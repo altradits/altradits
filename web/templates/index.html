@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Altradits — The Socratic Path to Go Mastery</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <nav>
+    <div class="nav-logo">
+      <div class="logo-mark"></div>
+      <span class="logo-text">Altradits</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#charter">Charter</a></li>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#forge" class="text-green">The Forge_</a></li>
+      <li><a href="#roadmap">Roadmap</a></li>
+    </ul>
+    <button class="nav-cta">Join waitlist</button>
+    <button class="nav-mobile-toggle" aria-label="Toggle menu" onclick="this.closest('nav').classList.toggle('open')">☰</button>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
+
+    <div class="hero-content">
+      <div class="hero-badge">
+        <div class="badge-dot"></div>
+        now building · zone01 kisumu
+      </div>
+
+      <h1>The Socratic<br/>path to <em>Go</em><br/>mastery.</h1>
+
+      <p class="hero-sub">
+        No copy-paste. No shortcuts. No hand-holding.<br/>
+        Just you, a <span>live sandbox</span>, and an AI mentor
+        that asks questions instead of giving answers.
+      </p>
+
+      <div class="hero-actions">
+        <button class="btn-primary">Start forging →</button>
+        <button class="btn-ghost">Read the charter</button>
+      </div>
+
+      <div class="hero-stats">
+        <div>
+          <div class="stat-val">11+</div>
+          <div class="stat-label">Min. age</div>
+        </div>
+        <div>
+          <div class="stat-val">Go</div>
+          <div class="stat-label">Only language</div>
+        </div>
+        <div>
+          <div class="stat-val">0</div>
+          <div class="stat-label">Free answers</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-terminal">
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="t-dot r"></div>
+          <div class="t-dot y"></div>
+          <div class="t-dot g"></div>
+          <span class="terminal-title">altradits · e2b-sandbox-7f2a · go 1.23</span>
+        </div>
+        <div class="terminal-body">
+          <div class="type-line l1">
+            <span class="t-prompt">student@forge:~$</span>
+            <span class="t-cmd"> go run main.go</span>
+          </div>
+          <div class="type-line l2">
+            <span class="t-err">panic: runtime error: invalid memory address or nil pointer dereference</span>
+          </div>
+          <div class="type-line l3">
+            <span class="t-err">[signal SIGSEGV: segmentation violation]</span>
+          </div>
+          <div>&nbsp;</div>
+          <div class="type-line l4">
+            <span class="t-comment">// 🎉 Milestone reached: nil pointer panic!</span>
+          </div>
+          <div>&nbsp;</div>
+          <span class="t-ai type-line l5">
+            Mentor: Interesting. Your program reached a nil pointer.<br/>
+            What do you think that tells you about the variable<br/>
+            on line 14 before you used it?
+          </span>
+          <div>&nbsp;</div>
+          <div class="type-line l6">
+            <span class="t-prompt">student@forge:~$</span>
+            <span class="t-cmd"> cat main.go | grep "line 14"</span>
+          </div>
+          <div class="type-line l7">
+            <span class="t-out">    var conn *sql.DB</span>
+          </div>
+          <div class="type-line l8">
+            <span class="t-out">    conn.Query("SELECT ...")</span>
+          </div>
+          <div>
+            <span class="t-prompt">student@forge:~$</span>
+            <span class="t-cursor"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="forge-workspace" id="forge">
+    <div class="workspace-header">
+      <div class="section-tag">// Live Workspace</div>
+      <h2 class="section-title">The Engineering Forge</h2>
+      <p class="section-desc">Active Mission: <span class="text-green">Ascii-art-01</span></p>
+    </div>
+
+    <div class="workspace-container">
+      <div class="pane editor-pane">
+        <div class="pane-bar">
+          <span class="file-name">main.go</span>
+          <button class="btn-run">Run System</button>
+        </div>
+        <textarea class="code-editor" spellcheck="false">package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Start writing Go...")
+}</textarea>
+      </div>
+
+      <div class="workspace-feedback">
+        <div class="pane mentor-pane">
+          <div class="pane-bar">Socratic Mentor</div>
+          <div class="mentor-content">
+            <div class="mentor-msg">
+              <span class="t-ai">// Observation:</span>
+              <p>Your program is currently a blank canvas. To achieve ASCII representation, how will you map standard characters to their 8-line graphical counterparts?</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="pane terminal-pane">
+          <div class="pane-bar">Sandbox Output (E2B)</div>
+          <div class="terminal-body">
+            <div class="t-line">
+              <span class="t-prompt">student@forge:~$</span> <span class="t-cursor"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="charter" id="charter">
+    <div class="charter-inner">
+      <div>
+        <div class="section-tag">// The Socratic Charter</div>
+        <h2 class="section-title">Three laws.<br/>No exceptions.</h2>
+        <p class="section-desc">
+          Our AI Mentor doesn't tutor. It interrogates. Every panic, every segfault — treated as a landmark, not a failure.
+        </p>
+      </div>
+
+      <div class="charter-rules">
+        <div class="rule-card">
+          <div class="rule-num">01</div>
+          <div>
+            <div class="rule-title">Never give code.</div>
+            <div class="rule-desc">The AI identifies the <em>concept</em> causing an error — never the fix. You write every character of production Go yourself.</div>
+          </div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-num">02</div>
+          <div>
+            <div class="rule-title">Validate via sandbox.</div>
+            <div class="rule-desc">Feedback is grounded in real-time E2B terminal output — stdout, stderr, exit codes. Not guesses about intent.</div>
+          </div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-num">03</div>
+          <div>
+            <div class="rule-title">Encourage failure.</div>
+            <div class="rule-desc">A nil pointer panic is a milestone. A segfault is progress. Fear of breaking things is the real enemy.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="section-tag">// The feedback loop</div>
+    <h2 class="section-title">How it works</h2>
+    <p class="section-desc">Four stages. Infinite iterations. Every cycle makes you sharper.</p>
+
+    <div class="flow-grid">
+      <div class="flow-step">
+        <div class="flow-arrow">→</div>
+        <div class="flow-icon">✍</div>
+        <div class="flow-num">Step 01</div>
+        <div class="flow-title">Student logic</div>
+        <div class="flow-desc">You write Go code in our browser-based editor. No scaffolding, no starter templates.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-arrow">→</div>
+        <div class="flow-icon">⚙</div>
+        <div class="flow-num">Step 02</div>
+        <div class="flow-title">E2B sandbox execution</div>
+        <div class="flow-desc">Your code runs in a fresh, isolated Linux micro-VM. Real output. Real errors. No fake environment.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-arrow">→</div>
+        <div class="flow-icon">🧠</div>
+        <div class="flow-num">Step 03</div>
+        <div class="flow-title">AI observation</div>
+        <div class="flow-desc">Claude 3.5 reads the stdout/stderr. It understands the error in full context before it speaks.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-icon">❓</div>
+        <div class="flow-num">Step 04</div>
+        <div class="flow-title">Socratic inquiry</div>
+        <div class="flow-desc">The mentor asks a question that leads you to the insight — never handing it to you on a plate.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stack-section" id="stack">
+    <div class="stack-header">
+      <div>
+        <div class="section-tag">// Tech stack</div>
+        <h2 class="section-title">Built for<br/>performance.</h2>
+      </div>
+      <p class="section-desc">
+        Every layer chosen deliberately. High-concurrency backends, agent-native sandboxes, and server-driven UI — this isn't a demo project.
+      </p>
+    </div>
+
+    <div class="stack-grid">
+      <div class="stack-card">
+        <div class="stack-layer">Core engine</div>
+        <div class="stack-tech green">Go (Golang)</div>
+        <div class="stack-role">High-concurrency systems logic and backend API. The only language students learn.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Sandbox infra</div>
+        <div class="stack-tech amber">E2B</div>
+        <div class="stack-role">Secure, agent-native micro-VMs. Untrusted student code never touches the host.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">The brain</div>
+        <div class="stack-tech">Claude 3.5 Sonnet</div>
+        <div class="stack-role">Socratic mentor. Optimized for code reasoning with proprietary system prompting.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Orchestration</div>
+        <div class="stack-tech">Go Fiber</div>
+        <div class="stack-role">Low-overhead, high-performance web framework serving the primary API layer.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Frontend</div>
+        <div class="stack-tech">HTMX + Tailwind</div>
+        <div class="stack-role">Server-driven interactivity. No heavy JS framework. Fast, lean, and deterministic.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Data &amp; auth</div>
+        <div class="stack-tech">Supabase</div>
+        <div class="stack-role">PostgreSQL persistence. Mastery Points ledger. Secure student sessions via JWT.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="roadmap">
+    <div class="section-tag">// Project roadmap</div>
+    <h2 class="section-title">Where we are.<br/>Where we're going.</h2>
+
+    <div class="roadmap-track">
+      <div class="roadmap-line"></div>
+      <div class="roadmap-items">
+
+        <div class="roadmap-item active">
+          <div class="roadmap-dot active"></div>
+          <div class="roadmap-phase">Phase 1</div>
+          <div>
+            <div class="roadmap-title">Core Go / E2B integration</div>
+            <div class="roadmap-desc">The "Hello World" Sandbox. Live code execution wired to the frontend.</div>
+          </div>
+          <div class="roadmap-status building">Building</div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-dot"></div>
+          <div class="roadmap-phase">Phase 2</div>
+          <div>
+            <div class="roadmap-title">Socratic feedback engine</div>
+            <div class="roadmap-desc">Context-aware logic via Claude 3.5. The Socratic wrapper intercepts all direct answers.</div>
+          </div>
+          <div class="roadmap-status planned">Planned</div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-dot"></div>
+          <div class="roadmap-phase">Phase 3</div>
+          <div>
+            <div class="roadmap-title">Automated peer-review</div>
+            <div class="roadmap-desc">GitHub Actions CI/CD. The "Automated Auditor" for project submissions.</div>
+          </div>
+          <div class="roadmap-status planned">Planned</div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-dot"></div>
+          <div class="roadmap-phase">Phase 4</div>
+          <div>
+            <div class="roadmap-title">The "Financial Go" extension</div>
+            <div class="roadmap-desc">Real-world money tools. Students build production-grade financial systems in Go.</div>
+          </div>
+          <div class="roadmap-status planned">Planned</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="founder-section">
+    <div class="section-tag">// Founder &amp; lead architect</div>
+    <div class="founder-card">
+      <div class="founder-avatar">S</div>
+      <div>
+        <div class="founder-name">Stanley Chege Thuita</div>
+        <div class="founder-role">Software Engineering Apprentice · Zone01 Kisumu</div>
+        <p class="founder-bio">
+          Immersed in the Software Developer Apprentice Cohort 2 at Zone01, building Altradits to scale the rigorous, logic-first learning model experienced daily. Mission: give every young engineer high-level challenges in a secure, AI-mentored environment.
+        </p>
+        <div class="founder-links">
+          <a href="https://www.linkedin.com/in/stanmobitech" class="founder-link" target="_blank" rel="noopener">LinkedIn ↗</a>
+          <a href="https://github.com/altradits/altradits" class="founder-link" target="_blank" rel="noopener">GitHub ↗</a>
+          <a href="https://www.zone01kisumu.ke/" class="founder-link" target="_blank" rel="noopener">Zone01 ↗</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <div class="cta-bg"></div>
+    <h2 class="cta-title">Ready to<br/><em>earn</em> your mastery?</h2>
+    <p class="cta-desc">Join the waitlist. No shortcuts on the other side.</p>
+    <div class="cta-actions">
+      <input type="email" class="input-email" placeholder="your@email.com" />
+      <button class="btn-primary">Join the forge</button>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-text">
+      © 2025 Altradits · Built at Zone01 Kisumu · Powered by E2B
+    </div>
+    <div class="footer-right">
+      <a href="#charter">Charter</a>
+      <a href="https://e2b.dev" target="_blank" rel="noopener">E2B</a>
+      <a href="https://github.com/altradits/altradits" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.zone01kisumu.ke/" target="_blank" rel="noopener">Zone01</a>
+    </div>
+  </footer>
+
+</body>
+</html>
