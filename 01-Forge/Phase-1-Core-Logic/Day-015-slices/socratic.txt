@@ -1,0 +1,13 @@
+--- DAY 015 SOCRATIC LOG ---
+
+Q1: What is the physical difference between an Array and a Slice in Go? 
+Why are Slices the standard for Altradits transaction lists?
+[Answer here later]
+
+Q2: Why does the "Capacity" (cap) of a slice sometimes double when you 
+append a new item? What is happening to the underlying memory?
+[Answer here later]
+
+Q3: In a bank, if we have a slice of 1 million transactions, how does 
+the "Capacity" behavior affect the server's RAM?
+[Answer here later]
