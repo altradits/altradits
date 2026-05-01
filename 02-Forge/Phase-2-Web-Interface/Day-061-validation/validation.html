@@ -1,0 +1,23 @@
+<p class="{{ if .IsValid }} text-emerald-400 {{ else }} text-red-500 {{ end }} flex items-center gap-1">
+    {{ if .IsValid }}
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+    {{ else }}
+        <span class="animate-pulse">●</span>
+    {{ end }}
+    {{ .Message }}
+</p>
+
+<!-- Extra Credit: Use HTMX to enable the button if valid -->
+{{ if .IsValid }}
+<script>
+    document.getElementById('submit-btn').disabled = false;
+    document.getElementById('submit-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+</script>
+{{ else }}
+<script>
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('submit-btn').classList.add('opacity-50', 'cursor-not-allowed');
+</script>
+{{ end }}

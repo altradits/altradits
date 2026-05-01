@@ -1,0 +1,11 @@
+--- DAY 061 SOCRATIC LOG ---
+
+Q1: Why do we use 'hx-post' for validation instead of 'hx-get'? 
+(Hint: Think about URL length limits and privacy of input data).
+
+Q2: What is the benefit of 'hx-sync="closest form:abort"'? 
+What problem does it solve when a user types extremely fast?
+
+Q3: In our validation.html, we used a <script> tag. HTMX executes 
+scripts in fragments by default. How does this help us manage 
+the UI state (like the button disabled state) from the server?
