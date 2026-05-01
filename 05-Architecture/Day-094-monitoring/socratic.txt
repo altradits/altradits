@@ -1,0 +1,24 @@
+--- DAY 094 SOCRATIC LOG ---
+
+Q1: Why should the '/metrics' endpoint be protected or hidden from 
+the public internet? (Hint: What could an attacker learn from 
+your internal timings and traffic volume?)
+
+Q2: What is the difference between a 'Counter' (e.g., total requests) 
+and a 'Gauge' (e.g., current memory usage)?
+
+Q3: If the '/healthz' endpoint returns a 503 error, what should 
+an automated system like Kubernetes do to that specific server 
+instance?
+
+
+
+
+# Get the Prometheus client
+go get github.com/prometheus/client_golang/prometheus
+
+# Run the server and check localhost:8080/metrics
+go run 05-Architecture/Day-094-monitoring/main.go
+
+git add 05-Architecture/Day-094-monitoring/
+git commit -m "feat(arch): implement health checks and Prometheus metrics instrumentation"
