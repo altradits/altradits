@@ -1,0 +1,10 @@
+OFFICIAL DOCUMENTATION FOR DAY 12:
+https://pkg.go.dev/strings#Count
+
+REQUIRED READING:
+1. strings.Count: Focus on the "non-overlapping" rule.
+2. strings.ToLower / strings.ToUpper: Learn about case normalization.
+
+ALTRADITS RESEARCH:
+Find 'strings.EqualFold'. Why is this a better way to compare 
+"Case-Insensitive" strings than converting both to lowercase?
