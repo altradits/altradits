@@ -1,0 +1,13 @@
+--- DAY 017 SOCRATIC LOG ---
+
+Q1: Why is a Map (Key-Value pair) faster than a Slice for finding 
+a specific user's balance in a database of millions?
+[Answer here later]
+
+Q2: What is the "Zero Value" of a Map? What happens if you try to 
+add data to a map that hasn't been initialized with 'make'?
+[Answer here later]
+
+Q3: In Altradits, why would we use a string (UUID) as a key 
+instead of an integer index?
+[Answer here later]
