@@ -1,0 +1,11 @@
+OFFICIAL DOCUMENTATION FOR DAY 27:
+https://go.dev/ref/spec#Go_statements
+https://go.dev/tour/concurrency/1
+
+REQUIRED READING:
+1. Go statements: Understand the syntax for starting a goroutine.
+2. The Go Tour (Goroutines): Practice the basic concurrency examples.
+
+ALTRADITS RESEARCH:
+How much memory (in KB) does a single goroutine stack start with? 
+Compare this to the 1MB+ typically required by a Java or C++ thread.
