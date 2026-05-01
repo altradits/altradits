@@ -1,0 +1,13 @@
+--- DAY 029 SOCRATIC LOG ---
+
+Q1: Why is 'sync.WaitGroup' a more professional way to wait for goroutines 
+than using 'time.Sleep'?
+[Answer here later]
+
+Q2: What happens if you call 'wg.Add(3)' but only two goroutines 
+call 'wg.Done()'?
+[Answer here later]
+
+Q3: In Altradits, if we are processing a batch of 1,000 transfers, 
+how does the WaitGroup ensure we don't send a "Batch Complete" email too early?
+[Answer here later]

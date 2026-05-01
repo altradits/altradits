@@ -1,0 +1,10 @@
+OFFICIAL DOCUMENTATION FOR DAY 29:
+https://pkg.go.dev/sync#WaitGroup
+
+REQUIRED READING:
+1. WaitGroup.Add / Done / Wait: Understand the internal counter mechanism.
+2. The Go Tour (WaitGroups): Review the standard synchronization patterns.
+
+ALTRADITS RESEARCH:
+Why should you pass a WaitGroup to a function as a pointer (*sync.WaitGroup) 
+rather than as a value?
