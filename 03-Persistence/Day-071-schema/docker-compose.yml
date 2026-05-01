@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: altradits_admin
+      POSTGRES_PASSWORD: forge_password
+      POSTGRES_DB: altradits_vault
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
