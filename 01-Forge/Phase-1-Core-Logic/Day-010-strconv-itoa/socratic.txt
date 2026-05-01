@@ -1,0 +1,13 @@
+--- DAY 010 SOCRATIC LOG ---
+
+Q1: Why can't we just use 'string(987654)' in Go to convert a 
+number to a readable string? (What does that actually produce?)
+[Answer here later]
+
+Q2: When generating a file name for a bank statement (e.g., "report_101.pdf"), 
+why is Itoa a necessary tool?
+[Answer here later]
+
+Q3: Why does Itoa NOT return an error, whereas Atoi DOES? 
+What does this tell you about the "safety" of going from numbers to strings?
+[Answer here later]
