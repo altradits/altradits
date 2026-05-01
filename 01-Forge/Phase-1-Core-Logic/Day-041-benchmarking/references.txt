@@ -1,0 +1,10 @@
+OFFICIAL DOCUMENTATION FOR DAY 41:
+https://pkg.go.dev/testing#B
+
+REQUIRED READING:
+1. Benchmark functions: Understand the 'b.ResetTimer()' and 'b.StopTimer()' methods.
+2. The `-benchmem` flag: Learn how to track memory allocations.
+
+ALTRADITS RESEARCH:
+Research "Memoization." How could you rewrite the Fibonacci function 
+to make it 100x faster in your next benchmark?
