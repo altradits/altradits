@@ -1,0 +1,10 @@
+OFFICIAL DOCUMENTATION FOR DAY 51:
+https://github.com/go-chi/chi
+
+REQUIRED READING:
+1. "How Middleware Works": Understand the concept of wrapping handlers.
+2. Chi Middleware: Look at the built-in 'middleware.Logger' and 'middleware.Recoverer'.
+
+ALTRADITS RESEARCH:
+How can you pass data from a middleware to a route handler? 
+(Hint: Look up 'context.WithValue').
