@@ -1,0 +1,10 @@
+--- DAY 083 SOCRATIC LOG ---
+
+Q1: Why are GET requests usually exempt from CSRF protection? 
+(Hint: Think about "Idempotency").
+
+Q2: If an attacker cannot read the CSRF token because of the 
+"Same-Origin Policy," how does this stop them from forging a POST request?
+
+Q3: Why is 'HttpOnly: true' set on the CSRF cookie? What kind of 
+attack (XSS) does this prevent?
