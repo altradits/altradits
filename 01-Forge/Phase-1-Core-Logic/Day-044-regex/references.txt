@@ -1,0 +1,10 @@
+OFFICIAL DOCUMENTATION FOR DAY 44:
+https://pkg.go.dev/regexp
+
+REQUIRED READING:
+1. regexp.MatchString: The quick-check method.
+2. regexp.MustCompile: The standard for global/reusable patterns.
+
+ALTRADITS RESEARCH:
+Is Go's regex engine "Linear Time"? Why does Go avoid the 
+"Backtracking" approach used in Python or Perl? (Hint: RE2).
