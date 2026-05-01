@@ -1,0 +1,22 @@
+{{ define "layout" }}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Altradits | Command Center</title>
+</head>
+<body style="background: #1a1a1a; color: white; padding: 50px;">
+    <header>
+        <h1>ALTRADITS FORGE v2.0</h1>
+    </header>
+    
+    <main>
+        <!-- This calls the specific 'balance' template defined in another file -->
+        {{ template "balance" . }}
+    </main>
+    
+    <footer>
+        <p>System secure. Monitoring active.</p>
+    </footer>
+</body>
+</html>
+{{ end }}

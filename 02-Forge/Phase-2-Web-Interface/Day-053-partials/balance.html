@@ -1,0 +1,7 @@
+{{ define "balance" }}
+<div style="border: 2px solid #4CAF50; padding: 20px; border-radius: 10px;">
+    <h3>Current Liquidity</h3>
+    <p style="font-size: 2em;">${{ .Balance }}</p>
+    <small>Verified at: {{ .LastUpdated }}</small>
+</div>
+{{ end }}
