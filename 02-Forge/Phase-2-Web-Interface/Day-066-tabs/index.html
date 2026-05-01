@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-white p-12">
+    <div class="max-w-2xl mx-auto">
+        <!-- Tab Navigation -->
+        <div class="flex border-b border-slate-800 mb-8 space-x-8">
+            <button hx-get="/" hx-target="#tab-content" hx-push-url="true" 
+                    class="pb-4 border-b-2 border-transparent hover:text-emerald-400 transition">Vault</button>
+            <button hx-get="/audit" hx-target="#tab-content" hx-push-url="true"
+                    class="pb-4 border-b-2 border-transparent hover:text-emerald-400 transition">Audit</button>
+            <button hx-get="/settings" hx-target="#tab-content" hx-push-url="true"
+                    class="pb-4 border-b-2 border-transparent hover:text-emerald-400 transition">Settings</button>
+        </div>
+
+        <!-- Dynamic Content -->
+        <div id="tab-content">
+            {{ template "tabs.html" . }}
+        </div>
+    </div>
+</body>
+</html>
