@@ -1,4 +1,3 @@
-package day007mathmodulus
 package main
 
 import "fmt"
