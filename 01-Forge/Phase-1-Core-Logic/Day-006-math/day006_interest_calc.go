@@ -1,10 +1,5 @@
 package main
 
-import (
-	"fmt"
-	"math"
-)
-
 func main() {
 	// TASK:
 	// 1. Declare 'principal' (float64) as 1000.00.
