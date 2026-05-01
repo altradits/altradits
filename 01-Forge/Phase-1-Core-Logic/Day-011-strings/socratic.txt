@@ -1,0 +1,13 @@
+--- DAY 011 SOCRATIC LOG ---
+
+Q1: Why is string searching (Contains/HasPrefix) essential for 
+filtering through thousands of bank transactions?
+[Answer here later]
+
+Q2: What is the difference between 'strings.Contains' and 'strings.Index'? 
+Which one gives you more information about the location of the data?
+[Answer here later]
+
+Q3: Are string comparisons in Go case-sensitive by default? 
+How could "Success" vs "SUCCESS" break a financial filter?
+[Answer here later]

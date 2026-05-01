@@ -1,0 +1,9 @@
+OFFICIAL DOCUMENTATION FOR DAY 11:
+https://pkg.go.dev/strings#Contains
+
+REQUIRED READING:
+1. strings.Contains: Learn the basic search logic.
+2. strings.HasPrefix / strings.HasSuffix: Essential for checking file extensions or ID prefixes.
+
+ALTRADITS RESEARCH:
+Look at 'strings.ContainsAny'. How does it differ from 'strings.Contains'?
