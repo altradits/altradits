@@ -1,4 +1,3 @@
-package day006math
 package main
 
 import (
