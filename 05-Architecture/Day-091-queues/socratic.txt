@@ -1,0 +1,22 @@
+--- DAY 091 SOCRATIC LOG ---
+
+Q1: What is the difference between an 'In-Memory Channel' and a 
+'Message Queue'? What happens to the messages in RabbitMQ if 
+the Go server restarts?
+
+Q2: Why is this called "Asynchronous Communication"? Does the 
+Founder see the result of the audit immediately on their screen?
+
+Q3: In a fintech environment, what is "At-Least-Once Delivery"? 
+Why is it better to process a transaction twice than to 
+miss it entirely?
+
+
+# Get the RabbitMQ driver
+go get github.com/rabbitmq/amqp091-go
+
+# Start RabbitMQ
+docker-compose up -d rabbitmq
+
+git add 05-Architecture/Day-091-queues/
+git commit -m "feat(arch): implement RabbitMQ producer for decoupled task processing"
