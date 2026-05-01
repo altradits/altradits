@@ -1,0 +1,13 @@
+--- DAY 005 SOCRATIC LOG ---
+
+Q1: Why should things like "Bank Name" or "Interest Rate" be constants 
+rather than variables in Altradits?
+[Answer here later]
+
+Q2: What is the difference between a "Typed Constant" and an "Untyped Constant" 
+in terms of flexibility?
+[Answer here later]
+
+Q3: Can a constant be calculated at runtime (e.g., the result of a function)? 
+Why does Go enforce this rule?
+[Answer here later]
