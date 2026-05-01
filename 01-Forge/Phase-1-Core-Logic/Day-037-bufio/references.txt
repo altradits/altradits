@@ -1,0 +1,10 @@
+OFFICIAL DOCUMENTATION FOR DAY 37:
+https://pkg.go.dev/bufio
+
+REQUIRED READING:
+1. bufio.Scanner: Understand the Scan/Text loop pattern.
+2. bufio.Reader: Learn when to use a Reader versus a Scanner.
+
+ALTRADITS RESEARCH:
+Look up `bufio.NewWriter`. Why is it important to call `.Flush()` 
+when you are done writing to a buffered stream?
