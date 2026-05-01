@@ -1,0 +1,11 @@
+--- DAY 002 SOCRATIC LOG ---
+
+Q1: What is the mechanical difference between Println and Printf?
+[Answer here later]
+
+Q2: In a financial ledger, why is vertical alignment (columns) more than just "design"? 
+How does it prevent human auditing errors?
+[Answer here later]
+
+Q3: Look at the documentation for "Verbs". What happens if you use %f for an integer?
+[Answer here later]
