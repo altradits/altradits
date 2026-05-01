@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-white p-12">
+    <div class="max-w-md mx-auto bg-slate-900 border border-slate-800 p-6 rounded-lg">
+        <h1 class="text-xl font-bold mb-4">Altradits Ledger</h1>
+        
+        <!-- This container is the target for our partial update -->
+        <div id="vault-display">
+            {{ template "balance.html" . }}
+        </div>
+
+        <button 
+            hx-get="/refresh-balance" 
+            hx-target="#vault-display" 
+            hx-swap="innerHTML"
+            class="mt-4 w-full bg-blue-600 py-2 rounded font-semibold hover:bg-blue-500 transition">
+            Sync with Vault
+        </button>
+    </div>
+</body>
+</html>
