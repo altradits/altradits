@@ -20,3 +20,18 @@ docker-compose up -d rabbitmq
 
 git add 05-Architecture/Day-091-queues/
 git commit -m "feat(arch): implement RabbitMQ producer for decoupled task processing"
+
+
+
+
+--- DAY 092 SOCRATIC LOG ---
+
+Q1: What happens to a message if the 'consumer.go' process is 
+killed (SIGKILL) while it is in the middle of 'time.Sleep'?
+
+Q2: Why is 'ch.Qos(1, 0, false)' (Prefetch) important if one 
+audit takes 1 second and another takes 10 seconds?
+
+Q3: What is a "Poison Pill" message? (Hint: What happens if a 
+message is corrupted and causes the consumer to crash every 
+time it tries to process it?)

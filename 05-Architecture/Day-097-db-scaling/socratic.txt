@@ -1,0 +1,13 @@
+--- DAY 097 SOCRATIC LOG ---
+
+Q1: What is "Replication Lag"? What happens if a Founder creates 
+a transaction (Primary) and immediately refreshes their page 
+(Replica) before the data has synced?
+
+Q2: Why is "Sharding" considered a last resort? (Hint: Think about 
+how difficult it becomes to run a report that joins data 
+across multiple shards).
+
+Q3: What is a "Global Unique ID" (like UUIDv7 or Snowflake IDs), 
+and why is it mandatory for a sharded database compared to 
+simple auto-incrementing integers?
