@@ -1,0 +1,11 @@
+--- DAY 090 SOCRATIC LOG ---
+
+Q1: Why is 'context.Context' always the first argument in a 
+Go function? (e.g., func DoWork(ctx context.Context, ...))
+
+Q2: What is the difference between 'context.Background()' and 
+'context.TODO()'? When should you use each?
+
+Q3: If 'HeavyLifting' calls another function 'DatabaseQuery', 
+should it pass the same 'ctx' down? What happens to the 
+database query if the root context is cancelled?
