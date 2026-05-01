@@ -1,0 +1,11 @@
+OFFICIAL DOCUMENTATION FOR DAY 13:
+https://pkg.go.dev/strings#Replace
+https://pkg.go.dev/strings#TrimSpace
+
+REQUIRED READING:
+1. strings.Replace: Understand the 'n' parameter (-1 for all).
+2. strings.TrimSpace: Note that it handles more than just standard spaces (tabs, newlines).
+
+ALTRADITS RESEARCH:
+Find 'strings.NewReplacer'. Why is this more efficient if you need 
+to replace multiple different symbols at once (e.g., $, ,, and .)?
