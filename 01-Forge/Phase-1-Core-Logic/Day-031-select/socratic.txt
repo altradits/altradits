@@ -1,0 +1,13 @@
+--- DAY 031 SOCRATIC LOG ---
+
+Q1: How does the 'select' statement allow a Go program to handle 
+multiple asynchronous events at once?
+[Answer here later]
+
+Q2: In a banking system, why is a "Timeout" (using time.After in select) 
+better than letting a request wait forever?
+[Answer here later]
+
+Q3: If multiple cases in a 'select' are ready at the same time, 
+how does Go decide which one to execute? Is it top-to-bottom or random?
+[Answer here later]
