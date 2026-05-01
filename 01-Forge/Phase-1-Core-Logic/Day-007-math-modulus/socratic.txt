@@ -1,0 +1,13 @@
+--- DAY 007 SOCRATIC LOG ---
+
+Q1: What is the "remainder" in a division operation, and why is it the 
+ultimate tool for currency denomination?
+[Answer here later]
+
+Q2: How can the modulus operator (%) be used to ensure a 
+program only runs a "Security Audit" every 10th transaction?
+[Answer here later]
+
+Q3: What happens if you try to use the modulus operator on a 
+float64 in Go? Why does the language restrict this?
+[Answer here later]
