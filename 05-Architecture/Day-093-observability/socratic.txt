@@ -1,0 +1,20 @@
+--- DAY 093 SOCRATIC LOG ---
+
+Q1: Why is it easier for a machine to parse {"level":"INFO","msg":"started"} 
+than "INFO: The process has started"?
+
+Q2: What is "Distributed Tracing"? How do we follow a single 
+request as it travels from the Web Server -> RabbitMQ -> Worker? 
+(Hint: Trace IDs).
+
+Q3: In production, should we log the actual 'Amount' or 
+'Credit Card Number' in our JSON logs? Why/Why not? (Hint: PII/PCI).
+
+
+
+
+# Run the logger and see the JSON output
+go run 05-Architecture/Day-093-observability/main.go | jq .
+
+git add 05-Architecture/Day-093-observability/
+git commit -m "feat(arch): implement structured JSON logging with slog for distributed observability"
