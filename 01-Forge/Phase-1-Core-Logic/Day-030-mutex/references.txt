@@ -1,0 +1,10 @@
+OFFICIAL DOCUMENTATION FOR DAY 30:
+https://pkg.go.dev/sync#Mutex
+
+REQUIRED READING:
+1. sync.Mutex: Understand the Lock and Unlock protocol.
+2. Go Blog "Introducing the Go Race Detector": Learn how to use `-race`.
+
+ALTRADITS RESEARCH:
+What is a 'RWMutex'? How does it allow many people to "Read" the balance 
+at once while still only allowing one person to "Write" at a time?
