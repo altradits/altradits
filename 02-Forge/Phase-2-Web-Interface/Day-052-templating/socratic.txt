@@ -1,0 +1,14 @@
+--- DAY 052 SOCRATIC LOG ---
+
+Q1: What is the difference between "Client-side Rendering" (React/Vue) 
+and "Server-side Rendering" (Go html/template)? 
+Why does Altradits benefit from the server doing the work?
+[Answer here later]
+
+Q2: Go's 'html/template' package is "Context Aware." What does this 
+mean for security, specifically regarding Cross-Site Scripting (XSS)?
+[Answer here later]
+
+Q3: Look at the syntax '{{ .Title }}'. What does the "dot" (.) represent 
+in the scope of a Go template?
+[Answer here later]
