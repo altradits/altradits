@@ -1,0 +1,13 @@
+--- DAY 020 SOCRATIC LOG ---
+
+Q1: What is the difference between a standalone Function and a Method? 
+How do methods help Altradits organize logic "around" the data?
+[Answer here later]
+
+Q2: What is a "Value Receiver" vs. a "Pointer Receiver"? 
+Which one is required to modify the struct's internal data?
+[Answer here later]
+
+Q3: If we have a method `(a Account) Deposit(...)`, and we pass a large 
+struct, why might this be slower than using `(a *Account) Deposit(...)`?
+[Answer here later]
