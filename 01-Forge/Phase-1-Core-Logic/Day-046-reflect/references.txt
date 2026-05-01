@@ -1,0 +1,10 @@
+OFFICIAL DOCUMENTATION FOR DAY 46:
+https://go.dev/blog/laws-of-reflection
+
+REQUIRED READING:
+1. The Three Laws of Reflection: This is the definitive guide.
+2. reflect.Type vs reflect.Value: Understand the distinction.
+
+ALTRADITS RESEARCH:
+Look at how `encoding/json` uses reflection to find struct tags. 
+How does it "see" the `json:"id"` strings you wrote on Day 35?

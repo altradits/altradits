@@ -1,0 +1,13 @@
+--- DAY 046 SOCRATIC LOG ---
+
+Q1: What is "Reflection"? Why is it described as a program "looking 
+in a mirror" to see its own structure?
+[Answer here later]
+
+Q2: Why is reflection considered "Heavy" or slow compared to 
+standard static typing?
+[Answer here later]
+
+Q3: In Altradits, why would we use reflection to automatically 
+map a CSV row to a Struct without writing 50 'if' statements?
+[Answer here later]
