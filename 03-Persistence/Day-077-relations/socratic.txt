@@ -1,0 +1,21 @@
+--- DAY 077 SOCRATIC LOG ---
+
+Q1: What does 'ON DELETE CASCADE' do? If we delete a 'User', 
+what happens to their 'Vaults'? Is this safe for a bank?
+
+Q2: Why use a 'LEFT JOIN' for transactions instead of an 'INNER JOIN'? 
+(Hint: What if a transaction is an "External Deposit" where the 
+sender vault isn't in our system?)
+
+Q3: In Go, SQLc will generate a 'GetVaultDetailsRow' struct. Why 
+doesn't it just return the 'Vault' struct?
+
+
+# Apply the new relational layers
+migrate -path migrations -database "postgres://altradits_admin:forge_password@localhost:5432/altradits_vault?sslmode=disable" up
+
+# Re-generate Go code to handle the new JOIN queries
+cd 03-Persistence/Day-077-relations && sqlc generate
+
+git add 03-Persistence/Day-077-relations/
+git commit -m "feat(persistence): implement relational schema with foreign keys and JOIN queries"
