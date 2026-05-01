@@ -1,0 +1,10 @@
+OFFICIAL DOCUMENTATION FOR DAY 8:
+https://pkg.go.dev/math/rand
+
+REQUIRED READING:
+1. rand.Intn: Understand how to limit a random number to a range.
+2. The note on Seeding: Understand why rand.Seed is being deprecated in newer Go versions in favor of rand.New(rand.NewSource(seed)).
+
+ALTRADITS RESEARCH:
+Look up 'crypto/rand'. How does it differ in its return values 
+(specifically the 'error' return) compared to 'math/rand'?
