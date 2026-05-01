@@ -1,0 +1,13 @@
+--- DAY 016 SOCRATIC LOG ---
+
+Q1: Go does not have a built-in `delete` function for slices. Why does 
+the language force you to manually "re-slice" to remove an item?
+[Answer here later]
+
+Q2: When you delete an item by re-slicing, what happens to the 
+original memory? Does it get smaller?
+[Answer here later]
+
+Q3: Why is deleting an item from the middle of a large slice 
+computationally "expensive" for a database?
+[Answer here later]
