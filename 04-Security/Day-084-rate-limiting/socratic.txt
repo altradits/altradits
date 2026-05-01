@@ -1,0 +1,12 @@
+--- DAY 084 SOCRATIC LOG ---
+
+Q1: Why is the 'burst' parameter (the '10' in NewLimiter) 
+important for a good user experience? What happens if a web page 
+needs to load 8 images at once?
+
+Q2: In our code, the 'ips' map grows forever. In a production 
+Altradits build, how would we prevent this map from eating 
+all the server's RAM? (Hint: Cleanup routines or Redis).
+
+Q3: Why should we return HTTP 429 (Too Many Requests) instead 
+of just dropping the connection?
