@@ -1,0 +1,8 @@
+OFFICIAL DOCUMENTATION:
+https://tailwindcss.com/docs
+
+GO-SPECIFIC:
+https://pkg.go.dev/net/http#FileServer
+
+PRO TIP:
+While we use the CDN for learning today, the 'Tailwind CLI' (referenced in our Phase 2 setup) is the only way to go for production because it "purges" unused CSS, making the file size tiny.
