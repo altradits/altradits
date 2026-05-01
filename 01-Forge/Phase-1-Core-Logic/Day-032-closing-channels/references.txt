@@ -1,0 +1,11 @@
+OFFICIAL DOCUMENTATION FOR DAY 32:
+https://go.dev/tour/concurrency/4
+https://pkg.go.dev/builtin#close
+
+REQUIRED READING:
+1. builtin.close: Understand the rules—only the sender should close.
+2. Range and Close: Learn the pattern for terminating consumers.
+
+ALTRADITS RESEARCH:
+What is the "Zero Value" of a channel receive? If you read from an 
+empty, closed channel, what do you get?
