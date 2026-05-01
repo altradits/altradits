@@ -1,0 +1,11 @@
+--- DAY 095 SOCRATIC LOG ---
+
+Q1: Why do we use a 'context.WithTimeout' during shutdown? What 
+happens if a request is "stuck" and never finishes?
+
+Q2: What is the difference between 'SIGINT' (Ctrl+C) and 'SIGTERM' 
+(the signal sent by Docker/Kubernetes)?
+
+Q3: If you have a RabbitMQ Consumer running, how do you gracefully 
+shut it down so it stops pulling new messages but finishes the 
+one it is currently 'Acking'?
