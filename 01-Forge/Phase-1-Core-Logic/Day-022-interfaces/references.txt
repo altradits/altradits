@@ -1,0 +1,10 @@
+OFFICIAL DOCUMENTATION FOR DAY 22:
+https://go.dev/ref/spec#Interface_types
+
+REQUIRED READING:
+1. Interface types: Understand how a type "satisfies" an interface.
+2. Duck Typing in Go: Research why people say "If it walks and quacks like a duck, it's a duck."
+
+ALTRADITS RESEARCH:
+Look at the `io.Reader` and `io.Writer` interfaces in the standard library. 
+Why are they considered the most powerful interfaces in all of Go?
