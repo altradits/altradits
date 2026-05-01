@@ -1,0 +1,11 @@
+OFFICIAL DOCUMENTATION FOR DAY 33:
+https://pkg.go.dev/time#Ticker
+https://pkg.go.dev/time#Timer
+
+REQUIRED READING:
+1. time.Ticker: Understand how to create and stop repeating events.
+2. time.AfterFunc: Learn how to trigger a function after a delay without blocking.
+
+ALTRADITS RESEARCH:
+Look at the difference between 'time.Tick' and 'time.NewTicker'. 
+Why is 'time.Tick' dangerous for programs that need to clean up memory?
