@@ -1,0 +1,12 @@
+- name: Configure Forge Servers
+  hosts: forge_servers
+  tasks:
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+    - name: Copy Forge Binary
+      copy:
+        src: ./bin/forge
+        dest: /usr/local/bin/forge
+        mode: '0755'
