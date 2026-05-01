@@ -1,0 +1,11 @@
+OFFICIAL DOCUMENTATION FOR DAY 28:
+https://go.dev/ref/spec#Channel_types
+https://go.dev/tour/concurrency/2
+
+REQUIRED READING:
+1. Channel types: Learn the syntax for `chan`, `chan<-` (send-only), and `<-chan` (receive-only).
+2. The Go Tour (Channels): Understand how channels synchronize goroutines.
+
+ALTRADITS RESEARCH:
+What is a "Buffered Channel"? How does it allow a sender to keep 
+working even if the receiver hasn't picked up the data yet?

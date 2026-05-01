@@ -1,0 +1,13 @@
+--- DAY 028 SOCRATIC LOG ---
+
+Q1: Go's motto is: "Do not communicate by sharing memory; instead, share 
+memory by communicating." How do channels fulfill this?
+[Answer here later]
+
+Q2: What is "Blocking"? Why does a goroutine stop and wait when 
+it tries to send to a channel that has no receiver?
+[Answer here later]
+
+Q3: Why are channels safer for transferring bank data between 
+threads than using a global shared variable?
+[Answer here later]
