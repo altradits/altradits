@@ -1,0 +1,13 @@
+--- DAY 006 SOCRATIC LOG ---
+
+Q1: The 'math' package functions almost exclusively use 'float64'. 
+Why does this pose a risk when calculating money over long periods?
+[Answer here later]
+
+Q2: What is the purpose of 'math.NaN' (Not a Number)? 
+How could a "NaN" result break a banking ledger?
+[Answer here later]
+
+Q3: Look at 'math.MaxInt64'. Why is it important to know the 
+physical limit of a number in a global financial system?
+[Answer here later]
