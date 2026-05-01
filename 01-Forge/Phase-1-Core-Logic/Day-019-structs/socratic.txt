@@ -1,0 +1,13 @@
+--- DAY 019 SOCRATIC LOG ---
+
+Q1: Why is a Struct better than a Map for representing a complex object 
+like a "Bank Account" or "User Profile"?
+[Answer here later]
+
+Q2: What is the "Zero Value" of a struct? If we declare 'var a Account', 
+what are the values of its internal fields before assignment?
+[Answer here later]
+
+Q3: Look at the field names. Why does starting a field name with a 
+Capital Letter (e.g., 'Owner' vs 'owner') matter in Go?
+[Answer here later]
