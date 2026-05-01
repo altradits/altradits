@@ -1,0 +1,13 @@
+--- DAY 039 SOCRATIC LOG ---
+
+Q1: What is the "Multiplexer" (ServeMux) in a Go web server? 
+How does it decide which function to run when a request arrives?
+[Answer here later]
+
+Q2: Why does 'http.ListenAndServe' block the main goroutine? 
+What would happen if we ran it inside a goroutine without any other code in main?
+[Answer here later]
+
+Q3: In a production Altradits environment, why is it better to use 
+'HTTPS' (ListenAndServeTLS) instead of 'HTTP'?
+[Answer here later]
