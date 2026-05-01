@@ -1,0 +1,13 @@
+--- DAY 045 SOCRATIC LOG ---
+
+Q1: Go doesn't have "Classes" or "Inheritance." How does Struct Embedding 
+provide a similar benefit while avoiding the "Deep Hierarchy" problem?
+[Answer here later]
+
+Q2: What is "Field Promotion"? If both the parent and child struct 
+have a field named 'ID', which one wins when you call 'account.ID'?
+[Answer here later]
+
+Q3: In Altradits, why is Composition (building things out of smaller parts) 
+considered safer than traditional Object-Oriented inheritance?
+[Answer here later]
