@@ -1,0 +1,10 @@
+OFFICIAL DOCUMENTATION FOR DAY 40:
+https://pkg.go.dev/testing
+
+REQUIRED READING:
+1. The testing package: Learn about `T`, `Error`, and `Fail`.
+2. Go Test Command: Learn how to run specific tests or check coverage.
+
+ALTRADITS RESEARCH:
+What is `go test -cover`? How can it help you find parts of the 
+ledger logic that haven't been verified yet?
