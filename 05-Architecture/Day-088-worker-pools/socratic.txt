@@ -1,0 +1,18 @@
+--- DAY 088 SOCRATIC LOG ---
+
+Q1: Why do we use 'close(jobs)'? What happens if the workers 
+keep trying to read from an open but empty channel?
+
+Q2: Look at the channel signatures: '<-chan' and 'chan<-'. 
+What do these arrows signify regarding the direction of data?
+
+Q3: In the Altradits Forge, if we use a worker pool for "PDF 
+Invoice Generation," how does this protect our server from 
+running out of memory during peak hours?
+
+
+# Run the pool and notice how only 3 jobs happen at a time
+go run 05-Architecture/Day-088-worker-pools/main.go
+
+git add 05-Architecture/Day-088-worker-pools/
+git commit -m "feat(arch): implement worker pool pattern with buffered channels"
