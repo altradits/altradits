@@ -1,0 +1,13 @@
+--- DAY 049 SOCRATIC LOG ---
+
+Q1: What is the purpose of 'go.mod' and 'go.sum'? Why are they 
+essential for ensuring Altradits builds the same way on every machine?
+[Answer here later]
+
+Q2: What does 'go mod tidy' actually do? Why is it better than 
+manually editing the requirement list?
+[Answer here later]
+
+Q3: What is "Semantic Versioning"? How does Go handle a situation 
+where two different libraries need two different versions of the same tool?
+[Answer here later]
