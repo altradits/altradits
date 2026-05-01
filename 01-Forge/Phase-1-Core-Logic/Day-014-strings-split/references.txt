@@ -1,0 +1,11 @@
+OFFICIAL DOCUMENTATION FOR DAY 14:
+https://pkg.go.dev/strings#Split
+https://pkg.go.dev/strings#Join
+
+REQUIRED READING:
+1. strings.Split: Understand how it returns a []string (Slice).
+2. strings.Join: Note how it takes a slice and a separator.
+
+ALTRADITS RESEARCH:
+Look at 'strings.Fields'. How is this different from 'strings.Split'? 
+Why is it better for strings with irregular spacing?

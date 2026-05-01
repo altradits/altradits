@@ -1,0 +1,13 @@
+--- DAY 014 SOCRATIC LOG ---
+
+Q1: How does 'strings.Split' allow Altradits to process a simple 
+text file as if it were a structured database?
+[Answer here later]
+
+Q2: What happens if you try to 'Split' a string using a delimiter 
+that doesn't exist in the text?
+[Answer here later]
+
+Q3: Why is 'strings.Join' useful for generating professional 
+formatted logs or reports from raw data slices?
+[Answer here later]
