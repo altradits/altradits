@@ -1,0 +1,13 @@
+--- DAY 024 SOCRATIC LOG ---
+
+Q1: What is a "Sentinel Error"? Why is it better to compare an error 
+to a variable (ErrNotFound) than to a string ("not found")?
+[Answer here later]
+
+Q2: How does 'errors.Is' differ from a simple 'err == targetErr' 
+comparison when dealing with wrapped errors?
+[Answer here later]
+
+Q3: In a banking API, how do custom errors help the frontend 
+display the correct message to the user?
+[Answer here later]
