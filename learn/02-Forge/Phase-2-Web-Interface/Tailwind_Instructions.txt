@@ -1,9 +1,0 @@
-HOW TO SETUP TAILWIND WITHOUT NODE.JS:
-
-1. Download binary: https://github.com/tailwindlabs/tailwindcss/releases/latest
-2. Name it 'tailwindcss' and make it executable: chmod +x tailwindcss
-3. Run init: ./tailwindcss init
-4. Configure 'tailwind.config.js':
-   content: ["./templates/**/*.html", "./cmd/**/*.go"],
-5. Run Watcher:
-   ./tailwindcss -i ./static/css/input.css -o ./static/css/output.css --watch

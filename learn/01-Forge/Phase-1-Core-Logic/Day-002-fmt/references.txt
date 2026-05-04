@@ -1,9 +1,0 @@
-OFFICIAL DOCUMENTATION FOR DAY 2:
-https://pkg.go.dev/fmt#hdr-Printing
-
-REQUIRED READING:
-1. "Printing" Header: Focus specifically on the "Verbs" section.
-2. Read the "Width and Precision" subsection to understand column alignment.
-
-ALTRADITS RESEARCH:
-Find the verb that prints the 'type' of a variable. Why is this useful for debugging a ledger?

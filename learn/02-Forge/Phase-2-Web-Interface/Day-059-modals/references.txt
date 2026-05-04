@@ -1,6 +1,0 @@
-OFFICIAL DOCUMENTATION:
-https://htmx.org/examples/modal-bootstrap/ (Concept applies to Tailwind)
-https://tailwindcss.com/docs/position#fixed
-
-DESIGN PATTERN:
-"Lazy Loading Modals" keeps the initial page weight light. We only load the modal code when the Founder actually clicks the button.

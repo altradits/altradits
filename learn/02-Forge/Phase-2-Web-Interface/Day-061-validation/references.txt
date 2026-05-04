@@ -1,8 +1,0 @@
-OFFICIAL DOCUMENTATION:
-https://htmx.org/examples/inline-validation/
-
-HTMX SCRIPTING:
-https://htmx.org/docs/#scripts
-
-PRO TIP:
-Using 'delay:200ms' is the "Goldilocks Zone" for typing. Any faster and the UI feels jittery; any slower and the user thinks the system is unresponsive.
