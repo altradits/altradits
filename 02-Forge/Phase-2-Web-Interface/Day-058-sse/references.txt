@@ -1,6 +1,0 @@
-OFFICIAL DOCUMENTATION:
-https://htmx.org/extensions/server-sent-events/
-https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events
-
-GO CONTEXTS:
-https://pkg.go.dev/context
