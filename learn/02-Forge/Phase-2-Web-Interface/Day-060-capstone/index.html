@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Altradits | Command Center</title>
+</head>
+<body class="bg-slate-950 text-slate-200 font-sans antialiased">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-slate-900 border-r border-slate-800 p-6 flex flex-col">
+            <h1 class="text-xl font-bold text-emerald-400 tracking-tighter mb-10">ALTRADITS <span class="font-light text-slate-500">FORGE</span></h1>
+            <nav class="space-y-4 flex-1">
+                <a href="#" class="block text-emerald-500 font-semibold">Dashboard</a>
+                <a href="#" class="block text-slate-400 hover:text-white transition">Ledger</a>
+                <a href="#" class="block text-slate-400 hover:text-white transition">Vaults</a>
+            </nav>
+            <div class="text-xs text-slate-600">v2.0.1-Alpha</div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-10 overflow-y-auto">
+            <header class="flex justify-between items-center mb-10">
+                <h2 class="text-3xl font-bold">Founder Overview</h2>
+                <div class="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-500 text-sm flex items-center gap-2">
+                    <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>
+                    System: {{ .Status }}
+                </div>
+            </header>
+
+            <!-- Metrics Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Dynamic Metric (HTMX Target) -->
+                <div id="metric-target" hx-get="/api/metric" hx-trigger="every 5s" class="contents">
+                    {{ template "metric-box" . }}
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <h3 class="text-slate-500 text-xs uppercase font-bold mb-4">Operations</h3>
+                    <button class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl font-semibold transition mb-3">View Logs</button>
+                    <button class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-semibold transition text-white">Manual Audit</button>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

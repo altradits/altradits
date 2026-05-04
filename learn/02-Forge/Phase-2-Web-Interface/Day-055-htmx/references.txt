@@ -1,0 +1,7 @@
+OFFICIAL DOCUMENTATION:
+https://htmx.org/attributes/hx-get/
+https://htmx.org/docs/#swapping
+
+ALTRADITS ARCHITECTURE:
+
+By returning HTML instead of JSON, we skip the need for a complex JavaScript frontend framework. The state remains in the Go backend.

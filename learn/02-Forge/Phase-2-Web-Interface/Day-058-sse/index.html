@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- Load the SSE extension -->
+    <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-white p-12">
+    <div class="max-w-md mx-auto bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-xl">
+        <h1 class="text-xl font-bold mb-2">Live Vault Monitor</h1>
+        <p class="text-slate-500 text-sm mb-6">Real-time liquidity stream enabled.</p>
+
+        <!-- Connect to the SSE stream -->
+        <div hx-ext="sse" sse-connect="/events" sse-swap="message">
+            <div id="live-balance" class="text-4xl font-mono transition-all duration-500">
+                Connecting...
+            </div>
+        </div>
+    </div>
+</body>
+</html>

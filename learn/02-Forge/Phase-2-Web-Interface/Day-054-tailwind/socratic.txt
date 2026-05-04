@@ -1,0 +1,10 @@
+--- DAY 054 SOCRATIC LOG ---
+
+Q1: Why does Tailwind use "Utility Classes" (like 'p-8' or 'rounded-2xl') 
+instead of traditional CSS classes (like '.card')? 
+
+Q2: What is the benefit of serving your CSS via a 'FileServer' in Go 
+rather than using a global CDN in a production environment?
+
+Q3: How does the 'bg-slate-900/50' syntax allow us to control 
+transparency without writing custom RGBA code?

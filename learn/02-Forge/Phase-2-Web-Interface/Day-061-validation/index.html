@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-white p-12">
+    <div class="max-w-md mx-auto">
+        <h1 class="text-2xl font-bold mb-6">System Registration</h1>
+        
+        <form class="space-y-6 bg-slate-900 p-8 rounded-2xl border border-slate-800">
+            <div>
+                <label class="block text-sm font-medium text-slate-400 mb-2">Vault Account Number</label>
+                <input type="text" name="account_number" 
+                       placeholder="ALTR-XXXXX"
+                       class="w-full bg-slate-950 border border-slate-700 p-3 rounded-lg focus:outline-none focus:border-emerald-500 transition"
+                       hx-post="/validate/account" 
+                       hx-trigger="keyup changed delay:200ms" 
+                       hx-target="#account-validation"
+                       hx-sync="closest form:abort">
+                
+                <!-- Target for validation feedback -->
+                <div id="account-validation" class="mt-2 text-xs"></div>
+            </div>
+
+            <button class="w-full bg-emerald-600 py-3 rounded-lg font-bold opacity-50 cursor-not-allowed" id="submit-btn" disabled>
+                Register Vault
+            </button>
+        </form>
+    </div>
+</body>
+</html>

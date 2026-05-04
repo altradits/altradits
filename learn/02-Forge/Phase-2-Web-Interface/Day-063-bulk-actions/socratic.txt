@@ -1,0 +1,11 @@
+--- DAY 063 SOCRATIC LOG ---
+
+Q1: Why does Go's 'r.Form["tx_ids"]' return a slice ([]string) 
+instead of a single string? 
+
+Q2: What is the benefit of 'hx-include'? Why would we use it 
+instead of just putting the button inside a <form>?
+
+Q3: In a multi-user Altradits environment, what happens if two 
+Founders try to approve the same transaction at the exact same 
+millisecond? (Hint: Think back to Phase 1 Mutexes).

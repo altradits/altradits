@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-white p-12">
+    <div class="max-w-md mx-auto text-center">
+        <h1 class="text-2xl font-bold mb-8">Vault Operations</h1>
+        
+        <button hx-get="/confirm-transfer" 
+                hx-target="#modal-container" 
+                class="bg-red-600 hover:bg-red-500 px-6 py-3 rounded-lg font-bold transition">
+            Initiate Wire Transfer
+        </button>
+    </div>
+
+    <!-- The 'Holding Pen' for our modals -->
+    <div id="modal-container"></div>
+</body>
+</html>

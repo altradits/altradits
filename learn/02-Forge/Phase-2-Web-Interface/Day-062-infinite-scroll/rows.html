@@ -1,0 +1,14 @@
+{{ range $index, $item := .Items }}
+    {{ if and (eq (add $index 1) 20) (not $.Last) }}
+    <!-- The 20th row triggers the next load when scrolled into view -->
+    <tr hx-get="/load-more?page={{ $.Next }}" 
+        hx-trigger="revealed" 
+        hx-swap="afterend" 
+        class="border-b border-slate-800 hover:bg-slate-800/50">
+    {{ else }}
+    <tr class="border-b border-slate-800 hover:bg-slate-800/50">
+    {{ end }}
+        <td class="p-4 font-mono text-emerald-500">ID-{{ $item.ID }}</td>
+        <td class="p-4">{{ $item.Label }}</td>
+    </tr>
+{{ end }}

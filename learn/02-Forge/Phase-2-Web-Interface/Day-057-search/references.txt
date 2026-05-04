@@ -1,0 +1,6 @@
+OFFICIAL DOCUMENTATION:
+https://htmx.org/examples/active-search/
+https://htmx.org/attributes/hx-trigger/
+
+DESIGN PATTERN:
+The "Active Search" pattern eliminates the "Search" button, making the system feel fluid and modern—the standard expected by Altradits clients.

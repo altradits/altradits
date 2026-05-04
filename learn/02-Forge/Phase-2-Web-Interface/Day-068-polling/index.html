@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-white p-12">
+    <div class="max-w-md mx-auto">
+        <h1 class="text-2xl font-bold mb-6">Engine Heartbeat</h1>
+        
+        <!-- The Polling Container -->
+        <div hx-get="/system/status" 
+             hx-trigger="every 2s" 
+             hx-swap="innerHTML"
+             class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl">
+            <p class="text-slate-500 animate-pulse">Establishing connection to Forge...</p>
+        </div>
+
+        <p class="mt-4 text-xs text-slate-600 text-center">
+            Automatic reconciliation every 2000ms
+        </p>
+    </div>
+</body>
+</html>

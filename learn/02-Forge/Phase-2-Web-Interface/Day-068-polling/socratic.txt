@@ -1,0 +1,11 @@
+--- DAY 068 SOCRATIC LOG ---
+
+Q1: What is the primary difference between Polling (Client-initiated) 
+and SSE (Server-initiated)? Which one uses more server resources?
+
+Q2: Why is 'transition-all duration-1000' used on the CPU bar 
+if the polling happens every 2 seconds? (Hint: Think about 
+"visual continuity").
+
+Q3: How would you stop the polling if the user clicks a "Pause Monitor" 
+button? (Research: 'hx-trigger="every 2s [condition]"').

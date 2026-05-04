@@ -1,0 +1,11 @@
+--- DAY 075 SOCRATIC LOG ---
+
+Q1: What does the 'A' in ACID (Atomicity) specifically protect against 
+in the 'TransferTx' function above?
+
+Q2: Why is 'defer tx.Rollback(ctx)' used at the start? What happens 
+if 'tx.Commit(ctx)' is called successfully? Does the rollback still trigger?
+
+Q3: What is a "Deadlock"? How could two simultaneous transfers between 
+Stan and Alice (Stan -> Alice and Alice -> Stan) cause the database 
+to freeze if the update order isn't handled carefully?s

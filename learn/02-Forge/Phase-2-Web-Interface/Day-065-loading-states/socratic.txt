@@ -1,0 +1,10 @@
+--- DAY 065 SOCRATIC LOG ---
+
+Q1: What is the specific role of the '.htmx-request' class? 
+Where does it come from, and how does it drive our CSS transition?
+
+Q2: Why use 'pointer-events: none' on the loading indicator? 
+What user error does this prevent during the 3-second wait?
+
+Q3: In a professional Altradits build, why would we prefer 
+'hx-indicator' over a simple JavaScript 'show/hide' function?

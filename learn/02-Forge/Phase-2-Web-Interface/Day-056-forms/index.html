@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-white p-12">
+    <div class="max-w-md mx-auto bg-slate-900 p-8 rounded-xl border border-slate-800 shadow-2xl">
+        <h1 class="text-2xl font-bold text-emerald-400 mb-6">Vault Transfer</h1>
+        
+        <form hx-post="/transact" hx-target="#feedback" hx-swap="innerHTML" class="space-y-4">
+            <div>
+                <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Transfer Amount</label>
+                <input type="number" name="amount" placeholder="0.00" step="0.01"
+                       class="w-full bg-slate-800 border border-slate-700 p-3 rounded text-xl focus:outline-none focus:border-emerald-500 transition">
+            </div>
+            
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded font-bold transition">
+                Execute Transaction
+            </button>
+        </form>
+
+        <!-- Placeholder for server feedback -->
+        <div id="feedback" class="mt-6"></div>
+    </div>
+</body>
+</html>

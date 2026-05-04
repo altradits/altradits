@@ -1,0 +1,6 @@
+OFFICIAL DOCUMENTATION:
+https://htmx.org/attributes/hx-post/
+https://htmx.org/attributes/hx-disabled-elt/
+
+GO CORE:
+https://pkg.go.dev/net/http#Request.PostFormValue

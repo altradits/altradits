@@ -1,0 +1,20 @@
+--- DAY 078 SOCRATIC LOG ---
+
+Q1: Why is an index with a 'WHERE deleted_at IS NULL' clause (a Partial 
+Index) more efficient than a standard index in this scenario?
+
+Q2: If a 'Vault' is soft-deleted, should its associated 'Transactions' 
+also be hidden? How would you handle this "Cascading Soft Delete" in Go?
+
+Q3: From a data privacy (GDPR) perspective, are Soft Deletes enough, 
+or does the system still need a way to perform a "Permanent Purge" 
+upon a user's formal request?
+
+# Apply the shadow columns
+migrate -path migrations -database "postgres://altradits_admin:forge_password@localhost:5432/altradits_vault?sslmode=disable" up
+
+# Re-sync Go code
+cd 03-Persistence/Day-078-soft-deletes && sqlc generate
+
+git add 03-Persistence/Day-078-soft-deletes/
+git commit -m "feat(persistence): implement soft-delete pattern for audit-compliant record management"

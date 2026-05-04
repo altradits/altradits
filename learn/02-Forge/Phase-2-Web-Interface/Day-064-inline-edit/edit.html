@@ -1,0 +1,18 @@
+<tr class="bg-slate-800/80 border-y border-emerald-500/30">
+    <td class="p-4">
+        <input type="text" name="name" value="{{ .Name }}" class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-emerald-400 focus:outline-none">
+    </td>
+    <td class="p-4">
+        <input type="email" name="email" value="{{ .Email }}" class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-300 focus:outline-none">
+    </td>
+    <td class="p-4 text-right space-x-2">
+        <button hx-get="/" hx-target="#contact-row" class="text-xs text-slate-500 hover:text-white">Cancel</button>
+        <button hx-put="/contact/{{ .ID }}" 
+                hx-target="closest tr" 
+                hx-swap="outerHTML"
+                hx-include="closest tr"
+                class="bg-emerald-600 px-3 py-1 rounded text-xs font-bold text-white">
+            Save
+        </button>
+    </td>
+</tr>

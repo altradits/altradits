@@ -1,0 +1,10 @@
+--- DAY 058 SOCRATIC LOG ---
+
+Q1: Why is SSE considered "Unidirectional" compared to WebSockets? 
+In what scenario would Altradits actually NEED a WebSocket instead?
+
+Q2: What happens if the Founder loses internet connection? How does 
+the browser handle the SSE connection automatically?
+
+Q3: Why is the 'http.Flusher' interface necessary? What would 
+happen if we forgot to call 'Flush()'?

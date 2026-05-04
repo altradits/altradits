@@ -1,0 +1,10 @@
+--- DAY 067 SOCRATIC LOG ---
+
+Q1: What happens if the 'swap:500ms' delay is shorter than the CSS 
+transition time? 
+
+Q2: Why do we use 'hx-delete' instead of a POST request for 
+removing logs? How does this follow RESTful principles?
+
+Q3: Look at the Go code: 'w.WriteHeader(http.StatusOK)'. Why don't 
+we need to return any HTML to remove the item?

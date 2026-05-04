@@ -1,0 +1,10 @@
+--- DAY 071 SOCRATIC LOG ---
+
+Q1: Why do we use 'DECIMAL(15, 2)' for the amount instead of 
+'FLOAT' or 'DOUBLE'? What happens to 0.1 + 0.2 in floating point?
+
+Q2: What is the benefit of using 'UUID' over an auto-incrementing 
+'SERIAL' integer for a public-facing fintech API?
+
+Q3: Look at the 'CHECK (amount > 0)' constraint. Why define this 
+in the database if we already validated it in the Go code on Day 056?
