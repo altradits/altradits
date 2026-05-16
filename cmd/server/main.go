@@ -1,18 +1,19 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/altradits/altradits/internal/auth"
+)
 
 func main() {
-	// Explicit naming, no room for bias
-	var name string = "Stanley Chege Thuita"
-	var profession string = "Principal Architect"
 
-	// Output Feedback
+	// Trigger the fortress check of Altradits Kernel
 	fmt.Println("🏦 ALTRADITS KERNEL: INITIALIZING...")
 	fmt.Println("====================================")
-	fmt.Println("Status: Access Granted")
-	fmt.Printf("Name: %s\n", name)
-	fmt.Printf("Role: %s\n", profession)
+
+	aut.ValidateIdentity()
+
+	// Output Feedback
 	fmt.Println("====================================")
 	fmt.Println("💗 Permanent Pulse Detected. ChouMi Out 👋😊")
 }
