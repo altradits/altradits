@@ -2,16 +2,20 @@ package main
 
 import (
 	"fmt"
+	"flag"
 	"github.com/altradits/altradits/internal/auth"
 )
 
 func main() {
+	// 1. Establish the flags
+	nameFlag := flag.String("name", "", "The legal name of the system operator")
+	roleFlag := flag.String("role", "", "The professional role of the operator")
 
-	// Trigger the fortress check of Altradits Kernel
-	fmt.Println("🏦 ALTRADITS KERNEL: INITIALIZING...")
-	fmt.Println("====================================")
+	// 2. Parse the flags from cmd
+	flag.Parse()
 
-	auth.ValidateIdentity()
+	// 3. Validate parsed commands
+	auth.ValidateIdentity(*nameFlag, *roleFlag)
 
 	// Output Feedback
 	fmt.Println("====================================")
