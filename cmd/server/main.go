@@ -11,7 +11,7 @@ func main() {
 	fmt.Println("🏦 ALTRADITS KERNEL: INITIALIZING...")
 	fmt.Println("====================================")
 
-	aut.ValidateIdentity()
+	auth.ValidateIdentity()
 
 	// Output Feedback
 	fmt.Println("====================================")

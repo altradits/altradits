@@ -1,6 +1,8 @@
 package auth
 
-import "github.com/altradits/altradits/auth"
+import (
+	"fmt"
+)
 
 // Validate the credentials of the incomming system request
 func ValidateIdentity() {
