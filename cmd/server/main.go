@@ -25,8 +25,8 @@ func main() {
 	var incommingDebit int64 = 1000000
 
 	// 5. Apply Transaction to Ledger
-	altraditsVault.ApplyTransaction(altraditsVault.TotalBalance, incommingCredit, incommingDebit)	
-
+	altraditsVault.ApplyTransaction(incommingCredit, incommingDebit)
+	
 	// Output Feedback
 	fmt.Println("====================================")
 	fmt.Println("💗 Permanent Pulse Detected. ChouMi Out 👋😊")

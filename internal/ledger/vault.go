@@ -38,10 +38,10 @@ func formatWithCommas(val float64) string {
 	return strings.Join(result, ",") + "." + decPart
 }
 
-func (v *VaultLedger) ApplyTransaction(initialBalance int64, creditAmount int64, debitAmount int64) {
+func (v *VaultLedger) ApplyTransaction(creditAmount int64, debitAmount int64) {
 
 	// Store the snapshot of the balance before the mutation occurs
-	initialBalance = v.TotalBalance
+	initialBalance := v.TotalBalance
 
 	fmt.Println("CORE ENGINE LEDGER")
 
