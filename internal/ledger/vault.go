@@ -8,8 +8,8 @@ func RecordTransaction(initialBalance int64, creditAmount int64, debitAmount int
 
 	finalBalance := initialBalance + creditAmount - debitAmount
 
-	fmt.Printf("Initial Balance: %.2f/n", float64(initialBalance)/100)
-	fmt.Printf("Credit Push: +%.2f/n", float64(creditAmount)/100)
-	fmt.Printf("Initial Pull: -%.2f/n", float64(creditAmount)/100)
-	fmt.Printf("Final Balance: %.2f/n", float64(finalBalance)/100)
+	fmt.Printf("Initial Base: %.2f\n", float64(initialBalance)/100)
+	fmt.Printf("Credit Push: +%.2f\n", float64(creditAmount)/100)
+	fmt.Printf("Credit Pull: -%.2f\n", float64(creditAmount)/100)
+	fmt.Printf("Final Balance: %.2f\n", float64(finalBalance)/100)
 }
