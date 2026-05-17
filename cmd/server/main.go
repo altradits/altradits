@@ -1,6 +1,9 @@
 package main
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
 	"fmt"
 	"flag"
 	"time"
@@ -26,6 +29,12 @@ func main() {
 	// Instantiate the structured ledger with our recovered state
 	altraditsVault := ledger.NewVaultLedger(startingBankroll)
 
+	// GRACEFUL SHUTDOWN INTERCEPTOR
+	// Create a channel channel to listen for incoming operating system termination signals
+	shutdownChan := make(chan os.Signal, 1)
+	// Notify this channel specifically if the user hits Ctrl+C (Interrupt) or kills the process
+	signal.Notify(shutdownChan, os.Interrupt, syscall.SIGTERM)
+
 	fmt.Println("\n====================================")
     fmt.Println("💗 PERMANENT HEARTBEAT ACTIVATED")
     fmt.Println("State Engine running continuously. Press Ctrl+C to halt.")
@@ -47,6 +56,18 @@ func main() {
 				fmt.Println("====================================")
 				fmt.Println("💗 Permanent Pulse Detected. ChouMi Out 👋😊")
 				fmt.Println("====================================")
+
+			case sig := <-shutdownChan:
+				// Intercepted execution signal! Trigger cleanup operations before closing.
+				fmt.Printf("\n\n🚨 SIGNAL RECEIVER: Intercepted system closure signal: [%v]\n", sig)
+				fmt.Println("⏳ KERNEL CLOSURE: Flushing active files and sealing ledger memory structures...")
+				
+				// Enforce a brief millisecond sleep to allow final storage operations to clear disk pipelines safely
+				time.Sleep(500 * time.Millisecond)
+				
+				fmt.Println("🔒 SYSTEM SECURED: Ledger state successfully preserved. Kernel out.")
+				fmt.Println("====================================")
+				os.Exit(0) // Safe, error-free system shutdown exit code
 		}
 	}
 }

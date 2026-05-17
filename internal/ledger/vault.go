@@ -103,7 +103,6 @@ func (v *VaultLedger) ApplyDynamicFlux(){
 	source := rand.NewSource(time.Now().UnixNano())
 	randomizer := rand.New(source)
 
-
 	// Simulate incoming transaction variances (tracked entirely in raw integer cents)
 	creditAmount := int64(randomizer.Intn(5000000))
 	debitAmount := int64(randomizer.Intn(3000000))
