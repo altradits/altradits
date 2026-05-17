@@ -19,13 +19,17 @@ func main() {
 	// 3. Validate parsed commands
 	auth.ValidateIdentity(*nameFlag, *roleFlag)
 
+	// 4. Milestone 8: Recover State from Local Disk Registry
+	// If ledger.log exists, scan it; otherwise use 500,000.00 KSH as fallback default base
+	startingBankroll := ledger.LoadPersistedState(50000000)
+
+	// Instantiate the structured ledger with our recovered state
+	altraditsVault := ledger.NewVaultLedger(startingBankroll)
+
 	fmt.Println("\n====================================")
     fmt.Println("💗 PERMANENT HEARTBEAT ACTIVATED")
     fmt.Println("State Engine running continuously. Press Ctrl+C to halt.")
     fmt.Println("====================================")
-
-	// 4. Instanciate Structured Ledger 
-	altraditsVault := ledger.NewVaultLedger(000)
 	        
 	// 5. Establish a 3-second system pulse ticker channel loop
     heartbeatTicker := time.NewTicker(3 * time.Second)

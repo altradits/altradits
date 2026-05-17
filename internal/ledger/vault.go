@@ -1,6 +1,8 @@
 package ledger
 
 import (
+	"bufio"
+	"strconv"
 	"os"
 	"time"
 	"math/rand"
@@ -17,6 +19,55 @@ func NewVaultLedger(initialDeposit int64) *VaultLedger {
 	return &VaultLedger{
 		TotalBalance: initialDeposit,
 	}
+}
+
+// LoadPersistedState scans ledger.log to recover the last recorded balance state.
+// If the file is missing or corrupted, it safely initializes with a baseline allocation.
+func LoadPersistedState(fallbackDeposit int64) int64 {
+	file, err := os.Open("ledger.log")
+	if err != nil {
+		// File doesn't exist yet, return the default entry bankroll safely
+		return fallbackDeposit
+	}
+	defer file.Close()
+
+	var lastLine string
+	scanner := bufio.NewScanner(file)
+	
+	// Scan through the file to extract the absolute final row line
+	for scanner.Scan() {
+		lastLine = scanner.Text()
+	}
+
+	if lastLine == "" {
+		return fallbackDeposit
+	}
+
+	// Parsing string logic: Extracting the target substring after "BAL:"
+	// Example Line: [... Flags ...] | BAL:12,399.70 KSH
+	parts := strings.Split(lastLine, "BAL:")
+	if len(parts) < 2 {
+		return fallbackDeposit
+	}
+
+	// Isolate the pure number string, strip currency markers and punctuation commas
+	balStr := strings.TrimSpace(parts[1])
+	balStr = strings.ReplaceAll(balStr, " KSH", "")
+	balStr = strings.ReplaceAll(balStr, ",", "")
+
+	// Split the integer portion from the fraction components to reconstruct raw cents safely
+	centsParts := strings.Split(balStr, ".")
+	if len(centsParts) != 2 {
+		return fallbackDeposit
+	}
+
+	shillings, _ := strconv.ParseInt(centsParts[0], 10, 64)
+	cents, _ := strconv.ParseInt(centsParts[1], 10, 64)
+
+	// Re-compile variables into explicit whole int64 cents units
+	recoveredBalance := (shillings * 100) + cents
+	fmt.Printf("📂 STORAGE REGISTRY: Recovered Persistent Balance: %s KSH\n", formatWithCommas(float64(recoveredBalance)/100))
+	return recoveredBalance
 }
 
 func formatWithCommas(val float64) string {
@@ -92,4 +143,5 @@ func (v *VaultLedger) ApplyDynamicFlux(){
 	if _, err := file.WriteString(logEntry); err != nil {
 		fmt.Printf("🚨 CRITICAL IO EXCEPTION: AUDIT STRIP LOGGING FAILURE: %v\n", err)
 	}
+	
 }
