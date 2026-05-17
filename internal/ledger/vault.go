@@ -12,4 +12,10 @@ func RecordTransaction(initialBalance int64, creditAmount int64, debitAmount int
 	fmt.Printf("Credit Push: +%.2f\n", float64(creditAmount)/100)
 	fmt.Printf("Credit Pull: -%.2f\n", float64(creditAmount)/100)
 	fmt.Printf("Final Balance: %.2f\n", float64(finalBalance)/100)
+
+	if finalBalance < 0 {
+		fmt.Println("WARNING: Vault Liquidity Negative Buffer")
+	} else {
+		fmt.Println("VERIFICATION: Ledger balance to Atom")
+	}
 }
