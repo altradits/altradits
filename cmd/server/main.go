@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"flag"
 	"github.com/altradits/altradits/internal/auth"
+	"github.com/altradits/altradits/internal/ledger"
 )
 
 func main() {
@@ -16,6 +17,13 @@ func main() {
 
 	// 3. Validate parsed commands
 	auth.ValidateIdentity(*nameFlag, *roleFlag)
+
+	// 4. Ledger 
+	var baseBankrol int64 = 000 
+	var incommingCredit int64 = 10000000
+	var incommingDebit int64 = 2000000
+	
+	ledger.RecordTransaction(baseBankrol, incommingCredit, incommingDebit)
 
 	// Output Feedback
 	fmt.Println("====================================")
