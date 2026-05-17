@@ -18,12 +18,14 @@ func main() {
 	// 3. Validate parsed commands
 	auth.ValidateIdentity(*nameFlag, *roleFlag)
 
-	// 4. Ledger 
-	var baseBankrol int64 = 000 
-	var incommingCredit int64 = 10000000
-	var incommingDebit int64 = 2000000
+	// 4. Instanciate Structured Ledger 
+	altraditsVault := ledger.NewVaultLedger(000)
 	
-	ledger.RecordTransaction(baseBankrol, incommingCredit, incommingDebit)
+	var incommingCredit int64 = 2500000
+	var incommingDebit int64 = 1000000
+
+	// 5. Apply Transaction to Ledger
+	altraditsVault.ApplyTransaction(altraditsVault.TotalBalance, incommingCredit, incommingDebit)	
 
 	// Output Feedback
 	fmt.Println("====================================")

@@ -5,6 +5,17 @@ import (
 	"strings"
 )
 
+type VaultLedger struct {
+	TotalBalance int64 // Stored entirely in minor units (cents)
+}
+
+// NewVaultLedger initializes a high-integrity balance sheet memory block.
+func NewVaultLedger(initialDeposit int64) *VaultLedger {
+	return &VaultLedger{
+		TotalBalance: initialDeposit,
+	}
+}
+
 func formatWithCommas(val float64) string {
 	// Separate the integer portion from the fraction components
 	str := fmt.Sprintf("%.2f", val)
@@ -27,18 +38,22 @@ func formatWithCommas(val float64) string {
 	return strings.Join(result, ",") + "." + decPart
 }
 
-func RecordTransaction(initialBalance int64, creditAmount int64, debitAmount int64) {
+func (v *VaultLedger) ApplyTransaction(initialBalance int64, creditAmount int64, debitAmount int64) {
+
+	// Store the snapshot of the balance before the mutation occurs
+	initialBalance = v.TotalBalance
 
 	fmt.Println("CORE ENGINE LEDGER")
 
-	finalBalance := initialBalance + creditAmount - debitAmount
+	// Execute calculation sequence directly on the pointer object reference
+	v.TotalBalance = v.TotalBalance + creditAmount - debitAmount
 
 	fmt.Printf("Initial Base: %s\n", formatWithCommas(float64(initialBalance)/100))
 	fmt.Printf("Credit Push: +%s\n", formatWithCommas(float64(creditAmount)/100))
 	fmt.Printf("Credit Pull: -%s\n", formatWithCommas(float64(debitAmount)/100))
-	fmt.Printf("Final Balance: %s\n", formatWithCommas(float64(finalBalance)/100))
+	fmt.Printf("Final Balance: %s\n", formatWithCommas(float64(v.TotalBalance)/100))
 
-	if finalBalance < 0 {
+	if v.TotalBalance < 0 {
 		fmt.Println("WARNING: Vault Liquidity Negative Buffer")
 	} else {
 		fmt.Println("VERIFICATION: Ledger balance to Atom")
