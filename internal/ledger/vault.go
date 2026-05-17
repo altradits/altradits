@@ -1,6 +1,9 @@
 package ledger
 
 import (
+	"os"
+	"time"
+	"math/rand"
 	"fmt"
 	"strings"
 )
@@ -38,24 +41,55 @@ func formatWithCommas(val float64) string {
 	return strings.Join(result, ",") + "." + decPart
 }
 
-func (v *VaultLedger) ApplyTransaction(creditAmount int64, debitAmount int64) {
+func (v *VaultLedger) ApplyDynamicFlux(){
+
+	// Initialize a localized, time-seeded random source to simulate incoming API vectors
+	source := rand.NewSource(time.Now().UnixNano())
+	randomizer := rand.New(source)
+
+
+	// Simulate incoming transaction variances (tracked entirely in raw integer cents)
+	creditAmount := int64(randomizer.Intn(5000000))
+	debitAmount := int64(randomizer.Intn(3000000))
 
 	// Store the snapshot of the balance before the mutation occurs
 	initialBalance := v.TotalBalance
-
-	fmt.Println("CORE ENGINE LEDGER")
-
-	// Execute calculation sequence directly on the pointer object reference
 	v.TotalBalance = v.TotalBalance + creditAmount - debitAmount
 
-	fmt.Printf("Initial Base: %s\n", formatWithCommas(float64(initialBalance)/100))
-	fmt.Printf("Credit Push: +%s\n", formatWithCommas(float64(creditAmount)/100))
-	fmt.Printf("Credit Pull: -%s\n", formatWithCommas(float64(debitAmount)/100))
-	fmt.Printf("Final Balance: %s\n", formatWithCommas(float64(v.TotalBalance)/100))
+	// Formatting variables for visibility streams
+	initStr := formatWithCommas(float64(initialBalance) / 100)
+	credStr := formatWithCommas(float64(creditAmount) / 100)
+	debStr := formatWithCommas(float64(debitAmount) / 100)
+	finStr := formatWithCommas(float64(v.TotalBalance) / 100)
+
+	fmt.Println("CORE ENGINE LEDGER")
+	fmt.Printf("Initial Base: %s KSH\n", formatWithCommas(float64(initialBalance)/100))
+	fmt.Printf("Credit Push: +%s KSH\n", formatWithCommas(float64(creditAmount)/100))
+	fmt.Printf("Credit Pull: -%s KSH\n", formatWithCommas(float64(debitAmount)/100))
+	fmt.Printf("Final Balance: %s KSH\n", formatWithCommas(float64(v.TotalBalance)/100))
 
 	if v.TotalBalance < 0 {
 		fmt.Println("WARNING: Vault Liquidity Negative Buffer")
 	} else {
 		fmt.Println("VERIFICATION: Ledger balance to Atom")
+	}
+
+	// 🏛️ PERSISTENCE REGISTRY INJECTION
+	// Open or create an append-only ledger audit file in the root workspace folder
+	// Flags tell the OS: Create if missing (O_CREATE), Append data (O_APPEND), Read/Write (O_WRONLY)
+	file, err := os.OpenFile("ledger.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Printf("🚨 STRUCTURAL EXCEPTION: PERSISTENCE REGISTRY WRITING FAILURE: %v\n", err)
+		return
+	}
+	defer file.Close() // Ensure systemic resources are freed after execution passes
+
+	// Create an unalterable log string format line with a clean timestamp
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	logEntry := fmt.Sprintf("[%s] INIT:%s | CREDIT:+%s | DEBIT:-%s | BAL:%s\n", timestamp, initStr, credStr, debStr, finStr)
+
+	// Etch data line to physical storage drive
+	if _, err := file.WriteString(logEntry); err != nil {
+		fmt.Printf("🚨 CRITICAL IO EXCEPTION: AUDIT STRIP LOGGING FAILURE: %v\n", err)
 	}
 }

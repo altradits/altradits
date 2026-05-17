@@ -26,10 +26,7 @@ func main() {
 
 	// 4. Instanciate Structured Ledger 
 	altraditsVault := ledger.NewVaultLedger(000)
-	
-	var incommingCredit int64 = 2500000
-	var incommingDebit int64 = 1000000
-
+	        
 	// 5. Establish a 3-second system pulse ticker channel loop
     heartbeatTicker := time.NewTicker(3 * time.Second)
     defer heartbeatTicker.Stop()
@@ -41,7 +38,7 @@ func main() {
 				fmt.Printf("\n[PULSE TIMER: %s]\n", tickTime.Format("15:04:05"))
 
 				// Apply transaction changes recursively over time
-				altraditsVault.ApplyTransaction(incommingCredit, incommingDebit)
+				altraditsVault.ApplyDynamicFlux()
 				
 				fmt.Println("====================================")
 				fmt.Println("💗 Permanent Pulse Detected. ChouMi Out 👋😊")
