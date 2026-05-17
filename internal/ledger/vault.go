@@ -8,9 +8,11 @@ import (
 	"math/rand"
 	"fmt"
 	"strings"
+	"sync"
 )
 
 type VaultLedger struct {
+	sync.Mutex
 	TotalBalance int64 // Stored entirely in minor units (cents)
 }
 
@@ -93,6 +95,9 @@ func formatWithCommas(val float64) string {
 }
 
 func (v *VaultLedger) ApplyDynamicFlux(){
+	// 🏛️ CRITICAL ADDITION: Lock the state before reading or mutating memory
+    v.Lock()
+    defer v.Unlock() // Automatically unlocks when the function block exits
 
 	// Initialize a localized, time-seeded random source to simulate incoming API vectors
 	source := rand.NewSource(time.Now().UnixNano())
@@ -113,11 +118,11 @@ func (v *VaultLedger) ApplyDynamicFlux(){
 	debStr := formatWithCommas(float64(debitAmount) / 100)
 	finStr := formatWithCommas(float64(v.TotalBalance) / 100)
 
-	fmt.Println("CORE ENGINE LEDGER")
-	fmt.Printf("Initial Base: %s KSH\n", formatWithCommas(float64(initialBalance)/100))
-	fmt.Printf("Credit Push: +%s KSH\n", formatWithCommas(float64(creditAmount)/100))
-	fmt.Printf("Credit Pull: -%s KSH\n", formatWithCommas(float64(debitAmount)/100))
-	fmt.Printf("Final Balance: %s KSH\n", formatWithCommas(float64(v.TotalBalance)/100))
+	fmt.Println("CORE ENGINE  [THREAD SAFE]")
+	fmt.Printf("Initial Base: %s KSH\n", initStr)
+	fmt.Printf("Credit Push: +%s KSH\n", credStr)
+	fmt.Printf("Credit Pull: -%s KSH\n", debStr)
+	fmt.Printf("Final Balance: %s KSH\n", finStr)
 
 	if v.TotalBalance < 0 {
 		fmt.Println("WARNING: Vault Liquidity Negative Buffer")
@@ -143,5 +148,5 @@ func (v *VaultLedger) ApplyDynamicFlux(){
 	if _, err := file.WriteString(logEntry); err != nil {
 		fmt.Printf("🚨 CRITICAL IO EXCEPTION: AUDIT STRIP LOGGING FAILURE: %v\n", err)
 	}
-	
+
 }
