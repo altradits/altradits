@@ -35,7 +35,7 @@ func main() {
 	fmt.Println("====================================")
 
 	// 5. Milestone 8 & 13: Recover Financial State & Initialize Ledger Memory Struct
-	startingBankroll := ledger.LoadPersistedState(50000000)
+	startingBankroll := ledger.LoadPersistedState(500)
 	altraditsVault := ledger.NewVaultLedger(startingBankroll)
 
 	// Register the baseline interaction into the state struct AFTER hint generation

@@ -3,6 +3,7 @@ package ledger
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -96,6 +97,22 @@ func LoadPersistedState(fallbackDeposit int64) int64 {
 	return int64((lastRecord.FinalBalance * 100) + 0.5)
 }
 
+// ValidateInvariants checks transaction rules before memory mutations occur
+func (v *VaultLedger) ValidateInvariants(credit int64, debit int64) error {
+	// Rule 1: Eliminate negative parameters
+	if credit < 0 || debit < 0 {
+		return errors.New("DOMAIN VIOLATION: Transaction parameters cannot contain negative vectors")
+	}
+
+	// Rule 2: Enforce a hard insolvency liquidity floor (e.g., cannot drop below 0.00 KSH)
+	projectedBalance := v.TotalBalance + credit - debit
+	if projectedBalance < 0 {
+		return errors.New("INSUFFICIENT LIQUIDITY: Requested vector breaches absolute floor balance boundaries")
+	}
+
+	return nil // Invariants secure
+}
+
 // ApplyCategorizedFlux accepts an explicit type vector classification argument
 func (v *VaultLedger) ApplyCategorizedFlux(category TxType) {
 	v.Lock()
@@ -115,6 +132,14 @@ func (v *VaultLedger) ApplyCategorizedFlux(category TxType) {
 		debitAmount = int64(randomizer.Intn(3000000)) // Withdrawals only pull capital outbound
 	case TxPlatformFee:
 		debitAmount = int64(randomizer.Intn(150000)) // Small flat fees applied to memory state
+	}
+
+	// PRE-FLIGHT GUARDRAIL EVALUATION
+	// Intercept the processing thread and verify transaction safety before mutating state
+	err := v.ValidateInvariants(creditAmount, debitAmount)
+	if err != nil {
+		fmt.Printf("\n🛑 TRANSATION REJECTED: %v [METRICS BYPASSED]\n", err)
+		return // Terminate execution early to protect memory and disk integrity
 	}
 
 	initialBalance := v.TotalBalance
