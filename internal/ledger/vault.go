@@ -2,78 +2,48 @@ package ledger
 
 import (
 	"bufio"
-	"strconv"
-	"os"
-	"time"
-	"math/rand"
+	"encoding/json"
 	"fmt"
+	"math/rand"
+	"os"
 	"strings"
 	"sync"
+	"time"
 )
+
+// TransactionRecord defines the schema layout for our machine-readable disk logs.
+type TransactionRecord struct {
+	Timestamp      string  `json:"timestamp"`
+	InitialBase    float64 `json:"initial_base_ksh"`
+	CreditIncoming float64 `json:"credit_incoming_ksh"`
+	DebitOutgoing  float64 `json:"debit_outgoing_ksh"`
+	FinalBalance   float64 `json:"final_balance_ksh"`
+	ThreadSafe     bool    `json:"thread_safe"`
+}
 
 type VaultLedger struct {
 	sync.Mutex
 	TotalBalance int64 // Stored entirely in minor units (cents)
+	HintCount    int64 // Structural diagnostic counter
 }
 
 // NewVaultLedger initializes a high-integrity balance sheet memory block.
 func NewVaultLedger(initialDeposit int64) *VaultLedger {
 	return &VaultLedger{
 		TotalBalance: initialDeposit,
+		HintCount:    0,
 	}
 }
 
-// LoadPersistedState scans ledger.log to recover the last recorded balance state.
-// If the file is missing or corrupted, it safely initializes with a baseline allocation.
-func LoadPersistedState(fallbackDeposit int64) int64 {
-	file, err := os.Open("ledger.log")
-	if err != nil {
-		// File doesn't exist yet, return the default entry bankroll safely
-		return fallbackDeposit
-	}
-	defer file.Close()
-
-	var lastLine string
-	scanner := bufio.NewScanner(file)
-	
-	// Scan through the file to extract the absolute final row line
-	for scanner.Scan() {
-		lastLine = scanner.Text()
-	}
-
-	if lastLine == "" {
-		return fallbackDeposit
-	}
-
-	// Parsing string logic: Extracting the target substring after "BAL:"
-	// Example Line: [... Flags ...] | BAL:12,399.70 KSH
-	parts := strings.Split(lastLine, "BAL:")
-	if len(parts) < 2 {
-		return fallbackDeposit
-	}
-
-	// Isolate the pure number string, strip currency markers and punctuation commas
-	balStr := strings.TrimSpace(parts[1])
-	balStr = strings.ReplaceAll(balStr, " KSH", "")
-	balStr = strings.ReplaceAll(balStr, ",", "")
-
-	// Split the integer portion from the fraction components to reconstruct raw cents safely
-	centsParts := strings.Split(balStr, ".")
-	if len(centsParts) != 2 {
-		return fallbackDeposit
-	}
-
-	shillings, _ := strconv.ParseInt(centsParts[0], 10, 64)
-	cents, _ := strconv.ParseInt(centsParts[1], 10, 64)
-
-	// Re-compile variables into explicit whole int64 cents units
-	recoveredBalance := (shillings * 100) + cents
-	fmt.Printf("📂 STORAGE REGISTRY: Recovered Persistent Balance: %s KSH\n", formatWithCommas(float64(recoveredBalance)/100))
-	return recoveredBalance
+// IncrementHintTicker safely increases the metric log under concurrency protection.
+func (v *VaultLedger) IncrementHintTicker() {
+	v.Lock()
+	defer v.Unlock()
+	v.HintCount++
+	fmt.Printf("🤖 MATRIX STATE: Socratic Interaction Count Incremented [Total: %d]\n", v.HintCount)
 }
 
 func formatWithCommas(val float64) string {
-	// Separate the integer portion from the fraction components
 	str := fmt.Sprintf("%.2f", val)
 	parts := strings.Split(str, ".")
 	intPart := parts[0]
@@ -82,7 +52,6 @@ func formatWithCommas(val float64) string {
 	var result []string
 	length := len(intPart)
 
-	// Walk backwards through the integer string, inserting commas every 3 steps
 	for i := length; i > 0; i -= 3 {
 		start := i - 3
 		if start < 0 {
@@ -94,34 +63,64 @@ func formatWithCommas(val float64) string {
 	return strings.Join(result, ",") + "." + decPart
 }
 
-func (v *VaultLedger) ApplyDynamicFlux(){
-	// 🏛️ CRITICAL ADDITION: Lock the state before reading or mutating memory
-    v.Lock()
-    defer v.Unlock() // Automatically unlocks when the function block exits
+// LoadPersistedState reads ledger.json and marshals the final row block back to memory.
+func LoadPersistedState(fallbackDeposit int64) int64 {
+	// Target the modern storage file asset cleanly
+	file, err := os.Open("ledger.json")
+	if err != nil {
+		return fallbackDeposit // No historic JSON log found, pass default allocation
+	}
+	defer file.Close()
 
-	// Initialize a localized, time-seeded random source to simulate incoming API vectors
+	var lastLine string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lastLine = scanner.Text()
+	}
+
+	if lastLine == "" {
+		return fallbackDeposit
+	}
+
+	// Unmarshal the raw text row back into our native schema model instance
+	var lastRecord TransactionRecord
+	err = json.Unmarshal([]byte(lastLine), &lastRecord)
+	if err != nil {
+		fmt.Printf("🚨 CORRUPTION DETECTED: Unable to decode JSON history: %v\n", err)
+		return fallbackDeposit
+	}
+
+	// Reconstruct float values back to our explicit int64 minor cents system safely
+	// Multiplying by 100 and rounding slightly prevents floating-point transformation holes
+	recoveredBalance := int64((lastRecord.FinalBalance * 100) + 0.5)
+	
+	fmt.Printf("📂 STORAGE REGISTRY: Recovered Persistent Balance: %s KSH\n", formatWithCommas(float64(recoveredBalance)/100))
+	return recoveredBalance
+}
+
+func (v *VaultLedger) ApplyDynamicFlux() {
+	v.Lock()
+	defer v.Unlock()
+
 	source := rand.NewSource(time.Now().UnixNano())
 	randomizer := rand.New(source)
 
-	// Simulate incoming transaction variances (tracked entirely in raw integer cents)
 	creditAmount := int64(randomizer.Intn(5000000))
 	debitAmount := int64(randomizer.Intn(3000000))
 
-	// Store the snapshot of the balance before the mutation occurs
 	initialBalance := v.TotalBalance
 	v.TotalBalance = v.TotalBalance + creditAmount - debitAmount
 
-	// Formatting variables for visibility streams
-	initStr := formatWithCommas(float64(initialBalance) / 100)
-	credStr := formatWithCommas(float64(creditAmount) / 100)
-	debStr := formatWithCommas(float64(debitAmount) / 100)
-	finStr := formatWithCommas(float64(v.TotalBalance) / 100)
+	initFloat := float64(initialBalance) / 100
+	credFloat := float64(creditAmount) / 100
+	debFloat := float64(debitAmount) / 100
+	finFloat := float64(v.TotalBalance) / 100
 
 	fmt.Println("CORE ENGINE  [THREAD SAFE]")
-	fmt.Printf("Initial Base: %s KSH\n", initStr)
-	fmt.Printf("Credit Push: +%s KSH\n", credStr)
-	fmt.Printf("Credit Pull: -%s KSH\n", debStr)
-	fmt.Printf("Final Balance: %s KSH\n", finStr)
+	fmt.Printf("Initial Base: %s KSH\n", formatWithCommas(initFloat))
+	fmt.Printf("Credit Push: +%s KSH\n", formatWithCommas(credFloat))
+	fmt.Printf("Debit Pull:  -%s KSH\n", formatWithCommas(debFloat)) // Fixed display tag layout
+	fmt.Printf("Final Balance: %s KSH\n", formatWithCommas(finFloat))
 
 	if v.TotalBalance < 0 {
 		fmt.Println("WARNING: Vault Liquidity Negative Buffer")
@@ -129,23 +128,30 @@ func (v *VaultLedger) ApplyDynamicFlux(){
 		fmt.Println("VERIFICATION: Ledger balance to Atom")
 	}
 
-	// 🏛️ PERSISTENCE REGISTRY INJECTION
-	// Open or create an append-only ledger audit file in the root workspace folder
-	// Flags tell the OS: Create if missing (O_CREATE), Append data (O_APPEND), Read/Write (O_WRONLY)
-	file, err := os.OpenFile("ledger.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// 🏛️ PERSISTENCE REGISTRY INJECTION: Explicitly targeting ledger.json
+	file, err := os.OpenFile("ledger.json", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Printf("🚨 STRUCTURAL EXCEPTION: PERSISTENCE REGISTRY WRITING FAILURE: %v\n", err)
+		fmt.Printf("🚨 PERSISTENCE EXCEPTION: JSON LOG WRITE FAILURE: %v\n", err)
 		return
 	}
-	defer file.Close() // Ensure systemic resources are freed after execution passes
+	defer file.Close() 
 
-	// Create an unalterable log string format line with a clean timestamp
-	timestamp := time.Now().Format("2006-01-02 15:04:05")
-	logEntry := fmt.Sprintf("[%s] INIT:%s | CREDIT:+%s | DEBIT:-%s | BAL:%s\n", timestamp, initStr, credStr, debStr, finStr)
-
-	// Etch data line to physical storage drive
-	if _, err := file.WriteString(logEntry); err != nil {
-		fmt.Printf("🚨 CRITICAL IO EXCEPTION: AUDIT STRIP LOGGING FAILURE: %v\n", err)
+	logRecord := TransactionRecord{
+		Timestamp:      time.Now().Format("2006-01-02 15:04:05"),
+		InitialBase:    initFloat,
+		CreditIncoming: credFloat,
+		DebitOutgoing:  debFloat,
+		FinalBalance:   finFloat,
+		ThreadSafe:     true,
 	}
 
+	jsonData, err := json.Marshal(logRecord)
+	if err != nil {
+		fmt.Printf("🚨 SERIALIZATION EXCEPTION: JSON MARSHALING FAILURE: %v\n", err)
+		return
+	}
+
+	if _, err := file.WriteString(string(jsonData) + "\n"); err != nil {
+		fmt.Printf("🚨 CRITICAL IO EXCEPTION: JSON DISK WRITE FAILURE: %v\n", err)
+	}
 }
