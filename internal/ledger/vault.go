@@ -28,6 +28,7 @@ type TransactionRecord struct {
 	DebitOutgoing  float64 `json:"debit_outgoing_ksh"`
 	FinalBalance   float64 `json:"final_balance_ksh"`
 	ThreadSafe     bool    `json:"thread_safe"`
+	WorkerID       int     `json:"worker_id"` // Added metadata tracking tag to verify worker orchestration
 }
 
 type VaultLedger struct {
@@ -35,57 +36,62 @@ type VaultLedger struct {
 	TotalBalance int64
 	HintCount    int64
 	VolumeMatrix map[TxType]int64
-	// 🏛️ ASYNC PIPELINE CHANNELS
-	LogQueue     chan TransactionRecord // Stream channel for outbound file records
-	WorkerWg     *sync.WaitGroup        // Tracks background worker completion on shutdown
+	LogQueue     chan TransactionRecord
+	WorkerWg     *sync.WaitGroup
 }
 
-// NewVaultLedger updated to spin up the async logging worker daemon
+// NewVaultLedger updated to orchestrate a clustered Multi-Worker Pool
 func NewVaultLedger(initialDeposit int64) *VaultLedger {
 	v := &VaultLedger{
 		TotalBalance: initialDeposit,
 		HintCount:    0,
 		VolumeMatrix: make(map[TxType]int64),
-		LogQueue:     make(chan TransactionRecord, 500), // Buffered channel to absorb traffic spikes
+		LogQueue:     make(chan TransactionRecord, 1000), // Increased buffer capacity to support high throughput
 		WorkerWg:     &sync.WaitGroup{},
 	}
 
-	// Launch the background persistence pipeline worker immediately upon instantiation
-	v.WorkerWg.Add(1)
-	go v.startAsyncLogWorker()
+	// 🏛️ WORKER POOL ORCHESTRATION BLOCK
+	// Dynamically scale out an explicit cluster of 3 parallel background consumer daemons
+	workerClusterSize := 3
+	for i := 1; i <= workerClusterSize; i++ {
+		v.WorkerWg.Add(1)
+		go v.startAsyncLogWorker(i) // Pass structural tracking index parameter
+	}
 
 	return v
 }
 
-// startAsyncLogWorker runs in its own concurrent Goroutine thread, pulling events from the channel
-func (v *VaultLedger) startAsyncLogWorker() {
+// startAsyncLogWorker updated to accept and track its explicit WorkerID
+func (v *VaultLedger) startAsyncLogWorker(id int) {
 	defer v.WorkerWg.Done()
-	fmt.Println("🚀 ASYNC BROKER: Background Logging Worker Daemon Initialized.")
+	fmt.Printf("🚀 MULTI-WORKER POOL: Background Daemon Thread [Worker #%d] Initialized.\n", id)
 
-	// Range loop keeps reading from the channel until it is explicitly closed
 	for record := range v.LogQueue {
+		// Attach worker context to the data tracking schema layout before disk write
+		record.WorkerID = id
+
 		file, err := os.OpenFile("ledger.json", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 		if err != nil {
-			fmt.Printf("🚨 ASYNC FILE EXCEPTION: JSON LOG WRITE FAILURE: %v\n", err)
+			fmt.Printf("🚨 [WORKER #%d] FILE EXCEPTION: JSON LOG WRITE FAILURE: %v\n", id, err)
 			continue
 		}
 
 		jsonData, err := json.Marshal(record)
 		if err != nil {
-			fmt.Printf("🚨 ASYNC SERIALIZATION EXCEPTION: JSON MARSHALING FAILURE: %v\n", err)
+			fmt.Printf("🚨 [WORKER #%d] SERIALIZATION EXCEPTION: %v\n", id, err)
 			file.Close()
 			continue
 		}
 
 		if _, err := file.WriteString(string(jsonData) + "\n"); err != nil {
-			fmt.Printf("🚨 ASYNC IO EXCEPTION: JSON DISK WRITE FAILURE: %v\n", err)
+			fmt.Printf("🚨 [WORKER #%d] IO EXCEPTION: DISK WRITE FAILURE: %v\n", id, err)
 		}
-		file.Close() // Safe, isolated file lifecycle per write operation
+		file.Close()
 	}
-	fmt.Println("🔒 ASYNC BROKER: Queue drained. Logging Worker safely terminated.")
+	fmt.Printf("🔒 MULTI-WORKER POOL: Queue drained. [Worker #%d] safely terminated.\n", id)
 }
 
-// [Keep your existing IncrementHintTicker, formatWithCommas, LoadPersistedState, and ValidateInvariants exactly as they are]
+// [Keep your existing IncrementHintTicker, formatWithCommas, LoadPersistedState, and ValidateInvariants exactly as they are written]
 func (v *VaultLedger) IncrementHintTicker() {
 	v.Lock()
 	defer v.Unlock()
@@ -155,12 +161,12 @@ func (v *VaultLedger) ApplyCategorizedFlux(category TxType) {
 	var debitAmount int64 = 0
 
 	switch category {
-		case TxDeposit:
-			creditAmount = int64(randomizer.Intn(5000000))
-		case TxWithdrawal:
-			debitAmount = int64(randomizer.Intn(3000000))
-		case TxPlatformFee:
-			debitAmount = int64(randomizer.Intn(150000))
+	case TxDeposit:
+		creditAmount = int64(randomizer.Intn(5000000))
+	case TxWithdrawal:
+		debitAmount = int64(randomizer.Intn(3000000))
+	case TxPlatformFee:
+		debitAmount = int64(randomizer.Intn(150000))
 	}
 
 	err := v.ValidateInvariants(creditAmount, debitAmount)
@@ -187,8 +193,6 @@ func (v *VaultLedger) ApplyCategorizedFlux(category TxType) {
 	fmt.Printf("Total Volume for %s Category: %s KSH\n", category, formatWithCommas(float64(v.VolumeMatrix[category])/100))
 	fmt.Println("VERIFICATION: Ledger balance to Atom")
 
-	// 🏛️ NON-BLOCKING EVENT EMISSION
-	// Pack the transaction data and drop it straight into the log channel
 	v.LogQueue <- TransactionRecord{
 		Timestamp:      time.Now().Format("2006-01-02 15:04:05"),
 		Type:           category,
