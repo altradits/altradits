@@ -38,6 +38,7 @@ type VaultLedger struct {
 	VolumeMatrix map[TxType]int64
 	LogQueue     chan TransactionRecord
 	WorkerWg     *sync.WaitGroup
+	WorkerMetrics map[int]int64 // New structure to track per-worker processed transaction counts
 }
 
 // NewVaultLedger updated to orchestrate a clustered Multi-Worker Pool
@@ -46,6 +47,7 @@ func NewVaultLedger(initialDeposit int64) *VaultLedger {
 		TotalBalance: initialDeposit,
 		HintCount:    0,
 		VolumeMatrix: make(map[TxType]int64),
+		WorkerMetrics: make(map[int]int64),
 		LogQueue:     make(chan TransactionRecord, 1000), // Increased buffer capacity to support high throughput
 		WorkerWg:     &sync.WaitGroup{},
 	}
@@ -70,6 +72,10 @@ func (v *VaultLedger) startAsyncLogWorker(id int) {
 		// Attach worker context to the data tracking schema layout before disk write
 		record.WorkerID = id
 
+		v.Lock()
+		v.WorkerMetrics[id]++ // Increment the processed transaction count for this worker
+		v.Unlock()
+
 		file, err := os.OpenFile("ledger.json", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 		if err != nil {
 			fmt.Printf("🚨 [WORKER #%d] FILE EXCEPTION: JSON LOG WRITE FAILURE: %v\n", id, err)
@@ -89,6 +95,27 @@ func (v *VaultLedger) startAsyncLogWorker(id int) {
 		file.Close()
 	}
 	fmt.Printf("🔒 MULTI-WORKER POOL: Queue drained. [Worker #%d] safely terminated.\n", id)
+}
+
+// EmitTelemetryReport outputs an enterprise snapshot telemetry dashboard profile
+func (v *VaultLedger) EmitTelemetryReport() {
+	v.Lock()
+	defer v.Unlock()
+
+	fmt.Println("\n📊 ============ ALTRADITS KERNEL LIVE TELEMETRY ============")
+	fmt.Printf("🏛️ SYSTEM VAULT BALANCE : %s KSH\n", formatWithCommas(float64(v.TotalBalance)/100))
+	fmt.Printf("🧠 SOCRATIC FEEDBACK COUNTER : %d Interventions Registered\n", v.HintCount)
+	
+	fmt.Println("\n👷 ASYNC WORKER POOL DISTRIBUTION LOAD:")
+	for id, count := range v.WorkerMetrics {
+		fmt.Printf("  ├── [Worker Thread #%d] ──► Processed %d Operations\n", id, count)
+	}
+
+	fmt.Println("\n📁 CATEGORICAL VOLUME MATRIX STATS:")
+	for cat, vol := range v.VolumeMatrix {
+		fmt.Printf("  ├── [%s] Total Combined Flux: %s KSH\n", cat, formatWithCommas(float64(vol)/100))
+	}
+	fmt.Println("========================================================\n")
 }
 
 // [Keep your existing IncrementHintTicker, formatWithCommas, LoadPersistedState, and ValidateInvariants exactly as they are written]

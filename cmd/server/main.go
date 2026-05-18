@@ -45,7 +45,7 @@ func main() {
 	// Compute the current user tracking tier based on the active state counter
 	devTier := textMetrics.EvaluateDeveloperProfile(altraditsVault.HintCount)
 	fmt.Printf("📊 ASSIGNED TELEMETRY PROFILE: [%s]\n", devTier)
-	
+
 	// Print out the custom targeted pedagogical prompt response
 	fmt.Println(parser.FormatSocraticResponse(devTier))
 	fmt.Println("====================================")
@@ -63,11 +63,13 @@ func main() {
 	heartbeatTicker := time.NewTicker(3 * time.Second)
 	defer heartbeatTicker.Stop()
 
+	pulseIterations := 0
 	// 7. Infinite Channel Selector Loop
 	for {
 		select {
 		case tickTime := <-heartbeatTicker.C:
-			fmt.Printf("\n[PULSE TIMER: %s]\n", tickTime.Format("15:04:05"))
+			pulseIterations++
+			fmt.Printf("\n[PULSE TIMER: %s] (Tick #%d)\n", tickTime.Format("15:04:05"), pulseIterations)
 
 			// Define an array slice containing our custom classification type entities
 			categories := []ledger.TxType{ledger.TxDeposit, ledger.TxWithdrawal, ledger.TxPlatformFee}
@@ -84,16 +86,21 @@ func main() {
 			fmt.Println("💗 Permanent Pulse Detected. ChouMi Out 👋😊")
 			fmt.Println("====================================")
 
+			// Print on evry 3rd pulse execution.
+			if pulseIterations%3 == 0 {
+				altraditsVault.EmitTelemetryReport()
+			}
+
 		case sig := <-shutdownChan:
 			fmt.Printf("\n\n🚨 SIGNAL RECEIVER: Intercepted system closure signal: [%v]\n", sig)
 			fmt.Println("⏳ KERNEL CLOSURE: Closing event channels and draining worker queues...")
-			
+
 			// 🏛️ CLOSE THE VALVE: Terminate incoming stream access to the channel queue
 			close(altraditsVault.LogQueue)
-			
+
 			// Wait for the background logging goroutine worker to finish flushing records to disk safely
 			altraditsVault.WorkerWg.Wait()
-			
+
 			fmt.Println("🔒 SYSTEM SECURED: Asynchronous ledger records flushed and verified. Kernel out.")
 			fmt.Println("====================================")
 			os.Exit(0)
