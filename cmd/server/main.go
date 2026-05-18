@@ -9,6 +9,7 @@ import (
 	"time"
 	"github.com/altradits/altradits/internal/auth"
 	"github.com/altradits/altradits/internal/ledger"
+	"github.com/altradits/altradits/internal/parser"
 )
 
 func main() {
@@ -28,6 +29,15 @@ func main() {
 
 	// Instantiate the structured ledger with our recovered state
 	altraditsVault := ledger.NewVaultLedger(startingBankroll)
+
+	// 3. Milestone 11 Addition: Analyze structural operator flags from first principles
+	textMetrics := parser.AnalyzeInputPayload(*nameFlag)
+	fmt.Printf("📊 Operator Name true Character Count: %d\n", textMetrics.CharacterCount)
+	fmt.Printf("📦 Operator Name raw Byte Footprint:   %d bytes\n", textMetrics.ByteSize)
+	if textMetrics.ByteSize > textMetrics.CharacterCount {
+		fmt.Println("✨ Multibyte Unicode characters detected inside payload.")
+	}
+	fmt.Println("====================================")
 
 	// GRACEFUL SHUTDOWN INTERCEPTOR
 	// Create a channel channel to listen for incoming operating system termination signals
