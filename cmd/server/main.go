@@ -35,11 +35,20 @@ func main() {
 	fmt.Println("====================================")
 
 	// 5. Milestone 8 & 13: Recover Financial State & Initialize Ledger Memory Struct
-	startingBankroll := ledger.LoadPersistedState(500)
+	startingBankroll := ledger.LoadPersistedState(50000000)
 	altraditsVault := ledger.NewVaultLedger(startingBankroll)
 
 	// Register the baseline interaction into the state struct AFTER hint generation
 	altraditsVault.IncrementHintTicker()
+
+	// 🏛️ MILESTONE 17 ADAPTIVE EVALUATION COUPLING
+	// Compute the current user tracking tier based on the active state counter
+	devTier := textMetrics.EvaluateDeveloperProfile(altraditsVault.HintCount)
+	fmt.Printf("📊 ASSIGNED TELEMETRY PROFILE: [%s]\n", devTier)
+	
+	// Print out the custom targeted pedagogical prompt response
+	fmt.Println(parser.FormatSocraticResponse(devTier))
+	fmt.Println("====================================")
 
 	// GRACEFUL SHUTDOWN INTERCEPTOR
 	shutdownChan := make(chan os.Signal, 1)
@@ -77,11 +86,15 @@ func main() {
 
 		case sig := <-shutdownChan:
 			fmt.Printf("\n\n🚨 SIGNAL RECEIVER: Intercepted system closure signal: [%v]\n", sig)
-			fmt.Println("⏳ KERNEL CLOSURE: Flushing active files and sealing ledger memory structures...")
-
-			time.Sleep(500 * time.Millisecond)
-
-			fmt.Println("🔒 SYSTEM SECURED: Ledger state successfully preserved. Kernel out.")
+			fmt.Println("⏳ KERNEL CLOSURE: Closing event channels and draining worker queues...")
+			
+			// 🏛️ CLOSE THE VALVE: Terminate incoming stream access to the channel queue
+			close(altraditsVault.LogQueue)
+			
+			// Wait for the background logging goroutine worker to finish flushing records to disk safely
+			altraditsVault.WorkerWg.Wait()
+			
+			fmt.Println("🔒 SYSTEM SECURED: Asynchronous ledger records flushed and verified. Kernel out.")
 			fmt.Println("====================================")
 			os.Exit(0)
 		}

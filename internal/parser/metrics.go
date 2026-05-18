@@ -10,8 +10,16 @@ type AnalysisMetrics struct {
 	ByteSize       int
 }
 
+// CognitiveTier defines the developer's contextual guidance state.
+type CognitiveTier string
+
+const (
+	TierDiscovery CognitiveTier = "DISCOVERY_MODE" // High assistance, detailed questions
+	TierChallenge CognitiveTier = "CHALLENGE_MODE" // Balanced assistance, conceptual hints
+	TierForge     CognitiveTier = "FORGE_MODE"     // Minimal assistance, strict architectural critiques
+)
+
 // AnalyzeInputPayload processes string attributes from first principles.
-// It bypasses default length macros to extract absolute character boundaries.
 func AnalyzeInputPayload(input string) AnalysisMetrics {
 	fmt.Println("\n🧠 SOCRATIC PARSER: SCANNING INPUT STRUCTURAL METRICS...")
 
@@ -49,4 +57,36 @@ func (m AnalysisMetrics) GenerateSocraticHint() string {
 
 	// Rule 3: Balanced standard profile fallback
 	return "💡 Socratic Reflection: Structural dimensions align cleanly. The system state is balanced. Consider how optimizing the underlying type allocation structures could improve performance further."
+}
+
+// EvaluateDeveloperProfile processes interactions to dynamically assign a Cognitive Guidance Tier.
+func (m AnalysisMetrics) EvaluateDeveloperProfile(totalInteractions int64) CognitiveTier {
+	fmt.Println("🤖 PARSER MATRIX: EVALUATING COGNITIVE PROFILE TIER...")
+
+	// Condition 1: Low interaction history indicates early exploration stage
+	if totalInteractions <= 1 {
+		return TierDiscovery
+	}
+
+	// Condition 2: Medium interaction metrics indicate a stable challenge vector
+	if totalInteractions > 1 && totalInteractions <= 5 {
+		return TierChallenge
+	}
+
+	// Condition 3: Deep historical interactions trigger elite high-pressure forge rules
+	return TierForge
+}
+
+// FormatSocraticResponse generates a custom mentorship message matched precisely to the user's Cognitive Tier
+func FormatSocraticResponse(tier CognitiveTier) string {
+	switch tier {
+	case TierDiscovery:
+		return "✨ [ALTRADITS ASSISTANT - DISCOVERY] Break the problem down into small parts. What is the explicit responsibility of this specific variable block?"
+	case TierChallenge:
+		return "⚡ [ALTRADITS ASSISTANT - CHALLENGE] Observe the structural behavior of the state machine. Are your data structures shifting predictably across memory cycles?"
+	case TierForge:
+		return "🔥 [ALTRADITS ASSISTANT - FORGE] State boundaries are vulnerable to side-effects. Eliminate redundant allocations and enforce complete thread-isolation constraints immediately."
+	default:
+		return "🎯 [ALTRADITS ASSISTANT] Keep refining the logic from first principles."
+	}
 }

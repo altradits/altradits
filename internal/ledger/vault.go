@@ -12,7 +12,6 @@ import (
 	"time"
 )
 
-// 1. Establish custom transaction categories using typed strings
 type TxType string
 
 const (
@@ -21,10 +20,9 @@ const (
 	TxPlatformFee TxType = "PLATFORM_FEE"
 )
 
-// TransactionRecord updated to hold our categorical metadata mapping
 type TransactionRecord struct {
 	Timestamp      string  `json:"timestamp"`
-	Type           TxType  `json:"type"` // Added category key
+	Type           TxType  `json:"type"`
 	InitialBase    float64 `json:"initial_base_ksh"`
 	CreditIncoming float64 `json:"credit_incoming_ksh"`
 	DebitOutgoing  float64 `json:"debit_outgoing_ksh"`
@@ -36,20 +34,58 @@ type VaultLedger struct {
 	sync.Mutex
 	TotalBalance int64
 	HintCount    int64
-	// 2. Added an in-memory tracking matrix map to categorize global volumes per type
 	VolumeMatrix map[TxType]int64
+	// 🏛️ ASYNC PIPELINE CHANNELS
+	LogQueue     chan TransactionRecord // Stream channel for outbound file records
+	WorkerWg     *sync.WaitGroup        // Tracks background worker completion on shutdown
 }
 
-// NewVaultLedger updated to cleanly instantiate our empty nested metrics map
+// NewVaultLedger updated to spin up the async logging worker daemon
 func NewVaultLedger(initialDeposit int64) *VaultLedger {
-	return &VaultLedger{
+	v := &VaultLedger{
 		TotalBalance: initialDeposit,
 		HintCount:    0,
-		VolumeMatrix: make(map[TxType]int64), // Initialize mapping allocation
+		VolumeMatrix: make(map[TxType]int64),
+		LogQueue:     make(chan TransactionRecord, 500), // Buffered channel to absorb traffic spikes
+		WorkerWg:     &sync.WaitGroup{},
 	}
+
+	// Launch the background persistence pipeline worker immediately upon instantiation
+	v.WorkerWg.Add(1)
+	go v.startAsyncLogWorker()
+
+	return v
 }
 
-// [Keep your existing IncrementHintTicker, formatWithCommas, and LoadPersistedState exactly as you have them]
+// startAsyncLogWorker runs in its own concurrent Goroutine thread, pulling events from the channel
+func (v *VaultLedger) startAsyncLogWorker() {
+	defer v.WorkerWg.Done()
+	fmt.Println("🚀 ASYNC BROKER: Background Logging Worker Daemon Initialized.")
+
+	// Range loop keeps reading from the channel until it is explicitly closed
+	for record := range v.LogQueue {
+		file, err := os.OpenFile("ledger.json", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+		if err != nil {
+			fmt.Printf("🚨 ASYNC FILE EXCEPTION: JSON LOG WRITE FAILURE: %v\n", err)
+			continue
+		}
+
+		jsonData, err := json.Marshal(record)
+		if err != nil {
+			fmt.Printf("🚨 ASYNC SERIALIZATION EXCEPTION: JSON MARSHALING FAILURE: %v\n", err)
+			file.Close()
+			continue
+		}
+
+		if _, err := file.WriteString(string(jsonData) + "\n"); err != nil {
+			fmt.Printf("🚨 ASYNC IO EXCEPTION: JSON DISK WRITE FAILURE: %v\n", err)
+		}
+		file.Close() // Safe, isolated file lifecycle per write operation
+	}
+	fmt.Println("🔒 ASYNC BROKER: Queue drained. Logging Worker safely terminated.")
+}
+
+// [Keep your existing IncrementHintTicker, formatWithCommas, LoadPersistedState, and ValidateInvariants exactly as they are]
 func (v *VaultLedger) IncrementHintTicker() {
 	v.Lock()
 	defer v.Unlock()
@@ -75,7 +111,7 @@ func formatWithCommas(val float64) string {
 }
 
 func LoadPersistedState(fallbackDeposit int64) int64 {
-	file, err := os.Open("ledger.json") // Targeting your live JSON database file asset
+	file, err := os.Open("ledger.json")
 	if err != nil {
 		return fallbackDeposit
 	}
@@ -97,23 +133,17 @@ func LoadPersistedState(fallbackDeposit int64) int64 {
 	return int64((lastRecord.FinalBalance * 100) + 0.5)
 }
 
-// ValidateInvariants checks transaction rules before memory mutations occur
 func (v *VaultLedger) ValidateInvariants(credit int64, debit int64) error {
-	// Rule 1: Eliminate negative parameters
 	if credit < 0 || debit < 0 {
 		return errors.New("DOMAIN VIOLATION: Transaction parameters cannot contain negative vectors")
 	}
-
-	// Rule 2: Enforce a hard insolvency liquidity floor (e.g., cannot drop below 0.00 KSH)
 	projectedBalance := v.TotalBalance + credit - debit
 	if projectedBalance < 0 {
 		return errors.New("INSUFFICIENT LIQUIDITY: Requested vector breaches absolute floor balance boundaries")
 	}
-
-	return nil // Invariants secure
+	return nil
 }
 
-// ApplyCategorizedFlux accepts an explicit type vector classification argument
 func (v *VaultLedger) ApplyCategorizedFlux(category TxType) {
 	v.Lock()
 	defer v.Unlock()
@@ -124,28 +154,24 @@ func (v *VaultLedger) ApplyCategorizedFlux(category TxType) {
 	var creditAmount int64 = 0
 	var debitAmount int64 = 0
 
-	// 3. Apply operational constraints based on our structured transaction categories
 	switch category {
-	case TxDeposit:
-		creditAmount = int64(randomizer.Intn(5000000)) // Deposits only push capital inbound
-	case TxWithdrawal:
-		debitAmount = int64(randomizer.Intn(3000000)) // Withdrawals only pull capital outbound
-	case TxPlatformFee:
-		debitAmount = int64(randomizer.Intn(150000)) // Small flat fees applied to memory state
+		case TxDeposit:
+			creditAmount = int64(randomizer.Intn(5000000))
+		case TxWithdrawal:
+			debitAmount = int64(randomizer.Intn(3000000))
+		case TxPlatformFee:
+			debitAmount = int64(randomizer.Intn(150000))
 	}
 
-	// PRE-FLIGHT GUARDRAIL EVALUATION
-	// Intercept the processing thread and verify transaction safety before mutating state
 	err := v.ValidateInvariants(creditAmount, debitAmount)
 	if err != nil {
 		fmt.Printf("\n🛑 TRANSATION REJECTED: %v [METRICS BYPASSED]\n", err)
-		return // Terminate execution early to protect memory and disk integrity
+		return
 	}
 
 	initialBalance := v.TotalBalance
 	v.TotalBalance = v.TotalBalance + creditAmount - debitAmount
 
-	// Accumulate transactional volume metrics safely into our structural tracker map
 	v.VolumeMatrix[category] += (creditAmount + debitAmount)
 
 	initFloat := float64(initialBalance) / 100
@@ -159,37 +185,17 @@ func (v *VaultLedger) ApplyCategorizedFlux(category TxType) {
 	fmt.Printf("Debit Pull:  -%s KSH\n", formatWithCommas(debFloat))
 	fmt.Printf("Final Balance: %s KSH\n", formatWithCommas(finFloat))
 	fmt.Printf("Total Volume for %s Category: %s KSH\n", category, formatWithCommas(float64(v.VolumeMatrix[category])/100))
+	fmt.Println("VERIFICATION: Ledger balance to Atom")
 
-	if v.TotalBalance < 0 {
-		fmt.Println("WARNING: Vault Liquidity Negative Buffer")
-	} else {
-		fmt.Println("VERIFICATION: Ledger balance to Atom")
-	}
-
-	file, err := os.OpenFile("ledger.json", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		fmt.Printf("🚨 PERSISTENCE EXCEPTION: JSON LOG WRITE FAILURE: %v\n", err)
-		return
-	}
-	defer file.Close()
-
-	logRecord := TransactionRecord{
+	// 🏛️ NON-BLOCKING EVENT EMISSION
+	// Pack the transaction data and drop it straight into the log channel
+	v.LogQueue <- TransactionRecord{
 		Timestamp:      time.Now().Format("2006-01-02 15:04:05"),
-		Type:           category, // Serialization mapping updates cleanly
+		Type:           category,
 		InitialBase:    initFloat,
 		CreditIncoming: credFloat,
 		DebitOutgoing:  debFloat,
 		FinalBalance:   finFloat,
 		ThreadSafe:     true,
-	}
-
-	jsonData, err := json.Marshal(logRecord)
-	if err != nil {
-		fmt.Printf("🚨 SERIALIZATION EXCEPTION: JSON MARSHALING FAILURE: %v\n", err)
-		return
-	}
-
-	if _, err := file.WriteString(string(jsonData) + "\n"); err != nil {
-		fmt.Printf("🚨 CRITICAL IO EXCEPTION: JSON DISK WRITE FAILURE: %v\n", err)
 	}
 }
