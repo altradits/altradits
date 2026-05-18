@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
 	"github.com/altradits/altradits/internal/auth"
 	"github.com/altradits/altradits/internal/ledger"
 	"github.com/altradits/altradits/internal/parser"
@@ -27,7 +29,7 @@ func main() {
 	textMetrics := parser.AnalyzeInputPayload(*nameFlag)
 	fmt.Printf("📊 Operator Name true Character Count: %d\n", textMetrics.CharacterCount)
 	fmt.Printf("📦 Operator Name raw Byte Footprint:   %d bytes\n", textMetrics.ByteSize)
-	
+
 	// CRITICAL FIX: Explicitly evaluate and print the Socratic Hint to the console interface
 	fmt.Println(textMetrics.GenerateSocraticHint())
 	fmt.Println("====================================")
@@ -47,7 +49,7 @@ func main() {
 	fmt.Println("💗 PERMANENT HEARTBEAT ACTIVATED")
 	fmt.Println("State Engine running continuously. Press Ctrl+C to safely exit.")
 	fmt.Println("====================================")
-            
+
 	// 6. Establish a 3-second system pulse ticker channel loop
 	heartbeatTicker := time.NewTicker(3 * time.Second)
 	defer heartbeatTicker.Stop()
@@ -58,9 +60,17 @@ func main() {
 		case tickTime := <-heartbeatTicker.C:
 			fmt.Printf("\n[PULSE TIMER: %s]\n", tickTime.Format("15:04:05"))
 
-			// Apply transaction changes recursively under mutex lock protection
-			altraditsVault.ApplyDynamicFlux()
-			
+			// Define an array slice containing our custom classification type entities
+			categories := []ledger.TxType{ledger.TxDeposit, ledger.TxWithdrawal, ledger.TxPlatformFee}
+
+			// Select a random category identifier index on each tick interval
+			source := rand.NewSource(time.Now().UnixNano())
+			randomizer := rand.New(source)
+			chosenCategory := categories[randomizer.Intn(len(categories))]
+
+			// Apply transactional mutations organically labeled by categorical records
+			altraditsVault.ApplyCategorizedFlux(chosenCategory)
+
 			fmt.Println("====================================")
 			fmt.Println("💗 Permanent Pulse Detected. ChouMi Out 👋😊")
 			fmt.Println("====================================")
@@ -68,12 +78,12 @@ func main() {
 		case sig := <-shutdownChan:
 			fmt.Printf("\n\n🚨 SIGNAL RECEIVER: Intercepted system closure signal: [%v]\n", sig)
 			fmt.Println("⏳ KERNEL CLOSURE: Flushing active files and sealing ledger memory structures...")
-			
+
 			time.Sleep(500 * time.Millisecond)
-			
+
 			fmt.Println("🔒 SYSTEM SECURED: Ledger state successfully preserved. Kernel out.")
 			fmt.Println("====================================")
-			os.Exit(0) 
+			os.Exit(0)
 		}
 	}
 }
