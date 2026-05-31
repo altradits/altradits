@@ -160,6 +160,7 @@ altradits/
 ├── .env.example
 ├── docker-compose.yml
 ├── Makefile
+├── Setup.md
 └── README.md
 ```
 

@@ -146,6 +146,7 @@ altradits/
 ├── docs/
 ├── docker/
 ├── scripts/
+├── Setup.md
 └── README.md
 ```
 
