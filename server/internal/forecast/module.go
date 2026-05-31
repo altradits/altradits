@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// forecast: Predictions.
+// forecast: Module for forecast
 
 // ForecastHandler handles the forecast endpoint.
 func ForecastHandler() gin.HandlerFunc {

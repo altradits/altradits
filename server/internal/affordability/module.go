@@ -4,9 +4,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// affordability: Answers: "Can I afford this?" Uses cashflow, goals, saving behavior, upcoming obligations, and risk tolerance.
+// affordability: Module for affordability
 
-// AffordabilityCheckHandler handles the affordability check endpoint.
+// AffordabilityCheckHandler handles the affordability endpoint.
 func AffordabilityCheckHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Stub implementation

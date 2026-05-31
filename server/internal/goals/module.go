@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// goals: Savings targets.
+// goals: Module for goals
 
 // GoalsHandler handles the goals endpoint.
 func GoalsHandler() gin.HandlerFunc {

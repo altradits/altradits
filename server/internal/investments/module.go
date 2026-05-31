@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// investments: Tracks MMF, bonds, ETFs, treasury bills, stocks, funds.
+// investments: Module for investments
 
 // InvestmentsHandler handles the investments endpoint.
 func InvestmentsHandler() gin.HandlerFunc {

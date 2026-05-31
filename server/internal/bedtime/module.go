@@ -4,9 +4,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// bedtime: Core nightly reflection engine.
+// bedtime: Module for bedtime
 
-// BedtimeCloseHandler handles the bedtime close endpoint.
+// BedtimeCloseHandler handles the bedtime endpoint.
 func BedtimeCloseHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Stub implementation

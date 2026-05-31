@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// budget: Budget engine.
+// budget: Module for budget
 
 // BudgetHandler handles the budget endpoint.
 func BudgetHandler() gin.HandlerFunc {

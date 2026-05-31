@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// capture: Quick capture, chat capture, todo capture, SMS capture, OCR capture.
+// capture: Module for capture
 
 // CaptureHandler handles the capture endpoint.
 func CaptureHandler() gin.HandlerFunc {
