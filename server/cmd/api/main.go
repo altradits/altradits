@@ -101,7 +101,34 @@ func main() {
 	})
 
 	// API routes
-	r.POST("/capture", capture.CaptureHandler())
+	captureService := capture.NewService(pool)
+
+	r.POST("/capture", func(c *gin.Context) {
+	    var input capture.CaptureInput
+	    if err := c.ShouldBindJSON(&input); err != nil {
+	        c.JSON(400, gin.H{"error": "raw input is required"})
+	        return
+	    }
+
+	    result, err := captureService.Save(c.Request.Context(), input.Raw)
+	    if err != nil {
+	        c.JSON(422, gin.H{"error": err.Error()})
+	        return
+	    }
+
+	    c.JSON(201, result)
+	})
+
+	// Add a GET route to fetch recent transactions (add after /capture):
+	r.GET("/capture/recent", func(c *gin.Context) {
+	    txns, err := captureService.Recent(c.Request.Context(), 10)
+	    if err != nil {
+	        c.JSON(500, gin.H{"error": "could not fetch transactions"})
+	        return
+	    }
+	    c.JSON(200, gin.H{"transactions": txns})
+	})
+
 	r.POST("/bedtime/close", bedtime.BedtimeCloseHandler())
 	r.POST("/affordability/check", affordability.AffordabilityCheckHandler())
 	r.GET("/forecast", forecast.ForecastHandler())

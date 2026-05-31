@@ -18,7 +18,7 @@ func main() {
 		log.Fatal("DATABASE_URL is not set")
 	}
 
-	m, err := migrate.New("file://database/migrations", dbURL)
+	m, err := migrate.New("file://server/database/migrations", dbURL)
 	if err != nil {
 		log.Fatalf("Failed to create migrator: %v", err)
 	}

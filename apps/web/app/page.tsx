@@ -90,16 +90,21 @@ export default function Home() {
         </div>
 
         {/* Ready banner */}
-        {health?.status === "ok" && (
-          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
-            <p className="text-sm font-medium text-emerald-700">
-              ✅ All systems connected.
-            </p>
-            <p className="text-xs text-emerald-600 mt-1">
-              Phase 0 complete. Ready to build Phase 1: Capture.
-            </p>
-          </div>
-        )}
+         {health?.status === "ok" && (
+           <div className="mt-4 space-y-3">
+             <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
+               <p className="text-sm text-emerald-700 font-medium">
+                 ✅ All systems connected.
+               </p>
+             </div>
+             <a
+               href="/capture"
+               className="block w-full text-center px-4 py-3 bg-stone-800 text-white text-sm font-medium rounded-xl hover:bg-stone-700 transition-colors"
+             >
+               Open Capture →
+             </a>
+           </div>
+         )}
 
         {health?.status === "degraded" && (
           <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">

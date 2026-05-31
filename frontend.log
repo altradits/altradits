@@ -13,3 +13,18 @@ cd apps/web && npm run dev
 
  GET / 200 in 603ms (next.js: 397ms, application-code: 206ms)
  GET / 200 in 257ms (next.js: 48ms, application-code: 209ms)
+ GET / 200 in 225ms (next.js: 76ms, application-code: 149ms)
+ GET / 200 in 100ms (next.js: 3ms, application-code: 96ms)
+ GET / 200 in 76ms (next.js: 8ms, application-code: 68ms)
+ GET / 200 in 1856ms (next.js: 1592ms, application-code: 264ms)
+ GET / 200 in 349ms (next.js: 12ms, application-code: 337ms)
+ GET / 200 in 413ms (next.js: 77ms, application-code: 335ms)
+ GET / 200 in 330ms (next.js: 9ms, application-code: 321ms)
+ GET / 200 in 212ms (next.js: 18ms, application-code: 194ms)
+✓ Compiled in 698ms
+ GET / 200 in 900ms (next.js: 671ms, application-code: 230ms)
+ GET / 200 in 158ms (next.js: 15ms, application-code: 143ms)
+ GET / 200 in 80ms (next.js: 12ms, application-code: 68ms)
+✓ Compiled in 451ms
+ GET / 200 in 177ms (next.js: 7ms, application-code: 170ms)
+ GET /capture 200 in 1145ms (next.js: 1068ms, application-code: 77ms)
