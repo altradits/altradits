@@ -1,6 +1,23 @@
-# ⚡ Altradits
+<div align="center">
 
-> Calm financial companionship.
+# ⚡ ALTRADITS ⚡
+### *Calm financial companionship.*
+
+<a href="https://e2b.dev/startups">
+  <img src="Black-2.png" alt="SPONSORED BY E2B FOR STARTUPS" width="100%">
+</a>
+
+<br>
+
+[![Go Version](https://img.shields.io/badge/Go-1.2x+-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
+[![Method](https://img.shields.io/badge/Method-Socratic-green?style=for-the-badge)](#-the-socratic-mentor)
+[![Learning Environment](https://img.shields.io/badge/Sandbox-E2B-ff8800?style=for-the-badge)](https://e2b.dev)
+[![Ecosystem](https://img.shields.io/badge/Built_at-Zone01_Kisumu-blue?style=for-the-badge)](https://www.zone01kisumu.ke/)
+
+**Empowering the next generation (11+) to build the future of systems engineering.** *No shortcuts. No copy-paste. Just pure mastery of the Go language.*
+
+---
+</div>
 
 Altradits is a personal wealth management operating system designed to make money feel calmer, clearer, and easier to manage. Instead of spreadsheets, stress, and confusion, Altradits helps users build better money behavior through reflection, gentle coaching, and intelligent organization.
 
