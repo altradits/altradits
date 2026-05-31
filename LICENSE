@@ -1,10 +1,76 @@
-MIT License
-
 Copyright (c) 2026 Stanley Chege Thuita / Altradits
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+All rights reserved.
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+This software, source code, architecture, algorithms, documentation, designs, workflows, user experience systems, business logic, product specifications, visual assets, and associated materials (collectively, the “Software”) are proprietary and confidential intellectual property of Stanley Chege Thuita / Altradits.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+Restrictions
+
+No person or entity is granted permission to:
+
+use
+copy
+reproduce
+modify
+merge
+publish
+distribute
+sublicense
+sell
+lease
+reverse engineer
+commercially exploit
+create derivative works from
+publicly deploy
+redistribute modified versions of
+
+the Software, in whole or in part, without prior written permission from Stanley Chege Thuita / Altradits.
+
+This includes:
+
+source code
+backend logic
+frontend implementation
+APIs
+database architecture
+AI behavior systems
+forecasting logic
+product flows
+financial models
+user experience patterns
+documentation
+diagrams
+specifications
+prompts
+internal workflows
+Limited Access
+
+Access to the Software does not grant ownership rights, distribution rights, reproduction rights, or commercialization rights.
+
+Viewing or receiving access to the Software does not imply permission to reuse any portion of it.
+
+Internal & Authorized Use
+
+Permission for limited use may only be granted explicitly in writing by Stanley Chege Thuita / Altradits.
+
+Any granted permission may include restrictions regarding:
+
+duration
+scope
+geography
+commercial use
+redistribution
+modification rights
+Confidentiality
+
+Unauthorized sharing, publication, redistribution, replication, or disclosure of the Software or any substantial portion of its intellectual property may constitute copyright infringement and/or breach of confidentiality obligations.
+
+Warranty Disclaimer
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, PERFORMANCE, SECURITY, OR NON-INFRINGEMENT.
+
+IN NO EVENT SHALL STANLEY CHEGE THUITA / ALTRADITS BE LIABLE FOR ANY CLAIM, DAMAGES, LIABILITY, OR LOSS ARISING FROM THE USE OF THE SOFTWARE OR INABILITY TO USE THE SOFTWARE.
+
+Contact
+
+Licensing, commercial permissions, partnerships, or usage requests must be made in writing to the copyright owner.

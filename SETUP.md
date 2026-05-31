@@ -1,4 +1,4 @@
-# Set Path Without Sudo Rights
+## GOPATH and GOMODECACHE Setup
 1. Create a local Go folder
 ```bash
 mkdir -p ~/go
