@@ -14,7 +14,7 @@
 [![Learning Environment](https://img.shields.io/badge/Sandbox-E2B-ff8800?style=for-the-badge)](https://e2b.dev)
 [![Ecosystem](https://img.shields.io/badge/Built_at-Zone01_Kisumu-blue?style=for-the-badge)](https://www.zone01kisumu.ke/)
 
-**Empowering the next generation (11+) to build the future of systems engineering.** *No shortcuts. No copy-paste. Just pure mastery of the Go language.*
+**We help people feel calmer, wiser, and more capable with money.**
 
 ---
 </div>
