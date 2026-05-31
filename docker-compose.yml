@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  web:
+    build: ./apps/web
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    depends_on:
+      - api
+      - db
+      - cache
+
+  api:
+    build: ./server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./server:/app
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/altradits
+      - REDIS_URL=redis://cache:6379
+      - JWT_SECRET=your-secret-key
+      - OPENAI_API_KEY=your-openai-key
+    depends_on:
+      - db
+      - cache
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=altradits
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  cache:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:

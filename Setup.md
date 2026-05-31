@@ -29,4 +29,5 @@ go: downloading go1.25.0 (linux/amd64)
 5. Initialize the project
 ```
 go mod init altradits
+go get github.com/gin-gonic/gin
 ```
