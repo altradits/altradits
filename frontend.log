@@ -1,0 +1,15 @@
+Makefile:58: warning: overriding recipe for target 'test'
+Makefile:10: warning: ignoring old recipe for target 'test'
+cd apps/web && npm run dev
+
+> web@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.89.195:3000
+- Environments: .env.local
+✓ Ready in 799ms
+
+ GET / 200 in 603ms (next.js: 397ms, application-code: 206ms)
+ GET / 200 in 257ms (next.js: 48ms, application-code: 209ms)

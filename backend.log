@@ -1,0 +1,65 @@
+Makefile:58: warning: overriding recipe for target 'test'
+Makefile:10: warning: ignoring old recipe for target 'test'
+cd server && air
+[warning] build.bin is deprecated; set build.entrypoint instead
+
+  __    _   ___  
+ / /\  | | | |_) 
+/_/--\ |_| |_| \_ v1.65.3, built with Go go1.25.10
+
+[14:59:14] mkdir /home/student/tests/altradits/server/tmp
+[14:59:14] watching .
+[14:59:14] watching cmd
+[14:59:14] watching cmd/api
+[14:59:14] watching cmd/migrate
+[14:59:14] watching configs
+[14:59:14] !exclude database
+[14:59:14] watching internal
+[14:59:14] watching internal/affordability
+[14:59:14] watching internal/analytics
+[14:59:14] watching internal/auth
+[14:59:14] watching internal/bedtime
+[14:59:14] watching internal/budget
+[14:59:14] watching internal/capture
+[14:59:14] watching internal/coaching
+[14:59:14] watching internal/companion
+[14:59:14] watching internal/forecast
+[14:59:14] watching internal/freedom
+[14:59:14] watching internal/goals
+[14:59:14] watching internal/investments
+[14:59:14] watching internal/notifications
+[14:59:14] watching internal/ocr
+[14:59:14] watching internal/shared
+[14:59:14] watching internal/sms
+[14:59:14] watching internal/transactions
+[14:59:14] watching internal/users
+[14:59:14] watching pkg
+[14:59:14] watching tests
+[14:59:14] !exclude tmp
+[14:59:14] watching workers
+[14:59:14] building...
+[14:59:16] running...
+2026/05/31 14:59:16 ✅ Database connected
+2026/05/31 14:59:16 ✅ Redis connected
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /health                   --> main.main.func1 (4 handlers)
+[GIN-debug] POST   /capture                  --> main.main.CaptureHandler.func7 (4 handlers)
+[GIN-debug] POST   /bedtime/close            --> main.main.BedtimeCloseHandler.func8 (4 handlers)
+[GIN-debug] POST   /affordability/check      --> main.main.AffordabilityCheckHandler.func9 (4 handlers)
+[GIN-debug] GET    /forecast                 --> main.main.ForecastHandler.func10 (4 handlers)
+[GIN-debug] GET    /budget                   --> main.main.BudgetHandler.func11 (4 handlers)
+[GIN-debug] GET    /goals                    --> main.main.GoalsHandler.func12 (4 handlers)
+[GIN-debug] GET    /investments              --> main.main.InvestmentsHandler.func13 (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Environment variable PORT="8080"
+[GIN-debug] Listening and serving HTTP on :8080
+make: *** [Makefile:31: dev-backend] Terminated
+[15:09:27] cleaning...
+[15:09:27] deleting /home/student/tests/altradits/server/tmp
+[15:09:27] see you again~

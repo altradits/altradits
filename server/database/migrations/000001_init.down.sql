@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS _schema_versions;
+DROP TABLE IF EXISTS users;

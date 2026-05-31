@@ -1,0 +1,59 @@
+[warning] build.bin is deprecated; set build.entrypoint instead
+
+  __    _   ___  
+ / /\  | | | |_) 
+/_/--\ |_| |_| \_ v1.65.3, built with Go go1.25.10
+
+[15:40:49] watching .
+[15:40:49] watching cmd
+[15:40:49] watching cmd/api
+[15:40:49] watching cmd/migrate
+[15:40:49] watching configs
+[15:40:49] !exclude database
+[15:40:49] watching internal
+[15:40:49] watching internal/affordability
+[15:40:49] watching internal/analytics
+[15:40:49] watching internal/auth
+[15:40:49] watching internal/bedtime
+[15:40:49] watching internal/budget
+[15:40:49] watching internal/capture
+[15:40:49] watching internal/coaching
+[15:40:49] watching internal/companion
+[15:40:49] watching internal/forecast
+[15:40:49] watching internal/freedom
+[15:40:49] watching internal/goals
+[15:40:49] watching internal/investments
+[15:40:49] watching internal/notifications
+[15:40:49] watching internal/ocr
+[15:40:49] watching internal/shared
+[15:40:49] watching internal/sms
+[15:40:49] watching internal/transactions
+[15:40:49] watching internal/users
+[15:40:49] watching pkg
+[15:40:49] watching tests
+[15:40:49] !exclude tmp
+[15:40:49] watching workers
+[15:40:49] building...
+[15:40:49] running...
+2026/05/31 15:40:49 ✅ Database connected
+2026/05/31 15:40:49 ✅ Redis connected
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /health                   --> main.main.func1 (4 handlers)
+[GIN-debug] POST   /capture                  --> main.main.CaptureHandler.func7 (4 handlers)
+[GIN-debug] POST   /bedtime/close            --> main.main.BedtimeCloseHandler.func8 (4 handlers)
+[GIN-debug] POST   /affordability/check      --> main.main.AffordabilityCheckHandler.func9 (4 handlers)
+[GIN-debug] GET    /forecast                 --> main.main.ForecastHandler.func10 (4 handlers)
+[GIN-debug] GET    /budget                   --> main.main.BudgetHandler.func11 (4 handlers)
+[GIN-debug] GET    /goals                    --> main.main.GoalsHandler.func12 (4 handlers)
+[GIN-debug] GET    /investments              --> main.main.InvestmentsHandler.func13 (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Environment variable PORT="8080"
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: address alread[GIN] 2026/05/31 - 15:53:02 | 200 |  21.55ms |             ::1 | GET      "/health"
+[GIN] 2026/05/31 - 15:53:28 | 200 |    1.4ms |             ::1 | GET      "/health"
