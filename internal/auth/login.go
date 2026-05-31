@@ -1,15 +1,25 @@
 package auth
 
 import (
-	"os"
 	"fmt"
+	"os"
 )
 
-// Validate the credentials of the incomming system request
+// Get expected credentials from environment variables with secure defaults
+func getExpectedCredentials() (string, string) {
+	name := os.Getenv("ALTRADITS_OPERATOR_NAME")
+	role := os.Getenv("ALTRADITS_OPERATOR_ROLE")
+	
+	// Return empty strings if not set - will trigger rejection
+	return name, role
+}
+
+// Validate the credentials of the incoming system request
 func ValidateIdentity(name string, role string) {
+	expectedName, expectedRole := getExpectedCredentials()
 
 	// Fail first. System Dark Out
-	if name == "" || role == ""|| name != "Stanley Chege Thuita" || role != "Principal Architect" {
+	if name == "" || role == "" || name != expectedName || role != expectedRole {
 		fmt.Println("🚨 SYSTEM DARK OUT ACTIVATED")
 		fmt.Println("====================================")
 		
