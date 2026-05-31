@@ -90,21 +90,27 @@ export default function Home() {
         </div>
 
         {/* Ready banner */}
-         {health?.status === "ok" && (
-           <div className="mt-4 space-y-3">
-             <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
-               <p className="text-sm text-emerald-700 font-medium">
-                 ✅ All systems connected.
-               </p>
-             </div>
-             <a
-               href="/capture"
-               className="block w-full text-center px-4 py-3 bg-stone-800 text-white text-sm font-medium rounded-xl hover:bg-stone-700 transition-colors"
-             >
-               Open Capture →
-             </a>
-           </div>
-         )}
+          {health?.status === "ok" && (
+            <div className="mt-4 space-y-3">
+              <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
+                <p className="text-sm text-emerald-700 font-medium">
+                  ✅ All systems connected.
+                </p>
+              </div>
+              <a
+                href="/capture"
+                className="block w-full text-center px-4 py-3 bg-stone-800 text-white text-sm font-medium rounded-xl hover:bg-stone-700 transition-colors"
+              >
+                + Capture →
+              </a>
+              <a
+                href="/budget"
+                className="block w-full text-center px-4 py-3 bg-white border border-stone-200 text-stone-700 text-sm font-medium rounded-xl hover:bg-stone-50 transition-colors"
+              >
+                Budget →
+              </a>
+            </div>
+          )}
 
         {health?.status === "degraded" && (
           <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">

@@ -200,7 +200,290 @@ Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust
 Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
 [GIN-debug] Environment variable PORT="8080"
 [GIN-debug] Listening and se[GIN] 2026/05/31 - 16:17:22 | 200 |   3.27ms |             ::1 | GET      "/health"
-[GIN] 2026/05/31 - 16:17:39 | 200 |   1.04ms |             ::1 | GET      "/health"
-[GIN] 2026/05/31 - 16:17:40 | 200 |   1.01ms |             ::1 | GET      "/health"
-Killed
-[16:18:19] Process Exit with Code: 137
+[GIN] 2026/05/31 - 16:17:39 | 200 |   1[16:35:42] internal/budget/service.go has changed
+[16:35:42] building...
+internal/budget/service.go:1:1: expected 'package', found 'EOF'
+[16:35:42] failed to build, error: exit status 1
+[16:35:42] running...
+2026/05/31 16:35:43 ✅ Database connected
+2026/05/31 16:35:43 ✅ Redis connected
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /health                   --> main.main.func1 (4 handlers)
+[GIN-debug] POST   /capture                  --> main.main.func2 (4 handlers)
+[GIN-debug] GET    /capture/recent           --> main.main.func3 (4 handlers)
+[GIN-debug] POST   /bedtime/close            --> main.main.BedtimeCloseHandler.func9 (4 handlers)
+[GIN-debug] POST   /affordability/check      --> main.main.AffordabilityCheckHandler.func10 (4 handlers)
+[GIN-debug] GET    /forecast                 --> main.main.ForecastHandler.func11 (4 handlers)
+[GIN-debug] GET    /budget                   --> main.main.BudgetHandler.func12 (4 handlers)
+[GIN-debug] GET    /goals                    --> main.main.GoalsHandler.func13 (4 handlers)
+[GIN-debug] GET    /investments              --> main.main.InvestmentsHandler.func14 (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Environment variable PORT="8080"
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: address already in use
+[16:35:43] Process Exit with Code 0
+[16:35:45] internal/budget/service.go has changed
+[16:35:45] building...
+# github.com/altradits/altradits/server/internal/budget
+internal/budget/service.go:15:1: syntax error: unexpected EOF, expected }
+[16:35:45] failed to build, error: exit status 1
+[16:35:45] running...
+2026/05/31 16:35:45 ✅ Database connected
+2026/05/31 16:35:46 ✅ Redis connected
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /health                   --> main.main.func1 (4 handlers)
+[GIN-debug] POST   /capture                  --> main.main.func2 (4 handlers)
+[GIN-debug] GET    /capture/recent           --> main.main.func3 (4 handlers)
+[GIN-debug] POST   /bedtime/close            --> main.main.BedtimeCloseHandler.func9 (4 handlers)
+[GIN-debug] POST   /affordability/check      --> main.main.AffordabilityCheckHandler.func10 (4 handlers)
+[GIN-debug] GET    /forecast                 --> main.main.ForecastHandler.func11 (4 handlers)
+[GIN-debug] GET    /budget                   --> main.main.BudgetHandler.func12 (4 handlers)
+[GIN-debug] GET    /goals                    --> main.main.GoalsHandler.func13 (4 handlers)
+[GIN-debug] GET    /investments              --> main.main.InvestmentsHandler.func14 (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Environment variable PORT="8080"
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: address already in use
+[16:35:46] Process Exit with Code 0
+[16:35:46] internal/budget/service.go has changed
+[16:35:46] building...
+# github.com/altradits/altradits/server/internal/budget
+internal/budget/service.go:15:1: syntax error: unexpected EOF, expected }
+[16:35:47] failed to build, error: exit status 1
+[16:35:47] running...
+2026/05/31 16:35:47 ✅ Database connected
+2026/05/31 16:35:47 ✅ Redis connected
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /health                   --> main.main.func1 (4 handlers)
+[GIN-debug] POST   /capture                  --> main.main.func2 (4 handlers)
+[GIN-debug] GET    /capture/recent           --> main.main.func3 (4 handlers)
+[GIN-debug] POST   /bedtime/close            --> main.main.BedtimeCloseHandler.func9 (4 handlers)
+[GIN-debug] POST   /affordability/check      --> main.main.AffordabilityCheckHandler.func10 (4 handlers)
+[GIN-debug] GET    /forecast                 --> main.main.ForecastHandler.func11 (4 handlers)
+[GIN-debug] GET    /budget                   --> main.main.BudgetHandler.func12 (4 handlers)
+[GIN-debug] GET    /goals                    --> main.main.GoalsHandler.func13 (4 handlers)
+[GIN-debug] GET    /investments              --> main.main.InvestmentsHandler.func14 (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Environment variable PORT="8080"
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: address already in use
+[16:35:47] Process Exit with Code 0
+[16:35:55] internal/budget/service.go has changed
+[16:35:55] building...
+# github.com/altradits/altradits/server/internal/budget
+internal/budget/service.go:43:31: string not terminated
+internal/budget/service.go:46:1: syntax error: unexpected EOF in argument list; possibly missing comma or )
+[16:35:55] failed to build, error: exit status 1
+[16:35:55] running...
+2026/05/31 16:35:55 ✅ Database connected
+2026/05/31 16:35:55 ✅ Redis connected
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /health                   --> main.main.func1 (4 handlers)
+[GIN-debug] POST   /capture                  --> main.main.func2 (4 handlers)
+[GIN-debug] GET    /capture/recent           --> main.main.func3 (4 handlers)
+[GIN-debug] POST   /bedtime/close            --> main.main.BedtimeCloseHandler.func9 (4 handlers)
+[GIN-debug] POST   /affordability/check      --> main.main.AffordabilityCheckHandler.func10 (4 handlers)
+[GIN-debug] GET    /forecast                 --> main.main.ForecastHandler.func11 (4 handlers)
+[GIN-debug] GET    /budget                   --> main.main.BudgetHandler.func12 (4 handlers)
+[GIN-debug] GET    /goals                    --> main.main.GoalsHandler.func13 (4 handlers)
+[GIN-debug] GET    /investments              --> main.main.InvestmentsHandler.func14 (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Environment variable PORT="8080"
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: address already in use
+[16:35:55] Process Exit with Code 0
+[16:35:58] internal/budget/service.go has changed
+[16:35:58] building...
+# github.com/altradits/altradits/server/internal/budget
+internal/budget/service.go:68:1: syntax error: unexpected EOF, expected }
+[16:35:59] failed to build, error: exit statu# github.com/altradits/alt2026/05/31 16:35:59 ✅ Database connected
+2026/05/31 16:35:59 ✅ Redis connected
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware al2026/05/31 16:35:59 ✅ Database connected
+2026/05/31 16:35:59 ✅ Redis connected
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /health                   --> main.main.func1 (4 handlers)
+[GIN-debug] POST   /capture                  --> main.main.func2 (4 handlers)
+[GIN-debug] GET    /capture/recent           --> main.main.func3 (4 handlers)
+[GIN-debug] POST   /bedtime/close            --> main.main.BedtimeCloseHandler.func9 (4 handlers)
+[GIN-debug] POST   /affordability/check      --> main.main.AffordabilityCheckHandler.func10 (4 handlers)
+[GIN-debug] GET    /forecast                 --> main.main.ForecastHandler.func11 (4 handlers)
+[GIN-debug] GET    /budget                   --> main.main.BudgetHandler.func12 (4 handlers)
+[GIN-debug] GET    /goals                    --> main.main.GoalsHandler.func13 (4 handlers)
+[GIN-debug] GET    /investments              --> main.main.InvestmentsHandler.func14 (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Environme[16:36:10] internal/budget/service.go has changed
+[16:36:10] building...
+# github.com/altradits/altradits/server/internal/budget
+internal/budget/service.go:78:36: string not terminated
+internal/budget/service.go:79:1: syntax error: unexpected EOF in argument list; possibly missing comma or )
+[16:36:11] failed to build, error: exit status 1
+[16:36:11] running...
+2026/05/31 16:36:11 ✅ Database connected
+2026/05/31 16:36:11 ✅ Redis connected
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /health                   --> main.main.func1 (4 handlers)
+[GIN-debug] POST   /capture                  --> main.main.func2 (4 handlers)
+[GIN-debug] GET    /capture/recent           --> main.main.func3 (4 handlers)
+[GIN-debug] POST   /bedtime/close            --> main.main.BedtimeCloseHandler.func9 (4 handlers)
+[GIN-debug] POST   /affordability/check      --> main.main.AffordabilityCheckHandler.func10 (4 handlers)
+[GIN-debug] GET    /forecast                 --> main.main.ForecastHandler.func11 (4 handlers)
+[GIN-debug] GET    /budget                   --> main.main.BudgetHandler.func12 (4 handlers)
+[GIN-debug] GET    /goals                    --> main.main.GoalsHandler.func13 (4 handlers)
+[GIN-debug] GET    /investments              --> main.main.InvestmentsHandler.func14 (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Environment variable PORT="8080"
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: address already in use
+[16:36:11] Process Exit with Code 0
+[16:36:16] internal/budget/service.go has changed
+[16:36:16] building...
+# github.com/altradits/altradits/server/internal/budget
+internal/budget/service.go:103:1: syntax error: unexpected EOF, expected }
+[16:36:17] failed to build, error: exit status 1
+[16:36:17] running...
+2026/05/31 16:36:17 ✅ Database connected
+2026/05/31 16:36:17 ✅ Redis connected
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /health                   --> main.main.func1 (4 handlers)
+[GIN-debug] POST   /capture                  --> main.main.func2 (4 handlers)
+[GIN-debug] GET    /capture/recent           --> main.main.func3 (4 handlers)
+[GIN-debug] POST   /bedtime/close            --> main.main.BedtimeCloseHandler.func9 (4 handlers)
+[GIN-debug] POST   /affordability/check      --> main.main.AffordabilityCheckHandler.func10 (4 handlers)
+[GIN-debug] GET    /forecast                 --> main.main.ForecastHandler.func11 (4 handlers)
+[GIN-debug] GET    /budget                   --> main.main.BudgetHandler.func12 (4 handlers)
+[GIN-debug] GET    /goals                    --> main.main.GoalsHandler.func13 (4 handlers)
+[GIN-debug] GET    /investments              --> main.main.InvestmentsHandler.func14 (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Environment variable PORT="8080"
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: address already in use
+[16:36:17] Process Exit with Code 0
+[16:36:20] internal/budget/service.go has changed
+[16:36:20] building...
+# github.com/altradits/altradits/server/internal/budget
+internal/budget/service.go:117:28: string not terminated
+internal/budget/service.go:121:1: syntax error: unexpected EOF in argument list; possibly missing comma or )
+[16:36:21] failed to build, error: exit status 1
+[16:36:21] running...
+2026/05/31 16:36:21 ✅ Database connected
+2026/05/31 16:36:21 ✅ Redis connected
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /health                   --> main.main.func1 (4 handlers)
+[GIN-debug] POST   /capture                  --> main.main.func2 (4 handlers)
+[GIN-debug] GET    /capture/recent           --> main.main.func3 (4 handlers)
+[GIN-debug] POST   /bedtime/close            --> main.main.BedtimeCloseHandler.func9 (4 handlers)
+[GIN-debug] POST   /affordability/check      --> main.main.AffordabilityCheckHandler.func10 (4 handlers)
+[GIN-debug] GET    /forecast                 --> main.main.ForecastHandler.func11 (4 handlers)
+[GIN-debug] GET    /budget                   --> main.main.BudgetHandler.func12 (4 handlers)
+[GIN-debug] GET    /goals                    --> main.main.GoalsHandler.func13 (4 handlers)
+[GIN-debug] GET    /investments              --> main.main.InvestmentsHandler.func14 (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Environment variable PORT="8080"
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: address already in use
+[16:36:21] Process Exit with Code 0
+[16:36:24] internal/budget/service.go has changed
+[16:36:24] building...
+[16:36:30] running...
+2026/05/31 16:36:30 ✅ Database connected
+2026/05/31 16:36:30 ✅ Redis connected
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /health                   --> main.main.func1 (4 handlers)
+[GIN-debug] POST   /capture                  --> main.main.func2 (4 handlers)
+[GIN-debug] GET    /capture/recent           --> main.main.func3 (4 handlers)
+[GIN-debug] POST   /bedtime/close            --> main.main.BedtimeCloseHandler.func9 (4 handlers)
+[GIN-debug] POST   /affordability/check      --> main.main.AffordabilityCheckHandler.func10 (4 handlers)
+[GIN-debug] GET    /forecast                 --> main.main.ForecastHandler.func11 (4 handlers)
+[GIN-debug] GET    /budget                   --> main.main.BudgetHandler.func12 (4 handlers)
+[GIN-debug] GET    /goals                    --> main.main.GoalsHandler.func13 (4 handlers)
+[GIN-debug] GET    /investments              --> main.main.InvestmentsHandler.func14 (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Environment variable PORT="8080"
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: address already in use
+[16:36:30] Process Exit with Code 0
+[16:37:20] cmd/api/main.go has changed
+[16:37:20] building...
+[16:37:25] running...
+2026/05/31 16:37:25 ✅ Database connected
+2026/05/31 16:37:25 ✅ Redis connected
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /health                   --> main.main.func1 (4 handlers)
+[GIN-debug] POST   /capture                  --> main.main.func2 (4 handlers)
+[GIN-debug] GET    /capture/recent           --> main.main.func3 (4 handlers)
+[GIN-debug] POST   /bedtime/close            --> main.main.BedtimeCloseHandler.func11 (4 handlers)
+[GIN-debug] POST   /affordability/check      --> main.main.AffordabilityCheckHandler.func12 (4 handlers)
+[GIN-debug] GET    /forecast                 --> main.main.ForecastHandler.func13 (4 handlers)
+[GIN-debug] GET    /budget                   --> main.main.func4 (4 handlers)
+[GIN-debug] POST   /budget                   --> main.main.func5 (4 handlers)
+[GIN-debug] GET    /goals                    --> main.main.GoalsHandler.func14 (4 handlers)
+[GIN-debug] GET    /investments              --> main.main.InvestmentsHandler.func15 (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Environment variable PORT="8080"
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: address already in use
+[16:37:25] Process Exit with Code 0
+nt variable PORT="8080"
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: address already in use
+[16:37:25] Process Exit with Code 0

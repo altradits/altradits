@@ -132,7 +132,32 @@ func main() {
 	r.POST("/bedtime/close", bedtime.BedtimeCloseHandler())
 	r.POST("/affordability/check", affordability.AffordabilityCheckHandler())
 	r.GET("/forecast", forecast.ForecastHandler())
-	r.GET("/budget", budget.BudgetHandler())
+
+	budgetService := budget.NewService(pool)
+
+	r.GET("/budget", func(c *gin.Context) {
+		summary, err := budgetService.Summary(c.Request.Context())
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not load budget"})
+			return
+		}
+		c.JSON(200, gin.H{"budgets": summary})
+	})
+
+	r.POST("/budget", func(c *gin.Context) {
+		var input budget.UpdateInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "category and amount are required"})
+			return
+		}
+		updated, err := budgetService.Update(c.Request.Context(), input.Category, input.Amount)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not update budget"})
+			return
+		}
+		c.JSON(200, gin.H{"budget": updated, "message": "Budget updated. 🌱"})
+	})
+
 	r.GET("/goals", goals.GoalsHandler())
 	r.GET("/investments", investments.InvestmentsHandler())
 

@@ -1,0 +1,2 @@
+DELETE FROM budgets WHERE user_id IS NULL;
+DROP TABLE IF EXISTS budgets;
