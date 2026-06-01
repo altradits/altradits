@@ -10,6 +10,7 @@ import (
 	"github.com/altradits/altradits/server/internal/bedtime"
 	"github.com/altradits/altradits/server/internal/budget"
 	"github.com/altradits/altradits/server/internal/capture"
+	"github.com/altradits/altradits/server/internal/dashboard"
 	"github.com/altradits/altradits/server/internal/forecast"
 	"github.com/altradits/altradits/server/internal/goals"
 	"github.com/altradits/altradits/server/internal/investments"
@@ -99,6 +100,17 @@ func main() {
 			"app":      "altradits",
 			"version":  "0.1.0",
 		})
+	})
+
+	// Dashboard summary endpoint
+	dashboardService := dashboard.NewService(pool)
+	r.GET("/dashboard", func(c *gin.Context) {
+		summary, err := dashboardService.Get(c.Request.Context())
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not load dashboard"})
+			return
+		}
+		c.JSON(200, summary)
 	})
 
 	// API routes

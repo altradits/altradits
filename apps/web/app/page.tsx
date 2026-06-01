@@ -2,165 +2,329 @@
 
 import { useEffect, useState } from "react";
 
-type HealthStatus = {
-  status: string;
-  database: { connected: boolean };
-  redis: { connected: boolean };
-  app: string;
-  version: string;
-} | null;
+type RecentItem = {
+  description: string;
+  amount: number;
+  category: string;
+  created_at: string;
+};
 
-export default function Home() {
-  const [health, setHealth] = useState<HealthStatus>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+type CategoryHealth = {
+  category: string;
+  allocated: number;
+  spent: number;
+  percent: number;
+};
 
-  useEffect(() => {
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-    console.log('Fetching health from:', apiUrl);
-    fetch(`${apiUrl}/health`)
-      .then((res) => res.json())
-      .then((data) => {
-        console.log('Health response:', data);
-        setHealth(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Fetch error:', err);
-        setError(err.message);
-        setLoading(false);
-      });
-  }, []);
+type GoalPreview = {
+  id: string;
+  name: string;
+  emoji: string;
+  percent: number;
+  saved: number;
+  target: number;
+};
 
+type DashboardData = {
+  date: string;
+  greeting: string;
+  today: {
+    total_spent: number;
+    entry_count: number;
+    top_category: string;
+    recent_items: RecentItem[];
+  };
+  budget: {
+    total_allocated: number;
+    total_spent: number;
+    percent: number;
+    top_categories: CategoryHealth[];
+  };
+  goals: {
+    active_count: number;
+    goals: GoalPreview[];
+  };
+  bedtime_done: boolean;
+  streak: number;
+};
+
+const CATEGORY_EMOJI: Record<string, string> = {
+  food: "🍽️", transport: "🚗", family: "👨‍👩‍👧",
+  investments: "🌱", bills: "💡", fun: "🎉",
+  savings: "💰", health: "💊", uncategorized: "📝",
+};
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+function formatKES(n: number) {
+  return `KES ${n.toLocaleString("en-KE", { minimumFractionDigits: 0 })}`;
+}
+
+function MiniBar({ percent, muted }: { percent: number; muted?: boolean }) {
   return (
-    <main className="min-h-screen bg-stone-50 flex items-center justify-center p-8 font-sans">
-      <div className="max-w-sm w-full space-y-6">
-
-        {/* Wordmark */}
-        <div>
-          <p className="text-xs text-stone-400 mb-1 tracking-wide">
-            calm financial companionship
-          </p>
-          <h1 className="text-2xl font-semibold text-stone-800">
-            ⚡ Altradits
-          </h1>
-        </div>
-
-        {/* Status card */}
-        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-6 space-y-4">
-          <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider">
-            System status
-          </p>
-
-          {loading && (
-            <p className="text-sm text-stone-400">Checking connections...</p>
-          )}
-
-          {error && (
-            <div className="space-y-3">
-              <Row label="Backend API" ok={false} />
-              <Row label="Database" ok={false} />
-              <Row label="Redis" ok={false} />
-              <p className="text-xs text-red-400 pt-2 border-t border-stone-50">
-                Could not reach {process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/health
-              </p>
-              <p className="text-xs text-stone-400">
-                Make sure the Go server is running: <code className="bg-stone-100 px-1 rounded">cd server && air</code>
-              </p>
-            </div>
-          )}
-
-          {health && (
-            <div className="space-y-3">
-              <Row
-                label="Backend API"
-                ok={true}
-                note={health.status === "degraded" ? "degraded" : undefined}
-              />
-              <Row label="Database" ok={health.database.connected} />
-              <Row label="Redis" ok={health.redis.connected} />
-              <div className="pt-3 border-t border-stone-50">
-                <p className="text-xs text-stone-300">
-                  {health.app} v{health.version}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Ready banner */}
-          {health?.status === "ok" && (
-            <div className="mt-4 space-y-3">
-              <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
-                <p className="text-sm text-emerald-700 font-medium">
-                  ✅ All systems connected.
-                </p>
-              </div>
-              <a
-                href="/bedtime"
-                className="block w-full text-center px-4 py-3 bg-stone-800 text-white text-sm font-medium rounded-xl hover:bg-stone-700 transition-colors"
-              >
-                🌙 Close your day →
-              </a>
-              <a
-                href="/capture"
-                className="block w-full text-center px-4 py-3 bg-white border border-stone-200 text-stone-700 text-sm font-medium rounded-xl hover:bg-stone-50 transition-colors"
-              >
-                + Capture
-              </a>
-              <a
-                href="/budget"
-                className="block w-full text-center px-4 py-3 bg-white border border-stone-200 text-stone-700 text-sm font-medium rounded-xl hover:bg-stone-50 transition-colors"
-              >
-                Budget
-              </a>
-              <a
-                href="/goals"
-                className="block w-full text-center px-4 py-3 bg-white border border-stone-200 text-stone-700 text-sm font-medium rounded-xl hover:bg-stone-50 transition-colors"
-              >
-                Goals
-              </a>
-            </div>
-          )}
-
-        {health?.status === "degraded" && (
-          <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
-            <p className="text-sm font-medium text-amber-700">
-              ⚠️ Partially connected.
-            </p>
-            <p className="text-xs text-amber-600 mt-1">
-              Check the terminal output for connection errors.
-            </p>
-          </div>
-        )}
-
-      </div>
-    </main>
+    <div className="w-full bg-stone-100 rounded-full h-1 mt-1.5">
+      <div
+        className={`h-1 rounded-full transition-all duration-500 ${
+          muted ? "bg-stone-300" : percent > 85 ? "bg-amber-400" : "bg-emerald-400"
+        }`}
+        style={{ width: `${Math.min(percent, 100)}%` }}
+      />
+    </div>
   );
 }
 
-function Row({
-  label,
-  ok,
-  note,
-}: {
-  label: string;
-  ok: boolean;
-  note?: string;
-}) {
+export default function Dashboard() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    console.log('Fetching dashboard from:', `${API}/dashboard`);
+    fetch(`${API}/dashboard`)
+      .then((r) => r.json())
+      .then((d) => { setData(d); setLoading(false); console.log('Data:', d); })
+      .catch(() => { setError(true); setLoading(false); console.error('Error fetching dashboard'); });
+  }, []);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <p className="text-stone-400 text-sm">Loading...</p>
+      </main>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <main className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center">
+          <p className="text-stone-400 text-sm mb-2">Could not reach the server.</p>
+          <p className="text-xs text-stone-300">
+            Make sure the backend is running on port 8080.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  const todayDate = new Date().toLocaleDateString("en-KE", {
+    weekday: "long", day: "numeric", month: "long",
+  });
+
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-stone-600">{label}</span>
-      <span
-        className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-          ok
-            ? "bg-emerald-50 text-emerald-600"
-            : "bg-red-50 text-red-500"
-        }`}
-      >
-        {ok ? (note ?? "connected") : "offline"}
-      </span>
-    </div>
+    <main className="min-h-screen bg-stone-50 pb-12">
+      <div className="max-w-lg mx-auto px-5">
+
+        {/* ── Header ──────────────────────────────────────── */}
+        <div className="pt-10 pb-6">
+          <p className="text-xs text-stone-400 mb-1">{todayDate}</p>
+          <div className="flex items-start justify-between">
+            <h1 className="text-2xl font-semibold text-stone-800">
+              {data.greeting}
+            </h1>
+            {data.streak > 1 && (
+              <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-1.5 text-center">
+                <p className="text-lg leading-none">🔥</p>
+                <p className="text-xs text-amber-600 font-medium mt-0.5">
+                  {data.streak}d
+                </p>
+              </div>
+            )}
+          </div>
+          <p className="text-sm text-stone-400 mt-1">
+            calm financial companionship
+          </p>
+        </div>
+
+        {/* ── Today card ──────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
+                Today
+              </p>
+              <p className="text-3xl font-semibold text-stone-800 mt-1">
+                {formatKES(data.today.total_spent)}
+              </p>
+              <p className="text-xs text-stone-400 mt-0.5">
+                {data.today.entry_count === 0
+                  ? "No entries yet"
+                  : `${data.today.entry_count} ${data.today.entry_count === 1 ? "entry" : "entries"}`}
+              </p>
+            </div>
+            <a
+              href="/capture"
+              className="px-3 py-2 bg-stone-800 text-white text-xs font-medium rounded-xl hover:bg-stone-700 transition-colors"
+            >
+              + Add
+            </a>
+          </div>
+
+          {/* Recent items */}
+          {data.today.recent_items && data.today.recent_items.length > 0 ? (
+            <div className="space-y-2 border-t border-stone-50 pt-3">
+              {data.today.recent_items.map((item, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">
+                      {CATEGORY_EMOJI[item.category] ?? "📝"}
+                    </span>
+                    <span className="text-sm text-stone-600">
+                      {item.description}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-stone-300">
+                      {item.created_at}
+                    </span>
+                    <span className="text-sm text-stone-700 font-medium">
+                      {formatKES(item.amount)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {data.today.entry_count > 3 && (
+                <a
+                  href="/capture"
+                  className="block text-xs text-stone-400 hover:text-stone-600 pt-1 text-center"
+                >
+                  +{data.today.entry_count - 3} more →
+                </a>
+              )}
+            </div>
+          ) : (
+            <div className="border-t border-stone-50 pt-3 text-center">
+              <p className="text-xs text-stone-300">
+                What happened today? Tap + Add to start.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* ── Budget card ─────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
+              Budget · this month
+            </p>
+            <a href="/budget" className="text-xs text-stone-400 hover:text-stone-600">
+              See all →
+            </a>
+          </div>
+
+          {/* Overall bar */}
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-sm text-stone-600">
+              {formatKES(data.budget.total_spent)}
+            </span>
+            <span className="text-xs text-stone-400">
+              of {formatKES(data.budget.total_allocated)}
+            </span>
+          </div>
+          <MiniBar percent={data.budget.percent} />
+
+          {/* Top categories */}
+          {data.budget.top_categories && data.budget.top_categories.length > 0 && (
+            <div className="space-y-2 mt-4 pt-3 border-t border-stone-50">
+              {data.budget.top_categories.map((cat) => (
+                <div key={cat.category}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">
+                        {CATEGORY_EMOJI[cat.category] ?? "📝"}
+                      </span>
+                      <span className="text-sm text-stone-600 capitalize">
+                        {cat.category}
+                      </span>
+                    </div>
+                    <span className="text-sm text-stone-700">
+                      {formatKES(cat.spent)}
+                    </span>
+                  </div>
+                  <MiniBar percent={cat.percent} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Goals card ──────────────────────────────────── */}
+        {data.goals.active_count > 0 && (
+          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
+                Goals · {data.goals.active_count} active
+              </p>
+              <a href="/goals" className="text-xs text-stone-400 hover:text-stone-600">
+                See all →
+              </a>
+            </div>
+            <div className="space-y-3">
+              {data.goals.goals.map((g) => (
+                <div key={g.id}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{g.emoji}</span>
+                      <span className="text-sm text-stone-600">{g.name}</span>
+                    </div>
+                    <span className="text-xs text-stone-400">
+                      {Math.round(g.percent)}%
+                    </span>
+                  </div>
+                  <MiniBar percent={g.percent} muted />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Bedtime CTA ─────────────────────────────────── */}
+        {data.bedtime_done ? (
+          <div className="bg-stone-800 rounded-2xl p-5 text-center">
+            <p className="text-lg mb-1">🌙</p>
+            <p className="text-sm font-medium text-stone-100">Day closed.</p>
+            <p className="text-xs text-stone-500 mt-1">
+              Sleep well. Tomorrow is ready.
+            </p>
+          </div>
+        ) : (
+          <a
+            href="/bedtime"
+            className="block bg-stone-800 rounded-2xl p-5 text-center hover:bg-stone-700 transition-colors"
+          >
+            <p className="text-lg mb-1">🌙</p>
+            <p className="text-sm font-medium text-stone-100">
+              Close your day
+            </p>
+            <p className="text-xs text-stone-500 mt-1">
+              Review · Reflect · Rest
+            </p>
+          </a>
+        )}
+
+        {/* ── Nav row ─────────────────────────────────────── */}
+        <div className="flex gap-3 mt-4">
+          <a
+            href="/budget"
+            className="flex-1 text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+          >
+            Budget
+          </a>
+          <a
+            href="/goals"
+            className="flex-1 text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+          >
+            Goals
+          </a>
+          <a
+            href="/capture"
+            className="flex-1 text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+          >
+            Capture
+          </a>
+        </div>
+
+      </div>
+    </main>
   );
 }
