@@ -98,22 +98,28 @@ export default function Home() {
                 </p>
               </div>
               <a
-                href="/capture"
+                href="/bedtime"
                 className="block w-full text-center px-4 py-3 bg-stone-800 text-white text-sm font-medium rounded-xl hover:bg-stone-700 transition-colors"
               >
-                + Capture →
+                🌙 Close your day →
+              </a>
+              <a
+                href="/capture"
+                className="block w-full text-center px-4 py-3 bg-white border border-stone-200 text-stone-700 text-sm font-medium rounded-xl hover:bg-stone-50 transition-colors"
+              >
+                + Capture
               </a>
               <a
                 href="/budget"
                 className="block w-full text-center px-4 py-3 bg-white border border-stone-200 text-stone-700 text-sm font-medium rounded-xl hover:bg-stone-50 transition-colors"
               >
-                Budget →
+                Budget
               </a>
               <a
                 href="/goals"
                 className="block w-full text-center px-4 py-3 bg-white border border-stone-200 text-stone-700 text-sm font-medium rounded-xl hover:bg-stone-50 transition-colors"
               >
-                Goals →
+                Goals
               </a>
             </div>
           )}

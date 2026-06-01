@@ -130,7 +130,50 @@ func main() {
 		c.JSON(200, gin.H{"transactions": txns})
 	})
 
-	r.POST("/bedtime/close", bedtime.BedtimeCloseHandler())
+	bedtimeService := bedtime.NewService(pool)
+
+	// Get today's spending review (step 1 of the bedtime flow)
+	r.GET("/bedtime/review", func(c *gin.Context) {
+		review, err := bedtimeService.TodayReview(c.Request.Context())
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not load today's review"})
+			return
+		}
+		coaching := bedtimeService.GenerateCoaching(c.Request.Context(), review)
+		c.JSON(200, gin.H{
+			"review":   review,
+			"coaching": coaching,
+		})
+	})
+
+	// Close the day (final step of the bedtime flow)
+	r.POST("/bedtime/close", func(c *gin.Context) {
+		var input bedtime.CloseInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "invalid input"})
+			return
+		}
+		snapshot, err := bedtimeService.Close(c.Request.Context(), input)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not close day"})
+			return
+		}
+		c.JSON(200, gin.H{
+			"snapshot": snapshot,
+			"message":  "Day closed. Sleep well. 🌙",
+		})
+	})
+
+	// Get recent daily snapshots (history)
+	r.GET("/bedtime/history", func(c *gin.Context) {
+		history, err := bedtimeService.History(c.Request.Context(), 7)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not load history"})
+			return
+		}
+		c.JSON(200, gin.H{"history": history})
+	})
+
 	r.POST("/affordability/check", affordability.AffordabilityCheckHandler())
 	r.GET("/forecast", forecast.ForecastHandler())
 
