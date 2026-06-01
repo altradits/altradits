@@ -109,6 +109,12 @@ export default function Home() {
               >
                 Budget →
               </a>
+              <a
+                href="/goals"
+                className="block w-full text-center px-4 py-3 bg-white border border-stone-200 text-stone-700 text-sm font-medium rounded-xl hover:bg-stone-50 transition-colors"
+              >
+                Goals →
+              </a>
             </div>
           )}
 

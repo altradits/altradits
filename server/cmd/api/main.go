@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -92,11 +93,11 @@ func main() {
 		}
 
 		c.JSON(200, gin.H{
-			"status":  status,
+			"status":   status,
 			"database": gin.H{"connected": dbOK},
 			"redis":    gin.H{"connected": redisOK},
-			"app":     "altradits",
-			"version": "0.1.0",
+			"app":      "altradits",
+			"version":  "0.1.0",
 		})
 	})
 
@@ -104,29 +105,29 @@ func main() {
 	captureService := capture.NewService(pool)
 
 	r.POST("/capture", func(c *gin.Context) {
-	    var input capture.CaptureInput
-	    if err := c.ShouldBindJSON(&input); err != nil {
-	        c.JSON(400, gin.H{"error": "raw input is required"})
-	        return
-	    }
+		var input capture.CaptureInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "raw input is required"})
+			return
+		}
 
-	    result, err := captureService.Save(c.Request.Context(), input.Raw)
-	    if err != nil {
-	        c.JSON(422, gin.H{"error": err.Error()})
-	        return
-	    }
+		result, err := captureService.Save(c.Request.Context(), input.Raw)
+		if err != nil {
+			c.JSON(422, gin.H{"error": err.Error()})
+			return
+		}
 
-	    c.JSON(201, result)
+		c.JSON(201, result)
 	})
 
 	// Add a GET route to fetch recent transactions (add after /capture):
 	r.GET("/capture/recent", func(c *gin.Context) {
-	    txns, err := captureService.Recent(c.Request.Context(), 10)
-	    if err != nil {
-	        c.JSON(500, gin.H{"error": "could not fetch transactions"})
-	        return
-	    }
-	    c.JSON(200, gin.H{"transactions": txns})
+		txns, err := captureService.Recent(c.Request.Context(), 10)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not fetch transactions"})
+			return
+		}
+		c.JSON(200, gin.H{"transactions": txns})
 	})
 
 	r.POST("/bedtime/close", bedtime.BedtimeCloseHandler())
@@ -158,7 +159,66 @@ func main() {
 		c.JSON(200, gin.H{"budget": updated, "message": "Budget updated. 🌱"})
 	})
 
-	r.GET("/goals", goals.GoalsHandler())
+	goalsService := goals.NewService(pool)
+
+	// List all goals
+	r.GET("/goals", func(c *gin.Context) {
+		list, err := goalsService.List(c.Request.Context())
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not load goals"})
+			return
+		}
+		c.JSON(200, gin.H{"goals": list})
+	})
+
+	// Create a new goal
+	r.POST("/goals", func(c *gin.Context) {
+		var input goals.CreateInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "name and target are required"})
+			return
+		}
+		goal, err := goalsService.Create(c.Request.Context(), input)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not create goal"})
+			return
+		}
+		c.JSON(201, gin.H{
+			"goal":    goal,
+			"message": fmt.Sprintf("First step toward %s. 🌱", goal.Name),
+		})
+	})
+
+	// Contribute to a goal
+	r.POST("/goals/:id/contribute", func(c *gin.Context) {
+		id := c.Param("id")
+		var input goals.ContributeInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "amount is required"})
+			return
+		}
+		goal, err := goalsService.Contribute(c.Request.Context(), id, input.Amount)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not update goal"})
+			return
+		}
+		msg := fmt.Sprintf("Added KES %.0f to %s. 🌱", input.Amount, goal.Name)
+		if goal.Completed {
+			msg = fmt.Sprintf("🎉 You hit your %s target!", goal.Name)
+		}
+		c.JSON(200, gin.H{"goal": goal, "message": msg})
+	})
+
+	// Delete a goal
+	r.DELETE("/goals/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		if err := goalsService.Delete(c.Request.Context(), id); err != nil {
+			c.JSON(500, gin.H{"error": "could not delete goal"})
+			return
+		}
+		c.JSON(200, gin.H{"message": "Goal removed."})
+	})
+
 	r.GET("/investments", investments.InvestmentsHandler())
 
 	r.Run() // listen and serve on 0.0.0.0:8080
