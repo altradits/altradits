@@ -186,7 +186,21 @@ func main() {
 		c.JSON(200, gin.H{"history": history})
 	})
 
-	r.POST("/affordability/check", affordability.AffordabilityCheckHandler())
+	affordabilityService := affordability.NewService(pool)
+
+	r.POST("/affordability/check", func(c *gin.Context) {
+		var input affordability.CheckInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "item and amount are required"})
+			return
+		}
+		result, err := affordabilityService.Check(c.Request.Context(), input)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not check affordability"})
+			return
+		}
+		c.JSON(200, result)
+	})
 	r.GET("/forecast", forecast.ForecastHandler())
 
 	budgetService := budget.NewService(pool)

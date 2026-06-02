@@ -303,24 +303,30 @@ export default function Dashboard() {
         )}
 
         {/* ── Nav row ─────────────────────────────────────── */}
-        <div className="flex gap-3 mt-4">
+        <div className="grid grid-cols-2 gap-3 mt-4">
           <a
             href="/budget"
-            className="flex-1 text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
           >
             Budget
           </a>
           <a
             href="/goals"
-            className="flex-1 text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
           >
             Goals
           </a>
           <a
-            href="/capture"
-            className="flex-1 text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+            href="/affordability"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
           >
-            Capture
+            Can I afford it?
+          </a>
+          <a
+            href="/capture"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+          >
+            + Capture
           </a>
         </div>
 
