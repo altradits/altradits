@@ -8,13 +8,14 @@ import (
 
 	"github.com/altradits/altradits/server/internal/affordability"
 	"github.com/altradits/altradits/server/internal/bedtime"
-	"github.com/altradits/altradits/server/internal/coaching"
 	"github.com/altradits/altradits/server/internal/budget"
 	"github.com/altradits/altradits/server/internal/capture"
+	"github.com/altradits/altradits/server/internal/coaching"
 	"github.com/altradits/altradits/server/internal/dashboard"
 	"github.com/altradits/altradits/server/internal/forecast"
 	"github.com/altradits/altradits/server/internal/goals"
 	"github.com/altradits/altradits/server/internal/investments"
+	"github.com/altradits/altradits/server/internal/sms"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -25,19 +26,19 @@ import (
 // coachingAdapter adapts coaching.Service to bedtime.CoachingGenerator
 // to avoid circular imports between the two packages.
 type coachingAdapter struct {
-    service *coaching.Service
+	service *coaching.Service
 }
 
 func (a *coachingAdapter) Generate(ctx context.Context, mood, reflection string) (*bedtime.CoachingNote, error) {
-    result, err := a.service.Generate(ctx, mood, reflection)
-    if err != nil {
-        return nil, err
-    }
-    return &bedtime.CoachingNote{
-        Note:         result.Note,
-        TomorrowHint: result.TomorrowHint,
-        Source:       result.Source,
-    }, nil
+	result, err := a.service.Generate(ctx, mood, reflection)
+	if err != nil {
+		return nil, err
+	}
+	return &bedtime.CoachingNote{
+		Note:         result.Note,
+		TomorrowHint: result.TomorrowHint,
+		Source:       result.Source,
+	}, nil
 }
 
 func main() {
@@ -227,7 +228,6 @@ func main() {
 		c.JSON(200, note)
 	})
 
-
 	affordabilityService := affordability.NewService(pool)
 
 	r.POST("/affordability/check", func(c *gin.Context) {
@@ -328,6 +328,64 @@ func main() {
 			return
 		}
 		c.JSON(200, gin.H{"message": "Goal removed."})
+	})
+
+	smsService := sms.NewService(pool)
+
+	// Parse a raw SMS string — returns a suggestion, saves nothing
+	r.POST("/sms/parse", func(c *gin.Context) {
+		var req sms.ParseRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{"error": "raw_text is required"})
+			return
+		}
+		result, err := smsService.Parse(c.Request.Context(), req.RawText)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not parse SMS"})
+			return
+		}
+		c.JSON(200, result)
+	})
+
+	// Confirm a parsed SMS — creates the transaction
+	r.POST("/sms/confirm", func(c *gin.Context) {
+		var req sms.ConfirmRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{"error": "inbox_id and amount are required"})
+			return
+		}
+		result, err := smsService.Confirm(c.Request.Context(), req)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not confirm SMS"})
+			return
+		}
+		c.JSON(201, result)
+	})
+
+	// Dismiss a parsed SMS without saving
+	r.POST("/sms/dismiss", func(c *gin.Context) {
+		var req struct {
+			InboxID string `json:"inbox_id" binding:"required"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{"error": "inbox_id is required"})
+			return
+		}
+		if err := smsService.Dismiss(c.Request.Context(), req.InboxID); err != nil {
+			c.JSON(500, gin.H{"error": "could not dismiss"})
+			return
+		}
+		c.JSON(200, gin.H{"message": "Dismissed."})
+	})
+
+	// Get pending SMS inbox items
+	r.GET("/sms/pending", func(c *gin.Context) {
+		items, err := smsService.Pending(c.Request.Context())
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not load inbox"})
+			return
+		}
+		c.JSON(200, gin.H{"items": items})
 	})
 
 	r.GET("/investments", investments.InvestmentsHandler())
