@@ -317,11 +317,11 @@ export default function Dashboard() {
         {/* ── Nav row ─────────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-3 mt-4">
           <a
-             href="/budget"
-             className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
-           >
-             Budget
-           </a>
+            href="/budget"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+          >
+            Budget
+          </a>
           <a
             href="/goals"
             className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
@@ -333,6 +333,12 @@ export default function Dashboard() {
             className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
           >
             Can I afford it?
+          </a>
+          <a
+            href="/investments"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+          >
+            Investments
           </a>
           <a
             href="/sms"

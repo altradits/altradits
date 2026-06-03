@@ -339,7 +339,7 @@ func main() {
 			c.JSON(400, gin.H{"error": "raw_text is required"})
 			return
 		}
-		result, err := smsService.Parse(c.Request.Context(), req.RawText)
+		result, err = smsService.Parse(c.Request.Context(), req.RawText)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not parse SMS"})
 			return
@@ -354,7 +354,7 @@ func main() {
 			c.JSON(400, gin.H{"error": "inbox_id and amount are required"})
 			return
 		}
-		result, err := smsService.Confirm(c.Request.Context(), req)
+		result, err = smsService.Confirm(c.Request.Context(), req)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not confirm SMS"})
 			return
@@ -380,7 +380,7 @@ func main() {
 
 	// Get pending SMS inbox items
 	r.GET("/sms/pending", func(c *gin.Context) {
-		items, err := smsService.Pending(c.Request.Context())
+		items, err = smsService.Pending(c.Request.Context())
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not load inbox"})
 			return
@@ -388,7 +388,75 @@ func main() {
 		c.JSON(200, gin.H{"items": items})
 	})
 
-	r.GET("/investments", investments.InvestmentsHandler())
+	// Investment routes
+	investmentsService := investments.NewService(pool)
+
+	// List all positions
+	r.GET("/investments", func(c *gin.Context) {
+		positions, err := investmentsService.List(c.Request.Context())
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not load investments"})
+			return
+		}
+		c.JSON(200, gin.H{"positions": positions})
+	})
+
+	// Portfolio summary with allocation and freedom score
+	r.GET("/investments/summary", func(c *gin.Context) {
+		summary, err := investmentsService.Summary(c.Request.Context())
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not load portfolio summary"})
+			return
+		}
+		c.JSON(200, summary)
+	})
+
+	// Add a new position
+	r.POST("/investments", func(c *gin.Context) {
+		var input investments.CreateInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "name, type, and principal are required"})
+			return
+		}
+		position, err := investmentsService.Create(c.Request.Context(), input)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not add investment"})
+			return
+		}
+		c.JSON(201, gin.H{
+			"position": position,
+			"message":  fmt.Sprintf("Logged. %s is now in your picture. 🌱", position.Name),
+		})
+	})
+
+	// Update current value
+	r.PUT("/investments/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		var input investments.UpdateInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "current_value is required"})
+			return
+		}
+		position, err := investmentsService.Update(c.Request.Context(), id, input)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not update investment"})
+			return
+		}
+		c.JSON(200, gin.H{
+			"position": position,
+			"message":  "Value updated. 🌱",
+		})
+	})
+
+	// Remove a position (soft delete)
+	r.DELETE("/investments/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		if err := investmentsService.Delete(c.Request.Context(), id); err != nil {
+			c.JSON(500, gin.H{"error": "could not remove investment"})
+			return
+		}
+		c.JSON(200, gin.H{"message": "Removed from your picture."})
+	})
 
 	r.Run() // listen and serve on 0.0.0.0:8080
 }
