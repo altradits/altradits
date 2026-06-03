@@ -25,10 +25,17 @@ type CategorySummary struct {
 	Count    int     `json:"count"`
 }
 
-// CoachingNote is a calm observation based on today's spending.
+// CoachingNote mirrors coaching.CoachingNote to avoid circular imports.
 type CoachingNote struct {
 	Note         string `json:"note"`
 	TomorrowHint string `json:"tomorrow_hint"`
+	Source       string `json:"source"`
+}
+
+// CoachingGenerator is the interface for generating coaching notes.
+// Using an interface keeps the bedtime package decoupled from the coaching package.
+type CoachingGenerator interface {
+	Generate(ctx context.Context, mood, reflection string) (*CoachingNote, error)
 }
 
 // CloseInput is the request body for closing the day.
@@ -53,12 +60,13 @@ type Snapshot struct {
 
 // Service handles bedtime business logic.
 type Service struct {
-	db *pgxpool.Pool
+	db       *pgxpool.Pool
+	coaching CoachingGenerator
 }
 
 // NewService creates a new bedtime service.
-func NewService(db *pgxpool.Pool) *Service {
-	return &Service{db: db}
+func NewService(db *pgxpool.Pool, coaching CoachingGenerator) *Service {
+	return &Service{db: db, coaching: coaching}
 }
 
 // TodayReview returns a spending summary for today.
@@ -117,63 +125,6 @@ func (s *Service) TodayReview(ctx context.Context) (*DayReview, error) {
 	}, nil
 }
 
-// GenerateCoaching produces a calm, data-driven coaching note without calling an LLM.
-// In Phase 5+, this will be replaced by the AI coaching engine.
-func (s *Service) GenerateCoaching(ctx context.Context, review *DayReview) *CoachingNote {
-	if review.TotalEntries == 0 {
-		return &CoachingNote{
-			Note:         "Quiet day — sometimes that's exactly right. 🌙",
-			TomorrowHint: "Tomorrow is a fresh start. Ready when you are.",
-		}
-	}
-
-	topCat := ""
-	if len(review.Categories) > 0 {
-		topCat = review.Categories[0].Category
-	}
-
-	dayOfWeek := time.Now().Weekday().String()
-	isWeekend := dayOfWeek == "Saturday" || dayOfWeek == "Sunday"
-
-	var note, hint string
-
-	switch {
-	case review.TotalEntries == 1:
-		note = "One entry today. Small day, honest record. That counts. 🌱"
-		hint = "Tomorrow: keep the habit going."
-
-	case topCat == "food":
-		note = fmt.Sprintf("Food was the main chapter today — %d entries. Meals matter. 🍽️", review.TotalEntries)
-		hint = "Transport and bills tend to follow their own rhythm. Worth a glance tomorrow."
-
-	case topCat == "investments":
-		note = "You put money toward growth today. That's a quiet kind of discipline. 🌱"
-		hint = "Consistency compounds. Same time tomorrow?"
-
-	case topCat == "family":
-		note = "Family spending today. Some money moves that way on purpose. 👨‍👩‍👧"
-		hint = "Check your goals tomorrow — make sure your own savings are still moving."
-
-	case topCat == "bills":
-		note = "Bills handled. The unsexy part of a solid financial life. ✅"
-		hint = "With bills out of the way, tomorrow is cleaner."
-
-	case topCat == "transport":
-		note = "Transport was the main spend today. Some days are just movement. 🚗"
-		hint = "If this week has felt heavy on transport, worth reviewing the pattern."
-
-	case isWeekend:
-		note = "Weekends tend to feel fuller — yours did. That's allowed. 🌙"
-		hint = "Monday usually resets the rhythm."
-
-	default:
-		note = fmt.Sprintf("You tracked %d moments today. That awareness is the foundation. 🌱", review.TotalEntries)
-		hint = "Tiny progress compounds. Same time tomorrow."
-	}
-
-	return &CoachingNote{Note: note, TomorrowHint: hint}
-}
-
 // Close saves the daily snapshot and marks the day as closed.
 func (s *Service) Close(ctx context.Context, input CloseInput) (*Snapshot, error) {
 	review, err := s.TodayReview(ctx)
@@ -181,7 +132,15 @@ func (s *Service) Close(ctx context.Context, input CloseInput) (*Snapshot, error
 		return nil, err
 	}
 
-	coaching := s.GenerateCoaching(ctx, review)
+	coachingNote, err := s.coaching.Generate(ctx, input.Mood, input.Reflection)
+	if err != nil || coachingNote == nil {
+		coachingNote = &CoachingNote{
+			Note:         "Tiny progress still counts. 🌱",
+			TomorrowHint: "Same time tomorrow.",
+			Source:       "fallback",
+		}
+	}
+
 	today := time.Now().Format("2006-01-02")
 
 	var topCategory *string
@@ -220,7 +179,7 @@ func (s *Service) Close(ctx context.Context, input CloseInput) (*Snapshot, error
 			top_category, reflection, mood, coaching_note, tomorrow_preview,
 			TO_CHAR(closed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"')
 	`, today, review.TotalSpent, review.TotalEntries, topCategory,
-		reflection, mood, coaching.Note, coaching.TomorrowHint).
+		reflection, mood, coachingNote.Note, coachingNote.TomorrowHint).
 		Scan(&snap.ID, &snap.SnapshotDate, &snap.TotalSpent, &snap.TotalEntries,
 			&snap.TopCategory, &snap.Reflection, &snap.Mood,
 			&snap.CoachingNote, &snap.TomorrowPreview, &snap.ClosedAt)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/altradits/altradits/server/internal/affordability"
 	"github.com/altradits/altradits/server/internal/bedtime"
+	"github.com/altradits/altradits/server/internal/coaching"
 	"github.com/altradits/altradits/server/internal/budget"
 	"github.com/altradits/altradits/server/internal/capture"
 	"github.com/altradits/altradits/server/internal/dashboard"
@@ -20,6 +21,24 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 )
+
+// coachingAdapter adapts coaching.Service to bedtime.CoachingGenerator
+// to avoid circular imports between the two packages.
+type coachingAdapter struct {
+    service *coaching.Service
+}
+
+func (a *coachingAdapter) Generate(ctx context.Context, mood, reflection string) (*bedtime.CoachingNote, error) {
+    result, err := a.service.Generate(ctx, mood, reflection)
+    if err != nil {
+        return nil, err
+    }
+    return &bedtime.CoachingNote{
+        Note:         result.Note,
+        TomorrowHint: result.TomorrowHint,
+        Source:       result.Source,
+    }, nil
+}
 
 func main() {
 	// Load environment variables (add at the very top of main(), before anything else)
@@ -142,7 +161,8 @@ func main() {
 		c.JSON(200, gin.H{"transactions": txns})
 	})
 
-	bedtimeService := bedtime.NewService(pool)
+	coachingService := coaching.NewService(pool)
+	bedtimeService := bedtime.NewService(pool, &coachingAdapter{service: coachingService})
 
 	// Get today's spending review (step 1 of the bedtime flow)
 	r.GET("/bedtime/review", func(c *gin.Context) {
@@ -151,7 +171,12 @@ func main() {
 			c.JSON(500, gin.H{"error": "could not load today's review"})
 			return
 		}
-		coaching := bedtimeService.GenerateCoaching(c.Request.Context(), review)
+		coachingResult, err := coachingService.Generate(c.Request.Context(), "", "")
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not generate coaching"})
+			return
+		}
+		coaching := bedtime.CoachingNote{Note: coachingResult.Note, TomorrowHint: coachingResult.TomorrowHint, Source: coachingResult.Source}
 		c.JSON(200, gin.H{
 			"review":   review,
 			"coaching": coaching,
@@ -185,6 +210,23 @@ func main() {
 		}
 		c.JSON(200, gin.H{"history": history})
 	})
+
+	// Generate a coaching note on demand
+	r.POST("/coaching/note", func(c *gin.Context) {
+		var input struct {
+			Mood       string `json:"mood"`
+			Reflection string `json:"reflection"`
+		}
+		_ = c.ShouldBindJSON(&input)
+
+		note, err := coachingService.Generate(c.Request.Context(), input.Mood, input.Reflection)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not generate coaching note"})
+			return
+		}
+		c.JSON(200, note)
+	})
+
 
 	affordabilityService := affordability.NewService(pool)
 

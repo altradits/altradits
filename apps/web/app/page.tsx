@@ -248,6 +248,18 @@ export default function Dashboard() {
           )}
         </div>
 
+        {!data.bedtime_done && (
+          <div
+            className="bg-stone-50 border border-stone-100 rounded-xl px-4 py-3 cursor-pointer hover:bg-stone-100 transition-colors"
+            onClick={() => window.location.href = '/bedtime'}
+          >
+            <p className="text-xs text-stone-500">
+              💬 <span className="font-medium">How did money feel today?</span>{" "}
+              <span className="text-stone-400">Close your day →</span>
+            </p>
+          </div>
+        )}
+
         {/* ── Goals card ──────────────────────────────────── */}
         {data.goals.active_count > 0 && (
           <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">

@@ -20,6 +20,7 @@ type DayReview = {
 type CoachingNote = {
   note: string;
   tomorrow_hint: string;
+  source?: string;
 };
 
 type Snapshot = {
@@ -255,6 +256,12 @@ export default function BedtimePage() {
                   {coaching.note}
                 </p>
               </div>
+
+              {coaching && (
+                <p className="text-xs text-stone-700 text-center mt-3 opacity-50">
+                  {(coaching as any).source === "ai" ? "✦ AI coaching" : "✦ Calm note"}
+                </p>
+              )}
 
               {mood && (
                 <p className="text-stone-600 text-sm text-center">
