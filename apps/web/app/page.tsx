@@ -54,6 +54,7 @@ type DashboardData = {
   investments: InvestmentsSnapshot;
   bedtime_done: boolean;
   streak: number;
+  freedom_coverage?: number;
 };
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -298,6 +299,27 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ── Freedom coverage ──────────────────────────────────── */}
+        {data.freedom_coverage !== undefined && data.freedom_coverage > 0 && (
+          <a
+            href="/freedom"
+            className="block bg-stone-800 rounded-xl px-4 py-3 mb-4 hover:bg-stone-700 transition-colors"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-xs text-stone-400 font-medium">Financial freedom</p>
+              <p className="text-xs text-emerald-400 font-medium">
+                {data.freedom_coverage.toFixed(0)}% covered →
+              </p>
+            </div>
+            <div className="w-full bg-stone-700 rounded-full h-1">
+              <div
+                className="h-1 bg-emerald-400 rounded-full transition-all"
+                style={{ width: `${Math.min(data.freedom_coverage, 100)}%` }}
+              />
+            </div>
+          </a>
+        )}
+
         {/* ── Goals card ──────────────────────────────────── */}
         {data.goals.active_count > 0 && (
           <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
@@ -377,6 +399,12 @@ export default function Dashboard() {
             className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
           >
             Investments
+          </a>
+          <a
+            href="/freedom"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+          >
+            Freedom
           </a>
           <a
             href="/sms"

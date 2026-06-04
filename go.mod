@@ -3,7 +3,8 @@ module github.com/altradits/altradits
 go 1.25.0
 
 require (
-	github.com/gin-contrib/cors v1.7.7
+	github.com/anthropics/anthropic-sdk-go v1.46.0
+	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.12.0
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/jackc/pgx/v5 v5.9.2
@@ -12,7 +13,6 @@ require (
 )
 
 require (
-	github.com/anthropics/anthropic-sdk-go v1.46.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect

@@ -17,6 +17,7 @@ type Summary struct {
 	BedtimeDone         bool                `json:"bedtime_done"`
 	Streak              int                 `json:"streak"`
 	InvestmentsSnapshot InvestmentsSnapshot `json:"investments"`
+	FreedomCoverage     float64             `json:"freedom_coverage"`
 }
 
 // InvestmentsSnapshot shows investment portfolio summary.
@@ -109,6 +110,10 @@ func (s *Service) Get(ctx context.Context) (*Summary, error) {
 	summary := &Summary{
 		Date:     today,
 		Greeting: greeting(),
+	}
+
+	if s.db == nil {
+		return summary, nil
 	}
 
 	// ── Today's spending ──────────────────────────────────────────────────
@@ -315,6 +320,29 @@ func (s *Service) Get(ctx context.Context) (*Summary, error) {
 		)
 	`).Scan(&streak)
 	summary.Streak = streak
+
+	// ── Freedom snapshot ──────────────────────────────────────────────────────
+	var freedomPassive, freedomExpenses float64
+	monthStart3 := now.AddDate(0, -3, 0)
+
+	_ = s.db.QueryRow(ctx, `
+		SELECT COALESCE(SUM(amount),0)/3.0 FROM transactions WHERE created_at >= $1
+	`, monthStart3).Scan(&freedomExpenses)
+
+	// Use investment portfolio * conservative 10% annual return / 12
+	_ = s.db.QueryRow(ctx, `
+		SELECT COALESCE(SUM(current_value)*0.10/12, 0)
+		FROM investments WHERE user_id IS NULL AND is_active = TRUE
+	`).Scan(&freedomPassive)
+
+	freedomCoverage := 0.0
+	if freedomExpenses > 0 {
+		freedomCoverage = (freedomPassive / freedomExpenses) * 100
+		if freedomCoverage > 100 {
+			freedomCoverage = 100
+		}
+	}
+	summary.FreedomCoverage = freedomCoverage
 
 	return summary, nil
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/altradits/altradits/server/internal/coaching"
 	"github.com/altradits/altradits/server/internal/dashboard"
 	"github.com/altradits/altradits/server/internal/forecast"
+	"github.com/altradits/altradits/server/internal/freedom"
 	"github.com/altradits/altradits/server/internal/goals"
 	"github.com/altradits/altradits/server/internal/investments"
 	"github.com/altradits/altradits/server/internal/sms"
@@ -489,6 +490,37 @@ func main() {
 			return
 		}
 		c.JSON(200, gin.H{"message": "Removed from your picture."})
+	})
+
+	// Freedom planner routes
+	freedomService := freedom.NewService(pool)
+
+	// Full freedom plan
+	r.GET("/freedom", func(c *gin.Context) {
+		plan, err := freedomService.GetPlan(c.Request.Context())
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not calculate freedom plan"})
+			return
+		}
+		c.JSON(200, plan)
+	})
+
+	// Set or update the freedom target
+	r.POST("/freedom/targets", func(c *gin.Context) {
+		var input freedom.TargetInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "monthly_savings and target_passive are required"})
+			return
+		}
+		target, err := freedomService.SetTarget(c.Request.Context(), input)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not save target"})
+			return
+		}
+		c.JSON(200, gin.H{
+			"target":  target,
+			"message": "Freedom target updated. 🌱",
+		})
 	})
 
 	r.Run() // listen and serve on 0.0.0.0:8080
