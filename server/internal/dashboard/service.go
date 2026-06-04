@@ -9,13 +9,22 @@ import (
 
 // Summary is the complete dashboard payload.
 type Summary struct {
-	Date        string         `json:"date"`
-	Greeting    string         `json:"greeting"`
-	Today       TodaySummary   `json:"today"`
-	Budget      BudgetSnapshot `json:"budget"`
-	Goals       GoalsSnapshot  `json:"goals"`
-	BedtimeDone bool           `json:"bedtime_done"`
-	Streak      int            `json:"streak"`
+	Date                string              `json:"date"`
+	Greeting            string              `json:"greeting"`
+	Today               TodaySummary        `json:"today"`
+	Budget              BudgetSnapshot      `json:"budget"`
+	Goals               GoalsSnapshot       `json:"goals"`
+	BedtimeDone         bool                `json:"bedtime_done"`
+	Streak              int                 `json:"streak"`
+	InvestmentsSnapshot InvestmentsSnapshot `json:"investments"`
+}
+
+// InvestmentsSnapshot shows investment portfolio summary.
+type InvestmentsSnapshot struct {
+	TotalValue     float64 `json:"total_value"`
+	TotalGrowth    float64 `json:"total_growth"`
+	TotalGrowthPct float64 `json:"total_growth_pct"`
+	PositionCount  int     `json:"position_count"`
 }
 
 // TodaySummary is today's spending at a glance.
@@ -252,6 +261,29 @@ func (s *Service) Get(ctx context.Context) (*Summary, error) {
 	summary.Goals = GoalsSnapshot{
 		ActiveCount: activeCount,
 		Goals:       goalPreviews,
+	}
+
+	// ── Investments snapshot ─────────────────────────────────────────────
+	var invTotalValue, invTotalGrowth, invGrowthPct float64
+	var invCount int
+	_ = s.db.QueryRow(ctx, `
+		SELECT
+			COALESCE(SUM(current_value), 0),
+			COALESCE(SUM(current_value - principal), 0),
+			COUNT(*)
+		FROM investments
+		WHERE user_id IS NULL AND is_active = TRUE
+	`).Scan(&invTotalValue, &invTotalGrowth, &invCount)
+
+	if invTotalGrowth > 0 {
+		invGrowthPct = (invTotalGrowth / (invTotalValue - invTotalGrowth)) * 100
+	}
+
+	summary.InvestmentsSnapshot = InvestmentsSnapshot{
+		TotalValue:     invTotalValue,
+		TotalGrowth:    invTotalGrowth,
+		TotalGrowthPct: invGrowthPct,
+		PositionCount:  invCount,
 	}
 
 	// ── Bedtime status ────────────────────────────────────────────────────

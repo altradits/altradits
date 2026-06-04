@@ -8,14 +8,13 @@ type Investment = {
   institution: string;
   type: string;
   current_value: number;
-  invested_amount: number;
+  principal: number;
   currency: string;
-  notes: string;
+  notes: string | null;
   is_active: boolean;
   started_at: string | null;
   matures_at: string | null;
   created_at: string;
-  updated_at: string;
 };
 
 type Summary = {
@@ -23,6 +22,14 @@ type Summary = {
   total_current_value: number;
   total_growth: number;
   allocation: Record<string, number>;
+  freedom_score?: FreedomScore;
+};
+
+type FreedomScore = {
+  monthly_expenses: number;
+  estimated_passive: number;
+  coverage_percent: number;
+  message: string;
 };
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -42,8 +49,10 @@ function formatDate(dateString: string | null): string {
 
 function InvestmentCard({
   investment,
+  onUpdate,
 }: {
   investment: Investment;
+  onUpdate?: (id: string, newValue: number) => void;
 }) {
   const typeEmoji: Record<string, string> = {
     mmf: "🏦",
@@ -51,17 +60,27 @@ function InvestmentCard({
     bond: "📑",
     stock: "📈",
     etf: "🏪",
-    saccos: "👥",
+    sacco: "👥",
     fixed: "🔒",
     crypto: "₿",
     other: "📦",
   };
 
-  const growth = investment.current_value - investment.invested_amount;
+  const growth = investment.current_value - investment.principal;
   const growthPercent =
-    investment.invested_amount > 0
-      ? (growth / investment.invested_amount) * 100
+    investment.principal > 0
+      ? (growth / investment.principal) * 100
       : 0;
+
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(investment.current_value);
+
+  const handleUpdate = async () => {
+    if (onUpdate) {
+      onUpdate(investment.id, editValue);
+    }
+    setEditing(false);
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
@@ -78,9 +97,28 @@ function InvestmentCard({
           </div>
         </div>
         <div className="text-right space-y-1">
-          <p className="text-sm font-semibold text-stone-800">
-            {formatKES(investment.current_value)}
-          </p>
+          {editing ? (
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                value={editValue}
+                onChange={(e) => setEditValue(parseFloat(e.target.value) || 0)}
+                onBlur={handleUpdate}
+                onKeyDown={(e) => e.key === "Enter" && handleUpdate()}
+                className="w-24 px-2 py-1 text-sm font-semibold text-stone-800 border border-stone-200 rounded"
+                autoFocus
+              />
+              <span className="text-xs text-stone-400">KES</span>
+            </div>
+          ) : (
+            <p
+              className="text-sm font-semibold text-stone-800 cursor-pointer hover:text-stone-600"
+              onClick={() => setEditing(true)}
+              title="Tap to update"
+            >
+              {formatKES(investment.current_value)}
+            </p>
+          )}
           {growth !== 0 && (
             <p className={`text-xs ${
               growth >= 0 ? "text-emerald-600" : "text-red-600"
@@ -96,7 +134,7 @@ function InvestmentCard({
       <div className="grid grid-cols-2 gap-4 text-xs text-stone-500">
         <div>
           <p className="font-medium">Invested</p>
-          <p>{formatKES(investment.invested_amount)}</p>
+          <p>{formatKES(investment.principal)}</p>
         </div>
         <div>
           <p className="font-medium">Current Value</p>
@@ -148,35 +186,51 @@ export default function InvestmentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [invRes, sumRes] = await Promise.all([
-          fetch(`${API}/investments`),
-          fetch(`${API}/investments/summary`),
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [invRes, sumRes] = await Promise.all([
+        fetch(`${API}/investments`),
+        fetch(`${API}/investments/summary`),
+      ]);
+
+      if (invRes.ok && sumRes.ok) {
+        const [invData, sumData] = await Promise.all([
+          invRes.json(),
+          sumRes.json(),
         ]);
-
-        if (invRes.ok && sumRes.ok) {
-          const [invData, sumData] = await Promise.all([
-            invRes.json(),
-            sumRes.json(),
-          ]);
-          setInvestments(invData);
-          setSummary(sumData);
-        } else {
-          throw new Error("Failed to fetch data");
-        }
-      } catch (err) {
-        setError("Could not reach the server.");
-        console.error(err);
-      } finally {
-        setLoading(false);
+        setInvestments(invData);
+        setSummary(sumData);
+      } else {
+        throw new Error("Failed to fetch data");
       }
-    };
+    } catch (err) {
+      setError("Could not reach the server.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchData();
   }, []);
+
+  const handleUpdate = async (id: string, newValue: number) => {
+    try {
+      const res = await fetch(`${API}/investments/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ current_value: newValue }),
+      });
+
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error("Failed to update investment", err);
+    }
+  };
 
   if (loading) {
     return (
@@ -318,6 +372,37 @@ export default function InvestmentsPage() {
                   </div>
                 </div>
               )}
+
+              {/* Freedom Score */}
+              {summary.freedom_score && (
+                <div className="mt-4 pt-3 border-t border-stone-50">
+                  <div className="bg-stone-800 rounded-xl p-4">
+                    <p className="text-xs text-stone-300 font-medium uppercase tracking-wider mb-2">
+                      Freedom Score
+                    </p>
+                    <p className="text-2xl font-semibold text-white mb-1">
+                      {summary.freedom_score.coverage_percent.toFixed(0)}%
+                    </p>
+                    <p className="text-xs text-stone-300">
+                      {summary.freedom_score.message}
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <p className="text-stone-400">Monthly Expenses</p>
+                        <p className="text-stone-200 font-medium">
+                          {formatKES(summary.freedom_score.monthly_expenses)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-stone-400">Passive Income</p>
+                        <p className="text-stone-200 font-medium">
+                          {formatKES(summary.freedom_score.estimated_passive)}/mo
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -344,7 +429,7 @@ export default function InvestmentsPage() {
           {investments.length > 0 ? (
             <div className="space-y-3">
               {investments.map((inv, index) => (
-                <InvestmentCard key={inv.id} investment={inv} />
+                <InvestmentCard key={inv.id} investment={inv} onUpdate={handleUpdate} />
               ))}
             </div>
           ) : (

@@ -212,7 +212,6 @@ func (s *Service) Summary(ctx context.Context) (*Portfolio, error) {
 		SELECT COALESCE(SUM(amount), 0) / 3.0
 		FROM transactions
 		WHERE created_at >= NOW() - INTERVAL '3 months'
-		AND source != 'income'
 	`).Scan(&avgMonthlyExpenses)
 
 	coveragePct := 0.0

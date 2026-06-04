@@ -198,6 +198,12 @@ func GetInvestmentSummaryHandler(db *pgxpool.Pool) gin.HandlerFunc {
 			"total_current_value": summary.TotalValue,
 			"total_growth":        summary.TotalGrowth,
 			"allocation":          allocationMap,
+			"freedom_score": map[string]interface{}{
+				"monthly_expenses":  summary.FreedomScore.MonthlyExpenses,
+				"estimated_passive": summary.FreedomScore.EstimatedPassive,
+				"coverage_percent":  summary.FreedomScore.CoveragePercent,
+				"message":           summary.FreedomScore.Message,
+			},
 		}
 		c.JSON(http.StatusOK, frontendSummary)
 	}

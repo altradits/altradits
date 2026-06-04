@@ -25,6 +25,13 @@ type GoalPreview = {
   target: number;
 };
 
+type InvestmentsSnapshot = {
+  total_value: number;
+  total_growth: number;
+  total_growth_pct: number;
+  position_count: number;
+};
+
 type DashboardData = {
   date: string;
   greeting: string;
@@ -44,6 +51,7 @@ type DashboardData = {
     active_count: number;
     goals: GoalPreview[];
   };
+  investments: InvestmentsSnapshot;
   bedtime_done: boolean;
   streak: number;
 };
@@ -257,6 +265,36 @@ export default function Dashboard() {
               💬 <span className="font-medium">How did money feel today?</span>{" "}
               <span className="text-stone-400">Close your day →</span>
             </p>
+          </div>
+        )}
+
+        {/* ── Investments card ──────────────────────────────────── */}
+        {data.investments && data.investments.position_count > 0 && (
+          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
+                Investments · {data.investments.position_count} positions
+              </p>
+              <a href="/investments" className="text-xs text-stone-400 hover:text-stone-600">
+                See all →
+              </a>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-stone-600">Total Value</span>
+                <span className="text-sm text-stone-800 font-medium">
+                  {formatKES(data.investments.total_value)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-stone-600">Growth</span>
+                <span className={`text-sm font-medium ${
+                  data.investments.total_growth >= 0 ? "text-emerald-600" : "text-red-600"
+                }`}>
+                  {data.investments.total_growth >= 0 ? "+" : ""}{formatKES(data.investments.total_growth)}
+                </span>
+              </div>
+            </div>
           </div>
         )}
 

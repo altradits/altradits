@@ -339,7 +339,7 @@ func main() {
 			c.JSON(400, gin.H{"error": "raw_text is required"})
 			return
 		}
-		result, err = smsService.Parse(c.Request.Context(), req.RawText)
+		result, err := smsService.Parse(c.Request.Context(), req.RawText)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not parse SMS"})
 			return
@@ -354,7 +354,7 @@ func main() {
 			c.JSON(400, gin.H{"error": "inbox_id and amount are required"})
 			return
 		}
-		result, err = smsService.Confirm(c.Request.Context(), req)
+		result, err := smsService.Confirm(c.Request.Context(), req)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not confirm SMS"})
 			return
@@ -380,7 +380,7 @@ func main() {
 
 	// Get pending SMS inbox items
 	r.GET("/sms/pending", func(c *gin.Context) {
-		items, err = smsService.Pending(c.Request.Context())
+		items, err := smsService.Pending(c.Request.Context())
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not load inbox"})
 			return
@@ -398,7 +398,7 @@ func main() {
 			c.JSON(500, gin.H{"error": "could not load investments"})
 			return
 		}
-		c.JSON(200, gin.H{"positions": positions})
+		c.JSON(200, positions)
 	})
 
 	// Portfolio summary with allocation and freedom score
@@ -408,7 +408,24 @@ func main() {
 			c.JSON(500, gin.H{"error": "could not load portfolio summary"})
 			return
 		}
-		c.JSON(200, summary)
+		// Convert Portfolio to frontend expected format
+		allocationMap := make(map[string]float64)
+		for _, alloc := range summary.Allocation {
+			allocationMap[alloc.Type] = alloc.Percent
+		}
+		frontendSummary := map[string]interface{}{
+			"total_invested":      summary.TotalPrincipal,
+			"total_current_value": summary.TotalValue,
+			"total_growth":        summary.TotalGrowth,
+			"allocation":          allocationMap,
+			"freedom_score": map[string]interface{}{
+				"monthly_expenses":  summary.FreedomScore.MonthlyExpenses,
+				"estimated_passive": summary.FreedomScore.EstimatedPassive,
+				"coverage_percent":  summary.FreedomScore.CoveragePercent,
+				"message":           summary.FreedomScore.Message,
+			},
+		}
+		c.JSON(200, frontendSummary)
 	})
 
 	// Add a new position
@@ -416,6 +433,22 @@ func main() {
 		var input investments.CreateInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(400, gin.H{"error": "name, type, and principal are required"})
+			return
+		}
+		// Validate investment type
+		validTypes := map[string]bool{
+			"mmf":    true,
+			"tbill":  true,
+			"bond":   true,
+			"stock":  true,
+			"etf":    true,
+			"sacco":  true,
+			"fixed":  true,
+			"crypto": true,
+			"other":  true,
+		}
+		if !validTypes[input.Type] {
+			c.JSON(400, gin.H{"error": "invalid investment type"})
 			return
 		}
 		position, err := investmentsService.Create(c.Request.Context(), input)
