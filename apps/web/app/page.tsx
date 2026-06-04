@@ -55,6 +55,12 @@ type DashboardData = {
   bedtime_done: boolean;
   streak: number;
   freedom_coverage?: number;
+  companion?: {
+    emoji: string;
+    level: string;
+    streak_days: number;
+    xp_percent: number;
+  };
 };
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -144,6 +150,35 @@ export default function Dashboard() {
             calm financial companionship
           </p>
         </div>
+
+        {/* ── Companion widget ─────────────────────────────── */}
+        {data.companion && (
+          <a
+            href="/companion"
+            className="flex items-center gap-4 bg-white rounded-2xl border border-stone-100 shadow-sm px-5 py-4 mb-4 hover:bg-stone-50 transition-colors"
+          >
+            <span className="text-4xl select-none">{data.companion.emoji}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-sm font-medium text-stone-700 capitalize">
+                  {data.companion.level.replace("_", " ")}
+                </p>
+                {data.companion.streak_days > 0 && (
+                  <span className="text-xs text-amber-500 font-medium">
+                    🔥 {data.companion.streak_days}d
+                  </span>
+                )}
+              </div>
+              <div className="w-full bg-stone-100 rounded-full h-1.5">
+                <div
+                  className="h-1.5 bg-emerald-400 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(data.companion.xp_percent, 100)}%` }}
+                />
+              </div>
+            </div>
+            <span className="text-xs text-stone-400">→</span>
+          </a>
+        )}
 
         {/* ── Today card ──────────────────────────────────── */}
         <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
@@ -411,6 +446,12 @@ export default function Dashboard() {
             className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
           >
             📱 SMS
+          </a>
+          <a
+            href="/companion"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+          >
+            🌱 Companion
           </a>
           <a
             href="/capture"

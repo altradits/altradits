@@ -18,6 +18,15 @@ type Summary struct {
 	Streak              int                 `json:"streak"`
 	InvestmentsSnapshot InvestmentsSnapshot `json:"investments"`
 	FreedomCoverage     float64             `json:"freedom_coverage"`
+	Companion           CompanionSnapshot   `json:"companion"`
+}
+
+// CompanionSnapshot shows the companion state on the dashboard.
+type CompanionSnapshot struct {
+	Emoji      string  `json:"emoji"`
+	Level      string  `json:"level"`
+	StreakDays int     `json:"streak_days"`
+	XPPercent  float64 `json:"xp_percent"`
 }
 
 // InvestmentsSnapshot shows investment portfolio summary.
@@ -343,6 +352,40 @@ func (s *Service) Get(ctx context.Context) (*Summary, error) {
 		}
 	}
 	summary.FreedomCoverage = freedomCoverage
+
+	// ── Companion snapshot ────────────────────────────────────────────────────
+	var compEmoji, compLevel string
+	var compStreak, compXP, compXPToNext int
+
+	_ = s.db.QueryRow(ctx, `
+		SELECT companion::text, level::text, streak_days, xp, xp_to_next
+		FROM companion_state WHERE user_id IS NULL
+	`).Scan(&compEmoji, &compLevel, &compStreak, &compXP, &compXPToNext)
+
+	companionEmojis := map[string]map[string]string{
+		"seed":   {"sprout": "🌱", "growing": "🌿", "thriving": "🌳", "flourishing": "🌲"},
+		"puppy":  {"sprout": "🐾", "growing": "🐶", "thriving": "🐕", "flourishing": "🦮"},
+		"kitten": {"sprout": "🐾", "growing": "🐱", "thriving": "🐈", "flourishing": "🦁"},
+		"tree":   {"sprout": "🌱", "growing": "🌿", "thriving": "🌳", "flourishing": "🌲"},
+	}
+	emoji := "🌱"
+	if c, ok := companionEmojis[compEmoji]; ok {
+		if e, ok := c[compLevel]; ok {
+			emoji = e
+		}
+	}
+
+	xpPct := 0.0
+	if compXPToNext > 0 {
+		xpPct = float64(compXP) / float64(compXPToNext) * 100
+	}
+
+	summary.Companion = CompanionSnapshot{
+		Emoji:      emoji,
+		Level:      compLevel,
+		StreakDays: compStreak,
+		XPPercent:  xpPct,
+	}
 
 	return summary, nil
 }

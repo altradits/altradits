@@ -11,6 +11,7 @@ import (
 	"github.com/altradits/altradits/server/internal/budget"
 	"github.com/altradits/altradits/server/internal/capture"
 	"github.com/altradits/altradits/server/internal/coaching"
+	"github.com/altradits/altradits/server/internal/companion"
 	"github.com/altradits/altradits/server/internal/dashboard"
 	"github.com/altradits/altradits/server/internal/forecast"
 	"github.com/altradits/altradits/server/internal/freedom"
@@ -134,6 +135,58 @@ func main() {
 		c.JSON(200, summary)
 	})
 
+	// Companion routes
+	companionService := companion.NewService(pool)
+
+	r.GET("/companion", func(c *gin.Context) {
+		state, err := companionService.Get(c.Request.Context())
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not load companion"})
+			return
+		}
+		c.JSON(200, state)
+	})
+
+	r.POST("/companion/choose", func(c *gin.Context) {
+		var input companion.ChooseInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "companion is required"})
+			return
+		}
+		state, err := companionService.Choose(c.Request.Context(), input)
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{
+			"companion": state,
+			"message":   fmt.Sprintf("Meet your companion. %s", state.Emoji),
+		})
+	})
+
+	r.POST("/companion/checkin", func(c *gin.Context) {
+		var input companion.CheckinInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "event_type is required"})
+			return
+		}
+		state, err := companionService.Checkin(c.Request.Context(), input)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not update companion"})
+			return
+		}
+		c.JSON(200, state)
+	})
+
+	r.GET("/companion/history", func(c *gin.Context) {
+		history, err := companionService.History(c.Request.Context())
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not load history"})
+			return
+		}
+		c.JSON(200, gin.H{"events": history})
+	})
+
 	// API routes
 	captureService := capture.NewService(pool)
 
@@ -149,6 +202,14 @@ func main() {
 			c.JSON(422, gin.H{"error": err.Error()})
 			return
 		}
+
+		// Award companion XP for capture
+		go func() {
+			_, _ = companionService.Checkin(context.Background(), companion.CheckinInput{
+				EventType: "capture",
+				Note:      result.Transaction.Description,
+			})
+		}()
 
 		c.JSON(201, result)
 	})
@@ -197,6 +258,13 @@ func main() {
 			c.JSON(500, gin.H{"error": "could not close day"})
 			return
 		}
+		// Award companion XP for bedtime logoff
+		go func() {
+			_, _ = companionService.Checkin(context.Background(), companion.CheckinInput{
+				EventType: "bedtime",
+				Note:      "Bedtime logoff completed",
+			})
+		}()
 		c.JSON(200, gin.H{
 			"snapshot": snapshot,
 			"message":  "Day closed. Sleep well. 🌙",
@@ -314,6 +382,13 @@ func main() {
 			c.JSON(500, gin.H{"error": "could not update goal"})
 			return
 		}
+		// Award companion XP for goal contribution
+		go func() {
+			_, _ = companionService.Checkin(context.Background(), companion.CheckinInput{
+				EventType: "goal",
+				Note:      fmt.Sprintf("Contributed to %s", goal.Name),
+			})
+		}()
 		msg := fmt.Sprintf("Added KES %.0f to %s. 🌱", input.Amount, goal.Name)
 		if goal.Completed {
 			msg = fmt.Sprintf("🎉 You hit your %s target!", goal.Name)
