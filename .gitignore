@@ -31,3 +31,6 @@ go.work.sum
 # .idea/
 # .vscode/
 api
+
+# Go build output (default binary name on Linux)
+main
