@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api";
 
 type CategorySummary = {
   category: string;
@@ -68,7 +69,7 @@ export default function BedtimePage() {
   const [reflection, setReflection] = useState("");
 
   useEffect(() => {
-    fetch(`${API}/bedtime/review`)
+    apiFetch("/bedtime/review")
       .then((r) => r.json())
       .then((data) => {
         setReview(data.review);
@@ -84,9 +85,8 @@ export default function BedtimePage() {
   const handleClose = async () => {
     setClosing(true);
     try {
-      const res = await fetch(`${API}/bedtime/close`, {
+      const res = await apiFetch("/bedtime/close", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reflection, mood }),
       });
       const data = await res.json();

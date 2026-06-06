@@ -11,8 +11,12 @@ import (
 // GetInvestmentsHandler handles GET /investments
 func GetInvestmentsHandler(db *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := ""
+		if uid, exists := c.Get("user_id"); exists {
+			userID = uid.(string)
+		}
 		service := NewService(db)
-		positions, err := service.List(c.Request.Context())
+		positions, err := service.List(c.Request.Context(), userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not retrieve investments"})
 			return
@@ -58,13 +62,17 @@ func GetInvestmentsHandler(db *pgxpool.Pool) gin.HandlerFunc {
 // CreateInvestmentHandler handles POST /investments
 func CreateInvestmentHandler(db *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := ""
+		if uid, exists := c.Get("user_id"); exists {
+			userID = uid.(string)
+		}
 		var input CreateInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid investment data"})
 			return
 		}
 		service := NewService(db)
-		createdInv, err := service.Create(c.Request.Context(), input)
+		createdInv, err := service.Create(c.Request.Context(), userID, input)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create investment"})
 			return
@@ -107,6 +115,10 @@ func CreateInvestmentHandler(db *pgxpool.Pool) gin.HandlerFunc {
 // UpdateInvestmentHandler handles PUT /investments/:id
 func UpdateInvestmentHandler(db *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := ""
+		if uid, exists := c.Get("user_id"); exists {
+			userID = uid.(string)
+		}
 		id := c.Param("id")
 		if id == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "investment ID is required"})
@@ -120,7 +132,7 @@ func UpdateInvestmentHandler(db *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		service := NewService(db)
-		updatedInv, err := service.Update(c.Request.Context(), id, input)
+		updatedInv, err := service.Update(c.Request.Context(), userID, id, input)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not update investment"})
 			return
@@ -163,6 +175,10 @@ func UpdateInvestmentHandler(db *pgxpool.Pool) gin.HandlerFunc {
 // DeleteInvestmentHandler handles DELETE /investments/:id
 func DeleteInvestmentHandler(db *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := ""
+		if uid, exists := c.Get("user_id"); exists {
+			userID = uid.(string)
+		}
 		id := c.Param("id")
 		if id == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "investment ID is required"})
@@ -170,7 +186,7 @@ func DeleteInvestmentHandler(db *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		service := NewService(db)
-		err := service.Delete(c.Request.Context(), id)
+		err := service.Delete(c.Request.Context(), userID, id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not delete investment"})
 			return
@@ -182,8 +198,12 @@ func DeleteInvestmentHandler(db *pgxpool.Pool) gin.HandlerFunc {
 // GetInvestmentSummaryHandler handles GET /investments/summary
 func GetInvestmentSummaryHandler(db *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := ""
+		if uid, exists := c.Get("user_id"); exists {
+			userID = uid.(string)
+		}
 		service := NewService(db)
-		summary, err := service.Summary(c.Request.Context())
+		summary, err := service.Summary(c.Request.Context(), userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not retrieve investment summary"})
 			return

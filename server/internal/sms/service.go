@@ -68,7 +68,7 @@ func NewService(db *pgxpool.Pool) *Service {
 
 // Parse parses a raw SMS string and stores it in the inbox as pending.
 // The transaction is NOT saved until the user calls Confirm.
-func (s *Service) Parse(ctx context.Context, rawText string) (*ParseResponse, error) {
+func (s *Service) Parse(ctx context.Context, userID, rawText string) (*ParseResponse, error) {
 	result := Parse(rawText)
 
 	if result == nil || result.Amount <= 0 {
@@ -76,9 +76,9 @@ func (s *Service) Parse(ctx context.Context, rawText string) (*ParseResponse, er
 		var id string
 		err := s.db.QueryRow(ctx, `
 			INSERT INTO sms_inbox (user_id, raw_text, sender, confidence, status)
-			VALUES (NULL, $1, 'Unknown', 0, 'pending')
+			VALUES ($1, $2, 'Unknown', 0, 'pending')
 			RETURNING id::text
-		`, rawText).Scan(&id)
+		`, userID, rawText).Scan(&id)
 		if err != nil {
 			return nil, err
 		}
@@ -95,9 +95,9 @@ func (s *Service) Parse(ctx context.Context, rawText string) (*ParseResponse, er
 	err := s.db.QueryRow(ctx, `
 		INSERT INTO sms_inbox
 			(user_id, raw_text, sender, parsed_amount, parsed_desc, parsed_category, parsed_type, confidence, status)
-		VALUES (NULL, $1, $2, $3, $4, $5, $6, $7, 'pending')
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
 		RETURNING id::text
-	`, rawText, result.Sender, result.Amount,
+	`, userID, rawText, result.Sender, result.Amount,
 		result.Recipient, result.Category, result.TxType, result.Confidence).
 		Scan(&id)
 	if err != nil {
@@ -123,14 +123,14 @@ func (s *Service) Parse(ctx context.Context, rawText string) (*ParseResponse, er
 
 // Confirm saves the SMS as a real transaction and marks it confirmed.
 // This is the only way a transaction gets created from an SMS.
-func (s *Service) Confirm(ctx context.Context, req ConfirmRequest) (*ConfirmResponse, error) {
+func (s *Service) Confirm(ctx context.Context, userID string, req ConfirmRequest) (*ConfirmResponse, error) {
 	// Save the transaction
 	var txID string
 	err := s.db.QueryRow(ctx, `
 		INSERT INTO transactions (user_id, raw_input, description, amount, category, source, updated_at)
-		VALUES (NULL, $1, $2, $3, $4, 'sms', NOW())
+		VALUES ($1, $2, $3, $4, $5, 'sms', NOW())
 		RETURNING id::text
-	`, req.Description, req.Description, req.Amount, req.Category).
+	`, userID, req.Description, req.Description, req.Amount, req.Category).
 		Scan(&txID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save transaction: %w", err)
@@ -166,16 +166,16 @@ func (s *Service) Dismiss(ctx context.Context, inboxID string) error {
 }
 
 // Pending returns all pending (unconfirmed) SMS inbox items.
-func (s *Service) Pending(ctx context.Context) ([]*InboxItem, error) {
+func (s *Service) Pending(ctx context.Context, userID string) ([]*InboxItem, error) {
 	rows, err := s.db.Query(ctx, `
 		SELECT id::text, COALESCE(sender,''), raw_text,
 		       parsed_desc, parsed_amount, parsed_category, parsed_type,
 		       confidence, status::text, received_at
 		FROM sms_inbox
-		WHERE user_id IS NULL AND status = 'pending'
+		WHERE user_id = $1 AND status = 'pending'
 		ORDER BY received_at DESC
 		LIMIT 20
-	`)
+	`, userID)
 	if err != nil {
 		return nil, err
 	}

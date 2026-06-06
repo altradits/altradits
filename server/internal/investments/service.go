@@ -76,13 +76,13 @@ type UpdateInput struct {
 var typeLabel = map[string]string{
 	"mmf":    "Money Market",
 	"tbill":  "Treasury Bills",
-	"bond":   "Bonds",
-	"stock":  "Stocks",
-	"etf":    "ETFs",
-	"sacco":  "SACCO",
-	"fixed":  "Fixed Deposit",
-	"crypto": "Crypto",
-	"other":  "Other",
+	"bond":    "Bonds",
+	"stock":   "Stocks",
+	"etf":     "ETFs",
+	"sacco":   "SACCO",
+	"fixed":   "Fixed Deposit",
+	"crypto":  "Crypto",
+	"other":   "Other",
 }
 
 // estimatedAnnualReturn gives a rough annual return rate by asset type.
@@ -118,7 +118,7 @@ func hydrate(p *Position) {
 }
 
 // List returns all active investment positions.
-func (s *Service) List(ctx context.Context) ([]*Position, error) {
+func (s *Service) List(ctx context.Context, userID string) ([]*Position, error) {
 	rows, err := s.db.Query(ctx, `
 		SELECT
 			id::text, name, COALESCE(institution,''), type::text,
@@ -129,9 +129,9 @@ func (s *Service) List(ctx context.Context) ([]*Position, error) {
 			TO_CHAR(matures_at, 'YYYY-MM-DD'),
 			created_at
 		FROM investments
-		WHERE user_id IS NULL AND is_active = TRUE
+		WHERE user_id = $1 AND is_active = TRUE
 		ORDER BY current_value DESC
-	`)
+	`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -155,8 +155,8 @@ func (s *Service) List(ctx context.Context) ([]*Position, error) {
 }
 
 // Summary returns the portfolio-level aggregation.
-func (s *Service) Summary(ctx context.Context) (*Portfolio, error) {
-	positions, err := s.List(ctx)
+func (s *Service) Summary(ctx context.Context, userID string) (*Portfolio, error) {
+	positions, err := s.List(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -211,8 +211,8 @@ func (s *Service) Summary(ctx context.Context) (*Portfolio, error) {
 	_ = s.db.QueryRow(ctx, `
 		SELECT COALESCE(SUM(amount), 0) / 3.0
 		FROM transactions
-		WHERE created_at >= NOW() - INTERVAL '3 months'
-	`).Scan(&avgMonthlyExpenses)
+		WHERE created_at >= NOW() - INTERVAL '3 months' AND user_id = $1
+	`, userID).Scan(&avgMonthlyExpenses)
 
 	coveragePct := 0.0
 	if avgMonthlyExpenses > 0 {
@@ -241,7 +241,7 @@ func (s *Service) Summary(ctx context.Context) (*Portfolio, error) {
 }
 
 // Create adds a new investment position.
-func (s *Service) Create(ctx context.Context, input CreateInput) (*Position, error) {
+func (s *Service) Create(ctx context.Context, userID string, input CreateInput) (*Position, error) {
 	currentValue := input.CurrentValue
 	if currentValue == 0 {
 		currentValue = input.Principal
@@ -263,8 +263,8 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Position, err
 	var p Position
 	err := s.db.QueryRow(ctx, `
 		INSERT INTO investments
-			(name, institution, type, principal, current_value, currency, notes, started_at, matures_at)
-		VALUES ($1, $2, $3::investment_type, $4, $5, 'KES', $6, $7, $8)
+			(user_id, name, institution, type, principal, current_value, currency, notes, started_at, matures_at)
+		VALUES ($1, $2, $3, $4::investment_type, $5, $6, 'KES', $7, $8, $9)
 		RETURNING
 			id::text, name, COALESCE(institution,''), type::text,
 			principal, current_value, currency,
@@ -272,7 +272,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Position, err
 			TO_CHAR(started_at, 'YYYY-MM-DD'),
 			TO_CHAR(matures_at, 'YYYY-MM-DD'),
 			created_at
-	`, input.Name, input.Institution, input.Type, input.Principal,
+	`, userID, input.Name, input.Institution, input.Type, input.Principal,
 		currentValue, notes, startedAt, maturesAt).
 		Scan(&p.ID, &p.Name, &p.Institution, &p.Type,
 			&p.Principal, &p.CurrentValue, &p.Currency,
@@ -286,14 +286,14 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Position, err
 }
 
 // Update updates the current value of an investment.
-func (s *Service) Update(ctx context.Context, id string, input UpdateInput) (*Position, error) {
+func (s *Service) Update(ctx context.Context, userID, id string, input UpdateInput) (*Position, error) {
 	var p Position
 	err := s.db.QueryRow(ctx, `
 		UPDATE investments
 		SET current_value = $2,
 		    notes = COALESCE(NULLIF($3,''), notes),
 		    updated_at = NOW()
-		WHERE id = $1::uuid AND user_id IS NULL
+		WHERE id = $1::uuid AND user_id = $4
 		RETURNING
 			id::text, name, COALESCE(institution,''), type::text,
 			principal, current_value, currency,
@@ -301,7 +301,7 @@ func (s *Service) Update(ctx context.Context, id string, input UpdateInput) (*Po
 			TO_CHAR(started_at, 'YYYY-MM-DD'),
 			TO_CHAR(matures_at, 'YYYY-MM-DD'),
 			created_at
-	`, id, input.CurrentValue, input.Notes).
+	`, id, input.CurrentValue, input.Notes, userID).
 		Scan(&p.ID, &p.Name, &p.Institution, &p.Type,
 			&p.Principal, &p.CurrentValue, &p.Currency,
 			&p.Notes, &p.IsActive, &p.StartedAt, &p.MaturesAt,
@@ -314,16 +314,16 @@ func (s *Service) Update(ctx context.Context, id string, input UpdateInput) (*Po
 }
 
 // Delete soft-deletes an investment by setting is_active = false.
-func (s *Service) Delete(ctx context.Context, id string) error {
+func (s *Service) Delete(ctx context.Context, userID, id string) error {
 	_, err := s.db.Exec(ctx, `
 		UPDATE investments SET is_active = FALSE, updated_at = NOW()
-		WHERE id = $1::uuid AND user_id IS NULL
-	`, id)
+		WHERE id = $1::uuid AND user_id = $2
+	`, id, userID)
 	return err
 }
 
 // GetByID retrieves an investment by its ID.
-func (s *Service) GetByID(ctx context.Context, id string) (*Position, error) {
+func (s *Service) GetByID(ctx context.Context, userID, id string) (*Position, error) {
 	var p Position
 	err := s.db.QueryRow(ctx, `
 		SELECT
@@ -335,7 +335,7 @@ func (s *Service) GetByID(ctx context.Context, id string) (*Position, error) {
 			TO_CHAR(matures_at, 'YYYY-MM-DD'),
 			created_at
 		FROM investments
-		WHERE id = $1 AND user_id IS NULL
+		WHERE id = $1 AND user_id = $2
 	`).Scan(
 		&p.ID, &p.Name, &p.Institution, &p.Type,
 		&p.Principal, &p.CurrentValue, &p.Currency,

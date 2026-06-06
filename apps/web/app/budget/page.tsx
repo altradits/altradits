@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 type CategoryBudget = {
   id: string;
@@ -64,7 +65,7 @@ export default function BudgetPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const load = () => {
-    fetch(`${API}/budget`)
+    apiFetch("/budget")
       .then((r) => r.json())
       .then((data) => {
         setBudgets(data.budgets || []);
@@ -93,9 +94,8 @@ export default function BudgetPage() {
 
     setSaving(true);
     try {
-      const res = await fetch(`${API}/budget`, {
+      const res = await apiFetch("/budget", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ category, amount }),
       });
       const data = await res.json();

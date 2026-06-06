@@ -41,7 +41,7 @@ type CaptureResult struct {
 }
 
 // Save parses and persists a raw capture input.
-func (s *Service) Save(ctx context.Context, raw string) (*CaptureResult, error) {
+func (s *Service) Save(ctx context.Context, userID, raw string) (*CaptureResult, error) {
 	entry, err := Parse(raw)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse input: %w", err)
@@ -49,10 +49,10 @@ func (s *Service) Save(ctx context.Context, raw string) (*CaptureResult, error) 
 
 	var tx Transaction
 	err = s.db.QueryRow(ctx, `
-		INSERT INTO transactions (raw_input, description, amount, category, source)
-		VALUES ($1, $2, $3, $4, 'manual')
+		INSERT INTO transactions (user_id, raw_input, description, amount, category, source)
+		VALUES ($1, $2, $3, $4, $5, 'manual')
 		RETURNING id, raw_input, description, amount, category, source, created_at
-	`, entry.RawInput, entry.Description, entry.Amount, entry.Category).
+	`, userID, entry.RawInput, entry.Description, entry.Amount, entry.Category).
 		Scan(&tx.ID, &tx.RawInput, &tx.Description, &tx.Amount, &tx.Category, &tx.Source, &tx.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save transaction: %w", err)
@@ -65,7 +65,7 @@ func (s *Service) Save(ctx context.Context, raw string) (*CaptureResult, error) 
 }
 
 // Recent returns the last N transactions.
-func (s *Service) Recent(ctx context.Context, limit int) ([]*Transaction, error) {
+func (s *Service) Recent(ctx context.Context, userID string, limit int) ([]*Transaction, error) {
 	if limit <= 0 || limit > 50 {
 		limit = 10
 	}
@@ -73,9 +73,10 @@ func (s *Service) Recent(ctx context.Context, limit int) ([]*Transaction, error)
 	rows, err := s.db.Query(ctx, `
 		SELECT id, raw_input, description, amount, category, source, created_at
 		FROM transactions
+		WHERE user_id = $1
 		ORDER BY created_at DESC
-		LIMIT $1
-	`, limit)
+		LIMIT $2
+	`, userID, limit)
 	if err != nil {
 		return nil, err
 	}

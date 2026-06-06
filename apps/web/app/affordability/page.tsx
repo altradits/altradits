@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 type GoalImpact = {
   goal_name: string;
@@ -66,9 +67,8 @@ export default function AffordabilityPage() {
     setError(null);
 
     try {
-      const res = await fetch(`${API}/affordability/check`, {
+      const res = await apiFetch("/affordability/check", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ item: item.trim(), amount: amt }),
       });
       const data = await res.json();

@@ -70,7 +70,7 @@ func NewService(db *pgxpool.Pool, coaching CoachingGenerator) *Service {
 }
 
 // TodayReview returns a spending summary for today.
-func (s *Service) TodayReview(ctx context.Context) (*DayReview, error) {
+func (s *Service) TodayReview(ctx context.Context, userID string) (*DayReview, error) {
 	today := time.Now().Format("2006-01-02")
 
 	// Check if already closed today
@@ -79,8 +79,8 @@ func (s *Service) TodayReview(ctx context.Context) (*DayReview, error) {
 	_ = s.db.QueryRow(ctx, `
 		SELECT id::text, TO_CHAR(closed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"')
 		FROM daily_snapshots
-		WHERE snapshot_date = $1 AND user_id IS NULL
-	`, today).Scan(&snapshotID, &closedAt)
+		WHERE snapshot_date = $1 AND user_id = $2
+	`, today, userID).Scan(&snapshotID, &closedAt)
 
 	alreadyClosed := closedAt != nil
 
@@ -90,17 +90,17 @@ func (s *Service) TodayReview(ctx context.Context) (*DayReview, error) {
 	_ = s.db.QueryRow(ctx, `
 		SELECT COALESCE(SUM(amount), 0), COUNT(*)
 		FROM transactions
-		WHERE DATE(created_at AT TIME ZONE 'Africa/Nairobi') = $1
-	`, today).Scan(&totalSpent, &totalEntries)
+		WHERE DATE(created_at AT TIME ZONE 'Africa/Nairobi') = $1 AND user_id = $2
+	`, today, userID).Scan(&totalSpent, &totalEntries)
 
 	// Get category breakdown
 	rows, err := s.db.Query(ctx, `
 		SELECT category, SUM(amount) as total, COUNT(*) as cnt
 		FROM transactions
-		WHERE DATE(created_at AT TIME ZONE 'Africa/Nairobi') = $1
+		WHERE DATE(created_at AT TIME ZONE 'Africa/Nairobi') = $1 AND user_id = $2
 		GROUP BY category
 		ORDER BY total DESC
-	`, today)
+	`, today, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -126,8 +126,8 @@ func (s *Service) TodayReview(ctx context.Context) (*DayReview, error) {
 }
 
 // Close saves the daily snapshot and marks the day as closed.
-func (s *Service) Close(ctx context.Context, input CloseInput) (*Snapshot, error) {
-	review, err := s.TodayReview(ctx)
+func (s *Service) Close(ctx context.Context, userID string, input CloseInput) (*Snapshot, error) {
+	review, err := s.TodayReview(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -161,11 +161,10 @@ func (s *Service) Close(ctx context.Context, input CloseInput) (*Snapshot, error
 	var snap Snapshot
 	err = s.db.QueryRow(ctx, `
 		INSERT INTO daily_snapshots
-			(snapshot_date, total_spent, total_entries, top_category,
+			(user_id, snapshot_date, total_spent, total_entries, top_category,
 			 reflection, mood, coaching_note, tomorrow_preview, closed_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-		ON CONFLICT (snapshot_date) WHERE user_id IS NULL
-		DO UPDATE SET
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+		ON CONFLICT (user_id, snapshot_date) DO UPDATE SET
 			total_spent      = EXCLUDED.total_spent,
 			total_entries    = EXCLUDED.total_entries,
 			top_category     = EXCLUDED.top_category,
@@ -178,7 +177,7 @@ func (s *Service) Close(ctx context.Context, input CloseInput) (*Snapshot, error
 			id::text, snapshot_date::text, total_spent, total_entries,
 			top_category, reflection, mood, coaching_note, tomorrow_preview,
 			TO_CHAR(closed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"')
-	`, today, review.TotalSpent, review.TotalEntries, topCategory,
+	`, userID, today, review.TotalSpent, review.TotalEntries, topCategory,
 		reflection, mood, coachingNote.Note, coachingNote.TomorrowHint).
 		Scan(&snap.ID, &snap.SnapshotDate, &snap.TotalSpent, &snap.TotalEntries,
 			&snap.TopCategory, &snap.Reflection, &snap.Mood,
@@ -191,7 +190,7 @@ func (s *Service) Close(ctx context.Context, input CloseInput) (*Snapshot, error
 }
 
 // History returns the last N daily snapshots.
-func (s *Service) History(ctx context.Context, limit int) ([]*Snapshot, error) {
+func (s *Service) History(ctx context.Context, userID string, limit int) ([]*Snapshot, error) {
 	if limit <= 0 || limit > 30 {
 		limit = 7
 	}
@@ -200,10 +199,10 @@ func (s *Service) History(ctx context.Context, limit int) ([]*Snapshot, error) {
 		       top_category, reflection, mood, coaching_note, tomorrow_preview,
 		       TO_CHAR(closed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"')
 		FROM daily_snapshots
-		WHERE user_id IS NULL
+		WHERE user_id = $1
 		ORDER BY snapshot_date DESC
-		LIMIT $1
-	`, limit)
+		LIMIT $2
+	`, userID, limit)
 	if err != nil {
 		return nil, err
 	}

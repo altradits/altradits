@@ -111,7 +111,7 @@ func greeting() string {
 }
 
 // Get assembles the full dashboard summary.
-func (s *Service) Get(ctx context.Context) (*Summary, error) {
+func (s *Service) Get(ctx context.Context, userID string) (*Summary, error) {
 	now := time.Now()
 	today := now.Format("2006-01-02")
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
@@ -131,29 +131,29 @@ func (s *Service) Get(ctx context.Context) (*Summary, error) {
 	_ = s.db.QueryRow(ctx, `
 		SELECT COALESCE(SUM(amount), 0), COUNT(*)
 		FROM transactions
-		WHERE DATE(created_at) = $1
-	`, today).Scan(&totalSpent, &entryCount)
+		WHERE DATE(created_at) = $1 AND user_id = $2
+	`, today, userID).Scan(&totalSpent, &entryCount)
 
 	// Top category today
 	var topCategory string
 	_ = s.db.QueryRow(ctx, `
 		SELECT category
 		FROM transactions
-		WHERE DATE(created_at) = $1
+		WHERE DATE(created_at) = $1 AND user_id = $2
 		GROUP BY category
 		ORDER BY SUM(amount) DESC
 		LIMIT 1
-	`, today).Scan(&topCategory)
+	`, today, userID).Scan(&topCategory)
 
 	// Recent items (last 3)
 	rows, err := s.db.Query(ctx, `
 		SELECT description, amount, category,
 		       TO_CHAR(created_at AT TIME ZONE 'UTC', 'HH24:MI') as time
 		FROM transactions
-		WHERE DATE(created_at) = $1
+		WHERE DATE(created_at) = $1 AND user_id = $2
 		ORDER BY created_at DESC
 		LIMIT 3
-	`, today)
+	`, today, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -180,14 +180,14 @@ func (s *Service) Get(ctx context.Context) (*Summary, error) {
 	// ── Budget snapshot ───────────────────────────────────────────────────
 	var totalAllocated, totalSpentMonth float64
 	_ = s.db.QueryRow(ctx, `
-		SELECT COALESCE(SUM(amount), 0) FROM budgets WHERE user_id IS NULL
-	`).Scan(&totalAllocated)
+		SELECT COALESCE(SUM(amount), 0) FROM budgets WHERE user_id = $1
+	`, userID).Scan(&totalAllocated)
 
 	_ = s.db.QueryRow(ctx, `
 		SELECT COALESCE(SUM(amount), 0)
 		FROM transactions
-		WHERE created_at >= $1
-	`, monthStart).Scan(&totalSpentMonth)
+		WHERE created_at >= $1 AND user_id = $2
+	`, monthStart, userID).Scan(&totalSpentMonth)
 
 	// Top 3 categories by spend this month
 	catRows, err := s.db.Query(ctx, `
@@ -196,12 +196,12 @@ func (s *Service) Get(ctx context.Context) (*Summary, error) {
 			COALESCE(b.amount, 0) as allocated,
 			COALESCE(SUM(t.amount), 0) as spent
 		FROM transactions t
-		LEFT JOIN budgets b ON b.category = t.category AND b.user_id IS NULL
-		WHERE t.created_at >= $1
+		LEFT JOIN budgets b ON b.category = t.category AND b.user_id = $1
+		WHERE t.created_at >= $2 AND t.user_id = $1
 		GROUP BY t.category, b.amount
 		ORDER BY spent DESC
 		LIMIT 3
-	`, monthStart)
+	`, userID, monthStart)
 	if err != nil {
 		return nil, err
 	}
@@ -242,10 +242,10 @@ func (s *Service) Get(ctx context.Context) (*Summary, error) {
 	goalRows, err := s.db.Query(ctx, `
 		SELECT id::text, name, emoji, target, saved
 		FROM goals
-		WHERE user_id IS NULL AND completed = FALSE
+		WHERE user_id = $1 AND completed = FALSE
 		ORDER BY (saved / NULLIF(target, 0)) DESC
 		LIMIT 3
-	`)
+	`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -269,8 +269,8 @@ func (s *Service) Get(ctx context.Context) (*Summary, error) {
 
 	// Get total active count
 	_ = s.db.QueryRow(ctx, `
-		SELECT COUNT(*) FROM goals WHERE user_id IS NULL AND completed = FALSE
-	`).Scan(&activeCount)
+		SELECT COUNT(*) FROM goals WHERE user_id = $1 AND completed = FALSE
+	`, userID).Scan(&activeCount)
 
 	summary.Goals = GoalsSnapshot{
 		ActiveCount: activeCount,
@@ -286,8 +286,8 @@ func (s *Service) Get(ctx context.Context) (*Summary, error) {
 			COALESCE(SUM(current_value - principal), 0),
 			COUNT(*)
 		FROM investments
-		WHERE user_id IS NULL AND is_active = TRUE
-	`).Scan(&invTotalValue, &invTotalGrowth, &invCount)
+		WHERE user_id = $1 AND is_active = TRUE
+	`, userID).Scan(&invTotalValue, &invTotalGrowth, &invCount)
 
 	if invTotalGrowth > 0 {
 		invGrowthPct = (invTotalGrowth / (invTotalValue - invTotalGrowth)) * 100
@@ -305,8 +305,8 @@ func (s *Service) Get(ctx context.Context) (*Summary, error) {
 	_ = s.db.QueryRow(ctx, `
 		SELECT TO_CHAR(closed_at, 'HH24:MI')
 		FROM daily_snapshots
-		WHERE snapshot_date = $1 AND user_id IS NULL AND closed_at IS NOT NULL
-	`, today).Scan(&closedAt)
+		WHERE snapshot_date = $1 AND user_id = $2 AND closed_at IS NOT NULL
+	`, today, userID).Scan(&closedAt)
 	summary.BedtimeDone = closedAt != nil
 
 	// ── Streak (consecutive days closed) ─────────────────────────────────
@@ -317,17 +317,17 @@ func (s *Service) Get(ctx context.Context) (*Summary, error) {
 			SELECT snapshot_date,
 				   snapshot_date - ROW_NUMBER() OVER (ORDER BY snapshot_date DESC)::integer AS grp
 			FROM daily_snapshots
-			WHERE user_id IS NULL AND closed_at IS NOT NULL
+			WHERE user_id = $1 AND closed_at IS NOT NULL
 			ORDER BY snapshot_date DESC
 		) t
 		WHERE grp = (
 			SELECT snapshot_date - 1
 			FROM daily_snapshots
-			WHERE user_id IS NULL AND closed_at IS NOT NULL
+			WHERE user_id = $1 AND closed_at IS NOT NULL
 			ORDER BY snapshot_date DESC
 			LIMIT 1
 		)
-	`).Scan(&streak)
+	`, userID).Scan(&streak)
 	summary.Streak = streak
 
 	// ── Freedom snapshot ──────────────────────────────────────────────────────
@@ -335,14 +335,14 @@ func (s *Service) Get(ctx context.Context) (*Summary, error) {
 	monthStart3 := now.AddDate(0, -3, 0)
 
 	_ = s.db.QueryRow(ctx, `
-		SELECT COALESCE(SUM(amount),0)/3.0 FROM transactions WHERE created_at >= $1
-	`, monthStart3).Scan(&freedomExpenses)
+		SELECT COALESCE(SUM(amount),0)/3.0 FROM transactions WHERE created_at >= $1 AND user_id = $2
+	`, monthStart3, userID).Scan(&freedomExpenses)
 
 	// Use investment portfolio * conservative 10% annual return / 12
 	_ = s.db.QueryRow(ctx, `
 		SELECT COALESCE(SUM(current_value)*0.10/12, 0)
-		FROM investments WHERE user_id IS NULL AND is_active = TRUE
-	`).Scan(&freedomPassive)
+		FROM investments WHERE user_id = $1 AND is_active = TRUE
+	`, userID).Scan(&freedomPassive)
 
 	freedomCoverage := 0.0
 	if freedomExpenses > 0 {
@@ -359,8 +359,8 @@ func (s *Service) Get(ctx context.Context) (*Summary, error) {
 
 	_ = s.db.QueryRow(ctx, `
 		SELECT companion::text, level::text, streak_days, xp, xp_to_next
-		FROM companion_state WHERE user_id IS NULL
-	`).Scan(&compEmoji, &compLevel, &compStreak, &compXP, &compXPToNext)
+		FROM companion_state WHERE user_id = $1
+	`, userID).Scan(&compEmoji, &compLevel, &compStreak, &compXP, &compXPToNext)
 
 	companionEmojis := map[string]map[string]string{
 		"seed":   {"sprout": "🌱", "growing": "🌿", "thriving": "🌳", "flourishing": "🌲"},

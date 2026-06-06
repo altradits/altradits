@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api";
 
 type Milestone = {
   label: string;
@@ -67,8 +68,8 @@ export default function CompanionPage() {
 
   const load = () => {
     Promise.all([
-      fetch(`${API}/companion`).then((r) => r.json()),
-      fetch(`${API}/companion/history`).then((r) => r.json()),
+      apiFetch("/companion").then((r) => r.json()),
+      apiFetch("/companion/history").then((r) => r.json()),
     ]).then(([s, h]) => {
       setState(s);
       setHistory(h.events || []);
@@ -81,9 +82,8 @@ export default function CompanionPage() {
   const handleChoose = async (companionKey: string) => {
     setSaving(true);
     try {
-      const res = await fetch(`${API}/companion/choose`, {
+      const res = await apiFetch("/companion/choose", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ companion: companionKey }),
       });
       const data = await res.json();

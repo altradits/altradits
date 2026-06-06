@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { apiFetch } from "@/lib/api";
 
 type Transaction = {
   id: string;
@@ -35,7 +36,7 @@ export default function CapturePage() {
 
   // Load recent transactions on mount
   useEffect(() => {
-    fetch(`${API}/capture/recent`)
+    apiFetch("/capture/recent")
       .then((r) => r.json())
       .then((data) => setTransactions(data.transactions || []))
       .catch(() => {});
@@ -51,9 +52,8 @@ export default function CapturePage() {
     setError(null);
 
     try {
-      const res = await fetch(`${API}/capture`, {
+      const res = await apiFetch("/capture", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ raw }),
       });
 

@@ -164,7 +164,7 @@ func greeting(companion, level string) string {
 }
 
 // Get returns the current companion state.
-func (s *Service) Get(ctx context.Context) (*CompanionState, error) {
+func (s *Service) Get(ctx context.Context, userID string) (*CompanionState, error) {
 	var cs CompanionState
 	var milestonesJSON []byte
 	var lastCheckin *string
@@ -177,8 +177,8 @@ func (s *Service) Get(ctx context.Context) (*CompanionState, error) {
 			TO_CHAR(last_checkin, 'YYYY-MM-DD'),
 			milestones
 		FROM companion_state
-		WHERE user_id IS NULL
-	`).Scan(
+		WHERE user_id = $1
+	`, userID).Scan(
 		&cs.ID, &cs.Companion, &cs.Level,
 		&cs.XP, &cs.XPToNext, &cs.StreakDays, &cs.LongestStreak,
 		&cs.TotalCheckins, &lastCheckin, &milestonesJSON,
@@ -210,7 +210,7 @@ func (s *Service) Get(ctx context.Context) (*CompanionState, error) {
 }
 
 // Choose sets the user's companion choice.
-func (s *Service) Choose(ctx context.Context, input ChooseInput) (*CompanionState, error) {
+func (s *Service) Choose(ctx context.Context, userID string, input ChooseInput) (*CompanionState, error) {
 	valid := map[string]bool{"seed": true, "puppy": true, "kitten": true, "tree": true}
 	if !valid[input.Companion] {
 		return nil, fmt.Errorf("invalid companion: must be seed, puppy, kitten, or tree")
@@ -219,20 +219,20 @@ func (s *Service) Choose(ctx context.Context, input ChooseInput) (*CompanionStat
 	_, err := s.db.Exec(ctx, `
 		UPDATE companion_state
 		SET companion = $1::companion_type, updated_at = NOW()
-		WHERE user_id IS NULL
-	`, input.Companion)
+		WHERE user_id = $2
+	`, input.Companion, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set companion: %w", err)
 	}
 
-	return s.Get(ctx)
+	return s.Get(ctx, userID)
 }
 
 // Checkin awards XP for a behavioral event and handles leveling up.
-func (s *Service) Checkin(ctx context.Context, input CheckinInput) (*CompanionState, error) {
+func (s *Service) Checkin(ctx context.Context, userID string, input CheckinInput) (*CompanionState, error) {
 	xp := xpForEvent(input.EventType)
 	if xp == 0 {
-		return s.Get(ctx)
+		return s.Get(ctx, userID)
 	}
 
 	today := time.Now().Format("2006-01-02")
@@ -248,8 +248,8 @@ func (s *Service) Checkin(ctx context.Context, input CheckinInput) (*CompanionSt
 		       streak_days, longest_streak, total_checkins,
 		       TO_CHAR(last_checkin, 'YYYY-MM-DD'),
 		       milestones
-		FROM companion_state WHERE user_id IS NULL
-	`).Scan(&currentXP, &currentXPToNext, &currentLevel, &currentCompanion,
+		FROM companion_state WHERE user_id = $1
+	`, userID).Scan(&currentXP, &currentXPToNext, &currentLevel, &currentCompanion,
 		&streakDays, &longestStreak, &totalCheckins, &lastCheckin, &milestonesJSON)
 	if err != nil {
 		return nil, err
@@ -328,9 +328,9 @@ func (s *Service) Checkin(ctx context.Context, input CheckinInput) (*CompanionSt
 
 	// Save companion event
 	_, _ = s.db.Exec(ctx, `
-		INSERT INTO companion_events (event_type, xp_awarded, note)
-		VALUES ($1, $2, $3)
-	`, input.EventType, totalXP, input.Note)
+		INSERT INTO companion_events (user_id, event_type, xp_awarded, note)
+		VALUES ($1, $2, $3, $4)
+	`, userID, input.EventType, totalXP, input.Note)
 
 	// Update companion state
 	lastCheckinUpdate := today
@@ -349,26 +349,26 @@ func (s *Service) Checkin(ctx context.Context, input CheckinInput) (*CompanionSt
 			last_checkin   = $7::date,
 			milestones     = $8,
 			updated_at     = NOW()
-		WHERE user_id IS NULL
+		WHERE user_id = $9
 	`, newXP, newXPToNext, newLevel, streakDays, longestStreak,
-		totalCheckins, lastCheckinUpdate, milestonesData)
+		totalCheckins, lastCheckinUpdate, milestonesData, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update companion: %w", err)
 	}
 
-	return s.Get(ctx)
+	return s.Get(ctx, userID)
 }
 
 // History returns recent companion events.
-func (s *Service) History(ctx context.Context) ([]map[string]interface{}, error) {
+func (s *Service) History(ctx context.Context, userID string) ([]map[string]interface{}, error) {
 	rows, err := s.db.Query(ctx, `
 		SELECT event_type, xp_awarded, COALESCE(note,''),
 		       TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI')
 		FROM companion_events
-		WHERE user_id IS NULL
+		WHERE user_id = $1
 		ORDER BY created_at DESC
 		LIMIT 20
-	`)
+	`, userID)
 	if err != nil {
 		return nil, err
 	}

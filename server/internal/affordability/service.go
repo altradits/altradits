@@ -54,23 +54,23 @@ func NewService(db *pgxpool.Pool) *Service {
 }
 
 // Check evaluates whether the user can afford an item.
-func (s *Service) Check(ctx context.Context, input CheckInput) (*CheckResult, error) {
+func (s *Service) Check(ctx context.Context, userID string, input CheckInput) (*CheckResult, error) {
 	now := time.Now()
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 
 	// ── 1. Total budget allocated this month ─────────────────────────────
 	var totalAllocated float64
 	_ = s.db.QueryRow(ctx, `
-		SELECT COALESCE(SUM(amount), 0) FROM budgets WHERE user_id IS NULL
-	`).Scan(&totalAllocated)
+		SELECT COALESCE(SUM(amount), 0) FROM budgets WHERE user_id = $1
+	`, userID).Scan(&totalAllocated)
 
 	// ── 2. Total spent this month ─────────────────────────────────────────
 	var totalSpent float64
 	_ = s.db.QueryRow(ctx, `
 		SELECT COALESCE(SUM(amount), 0)
 		FROM transactions
-		WHERE created_at >= $1
-	`, monthStart).Scan(&totalSpent)
+		WHERE created_at >= $1 AND user_id = $2
+	`, monthStart, userID).Scan(&totalSpent)
 
 	// ── 3. Budget headroom ────────────────────────────────────────────────
 	headroom := totalAllocated - totalSpent
@@ -89,10 +89,10 @@ func (s *Service) Check(ctx context.Context, input CheckInput) (*CheckResult, er
 	err := s.db.QueryRow(ctx, `
 		SELECT id::text, name, emoji, target, saved
 		FROM goals
-		WHERE user_id IS NULL AND completed = FALSE AND target > 0
+		WHERE user_id = $1 AND completed = FALSE AND target > 0
 		ORDER BY (saved / target) DESC
 		LIMIT 1
-	`).Scan(&goalID, &goalName, &goalEmoji, &goalTarget, &goalSaved)
+	`, userID).Scan(&goalID, &goalName, &goalEmoji, &goalTarget, &goalSaved)
 
 	var goalImpact *GoalImpact
 	if err == nil && goalTarget > 0 {

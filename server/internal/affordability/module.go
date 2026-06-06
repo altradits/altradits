@@ -17,7 +17,12 @@ func AffordabilityCheckHandler(db *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		service := NewService(db)
-		result, err := service.Check(c.Request.Context(), input)
+		// For backward compatibility, use empty userID if not in context
+		userID := ""
+		if uid, exists := c.Get("user_id"); exists {
+			userID = uid.(string)
+		}
+		result, err := service.Check(c.Request.Context(), userID, input)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not check affordability"})
 			return

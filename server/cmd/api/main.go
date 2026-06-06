@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/altradits/altradits/server/internal/affordability"
+	"github.com/altradits/altradits/server/internal/auth"
 	"github.com/altradits/altradits/server/internal/bedtime"
 	"github.com/altradits/altradits/server/internal/budget"
 	"github.com/altradits/altradits/server/internal/capture"
@@ -32,7 +34,7 @@ type coachingAdapter struct {
 }
 
 func (a *coachingAdapter) Generate(ctx context.Context, mood, reflection string) (*bedtime.CoachingNote, error) {
-	result, err := a.service.Generate(ctx, mood, reflection)
+	result, err := a.service.Generate(ctx, "", mood, reflection)
 	if err != nil {
 		return nil, err
 	}
@@ -94,18 +96,18 @@ func main() {
 		MaxAge:           12 * 60 * 60, // 12 hours
 	}))
 
-	// Health check — place this with the other route registrations
+	// Initialize auth service
+	authService := auth.NewService(pool)
+
+	// Health check — public
 	r.GET("/health", func(c *gin.Context) {
 		dbOK := false
 		redisOK := false
 
-		// Check DB (use whatever pool/db variable already exists in main.go,
-		// or add a ping using the pool created in Step 3.4 below)
 		if pool != nil {
 			dbOK = pool.Ping(c.Request.Context()) == nil
 		}
 
-		// Check Redis (use the rdb variable created in Step 3.4 below)
 		if rdb != nil {
 			redisOK = rdb.Ping(c.Request.Context()).Err() == nil
 		}
@@ -124,10 +126,64 @@ func main() {
 		})
 	})
 
+	// Public auth routes — no JWT required
+	r.POST("/auth/register", func(c *gin.Context) {
+		var input auth.RegisterInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "name, email, and password (min 8 chars) are required"})
+			return
+		}
+		resp, err := authService.Register(c.Request.Context(), input)
+		if err != nil {
+			c.JSON(409, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(201, resp)
+	})
+	r.POST("/auth/login", func(c *gin.Context) {
+		var input auth.LoginInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "email and password are required"})
+			return
+		}
+		resp, err := authService.Login(c.Request.Context(), input)
+		if err != nil {
+			c.JSON(401, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, resp)
+	})
+
+	// All routes below this line require a valid JWT
+	api := r.Group("/")
+	api.Use(authService.Middleware())
+
+	// Auth profile routes (protected)
+	api.GET("/auth/me", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		user, err := authService.Me(c.Request.Context(), userID)
+		if err != nil {
+			c.JSON(404, gin.H{"error": "user not found"})
+			return
+		}
+		c.JSON(200, user)
+	})
+	api.POST("/auth/logout", func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		parts := strings.SplitN(authHeader, " ", 2)
+		token := ""
+		if len(parts) == 2 {
+			token = parts[1]
+		}
+		_ = authService.Logout(c.Request.Context(), token)
+		c.JSON(200, gin.H{"message": "Logged out."})
+	})
+
 	// Dashboard summary endpoint
 	dashboardService := dashboard.NewService(pool)
-	r.GET("/dashboard", func(c *gin.Context) {
-		summary, err := dashboardService.Get(c.Request.Context())
+	api.GET("/dashboard", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		summary, err := dashboardService.Get(c.Request.Context(), userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not load dashboard"})
 			return
@@ -138,8 +194,9 @@ func main() {
 	// Companion routes
 	companionService := companion.NewService(pool)
 
-	r.GET("/companion", func(c *gin.Context) {
-		state, err := companionService.Get(c.Request.Context())
+	api.GET("/companion", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		state, err := companionService.Get(c.Request.Context(), userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not load companion"})
 			return
@@ -147,13 +204,14 @@ func main() {
 		c.JSON(200, state)
 	})
 
-	r.POST("/companion/choose", func(c *gin.Context) {
+	api.POST("/companion/choose", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		var input companion.ChooseInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(400, gin.H{"error": "companion is required"})
 			return
 		}
-		state, err := companionService.Choose(c.Request.Context(), input)
+		state, err := companionService.Choose(c.Request.Context(), userID, input)
 		if err != nil {
 			c.JSON(400, gin.H{"error": err.Error()})
 			return
@@ -164,13 +222,14 @@ func main() {
 		})
 	})
 
-	r.POST("/companion/checkin", func(c *gin.Context) {
+	api.POST("/companion/checkin", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		var input companion.CheckinInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(400, gin.H{"error": "event_type is required"})
 			return
 		}
-		state, err := companionService.Checkin(c.Request.Context(), input)
+		state, err := companionService.Checkin(c.Request.Context(), userID, input)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not update companion"})
 			return
@@ -178,8 +237,9 @@ func main() {
 		c.JSON(200, state)
 	})
 
-	r.GET("/companion/history", func(c *gin.Context) {
-		history, err := companionService.History(c.Request.Context())
+	api.GET("/companion/history", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		history, err := companionService.History(c.Request.Context(), userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not load history"})
 			return
@@ -190,14 +250,15 @@ func main() {
 	// API routes
 	captureService := capture.NewService(pool)
 
-	r.POST("/capture", func(c *gin.Context) {
+	api.POST("/capture", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		var input capture.CaptureInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(400, gin.H{"error": "raw input is required"})
 			return
 		}
 
-		result, err := captureService.Save(c.Request.Context(), input.Raw)
+		result, err := captureService.Save(c.Request.Context(), userID, input.Raw)
 		if err != nil {
 			c.JSON(422, gin.H{"error": err.Error()})
 			return
@@ -205,7 +266,7 @@ func main() {
 
 		// Award companion XP for capture
 		go func() {
-			_, _ = companionService.Checkin(context.Background(), companion.CheckinInput{
+			_, _ = companionService.Checkin(context.Background(), "", companion.CheckinInput{
 				EventType: "capture",
 				Note:      result.Transaction.Description,
 			})
@@ -215,8 +276,9 @@ func main() {
 	})
 
 	// Add a GET route to fetch recent transactions (add after /capture):
-	r.GET("/capture/recent", func(c *gin.Context) {
-		txns, err := captureService.Recent(c.Request.Context(), 10)
+	api.GET("/capture/recent", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		txns, err := captureService.Recent(c.Request.Context(), userID, 10)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not fetch transactions"})
 			return
@@ -228,13 +290,14 @@ func main() {
 	bedtimeService := bedtime.NewService(pool, &coachingAdapter{service: coachingService})
 
 	// Get today's spending review (step 1 of the bedtime flow)
-	r.GET("/bedtime/review", func(c *gin.Context) {
-		review, err := bedtimeService.TodayReview(c.Request.Context())
+	api.GET("/bedtime/review", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		review, err := bedtimeService.TodayReview(c.Request.Context(), userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not load today's review"})
 			return
 		}
-		coachingResult, err := coachingService.Generate(c.Request.Context(), "", "")
+		coachingResult, err := coachingService.Generate(c.Request.Context(), userID, "", "")
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not generate coaching"})
 			return
@@ -247,20 +310,21 @@ func main() {
 	})
 
 	// Close the day (final step of the bedtime flow)
-	r.POST("/bedtime/close", func(c *gin.Context) {
+	api.POST("/bedtime/close", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		var input bedtime.CloseInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(400, gin.H{"error": "invalid input"})
 			return
 		}
-		snapshot, err := bedtimeService.Close(c.Request.Context(), input)
+		snapshot, err := bedtimeService.Close(c.Request.Context(), userID, input)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not close day"})
 			return
 		}
 		// Award companion XP for bedtime logoff
 		go func() {
-			_, _ = companionService.Checkin(context.Background(), companion.CheckinInput{
+			_, _ = companionService.Checkin(context.Background(), "", companion.CheckinInput{
 				EventType: "bedtime",
 				Note:      "Bedtime logoff completed",
 			})
@@ -272,8 +336,9 @@ func main() {
 	})
 
 	// Get recent daily snapshots (history)
-	r.GET("/bedtime/history", func(c *gin.Context) {
-		history, err := bedtimeService.History(c.Request.Context(), 7)
+	api.GET("/bedtime/history", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		history, err := bedtimeService.History(c.Request.Context(), userID, 7)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not load history"})
 			return
@@ -282,14 +347,15 @@ func main() {
 	})
 
 	// Generate a coaching note on demand
-	r.POST("/coaching/note", func(c *gin.Context) {
+	api.POST("/coaching/note", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		var input struct {
 			Mood       string `json:"mood"`
 			Reflection string `json:"reflection"`
 		}
 		_ = c.ShouldBindJSON(&input)
 
-		note, err := coachingService.Generate(c.Request.Context(), input.Mood, input.Reflection)
+		note, err := coachingService.Generate(c.Request.Context(), userID, input.Mood, input.Reflection)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not generate coaching note"})
 			return
@@ -299,13 +365,14 @@ func main() {
 
 	affordabilityService := affordability.NewService(pool)
 
-	r.POST("/affordability/check", func(c *gin.Context) {
+	api.POST("/affordability/check", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		var input affordability.CheckInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(400, gin.H{"error": "item and amount are required"})
 			return
 		}
-		result, err := affordabilityService.Check(c.Request.Context(), input)
+		result, err := affordabilityService.Check(c.Request.Context(), userID, input)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not check affordability"})
 			return
@@ -316,8 +383,9 @@ func main() {
 
 	budgetService := budget.NewService(pool)
 
-	r.GET("/budget", func(c *gin.Context) {
-		summary, err := budgetService.Summary(c.Request.Context())
+	api.GET("/budget", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		summary, err := budgetService.Summary(c.Request.Context(), userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not load budget"})
 			return
@@ -325,13 +393,14 @@ func main() {
 		c.JSON(200, gin.H{"budgets": summary})
 	})
 
-	r.POST("/budget", func(c *gin.Context) {
+	api.POST("/budget", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		var input budget.UpdateInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(400, gin.H{"error": "category and amount are required"})
 			return
 		}
-		updated, err := budgetService.Update(c.Request.Context(), input.Category, input.Amount)
+		updated, err := budgetService.Update(c.Request.Context(), userID, input.Category, input.Amount)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not update budget"})
 			return
@@ -342,8 +411,9 @@ func main() {
 	goalsService := goals.NewService(pool)
 
 	// List all goals
-	r.GET("/goals", func(c *gin.Context) {
-		list, err := goalsService.List(c.Request.Context())
+	api.GET("/goals", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		list, err := goalsService.List(c.Request.Context(), userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not load goals"})
 			return
@@ -352,13 +422,14 @@ func main() {
 	})
 
 	// Create a new goal
-	r.POST("/goals", func(c *gin.Context) {
+	api.POST("/goals", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		var input goals.CreateInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(400, gin.H{"error": "name and target are required"})
 			return
 		}
-		goal, err := goalsService.Create(c.Request.Context(), input)
+		goal, err := goalsService.Create(c.Request.Context(), userID, input)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not create goal"})
 			return
@@ -370,21 +441,22 @@ func main() {
 	})
 
 	// Contribute to a goal
-	r.POST("/goals/:id/contribute", func(c *gin.Context) {
+	api.POST("/goals/:id/contribute", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		id := c.Param("id")
 		var input goals.ContributeInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(400, gin.H{"error": "amount is required"})
 			return
 		}
-		goal, err := goalsService.Contribute(c.Request.Context(), id, input.Amount)
+		goal, err := goalsService.Contribute(c.Request.Context(), userID, id, input.Amount)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not update goal"})
 			return
 		}
 		// Award companion XP for goal contribution
 		go func() {
-			_, _ = companionService.Checkin(context.Background(), companion.CheckinInput{
+			_, _ = companionService.Checkin(context.Background(), "", companion.CheckinInput{
 				EventType: "goal",
 				Note:      fmt.Sprintf("Contributed to %s", goal.Name),
 			})
@@ -397,9 +469,10 @@ func main() {
 	})
 
 	// Delete a goal
-	r.DELETE("/goals/:id", func(c *gin.Context) {
+	api.DELETE("/goals/:id", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		id := c.Param("id")
-		if err := goalsService.Delete(c.Request.Context(), id); err != nil {
+		if err := goalsService.Delete(c.Request.Context(), userID, id); err != nil {
 			c.JSON(500, gin.H{"error": "could not delete goal"})
 			return
 		}
@@ -409,13 +482,14 @@ func main() {
 	smsService := sms.NewService(pool)
 
 	// Parse a raw SMS string — returns a suggestion, saves nothing
-	r.POST("/sms/parse", func(c *gin.Context) {
+	api.POST("/sms/parse", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		var req sms.ParseRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(400, gin.H{"error": "raw_text is required"})
 			return
 		}
-		result, err := smsService.Parse(c.Request.Context(), req.RawText)
+		result, err := smsService.Parse(c.Request.Context(), userID, req.RawText)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not parse SMS"})
 			return
@@ -424,13 +498,14 @@ func main() {
 	})
 
 	// Confirm a parsed SMS — creates the transaction
-	r.POST("/sms/confirm", func(c *gin.Context) {
+	api.POST("/sms/confirm", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		var req sms.ConfirmRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(400, gin.H{"error": "inbox_id and amount are required"})
 			return
 		}
-		result, err := smsService.Confirm(c.Request.Context(), req)
+		result, err := smsService.Confirm(c.Request.Context(), userID, req)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not confirm SMS"})
 			return
@@ -439,7 +514,7 @@ func main() {
 	})
 
 	// Dismiss a parsed SMS without saving
-	r.POST("/sms/dismiss", func(c *gin.Context) {
+	api.POST("/sms/dismiss", func(c *gin.Context) {
 		var req struct {
 			InboxID string `json:"inbox_id" binding:"required"`
 		}
@@ -455,8 +530,9 @@ func main() {
 	})
 
 	// Get pending SMS inbox items
-	r.GET("/sms/pending", func(c *gin.Context) {
-		items, err := smsService.Pending(c.Request.Context())
+	api.GET("/sms/pending", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		items, err := smsService.Pending(c.Request.Context(), userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not load inbox"})
 			return
@@ -468,8 +544,9 @@ func main() {
 	investmentsService := investments.NewService(pool)
 
 	// List all positions
-	r.GET("/investments", func(c *gin.Context) {
-		positions, err := investmentsService.List(c.Request.Context())
+	api.GET("/investments", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		positions, err := investmentsService.List(c.Request.Context(), userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not load investments"})
 			return
@@ -478,8 +555,9 @@ func main() {
 	})
 
 	// Portfolio summary with allocation and freedom score
-	r.GET("/investments/summary", func(c *gin.Context) {
-		summary, err := investmentsService.Summary(c.Request.Context())
+	api.GET("/investments/summary", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		summary, err := investmentsService.Summary(c.Request.Context(), userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not load portfolio summary"})
 			return
@@ -505,7 +583,8 @@ func main() {
 	})
 
 	// Add a new position
-	r.POST("/investments", func(c *gin.Context) {
+	api.POST("/investments", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		var input investments.CreateInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(400, gin.H{"error": "name, type, and principal are required"})
@@ -527,7 +606,7 @@ func main() {
 			c.JSON(400, gin.H{"error": "invalid investment type"})
 			return
 		}
-		position, err := investmentsService.Create(c.Request.Context(), input)
+		position, err := investmentsService.Create(c.Request.Context(), userID, input)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not add investment"})
 			return
@@ -539,14 +618,15 @@ func main() {
 	})
 
 	// Update current value
-	r.PUT("/investments/:id", func(c *gin.Context) {
+	api.PUT("/investments/:id", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		id := c.Param("id")
 		var input investments.UpdateInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(400, gin.H{"error": "current_value is required"})
 			return
 		}
-		position, err := investmentsService.Update(c.Request.Context(), id, input)
+		position, err := investmentsService.Update(c.Request.Context(), userID, id, input)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not update investment"})
 			return
@@ -558,9 +638,10 @@ func main() {
 	})
 
 	// Remove a position (soft delete)
-	r.DELETE("/investments/:id", func(c *gin.Context) {
+	api.DELETE("/investments/:id", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		id := c.Param("id")
-		if err := investmentsService.Delete(c.Request.Context(), id); err != nil {
+		if err := investmentsService.Delete(c.Request.Context(), userID, id); err != nil {
 			c.JSON(500, gin.H{"error": "could not remove investment"})
 			return
 		}
@@ -571,8 +652,9 @@ func main() {
 	freedomService := freedom.NewService(pool)
 
 	// Full freedom plan
-	r.GET("/freedom", func(c *gin.Context) {
-		plan, err := freedomService.GetPlan(c.Request.Context())
+	api.GET("/freedom", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		plan, err := freedomService.GetPlan(c.Request.Context(), userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not calculate freedom plan"})
 			return
@@ -581,13 +663,14 @@ func main() {
 	})
 
 	// Set or update the freedom target
-	r.POST("/freedom/targets", func(c *gin.Context) {
+	api.POST("/freedom/targets", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
 		var input freedom.TargetInput
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(400, gin.H{"error": "monthly_savings and target_passive are required"})
 			return
 		}
-		target, err := freedomService.SetTarget(c.Request.Context(), input)
+		target, err := freedomService.SetTarget(c.Request.Context(), userID, input)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not save target"})
 			return

@@ -80,7 +80,7 @@ func NewService(db *pgxpool.Pool) *Service {
 }
 
 // GatherContext builds the full context from the database for today.
-func (s *Service) GatherContext(ctx context.Context, mood, reflection string) (*CoachingContext, error) {
+func (s *Service) GatherContext(ctx context.Context, userID, mood, reflection string) (*CoachingContext, error) {
 	now := time.Now()
 	today := now.Format("2006-01-02")
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
@@ -96,17 +96,17 @@ func (s *Service) GatherContext(ctx context.Context, mood, reflection string) (*
 	_ = s.db.QueryRow(ctx, `
 		SELECT COALESCE(SUM(amount), 0), COUNT(*)
 		FROM transactions
-		WHERE DATE(created_at AT TIME ZONE 'Africa/Nairobi') = $1
-	`, today).Scan(&cc.TotalSpent, &cc.EntryCount)
+		WHERE DATE(created_at AT TIME ZONE 'Africa/Nairobi') = $1 AND user_id = $2
+	`, today, userID).Scan(&cc.TotalSpent, &cc.EntryCount)
 
 	// Category breakdown today
 	rows, err := s.db.Query(ctx, `
 		SELECT category, SUM(amount), COUNT(*)
 		FROM transactions
-		WHERE DATE(created_at AT TIME ZONE 'Africa/Nairobi') = $1
+		WHERE DATE(created_at AT TIME ZONE 'Africa/Nairobi') = $1 AND user_id = $2
 		GROUP BY category
 		ORDER BY SUM(amount) DESC
-	`, today)
+	`, today, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -125,11 +125,11 @@ func (s *Service) GatherContext(ctx context.Context, mood, reflection string) (*
 
 	// Budget status this month
 	var allocated, spentMonth float64
-	_ = s.db.QueryRow(ctx, `SELECT COALESCE(SUM(amount),0) FROM budgets WHERE user_id IS NULL`).
+	_ = s.db.QueryRow(ctx, `SELECT COALESCE(SUM(amount),0) FROM budgets WHERE user_id = $1`, userID).
 		Scan(&allocated)
 	_ = s.db.QueryRow(ctx, `
-		SELECT COALESCE(SUM(amount),0) FROM transactions WHERE created_at >= $1
-	`, monthStart).Scan(&spentMonth)
+		SELECT COALESCE(SUM(amount),0) FROM transactions WHERE created_at >= $1 AND user_id = $2
+	`, monthStart, userID).Scan(&spentMonth)
 
 	percent := 0.0
 	if allocated > 0 {
@@ -146,10 +146,10 @@ func (s *Service) GatherContext(ctx context.Context, mood, reflection string) (*
 	goalRows, err := s.db.Query(ctx, `
 		SELECT name, emoji, target, saved
 		FROM goals
-		WHERE user_id IS NULL AND completed = FALSE AND target > 0
+		WHERE user_id = $1 AND completed = FALSE AND target > 0
 		ORDER BY (saved / target) DESC
 		LIMIT 3
-	`)
+	`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -169,9 +169,9 @@ func (s *Service) GatherContext(ctx context.Context, mood, reflection string) (*
 	// Streak
 	_ = s.db.QueryRow(ctx, `
 		SELECT COUNT(*) FROM daily_snapshots
-		WHERE user_id IS NULL AND closed_at IS NOT NULL
+		WHERE user_id = $1 AND closed_at IS NOT NULL
 		AND snapshot_date >= CURRENT_DATE - INTERVAL '30 days'
-	`).Scan(&cc.StreakDays)
+	`, userID).Scan(&cc.StreakDays)
 
 	return cc, nil
 }
@@ -296,9 +296,9 @@ func fallbackNote(cc *CoachingContext) *CoachingNote {
 
 // Generate calls Claude to produce a personalised coaching note.
 // Falls back to rule-based note if the API is unavailable.
-func (s *Service) Generate(ctx context.Context, mood, reflection string) (*CoachingNote, error) {
+func (s *Service) Generate(ctx context.Context, userID, mood, reflection string) (*CoachingNote, error) {
 	// Gather context from the database
-	cc, err := s.GatherContext(ctx, mood, reflection)
+	cc, err := s.GatherContext(ctx, userID, mood, reflection)
 	if err != nil {
 		return fallbackNote(&CoachingContext{Mood: mood}), nil
 	}

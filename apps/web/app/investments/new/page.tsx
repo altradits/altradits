@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 type CreateInput = {
   name: string;
@@ -48,9 +49,8 @@ export default function NewInvestmentPage() {
     setError(null);
 
     try {
-      const res = await fetch(`${API}/investments`, {
+      const res = await apiFetch("/investments", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 

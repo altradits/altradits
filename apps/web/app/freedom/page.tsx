@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api";
 
 type CurrentState = {
   total_invested: number;
@@ -136,11 +137,16 @@ export default function FreedomPage() {
   const [newReturn, setNewReturn] = useState("12");
   const [saving, setSaving] = useState(false);
 
-  const load = () => {
-    fetch(`${API}/freedom`)
-      .then((r) => r.json())
-      .then((d) => { setPlan(d); setLoading(false); })
-      .catch(() => setLoading(false));
+  const load = async () => {
+    try {
+      const res = await apiFetch("/freedom");
+      const d = await res.json();
+      setPlan(d);
+    } catch {
+      // handle error
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -149,9 +155,8 @@ export default function FreedomPage() {
     if (!newSavings || !newPassive) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API}/freedom/targets`, {
+      const res = await apiFetch("/freedom/targets", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           monthly_savings: parseFloat(newSavings),
           target_passive: parseFloat(newPassive),

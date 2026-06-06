@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 type Investment = {
   id: string;
@@ -190,8 +191,8 @@ export default function InvestmentsPage() {
     try {
       setLoading(true);
       const [invRes, sumRes] = await Promise.all([
-        fetch(`${API}/investments`),
-        fetch(`${API}/investments/summary`),
+        apiFetch("/investments"),
+        apiFetch("/investments/summary"),
       ]);
 
       if (invRes.ok && sumRes.ok) {
@@ -218,9 +219,8 @@ export default function InvestmentsPage() {
 
   const handleUpdate = async (id: string, newValue: number) => {
     try {
-      const res = await fetch(`${API}/investments/${id}`, {
+      const res = await apiFetch(`/investments/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ current_value: newValue }),
       });
 

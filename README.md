@@ -227,40 +227,90 @@ Assisted money automation (with explicit consent), family mode, platform ecosyst
 
 ## Local Development
 
-**1. Clone**
+### Prerequisites
+- Go 1.21+
+- Node.js 18+
+- PostgreSQL 15+
+- Redis 7+
+- Docker & Docker Compose (optional, for database)
+
+### 1. Clone
 ```bash
 git clone https://github.com/your-org/altradits.git
 cd altradits
 ```
 
-**2. Environment variables**
+### 2. Environment variables
 
 Create `.env` from `.env.example`:
 ```env
-DATABASE_URL=
-REDIS_URL=
-JWT_SECRET=
-OPENAI_API_KEY=
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/altradits
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=your-secret-key-here
+OPENAI_API_KEY=your-openai-key
+ANTHROPIC_API_KEY=your-anthropic-key
 ```
 
-**3. Run with Docker**
+### 3. Start infrastructure (PostgreSQL + Redis)
+
+**Option A: Docker Compose (recommended)**
 ```bash
-docker compose up --build
+docker compose up -d db cache
 ```
 
-**4. Run backend**
+**Option B: Local services**
+Ensure PostgreSQL is running on port 5432 and Redis on port 6379.
+
+### 4. Run database migrations
+
 ```bash
-go run ./server/cmd/api
+cd server
+go run ./cmd/migrate/main.go up
 ```
 
-**5. Run frontend**
+### 5. Run the backend
+
+```bash
+cd server
+go run ./cmd/api/main.go
+```
+
+The API will be available at **http://localhost:8080**
+
+### 6. Run the frontend
+
 ```bash
 cd apps/web
 npm install
 npm run dev
 ```
 
----
+The web app will be available at **http://localhost:3000**
+
+### 7. Access the application
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8080
+- Health check: http://localhost:8080/health
+
+### Quick start with Docker (all-in-one)
+
+```bash
+docker compose up --build
+```
+
+This starts the web frontend (port 3000), API backend (port 8080), PostgreSQL (port 5432), and Redis (port 6379) together.
+
+### Useful Make targets
+
+```bash
+make dev-db       # Start only Postgres + Redis
+make dev-backend  # Run Go backend with Air live reload
+make dev-frontend # Run Next.js dev server
+make migrate-up   # Apply all pending migrations
+make db-reset     # Wipe and recreate database from scratch
+make test         # Run backend tests
+```
 
 ## Revenue Model
 

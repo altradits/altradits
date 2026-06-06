@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 type ParseResponse = {
   inbox_id: string;
@@ -54,9 +55,8 @@ export default function SMSPage() {
     setParsing(true);
     setParseError(null);
     try {
-      const res = await fetch(`${API}/sms/parse`, {
+      const res = await apiFetch("/sms/parse", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ raw_text: rawText.trim() }),
       });
       const data: ParseResponse = await res.json();
@@ -76,9 +76,8 @@ export default function SMSPage() {
     if (!parsed || !amount) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API}/sms/confirm`, {
+      const res = await apiFetch("/sms/confirm", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           inbox_id: parsed.inbox_id,
           description: description || parsed.recipient,
@@ -98,9 +97,8 @@ export default function SMSPage() {
 
   const handleDismiss = async () => {
     if (!parsed) return;
-    await fetch(`${API}/sms/dismiss`, {
+    await apiFetch("/sms/dismiss", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ inbox_id: parsed.inbox_id }),
     });
     handleReset();

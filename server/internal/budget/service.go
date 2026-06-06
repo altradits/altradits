@@ -35,15 +35,15 @@ func NewService(db *pgxpool.Pool) *Service {
 }
 
 // Summary returns all budget categories with actual spending for the current month.
-func (s *Service) Summary(ctx context.Context) ([]*CategoryBudget, error) {
+func (s *Service) Summary(ctx context.Context, userID string) ([]*CategoryBudget, error) {
 	now := time.Now()
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 
-	// Get all budgets (system defaults where user_id IS NULL for now)
+	// Get all budgets for the user
 	rows, err := s.db.Query(ctx, `
 		SELECT id, category, amount, period
 		FROM budgets
-		WHERE user_id IS NULL
+		WHERE user_id = $1
 		ORDER BY
 			CASE category
 				WHEN 'food'          THEN 1
@@ -56,7 +56,7 @@ func (s *Service) Summary(ctx context.Context) ([]*CategoryBudget, error) {
 				WHEN 'health'        THEN 8
 				ELSE                      9
 			END
-	`)
+	`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -78,9 +78,9 @@ func (s *Service) Summary(ctx context.Context) ([]*CategoryBudget, error) {
 	spendRows, err := s.db.Query(ctx, `
 		SELECT category, COALESCE(SUM(amount), 0) as total
 		FROM transactions
-		WHERE created_at >= $1
+		WHERE created_at >= $1 AND user_id = $2
 		GROUP BY category
-	`, monthStart)
+	`, monthStart, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -112,14 +112,14 @@ func (s *Service) Summary(ctx context.Context) ([]*CategoryBudget, error) {
 }
 
 // Update sets a new allocation amount for a category.
-func (s *Service) Update(ctx context.Context, category string, amount float64) (*CategoryBudget, error) {
+func (s *Service) Update(ctx context.Context, userID, category string, amount float64) (*CategoryBudget, error) {
 	var b CategoryBudget
 	err := s.db.QueryRow(ctx, `
 		UPDATE budgets
 		SET amount = $2, updated_at = NOW()
-		WHERE category = $1 AND user_id IS NULL
+		WHERE category = $1 AND user_id = $3
 		RETURNING id, category, amount, period
-	`, category, amount).
+	`, category, amount, userID).
 		Scan(&b.ID, &b.Category, &b.Allocated, &b.Period)
 	if err != nil {
 		return nil, err

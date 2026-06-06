@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api";
 
 type Goal = {
   id: string;
@@ -55,7 +56,7 @@ export default function GoalsPage() {
   const [saving, setSaving] = useState(false);
 
   const load = () => {
-    fetch(`${API}/goals`)
+    apiFetch("/goals")
       .then((r) => r.json())
       .then((d) => { setGoals(d.goals || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -67,9 +68,8 @@ export default function GoalsPage() {
     if (!newName.trim() || !newTarget) return;
     setCreating(true);
     try {
-      const res = await fetch(`${API}/goals`, {
+      const res = await apiFetch("/goals", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newName.trim(),
           emoji: newEmoji,
@@ -94,9 +94,8 @@ export default function GoalsPage() {
     if (!amount || amount <= 0) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API}/goals/${id}/contribute`, {
+      const res = await apiFetch(`/goals/${id}/contribute`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount }),
       });
       const data = await res.json();
@@ -113,7 +112,7 @@ export default function GoalsPage() {
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Remove "${name}"?`)) return;
-    await fetch(`${API}/goals/${id}`, { method: "DELETE" });
+    await apiFetch(`/goals/${id}`, { method: "DELETE" });
     load();
   };
 

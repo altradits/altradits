@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { apiFetch } from "@/lib/api";
 
 type RecentItem = {
   description: string;
@@ -93,13 +95,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  const { token } = useAuth();
+
   useEffect(() => {
-    console.log('Fetching dashboard from:', `${API}/dashboard`);
-    fetch(`${API}/dashboard`)
+    apiFetch("/dashboard")
       .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); console.log('Data:', d); })
-      .catch(() => { setError(true); setLoading(false); console.error('Error fetching dashboard'); });
-  }, []);
+      .then((d) => { setData(d); setLoading(false); })
+      .catch(() => { setError(true); setLoading(false); });
+  }, [token]);
 
   if (loading) {
     return (

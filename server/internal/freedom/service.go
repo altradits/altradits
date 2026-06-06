@@ -65,7 +65,7 @@ func NewService(db *pgxpool.Pool) *Service {
 }
 
 // GetPlan calculates and returns the full financial freedom plan.
-func (s *Service) GetPlan(ctx context.Context) (*Plan, error) {
+func (s *Service) GetPlan(ctx context.Context, userID string) (*Plan, error) {
 	now := time.Now()
 	currentYear := now.Year()
 	monthStart3 := time.Date(now.Year(), now.Month()-3, 1, 0, 0, 0, 0, now.Location())
@@ -86,15 +86,15 @@ func (s *Service) GetPlan(ctx context.Context) (*Plan, error) {
 		_ = s.db.QueryRow(ctx, `
 			SELECT COALESCE(SUM(principal),0), COALESCE(SUM(current_value),0)
 			FROM investments
-			WHERE user_id IS NULL AND is_active = TRUE
-		`).Scan(&totalInvested, &totalValue)
+			WHERE user_id = $1 AND is_active = TRUE
+		`, userID).Scan(&totalInvested, &totalValue)
 
 		// ── 2. Average monthly expenses (last 3 months) ───────────────────────
 		_ = s.db.QueryRow(ctx, `
 			SELECT COALESCE(SUM(amount),0) / 3.0
 			FROM transactions
-			WHERE created_at >= $1
-		`, monthStart3).Scan(&avgMonthlyExpenses)
+			WHERE created_at >= $1 AND user_id = $2
+		`, monthStart3, userID).Scan(&avgMonthlyExpenses)
 
 		if avgMonthlyExpenses == 0 {
 			avgMonthlyExpenses = 50000 // KES 50k/mo default
@@ -104,16 +104,16 @@ func (s *Service) GetPlan(ctx context.Context) (*Plan, error) {
 		_ = s.db.QueryRow(ctx, `
 			SELECT COALESCE(amount, 0)
 			FROM budgets
-			WHERE category IN ('savings','investments') AND user_id IS NULL
+			WHERE category IN ('savings','investments') AND user_id = $1
 			LIMIT 1
-		`).Scan(&avgMonthlySavings)
+		`, userID).Scan(&avgMonthlySavings)
 
 		// ── 4. Load freedom target ────────────────────────────────────────────
 		err := s.db.QueryRow(ctx, `
 			SELECT monthly_savings, target_passive, assumed_return_pct
 			FROM freedom_targets
-			WHERE user_id IS NULL
-		`).Scan(&monthlySavings, &targetPassive, &returnPct)
+			WHERE user_id = $1
+		`, userID).Scan(&monthlySavings, &targetPassive, &returnPct)
 		if err != nil {
 			monthlySavings = avgMonthlySavings
 			if monthlySavings == 0 {
@@ -130,9 +130,9 @@ func (s *Service) GetPlan(ctx context.Context) (*Plan, error) {
 		rows, err := s.db.Query(ctx, `
 			SELECT type::text, COALESCE(SUM(current_value),0)
 			FROM investments
-			WHERE user_id IS NULL AND is_active = TRUE
+			WHERE user_id = $1 AND is_active = TRUE
 			GROUP BY type
-		`)
+		`, userID)
 		if err == nil {
 			defer rows.Close()
 			returnByType := map[string]float64{
@@ -226,7 +226,7 @@ func (s *Service) GetPlan(ctx context.Context) (*Plan, error) {
 }
 
 // SetTarget saves or updates the user's freedom target.
-func (s *Service) SetTarget(ctx context.Context, input TargetInput) (*Target, error) {
+func (s *Service) SetTarget(ctx context.Context, userID string, input TargetInput) (*Target, error) {
 	returnPct := input.AssumedReturnPct
 	if returnPct <= 0 {
 		returnPct = 12.0
@@ -242,20 +242,20 @@ func (s *Service) SetTarget(ctx context.Context, input TargetInput) (*Target, er
 
 	var existing bool
 	_ = s.db.QueryRow(ctx,
-		`SELECT EXISTS(SELECT 1 FROM freedom_targets WHERE user_id IS NULL)`).Scan(&existing)
+		`SELECT EXISTS(SELECT 1 FROM freedom_targets WHERE user_id = $1)`, userID).Scan(&existing)
 
 	var err error
 	if existing {
 		_, err = s.db.Exec(ctx, `
 			UPDATE freedom_targets
 			SET monthly_savings=$1, target_passive=$2, assumed_return_pct=$3, updated_at=NOW()
-			WHERE user_id IS NULL
-		`, input.MonthlySavings, input.TargetPassive, returnPct)
+			WHERE user_id = $4
+		`, input.MonthlySavings, input.TargetPassive, returnPct, userID)
 	} else {
 		_, err = s.db.Exec(ctx, `
-			INSERT INTO freedom_targets (monthly_savings, target_passive, assumed_return_pct)
-			VALUES ($1, $2, $3)
-		`, input.MonthlySavings, input.TargetPassive, returnPct)
+			INSERT INTO freedom_targets (user_id, monthly_savings, target_passive, assumed_return_pct)
+			VALUES ($1, $2, $3, $4)
+		`, userID, input.MonthlySavings, input.TargetPassive, returnPct)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to save target: %w", err)
