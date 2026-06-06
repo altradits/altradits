@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -23,10 +24,11 @@ func main() {
 		log.Fatalf("Failed to create migrator: %v", err)
 	}
 
-	direction := "up"
-	if len(os.Args) > 1 {
-		direction = os.Args[1]
+	if len(os.Args) < 2 {
+		log.Fatal("Usage: migrate <up|down|force> [version]")
 	}
+
+	direction := os.Args[1]
 
 	switch direction {
 	case "up":
@@ -39,7 +41,19 @@ func main() {
 			log.Fatalf("Migration down failed: %v", err)
 		}
 		log.Println("✅ Last migration rolled back")
+	case "force":
+		if len(os.Args) < 3 {
+			log.Fatal("Usage: migrate force <version>")
+		}
+		version, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			log.Fatalf("Invalid version: %v", err)
+		}
+		if err := m.Force(version); err != nil {
+			log.Fatalf("Force failed: %v", err)
+		}
+		log.Printf("✅ Forced version to %d", version)
 	default:
-		log.Fatalf("Unknown direction: %s (use 'up' or 'down')", direction)
+		log.Fatalf("Unknown direction: %s (use 'up', 'down', or 'force')", direction)
 	}
 }

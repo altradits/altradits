@@ -6,37 +6,37 @@
 DO $$
 DECLARE
     user_count INT;
-    first_user_id UUID;
+    first_user_id TEXT;
 BEGIN
-    SELECT COUNT(*), MIN(id) INTO user_count, first_user_id FROM users;
+    SELECT COUNT(*), MIN(id::text) INTO user_count, first_user_id FROM users;
     
     IF user_count = 1 THEN
         -- Transfer budgets
-        UPDATE budgets SET user_id = first_user_id WHERE user_id IS NULL;
+        UPDATE budgets SET user_id = first_user_id::uuid WHERE user_id IS NULL;
         
         -- Transfer goals
-        UPDATE goals SET user_id = first_user_id WHERE user_id IS NULL;
+        UPDATE goals SET user_id = first_user_id::uuid WHERE user_id IS NULL;
         
         -- Transfer daily_snapshots
-        UPDATE daily_snapshots SET user_id = first_user_id WHERE user_id IS NULL;
+        UPDATE daily_snapshots SET user_id = first_user_id::uuid WHERE user_id IS NULL;
         
         -- Transfer investments
-        UPDATE investments SET user_id = first_user_id WHERE user_id IS NULL;
+        UPDATE investments SET user_id = first_user_id::uuid WHERE user_id IS NULL;
         
         -- Transfer freedom_targets
-        UPDATE freedom_targets SET user_id = first_user_id WHERE user_id IS NULL;
+        UPDATE freedom_targets SET user_id = first_user_id::uuid WHERE user_id IS NULL;
         
         -- Transfer companion_state
-        UPDATE companion_state SET user_id = first_user_id WHERE user_id IS NULL;
+        UPDATE companion_state SET user_id = first_user_id::uuid WHERE user_id IS NULL;
         
         -- Transfer companion_events
-        UPDATE companion_events SET user_id = first_user_id WHERE user_id IS NULL;
+        UPDATE companion_events SET user_id = first_user_id::uuid WHERE user_id IS NULL;
         
         -- Transfer sms_inbox
-        UPDATE sms_inbox SET user_id = first_user_id WHERE user_id IS NULL;
+        UPDATE sms_inbox SET user_id = first_user_id::uuid WHERE user_id IS NULL;
         
         -- Transfer transactions (if any system transactions exist)
-        UPDATE transactions SET user_id = first_user_id WHERE user_id IS NULL;
+        UPDATE transactions SET user_id = first_user_id::uuid WHERE user_id IS NULL;
         
         RAISE NOTICE 'System data transferred to user %', first_user_id;
     END IF;
