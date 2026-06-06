@@ -98,8 +98,9 @@ export default function Dashboard() {
   const { token } = useAuth();
 
   useEffect(() => {
+    if (!token) return;
     apiFetch("/dashboard")
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Unauthorized"); return r.json(); })
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });
   }, [token]);
