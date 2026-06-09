@@ -17,6 +17,8 @@ coverage.*
 *.coverprofile
 profile.cov
 
+
+
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
@@ -24,13 +26,26 @@ profile.cov
 go.work
 go.work.sum
 
-# env file
+# env files
 .env
+.env.local
+apps/web/.env.local
 
 # Editor/IDE
 # .idea/
 # .vscode/
-api
 
-# Go build output (default binary name on Linux)
+# Go build output
 main
+server/bin/
+server/tmp/
+tmp/
+
+# Local Go caches (optional local override)
+.gomodcache/
+.gocache/
+.gopath/
+
+# Node / Next.js
+apps/web/node_modules/
+apps/web/.next/

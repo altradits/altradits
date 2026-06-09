@@ -8,11 +8,11 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/joho/godotenv"
+	"github.com/altradits/altradits/server/pkg/envload"
 )
 
 func main() {
-	_ = godotenv.Load()
+	envload.Load()
 
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {

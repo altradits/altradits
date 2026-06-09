@@ -9,7 +9,7 @@
 
 <br>
 
-[![Go Version](https://img.shields.io/badge/Go-1.2x+-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
 [![Method](https://img.shields.io/badge/Method-Socratic-green?style=for-the-badge)](#-the-socratic-mentor)
 [![Learning Environment](https://img.shields.io/badge/Sandbox-E2B-ff8800?style=for-the-badge)](https://e2b.dev)
 [![Ecosystem](https://img.shields.io/badge/Built_at-Zone01_Kisumu-blue?style=for-the-badge)](https://www.zone01kisumu.ke/)
@@ -172,8 +172,10 @@ altradits/
 │   ├── PRODUCT_BIBLE.md
 │   └── DOCUMENTATION.md
 │
-├── docker/
 ├── scripts/
+│   ├── setup.sh                # First-time setup after clone
+│   ├── verify.sh               # Health checks for all services
+│   └── docker-api-entrypoint.sh
 ├── .env.example
 ├── docker-compose.yml
 ├── Makefile
@@ -225,92 +227,192 @@ Assisted money automation (with explicit consent), family mode, platform ecosyst
 
 ---
 
-## Local Development
+## Quick Start (after clone)
 
-### Prerequisites
-- Go 1.21+
-- Node.js 18+
-- PostgreSQL 15+
-- Redis 7+
-- Docker & Docker Compose (optional, for database)
+**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) (for Postgres + Redis), [Go 1.22+](https://go.dev/dl/) (auto-downloads 1.25 via toolchain), [Node.js 20+](https://nodejs.org/)
 
-### 1. Clone
 ```bash
-git clone https://github.com/your-org/altradits.git
+git clone https://github.com/altradits/altradits.git
 cd altradits
+make setup          # creates .env, starts db/cache, migrates, npm install
 ```
 
-### 2. Environment variables
+Open **two terminals** from the project root:
 
-Create `.env` from `.env.example`:
+```bash
+# Terminal 1 — API (port 8080)
+make dev-backend
+
+# Terminal 2 — Web (port 3000)
+make dev-frontend
+```
+
+| URL | Purpose |
+|-----|---------|
+| http://localhost:3000 | Web app — register, then explore |
+| http://localhost:8080/health | API health check |
+| http://localhost:8080 | REST API |
+
+Verify everything is wired:
+
+```bash
+make verify
+curl http://localhost:8080/health
+```
+
+---
+
+## Local Development (step by step)
+
+All commands run from the **repository root** (`go.mod` lives here — do not `cd server` for Go commands).
+
+### 1. Clone and configure environment
+
+```bash
+git clone https://github.com/altradits/altradits.git
+cd altradits
+cp .env.example .env
+cp apps/web/.env.example apps/web/.env.local
+```
+
+Edit `.env` if needed. Defaults work with the Docker database:
+
 ```env
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/altradits
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/altradits?sslmode=disable
 REDIS_URL=redis://localhost:6379
-JWT_SECRET=your-secret-key-here
-OPENAI_API_KEY=your-openai-key
-ANTHROPIC_API_KEY=your-anthropic-key
+JWT_SECRET=change-me-to-a-long-random-string
 ```
 
-### 3. Start infrastructure (PostgreSQL + Redis)
+`OPENAI_API_KEY` and `ANTHROPIC_API_KEY` are **optional** — AI coaching falls back to calm template messages without them.
 
-**Option A: Docker Compose (recommended)**
+### 2. Start PostgreSQL and Redis
+
+```bash
+make dev-db
+# or: docker compose up -d db cache
+```
+
+### 3. Install dependencies and migrate
+
+```bash
+go mod download
+make migrate-up
+cd apps/web && npm install && cd ../..
+```
+
+### 4. Run the backend
+
+```bash
+make dev-backend
+# uses Air for live reload if installed, otherwise: go run server/cmd/api/main.go
+```
+
+### 5. Run the frontend
+
+```bash
+make dev-frontend
+```
+
+### 6. Create your account
+
+Open http://localhost:3000 → **Register** → sign in. All data is scoped to your user.
+
+---
+
+## Docker (full stack)
+
+Infrastructure only (recommended for daily dev):
+
 ```bash
 docker compose up -d db cache
+make migrate-up
+make dev-backend    # local Go process
+make dev-frontend   # local Next.js process
 ```
 
-**Option B: Local services**
-Ensure PostgreSQL is running on port 5432 and Redis on port 6379.
-
-### 4. Run database migrations
+Everything in containers (API + web + db + cache):
 
 ```bash
-cd server
-go run ./cmd/migrate/main.go up
+docker compose --profile full up --build
 ```
 
-### 5. Run the backend
+The API container runs migrations automatically on startup.
+
+---
+
+## Make commands
 
 ```bash
-cd server
-go run ./cmd/api/main.go
+make help           # list all targets
+make setup          # first-time setup after clone
+make verify         # check db, redis, API, frontend
+make dev-db         # Postgres + Redis only
+make migrate-up     # apply pending migrations
+make migrate-down   # roll back last migration
+make dev-backend    # Go API on :8080
+make dev-frontend   # Next.js on :3000
+make dev-all        # db + migrate, then print next steps
+make dev            # full Docker stack (profile: full)
+make db-reset       # wipe DB volume and re-migrate
+make build-backend  # compile binary to server/bin/altradits
+make test           # backend tests
 ```
 
-The API will be available at **http://localhost:8080**
+---
 
-### 6. Run the frontend
+## Environment variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `REDIS_URL` | Yes | Redis connection string |
+| `JWT_SECRET` | Yes | Secret for signing auth tokens — change in production |
+| `OPENAI_API_KEY` | No | OpenAI for coaching features |
+| `ANTHROPIC_API_KEY` | No | Claude for coaching features |
+| `NEXT_PUBLIC_API_URL` | No | Frontend API base URL (default `http://localhost:8080`) |
+
+Copy `apps/web/.env.example` → `apps/web/.env.local` for frontend overrides.
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| `DATABASE_URL is not set` | Run from repo root. Ensure `.env` exists: `cp .env.example .env` |
+| `go: could not create module cache: permission denied` | Set `export GOPATH=$HOME/go` and `export GOMODCACHE=$GOPATH/pkg/mod` in your shell profile |
+| `go: go.mod requires go >= 1.25.0` | Install Go 1.22+ — the toolchain auto-downloads 1.25. Or: `go install golang.org/dl/go1.25.0@latest && go1.25.0 download` |
+| `connection refused` on :5432 | Start database: `make dev-db` and wait ~5s |
+| `could not reach the server` in browser | Start API: `make dev-backend`. Check `curl localhost:8080/health` |
+| Migration errors / dirty state | Reset: `make db-reset` |
+| Port 3000 or 8080 already in use | `lsof -i :3000` or `lsof -i :8080` to find the process |
+| CORS errors | API allows `http://localhost:3000` by default. Match `NEXT_PUBLIC_API_URL` to your API origin |
+| `npm ci` fails in Docker | Run `cd apps/web && npm install` locally first to refresh `package-lock.json` |
+| API starts but Redis shows degraded | Non-fatal. Start cache: `docker compose up -d cache` |
+
+Run the diagnostic script anytime:
 
 ```bash
-cd apps/web
-npm install
-npm run dev
+make verify
 ```
 
-The web app will be available at **http://localhost:3000**
+---
 
-### 7. Access the application
+## Hosting checklist
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8080
-- Health check: http://localhost:8080/health
+Before deploying to staging or production:
 
-### Quick start with Docker (all-in-one)
+1. Set strong `JWT_SECRET` (32+ random characters)
+2. Use managed PostgreSQL and Redis (or self-hosted with backups)
+3. Set `DATABASE_URL` and `REDIS_URL` to production endpoints
+4. Build API: `go build -o altradits-api ./server/cmd/api`
+5. Run migrations: `go run server/cmd/migrate/main.go up`
+6. Build frontend: `cd apps/web && npm run build && npm run start`
+7. Set `NEXT_PUBLIC_API_URL` to your public API URL at **build time**
+8. Put HTTPS in front (nginx, Caddy, or a platform load balancer)
+9. Never commit `.env` — use platform secrets
 
-```bash
-docker compose up --build
-```
-
-This starts the web frontend (port 3000), API backend (port 8080), PostgreSQL (port 5432), and Redis (port 6379) together.
-
-### Useful Make targets
-
-```bash
-make dev-db       # Start only Postgres + Redis
-make dev-backend  # Run Go backend with Air live reload
-make dev-frontend # Run Next.js dev server
-make migrate-up   # Apply all pending migrations
-make db-reset     # Wipe and recreate database from scratch
-make test         # Run backend tests
-```
+**Docker production:** use `docker compose --profile full up --build` as a starting point; swap dev Dockerfiles for multi-stage production images when ready.
 
 ## Revenue Model
 

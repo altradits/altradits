@@ -25,7 +25,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
+	"github.com/altradits/altradits/server/pkg/envload"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -48,10 +48,7 @@ func (a *coachingAdapter) Generate(ctx context.Context, mood, reflection string)
 }
 
 func main() {
-	// Load environment variables (add at the very top of main(), before anything else)
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found — using system environment")
-	}
+	envload.Load()
 
 	// PostgreSQL connection pool
 	dbURL := os.Getenv("DATABASE_URL")
@@ -552,6 +549,9 @@ func main() {
 		if err != nil {
 			c.JSON(500, gin.H{"error": "could not load investments"})
 			return
+		}
+		if positions == nil {
+			positions = []*investments.Position{}
 		}
 		c.JSON(200, positions)
 	})

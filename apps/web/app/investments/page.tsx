@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api";
 
 type Investment = {
@@ -33,7 +35,17 @@ type FreedomScore = {
   message: string;
 };
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const TYPE_LABELS: Record<string, string> = {
+  mmf: "Money Market",
+  tbill: "Treasury Bill",
+  bond: "Bond",
+  stock: "Stock",
+  etf: "ETF",
+  sacco: "SACCO",
+  fixed: "Fixed Deposit",
+  crypto: "Crypto",
+  other: "Other",
+};
 
 function formatKES(n: number) {
   return `KES ${n.toLocaleString("en-KE", { minimumFractionDigits: 0 })}`;
@@ -51,9 +63,11 @@ function formatDate(dateString: string | null): string {
 function InvestmentCard({
   investment,
   onUpdate,
+  onDelete,
 }: {
   investment: Investment;
   onUpdate?: (id: string, newValue: number) => void;
+  onDelete?: (id: string) => void;
 }) {
   const typeEmoji: Record<string, string> = {
     mmf: "🏦",
@@ -143,12 +157,7 @@ function InvestmentCard({
         </div>
         <div>
           <p className="font-medium">Type</p>
-          <p>
-            {investment.type
-              .split(/(?=[A-Z])/)
-              .join(" ")
-              .toUpperCase()}
-          </p>
+          <p>{TYPE_LABELS[investment.type] ?? investment.type}</p>
         </div>
         <div>
           <p className="font-medium">Currency</p>
@@ -177,11 +186,23 @@ function InvestmentCard({
           </div>
         )}
       </div>
+
+      {onDelete && (
+        <button
+          type="button"
+          onClick={() => onDelete(investment.id)}
+          className="mt-3 text-xs text-stone-400 hover:text-red-500 transition-colors"
+        >
+          Remove from picture
+        </button>
+      )}
     </div>
   );
 }
 
 export default function InvestmentsPage() {
+  const router = useRouter();
+  const { token } = useAuth();
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -190,21 +211,27 @@ export default function InvestmentsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [invRes, sumRes] = await Promise.all([
         apiFetch("/investments"),
         apiFetch("/investments/summary"),
       ]);
 
-      if (invRes.ok && sumRes.ok) {
-        const [invData, sumData] = await Promise.all([
-          invRes.json(),
-          sumRes.json(),
-        ]);
-        setInvestments(invData);
-        setSummary(sumData);
-      } else {
+      if (invRes.status === 401 || sumRes.status === 401) {
+        router.push("/login");
+        return;
+      }
+
+      if (!invRes.ok || !sumRes.ok) {
         throw new Error("Failed to fetch data");
       }
+
+      const [invData, sumData] = await Promise.all([
+        invRes.json(),
+        sumRes.json(),
+      ]);
+      setInvestments(Array.isArray(invData) ? invData : []);
+      setSummary(sumData);
     } catch (err) {
       setError("Could not reach the server.");
       console.error(err);
@@ -214,8 +241,12 @@ export default function InvestmentsPage() {
   };
 
   useEffect(() => {
+    if (!token) {
+      router.push("/login");
+      return;
+    }
     fetchData();
-  }, []);
+  }, [token, router]);
 
   const handleUpdate = async (id: string, newValue: number) => {
     try {
@@ -229,6 +260,18 @@ export default function InvestmentsPage() {
       }
     } catch (err) {
       console.error("Failed to update investment", err);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Remove this position from your picture?")) return;
+    try {
+      const res = await apiFetch(`/investments/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error("Failed to delete investment", err);
     }
   };
 
@@ -332,15 +375,11 @@ export default function InvestmentsPage() {
                           bond: "📑",
                           stock: "📈",
                           etf: "🏪",
-                          saccos: "👥",
+                          sacco: "👥",
                           fixed: "🔒",
                           crypto: "₿",
                           other: "📦",
                         };
-                        const formattedType = type
-                          .split(/(?=[A-Z])/)
-                          .join(" ")
-                          .toUpperCase();
 
                         return (
                           <div key={type} className="flex items-center justify-between">
@@ -348,8 +387,8 @@ export default function InvestmentsPage() {
                               <span className="text-sm">
                                 {typeEmoji[type] || "📦"}
                               </span>
-                              <span className="text-sm text-stone-600 capitalize">
-                                {formattedType}
+                              <span className="text-sm text-stone-600">
+                                {TYPE_LABELS[type] ?? type}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -428,8 +467,13 @@ export default function InvestmentsPage() {
 
           {investments.length > 0 ? (
             <div className="space-y-3">
-              {investments.map((inv, index) => (
-                <InvestmentCard key={inv.id} investment={inv} onUpdate={handleUpdate} />
+              {investments.map((inv) => (
+                <InvestmentCard
+                  key={inv.id}
+                  investment={inv}
+                  onUpdate={handleUpdate}
+                  onDelete={handleDelete}
+                />
               ))}
             </div>
           ) : (

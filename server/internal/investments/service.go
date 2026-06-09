@@ -151,6 +151,9 @@ func (s *Service) List(ctx context.Context, userID string) ([]*Position, error) 
 		hydrate(&p)
 		positions = append(positions, &p)
 	}
+	if positions == nil {
+		positions = []*Position{}
+	}
 	return positions, rows.Err()
 }
 
@@ -335,8 +338,8 @@ func (s *Service) GetByID(ctx context.Context, userID, id string) (*Position, er
 			TO_CHAR(matures_at, 'YYYY-MM-DD'),
 			created_at
 		FROM investments
-		WHERE id = $1 AND user_id = $2
-	`).Scan(
+		WHERE id = $1::uuid AND user_id = $2::uuid
+	`, id, userID).Scan(
 		&p.ID, &p.Name, &p.Institution, &p.Type,
 		&p.Principal, &p.CurrentValue, &p.Currency,
 		&p.Notes, &p.IsActive, &p.StartedAt, &p.MaturesAt,

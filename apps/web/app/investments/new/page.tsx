@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api";
 
 type CreateInput = {
@@ -13,8 +15,6 @@ type CreateInput = {
   started_at: string;
   matures_at: string;
 };
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 const INVESTMENT_TYPES = [
   { value: "mmf", label: "Money Market Fund" },
@@ -29,6 +29,8 @@ const INVESTMENT_TYPES = [
 ];
 
 export default function NewInvestmentPage() {
+  const router = useRouter();
+  const { token } = useAuth();
   const [form, setForm] = useState<CreateInput>({
     name: "",
     institution: "",
@@ -43,27 +45,56 @@ export default function NewInvestmentPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  useEffect(() => {
+    if (!token) router.push("/login");
+  }, [token, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
+    if (form.principal < 1) {
+      setError("Amount invested must be at least KES 1.");
+      setLoading(false);
+      return;
+    }
+
+    const payload: Record<string, unknown> = {
+      name: form.name.trim(),
+      type: form.type,
+      principal: form.principal,
+    };
+    if (form.institution.trim()) payload.institution = form.institution.trim();
+    if (form.current_value > 0) payload.current_value = form.current_value;
+    if (form.notes.trim()) payload.notes = form.notes.trim();
+    if (form.started_at) payload.started_at = form.started_at;
+    if (form.matures_at) payload.matures_at = form.matures_at;
+
     try {
       const res = await apiFetch("/investments", {
         method: "POST",
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+
       if (!res.ok) {
-        throw new Error("Failed to create investment");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to create investment");
       }
 
       setSuccess(true);
       setTimeout(() => {
-        window.location.href = "/investments";
+        router.push("/investments");
       }, 1500);
     } catch (err) {
-      setError("Could not save investment. Please try again.");
+      setError(
+        err instanceof Error ? err.message : "Could not save investment. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -153,7 +184,7 @@ export default function NewInvestmentPage() {
                   })
                 }
                 placeholder="0"
-                min="0"
+                min="1"
                 step="1000"
                 className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
                 required
@@ -173,7 +204,7 @@ export default function NewInvestmentPage() {
                   })
                 }
                 placeholder="Same as invested"
-                min="0"
+                min="1"
                 step="1000"
                 className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
               />

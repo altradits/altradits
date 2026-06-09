@@ -1,11 +1,11 @@
-root = "."
-tmp_dir = "tmp"
+root = ".."
+tmp_dir = "server/tmp"
 
 [build]
-  cmd = "go build -o ./tmp/main ./cmd/api"
-  bin = "./tmp/main"
+  cmd = "go build -o ./server/tmp/altradits-api ./server/cmd/api"
+  bin = "./server/tmp/altradits-api"
   delay = 1000
-  exclude_dir = ["tmp", "vendor", "testdata", "database"]
+  exclude_dir = ["tmp", "vendor", "testdata", "database", "node_modules", ".next", ".gomodcache"]
   include_ext = ["go"]
   exclude_regex = ["_test\\.go"]
 
