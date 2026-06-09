@@ -19,7 +19,9 @@ import (
 	"github.com/altradits/altradits/server/internal/freedom"
 	"github.com/altradits/altradits/server/internal/goals"
 	"github.com/altradits/altradits/server/internal/investments"
+	"github.com/altradits/altradits/server/internal/notifications"
 	"github.com/altradits/altradits/server/internal/sms"
+	"github.com/altradits/altradits/server/workers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -679,6 +681,99 @@ func main() {
 			"target":  target,
 			"message": "Freedom target updated. 🌱",
 		})
+	})
+
+	notifService := notifications.NewService(pool)
+
+	go workers.NewBedtimeWorker(pool, notifService).Run(context.Background())
+
+	api.GET("/notifications", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		items, err := notifService.List(c.Request.Context(), userID, 20)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not load notifications"})
+			return
+		}
+		c.JSON(200, gin.H{"notifications": items})
+	})
+
+	api.GET("/notifications/unread-count", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		count, err := notifService.UnreadCount(c.Request.Context(), userID)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not count notifications"})
+			return
+		}
+		c.JSON(200, gin.H{"count": count})
+	})
+
+	api.POST("/notifications/:id/read", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		notifID := c.Param("id")
+		if err := notifService.MarkRead(c.Request.Context(), userID, notifID); err != nil {
+			c.JSON(500, gin.H{"error": "could not mark as read"})
+			return
+		}
+		c.JSON(200, gin.H{"message": "Marked as read."})
+	})
+
+	api.POST("/notifications/read-all", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		if err := notifService.MarkAllRead(c.Request.Context(), userID); err != nil {
+			c.JSON(500, gin.H{"error": "could not mark all as read"})
+			return
+		}
+		c.JSON(200, gin.H{"message": "All marked as read."})
+	})
+
+	api.GET("/notifications/preferences", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		prefs, err := notifService.GetPreferences(c.Request.Context(), userID)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not load preferences"})
+			return
+		}
+		c.JSON(200, prefs)
+	})
+
+	api.PUT("/notifications/preferences", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		var input notifications.PreferencesInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "invalid preferences"})
+			return
+		}
+		prefs, err := notifService.UpdatePreferences(c.Request.Context(), userID, input)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not save preferences"})
+			return
+		}
+		c.JSON(200, gin.H{"preferences": prefs, "message": "Preferences saved. 🌱"})
+	})
+
+	api.POST("/notifications/trigger", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		var body struct {
+			Type string `json:"type" binding:"required"`
+		}
+		if err := c.ShouldBindJSON(&body); err != nil {
+			c.JSON(400, gin.H{"error": "type is required"})
+			return
+		}
+		switch body.Type {
+		case "bedtime_reminder":
+			_ = notifService.CheckAndSendBedtimeReminder(c.Request.Context(), userID)
+		case "goal_milestone":
+			_ = notifService.CheckAndSendGoalMilestones(c.Request.Context(), userID)
+		case "streak_at_risk":
+			_ = notifService.CheckAndSendStreakAtRisk(c.Request.Context(), userID)
+		case "weekly_summary":
+			_ = notifService.SendWeeklySummary(c.Request.Context(), userID)
+		default:
+			c.JSON(400, gin.H{"error": "unknown notification type"})
+			return
+		}
+		c.JSON(200, gin.H{"message": fmt.Sprintf("Triggered %s. Check /notifications.", body.Type)})
 	})
 
 	r.Run() // listen and serve on 0.0.0.0:8080

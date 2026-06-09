@@ -63,6 +63,7 @@ type DashboardData = {
     streak_days: number;
     xp_percent: number;
   };
+  unread_notifications?: number;
 };
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -138,17 +139,30 @@ export default function Dashboard() {
         <div className="pt-10 pb-6">
           <p className="text-xs text-stone-400 mb-1">{todayDate}</p>
           <div className="flex items-start justify-between">
-            <h1 className="text-2xl font-semibold text-stone-800">
-              {data.greeting}
-            </h1>
-            {data.streak > 1 && (
-              <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-1.5 text-center">
-                <p className="text-lg leading-none">🔥</p>
-                <p className="text-xs text-amber-600 font-medium mt-0.5">
-                  {data.streak}d
-                </p>
-              </div>
-            )}
+            <div>
+              <h1 className="text-2xl font-semibold text-stone-800">
+                {data.greeting}
+              </h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <a href="/notifications" className="relative">
+                <span className="text-xl">🔔</span>
+                {data.unread_notifications !== undefined &&
+                  data.unread_notifications > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-emerald-400 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                    {data.unread_notifications > 9 ? "9+" : data.unread_notifications}
+                  </span>
+                )}
+              </a>
+              {data.streak > 1 && (
+                <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-1.5 text-center">
+                  <p className="text-lg leading-none">🔥</p>
+                  <p className="text-xs text-amber-600 font-medium mt-0.5">
+                    {data.streak}d
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
           <p className="text-sm text-stone-400 mt-1">
             calm financial companionship
@@ -456,6 +470,12 @@ export default function Dashboard() {
             className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
           >
             🌱 Companion
+          </a>
+          <a
+            href="/notifications"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+          >
+            🔔 Notifications
           </a>
           <a
             href="/capture"

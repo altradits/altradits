@@ -19,6 +19,7 @@ type Summary struct {
 	InvestmentsSnapshot InvestmentsSnapshot `json:"investments"`
 	FreedomCoverage     float64             `json:"freedom_coverage"`
 	Companion           CompanionSnapshot   `json:"companion"`
+	UnreadNotifications int                 `json:"unread_notifications"`
 }
 
 // CompanionSnapshot shows the companion state on the dashboard.
@@ -386,6 +387,14 @@ func (s *Service) Get(ctx context.Context, userID string) (*Summary, error) {
 		StreakDays: compStreak,
 		XPPercent:  xpPct,
 	}
+
+	var unreadNotifs int
+	_ = s.db.QueryRow(ctx, `
+		SELECT COUNT(*) FROM notifications
+		WHERE user_id = $1::uuid AND status IN ('pending','delivered')
+		AND (expires_at IS NULL OR expires_at > NOW())
+	`, userID).Scan(&unreadNotifs)
+	summary.UnreadNotifications = unreadNotifs
 
 	return summary, nil
 }
