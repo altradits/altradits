@@ -239,7 +239,7 @@ type WithdrawMpesaInput struct {
 // payout, debiting the wallet immediately on success.
 func (s *Service) WithdrawMpesa(ctx context.Context, userID string, input WithdrawMpesaInput) (*Transaction, error) {
 	if input.AmountSats < minWithdrawSats {
-		return nil, fmt.Errorf("minimum withdrawal is %s sats", formatSats(minWithdrawSats))
+		return nil, fmt.Errorf("minimum withdrawal is %s sats", FormatSats(minWithdrawSats))
 	}
 	phone, err := NormalizeMpesaPhone(input.Phone)
 	if err != nil {
@@ -348,7 +348,7 @@ func (s *Service) WithdrawLightning(ctx context.Context, userID string, input Wi
 	// the available balance.
 	total := input.AmountSats + payment.FeeSats
 	if balance < total {
-		return nil, fmt.Errorf("insufficient balance to cover the %s sat routing fee", formatSats(payment.FeeSats))
+		return nil, fmt.Errorf("insufficient balance to cover the %s sat routing fee", FormatSats(payment.FeeSats))
 	}
 
 	now := time.Now()
@@ -358,7 +358,7 @@ func (s *Service) WithdrawLightning(ctx context.Context, userID string, input Wi
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, amount_sats, amount_kes, type, status, lightning_invoice, lightning_payment_hash, description, created_at, completed_at
 	`, userID, total, TypeWithdrawLightning, StatusCompleted, input.Destination, payment.PaymentHash,
-		fmt.Sprintf("Sent %s sats via Lightning", formatSats(input.AmountSats)), now).Scan(
+		fmt.Sprintf("Sent %s sats via Lightning", FormatSats(input.AmountSats)), now).Scan(
 		&wt.ID, &wt.AmountSats, &wt.AmountKES, &wt.Type, &wt.Status, &wt.LightningInvoice, &wt.LightningPaymentHash, &wt.Description, &wt.CreatedAt, &wt.CompletedAt,
 	)
 	if err != nil {
@@ -471,9 +471,9 @@ func (s *Service) UpdateSettings(ctx context.Context, userID string, input Setti
 	return nil
 }
 
-// formatSats renders a sats amount with thousands separators, e.g.
+// FormatSats renders a sats amount with thousands separators, e.g.
 // 1234567 -> "1,234,567", for use in user-facing error and description text.
-func formatSats(sats int64) string {
+func FormatSats(sats int64) string {
 	digits := strconv.FormatInt(sats, 10)
 	neg := strings.HasPrefix(digits, "-")
 	if neg {

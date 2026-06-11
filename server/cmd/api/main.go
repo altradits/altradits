@@ -431,7 +431,7 @@ func main() {
 		}
 		goal, err := goalsService.Create(c.Request.Context(), userID, input)
 		if err != nil {
-			c.JSON(500, gin.H{"error": "could not create goal"})
+			c.JSON(400, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(201, gin.H{
@@ -451,7 +451,7 @@ func main() {
 		}
 		goal, err := goalsService.Contribute(c.Request.Context(), userID, id, input.Amount)
 		if err != nil {
-			c.JSON(500, gin.H{"error": "could not update goal"})
+			c.JSON(400, gin.H{"error": err.Error()})
 			return
 		}
 		// Award companion XP for goal contribution
@@ -462,6 +462,9 @@ func main() {
 			})
 		}()
 		msg := fmt.Sprintf("Added KES %.0f to %s. 🌱", input.Amount, goal.Name)
+		if goal.Currency == "sats" {
+			msg = fmt.Sprintf("Moved %s sats from your wallet into %s. 🌱", wallet.FormatSats(int64(input.Amount+0.5)), goal.Name)
+		}
 		if goal.Completed {
 			msg = fmt.Sprintf("🎉 You hit your %s target!", goal.Name)
 		}

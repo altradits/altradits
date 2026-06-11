@@ -11,6 +11,7 @@ type Goal = {
   saved: number;
   remaining: number;
   percent: number;
+  currency: "kes" | "sats";
   deadline: string | null;
   completed: boolean;
   completed_at: string | null;
@@ -20,6 +21,14 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 function formatKES(n: number) {
   return `KES ${n.toLocaleString("en-KE", { minimumFractionDigits: 0 })}`;
+}
+
+function formatSats(n: number) {
+  return `${n.toLocaleString("en-US")} sats`;
+}
+
+function formatAmount(g: Goal, value: number) {
+  return g.currency === "sats" ? formatSats(value) : formatKES(value);
 }
 
 function ProgressBar({ percent, completed }: { percent: number; completed: boolean }) {
@@ -35,7 +44,7 @@ function ProgressBar({ percent, completed }: { percent: number; completed: boole
   );
 }
 
-const EMOJI_OPTIONS = ["🎯","🛡️","🎂","💻","✈️","🏠","📚","🕊️","💍","🚗","🎓","💰"];
+const EMOJI_OPTIONS = ["🎯","🛡️","🎂","💻","✈️","🏠","📚","🕊️","💍","🚗","🎓","💰","₿"];
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -47,13 +56,18 @@ export default function GoalsPage() {
   const [newName, setNewName] = useState("");
   const [newTarget, setNewTarget] = useState("");
   const [newEmoji, setNewEmoji] = useState("🎯");
+  const [newCurrency, setNewCurrency] = useState<"kes" | "sats">("kes");
   const [newDeadline, setNewDeadline] = useState("");
   const [creating, setCreating] = useState(false);
 
   // Contribute
   const [contributing, setContributing] = useState<string | null>(null);
   const [contributeAmount, setContributeAmount] = useState("");
+  const [contributeError, setContributeError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Wallet balance, shown as a hint when moving sats into a goal
+  const [walletSats, setWalletSats] = useState<number | null>(null);
 
   const load = () => {
     apiFetch("/goals")
@@ -62,7 +76,14 @@ export default function GoalsPage() {
       .catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  const loadWalletBalance = () => {
+    apiFetch("/wallet/balance")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setWalletSats(d ? d.sats_balance : null))
+      .catch(() => setWalletSats(null));
+  };
+
+  useEffect(() => { load(); loadWalletBalance(); }, []);
 
   const handleCreate = async () => {
     if (!newName.trim() || !newTarget) return;
@@ -74,6 +95,7 @@ export default function GoalsPage() {
           name: newName.trim(),
           emoji: newEmoji,
           target: parseFloat(newTarget),
+          currency: newCurrency,
           deadline: newDeadline || undefined,
         }),
       });
@@ -81,7 +103,7 @@ export default function GoalsPage() {
       if (res.ok) {
         setFeedback(data.message);
         setShowForm(false);
-        setNewName(""); setNewTarget(""); setNewEmoji("🎯"); setNewDeadline("");
+        setNewName(""); setNewTarget(""); setNewEmoji("🎯"); setNewCurrency("kes"); setNewDeadline("");
         load();
       }
     } finally {
@@ -93,18 +115,22 @@ export default function GoalsPage() {
     const amount = parseFloat(contributeAmount);
     if (!amount || amount <= 0) return;
     setSaving(true);
+    setContributeError(null);
     try {
       const res = await apiFetch(`/goals/${id}/contribute`, {
         method: "POST",
         body: JSON.stringify({ amount }),
       });
       const data = await res.json();
-      if (res.ok) {
-        setFeedback(data.message);
-        setContributing(null);
-        setContributeAmount("");
-        load();
+      if (!res.ok) {
+        setContributeError(data.error || "Could not update goal");
+        return;
       }
+      setFeedback(data.message);
+      setContributing(null);
+      setContributeAmount("");
+      load();
+      loadWalletBalance();
     } finally {
       setSaving(false);
     }
@@ -177,13 +203,45 @@ export default function GoalsPage() {
             onChange={(e) => setNewName(e.target.value)}
             className="w-full text-sm border border-stone-200 rounded-xl px-3 py-2.5 mb-3 outline-none focus:border-stone-400"
           />
+
+          {/* Currency toggle */}
+          <div className="flex gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => setNewCurrency("kes")}
+              className={`flex-1 py-2 text-sm font-medium rounded-xl transition-colors ${
+                newCurrency === "kes"
+                  ? "bg-stone-800 text-white"
+                  : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+              }`}
+            >
+              KES
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewCurrency("sats")}
+              className={`flex-1 py-2 text-sm font-medium rounded-xl transition-colors ${
+                newCurrency === "sats"
+                  ? "bg-stone-800 text-white"
+                  : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+              }`}
+            >
+              ⚡ Sats
+            </button>
+          </div>
+
           <input
             type="number"
-            placeholder="Target amount (KES)"
+            placeholder={newCurrency === "sats" ? "Target amount (sats)" : "Target amount (KES)"}
             value={newTarget}
             onChange={(e) => setNewTarget(e.target.value)}
             className="w-full text-sm border border-stone-200 rounded-xl px-3 py-2.5 mb-3 outline-none focus:border-stone-400"
           />
+          {newCurrency === "sats" && (
+            <p className="text-xs text-stone-300 -mt-2 mb-3">
+              Sats are moved here from your Lightning wallet as you contribute.
+            </p>
+          )}
           <input
             type="date"
             value={newDeadline}
@@ -215,7 +273,14 @@ export default function GoalsPage() {
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{g.emoji}</span>
                   <div>
-                    <p className="text-sm font-semibold text-stone-800">{g.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-stone-800">{g.name}</p>
+                      {g.currency === "sats" && (
+                        <span className="text-[10px] font-medium text-amber-600 bg-amber-50 border border-amber-100 rounded-full px-1.5 py-0.5">
+                          ⚡ sats
+                        </span>
+                      )}
+                    </div>
                     {g.deadline && (
                       <p className="text-xs text-stone-400">by {g.deadline}</p>
                     )}
@@ -233,14 +298,14 @@ export default function GoalsPage() {
               <div className="flex justify-between items-end mt-4">
                 <div>
                   <p className="text-lg font-semibold text-stone-800">
-                    {formatKES(g.saved)}
+                    {formatAmount(g, g.saved)}
                   </p>
                   <p className="text-xs text-stone-400">
-                    of {formatKES(g.target)} · {Math.round(g.percent)}%
+                    of {formatAmount(g, g.target)} · {Math.round(g.percent)}%
                   </p>
                 </div>
                 <p className="text-sm text-stone-500">
-                  {formatKES(g.remaining)} to go
+                  {formatAmount(g, g.remaining)} to go
                 </p>
               </div>
 
@@ -249,42 +314,53 @@ export default function GoalsPage() {
 
               {/* Contribute */}
               {contributing === g.id ? (
-                <div className="flex gap-2 mt-3">
-                  <input
-                    autoFocus
-                    type="number"
-                    placeholder="Amount"
-                    value={contributeAmount}
-                    onChange={(e) => setContributeAmount(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleContribute(g.id);
-                      if (e.key === "Escape") {
-                        setContributing(null);
-                        setContributeAmount("");
-                      }
-                    }}
-                    className="flex-1 text-sm border border-stone-200 rounded-xl px-3 py-2 outline-none focus:border-stone-400"
-                  />
-                  <button
-                    onClick={() => handleContribute(g.id)}
-                    disabled={saving}
-                    className="px-3 py-2 bg-stone-800 text-white text-sm rounded-xl disabled:opacity-30"
-                  >
-                    Add
-                  </button>
-                  <button
-                    onClick={() => { setContributing(null); setContributeAmount(""); }}
-                    className="px-3 py-2 text-stone-400 text-sm"
-                  >
-                    ✕
-                  </button>
+                <div className="mt-3">
+                  <div className="flex gap-2">
+                    <input
+                      autoFocus
+                      type="number"
+                      placeholder={g.currency === "sats" ? "Amount (sats)" : "Amount"}
+                      value={contributeAmount}
+                      onChange={(e) => setContributeAmount(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleContribute(g.id);
+                        if (e.key === "Escape") {
+                          setContributing(null);
+                          setContributeAmount("");
+                          setContributeError(null);
+                        }
+                      }}
+                      className="flex-1 text-sm border border-stone-200 rounded-xl px-3 py-2 outline-none focus:border-stone-400"
+                    />
+                    <button
+                      onClick={() => handleContribute(g.id)}
+                      disabled={saving}
+                      className="px-3 py-2 bg-stone-800 text-white text-sm rounded-xl disabled:opacity-30"
+                    >
+                      Add
+                    </button>
+                    <button
+                      onClick={() => { setContributing(null); setContributeAmount(""); setContributeError(null); }}
+                      className="px-3 py-2 text-stone-400 text-sm"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {g.currency === "sats" && walletSats !== null && (
+                    <p className="text-xs text-stone-300 mt-1.5">
+                      {formatSats(walletSats)} available in your wallet
+                    </p>
+                  )}
+                  {contributeError && (
+                    <p className="text-xs text-red-500 mt-1.5">{contributeError}</p>
+                  )}
                 </div>
               ) : (
                 <button
-                  onClick={() => { setContributing(g.id); setFeedback(null); }}
+                  onClick={() => { setContributing(g.id); setFeedback(null); setContributeError(null); }}
                   className="mt-3 w-full text-sm text-stone-500 py-2 border border-stone-100 rounded-xl hover:bg-stone-50 transition-colors"
                 >
-                  + Add money
+                  {g.currency === "sats" ? "+ Move sats from wallet" : "+ Add money"}
                 </button>
               )}
             </div>
@@ -321,7 +397,7 @@ export default function GoalsPage() {
                       {g.name}
                     </p>
                     <p className="text-xs text-emerald-500">
-                      {formatKES(g.target)} reached 🌱
+                      {formatAmount(g, g.target)} reached 🌱
                     </p>
                   </div>
                 </div>

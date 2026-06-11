@@ -2,13 +2,17 @@ package goals
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Goal represents a savings goal.
+// Goal represents a savings goal. Currency is either "kes" (saved is a
+// manually-tracked running total) or "sats" (saved is earmarked from the
+// user's Lightning wallet balance via Contribute/Delete).
 type Goal struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
@@ -17,6 +21,7 @@ type Goal struct {
 	Saved       float64   `json:"saved"`
 	Remaining   float64   `json:"remaining"`
 	Percent     float64   `json:"percent"`
+	Currency    string    `json:"currency"`
 	Deadline    *string   `json:"deadline"`
 	Completed   bool      `json:"completed"`
 	CompletedAt *string   `json:"completed_at"`
@@ -28,6 +33,7 @@ type CreateInput struct {
 	Name     string  `json:"name"     binding:"required"`
 	Emoji    string  `json:"emoji"`
 	Target   float64 `json:"target"   binding:"required,min=1"`
+	Currency string  `json:"currency"` // "kes" (default) or "sats"
 	Deadline string  `json:"deadline"` // optional, YYYY-MM-DD
 }
 
@@ -64,7 +70,7 @@ func hydrate(g *Goal) {
 func (s *Service) List(ctx context.Context, userID string) ([]*Goal, error) {
 	rows, err := s.db.Query(ctx, `
 		SELECT
-			id, name, emoji, target, saved,
+			id, name, emoji, target, saved, currency,
 			TO_CHAR(deadline, 'YYYY-MM-DD'),
 			completed,
 			TO_CHAR(completed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
@@ -82,7 +88,7 @@ func (s *Service) List(ctx context.Context, userID string) ([]*Goal, error) {
 	for rows.Next() {
 		var g Goal
 		if err := rows.Scan(
-			&g.ID, &g.Name, &g.Emoji, &g.Target, &g.Saved,
+			&g.ID, &g.Name, &g.Emoji, &g.Target, &g.Saved, &g.Currency,
 			&g.Deadline, &g.Completed, &g.CompletedAt, &g.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -100,6 +106,14 @@ func (s *Service) Create(ctx context.Context, userID string, input CreateInput) 
 		emoji = "🎯"
 	}
 
+	currency := input.Currency
+	if currency == "" {
+		currency = "kes"
+	}
+	if currency != "kes" && currency != "sats" {
+		return nil, fmt.Errorf("currency must be kes or sats")
+	}
+
 	var g Goal
 	var deadline *string
 	if input.Deadline != "" {
@@ -107,16 +121,16 @@ func (s *Service) Create(ctx context.Context, userID string, input CreateInput) 
 	}
 
 	err := s.db.QueryRow(ctx, `
-		INSERT INTO goals (user_id, name, emoji, target, deadline)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO goals (user_id, name, emoji, target, currency, deadline)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING
-			id, name, emoji, target, saved,
+			id, name, emoji, target, saved, currency,
 			TO_CHAR(deadline, 'YYYY-MM-DD'),
 			completed,
 			TO_CHAR(completed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
 			created_at
-	`, userID, input.Name, emoji, input.Target, deadline).
-		Scan(&g.ID, &g.Name, &g.Emoji, &g.Target, &g.Saved,
+	`, userID, input.Name, emoji, input.Target, currency, deadline).
+		Scan(&g.ID, &g.Name, &g.Emoji, &g.Target, &g.Saved, &g.Currency,
 			&g.Deadline, &g.Completed, &g.CompletedAt, &g.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create goal: %w", err)
@@ -125,10 +139,46 @@ func (s *Service) Create(ctx context.Context, userID string, input CreateInput) 
 	return &g, nil
 }
 
-// Contribute adds an amount to a goal's saved total.
+// Contribute adds an amount to a goal's saved total. For sats-denominated
+// goals, the amount is moved out of the user's Lightning wallet balance and
+// earmarked against the goal; for KES goals it is a manually-tracked total.
 func (s *Service) Contribute(ctx context.Context, userID, id string, amount float64) (*Goal, error) {
+	dbTx, err := s.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer dbTx.Rollback(ctx)
+
+	var currency string
+	if err := dbTx.QueryRow(ctx, `
+		SELECT currency FROM goals WHERE id = $1 AND user_id = $2 FOR UPDATE
+	`, id, userID).Scan(&currency); err != nil {
+		return nil, fmt.Errorf("goal not found")
+	}
+
+	if currency == "sats" {
+		amountSats := int64(amount + 0.5)
+
+		var balance int64
+		if err := dbTx.QueryRow(ctx, `
+			SELECT current_sats_balance FROM users WHERE id = $1 FOR UPDATE
+		`, userID).Scan(&balance); err != nil {
+			return nil, err
+		}
+		if balance < amountSats {
+			return nil, fmt.Errorf("insufficient wallet balance")
+		}
+
+		if _, err := dbTx.Exec(ctx, `
+			UPDATE users SET current_sats_balance = current_sats_balance - $1 WHERE id = $2
+		`, amountSats, userID); err != nil {
+			return nil, err
+		}
+		amount = float64(amountSats)
+	}
+
 	var g Goal
-	err := s.db.QueryRow(ctx, `
+	err = dbTx.QueryRow(ctx, `
 		UPDATE goals
 		SET
 			saved      = saved + $2,
@@ -138,23 +188,57 @@ func (s *Service) Contribute(ctx context.Context, userID, id string, amount floa
 			updated_at = NOW()
 		WHERE id = $1 AND user_id = $3
 		RETURNING
-			id, name, emoji, target, saved,
+			id, name, emoji, target, saved, currency,
 			TO_CHAR(deadline, 'YYYY-MM-DD'),
 			completed,
 			TO_CHAR(completed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
 			created_at
 	`, id, amount, userID).
-		Scan(&g.ID, &g.Name, &g.Emoji, &g.Target, &g.Saved,
+		Scan(&g.ID, &g.Name, &g.Emoji, &g.Target, &g.Saved, &g.Currency,
 			&g.Deadline, &g.Completed, &g.CompletedAt, &g.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update goal: %w", err)
+	}
+
+	if err := dbTx.Commit(ctx); err != nil {
+		return nil, err
 	}
 	hydrate(&g)
 	return &g, nil
 }
 
-// Delete removes a goal.
+// Delete removes a goal. If it is a sats goal with sats earmarked against
+// it, those sats are returned to the user's Lightning wallet balance first.
 func (s *Service) Delete(ctx context.Context, userID, id string) error {
-	_, err := s.db.Exec(ctx, `DELETE FROM goals WHERE id = $1 AND user_id = $2`, id, userID)
-	return err
+	dbTx, err := s.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer dbTx.Rollback(ctx)
+
+	var currency string
+	var saved float64
+	err = dbTx.QueryRow(ctx, `
+		SELECT currency, saved FROM goals WHERE id = $1 AND user_id = $2 FOR UPDATE
+	`, id, userID).Scan(&currency, &saved)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	if currency == "sats" && saved > 0 {
+		if _, err := dbTx.Exec(ctx, `
+			UPDATE users SET current_sats_balance = current_sats_balance + $1 WHERE id = $2
+		`, int64(saved+0.5), userID); err != nil {
+			return err
+		}
+	}
+
+	if _, err := dbTx.Exec(ctx, `DELETE FROM goals WHERE id = $1 AND user_id = $2`, id, userID); err != nil {
+		return err
+	}
+
+	return dbTx.Commit(ctx)
 }

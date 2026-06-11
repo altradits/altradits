@@ -16,8 +16,8 @@ func TestFormatSats(t *testing.T) {
 		{-1_234_567, "-1,234,567"},
 	}
 	for _, c := range cases {
-		if got := formatSats(c.sats); got != c.want {
-			t.Errorf("formatSats(%d) = %q, want %q", c.sats, got, c.want)
+		if got := FormatSats(c.sats); got != c.want {
+			t.Errorf("FormatSats(%d) = %q, want %q", c.sats, got, c.want)
 		}
 	}
 }
