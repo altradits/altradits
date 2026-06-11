@@ -334,15 +334,21 @@ func (s *Service) WithdrawLightning(ctx context.Context, userID string, input Wi
 	if err := dbTx.QueryRow(ctx, `SELECT current_sats_balance FROM users WHERE id = $1 FOR UPDATE`, userID).Scan(&balance); err != nil {
 		return nil, err
 	}
+	if balance < input.AmountSats {
+		return nil, fmt.Errorf("insufficient balance")
+	}
 
 	payment, err := s.lightning.PayInvoice(ctx, input.Destination, input.AmountSats)
 	if err != nil {
 		return nil, err
 	}
 
+	// Re-check including the routing fee: the amount alone was affordable,
+	// but a real LND provider may charge a fee that pushes the total over
+	// the available balance.
 	total := input.AmountSats + payment.FeeSats
 	if balance < total {
-		return nil, fmt.Errorf("insufficient balance")
+		return nil, fmt.Errorf("insufficient balance to cover the %s sat routing fee", formatSats(payment.FeeSats))
 	}
 
 	now := time.Now()
@@ -465,6 +471,25 @@ func (s *Service) UpdateSettings(ctx context.Context, userID string, input Setti
 	return nil
 }
 
+// formatSats renders a sats amount with thousands separators, e.g.
+// 1234567 -> "1,234,567", for use in user-facing error and description text.
 func formatSats(sats int64) string {
-	return strconv.FormatInt(sats, 10)
+	digits := strconv.FormatInt(sats, 10)
+	neg := strings.HasPrefix(digits, "-")
+	if neg {
+		digits = digits[1:]
+	}
+
+	var out strings.Builder
+	for i, d := range digits {
+		if i > 0 && (len(digits)-i)%3 == 0 {
+			out.WriteByte(',')
+		}
+		out.WriteRune(d)
+	}
+
+	if neg {
+		return "-" + out.String()
+	}
+	return out.String()
 }

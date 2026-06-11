@@ -235,7 +235,7 @@ export default function WalletDepositPage() {
               <p className="text-sm text-stone-600">
                 Pay this invoice for{" "}
                 <span className="font-semibold">
-                  {parseInt(satsAmount, 10).toLocaleString("en-US")} sats
+                  {invoice.amount_sats.toLocaleString("en-US")} sats
                 </span>
                 :
               </p>
