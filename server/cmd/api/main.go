@@ -21,6 +21,7 @@ import (
 	"github.com/altradits/altradits/server/internal/investments"
 	"github.com/altradits/altradits/server/internal/notifications"
 	"github.com/altradits/altradits/server/internal/sms"
+	"github.com/altradits/altradits/server/internal/wallet"
 	"github.com/altradits/altradits/server/workers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -775,6 +776,13 @@ func main() {
 		}
 		c.JSON(200, gin.H{"message": fmt.Sprintf("Triggered %s. Check /notifications.", body.Type)})
 	})
+
+	// Wallet routes — Bitcoin Lightning + M-Pesa
+	exchangeRateService := wallet.NewExchangeRateService(pool, rdb)
+	walletService := wallet.NewService(pool, exchangeRateService, wallet.NewMpesaProvider(), wallet.NewLightningProvider())
+	wallet.RegisterRoutes(api, walletService)
+
+	go workers.NewExchangeRateWorker(exchangeRateService).Run(context.Background())
 
 	r.Run() // listen and serve on 0.0.0.0:8080
 }

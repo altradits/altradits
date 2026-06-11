@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/altradits/altradits/server/internal/wallet"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -20,6 +21,16 @@ type Summary struct {
 	FreedomCoverage     float64             `json:"freedom_coverage"`
 	Companion           CompanionSnapshot   `json:"companion"`
 	UnreadNotifications int                 `json:"unread_notifications"`
+	Wallet              WalletSnapshot      `json:"wallet"`
+}
+
+// WalletSnapshot shows the Bitcoin Lightning wallet balance on the dashboard.
+type WalletSnapshot struct {
+	SatsBalance       int64   `json:"sats_balance"`
+	BTCBalance        float64 `json:"btc_balance"`
+	KESValue          float64 `json:"kes_value"`
+	PreferredCurrency string  `json:"preferred_currency"`
+	BTCToKES          float64 `json:"btc_to_kes"`
 }
 
 // CompanionSnapshot shows the companion state on the dashboard.
@@ -395,6 +406,27 @@ func (s *Service) Get(ctx context.Context, userID string) (*Summary, error) {
 		AND (expires_at IS NULL OR expires_at > NOW())
 	`, userID).Scan(&unreadNotifs)
 	summary.UnreadNotifications = unreadNotifs
+
+	// ── Wallet snapshot ───────────────────────────────────────────────────
+	var satsBalance int64
+	var preferredCurrency string
+	_ = s.db.QueryRow(ctx, `
+		SELECT current_sats_balance, preferred_currency FROM users WHERE id = $1
+	`, userID).Scan(&satsBalance, &preferredCurrency)
+
+	var btcToKES float64
+	_ = s.db.QueryRow(ctx, `
+		SELECT btc_to_kes FROM exchange_rates ORDER BY updated_at DESC LIMIT 1
+	`).Scan(&btcToKES)
+
+	rate := wallet.ExchangeRate{BTCToKES: btcToKES}
+	summary.Wallet = WalletSnapshot{
+		SatsBalance:       satsBalance,
+		BTCBalance:        wallet.SatsToBTC(satsBalance),
+		KESValue:          wallet.SatsToKES(satsBalance, rate),
+		PreferredCurrency: preferredCurrency,
+		BTCToKES:          btcToKES,
+	}
 
 	return summary, nil
 }

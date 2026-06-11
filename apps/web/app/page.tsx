@@ -34,6 +34,14 @@ type InvestmentsSnapshot = {
   position_count: number;
 };
 
+type WalletSnapshot = {
+  sats_balance: number;
+  btc_balance: number;
+  kes_value: number;
+  preferred_currency: string;
+  btc_to_kes: number;
+};
+
 type DashboardData = {
   date: string;
   greeting: string;
@@ -54,6 +62,7 @@ type DashboardData = {
     goals: GoalPreview[];
   };
   investments: InvestmentsSnapshot;
+  wallet: WalletSnapshot;
   bedtime_done: boolean;
   streak: number;
   freedom_coverage?: number;
@@ -76,6 +85,10 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 function formatKES(n: number) {
   return `KES ${n.toLocaleString("en-KE", { minimumFractionDigits: 0 })}`;
+}
+
+function formatSats(n: number) {
+  return `${n.toLocaleString("en-US")} sats`;
 }
 
 function MiniBar({ percent, muted }: { percent: number; muted?: boolean }) {
@@ -262,6 +275,34 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
+        {/* ── Wallet card ─────────────────────────────────── */}
+        {data.wallet && (
+          <a
+            href="/wallet"
+            className="block bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4 hover:bg-stone-50 transition-colors"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
+                ⚡ Lightning Wallet
+              </p>
+              <span className="text-xs text-stone-400">See all →</span>
+            </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-2xl font-semibold text-stone-800">
+                  {formatSats(data.wallet.sats_balance)}
+                </p>
+                <p className="text-xs text-stone-400 mt-0.5">
+                  ≈ {formatKES(data.wallet.kes_value)}
+                </p>
+              </div>
+              <p className="text-xs text-stone-400">
+                ₿ {data.wallet.btc_balance.toFixed(8)}
+              </p>
+            </div>
+          </a>
+        )}
 
         {/* ── Budget card ─────────────────────────────────── */}
         <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
@@ -452,6 +493,12 @@ export default function Dashboard() {
             className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
           >
             Investments
+          </a>
+          <a
+            href="/wallet"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+          >
+            ⚡ Wallet
           </a>
           <a
             href="/freedom"
