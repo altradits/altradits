@@ -72,15 +72,18 @@ func (s *Service) Send(ctx context.Context, userID, notifType, title, body strin
 		SELECT COUNT(*) FROM notifications
 		WHERE user_id = $1::uuid
 		  AND type = $2::notification_type
+		  AND title = $3
 		  AND created_at > NOW() - INTERVAL '6 hours'
-	`, userID, notifType).Scan(&recentCount)
+	`, userID, notifType, title).Scan(&recentCount)
 	if recentCount > 0 {
 		return nil
 	}
 
-	metaJSON, _ := json.Marshal(metadata)
-	if metaJSON == nil {
-		metaJSON = []byte("{}")
+	metaJSON := []byte("{}")
+	if metadata != nil {
+		if encoded, err := json.Marshal(metadata); err == nil {
+			metaJSON = encoded
+		}
 	}
 
 	_, err := s.db.Exec(ctx, `
@@ -276,6 +279,10 @@ func (s *Service) CheckAndSendBedtimeReminder(ctx context.Context, userID string
 		return nil
 	}
 
+	if time.Now().Format("15:04") < prefs.BedtimeReminderTime {
+		return nil
+	}
+
 	today := time.Now().Format("2006-01-02")
 	var closedAt *string
 	_ = s.db.QueryRow(ctx, `
@@ -313,7 +320,9 @@ func (s *Service) CheckAndSendGoalMilestones(ctx context.Context, userID string)
 	}
 	defer rows.Close()
 
-	milestones := []int{25, 50, 75, 100}
+	// Highest milestone first: a goal that jumps straight to 80% only
+	// celebrates 75%, and milestones already celebrated are not repeated.
+	milestones := []int{100, 75, 50, 25}
 	for rows.Next() {
 		var id, name, emoji string
 		var pct float64
@@ -321,15 +330,27 @@ func (s *Service) CheckAndSendGoalMilestones(ctx context.Context, userID string)
 			continue
 		}
 		for _, m := range milestones {
-			if pct >= float64(m) {
+			if pct < float64(m) {
+				continue
+			}
+			var alreadySent bool
+			_ = s.db.QueryRow(ctx, `
+				SELECT EXISTS(
+					SELECT 1 FROM notifications
+					WHERE user_id = $1::uuid AND type = 'goal_milestone'
+					  AND metadata->>'goal_id' = $2 AND metadata->>'milestone' = $3
+				)
+			`, userID, id, fmt.Sprintf("%d", m)).Scan(&alreadySent)
+			if !alreadySent {
 				_ = s.Send(ctx, userID, "goal_milestone",
 					fmt.Sprintf("%s %s is %d%% complete", emoji, name, m),
 					fmt.Sprintf("You're %d%% of the way to your %s goal. One step at a time. 🌱", m, name),
 					map[string]interface{}{"goal_id": id, "milestone": m})
 			}
+			break
 		}
 	}
-	return nil
+	return rows.Err()
 }
 
 // CheckAndSendStreakAtRisk notifies the user if their streak is at risk today.
