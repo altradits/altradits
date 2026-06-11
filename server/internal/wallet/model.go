@@ -44,6 +44,14 @@ type ExchangeRate struct {
 	Source    string    `json:"source"`
 }
 
+// PriceInfo is the current BTC/KES rate plus its change over the last 24h.
+type PriceInfo struct {
+	Rate         ExchangeRate `json:"rate"`
+	Change24hKES float64      `json:"change_24h_kes"`
+	Change24hPct float64      `json:"change_24h_pct"`
+	HasHistory   bool         `json:"has_history"`
+}
+
 // Balance is the wallet balance shown to a user, expressed in every unit.
 type Balance struct {
 	SatsBalance        int64        `json:"sats_balance"`

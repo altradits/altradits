@@ -419,6 +419,76 @@ func (s *Service) SendWeeklySummary(ctx context.Context, userID string) error {
 		})
 }
 
+// CheckAndSendPriceAlerts checks the user's active BTC price alerts against
+// the latest exchange rate, notifying and deactivating any that have been
+// crossed.
+func (s *Service) CheckAndSendPriceAlerts(ctx context.Context, userID string) error {
+	if s.isQuietHours(ctx, userID) {
+		return nil
+	}
+
+	var rate float64
+	if err := s.db.QueryRow(ctx, `
+		SELECT btc_to_kes FROM exchange_rates ORDER BY updated_at DESC LIMIT 1
+	`).Scan(&rate); err != nil || rate <= 0 {
+		return nil
+	}
+
+	rows, err := s.db.Query(ctx, `
+		SELECT id::text, direction, target_kes FROM price_alerts
+		WHERE user_id = $1::uuid AND active = TRUE
+		  AND (
+		    (direction = 'above' AND $2 >= target_kes)
+		    OR (direction = 'below' AND $2 <= target_kes)
+		  )
+	`, userID, rate)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	type hit struct {
+		id        string
+		direction string
+		target    float64
+	}
+	var hits []hit
+	for rows.Next() {
+		var h hit
+		if err := rows.Scan(&h.id, &h.direction, &h.target); err != nil {
+			continue
+		}
+		hits = append(hits, h)
+	}
+	if err := rows.Err(); err != nil {
+		return nil
+	}
+
+	for _, h := range hits {
+		verb := "risen above"
+		if h.direction == "below" {
+			verb = "fallen below"
+		}
+		title := fmt.Sprintf("₿ BTC has %s KES %.0f", verb, h.target)
+		body := fmt.Sprintf("Bitcoin is now KES %.0f.", rate)
+
+		if err := s.Send(ctx, userID, "price_alert", title, body, map[string]interface{}{
+			"alert_id":   h.id,
+			"direction":  h.direction,
+			"target_kes": h.target,
+			"rate_kes":   rate,
+		}); err != nil {
+			continue
+		}
+
+		_, _ = s.db.Exec(ctx, `
+			UPDATE price_alerts SET active = FALSE, triggered_at = NOW()
+			WHERE id = $1::uuid
+		`, h.id)
+	}
+	return nil
+}
+
 func (s *Service) isQuietHours(ctx context.Context, userID string) bool {
 	now := time.Now()
 	var quietStart, quietEnd string

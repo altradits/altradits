@@ -773,6 +773,8 @@ func main() {
 			_ = notifService.CheckAndSendStreakAtRisk(c.Request.Context(), userID)
 		case "weekly_summary":
 			_ = notifService.SendWeeklySummary(c.Request.Context(), userID)
+		case "price_alert":
+			_ = notifService.CheckAndSendPriceAlerts(c.Request.Context(), userID)
 		default:
 			c.JSON(400, gin.H{"error": "unknown notification type"})
 			return
@@ -786,6 +788,7 @@ func main() {
 	wallet.RegisterRoutes(api, walletService)
 
 	go workers.NewExchangeRateWorker(exchangeRateService).Run(context.Background())
+	go workers.NewPriceAlertWorker(pool, notifService).Run(context.Background())
 
 	r.Run() // listen and serve on 0.0.0.0:8080
 }

@@ -102,6 +102,30 @@ func (s *ExchangeRateService) Refresh(ctx context.Context) (ExchangeRate, error)
 	return rate, nil
 }
 
+// GetPriceInfo returns the current rate plus its change over the last 24h,
+// computed from historical rows in the exchange_rates table.
+func (s *ExchangeRateService) GetPriceInfo(ctx context.Context) (PriceInfo, error) {
+	rate, err := s.GetRate(ctx)
+	if err != nil && rate.BTCToKES == 0 {
+		return PriceInfo{}, err
+	}
+
+	info := PriceInfo{Rate: rate}
+
+	var past float64
+	dbErr := s.db.QueryRow(ctx, `
+		SELECT btc_to_kes FROM exchange_rates
+		WHERE updated_at <= NOW() - INTERVAL '24 hours'
+		ORDER BY updated_at DESC LIMIT 1
+	`).Scan(&past)
+	if dbErr == nil && past > 0 {
+		info.HasHistory = true
+		info.Change24hKES = rate.BTCToKES - past
+		info.Change24hPct = info.Change24hKES / past * 100
+	}
+	return info, nil
+}
+
 func (s *ExchangeRateService) fetchFromCoingecko(ctx context.Context) (float64, error) {
 	url := s.apiBaseURL + "/simple/price?ids=bitcoin&vs_currencies=kes"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)

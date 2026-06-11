@@ -245,6 +245,12 @@ export default function WalletPage() {
             1 BTC ≈ {formatKES(balance.rate.btc_to_kes)}
             {balance.rate.source === "default" && " (offline rate)"}
           </p>
+          <a
+            href="/wallet/price"
+            className="text-xs text-emerald-400 hover:text-emerald-300 mt-2 inline-block"
+          >
+            📈 Track price & set alerts →
+          </a>
         </div>
 
         {/* Actions */}
