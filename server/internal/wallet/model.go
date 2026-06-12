@@ -69,11 +69,6 @@ func SatsToBTC(sats int64) float64 {
 	return float64(sats) / SatsPerBTC
 }
 
-// BTCToSats converts whole bitcoin to satoshis (rounded to nearest sat).
-func BTCToSats(btc float64) int64 {
-	return int64(btc*SatsPerBTC + 0.5)
-}
-
 // SatsToKES converts a satoshi amount to KES using the given rate.
 func SatsToKES(sats int64, rate ExchangeRate) float64 {
 	return float64(sats) * rate.BTCToKES / SatsPerBTC

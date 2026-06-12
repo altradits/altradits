@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -16,6 +18,10 @@ const (
 	minDepositKES   = 10
 	minWithdrawSats = 10_000
 )
+
+// ErrUserNotFound is returned when the authenticated user's ID no longer
+// matches a row in the users table (e.g. a JWT issued for a deleted account).
+var ErrUserNotFound = errors.New("user not found")
 
 // Service implements wallet balance, deposit, withdrawal, and history
 // operations on top of the wallet_transactions ledger and the per-user sats
@@ -44,6 +50,9 @@ func (s *Service) GetBalance(ctx context.Context, userID string) (*Balance, erro
 		FROM users WHERE id = $1
 	`, userID).Scan(&sats, &received, &withdrawn, &preferredCurrency, &mpesaPhone)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
 		return nil, err
 	}
 	if rateErr != nil && rate.BTCToKES == 0 {
@@ -207,19 +216,7 @@ func (s *Service) SimulateLightningDeposit(ctx context.Context, userID, txID str
 		return nil, fmt.Errorf("invoice is already %s", wt.Status)
 	}
 
-	now := time.Now()
-	if err := dbTx.QueryRow(ctx, `
-		UPDATE wallet_transactions SET status = $1, completed_at = $2 WHERE id = $3
-		RETURNING status, completed_at
-	`, StatusCompleted, now, txID).Scan(&wt.Status, &wt.CompletedAt); err != nil {
-		return nil, err
-	}
-
-	if _, err := dbTx.Exec(ctx, `
-		UPDATE users SET current_sats_balance = current_sats_balance + $1,
-		                  total_sats_received = total_sats_received + $1
-		WHERE id = $2
-	`, wt.AmountSats, userID); err != nil {
+	if err := completeLightningDeposit(ctx, dbTx, &wt, userID); err != nil {
 		return nil, err
 	}
 
@@ -227,6 +224,73 @@ func (s *Service) SimulateLightningDeposit(ctx context.Context, userID, txID str
 		return nil, err
 	}
 	return &wt, nil
+}
+
+// CheckLightningDeposit asks the Lightning node whether a pending deposit
+// invoice has been settled. If so, the transaction is marked completed and
+// the wallet credited, exactly as SimulateLightningDeposit does. If the
+// invoice is still unpaid (or the transaction is not a pending Lightning
+// deposit), it is returned unchanged so the caller can poll again.
+func (s *Service) CheckLightningDeposit(ctx context.Context, userID, txID string) (*Transaction, error) {
+	dbTx, err := s.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer dbTx.Rollback(ctx)
+
+	var wt Transaction
+	err = dbTx.QueryRow(ctx, `
+		SELECT id, amount_sats, amount_kes, type, status, lightning_invoice, lightning_payment_hash, description, created_at, completed_at
+		FROM wallet_transactions WHERE id = $1 AND user_id = $2 FOR UPDATE
+	`, txID, userID).Scan(&wt.ID, &wt.AmountSats, &wt.AmountKES, &wt.Type, &wt.Status, &wt.LightningInvoice, &wt.LightningPaymentHash, &wt.Description, &wt.CreatedAt, &wt.CompletedAt)
+	if err != nil {
+		return nil, fmt.Errorf("transaction not found")
+	}
+	if wt.Type != TypeDepositLightning {
+		return nil, fmt.Errorf("not a lightning deposit")
+	}
+	if wt.Status != StatusPending || wt.LightningPaymentHash == nil {
+		return &wt, nil
+	}
+
+	settled, err := s.lightning.CheckInvoice(ctx, *wt.LightningPaymentHash)
+	if err != nil {
+		return nil, err
+	}
+	if !settled {
+		return &wt, nil
+	}
+
+	if err := completeLightningDeposit(ctx, dbTx, &wt, userID); err != nil {
+		return nil, err
+	}
+
+	if err := dbTx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return &wt, nil
+}
+
+// completeLightningDeposit marks a pending Lightning deposit transaction as
+// completed and credits the user's wallet for its amount. wt must have been
+// loaded with a FOR UPDATE lock within dbTx.
+func completeLightningDeposit(ctx context.Context, dbTx pgx.Tx, wt *Transaction, userID string) error {
+	now := time.Now()
+	if err := dbTx.QueryRow(ctx, `
+		UPDATE wallet_transactions SET status = $1, completed_at = $2 WHERE id = $3
+		RETURNING status, completed_at
+	`, StatusCompleted, now, wt.ID).Scan(&wt.Status, &wt.CompletedAt); err != nil {
+		return err
+	}
+
+	if _, err := dbTx.Exec(ctx, `
+		UPDATE users SET current_sats_balance = current_sats_balance + $1,
+		                  total_sats_received = total_sats_received + $1
+		WHERE id = $2
+	`, wt.AmountSats, userID); err != nil {
+		return err
+	}
+	return nil
 }
 
 // WithdrawMpesaInput is the request body for POST /wallet/withdraw/mpesa.

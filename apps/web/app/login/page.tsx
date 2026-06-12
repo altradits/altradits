@@ -17,8 +17,8 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
-      router.push("/");
+      const user = await login(email, password);
+      router.push(user.is_admin ? "/admin" : "/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -27,25 +27,24 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
-        <div>
-          <h1 className="text-3xl font-bold text-center text-gray-900">
+    <main className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
+      <div className="max-w-sm w-full">
+        <div className="text-center mb-6">
+          <a href="/" className="text-2xl">⚡</a>
+          <h1 className="text-2xl font-semibold text-stone-800 mt-2">
             Welcome back
           </h1>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to your Altradits account
+          <p className="text-sm text-stone-400 mt-1">
+            Sign in to your Altradits wallet
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
-          <div className="space-y-4">
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-6">
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {error && (
+              <p className="text-xs text-red-500 text-center">{error}</p>
+            )}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-xs text-stone-500 mb-1">
                 Email
               </label>
               <input
@@ -54,12 +53,12 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
                 placeholder="you@example.com"
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-xs text-stone-500 mb-1">
                 Password
               </label>
               <input
@@ -68,26 +67,26 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
                 placeholder="••••••••"
               />
             </div>
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-          >
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-          <p className="text-center text-sm text-gray-600">
-            Don't have an account?{" "}
-            <a href="/register" className="text-green-600 hover:text-green-500">
-              Sign up
-            </a>
-          </p>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-stone-800 text-white text-sm font-medium rounded-xl hover:bg-stone-700 transition-colors disabled:opacity-50"
+            >
+              {loading ? "Signing in..." : "Sign in"}
+            </button>
+          </form>
+        </div>
+        <p className="text-center text-sm text-stone-400 mt-4">
+          Don&apos;t have an account?{" "}
+          <a href="/register" className="text-emerald-600 hover:text-emerald-700 font-medium">
+            Sign up
+          </a>
+        </p>
       </div>
-    </div>
+    </main>
   );
 }

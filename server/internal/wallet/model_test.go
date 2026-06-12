@@ -19,31 +19,6 @@ func TestSatsToBTC(t *testing.T) {
 	}
 }
 
-func TestBTCToSats(t *testing.T) {
-	cases := []struct {
-		btc  float64
-		want int64
-	}{
-		{0, 0},
-		{1, SatsPerBTC},
-		{0.5, 50_000_000},
-		{0.00000001, 1},
-	}
-	for _, c := range cases {
-		if got := BTCToSats(c.btc); got != c.want {
-			t.Errorf("BTCToSats(%v) = %d, want %d", c.btc, got, c.want)
-		}
-	}
-}
-
-func TestBTCToSatsRoundTrip(t *testing.T) {
-	for _, sats := range []int64{0, 1, 1234, 100_000_000, 123_456_789} {
-		if got := BTCToSats(SatsToBTC(sats)); got != sats {
-			t.Errorf("BTCToSats(SatsToBTC(%d)) = %d, want %d", sats, got, sats)
-		}
-	}
-}
-
 func TestSatsToKES(t *testing.T) {
 	rate := ExchangeRate{BTCToKES: 13_000_000}
 

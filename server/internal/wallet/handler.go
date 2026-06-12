@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -14,14 +15,12 @@ func RegisterRoutes(api gin.IRouter, service *Service) {
 	api.GET("/wallet/balance", getBalanceHandler(service))
 	api.GET("/wallet/rate", getRateHandler(service))
 	api.GET("/wallet/price", getPriceInfoHandler(service))
-	api.GET("/price-alerts", listPriceAlertsHandler(service))
-	api.POST("/price-alerts", createPriceAlertHandler(service))
-	api.DELETE("/price-alerts/:id", deletePriceAlertHandler(service))
 	api.GET("/wallet/transactions", listTransactionsHandler(service))
 	api.GET("/wallet/transactions/export", exportTransactionsHandler(service))
 	api.POST("/wallet/deposit/mpesa", depositMpesaHandler(service))
 	api.POST("/wallet/deposit/lightning", depositLightningHandler(service))
 	api.POST("/wallet/deposit/lightning/:id/simulate", simulateLightningHandler(service))
+	api.GET("/wallet/deposit/lightning/:id/status", checkLightningDepositHandler(service))
 	api.POST("/wallet/withdraw/mpesa", withdrawMpesaHandler(service))
 	api.POST("/wallet/withdraw/lightning", withdrawLightningHandler(service))
 	api.PUT("/wallet/settings", updateSettingsHandler(service))
@@ -32,6 +31,10 @@ func getBalanceHandler(service *Service) gin.HandlerFunc {
 		userID := auth.GetUserID(c)
 		balance, err := service.GetBalance(c.Request.Context(), userID)
 		if err != nil {
+			if errors.Is(err, ErrUserNotFound) {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+				return
+			}
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not load wallet balance"})
 			return
 		}
@@ -58,50 +61,6 @@ func getPriceInfoHandler(service *Service) gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, info)
-	}
-}
-
-func listPriceAlertsHandler(service *Service) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userID := auth.GetUserID(c)
-		alerts, err := service.ListPriceAlerts(c.Request.Context(), userID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not load price alerts"})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"alerts": alerts})
-	}
-}
-
-func createPriceAlertHandler(service *Service) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userID := auth.GetUserID(c)
-		var input CreatePriceAlertInput
-		if err := c.ShouldBindJSON(&input); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "direction and target_kes are required"})
-			return
-		}
-		alert, err := service.CreatePriceAlert(c.Request.Context(), userID, input)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusCreated, gin.H{
-			"alert":   alert,
-			"message": "Price alert set. We'll notify you when BTC gets there. 🔔",
-		})
-	}
-}
-
-func deletePriceAlertHandler(service *Service) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userID := auth.GetUserID(c)
-		id := c.Param("id")
-		if err := service.DeletePriceAlert(c.Request.Context(), userID, id); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not remove alert"})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"message": "Alert removed."})
 	}
 }
 
@@ -189,6 +148,19 @@ func simulateLightningHandler(service *Service) gin.HandlerFunc {
 			"transaction": txn,
 			"message":     "Payment received. Your wallet has been topped up. 🌱",
 		})
+	}
+}
+
+func checkLightningDepositHandler(service *Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		id := c.Param("id")
+		txn, err := service.CheckLightningDeposit(c.Request.Context(), userID, id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"transaction": txn})
 	}
 }
 

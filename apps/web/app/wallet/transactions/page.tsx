@@ -51,13 +51,14 @@ function formatDateTime(dateString: string) {
 
 export default function WalletTransactionsPage() {
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, loading: authLoading } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!token) {
       router.push("/login");
       return;
@@ -81,7 +82,7 @@ export default function WalletTransactionsPage() {
         setLoading(false);
       }
     })();
-  }, [token, router]);
+  }, [token, authLoading, router]);
 
   const handleExport = async () => {
     setExporting(true);
@@ -127,7 +128,7 @@ export default function WalletTransactionsPage() {
 
   return (
     <main className="min-h-screen bg-stone-50 pb-12">
-      <div className="max-w-lg mx-auto px-5">
+      <div className="max-w-lg sm:max-w-2xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <div className="pt-10 pb-6 flex items-start justify-between">
           <div>
@@ -208,7 +209,7 @@ export default function WalletTransactionsPage() {
         )}
 
         <a
-          href="/wallet"
+          href="/"
           className="block text-center text-xs text-stone-400 mt-4"
         >
           ← Back to wallet

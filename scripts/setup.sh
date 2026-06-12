@@ -4,8 +4,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-export GOPATH="${GOPATH:-$HOME/go}"
-export GOMODCACHE="${GOMODCACHE:-$GOPATH/pkg/mod}"
+# Force the module cache under $HOME — some shells export a GOPATH pointing
+# at another user's home directory, which breaks `go` with a permission error.
+export GOPATH="$HOME/go"
+export GOMODCACHE="$GOPATH/pkg/mod"
 
 echo "==> Altradits setup"
 

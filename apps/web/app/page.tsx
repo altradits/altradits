@@ -1,138 +1,134 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api";
+import DonutChart from "@/components/DonutChart";
+import ReceivePanel from "@/components/ReceivePanel";
+import SendPanel from "@/components/SendPanel";
 
-type RecentItem = {
-  description: string;
-  amount: number;
-  category: string;
+type ExchangeRate = {
+  btc_to_kes: number;
+  sats_to_kes: number;
+};
+
+type Balance = {
+  sats_balance: number;
+  kes_value: number;
+  rate: ExchangeRate;
+};
+
+type Transaction = {
+  id: string;
+  amount_sats: number;
+  type: string;
+  status: string;
   created_at: string;
 };
-
-type CategoryHealth = {
-  category: string;
-  allocated: number;
-  spent: number;
-  percent: number;
-};
-
-type GoalPreview = {
-  id: string;
-  name: string;
-  emoji: string;
-  percent: number;
-  saved: number;
-  target: number;
-};
-
-type InvestmentsSnapshot = {
-  total_value: number;
-  total_growth: number;
-  total_growth_pct: number;
-  position_count: number;
-};
-
-type WalletSnapshot = {
-  sats_balance: number;
-  btc_balance: number;
-  kes_value: number;
-  preferred_currency: string;
-  btc_to_kes: number;
-};
-
-type DashboardData = {
-  date: string;
-  greeting: string;
-  today: {
-    total_spent: number;
-    entry_count: number;
-    top_category: string;
-    recent_items: RecentItem[];
-  };
-  budget: {
-    total_allocated: number;
-    total_spent: number;
-    percent: number;
-    top_categories: CategoryHealth[];
-  };
-  goals: {
-    active_count: number;
-    goals: GoalPreview[];
-  };
-  investments: InvestmentsSnapshot;
-  wallet: WalletSnapshot;
-  net_worth: number;
-  bedtime_done: boolean;
-  streak: number;
-  freedom_coverage?: number;
-  companion?: {
-    emoji: string;
-    level: string;
-    streak_days: number;
-    xp_percent: number;
-  };
-  unread_notifications?: number;
-};
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  food: "🍽️", transport: "🚗", family: "👨‍👩‍👧",
-  investments: "🌱", bills: "💡", fun: "🎉",
-  savings: "💰", health: "💊", uncategorized: "📝",
-};
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
-function formatKES(n: number) {
-  return `KES ${n.toLocaleString("en-KE", { minimumFractionDigits: 0 })}`;
-}
 
 function formatSats(n: number) {
   return `${n.toLocaleString("en-US")} sats`;
 }
 
-function MiniBar({ percent, muted }: { percent: number; muted?: boolean }) {
+function formatKES(n: number) {
+  return `KES ${n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString("en-KE", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function TransactionRow({ tx }: { tx: Transaction }) {
+  const isDeposit = tx.type.startsWith("deposit");
+  const isLightning = tx.type.endsWith("lightning");
+  const isPending = tx.status === "pending";
+  const amountColor = isPending
+    ? "text-amber-600"
+    : isDeposit
+    ? "text-emerald-600"
+    : "text-stone-700";
+
   return (
-    <div className="w-full bg-stone-100 rounded-full h-1 mt-1.5">
-      <div
-        className={`h-1 rounded-full transition-all duration-500 ${
-          muted ? "bg-stone-300" : percent > 85 ? "bg-amber-400" : "bg-emerald-400"
-        }`}
-        style={{ width: `${Math.min(percent, 100)}%` }}
-      />
+    <div className="bg-white rounded-xl border border-stone-100 shadow-sm px-4 py-3 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <span className="text-xl">{isLightning ? "⚡" : "📲"}</span>
+        <p className="text-xs text-stone-400">
+          {formatDate(tx.created_at)}
+          {isPending && " · pending"}
+        </p>
+      </div>
+      <p className={`text-sm font-medium ${amountColor}`}>
+        {isDeposit ? "+" : "-"}
+        {formatSats(tx.amount_sats)}
+      </p>
     </div>
   );
 }
 
-export default function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
+export default function Home() {
+  const router = useRouter();
+  const { user, token, loading: authLoading } = useAuth();
+  const [balance, setBalance] = useState<Balance | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const { token } = useAuth();
+  const fetchData = async () => {
+    try {
+      setError(null);
+      const [balRes, txRes] = await Promise.all([
+        apiFetch("/wallet/balance"),
+        apiFetch("/wallet/transactions?limit=50"),
+      ]);
+
+      if (balRes.status === 401 || txRes.status === 401) {
+        router.push("/login");
+        return;
+      }
+
+      if (!balRes.ok || !txRes.ok) {
+        throw new Error("Failed to fetch wallet");
+      }
+
+      setBalance(await balRes.json());
+      const txData = await txRes.json();
+      setTransactions(txData.transactions ?? []);
+    } catch (err) {
+      setError("Could not reach the server.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!token) return;
-    apiFetch("/dashboard")
-      .then((r) => { if (!r.ok) throw new Error("Unauthorized"); return r.json(); })
-      .then((d) => { setData(d); setLoading(false); })
-      .catch(() => { setError(true); setLoading(false); });
-  }, [token]);
+    if (authLoading || !token) return;
+    fetchData();
+  }, [token, authLoading, router]);
 
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <p className="text-stone-400 text-sm">Loading...</p>
-      </main>
-    );
+  if (authLoading) {
+    return <LoadingScreen />;
   }
 
-  if (error || !data) {
+  if (!token) {
+    return <LandingPage />;
+  }
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (error || !balance) {
     return (
       <main className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
         <div className="max-w-sm w-full text-center">
-          <p className="text-stone-400 text-sm mb-2">Could not reach the server.</p>
+          <p className="text-stone-400 text-sm mb-2">
+            {error ?? "Could not load wallet."}
+          </p>
           <p className="text-xs text-stone-300">
             Make sure the backend is running on port 8080.
           </p>
@@ -141,434 +137,134 @@ export default function Dashboard() {
     );
   }
 
-  const todayDate = new Date().toLocaleDateString("en-KE", {
-    weekday: "long", day: "numeric", month: "long",
-  });
+  const satsVolume = transactions
+    .filter((tx) => tx.type === "deposit_lightning" || tx.type === "withdraw_lightning")
+    .reduce((sum, tx) => sum + tx.amount_sats, 0);
+  const mpesaVolume = transactions
+    .filter((tx) => tx.type === "deposit_mpesa" || tx.type === "withdraw_mpesa")
+    .reduce((sum, tx) => sum + tx.amount_sats, 0);
 
   return (
     <main className="min-h-screen bg-stone-50 pb-12">
-      <div className="max-w-lg mx-auto px-5">
-
-        {/* ── Header ──────────────────────────────────────── */}
+      <div className="max-w-lg sm:max-w-2xl mx-auto px-4 sm:px-6">
+        {/* Header */}
         <div className="pt-10 pb-6">
-          <p className="text-xs text-stone-400 mb-1">{todayDate}</p>
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-stone-800">
-                {data.greeting}
-              </h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <a href="/notifications" className="relative">
-                <span className="text-xl">🔔</span>
-                {data.unread_notifications !== undefined &&
-                  data.unread_notifications > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-emerald-400 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                    {data.unread_notifications > 9 ? "9+" : data.unread_notifications}
-                  </span>
-                )}
-              </a>
-              {data.streak > 1 && (
-                <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-1.5 text-center">
-                  <p className="text-lg leading-none">🔥</p>
-                  <p className="text-xs text-amber-600 font-medium mt-0.5">
-                    {data.streak}d
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-          <p className="text-sm text-stone-400 mt-1">
-            calm financial companionship
+          <h1 className="text-2xl font-semibold text-stone-800">
+            Hi, {user?.name ?? "there"}
+          </h1>
+        </div>
+
+        {/* Balance card */}
+        <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl p-6 mb-4">
+          <p className="text-xs text-indigo-100 font-medium uppercase tracking-wider mb-1">
+            Balance
           </p>
+          <p className="text-3xl font-semibold text-white">{formatSats(balance.sats_balance)}</p>
+          <p className="text-sm text-indigo-100 mt-1">≈ {formatKES(balance.kes_value)}</p>
+          <a
+            href="/wallet/price"
+            className="text-xs text-white/80 hover:text-white mt-3 inline-block"
+          >
+            📈 Track price →
+          </a>
         </div>
 
-        {/* ── Net worth card ──────────────────────────────── */}
-        <a
-          href="/net-worth"
-          className="block bg-stone-800 rounded-2xl p-5 mb-4 hover:bg-stone-700 transition-colors"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
-                Net worth
-              </p>
-              <p className="text-3xl font-semibold text-stone-50 mt-1">
-                {formatKES(data.net_worth)}
-              </p>
-            </div>
-            <span className="text-xs text-stone-400">See breakdown →</span>
-          </div>
-        </a>
-
-        {/* ── Companion widget ─────────────────────────────── */}
-        {data.companion && (
-          <a
-            href="/companion"
-            className="flex items-center gap-4 bg-white rounded-2xl border border-stone-100 shadow-sm px-5 py-4 mb-4 hover:bg-stone-50 transition-colors"
-          >
-            <span className="text-4xl select-none">{data.companion.emoji}</span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-sm font-medium text-stone-700 capitalize">
-                  {data.companion.level.replace("_", " ")}
-                </p>
-                {data.companion.streak_days > 0 && (
-                  <span className="text-xs text-amber-500 font-medium">
-                    🔥 {data.companion.streak_days}d
-                  </span>
-                )}
-              </div>
-              <div className="w-full bg-stone-100 rounded-full h-1.5">
-                <div
-                  className="h-1.5 bg-emerald-400 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(data.companion.xp_percent, 100)}%` }}
-                />
-              </div>
-            </div>
-            <span className="text-xs text-stone-400">→</span>
-          </a>
-        )}
-
-        {/* ── Today card ──────────────────────────────────── */}
+        {/* Activity donut */}
         <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
-                Today
-              </p>
-              <p className="text-3xl font-semibold text-stone-800 mt-1">
-                {formatKES(data.today.total_spent)}
-              </p>
-              <p className="text-xs text-stone-400 mt-0.5">
-                {data.today.entry_count === 0
-                  ? "No entries yet"
-                  : `${data.today.entry_count} ${data.today.entry_count === 1 ? "entry" : "entries"}`}
-              </p>
-            </div>
-            <a
-              href="/capture"
-              className="px-3 py-2 bg-stone-800 text-white text-xs font-medium rounded-xl hover:bg-stone-700 transition-colors"
-            >
-              + Add
-            </a>
-          </div>
-
-          {/* Recent items */}
-          {data.today.recent_items && data.today.recent_items.length > 0 ? (
-            <div className="space-y-2 border-t border-stone-50 pt-3">
-              {data.today.recent_items.map((item, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">
-                      {CATEGORY_EMOJI[item.category] ?? "📝"}
-                    </span>
-                    <span className="text-sm text-stone-600">
-                      {item.description}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-stone-300">
-                      {item.created_at}
-                    </span>
-                    <span className="text-sm text-stone-700 font-medium">
-                      {formatKES(item.amount)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              {data.today.entry_count > 3 && (
-                <a
-                  href="/capture"
-                  className="block text-xs text-stone-400 hover:text-stone-600 pt-1 text-center"
-                >
-                  +{data.today.entry_count - 3} more →
-                </a>
-              )}
-            </div>
-          ) : (
-            <div className="border-t border-stone-50 pt-3 text-center">
-              <p className="text-xs text-stone-300">
-                What happened today? Tap + Add to start.
-              </p>
-            </div>
-          )}
+          <p className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-3">
+            Activity
+          </p>
+          <DonutChart
+            segments={[
+              { label: "Sats", value: satsVolume, colorClass: "stroke-indigo-500", dotClass: "bg-indigo-500" },
+              { label: "M-Pesa", value: mpesaVolume, colorClass: "stroke-violet-400", dotClass: "bg-violet-400" },
+            ]}
+          />
         </div>
 
-        {/* ── Wallet card ─────────────────────────────────── */}
-        {data.wallet && (
-          <a
-            href="/wallet"
-            className="block bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4 hover:bg-stone-50 transition-colors"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
-                ⚡ Lightning Wallet
-              </p>
-              <span className="text-xs text-stone-400">See all →</span>
-            </div>
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="text-2xl font-semibold text-stone-800">
-                  {formatSats(data.wallet.sats_balance)}
-                </p>
-                <p className="text-xs text-stone-400 mt-0.5">
-                  ≈ {formatKES(data.wallet.kes_value)}
-                </p>
-              </div>
-              <p className="text-xs text-stone-400">
-                ₿ {data.wallet.btc_balance.toFixed(8)}
-              </p>
-            </div>
-          </a>
-        )}
+        {/* Receive / Send */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <div id="receive">
+            <ReceivePanel rate={balance.rate} onCompleted={fetchData} />
+          </div>
+          <div id="send">
+            <SendPanel rate={balance.rate} onCompleted={fetchData} />
+          </div>
+        </div>
 
-        {/* ── Budget card ─────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
+        {/* Recent activity */}
+        <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
-              Budget · this month
+              Recent
             </p>
-            <a href="/budget" className="text-xs text-stone-400 hover:text-stone-600">
+            <a href="/wallet/transactions" className="text-xs text-stone-400 hover:text-stone-600">
               See all →
             </a>
           </div>
 
-          {/* Overall bar */}
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-sm text-stone-600">
-              {formatKES(data.budget.total_spent)}
-            </span>
-            <span className="text-xs text-stone-400">
-              of {formatKES(data.budget.total_allocated)}
-            </span>
-          </div>
-          <MiniBar percent={data.budget.percent} />
-
-          {/* Top categories */}
-          {data.budget.top_categories && data.budget.top_categories.length > 0 && (
-            <div className="space-y-2 mt-4 pt-3 border-t border-stone-50">
-              {data.budget.top_categories.map((cat) => (
-                <div key={cat.category}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">
-                        {CATEGORY_EMOJI[cat.category] ?? "📝"}
-                      </span>
-                      <span className="text-sm text-stone-600 capitalize">
-                        {cat.category}
-                      </span>
-                    </div>
-                    <span className="text-sm text-stone-700">
-                      {formatKES(cat.spent)}
-                    </span>
-                  </div>
-                  <MiniBar percent={cat.percent} />
-                </div>
+          {transactions.length > 0 ? (
+            <div className="space-y-2">
+              {transactions.slice(0, 5).map((tx) => (
+                <TransactionRow key={tx.id} tx={tx} />
               ))}
             </div>
+          ) : (
+            <p className="text-stone-400 text-sm text-center py-8">No activity yet.</p>
           )}
         </div>
+      </div>
+    </main>
+  );
+}
 
-        {!data.bedtime_done && (
-          <div
-            className="bg-stone-50 border border-stone-100 rounded-xl px-4 py-3 cursor-pointer hover:bg-stone-100 transition-colors"
-            onClick={() => window.location.href = '/bedtime'}
-          >
-            <p className="text-xs text-stone-500">
-              💬 <span className="font-medium">How did money feel today?</span>{" "}
-              <span className="text-stone-400">Close your day →</span>
-            </p>
-          </div>
-        )}
+function LoadingScreen() {
+  return (
+    <main className="min-h-screen bg-stone-50 flex items-center justify-center">
+      <p className="text-stone-400 text-sm">Loading...</p>
+    </main>
+  );
+}
 
-        {/* ── Investments card ──────────────────────────────────── */}
-        {data.investments && data.investments.position_count > 0 && (
-          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
-                Investments · {data.investments.position_count} positions
-              </p>
-              <a href="/investments" className="text-xs text-stone-400 hover:text-stone-600">
-                See all →
-              </a>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-stone-600">Total Value</span>
-                <span className="text-sm text-stone-800 font-medium">
-                  {formatKES(data.investments.total_value)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-stone-600">Growth</span>
-                <span className={`text-sm font-medium ${
-                  data.investments.total_growth >= 0 ? "text-emerald-600" : "text-red-600"
-                }`}>
-                  {data.investments.total_growth >= 0 ? "+" : ""}{formatKES(data.investments.total_growth)}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
+function FeatureCard({ icon, title }: { icon: string; title: string }) {
+  return (
+    <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 text-center">
+      <p className="text-xl mb-1">{icon}</p>
+      <p className="text-xs font-medium text-stone-600">{title}</p>
+    </div>
+  );
+}
 
-        {/* ── Freedom coverage ──────────────────────────────────── */}
-        {data.freedom_coverage !== undefined && data.freedom_coverage > 0 && (
-          <a
-            href="/freedom"
-            className="block bg-stone-800 rounded-xl px-4 py-3 mb-4 hover:bg-stone-700 transition-colors"
-          >
-            <div className="flex items-center justify-between mb-1.5">
-              <p className="text-xs text-stone-400 font-medium">Financial freedom</p>
-              <p className="text-xs text-emerald-400 font-medium">
-                {data.freedom_coverage.toFixed(0)}% covered →
-              </p>
-            </div>
-            <div className="w-full bg-stone-700 rounded-full h-1">
-              <div
-                className="h-1 bg-emerald-400 rounded-full transition-all"
-                style={{ width: `${Math.min(data.freedom_coverage, 100)}%` }}
-              />
-            </div>
-          </a>
-        )}
+function LandingPage() {
+  return (
+    <main className="min-h-screen bg-stone-50 flex items-center justify-center px-4 py-12">
+      <div className="max-w-md w-full text-center">
+        <p className="text-4xl">⚡</p>
+        <h1 className="text-3xl font-semibold text-stone-800 mt-3">Altradits</h1>
+        <p className="text-sm text-stone-400 mt-2">
+          Send, receive, and cash out — Sats or M-Pesa, in one place.
+        </p>
 
-        {/* ── Goals card ──────────────────────────────────── */}
-        {data.goals.active_count > 0 && (
-          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
-                Goals · {data.goals.active_count} active
-              </p>
-              <a href="/goals" className="text-xs text-stone-400 hover:text-stone-600">
-                See all →
-              </a>
-            </div>
-            <div className="space-y-3">
-              {data.goals.goals.map((g) => (
-                <div key={g.id}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">{g.emoji}</span>
-                      <span className="text-sm text-stone-600">{g.name}</span>
-                    </div>
-                    <span className="text-xs text-stone-400">
-                      {Math.round(g.percent)}%
-                    </span>
-                  </div>
-                  <MiniBar percent={g.percent} muted />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Bedtime CTA ─────────────────────────────────── */}
-        {data.bedtime_done ? (
-          <div className="bg-stone-800 rounded-2xl p-5 text-center">
-            <p className="text-lg mb-1">🌙</p>
-            <p className="text-sm font-medium text-stone-100">Day closed.</p>
-            <p className="text-xs text-stone-500 mt-1">
-              Sleep well. Tomorrow is ready.
-            </p>
-          </div>
-        ) : (
+        <div className="flex flex-col sm:flex-row gap-3 mt-8">
           <a
-            href="/bedtime"
-            className="block bg-stone-800 rounded-2xl p-5 text-center hover:bg-stone-700 transition-colors"
+            href="/register"
+            className="flex-1 py-3 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
           >
-            <p className="text-lg mb-1">🌙</p>
-            <p className="text-sm font-medium text-stone-100">
-              Close your day
-            </p>
-            <p className="text-xs text-stone-500 mt-1">
-              Review · Reflect · Rest
-            </p>
-          </a>
-        )}
-
-        {/* ── Nav row ─────────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-3 mt-4">
-          <a
-            href="/budget"
-            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            Budget
+            Create account
           </a>
           <a
-            href="/goals"
-            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+            href="/login"
+            className="flex-1 py-3 bg-white border border-stone-200 text-stone-600 text-sm font-medium rounded-xl hover:bg-stone-50 transition-colors"
           >
-            Goals
-          </a>
-          <a
-            href="/affordability"
-            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            Can I afford it?
-          </a>
-          <a
-            href="/investments"
-            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            Investments
-          </a>
-          <a
-            href="/wallet"
-            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            ⚡ Wallet
-          </a>
-          <a
-            href="/freedom"
-            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            Freedom
-          </a>
-          <a
-            href="/sms"
-            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            📱 SMS
-          </a>
-          <a
-            href="/companion"
-            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            🌱 Companion
-          </a>
-          <a
-            href="/notifications"
-            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            🔔 Notifications
-          </a>
-          <a
-            href="/bills"
-            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            🧾 Bills
-          </a>
-          <a
-            href="/net-worth"
-            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            💎 Net Worth
-          </a>
-          <a
-            href="/hackathons"
-            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            🏆 Hackathons
-          </a>
-          <a
-            href="/capture"
-            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            + Capture
+            Sign in
           </a>
         </div>
 
+        <div className="grid grid-cols-3 gap-3 mt-10">
+          <FeatureCard icon="⚡" title="Lightning" />
+          <FeatureCard icon="📲" title="M-Pesa" />
+          <FeatureCard icon="📈" title="Live rates" />
+        </div>
       </div>
     </main>
   );

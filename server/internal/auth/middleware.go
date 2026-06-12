@@ -7,7 +7,7 @@ import (
 )
 
 const UserIDKey = "user_id"
-const EmailKey  = "email"
+const IsAdminKey = "is_admin"
 
 // Middleware returns a Gin middleware that validates JWT tokens.
 // Protected routes will return 401 if the token is missing or invalid.
@@ -36,7 +36,20 @@ func (s *Service) Middleware() gin.HandlerFunc {
 
 		// Store user info in context for downstream handlers
 		c.Set(UserIDKey, claims.UserID)
-		c.Set(EmailKey, claims.Email)
+		c.Set(IsAdminKey, claims.IsAdmin)
+		c.Next()
+	}
+}
+
+// AdminMiddleware returns a Gin middleware that requires the authenticated
+// user to be an admin. Must be used after Middleware().
+func AdminMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !IsAdmin(c) {
+			c.JSON(403, gin.H{"error": "admin access required"})
+			c.Abort()
+			return
+		}
 		c.Next()
 	}
 }
@@ -50,4 +63,14 @@ func GetUserID(c *gin.Context) string {
 		}
 	}
 	return ""
+}
+
+// IsAdmin reports whether the authenticated user has admin privileges.
+func IsAdmin(c *gin.Context) bool {
+	if v, exists := c.Get(IsAdminKey); exists {
+		if isAdmin, ok := v.(bool); ok {
+			return isAdmin
+		}
+	}
+	return false
 }

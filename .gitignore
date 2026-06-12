@@ -37,9 +37,13 @@ apps/web/.env.local
 
 # Go build output
 main
+api
+altradits-api
 server/bin/
-server/tmp/
 tmp/
+
+# Logs
+*.log
 
 # Local Go caches (optional local override)
 .gomodcache/

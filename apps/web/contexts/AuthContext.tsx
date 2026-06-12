@@ -7,13 +7,14 @@ type User = {
   email: string;
   name: string;
   created_at: string;
+  is_admin: boolean;
 };
 
 type AuthContextType = {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
+  register: (email: string, password: string, name: string) => Promise<User>;
   logout: () => void;
   loading: boolean;
 };
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
     localStorage.setItem("altradits_token", data.token);
     localStorage.setItem("altradits_user", JSON.stringify(data.user));
+    return data.user as User;
   };
 
   const register = async (email: string, password: string, name: string) => {
@@ -69,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
     localStorage.setItem("altradits_token", data.token);
     localStorage.setItem("altradits_user", JSON.stringify(data.user));
+    return data.user as User;
   };
 
   const logout = async () => {

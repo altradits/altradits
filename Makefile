@@ -1,9 +1,12 @@
-.PHONY: help setup verify dev dev-db dev-backend dev-frontend dev-all build test migrate-up migrate-down db-reset build-backend
+.PHONY: help setup verify dev dev-db dev-backend dev-frontend build test migrate-up migrate-down db-reset build-backend
 
 # Run all commands from the repo root (go.mod lives here).
 ROOT := $(CURDIR)
-export GOPATH ?= $(HOME)/go
-export GOMODCACHE ?= $(GOPATH)/pkg/mod
+# Force the module cache under $HOME regardless of any inherited GOPATH —
+# some shells export a GOPATH pointing at another user's home directory,
+# which breaks `go build`/`go run` with a permission error.
+export GOPATH := $(HOME)/go
+export GOMODCACHE := $(GOPATH)/pkg/mod
 
 help:
 	@echo "Altradits — common commands"
@@ -12,9 +15,8 @@ help:
 	@echo "  make verify        Check db, redis, and running services"
 	@echo "  make dev-db        Start Postgres + Redis only"
 	@echo "  make migrate-up    Apply database migrations"
-	@echo "  make dev-backend   Run Go API (port 8080)"
+	@echo "  make dev-backend   Run Go API (port 8080) — also starts db/cache + migrates"
 	@echo "  make dev-frontend  Run Next.js dev server (port 3000)"
-	@echo "  make dev-all       Start db/cache, migrate, then print next steps"
 	@echo "  make dev           Docker full stack (db + cache + api + web)"
 	@echo "  make db-reset      Wipe database volume and re-migrate"
 	@echo "  make test          Run backend tests"
@@ -48,20 +50,11 @@ db-reset:
 	@sleep 5
 	$(MAKE) migrate-up
 
-dev-backend:
-	@test -f .env || (echo "Missing .env — run: cp .env.example .env" && exit 1)
-	@command -v air >/dev/null 2>&1 && air -c server/.air.toml || go run server/cmd/api/main.go
+dev-backend: dev-db migrate-up
+	go run server/cmd/api/main.go
 
 dev-frontend:
 	cd apps/web && npm run dev
-
-dev-all: dev-db migrate-up
-	@echo ""
-	@echo "Infrastructure ready. In separate terminals run:"
-	@echo "  make dev-backend"
-	@echo "  make dev-frontend"
-	@echo ""
-	@echo "Open http://localhost:3000"
 
 dev:
 	docker compose --profile full up --build
