@@ -14,6 +14,7 @@ type CreateForm = {
   end_date: string;
   min_team_size: number;
   max_team_size: number;
+  social_post_reward_sats: number;
 };
 
 export default function NewHackathonPage() {
@@ -28,6 +29,7 @@ export default function NewHackathonPage() {
     end_date: "",
     min_team_size: 2,
     max_team_size: 5,
+    social_post_reward_sats: 1000,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +49,7 @@ export default function NewHackathonPage() {
       theme: form.theme.trim(),
       min_team_size: form.min_team_size,
       max_team_size: form.max_team_size,
+      social_post_reward_sats: form.social_post_reward_sats,
     };
     if (form.application_deadline) {
       payload.application_deadline = new Date(form.application_deadline).toISOString();
@@ -202,6 +205,24 @@ export default function NewHackathonPage() {
                 className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs text-stone-500 mb-1">
+              Social Post Reward (sats)
+            </label>
+            <input
+              type="number"
+              value={form.social_post_reward_sats}
+              onChange={(e) =>
+                setForm({ ...form, social_post_reward_sats: parseInt(e.target.value) || 0 })
+              }
+              min="0"
+              className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
+            />
+            <p className="text-xs text-stone-400 mt-1">
+              Sats awarded for each approved social media post.
+            </p>
           </div>
 
           {error && (

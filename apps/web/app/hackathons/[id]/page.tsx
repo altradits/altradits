@@ -18,6 +18,7 @@ type Hackathon = {
   end_date?: string | null;
   min_team_size: number;
   max_team_size: number;
+  social_post_reward_sats: number;
   created_at: string;
   updated_at: string;
   is_organizer?: boolean;
@@ -191,6 +192,7 @@ export default function HackathonDetailPage() {
         end_date: hackathon.end_date,
         min_team_size: hackathon.min_team_size,
         max_team_size: hackathon.max_team_size,
+        social_post_reward_sats: hackathon.social_post_reward_sats,
       };
       const res = await apiFetch(`/hackathons/${id}`, {
         method: "PUT",
@@ -366,6 +368,47 @@ export default function HackathonDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Engagement tools */}
+        {(hackathon.is_organizer || hackathon.my_application_status === "accepted") && (
+          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
+            <p className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-3">
+              Hackathon Tools
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <a
+                href={`/hackathons/${id}/notes`}
+                className="px-3 py-2 bg-stone-50 text-stone-700 text-xs font-medium rounded-xl hover:bg-stone-100 transition-colors text-center"
+              >
+                📝 Daily Notes
+              </a>
+              <a
+                href={`/hackathons/${id}/checkin`}
+                className="px-3 py-2 bg-stone-50 text-stone-700 text-xs font-medium rounded-xl hover:bg-stone-100 transition-colors text-center"
+              >
+                ✅ Check-in
+              </a>
+              <a
+                href={`/hackathons/${id}/chat`}
+                className="px-3 py-2 bg-stone-50 text-stone-700 text-xs font-medium rounded-xl hover:bg-stone-100 transition-colors text-center"
+              >
+                💬 Chat
+              </a>
+              <a
+                href={`/hackathons/${id}/homework`}
+                className="px-3 py-2 bg-stone-50 text-stone-700 text-xs font-medium rounded-xl hover:bg-stone-100 transition-colors text-center"
+              >
+                📚 Homework
+              </a>
+              <a
+                href={`/hackathons/${id}/social`}
+                className="px-3 py-2 bg-stone-50 text-stone-700 text-xs font-medium rounded-xl hover:bg-stone-100 transition-colors text-center col-span-2"
+              >
+                📣 Social Posts
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* Organizer panel */}
         {hackathon.is_organizer && (

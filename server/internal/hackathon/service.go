@@ -20,6 +20,10 @@ var (
 	ErrAlreadyOnTeam      = errors.New("you are already on a team for this hackathon")
 	ErrTeamNotFound       = errors.New("team not found")
 	ErrTeamFull           = errors.New("this team is full")
+	ErrNotParticipant     = errors.New("you must be an accepted hacker or the organizer to access this")
+	ErrNotTeamMember      = errors.New("you must be a member of this team")
+	ErrInvalidCheckinCode = errors.New("invalid or expired check-in code")
+	ErrHomeworkNotFound   = errors.New("homework not found")
 )
 
 var validStatuses = map[string]bool{
@@ -51,14 +55,14 @@ func NewService(db *pgxpool.Pool) *Service {
 const hackathonReturning = `
 	id, organizer_id, name, description, theme, status,
 	application_deadline, start_date, end_date,
-	min_team_size, max_team_size, created_at, updated_at
+	min_team_size, max_team_size, social_post_reward_sats, created_at, updated_at
 `
 
 func scanHackathon(row pgx.Row, h *Hackathon) error {
 	return row.Scan(
 		&h.ID, &h.OrganizerID, &h.Name, &h.Description, &h.Theme, &h.Status,
 		&h.ApplicationDeadline, &h.StartDate, &h.EndDate,
-		&h.MinTeamSize, &h.MaxTeamSize, &h.CreatedAt, &h.UpdatedAt,
+		&h.MinTeamSize, &h.MaxTeamSize, &h.SocialPostRewardSats, &h.CreatedAt, &h.UpdatedAt,
 	)
 }
 
@@ -84,10 +88,10 @@ func (s *Service) Create(ctx context.Context, userID string, input CreateInput) 
 
 	var h Hackathon
 	err = scanHackathon(s.db.QueryRow(ctx, `
-		INSERT INTO hackathons (organizer_id, name, description, theme, application_deadline, start_date, end_date, min_team_size, max_team_size)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO hackathons (organizer_id, name, description, theme, application_deadline, start_date, end_date, min_team_size, max_team_size, social_post_reward_sats)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING `+hackathonReturning,
-		userID, input.Name, input.Description, input.Theme, input.ApplicationDeadline, input.StartDate, input.EndDate, minSize, maxSize,
+		userID, input.Name, input.Description, input.Theme, input.ApplicationDeadline, input.StartDate, input.EndDate, minSize, maxSize, input.SocialPostRewardSats,
 	), &h)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create hackathon: %w", err)
@@ -101,7 +105,7 @@ func (s *Service) List(ctx context.Context, userID string) ([]*Hackathon, error)
 	rows, err := s.db.Query(ctx, `
 		SELECT h.id, h.organizer_id, u.name, h.name, h.description, h.theme, h.status,
 		       h.application_deadline, h.start_date, h.end_date,
-		       h.min_team_size, h.max_team_size, h.created_at, h.updated_at
+		       h.min_team_size, h.max_team_size, h.social_post_reward_sats, h.created_at, h.updated_at
 		FROM hackathons h
 		JOIN users u ON u.id = h.organizer_id
 		WHERE h.status != 'draft' OR h.organizer_id = $1
@@ -118,7 +122,7 @@ func (s *Service) List(ctx context.Context, userID string) ([]*Hackathon, error)
 		if err := rows.Scan(
 			&h.ID, &h.OrganizerID, &h.OrganizerName, &h.Name, &h.Description, &h.Theme, &h.Status,
 			&h.ApplicationDeadline, &h.StartDate, &h.EndDate,
-			&h.MinTeamSize, &h.MaxTeamSize, &h.CreatedAt, &h.UpdatedAt,
+			&h.MinTeamSize, &h.MaxTeamSize, &h.SocialPostRewardSats, &h.CreatedAt, &h.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -135,14 +139,14 @@ func (s *Service) Get(ctx context.Context, userID, id string) (*Hackathon, error
 	err := s.db.QueryRow(ctx, `
 		SELECT h.id, h.organizer_id, u.name, h.name, h.description, h.theme, h.status,
 		       h.application_deadline, h.start_date, h.end_date,
-		       h.min_team_size, h.max_team_size, h.created_at, h.updated_at
+		       h.min_team_size, h.max_team_size, h.social_post_reward_sats, h.created_at, h.updated_at
 		FROM hackathons h
 		JOIN users u ON u.id = h.organizer_id
 		WHERE h.id = $1
 	`, id).Scan(
 		&h.ID, &h.OrganizerID, &h.OrganizerName, &h.Name, &h.Description, &h.Theme, &h.Status,
 		&h.ApplicationDeadline, &h.StartDate, &h.EndDate,
-		&h.MinTeamSize, &h.MaxTeamSize, &h.CreatedAt, &h.UpdatedAt,
+		&h.MinTeamSize, &h.MaxTeamSize, &h.SocialPostRewardSats, &h.CreatedAt, &h.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -193,12 +197,12 @@ func (s *Service) Update(ctx context.Context, userID, id string, input UpdateInp
 		UPDATE hackathons
 		SET name = $1, description = $2, theme = $3, status = $4,
 		    application_deadline = $5, start_date = $6, end_date = $7,
-		    min_team_size = $8, max_team_size = $9, updated_at = NOW()
-		WHERE id = $10 AND organizer_id = $11
+		    min_team_size = $8, max_team_size = $9, social_post_reward_sats = $10, updated_at = NOW()
+		WHERE id = $11 AND organizer_id = $12
 		RETURNING `+hackathonReturning,
 		input.Name, input.Description, input.Theme, input.Status,
 		input.ApplicationDeadline, input.StartDate, input.EndDate,
-		minSize, maxSize, id, userID,
+		minSize, maxSize, input.SocialPostRewardSats, id, userID,
 	), &h)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -352,6 +356,62 @@ func (s *Service) onTeam(ctx context.Context, userID, hackathonID string) (bool,
 		SELECT EXISTS(SELECT 1 FROM hackathon_team_members WHERE hackathon_id = $1 AND user_id = $2)
 	`, hackathonID, userID).Scan(&exists)
 	return exists, err
+}
+
+// isOrganizer reports whether userID organizes hackathonID.
+func (s *Service) isOrganizer(ctx context.Context, userID, hackathonID string) (bool, error) {
+	var organizerID string
+	err := s.db.QueryRow(ctx, `SELECT organizer_id FROM hackathons WHERE id = $1`, hackathonID).Scan(&organizerID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, ErrHackathonNotFound
+		}
+		return false, err
+	}
+	return organizerID == userID, nil
+}
+
+// requireParticipant returns ErrNotParticipant unless userID organizes the
+// hackathon or has an accepted application to it.
+func (s *Service) requireParticipant(ctx context.Context, userID, hackathonID string) error {
+	isOrg, err := s.isOrganizer(ctx, userID, hackathonID)
+	if err != nil {
+		return err
+	}
+	if isOrg {
+		return nil
+	}
+	var status string
+	err = s.db.QueryRow(ctx, `SELECT status FROM hackathon_applications WHERE hackathon_id = $1 AND user_id = $2`, hackathonID, userID).Scan(&status)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotParticipant
+		}
+		return err
+	}
+	if status != ApplicationAccepted {
+		return ErrNotParticipant
+	}
+	return nil
+}
+
+// creditSats adds amountSats to userID's wallet balance and records a
+// hackathon_rewards entry for transparency. Must be called within dbTx.
+func (s *Service) creditSats(ctx context.Context, dbTx pgx.Tx, hackathonID, userID, source, sourceID string, amountSats int64) error {
+	if amountSats <= 0 {
+		return nil
+	}
+	if _, err := dbTx.Exec(ctx, `
+		UPDATE users SET current_sats_balance = current_sats_balance + $1, total_sats_received = total_sats_received + $1
+		WHERE id = $2
+	`, amountSats, userID); err != nil {
+		return err
+	}
+	_, err := dbTx.Exec(ctx, `
+		INSERT INTO hackathon_rewards (hackathon_id, user_id, source, source_id, amount_sats)
+		VALUES ($1, $2, $3, $4, $5)
+	`, hackathonID, userID, source, sourceID, amountSats)
+	return err
 }
 
 // CreateTeam forms a new team within a hackathon, with the creator as leader.

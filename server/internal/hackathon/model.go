@@ -25,6 +25,13 @@ const (
 	RoleMember = "member"
 )
 
+// Submission status values, shared by homework submissions and social posts.
+const (
+	SubmissionPending  = "pending"
+	SubmissionApproved = "approved"
+	SubmissionRejected = "rejected"
+)
+
 // Hackathon is an event organized on the platform.
 type Hackathon struct {
 	ID                  string     `json:"id"`
@@ -37,10 +44,11 @@ type Hackathon struct {
 	ApplicationDeadline *time.Time `json:"application_deadline,omitempty"`
 	StartDate           *time.Time `json:"start_date,omitempty"`
 	EndDate             *time.Time `json:"end_date,omitempty"`
-	MinTeamSize         int        `json:"min_team_size"`
-	MaxTeamSize         int        `json:"max_team_size"`
-	CreatedAt           time.Time  `json:"created_at"`
-	UpdatedAt           time.Time  `json:"updated_at"`
+	MinTeamSize          int        `json:"min_team_size"`
+	MaxTeamSize          int        `json:"max_team_size"`
+	SocialPostRewardSats int64      `json:"social_post_reward_sats"`
+	CreatedAt            time.Time  `json:"created_at"`
+	UpdatedAt            time.Time  `json:"updated_at"`
 
 	// Context for the requesting user, populated on GET /hackathons/:id
 	IsOrganizer     bool    `json:"is_organizer,omitempty"`
@@ -80,27 +88,29 @@ type Team struct {
 
 // CreateInput is the request body for POST /hackathons.
 type CreateInput struct {
-	Name                string     `json:"name" binding:"required"`
-	Description         string     `json:"description"`
-	Theme               string     `json:"theme"`
-	ApplicationDeadline *time.Time `json:"application_deadline"`
-	StartDate           *time.Time `json:"start_date"`
-	EndDate             *time.Time `json:"end_date"`
-	MinTeamSize         int        `json:"min_team_size"`
-	MaxTeamSize         int        `json:"max_team_size"`
+	Name                 string     `json:"name" binding:"required"`
+	Description          string     `json:"description"`
+	Theme                string     `json:"theme"`
+	ApplicationDeadline  *time.Time `json:"application_deadline"`
+	StartDate            *time.Time `json:"start_date"`
+	EndDate              *time.Time `json:"end_date"`
+	MinTeamSize          int        `json:"min_team_size"`
+	MaxTeamSize          int        `json:"max_team_size"`
+	SocialPostRewardSats int64      `json:"social_post_reward_sats"`
 }
 
 // UpdateInput is the request body for PUT /hackathons/:id.
 type UpdateInput struct {
-	Name                string     `json:"name" binding:"required"`
-	Description         string     `json:"description"`
-	Theme               string     `json:"theme"`
-	Status              string     `json:"status" binding:"required"`
-	ApplicationDeadline *time.Time `json:"application_deadline"`
-	StartDate           *time.Time `json:"start_date"`
-	EndDate             *time.Time `json:"end_date"`
-	MinTeamSize         int        `json:"min_team_size"`
-	MaxTeamSize         int        `json:"max_team_size"`
+	Name                 string     `json:"name" binding:"required"`
+	Description          string     `json:"description"`
+	Theme                string     `json:"theme"`
+	Status               string     `json:"status" binding:"required"`
+	ApplicationDeadline  *time.Time `json:"application_deadline"`
+	StartDate            *time.Time `json:"start_date"`
+	EndDate              *time.Time `json:"end_date"`
+	MinTeamSize          int        `json:"min_team_size"`
+	MaxTeamSize          int        `json:"max_team_size"`
+	SocialPostRewardSats int64      `json:"social_post_reward_sats"`
 }
 
 // ApplyInput is the request body for POST /hackathons/:id/apply.

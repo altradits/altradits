@@ -29,9 +29,9 @@ func RegisterRoutes(api gin.IRouter, service *Service) {
 // statusForError maps service sentinel errors to HTTP status codes.
 func statusForError(err error) int {
 	switch {
-	case errors.Is(err, ErrHackathonNotFound), errors.Is(err, ErrTeamNotFound):
+	case errors.Is(err, ErrHackathonNotFound), errors.Is(err, ErrTeamNotFound), errors.Is(err, ErrHomeworkNotFound):
 		return http.StatusNotFound
-	case errors.Is(err, ErrNotOrganizer):
+	case errors.Is(err, ErrNotOrganizer), errors.Is(err, ErrNotParticipant), errors.Is(err, ErrNotTeamMember):
 		return http.StatusForbidden
 	default:
 		return http.StatusBadRequest

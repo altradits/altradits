@@ -918,6 +918,13 @@ func main() {
 	hackathonService := hackathon.NewService(pool)
 	hackathon.RegisterRoutes(api, hackathonService)
 
+	// Hackathon engagement — daily notes, QR check-in, live chat, homework, social posts
+	hackathon.RegisterNotesRoutes(api, hackathonService)
+	hackathon.RegisterCheckinRoutes(api, hackathonService)
+	hackathon.RegisterChatRoutes(api, hackathonService)
+	hackathon.RegisterHomeworkRoutes(api, hackathonService)
+	hackathon.RegisterSocialRoutes(api, hackathonService)
+
 	go workers.NewExchangeRateWorker(exchangeRateService).Run(context.Background())
 	go workers.NewPriceAlertWorker(pool, notifService).Run(context.Background())
 	go workers.NewBillReminderWorker(pool, notifService).Run(context.Background())
