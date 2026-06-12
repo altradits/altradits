@@ -471,6 +471,37 @@ func main() {
 		c.JSON(200, gin.H{"goal": goal, "message": msg})
 	})
 
+	// Set up (or replace) a goal's recurring auto-save schedule
+	api.PUT("/goals/:id/auto-contribute", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		id := c.Param("id")
+		var input goals.AutoContributionInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "amount and frequency are required"})
+			return
+		}
+		ac, err := goalsService.SetAutoContribution(c.Request.Context(), userID, id, input)
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{
+			"auto_contribution": ac,
+			"message":           fmt.Sprintf("Auto-save turned on — we'll contribute %s. 🔁", input.Frequency),
+		})
+	})
+
+	// Turn off a goal's recurring auto-save schedule
+	api.DELETE("/goals/:id/auto-contribute", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		id := c.Param("id")
+		if err := goalsService.ClearAutoContribution(c.Request.Context(), userID, id); err != nil {
+			c.JSON(500, gin.H{"error": "could not update auto-save"})
+			return
+		}
+		c.JSON(200, gin.H{"message": "Auto-save turned off."})
+	})
+
 	// Delete a goal
 	api.DELETE("/goals/:id", func(c *gin.Context) {
 		userID := auth.GetUserID(c)
@@ -691,6 +722,9 @@ func main() {
 
 	go workers.NewBedtimeWorker(pool, notifService).Run(context.Background())
 
+	autoContributionWorker := workers.NewAutoContributionWorker(pool, goalsService, notifService)
+	go autoContributionWorker.Run(context.Background())
+
 	api.GET("/notifications", func(c *gin.Context) {
 		userID := auth.GetUserID(c)
 		items, err := notifService.List(c.Request.Context(), userID, 20)
@@ -775,6 +809,8 @@ func main() {
 			_ = notifService.SendWeeklySummary(c.Request.Context(), userID)
 		case "price_alert":
 			_ = notifService.CheckAndSendPriceAlerts(c.Request.Context(), userID)
+		case "auto_contribution":
+			autoContributionWorker.RunOnce(c.Request.Context())
 		default:
 			c.JSON(400, gin.H{"error": "unknown notification type"})
 			return

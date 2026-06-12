@@ -26,6 +26,8 @@ type Goal struct {
 	Completed   bool      `json:"completed"`
 	CompletedAt *string   `json:"completed_at"`
 	CreatedAt   time.Time `json:"created_at"`
+
+	AutoContribution *AutoContribution `json:"auto_contribution,omitempty"`
 }
 
 // CreateInput is the request body for creating a goal.
@@ -70,14 +72,18 @@ func hydrate(g *Goal) {
 func (s *Service) List(ctx context.Context, userID string) ([]*Goal, error) {
 	rows, err := s.db.Query(ctx, `
 		SELECT
-			id, name, emoji, target, saved, currency,
-			TO_CHAR(deadline, 'YYYY-MM-DD'),
-			completed,
-			TO_CHAR(completed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-			created_at
-		FROM goals
-		WHERE user_id = $1
-		ORDER BY completed ASC, created_at ASC
+			g.id, g.name, g.emoji, g.target, g.saved, g.currency,
+			TO_CHAR(g.deadline, 'YYYY-MM-DD'),
+			g.completed,
+			TO_CHAR(g.completed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+			g.created_at,
+			ac.id, ac.amount, ac.frequency, ac.active,
+			TO_CHAR(ac.next_run_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+			TO_CHAR(ac.last_run_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+		FROM goals g
+		LEFT JOIN goal_auto_contributions ac ON ac.goal_id = g.id AND ac.active = TRUE
+		WHERE g.user_id = $1
+		ORDER BY g.completed ASC, g.created_at ASC
 	`, userID)
 	if err != nil {
 		return nil, err
@@ -87,13 +93,28 @@ func (s *Service) List(ctx context.Context, userID string) ([]*Goal, error) {
 	var result []*Goal
 	for rows.Next() {
 		var g Goal
+		var acID, acFrequency, acNextRun, acLastRun *string
+		var acAmount *float64
+		var acActive *bool
 		if err := rows.Scan(
 			&g.ID, &g.Name, &g.Emoji, &g.Target, &g.Saved, &g.Currency,
 			&g.Deadline, &g.Completed, &g.CompletedAt, &g.CreatedAt,
+			&acID, &acAmount, &acFrequency, &acActive, &acNextRun, &acLastRun,
 		); err != nil {
 			return nil, err
 		}
 		hydrate(&g)
+		if acID != nil {
+			g.AutoContribution = &AutoContribution{
+				ID:        *acID,
+				GoalID:    g.ID,
+				Amount:    *acAmount,
+				Frequency: *acFrequency,
+				Active:    *acActive,
+				NextRunAt: *acNextRun,
+				LastRunAt: acLastRun,
+			}
+		}
 		result = append(result, &g)
 	}
 	return result, rows.Err()

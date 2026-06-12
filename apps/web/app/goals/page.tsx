@@ -3,6 +3,18 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
 
+type Frequency = "daily" | "weekly" | "monthly";
+
+type AutoContribution = {
+  id: string;
+  goal_id: string;
+  amount: number;
+  frequency: Frequency;
+  active: boolean;
+  next_run_at: string;
+  last_run_at: string | null;
+};
+
 type Goal = {
   id: string;
   name: string;
@@ -15,7 +27,10 @@ type Goal = {
   deadline: string | null;
   completed: boolean;
   completed_at: string | null;
+  auto_contribution?: AutoContribution | null;
 };
+
+const FREQUENCIES: Frequency[] = ["daily", "weekly", "monthly"];
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -68,6 +83,13 @@ export default function GoalsPage() {
 
   // Wallet balance, shown as a hint when moving sats into a goal
   const [walletSats, setWalletSats] = useState<number | null>(null);
+
+  // Auto-save
+  const [autoSaveEditing, setAutoSaveEditing] = useState<string | null>(null);
+  const [autoSaveAmount, setAutoSaveAmount] = useState("");
+  const [autoSaveFrequency, setAutoSaveFrequency] = useState<Frequency>("weekly");
+  const [autoSaveError, setAutoSaveError] = useState<string | null>(null);
+  const [autoSaving, setAutoSaving] = useState(false);
 
   const load = () => {
     apiFetch("/goals")
@@ -139,6 +161,35 @@ export default function GoalsPage() {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Remove "${name}"?`)) return;
     await apiFetch(`/goals/${id}`, { method: "DELETE" });
+    load();
+  };
+
+  const handleSetAutoSave = async (id: string) => {
+    const amount = parseFloat(autoSaveAmount);
+    if (!amount || amount <= 0) return;
+    setAutoSaving(true);
+    setAutoSaveError(null);
+    try {
+      const res = await apiFetch(`/goals/${id}/auto-contribute`, {
+        method: "PUT",
+        body: JSON.stringify({ amount, frequency: autoSaveFrequency }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAutoSaveError(data.error || "Could not set up auto-save");
+        return;
+      }
+      setFeedback(data.message);
+      setAutoSaveEditing(null);
+      setAutoSaveAmount("");
+      load();
+    } finally {
+      setAutoSaving(false);
+    }
+  };
+
+  const handleCancelAutoSave = async (id: string) => {
+    await apiFetch(`/goals/${id}/auto-contribute`, { method: "DELETE" });
     load();
   };
 
@@ -361,6 +412,87 @@ export default function GoalsPage() {
                   className="mt-3 w-full text-sm text-stone-500 py-2 border border-stone-100 rounded-xl hover:bg-stone-50 transition-colors"
                 >
                   {g.currency === "sats" ? "+ Move sats from wallet" : "+ Add money"}
+                </button>
+              )}
+
+              {/* Auto-save */}
+              {g.auto_contribution?.active ? (
+                <div className="mt-2 flex items-center justify-between text-xs text-stone-400">
+                  <span>
+                    🔁 Auto-saving {formatAmount(g, g.auto_contribution.amount)} / {g.auto_contribution.frequency}
+                  </span>
+                  <button
+                    onClick={() => handleCancelAutoSave(g.id)}
+                    className="text-stone-300 hover:text-stone-400"
+                  >
+                    Turn off
+                  </button>
+                </div>
+              ) : autoSaveEditing === g.id ? (
+                <div className="mt-2">
+                  <div className="flex gap-2 mb-2">
+                    {FREQUENCIES.map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => setAutoSaveFrequency(f)}
+                        className={`flex-1 py-1.5 text-xs font-medium rounded-lg capitalize transition-colors ${
+                          autoSaveFrequency === f
+                            ? "bg-stone-800 text-white"
+                            : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      autoFocus
+                      type="number"
+                      placeholder={g.currency === "sats" ? "Amount (sats)" : "Amount (KES)"}
+                      value={autoSaveAmount}
+                      onChange={(e) => setAutoSaveAmount(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSetAutoSave(g.id);
+                        if (e.key === "Escape") {
+                          setAutoSaveEditing(null);
+                          setAutoSaveAmount("");
+                          setAutoSaveError(null);
+                        }
+                      }}
+                      className="flex-1 text-sm border border-stone-200 rounded-xl px-3 py-2 outline-none focus:border-stone-400"
+                    />
+                    <button
+                      onClick={() => handleSetAutoSave(g.id)}
+                      disabled={autoSaving}
+                      className="px-3 py-2 bg-stone-800 text-white text-sm rounded-xl disabled:opacity-30"
+                    >
+                      Set
+                    </button>
+                    <button
+                      onClick={() => { setAutoSaveEditing(null); setAutoSaveAmount(""); setAutoSaveError(null); }}
+                      className="px-3 py-2 text-stone-400 text-sm"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {autoSaveError && (
+                    <p className="text-xs text-red-500 mt-1.5">{autoSaveError}</p>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setAutoSaveEditing(g.id);
+                    setAutoSaveAmount("");
+                    setAutoSaveFrequency("weekly");
+                    setAutoSaveError(null);
+                    setFeedback(null);
+                  }}
+                  className="mt-2 text-xs text-stone-400 hover:text-stone-600"
+                >
+                  🔁 Set up auto-save
                 </button>
               )}
             </div>
