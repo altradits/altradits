@@ -489,6 +489,88 @@ func (s *Service) CheckAndSendPriceAlerts(ctx context.Context, userID string) er
 	return nil
 }
 
+// CheckAndSendBillsApproaching rolls over any recurring bills whose due date
+// has passed to their next cycle, then notifies the user about bills due
+// within the next 3 days that haven't been notified about yet.
+func (s *Service) CheckAndSendBillsApproaching(ctx context.Context, userID string) error {
+	if s.isQuietHours(ctx, userID) {
+		return nil
+	}
+	if !s.isEnabled(ctx, userID, "bill_approaching") {
+		return nil
+	}
+
+	if _, err := s.db.Exec(ctx, `
+		UPDATE bills
+		SET next_due_date = next_due_date + CASE frequency
+				WHEN 'weekly' THEN INTERVAL '7 days'
+				WHEN 'yearly' THEN INTERVAL '1 year'
+				ELSE INTERVAL '1 month'
+			END,
+			last_notified_for = NULL
+		WHERE user_id = $1::uuid AND active = TRUE AND next_due_date < CURRENT_DATE
+	`, userID); err != nil {
+		return nil
+	}
+
+	rows, err := s.db.Query(ctx, `
+		SELECT id::text, name, emoji, amount,
+		       TO_CHAR(next_due_date, 'YYYY-MM-DD'),
+		       (next_due_date - CURRENT_DATE)::int
+		FROM bills
+		WHERE user_id = $1::uuid AND active = TRUE
+		  AND next_due_date - CURRENT_DATE <= 3
+		  AND (last_notified_for IS NULL OR last_notified_for != next_due_date)
+	`, userID)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	type due struct {
+		id, name, emoji, dueDate string
+		amount                   float64
+		daysUntil                int
+	}
+	var items []due
+	for rows.Next() {
+		var d due
+		if err := rows.Scan(&d.id, &d.name, &d.emoji, &d.amount, &d.dueDate, &d.daysUntil); err != nil {
+			continue
+		}
+		items = append(items, d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil
+	}
+
+	for _, d := range items {
+		var when string
+		switch {
+		case d.daysUntil < 0:
+			when = "is overdue"
+		case d.daysUntil == 0:
+			when = "is due today"
+		case d.daysUntil == 1:
+			when = "is due tomorrow"
+		default:
+			when = fmt.Sprintf("is due in %d days", d.daysUntil)
+		}
+
+		if err := s.Send(ctx, userID, "bill_approaching",
+			fmt.Sprintf("%s %s %s", d.emoji, d.name, when),
+			fmt.Sprintf("KES %.0f due on %s.", d.amount, d.dueDate),
+			map[string]interface{}{"bill_id": d.id, "amount": d.amount}); err != nil {
+			continue
+		}
+
+		_, _ = s.db.Exec(ctx, `
+			UPDATE bills SET last_notified_for = next_due_date WHERE id = $1::uuid
+		`, d.id)
+	}
+	return nil
+}
+
 func (s *Service) isQuietHours(ctx context.Context, userID string) bool {
 	now := time.Now()
 	var quietStart, quietEnd string

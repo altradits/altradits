@@ -525,6 +525,12 @@ export default function Dashboard() {
             🔔 Notifications
           </a>
           <a
+            href="/bills"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+          >
+            🧾 Bills
+          </a>
+          <a
             href="/capture"
             className="col-span-2 text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
           >

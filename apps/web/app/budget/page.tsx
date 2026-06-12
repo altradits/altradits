@@ -260,13 +260,19 @@ export default function BudgetPage() {
         </div>
       )}
 
-      {/* Quick link to capture */}
-      <div className="mt-8 pt-6 border-t border-stone-100">
+      {/* Nav */}
+      <div className="mt-8 pt-6 border-t border-stone-100 flex gap-3">
         <a
           href="/capture"
-          className="block w-full text-center px-4 py-3 bg-stone-800 text-white text-sm font-medium rounded-xl hover:bg-stone-700 transition-colors"
+          className="flex-1 text-center px-4 py-3 bg-stone-800 text-white text-sm font-medium rounded-xl hover:bg-stone-700 transition-colors"
         >
           + Add entry
+        </a>
+        <a
+          href="/bills"
+          className="flex-1 text-center px-4 py-3 bg-white border border-stone-200 text-stone-700 text-sm font-medium rounded-xl hover:bg-stone-50 transition-colors"
+        >
+          Bills
         </a>
       </div>
 

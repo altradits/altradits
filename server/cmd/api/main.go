@@ -10,6 +10,7 @@ import (
 	"github.com/altradits/altradits/server/internal/affordability"
 	"github.com/altradits/altradits/server/internal/auth"
 	"github.com/altradits/altradits/server/internal/bedtime"
+	"github.com/altradits/altradits/server/internal/bills"
 	"github.com/altradits/altradits/server/internal/budget"
 	"github.com/altradits/altradits/server/internal/capture"
 	"github.com/altradits/altradits/server/internal/coaching"
@@ -406,6 +407,79 @@ func main() {
 			return
 		}
 		c.JSON(200, gin.H{"budget": updated, "message": "Budget updated. 🌱"})
+	})
+
+	billsService := bills.NewService(pool)
+
+	// List all recurring bills
+	api.GET("/bills", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		list, err := billsService.List(c.Request.Context(), userID)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not load bills"})
+			return
+		}
+		c.JSON(200, gin.H{"bills": list})
+	})
+
+	// Add a new recurring bill
+	api.POST("/bills", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		var input bills.CreateInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "name, amount, and next_due_date are required"})
+			return
+		}
+		bill, err := billsService.Create(c.Request.Context(), userID, input)
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(201, gin.H{"bill": bill, "message": fmt.Sprintf("We'll remind you before %s is due. 🧾", bill.Name)})
+	})
+
+	// Edit a recurring bill
+	api.PUT("/bills/:id", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		id := c.Param("id")
+		var input bills.UpdateInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "name, amount, frequency, and next_due_date are required"})
+			return
+		}
+		bill, err := billsService.Update(c.Request.Context(), userID, id, input)
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{"bill": bill, "message": "Bill updated. 🌱"})
+	})
+
+	// Pause or resume reminders for a bill
+	api.POST("/bills/:id/toggle", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		id := c.Param("id")
+		bill, err := billsService.ToggleActive(c.Request.Context(), userID, id)
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+		msg := "Reminders paused."
+		if bill.Active {
+			msg = "Reminders turned back on."
+		}
+		c.JSON(200, gin.H{"bill": bill, "message": msg})
+	})
+
+	// Delete a recurring bill
+	api.DELETE("/bills/:id", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		id := c.Param("id")
+		if err := billsService.Delete(c.Request.Context(), userID, id); err != nil {
+			c.JSON(500, gin.H{"error": "could not delete bill"})
+			return
+		}
+		c.JSON(200, gin.H{"message": "Bill removed."})
 	})
 
 	goalsService := goals.NewService(pool)
@@ -811,6 +885,8 @@ func main() {
 			_ = notifService.CheckAndSendPriceAlerts(c.Request.Context(), userID)
 		case "auto_contribution":
 			autoContributionWorker.RunOnce(c.Request.Context())
+		case "bill_approaching":
+			_ = notifService.CheckAndSendBillsApproaching(c.Request.Context(), userID)
 		default:
 			c.JSON(400, gin.H{"error": "unknown notification type"})
 			return
@@ -825,6 +901,7 @@ func main() {
 
 	go workers.NewExchangeRateWorker(exchangeRateService).Run(context.Background())
 	go workers.NewPriceAlertWorker(pool, notifService).Run(context.Background())
+	go workers.NewBillReminderWorker(pool, notifService).Run(context.Background())
 
 	r.Run() // listen and serve on 0.0.0.0:8080
 }
