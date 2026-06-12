@@ -5,6 +5,15 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api";
 
+type ExchangeRate = {
+  btc_to_kes: number;
+  sats_to_kes: number;
+};
+
+function formatKES(n: number) {
+  return `KES ${n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 export default function WalletWithdrawPage() {
   const router = useRouter();
   const { token } = useAuth();
@@ -23,9 +32,18 @@ export default function WalletWithdrawPage() {
   const [lnMessage, setLnMessage] = useState<string | null>(null);
   const [lnError, setLnError] = useState<string | null>(null);
 
+  const [rate, setRate] = useState<ExchangeRate | null>(null);
+
   useEffect(() => {
     if (!token) router.push("/login");
   }, [token, router]);
+
+  useEffect(() => {
+    apiFetch("/wallet/rate")
+      .then((r) => r.json())
+      .then(setRate)
+      .catch(() => {});
+  }, []);
 
   const handleMpesaWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,7 +129,13 @@ export default function WalletWithdrawPage() {
                 className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
                 required
               />
-              <p className="text-xs text-stone-300 mt-1">Minimum 10,000 sats</p>
+              {rate && parseInt(mpesaSats, 10) > 0 ? (
+                <p className="text-xs text-emerald-600 mt-1">
+                  {parseInt(mpesaSats, 10).toLocaleString("en-US")} sats ≈ {formatKES(parseInt(mpesaSats, 10) * rate.sats_to_kes)}
+                </p>
+              ) : (
+                <p className="text-xs text-stone-300 mt-1">Minimum 10,000 sats</p>
+              )}
             </div>
             <div>
               <label className="block text-xs text-stone-500 mb-1">
