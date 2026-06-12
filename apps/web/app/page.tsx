@@ -63,6 +63,7 @@ type DashboardData = {
   };
   investments: InvestmentsSnapshot;
   wallet: WalletSnapshot;
+  net_worth: number;
   bedtime_done: boolean;
   streak: number;
   freedom_coverage?: number;
@@ -181,6 +182,24 @@ export default function Dashboard() {
             calm financial companionship
           </p>
         </div>
+
+        {/* ── Net worth card ──────────────────────────────── */}
+        <a
+          href="/net-worth"
+          className="block bg-stone-800 rounded-2xl p-5 mb-4 hover:bg-stone-700 transition-colors"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
+                Net worth
+              </p>
+              <p className="text-3xl font-semibold text-stone-50 mt-1">
+                {formatKES(data.net_worth)}
+              </p>
+            </div>
+            <span className="text-xs text-stone-400">See breakdown →</span>
+          </div>
+        </a>
 
         {/* ── Companion widget ─────────────────────────────── */}
         {data.companion && (
@@ -529,6 +548,12 @@ export default function Dashboard() {
             className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
           >
             🧾 Bills
+          </a>
+          <a
+            href="/net-worth"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+          >
+            💎 Net Worth
           </a>
           <a
             href="/capture"

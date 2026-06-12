@@ -20,6 +20,7 @@ import (
 	"github.com/altradits/altradits/server/internal/freedom"
 	"github.com/altradits/altradits/server/internal/goals"
 	"github.com/altradits/altradits/server/internal/investments"
+	"github.com/altradits/altradits/server/internal/networth"
 	"github.com/altradits/altradits/server/internal/notifications"
 	"github.com/altradits/altradits/server/internal/sms"
 	"github.com/altradits/altradits/server/internal/wallet"
@@ -757,6 +758,19 @@ func main() {
 			return
 		}
 		c.JSON(200, gin.H{"message": "Removed from your picture."})
+	})
+
+	// Net worth — everything the user owns, in one place
+	netWorthService := networth.NewService(pool)
+
+	api.GET("/net-worth", func(c *gin.Context) {
+		userID := auth.GetUserID(c)
+		summary, err := netWorthService.Get(c.Request.Context(), userID)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "could not load net worth"})
+			return
+		}
+		c.JSON(200, summary)
 	})
 
 	// Freedom planner routes

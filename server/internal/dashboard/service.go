@@ -22,6 +22,7 @@ type Summary struct {
 	Companion           CompanionSnapshot   `json:"companion"`
 	UnreadNotifications int                 `json:"unread_notifications"`
 	Wallet              WalletSnapshot      `json:"wallet"`
+	NetWorth            float64             `json:"net_worth"`
 }
 
 // WalletSnapshot shows the Bitcoin Lightning wallet balance on the dashboard.
@@ -427,6 +428,25 @@ func (s *Service) Get(ctx context.Context, userID string) (*Summary, error) {
 		PreferredCurrency: preferredCurrency,
 		BTCToKES:          btcToKES,
 	}
+
+	// ── Net worth ─────────────────────────────────────────────────────────
+	var goalsKES float64
+	goalRows, err = s.db.Query(ctx, `SELECT currency, saved FROM goals WHERE user_id = $1`, userID)
+	if err == nil {
+		for goalRows.Next() {
+			var currency string
+			var saved float64
+			if err := goalRows.Scan(&currency, &saved); err == nil {
+				if currency == "sats" {
+					goalsKES += saved * btcToKES / wallet.SatsPerBTC
+				} else {
+					goalsKES += saved
+				}
+			}
+		}
+		goalRows.Close()
+	}
+	summary.NetWorth = summary.Wallet.KESValue + invTotalValue + goalsKES
 
 	return summary, nil
 }
