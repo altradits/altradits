@@ -47,9 +47,6 @@ const TYPE_EMOJI: Record<string, string> = {
   withdraw_lightning: "⚡",
 };
 
-const CURRENCIES = ["sats", "btc", "kes"] as const;
-type Currency = (typeof CURRENCIES)[number];
-
 function formatSats(n: number) {
   return `${n.toLocaleString("en-US")} sats`;
 }
@@ -67,6 +64,50 @@ function formatDate(dateString: string) {
     month: "short",
     day: "numeric",
   });
+}
+
+function ConversionBox({
+  title,
+  options,
+  active,
+  onToggle,
+  primaryDisplay,
+  secondaryDisplay,
+}: {
+  title: string;
+  options: { key: string; label: string }[];
+  active: string;
+  onToggle: (key: string) => void;
+  primaryDisplay: string;
+  secondaryDisplay: string;
+}) {
+  return (
+    <div className="bg-stone-700/40 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
+          {title}
+        </p>
+        <div className="flex bg-stone-700 rounded-lg p-0.5">
+          {options.map((o) => (
+            <button
+              key={o.key}
+              type="button"
+              onClick={() => onToggle(o.key)}
+              className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                active === o.key
+                  ? "bg-emerald-400 text-stone-900"
+                  : "text-stone-300 hover:text-stone-100"
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="text-xl font-semibold text-white">{primaryDisplay}</p>
+      <p className="text-xs text-stone-400 mt-0.5">≈ {secondaryDisplay}</p>
+    </div>
+  );
 }
 
 function TransactionRow({ tx }: { tx: Transaction }) {
@@ -107,8 +148,8 @@ export default function WalletPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currency, setCurrency] = useState<Currency>("sats");
-  const [savingCurrency, setSavingCurrency] = useState(false);
+  const [toggle1, setToggle1] = useState<"btc" | "sats">("btc");
+  const [toggle2, setToggle2] = useState<"sats" | "kes">("sats");
 
   const fetchData = async () => {
     try {
@@ -131,7 +172,6 @@ export default function WalletPage() {
       const balData: Balance = await balRes.json();
       const txData = await txRes.json();
       setBalance(balData);
-      setCurrency(balData.preferred_currency);
       setTransactions(txData.transactions ?? []);
     } catch (err) {
       setError("Could not reach the server.");
@@ -148,21 +188,6 @@ export default function WalletPage() {
     }
     fetchData();
   }, [token, router]);
-
-  const handleCurrencyChange = async (next: Currency) => {
-    setCurrency(next);
-    setSavingCurrency(true);
-    try {
-      await apiFetch("/wallet/settings", {
-        method: "PUT",
-        body: JSON.stringify({ preferred_currency: next }),
-      });
-    } catch (err) {
-      console.error("Failed to save currency preference", err);
-    } finally {
-      setSavingCurrency(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -187,17 +212,6 @@ export default function WalletPage() {
     );
   }
 
-  const primaryDisplay = () => {
-    switch (currency) {
-      case "btc":
-        return formatBTC(balance.btc_balance);
-      case "kes":
-        return formatKES(balance.kes_value);
-      default:
-        return formatSats(balance.sats_balance);
-    }
-  };
-
   return (
     <main className="min-h-screen bg-stone-50 pb-12">
       <div className="max-w-lg mx-auto px-5">
@@ -211,36 +225,37 @@ export default function WalletPage() {
 
         {/* Balance card */}
         <div className="bg-stone-800 rounded-2xl p-6 mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
-              Balance
-            </p>
-            <div className="flex bg-stone-700 rounded-lg p-0.5">
-              {CURRENCIES.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => handleCurrencyChange(c)}
-                  disabled={savingCurrency}
-                  className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-                    currency === c
-                      ? "bg-emerald-400 text-stone-900"
-                      : "text-stone-300 hover:text-stone-100"
-                  }`}
-                >
-                  {c.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-          <p className="text-3xl font-semibold text-white">
-            {primaryDisplay()}
+          <p className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-3">
+            ⚡ Bitcoin Wallet
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-400">
-            {currency !== "sats" && <span>{formatSats(balance.sats_balance)}</span>}
-            {currency !== "btc" && <span>{formatBTC(balance.btc_balance)}</span>}
-            {currency !== "kes" && <span>≈ {formatKES(balance.kes_value)}</span>}
+
+          <div className="space-y-3">
+            <ConversionBox
+              title="BTC ⇄ Sats"
+              options={[{ key: "btc", label: "BTC" }, { key: "sats", label: "SATS" }]}
+              active={toggle1}
+              onToggle={(k) => setToggle1(k as "btc" | "sats")}
+              primaryDisplay={
+                toggle1 === "btc" ? formatBTC(balance.btc_balance) : formatSats(balance.sats_balance)
+              }
+              secondaryDisplay={
+                toggle1 === "btc" ? formatSats(balance.sats_balance) : formatBTC(balance.btc_balance)
+              }
+            />
+            <ConversionBox
+              title="Sats ⇄ KSh"
+              options={[{ key: "sats", label: "SATS" }, { key: "kes", label: "KSH" }]}
+              active={toggle2}
+              onToggle={(k) => setToggle2(k as "sats" | "kes")}
+              primaryDisplay={
+                toggle2 === "sats" ? formatSats(balance.sats_balance) : formatKES(balance.kes_value)
+              }
+              secondaryDisplay={
+                toggle2 === "sats" ? formatKES(balance.kes_value) : formatSats(balance.sats_balance)
+              }
+            />
           </div>
+
           <p className="text-xs text-stone-500 mt-3">
             1 BTC ≈ {formatKES(balance.rate.btc_to_kes)}
             {balance.rate.source === "default" && " (offline rate)"}
@@ -254,16 +269,22 @@ export default function WalletPage() {
         </div>
 
         {/* Actions */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="grid grid-cols-3 gap-3 mb-4">
           <a
-            href="/wallet/deposit"
-            className="text-center py-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-medium rounded-xl hover:bg-emerald-100 transition-colors"
+            href="/wallet/deposit#mpesa"
+            className="text-center py-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-medium rounded-xl hover:bg-emerald-100 transition-colors"
           >
-            ↓ Deposit
+            📲 Deposit M-Pesa
+          </a>
+          <a
+            href="/wallet/deposit#lightning"
+            className="text-center py-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-medium rounded-xl hover:bg-emerald-100 transition-colors"
+          >
+            ⚡ Deposit Lightning
           </a>
           <a
             href="/wallet/withdraw"
-            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-sm font-medium rounded-xl hover:bg-stone-50 transition-colors"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
           >
             ↑ Withdraw
           </a>

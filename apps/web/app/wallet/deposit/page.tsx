@@ -123,7 +123,7 @@ export default function WalletDepositPage() {
         </div>
 
         {/* M-Pesa deposit */}
-        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
+        <div id="mpesa" className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
           <p className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-3">
             📲 M-Pesa
           </p>
@@ -178,7 +178,7 @@ export default function WalletDepositPage() {
         </div>
 
         {/* Lightning deposit */}
-        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
+        <div id="lightning" className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
           <p className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-3">
             ⚡ Lightning
           </p>
