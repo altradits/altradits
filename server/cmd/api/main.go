@@ -19,6 +19,7 @@ import (
 	"github.com/altradits/altradits/server/internal/forecast"
 	"github.com/altradits/altradits/server/internal/freedom"
 	"github.com/altradits/altradits/server/internal/goals"
+	"github.com/altradits/altradits/server/internal/hackathon"
 	"github.com/altradits/altradits/server/internal/investments"
 	"github.com/altradits/altradits/server/internal/networth"
 	"github.com/altradits/altradits/server/internal/notifications"
@@ -912,6 +913,10 @@ func main() {
 	exchangeRateService := wallet.NewExchangeRateService(pool, rdb)
 	walletService := wallet.NewService(pool, exchangeRateService, wallet.NewMpesaProvider(), wallet.NewLightningProvider())
 	wallet.RegisterRoutes(api, walletService)
+
+	// Hackathon platform — hackathons, hacker applications, team formation
+	hackathonService := hackathon.NewService(pool)
+	hackathon.RegisterRoutes(api, hackathonService)
 
 	go workers.NewExchangeRateWorker(exchangeRateService).Run(context.Background())
 	go workers.NewPriceAlertWorker(pool, notifService).Run(context.Background())

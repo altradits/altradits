@@ -556,8 +556,14 @@ export default function Dashboard() {
             💎 Net Worth
           </a>
           <a
+            href="/hackathons"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+          >
+            🏆 Hackathons
+          </a>
+          <a
             href="/capture"
-            className="col-span-2 text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
+            className="text-center py-3 bg-white border border-stone-200 text-stone-600 text-xs font-medium rounded-xl hover:bg-stone-50 transition-colors"
           >
             + Capture
           </a>
