@@ -39,12 +39,28 @@ type AdminTransaction = {
   created_at: string;
 };
 
+type LedgerDiscrepancy = {
+  user_id: string;
+  name: string;
+  email: string;
+  current_sats_balance: number;
+  total_sats_received: number;
+  total_sats_withdrawn: number;
+  ledger_received_sats: number;
+  ledger_withdrawn_sats: number;
+};
+
 const TYPE_LABELS: Record<string, string> = {
   deposit_mpesa: "M-Pesa Deposit",
   deposit_lightning: "Lightning Deposit",
   withdraw_mpesa: "M-Pesa Withdrawal",
   withdraw_lightning: "Lightning Withdrawal",
+  interest: "Interest",
 };
+
+// Transaction types that credit (increase) a user's balance — used to pick
+// the "+"/"-" sign in the activity feed. Everything else is a debit.
+const CREDIT_TYPES = new Set(["deposit_mpesa", "deposit_lightning", "interest"]);
 
 const STATUS_COLORS: Record<string, string> = {
   completed: "text-emerald-600",
@@ -84,6 +100,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<BankStats | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [transactions, setTransactions] = useState<AdminTransaction[]>([]);
+  const [discrepancies, setDiscrepancies] = useState<LedgerDiscrepancy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -105,17 +122,19 @@ export default function AdminPage() {
       try {
         setLoading(true);
         setError(null);
-        const [statsRes, usersRes, txRes] = await Promise.all([
+        const [statsRes, usersRes, txRes, integrityRes] = await Promise.all([
           apiFetch("/admin/stats"),
           apiFetch("/admin/users"),
           apiFetch("/admin/transactions?limit=20"),
+          apiFetch("/admin/ledger/integrity"),
         ]);
-        if (!statsRes.ok || !usersRes.ok || !txRes.ok) {
+        if (!statsRes.ok || !usersRes.ok || !txRes.ok || !integrityRes.ok) {
           throw new Error("Failed to load admin data");
         }
         setStats(await statsRes.json());
         setUsers((await usersRes.json()).users ?? []);
         setTransactions((await txRes.json()).transactions ?? []);
+        setDiscrepancies((await integrityRes.json()).discrepancies ?? []);
       } catch (err) {
         setError("Could not load admin dashboard.");
         console.error(err);
@@ -236,7 +255,7 @@ export default function AdminPage() {
                             {TYPE_LABELS[tx.type] ?? tx.type}
                           </td>
                           <td className="py-2 pr-3 text-right text-stone-700 whitespace-nowrap">
-                            {tx.type.startsWith("deposit") ? "+" : "-"}
+                            {CREDIT_TYPES.has(tx.type) ? "+" : "-"}
                             {formatSats(tx.amount_sats)}
                           </td>
                           <td className={`py-2 pr-3 ${STATUS_COLORS[tx.status] ?? "text-stone-500"}`}>
@@ -252,6 +271,62 @@ export default function AdminPage() {
                 </div>
               ) : (
                 <p className="text-stone-400 text-sm text-center py-4">No transactions yet.</p>
+              )}
+            </div>
+
+            {/* Ledger integrity */}
+            <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-6">
+              <p className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-3">
+                Ledger Integrity
+              </p>
+              {discrepancies.length === 0 ? (
+                <p className="text-emerald-600 text-sm text-center py-4">
+                  All balances reconciled ✓
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-stone-400">
+                        <th className="font-medium pb-2 pr-3">User</th>
+                        <th className="font-medium pb-2 pr-3 text-right">Recorded Balance</th>
+                        <th className="font-medium pb-2 pr-3 text-right">Ledger Balance</th>
+                        <th className="font-medium pb-2 pr-3 text-right">Recorded Received</th>
+                        <th className="font-medium pb-2 pr-3 text-right">Ledger Received</th>
+                        <th className="font-medium pb-2 pr-3 text-right">Recorded Withdrawn</th>
+                        <th className="font-medium pb-2 text-right">Ledger Withdrawn</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {discrepancies.map((d) => (
+                        <tr key={d.user_id} className="border-t border-stone-100">
+                          <td className="py-2 pr-3 text-stone-700 whitespace-nowrap">
+                            {d.name}
+                            <span className="block text-stone-400">{d.email}</span>
+                          </td>
+                          <td className="py-2 pr-3 text-right text-stone-700 whitespace-nowrap">
+                            {formatSats(d.current_sats_balance)}
+                          </td>
+                          <td className="py-2 pr-3 text-right text-red-500 whitespace-nowrap">
+                            {formatSats(d.ledger_received_sats - d.ledger_withdrawn_sats)}
+                          </td>
+                          <td className="py-2 pr-3 text-right text-stone-700 whitespace-nowrap">
+                            {formatSats(d.total_sats_received)}
+                          </td>
+                          <td className="py-2 pr-3 text-right text-red-500 whitespace-nowrap">
+                            {formatSats(d.ledger_received_sats)}
+                          </td>
+                          <td className="py-2 pr-3 text-right text-stone-700 whitespace-nowrap">
+                            {formatSats(d.total_sats_withdrawn)}
+                          </td>
+                          <td className="py-2 text-right text-red-500 whitespace-nowrap">
+                            {formatSats(d.ledger_withdrawn_sats)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </>

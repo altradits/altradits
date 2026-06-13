@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api";
 import DonutChart from "@/components/DonutChart";
+import LineChart from "@/components/LineChart";
 import ReceivePanel from "@/components/ReceivePanel";
 import SendPanel from "@/components/SendPanel";
 
@@ -16,6 +17,7 @@ type ExchangeRate = {
 type Balance = {
   sats_balance: number;
   kes_value: number;
+  lightning_address: string;
   rate: ExchangeRate;
 };
 
@@ -25,6 +27,27 @@ type Transaction = {
   type: string;
   status: string;
   created_at: string;
+};
+
+type PoolAsset = {
+  name: string;
+  asset_class: string;
+  allocation_pct: number;
+  apy_pct: number;
+};
+
+type InterestSummary = {
+  monthly_earned_sats: number;
+  lifetime_earned_sats: number;
+  current_apy_pct: number;
+};
+
+const POOL_COLORS: Record<string, { stroke: string; dot: string }> = {
+  bond_funds: { stroke: "stroke-indigo-500", dot: "bg-indigo-500" },
+  money_market: { stroke: "stroke-violet-400", dot: "bg-violet-400" },
+  dividend_equities: { stroke: "stroke-sky-400", dot: "bg-sky-400" },
+  cash_btc: { stroke: "stroke-slate-300", dot: "bg-slate-300" },
+  tokenized_rwa: { stroke: "stroke-amber-400", dot: "bg-amber-400" },
 };
 
 function formatSats(n: number) {
@@ -43,7 +66,8 @@ function formatDate(dateString: string) {
 }
 
 function TransactionRow({ tx }: { tx: Transaction }) {
-  const isDeposit = tx.type.startsWith("deposit");
+  const isInterest = tx.type === "interest";
+  const isDeposit = tx.type.startsWith("deposit") || isInterest;
   const isLightning = tx.type.endsWith("lightning");
   const isPending = tx.status === "pending";
   const amountColor = isPending
@@ -51,11 +75,12 @@ function TransactionRow({ tx }: { tx: Transaction }) {
     : isDeposit
     ? "text-emerald-600"
     : "text-stone-700";
+  const icon = isInterest ? "💰" : isLightning ? "⚡" : "📲";
 
   return (
     <div className="bg-white rounded-xl border border-stone-100 shadow-sm px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <span className="text-xl">{isLightning ? "⚡" : "📲"}</span>
+        <span className="text-xl">{icon}</span>
         <p className="text-xs text-stone-400">
           {formatDate(tx.created_at)}
           {isPending && " · pending"}
@@ -74,15 +99,20 @@ export default function Home() {
   const { user, token, loading: authLoading } = useAuth();
   const [balance, setBalance] = useState<Balance | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [poolAssets, setPoolAssets] = useState<PoolAsset[]>([]);
+  const [interest, setInterest] = useState<InterestSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addressCopied, setAddressCopied] = useState(false);
 
   const fetchData = async () => {
     try {
       setError(null);
-      const [balRes, txRes] = await Promise.all([
+      const [balRes, txRes, poolRes, interestRes] = await Promise.all([
         apiFetch("/wallet/balance"),
         apiFetch("/wallet/transactions?limit=50"),
+        apiFetch("/wallet/pool/allocation"),
+        apiFetch("/wallet/pool/interest"),
       ]);
 
       if (balRes.status === 401 || txRes.status === 401) {
@@ -97,11 +127,30 @@ export default function Home() {
       setBalance(await balRes.json());
       const txData = await txRes.json();
       setTransactions(txData.transactions ?? []);
+
+      if (poolRes.ok) {
+        const poolData = await poolRes.json();
+        setPoolAssets(poolData.assets ?? []);
+      }
+      if (interestRes.ok) {
+        setInterest(await interestRes.json());
+      }
     } catch (err) {
       setError("Could not reach the server.");
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCopyAddress = async () => {
+    if (!balance?.lightning_address) return;
+    try {
+      await navigator.clipboard.writeText(balance.lightning_address);
+      setAddressCopied(true);
+      setTimeout(() => setAddressCopied(false), 2000);
+    } catch {
+      // ignore
     }
   };
 
@@ -144,6 +193,28 @@ export default function Home() {
     .filter((tx) => tx.type === "deposit_mpesa" || tx.type === "withdraw_mpesa")
     .reduce((sum, tx) => sum + tx.amount_sats, 0);
 
+  // Cumulative balance over time, ending at the current balance.
+  const completedTx = transactions
+    .filter((tx) => tx.status === "completed")
+    .slice()
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  const balanceHistory = (() => {
+    if (completedTx.length === 0) {
+      return [{ label: "Now", value: balance.sats_balance }];
+    }
+    const totalDelta = completedTx.reduce(
+      (sum, tx) => sum + (tx.type.startsWith("withdraw") ? -tx.amount_sats : tx.amount_sats),
+      0
+    );
+    let running = balance.sats_balance - totalDelta;
+    const points = [{ label: formatDate(completedTx[0].created_at), value: running }];
+    for (const tx of completedTx) {
+      running += tx.type.startsWith("withdraw") ? -tx.amount_sats : tx.amount_sats;
+      points.push({ label: formatDate(tx.created_at), value: running });
+    }
+    return points;
+  })();
+
   return (
     <main className="min-h-screen bg-stone-50 pb-12">
       <div className="max-w-lg sm:max-w-2xl mx-auto px-4 sm:px-6">
@@ -167,6 +238,86 @@ export default function Home() {
           >
             📈 Track price →
           </a>
+
+          {balance.lightning_address && (
+            <div className="mt-3 flex items-center justify-between gap-2 bg-white/10 rounded-xl px-3 py-2">
+              <p className="text-xs font-mono text-white truncate">
+                ⚡ {balance.lightning_address}
+              </p>
+              <button
+                type="button"
+                onClick={handleCopyAddress}
+                className="text-xs text-white/80 hover:text-white shrink-0"
+              >
+                {addressCopied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Balance growth */}
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 mb-4">
+          <p className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-3">
+            Balance growth
+          </p>
+          <LineChart points={balanceHistory} />
+        </div>
+
+        {/* Interest meter + pool allocation */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
+            <p className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-3">
+              Interest earned
+            </p>
+            {interest ? (
+              <div className="space-y-2">
+                <div>
+                  <p className="text-2xl font-semibold text-emerald-600">
+                    +{formatSats(interest.monthly_earned_sats)}
+                  </p>
+                  <p className="text-xs text-stone-400">this month</p>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-stone-100">
+                  <span className="text-xs text-stone-400">APY</span>
+                  <span className="text-sm font-medium text-stone-700">
+                    {interest.current_apy_pct.toFixed(2)}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-stone-400">Lifetime</span>
+                  <span className="text-sm font-medium text-stone-700">
+                    {formatSats(interest.lifetime_earned_sats)}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-stone-400 text-sm">Loading...</p>
+            )}
+          </div>
+
+          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
+            <p className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-3">
+              Your sats are working
+            </p>
+            {poolAssets.length > 0 ? (
+              <>
+                <DonutChart
+                  segments={poolAssets.map((a) => ({
+                    label: a.name,
+                    value: a.allocation_pct,
+                    colorClass: POOL_COLORS[a.asset_class]?.stroke ?? "stroke-stone-300",
+                    dotClass: POOL_COLORS[a.asset_class]?.dot ?? "bg-stone-300",
+                  }))}
+                />
+                <p className="text-xs text-stone-400 mt-3">
+                  Your sats are diversified across low-risk funds for steady,
+                  capital-preserving yield.
+                </p>
+              </>
+            ) : (
+              <p className="text-stone-400 text-sm">Loading...</p>
+            )}
+          </div>
         </div>
 
         {/* Activity donut */}

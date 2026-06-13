@@ -111,6 +111,64 @@ type Transaction struct {
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 }
 
+// LedgerDiscrepancy compares a user's recorded running totals (on the users
+// table) against the totals derived from their completed wallet_transactions
+// ledger rows. Any mismatch indicates the running totals have drifted from
+// the ledger — the source of truth.
+type LedgerDiscrepancy struct {
+	UserID              string `json:"user_id"`
+	Name                string `json:"name"`
+	Email               string `json:"email"`
+	CurrentSatsBalance  int64  `json:"current_sats_balance"`
+	TotalSatsReceived   int64  `json:"total_sats_received"`
+	TotalSatsWithdrawn  int64  `json:"total_sats_withdrawn"`
+	LedgerReceivedSats  int64  `json:"ledger_received_sats"`
+	LedgerWithdrawnSats int64  `json:"ledger_withdrawn_sats"`
+}
+
+// GetLedgerIntegrity returns every user whose recorded balance or running
+// totals don't match the sums derived from their completed
+// wallet_transactions ledger rows.
+func (s *Service) GetLedgerIntegrity(ctx context.Context) ([]LedgerDiscrepancy, error) {
+	rows, err := s.db.Query(ctx, `
+		WITH ledger AS (
+			SELECT
+				user_id,
+				COALESCE(SUM(amount_sats) FILTER (
+					WHERE status = 'completed' AND type IN ('deposit_mpesa', 'deposit_lightning', 'interest')
+				), 0) AS received,
+				COALESCE(SUM(amount_sats) FILTER (
+					WHERE status = 'completed' AND type IN ('withdraw_mpesa', 'withdraw_lightning')
+				), 0) AS withdrawn
+			FROM wallet_transactions
+			GROUP BY user_id
+		)
+		SELECT u.id::text, u.name, u.email,
+		       u.current_sats_balance, u.total_sats_received, u.total_sats_withdrawn,
+		       COALESCE(l.received, 0), COALESCE(l.withdrawn, 0)
+		FROM users u
+		LEFT JOIN ledger l ON l.user_id = u.id
+		WHERE u.total_sats_received != COALESCE(l.received, 0)
+		   OR u.total_sats_withdrawn != COALESCE(l.withdrawn, 0)
+		   OR u.current_sats_balance != COALESCE(l.received, 0) - COALESCE(l.withdrawn, 0)
+		ORDER BY u.created_at DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	discrepancies := []LedgerDiscrepancy{}
+	for rows.Next() {
+		var d LedgerDiscrepancy
+		if err := rows.Scan(&d.UserID, &d.Name, &d.Email, &d.CurrentSatsBalance, &d.TotalSatsReceived, &d.TotalSatsWithdrawn, &d.LedgerReceivedSats, &d.LedgerWithdrawnSats); err != nil {
+			return nil, err
+		}
+		discrepancies = append(discrepancies, d)
+	}
+	return discrepancies, rows.Err()
+}
+
 // ListTransactions returns the most recent transactions across all users.
 func (s *Service) ListTransactions(ctx context.Context, limit int) ([]Transaction, error) {
 	if limit <= 0 || limit > 200 {

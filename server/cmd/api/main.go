@@ -7,6 +7,8 @@ import (
 
 	"github.com/altradits/altradits/server/internal/admin"
 	"github.com/altradits/altradits/server/internal/auth"
+	"github.com/altradits/altradits/server/internal/liquidity"
+	"github.com/altradits/altradits/server/internal/treasury"
 	"github.com/altradits/altradits/server/internal/wallet"
 	"github.com/altradits/altradits/server/pkg/envload"
 	"github.com/altradits/altradits/server/workers"
@@ -77,6 +79,10 @@ func main() {
 		}
 	}
 
+	// Wallet service — created early so /health can report Lightning status.
+	exchangeRateService := wallet.NewExchangeRateService(pool, rdb)
+	walletService := wallet.NewService(pool, exchangeRateService, wallet.NewMpesaProvider(), wallet.NewLightningProvider())
+
 	// Health check — public
 	r.GET("/health", func(c *gin.Context) {
 		dbOK := false
@@ -96,11 +102,12 @@ func main() {
 		}
 
 		c.JSON(200, gin.H{
-			"status":   status,
-			"database": gin.H{"connected": dbOK},
-			"redis":    gin.H{"connected": redisOK},
-			"app":      "altradits",
-			"version":  "0.1.0",
+			"status":    status,
+			"database":  gin.H{"connected": dbOK},
+			"redis":     gin.H{"connected": redisOK},
+			"lightning": walletService.LightningStatus(c.Request.Context()),
+			"app":       "altradits",
+			"version":   "0.1.0",
 		})
 	})
 
@@ -151,17 +158,27 @@ func main() {
 	})
 
 	// Wallet routes — Bitcoin Lightning + M-Pesa
-	exchangeRateService := wallet.NewExchangeRateService(pool, rdb)
-	walletService := wallet.NewService(pool, exchangeRateService, wallet.NewMpesaProvider(), wallet.NewLightningProvider())
 	wallet.RegisterRoutes(api, walletService)
+	wallet.RegisterPublicRoutes(r, walletService)
+
+	// Treasury routes — savings pool allocation + interest
+	treasuryService := treasury.NewService(pool)
+	treasury.RegisterRoutes(api, treasuryService)
+
+	// Liquidity routes — Lightning node health, channels, on-chain reserves
+	liquidityService := liquidity.NewService(pool)
 
 	// Admin routes — bank-wide oversight, admin accounts only
 	adminService := admin.NewService(pool)
 	adminGroup := api.Group("/admin")
 	adminGroup.Use(auth.AdminMiddleware())
 	admin.RegisterRoutes(adminGroup, adminService)
+	treasury.RegisterAdminRoutes(adminGroup, treasuryService)
+	liquidity.RegisterAdminRoutes(adminGroup, liquidityService)
 
 	go workers.NewExchangeRateWorker(exchangeRateService).Run(context.Background())
+	go workers.NewPoolNAVWorker(treasuryService).Run(context.Background())
+	go workers.NewLiquidityWorker(liquidityService).Run(context.Background())
 
 	r.Run() // listen and serve on 0.0.0.0:8080
 }

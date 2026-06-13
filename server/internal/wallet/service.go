@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -16,8 +17,19 @@ import (
 
 const (
 	minDepositKES   = 10
+	maxDepositKES   = 250_000 // Safaricom M-Pesa STK Push per-transaction limit
 	minWithdrawSats = 10_000
+	maxWithdrawKES  = 250_000 // Safaricom M-Pesa B2C per-transaction limit
 )
+
+// lightningAddressDomain returns the domain used for Lightning addresses
+// (username@domain), configurable via LIGHTNING_ADDRESS_DOMAIN.
+func lightningAddressDomain() string {
+	if domain := os.Getenv("LIGHTNING_ADDRESS_DOMAIN"); domain != "" {
+		return domain
+	}
+	return "altradits.com"
+}
 
 // ErrUserNotFound is returned when the authenticated user's ID no longer
 // matches a row in the users table (e.g. a JWT issued for a deleted account).
@@ -38,17 +50,23 @@ func NewService(db *pgxpool.Pool, rates *ExchangeRateService, mpesa MpesaProvide
 	return &Service{db: db, rates: rates, mpesa: mpesa, lightning: lightning}
 }
 
+// LightningStatus reports whether the configured Lightning provider is a
+// real LND node or the mock, and whether it's currently reachable.
+func (s *Service) LightningStatus(ctx context.Context) LightningStatus {
+	return s.lightning.Status(ctx)
+}
+
 // GetBalance returns the user's wallet balance in sats, BTC, and KES.
 func (s *Service) GetBalance(ctx context.Context, userID string) (*Balance, error) {
 	rate, rateErr := s.rates.GetRate(ctx)
 
 	var sats, received, withdrawn int64
-	var preferredCurrency string
+	var preferredCurrency, username string
 	var mpesaPhone *string
 	err := s.db.QueryRow(ctx, `
-		SELECT current_sats_balance, total_sats_received, total_sats_withdrawn, preferred_currency, mpesa_phone_number
+		SELECT current_sats_balance, total_sats_received, total_sats_withdrawn, preferred_currency, mpesa_phone_number, username
 		FROM users WHERE id = $1
-	`, userID).Scan(&sats, &received, &withdrawn, &preferredCurrency, &mpesaPhone)
+	`, userID).Scan(&sats, &received, &withdrawn, &preferredCurrency, &mpesaPhone, &username)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrUserNotFound
@@ -66,6 +84,8 @@ func (s *Service) GetBalance(ctx context.Context, userID string) (*Balance, erro
 		TotalSatsReceived:  received,
 		TotalSatsWithdrawn: withdrawn,
 		PreferredCurrency:  preferredCurrency,
+		Username:           username,
+		LightningAddress:   username + "@" + lightningAddressDomain(),
 		Rate:               rate,
 	}
 	if mpesaPhone != nil {
@@ -85,6 +105,9 @@ type DepositMpesaInput struct {
 func (s *Service) DepositMpesa(ctx context.Context, userID string, input DepositMpesaInput) (*Transaction, error) {
 	if input.AmountKES < minDepositKES {
 		return nil, fmt.Errorf("minimum deposit is KSh %d", minDepositKES)
+	}
+	if input.AmountKES > maxDepositKES {
+		return nil, fmt.Errorf("maximum deposit is KSh %d", maxDepositKES)
 	}
 	phone, err := NormalizeMpesaPhone(input.Phone)
 	if err != nil {
@@ -315,6 +338,9 @@ func (s *Service) WithdrawMpesa(ctx context.Context, userID string, input Withdr
 		return nil, fmt.Errorf("could not load exchange rate: %w", rateErr)
 	}
 	amountKES := SatsToKES(input.AmountSats, rate)
+	if amountKES > maxWithdrawKES {
+		return nil, fmt.Errorf("maximum withdrawal is KSh %d", maxWithdrawKES)
+	}
 
 	dbTx, err := s.db.Begin(ctx)
 	if err != nil {

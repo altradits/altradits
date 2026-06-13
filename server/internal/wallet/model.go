@@ -11,6 +11,7 @@ const (
 	TypeDepositLightning  = "deposit_lightning"
 	TypeWithdrawMpesa     = "withdraw_mpesa"
 	TypeWithdrawLightning = "withdraw_lightning"
+	TypeInterest          = "interest"
 )
 
 // Transaction statuses.
@@ -61,6 +62,8 @@ type Balance struct {
 	TotalSatsWithdrawn int64        `json:"total_sats_withdrawn"`
 	PreferredCurrency  string       `json:"preferred_currency"`
 	MpesaPhoneNumber   string       `json:"mpesa_phone_number,omitempty"`
+	Username           string       `json:"username"`
+	LightningAddress   string       `json:"lightning_address"`
 	Rate               ExchangeRate `json:"rate"`
 }
 

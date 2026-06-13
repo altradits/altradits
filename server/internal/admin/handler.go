@@ -14,6 +14,7 @@ func RegisterRoutes(api gin.IRouter, service *Service) {
 	api.GET("/stats", getStatsHandler(service))
 	api.GET("/users", listUsersHandler(service))
 	api.GET("/transactions", listTransactionsHandler(service))
+	api.GET("/ledger/integrity", getLedgerIntegrityHandler(service))
 }
 
 func getStatsHandler(service *Service) gin.HandlerFunc {
@@ -35,6 +36,17 @@ func listUsersHandler(service *Service) gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"users": users})
+	}
+}
+
+func getLedgerIntegrityHandler(service *Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		discrepancies, err := service.GetLedgerIntegrity(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not load ledger integrity"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"discrepancies": discrepancies})
 	}
 }
 

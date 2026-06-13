@@ -50,6 +50,22 @@ export default function NavBar() {
                 Admin
               </a>
             )}
+            {user?.is_admin && (
+              <a
+                href="/trader"
+                className="shrink-0 text-indigo-600 hover:text-indigo-700 font-semibold"
+              >
+                Trader
+              </a>
+            )}
+            {user?.is_admin && (
+              <a
+                href="/liquidity"
+                className="shrink-0 text-indigo-600 hover:text-indigo-700 font-semibold"
+              >
+                Liquidity
+              </a>
+            )}
             <button
               type="button"
               onClick={handleLogout}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -12,6 +13,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var usernameStripPattern = regexp.MustCompile(`[^a-z0-9]`)
 
 const (
 	tokenExpiry = 7 * 24 * time.Hour // 7 days
@@ -86,13 +89,18 @@ func (s *Service) Register(ctx context.Context, input RegisterInput) (*AuthRespo
 		return nil, fmt.Errorf("failed to secure password: %w", err)
 	}
 
+	username, err := s.generateUsername(ctx, input.Email)
+	if err != nil {
+		return nil, fmt.Errorf("failed to assign a Lightning address: %w", err)
+	}
+
 	// Create user
 	var user User
 	err = s.db.QueryRow(ctx, `
-		INSERT INTO users (name, email, password_hash)
-		VALUES ($1, $2, $3)
+		INSERT INTO users (name, email, password_hash, username)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id::text, name, email, TO_CHAR(created_at, 'YYYY-MM-DD'), is_admin
-	`, input.Name, input.Email, string(hash)).
+	`, input.Name, input.Email, string(hash), username).
 		Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt, &user.IsAdmin)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create account: %w", err)
@@ -177,6 +185,31 @@ func (s *Service) Me(ctx context.Context, userID string) (*User, error) {
 		return nil, errors.New("user not found")
 	}
 	return &user, nil
+}
+
+// generateUsername derives a Lightning-address username from the local part
+// of an email address, falling back to "user" and appending a numeric
+// suffix until a unique value is found.
+func (s *Service) generateUsername(ctx context.Context, email string) (string, error) {
+	local, _, _ := strings.Cut(email, "@")
+	base := usernameStripPattern.ReplaceAllString(strings.ToLower(local), "")
+	if base == "" {
+		base = "user"
+	}
+
+	username := base
+	for i := 0; ; i++ {
+		if i > 0 {
+			username = fmt.Sprintf("%s%d", base, i)
+		}
+		var exists bool
+		if err := s.db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)`, username).Scan(&exists); err != nil {
+			return "", err
+		}
+		if !exists {
+			return username, nil
+		}
+	}
 }
 
 // issueToken creates a signed JWT.

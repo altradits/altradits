@@ -23,9 +23,12 @@ Altradits is a simple, calm Bitcoin Lightning wallet. Send and receive sats over
 ## Core Features
 
 - **Lightning wallet** — send and receive Bitcoin over the Lightning Network
+- **Lightning address** — receive payments to `username@altradits.com` via LNURL-pay
 - **M-Pesa deposit & withdraw** — top up or cash out in KES via STK push
 - **Request payments** — generate a Lightning invoice (with QR code) to receive sats
 - **Live BTC/KES price** — exchange rate tracking with 24h change
+- **Pool & Interest** — balance growth chart, monthly interest meter, and a
+  ledger-backed savings pool allocation (bonds, money market, equities, BTC)
 - **Transaction history** — searchable history with CSV export
 - **Accounts** — simple email/password registration and login
 - **Admin dashboard** — bank-wide overview of users, balances, and transactions
@@ -78,6 +81,7 @@ altradits/
 │   ├── internal/
 │   │   ├── admin/                # Admin oversight (bank stats, users, activity)
 │   │   ├── auth/                 # Authentication
+│   │   ├── treasury/              # Savings pool allocation + interest accrual
 │   │   └── wallet/                # Bitcoin Lightning + M-Pesa wallet
 │   │
 │   ├── database/
@@ -235,6 +239,7 @@ make test           # backend tests
 | `LND_REST_HOST` | No | LND node REST host — falls back to a mock Lightning provider if unset |
 | `LND_MACAROON_HEX` / `LND_MACAROON_PATH` | No | LND macaroon for authenticating to the node |
 | `LND_TLS_CERT_PATH` / `LND_TLS_INSECURE_SKIP_VERIFY` | No | TLS settings for the LND node |
+| `LIGHTNING_ADDRESS_DOMAIN` | No | Domain for Lightning addresses (`username@<domain>`), served via LNURL-pay (default: `altradits.com`) |
 | `NEXT_PUBLIC_API_URL` | No | Frontend API base URL (default `http://localhost:8080`) |
 
 Copy `apps/web/.env.example` → `apps/web/.env.local` for frontend overrides.

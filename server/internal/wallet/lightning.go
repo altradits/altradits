@@ -34,6 +34,19 @@ type LightningProvider interface {
 	// CheckInvoice reports whether the invoice with the given (hex-encoded)
 	// payment hash has been settled.
 	CheckInvoice(ctx context.Context, paymentHash string) (bool, error)
+	// Status reports the provider's current connection state, for health
+	// checks. The LND provider re-queries the node live.
+	Status(ctx context.Context) LightningStatus
+}
+
+// LightningStatus describes which Lightning provider is active and, for the
+// LND provider, whether the node is currently reachable.
+type LightningStatus struct {
+	Mode          string `json:"mode"` // "lnd" or "mock"
+	Connected     bool   `json:"connected"`
+	Alias         string `json:"alias,omitempty"`
+	Version       string `json:"version,omitempty"`
+	SyncedToChain bool   `json:"synced_to_chain,omitempty"`
 }
 
 // Invoice is a Lightning payment request awaiting payment.
@@ -133,6 +146,11 @@ func (m *MockLightningProvider) PayInvoice(ctx context.Context, destination stri
 // endpoint to mark a mock invoice as paid.
 func (m *MockLightningProvider) CheckInvoice(ctx context.Context, paymentHash string) (bool, error) {
 	return false, nil
+}
+
+// Status reports that no real Lightning node is configured.
+func (m *MockLightningProvider) Status(ctx context.Context) LightningStatus {
+	return LightningStatus{Mode: "mock"}
 }
 
 func randomHex(n int) string {
@@ -323,6 +341,23 @@ func (p *LNDLightningProvider) resolveLightningAddress(ctx context.Context, addr
 		return "", fmt.Errorf("%s did not return an invoice", address)
 	}
 	return cb.PR, nil
+}
+
+// Status re-queries the LND node's getinfo RPC so callers (e.g. /health)
+// always see the node's current connection state, not just a snapshot from
+// startup.
+func (p *LNDLightningProvider) Status(ctx context.Context) LightningStatus {
+	info, err := p.getInfo(ctx)
+	if err != nil {
+		return LightningStatus{Mode: "lnd", Connected: false}
+	}
+	return LightningStatus{
+		Mode:          "lnd",
+		Connected:     true,
+		Alias:         info.Alias,
+		Version:       info.Version,
+		SyncedToChain: info.SyncedToChain,
+	}
 }
 
 func (p *LNDLightningProvider) getInfo(ctx context.Context) (*struct {
