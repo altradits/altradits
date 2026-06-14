@@ -32,12 +32,12 @@
   <div style="display:grid;gap:14px;">
     {{range .Locks}}
     <div class="card">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-        <div>
-          <div class="kpi-label">Locked amount</div>
-          <div class="mono" style="font-size:1.5rem;color:#1a3a2a;">{{.AmountSats}} sats</div>
-          <div style="font-size:13px;color:#4a6a5a;margin-top:4px;">Profit earned: <span style="color:#2a7a4a;">+{{.ProfitSats}} sats</span></div>
-        </div>
+       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+         <div>
+           <div class="kpi-label">Locked amount</div>
+           <div class="mono" style="font-size:1.5rem;color:#1a3a2a;" id="lock-amount-{{.ID}}">{{.AmountSats}} sats</div>
+           <div style="font-size:13px;color:#4a6a5a;margin-top:4px;">Profit earned: <span style="color:#2a7a4a;">+{{.ProfitSats}} sats</span></div>
+         </div>
         <div style="text-align:right;">
           <span class="badge badge-{{.Status}}">{{.Status}}</span>
           <div style="font-size:12px;color:#4a6a5a;margin-top:6px;">{{.LockYears}}-year lock</div>
