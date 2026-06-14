@@ -1,0 +1,37 @@
+{{define "page"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Open account — Altradits</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="nav-mark" style="width:38px;height:38px;font-size:17px;">A</div>
+      <span class="auth-logo-name">Altradits</span>
+    </div>
+    <h2 class="auth-title">Open your account</h2>
+    <p class="auth-sub">No ID. No minimum balance.<br>Just your phone or email — done in seconds.</p>
+    {{if .Error}}<div class="alert alert-error">{{.Error}}</div>{{end}}
+    <form method="POST" action="/register">
+      <div class="form-group">
+        <label class="form-label" for="identifier">Phone number or email</label>
+        <input class="form-input" type="text" id="identifier" name="identifier" placeholder="+254 712 345 678 or you@email.com" required autocomplete="username">
+        <div class="form-hint">We'll never share this or sell your data.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Choose a password</label>
+        <input class="form-input" type="password" id="password" name="password" placeholder="At least 6 characters" required autocomplete="new-password" minlength="6">
+      </div>
+      <button type="submit" class="btn btn-primary btn-full" style="margin-top:8px;">Open account — free</button>
+    </form>
+    <hr>
+    <p class="auth-pledge">Your money is yours. We earn only when you earn — 2% of your interest, nothing else. No hidden fees. Ever.</p>
+    <div class="auth-footer">Already have an account? <a href="/login">Sign in &rarr;</a></div>
+  </div>
+</div>
+</body></html>
+{{end}}

@@ -1,0 +1,46 @@
+{{define "page"}}<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Send money — Altradits</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css"></head>
+<body>
+<nav class="dash-nav"><a class="nav-logo" href="/customer/dashboard" style="color:#fff;text-decoration:none;"><div class="nav-mark" style="background:#c4622d;">A</div> Altradits</a><div class="dash-nav-right"><a href="/logout" class="dash-nav-logout">Sign out</a></div></nav>
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="nav-section-label">Wallet</div>
+  <a href="/customer/dashboard" class="nav-item">&#9632; Dashboard</a>
+  <a href="/customer/deposit" class="nav-item">&#8595; Add money</a>
+  <a href="/customer/withdraw" class="nav-item">&#8593; Withdraw</a>
+  <a href="/customer/send" class="nav-item active">&#10148; Send money</a>
+  <a href="/customer/receive" class="nav-item">&#9889; Receive</a>
+  <a href="/customer/transactions" class="nav-item">&#8801; Transactions</a>
+  <div class="nav-section-label">Savings</div>
+  <a href="/customer/investments" class="nav-item">&#128274; Locked savings</a>
+</aside>
+<main class="main-content">
+  {{with .Data}}
+  <div class="page-header"><h2>Send money</h2><p>Pay any Lightning invoice or Altradits address</p></div>
+  {{if .Error}}<div class="alert alert-error">{{.Error}}</div>{{end}}
+  <div style="max-width:480px;">
+    <div class="kpi-card" style="margin-bottom:16px;"><div class="kpi-label">Available</div><div class="kpi-value mono">{{.BalanceSats}} sats</div></div>
+    <div class="card">
+      <form method="POST" action="/customer/send">
+        <div class="form-group">
+          <label class="form-label" for="invoice">Lightning invoice or address</label>
+          <input class="form-input" type="text" id="invoice" name="invoice" placeholder="lnbc... or user@altradits.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="sats_amount">Amount (sats)</label>
+          <input class="form-input" type="number" id="sats_amount" name="sats_amount" placeholder="5000" min="1" max="{{.BalanceSats}}" required>
+          <div class="form-hint">Lightning integration coming — payment queued for manual processing.</div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Send payment</button>
+      </form>
+    </div>
+  </div>
+  {{end}}
+</main>
+</div>
+</body></html>
+{{end}}
