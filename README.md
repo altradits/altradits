@@ -27,7 +27,7 @@
 From "hello world" to a working wallet backend, one shipped phase at a time.
 
 - 🎓 SE Apprentice @ **[Zone01 Kisumu](https://www.zone01kisumu.ke/)**, peer-to-peer and project-based, no lectures
-- ⚡ Building **[Altradits](https://github.com/altradits/altradits)**, a Lightning wallet with M-Pesa rails in vanilla Go
+- ⚡ Founder & sole developer of **[Altradits](#-altradits--bitcoin-banking-for-kenya)** — Bitcoin banking for Kenya, M-Pesa rails, vanilla Go
 - 🧩 Owns features end to end, from schema to deploy
 
 <img src="https://github-readme-stats.vercel.app/api?username=altradits&show_icons=true&theme=tokyonight&hide_border=true&bg_color=0D1117&title_color=274C77&icon_color=FF6B6B&text_color=c9d1d9&count_private=true&include_all_commits=true" width="100%" alt="stats"/>
@@ -48,9 +48,11 @@ From "hello world" to a working wallet backend, one shipped phase at a time.
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=274C77&height=3&width=100&section=footer" width="100%"/>
 
-## 🏗️ Flagship Build: Altradits
+## 🏗️ Altradits — Bitcoin Banking for Kenya
 
-> A calm Bitcoin Lightning wallet with M-Pesa rails for the Kenyan market.
+> "The root problem with conventional currency is all the trust that's required to make it work." — Satoshi Nakamoto, 2008
+
+Everyone in my community has a story — an "nguru" who vanished with their savings, a Sacco that quietly went broke, a chama that fell apart when the treasurer disappeared. Altradits is my answer: a bank for my community where there's no one left to trust — only code, Bitcoin, and a ledger anyone can audit. Deposit the M-Pesa you already use, lock your sats for 5+ years, and let patience do what no nguru ever could.
 
 [![Repo](https://img.shields.io/badge/Repo-altradits%2Faltradits-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/altradits/altradits)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
@@ -68,6 +70,95 @@ From "hello world" to a working wallet backend, one shipped phase at a time.
 - 🇰🇪 Deposit & withdraw KES via M-Pesa STK push
 - 💰 Treasury pool: bonds, money market, equities, BTC, auto interest
 - 🛡️ JWT auth + role-based admin dashboards
+
+### Quick Start
+
+**Prerequisites**: Go 1.22+, PostgreSQL 14+
+
+```bash
+# 1. Set up the database
+make setup-db
+
+# 2. Run (migrations + default-account seeding happen automatically)
+make dev
+# or: go run cmd/server/main.go
+```
+
+<details>
+<summary>Manual database setup (without <code>make</code>)</summary>
+
+```bash
+psql -U postgres << 'EOF'
+CREATE USER altradits WITH PASSWORD 'password';
+CREATE DATABASE altradits OWNER altradits;
+GRANT ALL PRIVILEGES ON DATABASE altradits TO altradits;
+EOF
+```
+
+```bash
+DB_URL=postgres://altradits:password@localhost:5432/altradits?sslmode=disable go run cmd/server/main.go
+```
+
+</details>
+
+**Default accounts**
+
+| Role   | Email                    | Password   |
+|--------|--------------------------|------------|
+| Admin  | admin@altradits.com      | admin123   |
+| Trader | trader@altradits.com     | trader123  |
+
+### Architecture
+
+- **Backend**: Go 1.22, standard library only. Custom PostgreSQL wire protocol driver (`internal/pgdrv`).
+- **Frontend**: Pure HTML + CSS + vanilla JS. No frameworks.
+- **Database**: PostgreSQL 14+
+- **Auth**: SHA-256 session tokens, HttpOnly cookies
+
+<details>
+<summary>Routes</summary>
+
+| Path | Role | Description |
+|------|------|-------------|
+| `/` | Public | Landing page |
+| `/register` | Public | Create account |
+| `/login` | Public | Sign in |
+| `/customer/dashboard` | Customer | Wallet overview |
+| `/customer/deposit` | Customer | M-Pesa deposit |
+| `/customer/withdraw` | Customer | M-Pesa withdrawal |
+| `/customer/investments` | Customer | Locked sats |
+| `/admin/dashboard` | Admin | Operations overview |
+| `/admin/deposits` | Admin | Approve deposits |
+| `/trader/dashboard` | Trader | Pool management |
+
+</details>
+
+### Values, from the Bitcoin Whitepaper
+
+1. **Trust minimization** — no ngurus, public assets
+2. **Patience as proof of work** — 5-year lock minimum
+3. **Timestamped transparency** — every sat traced
+4. **No KYC** — email or phone only
+5. **Community review** — no central authority
+6. **Incentive alignment** — 2% of profit only
+7. **Simplicity** — 6 buttons max
+8. **Privacy by default** — no name required
+9. **Long-term horizon** — shortcuts are traps
+10. **Open participation** — no minimums
+
+### Roadmap
+
+- **Now**: Manual M-Pesa + Lightning (admin-approved)
+- **Phase 2**: M-Pesa API (Daraja) + LND integration
+- **Phase 3**: Events, Hackathons, Travel, Crowdfunding modules
+
+### Contributing
+
+1. Fork the repo, then `git clone` your fork
+2. Follow [Quick Start](#quick-start) above to get it running locally
+3. Create a branch, make your change, and open a PR
+
+Bug fixes, tests, and roadmap items above are all welcome — open an issue first for bigger changes.
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=FF6B6B&height=3&width=100&section=footer" width="100%"/>
 
@@ -108,6 +199,7 @@ Hiring, or building something with Go + Lightning rails? Let's talk.
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/stanmobitech)
 [![Email](https://img.shields.io/badge/Email-Say_Hello-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:altradits@gmail.com)
+[![WhatsApp](https://img.shields.io/badge/WhatsApp-%2B254707172370-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://wa.me/254707172370)
 [![GitHub](https://img.shields.io/badge/GitHub-altradits-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/altradits)
 
 <br/>
