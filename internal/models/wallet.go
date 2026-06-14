@@ -1,1 +1,0 @@
-// Wallet struct + balance methods
