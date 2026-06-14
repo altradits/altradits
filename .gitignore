@@ -1,0 +1,12 @@
+# Binaries
+/altradits
+/server/bin/
+
+# Env
+.env
+
+# Logs
+*.log
+
+# OS
+.DS_Store

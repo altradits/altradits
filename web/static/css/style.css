@@ -1,0 +1,36 @@
+/* Global styles */
+
+:root {
+	--slate-blue: #274C77;
+	--warm-coral: #FF6B6B;
+	--soft-sand: #F5F5F5;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	font-family: system-ui, -apple-system, sans-serif;
+	background: var(--soft-sand);
+	color: var(--slate-blue);
+}
+
+header, footer {
+	padding: 1rem 2rem;
+	background: var(--slate-blue);
+	color: var(--soft-sand);
+}
+
+main {
+	padding: 2rem;
+	max-width: 960px;
+	margin: 0 auto;
+}
+
+a {
+	color: var(--warm-coral);
+}
+
+/* TODO: dashboard.css, events.css, hackathon.css, and mobile.css build on these base styles. */

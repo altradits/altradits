@@ -81,3 +81,105 @@ Altradits is not just an investment platform. It is a **complete Bitcoin ecosyst
 ---
 
 ## How It All Connects
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                       ALTRADITS ECOSYSTEM                                │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│                       ┌─────────────┐                                    │
+│                       │ INVESTMENT  │ ← Customers lock sats → earn profit│
+│                       │    POOL     │ ← Profit goes back to customers    │
+│                       └──────┬──────┘                                    │
+│                              │                                           │
+│                              │ Some profit allocated to:                 │
+│                              ▼                                           │
+│       ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                  │
+│       │   EVENTS    │  │  HACKATHON  │  │   TRAVEL    │                  │
+│       │             │  │             │  │             │                  │
+│       │ • Organizers│  │ • Students  │  │ • Gorilla   │                  │
+│       │ • Attendees │  │ • Reviewers │  │   Sats      │                  │
+│       │ • Sponsors  │  │ • Mentors   │  │ • Tourists  │                  │
+│       └─────────────┘  └─────────────┘  └─────────────┘                  │
+│              │                │                │                         │
+│              └────────────────┼────────────────┘                         │
+│                               │                                          │
+│                               ▼                                          │
+│                    ┌─────────────────────┐                               │
+│                    │     CROWDFUNDING    │                               │
+│                    │                     │                               │
+│                    │ • Well-wishers      │                               │
+│                    │ • Sponsors          │                               │
+│                    │ • Donors            │                               │
+│                    └─────────────────────┘                               │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Student Journey (Hackathon)
+
+| Step | Action | Reward |
+|------|--------|--------|
+| 1 | Register for hackathon (pay sats) | Access to materials |
+| 2 | Play pre-event game | Earn sats |
+| 3 | Attend daily sessions (QR check-in) | Attendance points |
+| 4 | Download PPTs, notes, links | Learning |
+| 5 | Submit project/homework | Project points |
+| 6 | Community review | Bonus points |
+| 7 | Graduate (daily logins complete) | Certificate + sats |
+| 8 | Get invited to collaborate | Networking |
+
+---
+
+## Organizer Journey
+
+| Step | Action |
+|------|--------|
+| 1 | Login as organizer |
+| 2 | Create event (title, date, venue, capacity, ticket price) |
+| 3 | Upload materials (PPTs, notes, links) |
+| 4 | Share pre-event game questions |
+| 5 | On event day: scan QR for student check-in |
+| 6 | Send notifications via chat |
+| 7 | After event: review student submissions |
+| 8 | Award sats to top performers |
+
+---
+
+## Community Reviewer Journey
+
+| Step | Action |
+|------|--------|
+| 1 | Browse hackathon submissions |
+| 2 | Read student bio (interests, skills) |
+| 3 | Review project |
+| 4 | Award points |
+| 5 | Send collaboration invitation |
+
+---
+
+## Well-Wisher Journey
+
+| Step | Action |
+|------|--------|
+| 1 | Browse active campaigns |
+| 2 | Choose campaign (event, student sponsorship) |
+| 3 | Donate sats |
+| 4 | Receive thank-you + impact report |
+| 5 | Track how donations were used |
+
+---
+
+## Bitcoin Philosophy Connection
+
+> *"The root problem with conventional currency is all the trust that's required to make it work."* — Satoshi Nakamoto
+
+Altradits extends this by **removing trust** from:
+- **Investment** — Assets are public, profit is transparent
+- **Events** — QR check-ins prove attendance
+- **Hackathons** — Community review, not central authority
+- **Crowdfunding** — Every sat tracked, every impact reported
+
+**No ngurus. No middlemen. Just transparent, Bitcoin-powered ecosystem.**

@@ -27,7 +27,8 @@ altradits/
 │   │   │   ├── 003_add_profit_access.sql
 │   │   │   ├── 004_add_events_tables.sql
 │   │   │   ├── 005_add_hackathon_tables.sql
-│   │   │   └── 006_add_travel_tables.sql
+│   │   │   ├── 006_add_travel_tables.sql
+│   │   │   └── 007_add_crowdfunding_tables.sql
 │   │   └── erd.md                     # Entity relationship diagram
 │   └── guides/
 │       ├── contribution_guide.md
