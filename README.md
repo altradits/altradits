@@ -2,9 +2,7 @@
 
 <img src="logo.png" width="100%" alt="Altradits"/>
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:274C77,100:FF6B6B&height=180&section=header&text=Stanley%20Chege%20Thuita&fontSize=42&fontColor=F5F5F5&animation=fadeIn&fontAlignY=36&desc=Go%20Backend%20Engineer.%20Bitcoin%20%26%20Lightning%20Network&descAlignY=60&descSize=18" width="100%" alt="header banner"/>
-
-<img src="https://github.com/altradits.png" width="120" alt="avatar"/>
+# Stanley Chege Thuita
 
 <br/>
 
@@ -26,50 +24,27 @@
 
 ## ⚡ Snapshot
 
-<table>
-<tr>
-<td width="55%" valign="top">
-
-**12 months deep** in Go and Bitcoin's Lightning Network. From "hello world" to a working wallet backend.
+From "hello world" to a working wallet backend, one shipped phase at a time.
 
 - 🎓 SE Apprentice @ **[Zone01 Kisumu](https://www.zone01kisumu.ke/)**, peer-to-peer and project-based, no lectures
-- ⚡ Building **[Altradits](https://github.com/altradits/altradits)**, a Lightning wallet with M-Pesa rails in Go (Gin)
-- 🤝 Open to backend roles & Bitcoin/Lightning contract work
+- ⚡ Building **[Altradits](https://github.com/altradits/altradits)**, a Lightning wallet with M-Pesa rails in vanilla Go
+- 🧩 Owns features end to end, from schema to deploy
 
-</td>
-<td width="45%">
 <img src="https://github-readme-stats.vercel.app/api?username=altradits&show_icons=true&theme=tokyonight&hide_border=true&bg_color=0D1117&title_color=274C77&icon_color=FF6B6B&text_color=c9d1d9&count_private=true&include_all_commits=true" width="100%" alt="stats"/>
-</td>
-</tr>
-</table>
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=FF6B6B&height=3&width=100&section=footer" width="100%"/>
 
 ## 🧰 Toolbox
 
-<table>
-<tr>
-<td width="55%" valign="top">
+**Core**, vanilla first while I build solid fundamentals:
 
-<p>
-<img src="https://skillicons.dev/icons?i=go,postgres,redis,docker,git,github,linux,bash,nextjs,ts,tailwind,nodejs&theme=dark" alt="skill icons"/>
-</p>
+<img src="https://skillicons.dev/icons?i=go,postgres,redis,git,github,linux,bash,docker&theme=dark" alt="core skills"/>
 
-<p>
-<img src="https://img.shields.io/badge/Bitcoin-000000?style=for-the-badge&logo=bitcoin&logoColor=F7931A" alt="Bitcoin"/>
-<img src="https://img.shields.io/badge/Lightning_Network-792EE5?style=for-the-badge&logo=lightning&logoColor=white" alt="Lightning Network"/>
-<img src="https://img.shields.io/badge/LND-2A2A2A?style=for-the-badge&logo=bitcoinsv&logoColor=F7931A" alt="LND"/>
-<img src="https://img.shields.io/badge/Gin-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Gin"/>
-<img src="https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT"/>
-<img src="https://img.shields.io/badge/M--Pesa-34A853?style=for-the-badge&logo=mpesa&logoColor=white" alt="M-Pesa"/>
-</p>
+**Exploring** in side projects:
 
-</td>
-<td width="45%">
+<img src="https://skillicons.dev/icons?i=nextjs,ts,tailwind,nodejs&theme=dark" alt="exploring"/>
+
 <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=altradits&layout=compact&theme=tokyonight&hide_border=true&bg_color=0D1117&title_color=274C77&text_color=c9d1d9&langs_count=8" width="100%" alt="top languages"/>
-</td>
-</tr>
-</table>
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=274C77&height=3&width=100&section=footer" width="100%"/>
 
@@ -80,7 +55,14 @@
 [![Repo](https://img.shields.io/badge/Repo-altradits%2Faltradits-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/altradits/altradits)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-2EA043?style=for-the-badge)](https://github.com/altradits/altradits/blob/main/LICENSE)
-[![Lightning](https://img.shields.io/badge/Bitcoin-Lightning-f7931a?style=for-the-badge&logo=lightning&logoColor=white)](#)
+
+<p>
+<img src="https://img.shields.io/badge/Bitcoin-000000?style=for-the-badge&logo=bitcoin&logoColor=F7931A" alt="Bitcoin"/>
+<img src="https://img.shields.io/badge/Lightning_Network-792EE5?style=for-the-badge&logo=lightning&logoColor=white" alt="Lightning Network"/>
+<img src="https://img.shields.io/badge/LND-2A2A2A?style=for-the-badge&logo=bitcoinsv&logoColor=F7931A" alt="LND"/>
+<img src="https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT"/>
+<img src="https://img.shields.io/badge/M--Pesa-34A853?style=for-the-badge&logo=mpesa&logoColor=white" alt="M-Pesa"/>
+</p>
 
 - ⚡ Send/receive sats over Lightning + `you@altradits.com` addresses (LNURL-pay)
 - 🇰🇪 Deposit & withdraw KES via M-Pesa STK push
@@ -93,7 +75,7 @@
 
 | Stage | Shipped | Skills |
 |---|---|---|
-| Foundations | Go modules, Gin, Docker, multi-schema Postgres | Tooling, schema design |
+| Foundations | Go modules, Docker, multi-schema Postgres | Tooling, schema design |
 | Money Rails | Lightning wallet + M-Pesa STK, BTC price tracking | LND REST, Redis, workers |
 | Growth Features | Auto-save, bills, net worth, investing, planner | Service layers, ledger math |
 | Engagement | AI coach, companion, notifications, hackathon mode | Pipelines, rapid iteration |
@@ -103,7 +85,7 @@
 
 **🔥 Still showing up, every day**
 
-<img src="https://streak-stats.demolab.com/?user=altradits&theme=tokyonight&hide_border=true&background=0D1117&ring=FF6B6B&fire=FF6B6B&currStreakLabel=274C77&sideLabels=c9d1d9&dates=8b949e" width="65%" alt="streak"/>
+<img src="https://streak-stats.demolab.com/?user=altradits&theme=tokyonight&hide_border=true&background=0D1117&ring=FF6B6B&fire=FF6B6B&currStreakLabel=274C77&sideLabels=c9d1d9&dates=8b949e" width="100%" alt="streak"/>
 
 </div>
 
@@ -114,6 +96,7 @@
 - 🔌 Real LND node (currently mock-Lightning for dev)
 - 🧪 Test coverage for `internal/wallet` & `internal/treasury`
 - 📡 Public Lightning address service (`*@altradits.com`)
+- 🤝 Sats to cash agent network with women-led businesses near me
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=FF6B6B&height=3&width=100&section=footer" width="100%"/>
 
