@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -155,9 +156,12 @@ func HandleSend(w http.ResponseWriter, r *http.Request) {
 	var balanceSats int64
 	db.DB.QueryRow("SELECT balance_sats FROM wallets WHERE user_id=$1", u.ID).Scan(&balanceSats)
 
+	var kesPerSat float64
+	db.DB.QueryRow("SELECT kes_per_sat FROM pool_settings LIMIT 1").Scan(&kesPerSat)
+
 	if r.Method == http.MethodGet {
 		serveTemplateData(w, r, "web/templates/customer/send.html", map[string]interface{}{
-			"User": u, "BalanceSats": balanceSats,
+			"User": u, "BalanceSats": balanceSats, "KesPerSat": kesPerSat,
 		})
 		return
 	}
@@ -168,13 +172,13 @@ func HandleSend(w http.ResponseWriter, r *http.Request) {
 
 	if sats <= 0 || invoice == "" {
 		serveTemplateData(w, r, "web/templates/customer/send.html", map[string]interface{}{
-			"User": u, "BalanceSats": balanceSats, "Error": "Enter amount and Lightning invoice.",
+			"User": u, "BalanceSats": balanceSats, "KesPerSat": kesPerSat, "Error": "Enter amount and Lightning invoice.",
 		})
 		return
 	}
 	if sats > balanceSats {
 		serveTemplateData(w, r, "web/templates/customer/send.html", map[string]interface{}{
-			"User": u, "BalanceSats": balanceSats, "Error": "Insufficient balance.",
+			"User": u, "BalanceSats": balanceSats, "KesPerSat": kesPerSat, "Error": "Insufficient balance.",
 		})
 		return
 	}
@@ -192,11 +196,21 @@ func HandleReceive(w http.ResponseWriter, r *http.Request) {
 	db.DB.QueryRow("SELECT COALESCE(lightning_addr,'') FROM wallets WHERE user_id=$1", u.ID).
 		Scan(&lightningAddr)
 
-	serveTemplateData(w, r, "web/templates/customer/receive.html", map[string]interface{}{
+	data := map[string]interface{}{
 		"User":          u,
 		"LightningAddr": lightningAddr,
-		"MockInvoice":   "lnbc50000n1p3fakexxxinvoicetoreplacewithreallndintegration",
-	})
+	}
+
+	if amountStr := r.URL.Query().Get("amount"); amountStr != "" {
+		if sats, err := strconv.ParseInt(amountStr, 10, 64); err == nil && sats > 0 {
+			data["InvoiceAmount"] = sats
+			data["Invoice"] = fmt.Sprintf("lnbc%dn1p3fakexxxinvoicetoreplacewithreallndintegration", sats)
+		} else {
+			data["Error"] = "Enter a valid amount."
+		}
+	}
+
+	serveTemplateData(w, r, "web/templates/customer/receive.html", data)
 }
 
 func HandleTransactions(w http.ResponseWriter, r *http.Request) {

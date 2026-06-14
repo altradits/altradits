@@ -169,6 +169,28 @@ h4 { font-size: 1rem; font-weight: 600; }
 .form-select { width: 100%; padding: 11px 14px; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-size: 14px; outline: none; cursor: pointer; transition: border-color 0.15s; }
 .form-select:focus { border-color: var(--forest-mid); }
 
+/* ── QR / PAYMENT REVIEW ──────────────────────────────────────── */
+.qr-box { display: inline-block; padding: 14px; background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius-sm); line-height: 0; }
+.qr-box img, .qr-box canvas, .qr-box table { display: block; margin: 0 auto; }
+.review-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.review-row:last-child { border-bottom: none; }
+.review-label { color: var(--text-muted); white-space: nowrap; }
+.review-value { font-weight: 600; text-align: right; word-break: break-all; }
+
+/* ── QR SCANNER ──────────────────────────────────────────────── */
+.input-row { display: flex; gap: 8px; align-items: stretch; }
+.input-row .form-input { flex: 1; min-width: 0; }
+.qr-scan-btn { flex-shrink: 0; width: 46px; display: flex; align-items: center; justify-content: center; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; font-size: 18px; transition: all 0.15s; }
+.qr-scan-btn:hover { border-color: var(--forest); color: var(--forest); background: var(--forest-dim); }
+.qr-scan-overlay { display: none; position: fixed; inset: 0; background: rgba(26,58,42,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+.qr-scan-overlay.active { display: flex; }
+.qr-scan-modal { background: var(--surface); border-radius: var(--radius-lg); padding: 20px; max-width: 380px; width: 100%; text-align: center; box-shadow: var(--shadow-lg); }
+.qr-scan-modal h3 { font-size: 14px; margin: 0 0 14px; color: var(--text); }
+.qr-scan-video-wrap { position: relative; border-radius: var(--radius); overflow: hidden; background: #000; aspect-ratio: 1; }
+.qr-scan-video-wrap video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.qr-scan-frame { position: absolute; inset: 14%; border: 3px solid var(--gold-bright); border-radius: var(--radius-sm); pointer-events: none; }
+.qr-scan-status { font-size: 12px; color: var(--text-muted); margin: 14px 0; min-height: 16px; }
+
 /* ── ALERTS ──────────────────────────────────────── */
 .alert { padding: 12px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 18px; }
 .alert-error { background: var(--red-dim); color: var(--red); border: 1px solid rgba(192,57,43,0.2); }
