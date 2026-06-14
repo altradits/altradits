@@ -2,7 +2,7 @@
 
 <img src="logo.png" width="100%" alt="Altradits"/>
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:274C77,100:FF6B6B&height=180&section=header&text=Stanley%20Chege%20Thuita&fontSize=42&fontColor=F5F5F5&animation=fadeIn&fontAlignY=36&desc=Backend%20Engineer%20%E2%80%94%20Go%20%C3%97%20Bitcoin%20%26%20Lightning%20Network&descAlignY=60&descSize=18" width="100%" alt="header banner"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:274C77,100:FF6B6B&height=180&section=header&text=Stanley%20Chege%20Thuita&fontSize=42&fontColor=F5F5F5&animation=fadeIn&fontAlignY=36&desc=Go%20Backend%20Engineer.%20Bitcoin%20%26%20Lightning%20Network&descAlignY=60&descSize=18" width="100%" alt="header banner"/>
 
 <img src="https://github.com/altradits.png" width="120" alt="avatar"/>
 
@@ -30,10 +30,10 @@
 <tr>
 <td width="55%" valign="top">
 
-Backend engineer, **12 months deep** in Go and Bitcoin's Lightning Network — went from "hello world" to a Lightning + mobile-money wallet backend.
+**12 months deep** in Go and Bitcoin's Lightning Network. From "hello world" to a working wallet backend.
 
-- 🎓 SE Apprentice @ **[Zone01 Kisumu](https://www.zone01kisumu.ke/)** — peer-to-peer, project-based, no lectures
-- ⚡ Building **[Altradits](https://github.com/altradits/altradits)** — Lightning wallet + M-Pesa rails, Go (Gin)
+- 🎓 SE Apprentice @ **[Zone01 Kisumu](https://www.zone01kisumu.ke/)**, peer-to-peer and project-based, no lectures
+- ⚡ Building **[Altradits](https://github.com/altradits/altradits)**, a Lightning wallet with M-Pesa rails in Go (Gin)
 - 🤝 Open to backend roles & Bitcoin/Lightning contract work
 
 </td>
@@ -73,7 +73,7 @@ Backend engineer, **12 months deep** in Go and Bitcoin's Lightning Network — w
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=274C77&height=3&width=100&section=footer" width="100%"/>
 
-## 🏗️ Flagship Build — Altradits
+## 🏗️ Flagship Build: Altradits
 
 > A calm Bitcoin Lightning wallet with M-Pesa rails for the Kenyan market.
 
@@ -84,14 +84,8 @@ Backend engineer, **12 months deep** in Go and Bitcoin's Lightning Network — w
 
 - ⚡ Send/receive sats over Lightning + `you@altradits.com` addresses (LNURL-pay)
 - 🇰🇪 Deposit & withdraw KES via M-Pesa STK push
-- 💰 Treasury savings pool — bonds, money market, equities, BTC, auto interest
+- 💰 Treasury pool: bonds, money market, equities, BTC, auto interest
 - 🛡️ JWT auth + role-based admin dashboards
-
-<div align="center">
-<a href="https://e2b.dev/startups">
-  <img src="Black-2.png" alt="Backed by E2B for Startups" width="280"/>
-</a>
-</div>
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=FF6B6B&height=3&width=100&section=footer" width="100%"/>
 
