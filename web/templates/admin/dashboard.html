@@ -22,7 +22,7 @@
   <div class="page-header"><h2>Admin dashboard</h2><p>Operational overview</p></div>
   <div class="kpi-grid" style="margin-bottom:24px;">
     <div class="kpi-card"><div class="kpi-label">Total members</div><div class="kpi-value mono">{{.TotalCustomers}}</div><div class="kpi-sub">+{{.NewToday}} today</div></div>
-    <div class="kpi-card"><div class="kpi-label">Total AUM (sats)</div><div class="kpi-value gold mono">{{.TotalAUMSats}}</div><div class="kpi-sub">across all wallets</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total AUM (sats)</div><div class="kpi-value gold mono">{{.TotalAUMSats}}</div><div class="kpi-sub mono">{{.TotalAUMBTC}} &middot; KES {{.TotalAUMKES}}</div></div>
     <div class="kpi-card"><div class="kpi-label">Pending deposits</div><div class="kpi-value mono" style="{{if gt .PendingDeposits 0}}color:#c4622d{{end}}">{{.PendingDeposits}}</div><div class="kpi-sub"><a href="/admin/deposits" style="color:#2d6b4a;">Review &rarr;</a></div></div>
     <div class="kpi-card"><div class="kpi-label">Pending withdrawals</div><div class="kpi-value mono" style="{{if gt .PendingWithdrawals 0}}color:#c4622d{{end}}">{{.PendingWithdrawals}}</div><div class="kpi-sub"><a href="/admin/withdrawals" style="color:#2d6b4a;">Review &rarr;</a></div></div>
   </div>
@@ -31,12 +31,14 @@
     {{if .RecentTx}}
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Type</th><th>Amount</th><th>Direction</th><th>Status</th><th>When</th></tr></thead>
+        <thead><tr><th>Type</th><th>Sats</th><th>BTC</th><th>KES</th><th>Direction</th><th>Status</th><th>When</th></tr></thead>
         <tbody>
         {{range .RecentTx}}
         <tr>
           <td style="font-weight:600;">{{.Type}}</td>
-          <td class="td-mono">{{.AmountSats}} sats</td>
+          <td class="td-mono">{{.AmountSats}}</td>
+          <td class="td-mono">{{.AmountBTC}}</td>
+          <td class="td-mono">{{.AmountKES}}</td>
           <td><span class="badge badge-{{.Direction}}">{{.Direction}}</span></td>
           <td><span class="badge badge-{{.Status}}">{{.Status}}</span></td>
           <td style="font-size:12px;">{{.TimeAgo}}</td>

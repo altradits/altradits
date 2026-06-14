@@ -25,6 +25,8 @@ type TxRow struct {
 	ID          string
 	Type        string
 	AmountSats  int64
+	AmountBTC   string
+	AmountKES   string
 	Direction   string
 	Status      string
 	Reference   string

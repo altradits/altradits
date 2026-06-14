@@ -96,7 +96,7 @@ h4 { font-size: 1rem; font-weight: 600; }
 .nav-item i { font-size: 15px; flex-shrink: 0; }
 
 /* ── MAIN CONTENT ──────────────────────────────── */
-.main-content { padding: 36px 40px; background: var(--bg); }
+.main-content { padding: 36px 40px; background: var(--bg); max-width: 1400px; margin: 0 auto; }
 
 /* ── PAGE HEADER ──────────────────────────────── */
 .page-header { margin-bottom: 28px; }

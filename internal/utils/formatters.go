@@ -67,9 +67,26 @@ func FormatKES(kes float64) string {
 	return fmt.Sprintf("KES %.2f", kes)
 }
 
+// FormatKESAmount formats a KES amount with 2 decimals, no currency prefix
+func FormatKESAmount(kes float64) string {
+	return fmt.Sprintf("%.2f", kes)
+}
+
 // SatsToKES converts sats to KES using stored rate
 func SatsToKES(sats int64, kesPerSat float64) float64 {
 	return float64(sats) * kesPerSat
+}
+
+// FormatBTC formats a satoshi amount as BTC, trimming trailing zeros
+func FormatBTC(sats int64) string {
+	btc := float64(sats) / 100000000.0
+	s := strconv.FormatFloat(btc, 'f', 8, 64)
+	s = strings.TrimRight(s, "0")
+	s = strings.TrimRight(s, ".")
+	if s == "" || s == "-" {
+		s = "0"
+	}
+	return "₿" + s
 }
 
 // KESToSats converts KES to sats

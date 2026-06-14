@@ -24,12 +24,14 @@
     {{if .Transactions}}
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Member</th><th>Amount (sats)</th><th>M-Pesa ref</th><th>Status</th><th>When</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Member</th><th>Sats</th><th>BTC</th><th>KES</th><th>M-Pesa ref</th><th>Status</th><th>When</th><th>Actions</th></tr></thead>
         <tbody>
         {{range .Transactions}}
         <tr>
           <td style="font-size:12px;">{{.Identifier}}</td>
           <td class="td-mono">{{.AmountSats}}</td>
+          <td class="td-mono">{{.AmountBTC}}</td>
+          <td class="td-mono">{{.AmountKES}}</td>
           <td style="font-size:11px;color:#4a6a5a;">{{.Reference}}</td>
           <td><span class="badge badge-{{.Status}}">{{.Status}}</span></td>
           <td style="font-size:12px;">{{.TimeAgo}}</td>

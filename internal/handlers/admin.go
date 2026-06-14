@@ -14,6 +14,8 @@ type AdminDashData struct {
 	TotalCustomers int
 	NewToday       int
 	TotalAUMSats   int64
+	TotalAUMBTC    string
+	TotalAUMKES    string
 	PendingDeposits int
 	PendingWithdrawals int
 	RecentTx       []TxRow
@@ -24,9 +26,14 @@ func HandleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	var d AdminDashData
 	d.User = u
 
+	var kesPerSat float64
+	db.DB.QueryRow("SELECT kes_per_sat FROM pool_settings LIMIT 1").Scan(&kesPerSat)
+
 	db.DB.QueryRow("SELECT COUNT(*) FROM users WHERE role='customer'").Scan(&d.TotalCustomers)
 	db.DB.QueryRow("SELECT COUNT(*) FROM users WHERE role='customer' AND created_at::date = CURRENT_DATE").Scan(&d.NewToday)
 	db.DB.QueryRow("SELECT COALESCE(SUM(balance_sats),0) FROM wallets").Scan(&d.TotalAUMSats)
+	d.TotalAUMBTC = utils.FormatBTC(d.TotalAUMSats)
+	d.TotalAUMKES = utils.FormatKESAmount(utils.SatsToKES(d.TotalAUMSats, kesPerSat))
 	db.DB.QueryRow("SELECT COUNT(*) FROM transactions WHERE type='deposit' AND status='pending'").Scan(&d.PendingDeposits)
 	db.DB.QueryRow("SELECT COUNT(*) FROM transactions WHERE type='withdrawal' AND status='pending'").Scan(&d.PendingWithdrawals)
 
@@ -40,6 +47,8 @@ func HandleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 			rows.Scan(&tx.ID, &tx.Type, &tx.AmountSats, &tx.Direction,
 				&tx.Status, &tx.Reference, &tx.Note, &tx.CreatedAt)
 			tx.TimeAgo = utils.TimeAgo(tx.CreatedAt)
+			tx.AmountBTC = utils.FormatBTC(tx.AmountSats)
+			tx.AmountKES = utils.FormatKESAmount(utils.SatsToKES(tx.AmountSats, kesPerSat))
 			d.RecentTx = append(d.RecentTx, tx)
 		}
 	}
@@ -53,6 +62,8 @@ type CustomerRow struct {
 	Role        string
 	FullName    string
 	BalanceSats int64
+	BalanceBTC  string
+	BalanceKES  string
 	LastSeen    string
 	CreatedAt   time.Time
 	IsBlocked   bool
@@ -61,6 +72,9 @@ type CustomerRow struct {
 func HandleAdminCustomers(w http.ResponseWriter, r *http.Request) {
 	u := middleware.GetUser(r)
 	search := r.URL.Query().Get("q")
+
+	var kesPerSat float64
+	db.DB.QueryRow("SELECT kes_per_sat FROM pool_settings LIMIT 1").Scan(&kesPerSat)
 
 	query := `SELECT u.id, u.identifier, u.role, COALESCE(u.full_name,''),
 		COALESCE(w.balance_sats,0), COALESCE(u.last_seen::text,'never'), u.created_at, u.is_blocked
@@ -81,6 +95,8 @@ func HandleAdminCustomers(w http.ResponseWriter, r *http.Request) {
 			rows.Scan(&c.ID, &c.Identifier, &c.Role, &c.FullName,
 				&c.BalanceSats, &lastSeen, &c.CreatedAt, &c.IsBlocked)
 			c.LastSeen = lastSeen
+			c.BalanceBTC = utils.FormatBTC(c.BalanceSats)
+			c.BalanceKES = utils.FormatKESAmount(utils.SatsToKES(c.BalanceSats, kesPerSat))
 			customers = append(customers, c)
 		}
 	}
@@ -92,6 +108,9 @@ func HandleAdminCustomers(w http.ResponseWriter, r *http.Request) {
 
 func HandleAdminDeposits(w http.ResponseWriter, r *http.Request) {
 	u := middleware.GetUser(r)
+
+	var kesPerSat float64
+	db.DB.QueryRow("SELECT kes_per_sat FROM pool_settings LIMIT 1").Scan(&kesPerSat)
 
 	if r.Method == http.MethodPost {
 		txID := r.FormValue("tx_id")
@@ -129,6 +148,8 @@ func HandleAdminDeposits(w http.ResponseWriter, r *http.Request) {
 			rows.Scan(&tx.ID, &tx.Type, &tx.AmountSats, &tx.Direction,
 				&tx.Status, &tx.Reference, &tx.Note, &tx.CreatedAt, &tx.Identifier)
 			tx.TimeAgo = utils.TimeAgo(tx.CreatedAt)
+			tx.AmountBTC = utils.FormatBTC(tx.AmountSats)
+			tx.AmountKES = utils.FormatKESAmount(utils.SatsToKES(tx.AmountSats, kesPerSat))
 			txs = append(txs, tx)
 		}
 	}
@@ -140,6 +161,9 @@ func HandleAdminDeposits(w http.ResponseWriter, r *http.Request) {
 
 func HandleAdminWithdrawals(w http.ResponseWriter, r *http.Request) {
 	u := middleware.GetUser(r)
+
+	var kesPerSat float64
+	db.DB.QueryRow("SELECT kes_per_sat FROM pool_settings LIMIT 1").Scan(&kesPerSat)
 
 	if r.Method == http.MethodPost {
 		txID := r.FormValue("tx_id")
@@ -173,6 +197,8 @@ func HandleAdminWithdrawals(w http.ResponseWriter, r *http.Request) {
 			rows.Scan(&tx.ID, &tx.Type, &tx.AmountSats, &tx.Direction,
 				&tx.Status, &tx.Reference, &tx.Note, &tx.CreatedAt, &tx.Identifier)
 			tx.TimeAgo = utils.TimeAgo(tx.CreatedAt)
+			tx.AmountBTC = utils.FormatBTC(tx.AmountSats)
+			tx.AmountKES = utils.FormatKESAmount(utils.SatsToKES(tx.AmountSats, kesPerSat))
 			txs = append(txs, tx)
 		}
 	}
