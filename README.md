@@ -1,301 +1,142 @@
 <div align="center">
 
-# ⚡ ALTRADITS ⚡
-### *A calm Bitcoin Lightning wallet.*
+<img src="logo.png" width="100%" alt="Altradits"/>
 
-<a href="https://e2b.dev/startups">
-  <img src="Black-2.png" alt="SPONSORED BY E2B FOR STARTUPS" width="100%">
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:274C77,100:FF6B6B&height=180&section=header&text=Stanley%20Chege%20Thuita&fontSize=42&fontColor=F5F5F5&animation=fadeIn&fontAlignY=36&desc=Backend%20Engineer%20%E2%80%94%20Go%20%C3%97%20Bitcoin%20%26%20Lightning%20Network&descAlignY=60&descSize=18" width="100%" alt="header banner"/>
+
+<img src="https://github.com/altradits.png" width="120" alt="avatar"/>
+
+<br/>
+
+<a href="https://github.com/altradits">
+  <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&weight=500&size=22&duration=3200&pause=1000&color=FF6B6B&center=true&vCenter=true&width=720&height=50&lines=Bitcoin+Lightning+%2B+M-Pesa+wallet+backend+in+Go;12+months+deep+in+Go+%26+Lightning;SE+Apprentice+%40+Zone01+Kisumu;Open+to+Backend+%26+Bitcoin%2FLightning+roles" alt="Typing SVG"/>
 </a>
 
-<br>
+<br/>
 
-[![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
-[![Lightning](https://img.shields.io/badge/Bitcoin-Lightning-f7931a?style=for-the-badge&logo=lightning&logoColor=white)](#)
-[![Ecosystem](https://img.shields.io/badge/Built_at-Zone01_Kisumu-blue?style=for-the-badge)](https://www.zone01kisumu.ke/)
+[![Profile Views](https://komarev.com/ghpvc/?username=altradits&style=for-the-badge&color=274C77&label=PROFILE+VIEWS)](https://github.com/altradits)
+[![Open to Work](https://img.shields.io/badge/STATUS-OPEN_TO_WORK-2EA043?style=for-the-badge&logo=target&logoColor=white)](mailto:altradits@gmail.com)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Stanley_Chege_Thuita-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/stanmobitech)
+[![Email](https://img.shields.io/badge/Email-altradits%40gmail.com-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:altradits@gmail.com)
+[![Location](https://img.shields.io/badge/Based_in-Kisumu%2C_Kenya-274C77?style=for-the-badge&logo=googlemaps&logoColor=white)](https://www.zone01kisumu.ke/)
 
----
 </div>
 
-Altradits is a simple, calm Bitcoin Lightning wallet. Send and receive sats over Lightning, deposit and withdraw via M-Pesa, track the live BTC/KES rate, and review your transaction history — all from a clean, focused interface.
-
----
-
-## Core Features
-
-- **Lightning wallet** — send and receive Bitcoin over the Lightning Network
-- **Lightning address** — receive payments to `username@altradits.com` via LNURL-pay
-- **M-Pesa deposit & withdraw** — top up or cash out in KES via STK push
-- **Request payments** — generate a Lightning invoice (with QR code) to receive sats
-- **Live BTC/KES price** — exchange rate tracking with 24h change
-- **Pool & Interest** — balance growth chart, monthly interest meter, and a
-  ledger-backed savings pool allocation (bonds, money market, equities, BTC)
-- **Transaction history** — searchable history with CSV export
-- **Accounts** — simple email/password registration and login
-- **Admin dashboard** — bank-wide overview of users, balances, and transactions
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js, TypeScript, TailwindCSS |
-| Backend | Go (Gin) |
-| Database | PostgreSQL |
-| Cache & Queue | Redis |
-| Auth | JWT |
-| Infrastructure | Docker, Docker Compose |
-
----
-
-## Project Structure
-
-```
-altradits/
-│
-├── apps/
-│   └── web/                      # Next.js (App Router) frontend
-│       ├── app/
-│       │   ├── admin/            # Admin dashboard (bank-wide stats, users, activity)
-│       │   ├── login/
-│       │   ├── register/
-│       │   ├── wallet/
-│       │   │   ├── price/        # BTC/KES price view
-│       │   │   └── transactions/ # History + CSV export
-│       │   ├── layout.tsx
-│       │   └── page.tsx          # Single dashboard: balance, activity donut,
-│       │                          # inline Send/Receive (Sats ⇄ M-Pesa), or
-│       │                          # landing page if logged out
-│       ├── components/           # NavBar, DonutChart, ReceivePanel, SendPanel, shared UI
-│       ├── contexts/             # AuthContext
-│       ├── lib/                  # apiFetch + shared helpers
-│       └── public/
-│
-├── server/
-│   ├── cmd/
-│   │   ├── api/
-│   │   │   └── main.go           # App entry point
-│   │   └── migrate/
-│   │       └── main.go           # Migration CLI (make migrate-up/down)
-│   │
-│   ├── internal/
-│   │   ├── admin/                # Admin oversight (bank stats, users, activity)
-│   │   ├── auth/                 # Authentication
-│   │   ├── treasury/              # Savings pool allocation + interest accrual
-│   │   └── wallet/                # Bitcoin Lightning + M-Pesa wallet
-│   │
-│   ├── database/
-│   │   └── migrations/           # Sequential .up.sql / .down.sql pairs
-│   │
-│   ├── workers/
-│   │   └── exchange_rate_worker.go
-│   │
-│   └── pkg/
-│       └── envload/              # .env file loader
-│
-├── scripts/
-│   ├── setup.sh                  # First-time setup after clone
-│   ├── verify.sh                 # Health checks for all services
-│   └── docker-api-entrypoint.sh
-│
-├── .env.example
-├── docker-compose.yml
-├── Makefile
-└── README.md
-```
-
----
-
-## Quick Start (after clone)
-
-**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) (for Postgres + Redis), [Go 1.22+](https://go.dev/dl/) (auto-downloads 1.25 via toolchain), [Node.js 20+](https://nodejs.org/)
-
-```bash
-git clone https://github.com/altradits/altradits.git
-cd altradits
-make setup          # creates .env, starts db/cache, migrates, npm install
-```
-
-Open **two terminals** from the project root:
+<img src="https://capsule-render.vercel.app/api?type=rect&color=274C77&height=3&width=100&section=footer" width="100%"/>
 
-```bash
-# Terminal 1 — API (port 8080)
-make dev-backend
+## ⚡ Snapshot
 
-# Terminal 2 — Web (port 3000)
-make dev-frontend
-```
+<table>
+<tr>
+<td width="55%" valign="top">
 
-| URL | Purpose |
-|-----|---------|
-| http://localhost:3000 | Web app — register, then explore your wallet |
-| http://localhost:8080/health | API health check |
-| http://localhost:8080 | REST API |
+Backend engineer, **12 months deep** in Go and Bitcoin's Lightning Network — went from "hello world" to a Lightning + mobile-money wallet backend.
 
-Verify everything is wired:
+- 🎓 SE Apprentice @ **[Zone01 Kisumu](https://www.zone01kisumu.ke/)** — peer-to-peer, project-based, no lectures
+- ⚡ Building **[Altradits](https://github.com/altradits/altradits)** — Lightning wallet + M-Pesa rails, Go (Gin)
+- 🤝 Open to backend roles & Bitcoin/Lightning contract work
 
-```bash
-make verify
-curl http://localhost:8080/health
-```
+</td>
+<td width="45%">
+<img src="https://github-readme-stats.vercel.app/api?username=altradits&show_icons=true&theme=tokyonight&hide_border=true&bg_color=0D1117&title_color=274C77&icon_color=FF6B6B&text_color=c9d1d9&count_private=true&include_all_commits=true" width="100%" alt="stats"/>
+</td>
+</tr>
+</table>
 
----
+<img src="https://capsule-render.vercel.app/api?type=rect&color=FF6B6B&height=3&width=100&section=footer" width="100%"/>
 
-## Local Development (step by step)
+## 🧰 Toolbox
 
-All commands run from the **repository root** (`go.mod` lives here — do not `cd server` for Go commands).
+<table>
+<tr>
+<td width="55%" valign="top">
 
-### 1. Clone and configure environment
+<p>
+<img src="https://skillicons.dev/icons?i=go,postgres,redis,docker,git,github,linux,bash,nextjs,ts,tailwind,nodejs&theme=dark" alt="skill icons"/>
+</p>
 
-```bash
-git clone https://github.com/altradits/altradits.git
-cd altradits
-cp .env.example .env
-cp apps/web/.env.example apps/web/.env.local
-```
+<p>
+<img src="https://img.shields.io/badge/Bitcoin-000000?style=for-the-badge&logo=bitcoin&logoColor=F7931A" alt="Bitcoin"/>
+<img src="https://img.shields.io/badge/Lightning_Network-792EE5?style=for-the-badge&logo=lightning&logoColor=white" alt="Lightning Network"/>
+<img src="https://img.shields.io/badge/LND-2A2A2A?style=for-the-badge&logo=bitcoinsv&logoColor=F7931A" alt="LND"/>
+<img src="https://img.shields.io/badge/Gin-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Gin"/>
+<img src="https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT"/>
+<img src="https://img.shields.io/badge/M--Pesa-34A853?style=for-the-badge&logo=mpesa&logoColor=white" alt="M-Pesa"/>
+</p>
 
-Edit `.env` if needed. Defaults work with the Docker database:
+</td>
+<td width="45%">
+<img src="https://github-readme-stats.vercel.app/api/top-langs/?username=altradits&layout=compact&theme=tokyonight&hide_border=true&bg_color=0D1117&title_color=274C77&text_color=c9d1d9&langs_count=8" width="100%" alt="top languages"/>
+</td>
+</tr>
+</table>
 
-```env
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/altradits?sslmode=disable
-REDIS_URL=redis://localhost:6379
-JWT_SECRET=change-me-to-a-long-random-string
-```
+<img src="https://capsule-render.vercel.app/api?type=rect&color=274C77&height=3&width=100&section=footer" width="100%"/>
 
-### 2. Install dependencies
+## 🏗️ Flagship Build — Altradits
 
-```bash
-go mod download
-cd apps/web && npm install && cd ../..
-```
+> A calm Bitcoin Lightning wallet with M-Pesa rails for the Kenyan market.
 
-### 3. Run the backend
+[![Repo](https://img.shields.io/badge/Repo-altradits%2Faltradits-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/altradits/altradits)
+[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
+[![License](https://img.shields.io/badge/License-MIT-2EA043?style=for-the-badge)](https://github.com/altradits/altradits/blob/main/LICENSE)
+[![Lightning](https://img.shields.io/badge/Bitcoin-Lightning-f7931a?style=for-the-badge&logo=lightning&logoColor=white)](#)
 
-```bash
-make dev-backend
-# starts Postgres + Redis (Docker), applies migrations, then runs the API
-```
+- ⚡ Send/receive sats over Lightning + `you@altradits.com` addresses (LNURL-pay)
+- 🇰🇪 Deposit & withdraw KES via M-Pesa STK push
+- 💰 Treasury savings pool — bonds, money market, equities, BTC, auto interest
+- 🛡️ JWT auth + role-based admin dashboards
 
-### 4. Run the frontend
+<div align="center">
+<a href="https://e2b.dev/startups">
+  <img src="Black-2.png" alt="Backed by E2B for Startups" width="280"/>
+</a>
+</div>
 
-```bash
-make dev-frontend
-```
+<img src="https://capsule-render.vercel.app/api?type=rect&color=FF6B6B&height=3&width=100&section=footer" width="100%"/>
 
-### 5. Create your account
+## 📈 Build Log
 
-Open http://localhost:3000 → **Register** → sign in. All data is scoped to your user.
+| Stage | Shipped | Skills |
+|---|---|---|
+| Foundations | Go modules, Gin, Docker, multi-schema Postgres | Tooling, schema design |
+| Money Rails | Lightning wallet + M-Pesa STK, BTC price tracking | LND REST, Redis, workers |
+| Growth Features | Auto-save, bills, net worth, investing, planner | Service layers, ledger math |
+| Engagement | AI coach, companion, notifications, hackathon mode | Pipelines, rapid iteration |
+| Now | Lightning addresses, treasury pool, admin dashboards | LNURL-pay, double-entry, RBAC |
 
----
+<div align="center">
 
-## Docker (full stack)
+**🔥 Still showing up, every day**
 
-Infrastructure only (recommended for daily dev):
+<img src="https://streak-stats.demolab.com/?user=altradits&theme=tokyonight&hide_border=true&background=0D1117&ring=FF6B6B&fire=FF6B6B&currStreakLabel=274C77&sideLabels=c9d1d9&dates=8b949e" width="65%" alt="streak"/>
 
-```bash
-make dev-backend    # starts db/cache, migrates, runs the local Go process
-make dev-frontend   # local Next.js process
-```
+</div>
 
-Everything in containers (API + web + db + cache):
+<img src="https://capsule-render.vercel.app/api?type=rect&color=274C77&height=3&width=100&section=footer" width="100%"/>
 
-```bash
-docker compose --profile full up --build
-```
+## 🛣️ Next Up
 
-The API container runs migrations automatically on startup.
+- 🔌 Real LND node (currently mock-Lightning for dev)
+- 🧪 Test coverage for `internal/wallet` & `internal/treasury`
+- 📡 Public Lightning address service (`*@altradits.com`)
 
----
+<img src="https://capsule-render.vercel.app/api?type=rect&color=FF6B6B&height=3&width=100&section=footer" width="100%"/>
 
-## Make commands
+## 📡 Open Channels
 
-```bash
-make help           # list all targets
-make setup          # first-time setup after clone
-make verify         # check db, redis, API, frontend
-make dev-db         # Postgres + Redis only
-make migrate-up     # apply pending migrations
-make migrate-down   # roll back last migration
-make dev-backend    # Go API on :8080 (also starts db/cache + migrates)
-make dev-frontend   # Next.js on :3000
-make dev            # full Docker stack (profile: full)
-make db-reset       # wipe DB volume and re-migrate
-make build-backend  # compile binary to server/bin/altradits
-make test           # backend tests
-```
+Hiring, or building something with Go + Lightning rails? Let's talk.
 
----
+<div align="center">
 
-## Environment variables
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/stanmobitech)
+[![Email](https://img.shields.io/badge/Email-Say_Hello-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:altradits@gmail.com)
+[![GitHub](https://img.shields.io/badge/GitHub-altradits-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/altradits)
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `REDIS_URL` | Yes | Redis connection string |
-| `JWT_SECRET` | Yes | Secret for signing auth tokens — change in production |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | No | If set, this account is created (or promoted to admin) on startup. Password is hashed before storage |
-| `EXCHANGE_RATE_API_URL` | No | BTC/KES exchange rate source (default: CoinGecko) |
-| `EXCHANGE_RATE_CACHE_TTL` | No | Exchange rate cache TTL in seconds (default: 300) |
-| `LND_REST_HOST` | No | LND node REST host — falls back to a mock Lightning provider if unset |
-| `LND_MACAROON_HEX` / `LND_MACAROON_PATH` | No | LND macaroon for authenticating to the node |
-| `LND_TLS_CERT_PATH` / `LND_TLS_INSECURE_SKIP_VERIFY` | No | TLS settings for the LND node |
-| `LIGHTNING_ADDRESS_DOMAIN` | No | Domain for Lightning addresses (`username@<domain>`), served via LNURL-pay (default: `altradits.com`) |
-| `NEXT_PUBLIC_API_URL` | No | Frontend API base URL (default `http://localhost:8080`) |
+<br/>
 
-Copy `apps/web/.env.example` → `apps/web/.env.local` for frontend overrides.
+<img src="https://github-readme-activity-graph.vercel.app/graph?username=altradits&theme=tokyo-night&hide_border=true&bg_color=0D1117&color=274C77&line=FF6B6B&point=ffffff&area=true&area_color=FF6B6B" width="100%" alt="activity"/>
 
----
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:FF6B6B,100:274C77&height=120&section=footer" width="100%" alt="footer wave"/>
 
-## Troubleshooting
-
-| Symptom | Fix |
-|---------|-----|
-| `DATABASE_URL is not set` | Run from repo root. Ensure `.env` exists: `cp .env.example .env` |
-| `go: could not create module cache: permission denied` | `make` targets and `scripts/setup.sh` already pin `GOPATH`/`GOMODCACHE` to `$HOME/go`. If running `go` directly (outside `make`), export `GOPATH=$HOME/go GOMODCACHE=$HOME/go/pkg/mod` first |
-| `go: go.mod requires go >= 1.25.0` | Install Go 1.22+ — the toolchain auto-downloads 1.25. Or: `go install golang.org/dl/go1.25.0@latest && go1.25.0 download` |
-| `connection refused` on :5432 | Start database: `make dev-db` and wait ~5s |
-| `could not reach the server` in browser | Start API: `make dev-backend`. Check `curl localhost:8080/health` |
-| Migration errors / dirty state | Reset: `make db-reset` |
-| Port 3000 or 8080 already in use | `lsof -i :3000` or `lsof -i :8080` to find the process |
-| CORS errors | API allows `http://localhost:3000` by default. Match `NEXT_PUBLIC_API_URL` to your API origin |
-| `npm ci` fails in Docker | Run `cd apps/web && npm install` locally first to refresh `package-lock.json` |
-| API starts but Redis shows degraded | Non-fatal. Start cache: `docker compose up -d cache` |
-
-Run the diagnostic script anytime:
-
-```bash
-make verify
-```
-
----
-
-## Hosting checklist
-
-Before deploying to staging or production:
-
-1. Set strong `JWT_SECRET` (32+ random characters)
-2. Use managed PostgreSQL and Redis (or self-hosted with backups)
-3. Set `DATABASE_URL` and `REDIS_URL` to production endpoints
-4. Connect a real Lightning node (set `LND_REST_HOST` + macaroon + TLS cert) — without it, the wallet uses a mock Lightning provider
-5. Build API: `go build -o altradits-api ./server/cmd/api`
-6. Run migrations: `go run server/cmd/migrate/main.go up`
-7. Build frontend: `cd apps/web && npm run build && npm run start`
-8. Set `NEXT_PUBLIC_API_URL` to your public API URL at **build time**
-9. Put HTTPS in front (nginx, Caddy, or a platform load balancer)
-10. Never commit `.env` — use platform secrets
-
-**Docker production:** use `docker compose --profile full up --build` as a starting point; swap dev Dockerfiles for multi-stage production images when ready.
-
----
-
-## License
-
-Private project. All rights reserved.
-
----
-
-## 👨‍💻 Founder & Lead Architect
-**Stanley Chege Thuita** *Software Engineering Apprentice @ [Zone01 Kisumu](https://www.linkedin.com/company/zone01kisumu/)*
-
-**Connect with the journey:** [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=flat&logo=linkedin)](https://www.linkedin.com/in/stanmobitech)
-[![GitHub](https://img.shields.io/badge/GitHub-altradits-lightgrey?style=flat&logo=github)](https://github.com/altradits/altradits)
+</div>
