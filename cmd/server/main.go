@@ -54,6 +54,12 @@ func main() {
 	mux.HandleFunc("/trader/assets/new", middleware.RequireRole("trader", handlers.HandleAddAsset))
 	mux.HandleFunc("/trader/profit", middleware.RequireRole("trader", handlers.HandleProfitUpdate))
 
+	// ── Agent routes ─────────────────────────────────────────────────────────
+	mux.HandleFunc("/agent/dashboard", middleware.RequireRole("agent", handlers.HandleAgentDashboard))
+	mux.HandleFunc("/agent/load", middleware.RequireRole("agent", handlers.HandleAgentCashIn))
+	mux.HandleFunc("/agent/cashout", middleware.RequireRole("agent", handlers.HandleAgentCashOut))
+	mux.HandleFunc("/agent/transactions", middleware.RequireRole("agent", handlers.HandleAgentTransactions))
+
 	// ── Admin routes ─────────────────────────────────────────────────────────
 	mux.HandleFunc("/admin/dashboard", middleware.RequireRole("admin", handlers.HandleAdminDashboard))
 	mux.HandleFunc("/admin/customers", middleware.RequireRole("admin", handlers.HandleAdminCustomers))
@@ -71,6 +77,7 @@ func main() {
 	log.Printf("  Altradits running on http://localhost:%s", port)
 	log.Printf("  Admin: admin@altradits.com / admin123")
 	log.Printf("  Trader: trader@altradits.com / trader123")
+	log.Printf("  Agent: agent@altradits.com / agent123")
 	log.Printf("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 	if err := http.ListenAndServe(":"+port, mux); err != nil {

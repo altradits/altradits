@@ -24,30 +24,39 @@ func HandleHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleRegister(w http.ResponseWriter, r *http.Request) {
+	registerRole := func(v string) string {
+		if v == "agent" {
+			return "agent"
+		}
+		return "customer"
+	}
+
 	if r.Method == http.MethodGet {
-		serveTemplate(w, r, "web/templates/register.html", nil)
+		role := registerRole(r.URL.Query().Get("role"))
+		serveTemplate(w, r, "web/templates/register.html", map[string]interface{}{"Role": role})
 		return
 	}
 
 	identifier := r.FormValue("identifier")
 	password := r.FormValue("password")
+	role := registerRole(r.FormValue("role"))
 
 	if !utils.ValidateIdentifier(identifier) {
-		serveTemplateWithError(w, r, "web/templates/register.html", "Enter a valid email or phone number.")
+		serveTemplate(w, r, "web/templates/register.html", map[string]interface{}{"Error": "Enter a valid email or phone number.", "Role": role})
 		return
 	}
 	if len(password) < 6 {
-		serveTemplateWithError(w, r, "web/templates/register.html", "Password must be at least 6 characters.")
+		serveTemplate(w, r, "web/templates/register.html", map[string]interface{}{"Error": "Password must be at least 6 characters.", "Role": role})
 		return
 	}
 
 	hash := utils.HashPassword(password)
 	var userID string
 	err := db.DB.QueryRow(
-		`INSERT INTO users (identifier, password, role) VALUES ($1, $2, 'customer') RETURNING id`,
-		identifier, hash).Scan(&userID)
+		`INSERT INTO users (identifier, password, role) VALUES ($1, $2, $3) RETURNING id`,
+		identifier, hash, role).Scan(&userID)
 	if err != nil {
-		serveTemplateWithError(w, r, "web/templates/register.html", "Account already exists. Try logging in.")
+		serveTemplate(w, r, "web/templates/register.html", map[string]interface{}{"Error": "Account already exists. Try logging in.", "Role": role})
 		return
 	}
 
@@ -57,7 +66,7 @@ func HandleRegister(w http.ResponseWriter, r *http.Request) {
 
 	// Create session
 	setSession(w, userID)
-	http.Redirect(w, r, "/customer/dashboard", http.StatusSeeOther)
+	redirectByRole(w, r, role)
 }
 
 func HandleLogin(w http.ResponseWriter, r *http.Request) {
@@ -123,6 +132,8 @@ func redirectByRole(w http.ResponseWriter, r *http.Request, role string) {
 		http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
 	case "trader":
 		http.Redirect(w, r, "/trader/dashboard", http.StatusSeeOther)
+	case "agent":
+		http.Redirect(w, r, "/agent/dashboard", http.StatusSeeOther)
 	default:
 		http.Redirect(w, r, "/customer/dashboard", http.StatusSeeOther)
 	}
