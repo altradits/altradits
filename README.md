@@ -1,8 +1,8 @@
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,50:2d1600,100:F7931A&height=220&section=header&text=Stanley%20Chege%20Thuita&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=40&desc=Go%20%2B%20Bitcoin%20%2F%20Lightning%20Developer&descAlignY=58&descSize=20" />
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,50:2d1600,100:F7931A&height=220&text=Stanley%20Chege%20Thuita&fontSize=48&fontColor=ffffff&fontAlignY=40&desc=Go%20%2B%20Bitcoin%20%2F%20Lightning%20Developer&descSize=20&descAlignY=58&descAlignX=50&animation=fadeIn" />
 
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&weight=700&size=18&duration=2800&pause=900&color=F7931A&center=true&vCenter=true&width=820&height=50&lines=158+Go+lessons+deep+and+still+going;Building+YeboBank+—+Bitcoin+community+bank+for+Africa;Zone01+Kisumu+%E2%86%92+lightningnetwork%2Flnd+contributor;Go+is+the+language.+Bitcoin+is+the+mission." alt="Typing SVG"/>
+<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&center=true&vCenter=true&color=F7931A&weight=700&size=18&duration=2800&pause=900&width=820&height=50&lines=158+Go+lessons+deep+and+still+going;Building+YeboBank+%E2%80%94+Bitcoin+community+bank+for+Africa;Zone01+Kisumu+%E2%86%92+lightningnetwork%2Flnd+contributor;Go+is+the+language.+Bitcoin+is+the+mission." alt="Typing SVG"/>
 
 <br/><br/>
 
@@ -24,13 +24,11 @@
 
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:0d1117,50:1a0800,100:0d1117&height=3&animation=twinkling" width="100%"/>
+<img width="100%" src="https://capsule-render.vercel.app/api?type=rounded&color=0:0d1117,50:1a0800,100:2d1600&height=90&text=%E2%9A%A1%20Currently%20Building&fontSize=26&fontColor=ffffff&fontAlignY=42&desc=YeboBank%20%E2%80%94%20open-source%20Bitcoin%20community%20bank%20for%20Africa&descSize=15&descAlignY=70&descAlignX=50&animation=twinkling" />
 
-### ⚡ Currently Building
+<br/>
 
-<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&weight=600&size=15&duration=3500&pause=1200&color=F7931A&center=true&vCenter=true&width=700&height=40&lines=altradits%2Fyebo+—+YeboBank%3A+Bitcoin+community+bank+for+Africa;M-Pesa+deposits+%2B+Lightning+payments+%2B+savings+interest;Zero+external+Go+dependencies+—+all+stdlib;Open+source.+Built+for+Kenyan+youth." alt="Currently Building"/>
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:0d1117,50:1a0800,100:0d1117&height=3&animation=twinkling" width="100%"/>
+<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&center=true&vCenter=true&color=F7931A&weight=600&size=15&duration=3500&pause=1200&width=700&height=40&lines=altradits%2Fyebo+%E2%80%94+Bitcoin+bank+for+Africa%2C+built+in+Go;M-Pesa+deposits+%2B+Lightning+payments+%2B+savings+interest;Zero+external+Go+dependencies+%E2%80%94+stdlib+only;Open+source.+Built+for+Kenyan+youth." alt="Currently Building"/>
 
 </div>
 
@@ -46,12 +44,6 @@
 </a>
 <a href="https://github.com/altradits">
   <img height="170" src="https://github-readme-stats.vercel.app/api/top-langs/?username=altradits&layout=donut&theme=github_dark&hide_border=true&title_color=F7931A&bg_color=0d1117&langs_count=6&hide=html,css" />
-</a>
-
-<br/><br/>
-
-<a href="https://github-profile-trophy.vercel.app/?username=altradits">
-  <img src="https://github-profile-trophy.vercel.app/?username=altradits&theme=darkhub&no-frame=true&no-bg=true&margin-w=6&column=6&title=Commits,Repositories,Stars,PullRequest,Issues,Followers" />
 </a>
 
 </div>
@@ -70,7 +62,7 @@ I chose Go because `lightningnetwork/lnd` is 99.5% Go — the most deployed Ligh
 
 ## My Go Journey — 158 Lessons Deep
 
-**[altradits/challenges](https://github.com/altradits/challenges)** — a 158-lesson curriculum I designed to take me from `package main` to Bitcoin open source contributor.
+**[altradits/challenges](https://github.com/altradits/challenges)** — a 158-lesson curriculum designed to take me from `package main` to Bitcoin open source contributor.
 
 ```
 Phase 1  (01–05)    Hello World       package main · fmt · entry points
@@ -86,7 +78,7 @@ Phase 7  (153–158)  Capstones         REST APIs → Bitcoin open source contri
 <div align="center">
 
 <a href="https://github.com/altradits/challenges">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=challenges&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117&description_lines_count=2" />
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=challenges&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
 </a>
 
 </div>
@@ -121,7 +113,7 @@ Phase 7  (153–158)  Capstones         REST APIs → Bitcoin open source contri
 
 ## Projects
 
-<img src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:2d1600&height=55&text=%E2%9A%A1%20Bitcoin%20%26%20Lightning&fontSize=20&fontColor=F7931A&animation=twinkling&fontAlignY=65" width="100%"/>
+<img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:2d1600&height=70&text=%E2%9A%A1%20Bitcoin%20%26%20Lightning&fontSize=22&fontColor=ffffff&fontAlignY=65&animation=twinkling" />
 
 <div align="center">
 
@@ -141,7 +133,7 @@ Phase 7  (153–158)  Capstones         REST APIs → Bitcoin open source contri
 
 </div>
 
-<img src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:2d1600&height=55&text=%F0%9F%92%B0%20Financial%20Freedom%20for%20Youth&fontSize=20&fontColor=F7931A&animation=twinkling&fontAlignY=65" width="100%"/>
+<img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:1a0800&height=70&text=%F0%9F%92%B0%20Financial%20Freedom%20for%20Youth&fontSize=22&fontColor=ffffff&fontAlignY=65&animation=twinkling" />
 
 <div align="center">
 
@@ -158,7 +150,7 @@ Phase 7  (153–158)  Capstones         REST APIs → Bitcoin open source contri
 |------|-------------|
 | [bursaryhub](https://github.com/altradits/bursaryhub) | Fraud-proof scholarship disbursement connecting donors, schools, and students |
 
-<img src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:2d1600&height=55&text=%F0%9F%93%9A%20Learning&fontSize=20&fontColor=F7931A&animation=twinkling&fontAlignY=65" width="100%"/>
+<img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:161616&height=70&text=%F0%9F%93%9A%20Learning&fontSize=22&fontColor=ffffff&fontAlignY=65&animation=twinkling" />
 
 | Repo | What It Is |
 |------|-----------|
@@ -180,8 +172,12 @@ Phase 7  (153–158)  Capstones         REST APIs → Bitcoin open source contri
 ## Why Bitcoin for Africa?
 
 <div align="center">
-<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&weight=500&size=14&duration=4000&pause=1500&color=F7931A&center=true&vCenter=true&width=750&height=45&lines=M-Pesa+moves+money.+Bitcoin+moves+value+without+a+bank's+permission.;No+credit+history%3F+No+collateral%3F+No+bank%3F+—+A+Lightning+wallet+changes+that.;Go+is+the+language.+Bitcoin+is+the+mission." alt="Why Bitcoin"/>
+
+<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&center=true&vCenter=true&color=F7931A&weight=500&size=14&duration=4000&pause=1500&width=750&height=45&lines=M-Pesa+moves+money.+Bitcoin+moves+value+without+permission.;No+credit+history%3F+No+collateral%3F+Lightning+fixes+this.;Go+is+the+language.+Bitcoin+is+the+mission." alt="Why Bitcoin"/>
+
 </div>
+
+<br/>
 
 Three walls Kenyan youth hit:
 - **No access to capital** — Lightning changes what collateral means
@@ -192,7 +188,7 @@ Three walls Kenyan youth hit:
 
 <div align="center">
 
-[![Activity Graph](https://github-readme-activity-graph.vercel.app/graph?username=altradits&bg_color=0d1117&color=F7931A&line=F7931A&point=ffffff&area=true&area_color=F7931A&hide_border=true)](https://github.com/altradits)
+[![Activity Graph](https://github-readme-activity-graph.vercel.app/graph?username=altradits&bg_color=0d1117&color=F7931A&line=F7931A&point=ffffff&area=true&hide_border=true)](https://github.com/altradits)
 
 <br/>
 
@@ -210,4 +206,4 @@ Three walls Kenyan youth hit:
 
 </div>
 
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:F7931A,50:2d1600,100:0d1117&height=120&section=footer&animation=fadeIn" />
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:F7931A,50:2d1600,100:0d1117&height=120&animation=fadeIn&section=footer" />
