@@ -13,17 +13,24 @@
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](#)
 [![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](#)
 
+<br/>
+
+![Profile Views](https://komarev.com/ghpvc/?username=altradits&color=F7931A&style=for-the-badge&label=PROFILE+VIEWS)
+[![GitHub followers](https://img.shields.io/github/followers/altradits?style=for-the-badge&color=F7931A&labelColor=0d1117&logo=github)](https://github.com/altradits?tab=followers)
+
 </div>
 
 ---
 
 <div align="center">
 
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:0d1117,50:1a0800,100:0d1117&height=3&animation=twinkling" width="100%"/>
+
 ### ⚡ Currently Building
 
-<a href="https://github.com/altradits/yebo">
-  <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&weight=600&size=15&duration=3500&pause=1200&color=F7931A&center=true&vCenter=true&width=700&height=40&lines=altradits%2Fyebo+—+YeboBank%3A+Bitcoin+community+bank+for+Africa;M-Pesa+deposits+%2B+Lightning+payments+%2B+savings+interest;Zero+external+Go+dependencies+—+all+stdlib" alt="Currently Building"/>
-</a>
+<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&weight=600&size=15&duration=3500&pause=1200&color=F7931A&center=true&vCenter=true&width=700&height=40&lines=altradits%2Fyebo+—+YeboBank%3A+Bitcoin+community+bank+for+Africa;M-Pesa+deposits+%2B+Lightning+payments+%2B+savings+interest;Zero+external+Go+dependencies+—+all+stdlib;Open+source.+Built+for+Kenyan+youth." alt="Currently Building"/>
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:0d1117,50:1a0800,100:0d1117&height=3&animation=twinkling" width="100%"/>
 
 </div>
 
@@ -36,6 +43,9 @@
 </a>
 <a href="https://github.com/altradits">
   <img height="170" src="https://streak-stats.demolab.com?user=altradits&theme=github-dark-blue&hide_border=true&fire=F7931A&ring=F7931A&currStreakLabel=F7931A&sideLabels=c9d1d9&dates=c9d1d9&background=0d1117" />
+</a>
+<a href="https://github.com/altradits">
+  <img height="170" src="https://github-readme-stats.vercel.app/api/top-langs/?username=altradits&layout=donut&theme=github_dark&hide_border=true&title_color=F7931A&bg_color=0d1117&langs_count=6&hide=html,css" />
 </a>
 
 <br/><br/>
@@ -73,6 +83,14 @@ Phase 6  (145–152)  Backend Bridge    time · JSON · HTTP · SQL · config ·
 Phase 7  (153–158)  Capstones         REST APIs → Bitcoin open source contribution
 ```
 
+<div align="center">
+
+<a href="https://github.com/altradits/challenges">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=challenges&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117&description_lines_count=2" />
+</a>
+
+</div>
+
 ---
 
 ## Stack Toward LND Contribution
@@ -103,24 +121,44 @@ Phase 7  (153–158)  Capstones         REST APIs → Bitcoin open source contri
 
 ## Projects
 
-### ⚡ Bitcoin & Lightning
+<img src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:2d1600&height=55&text=%E2%9A%A1%20Bitcoin%20%26%20Lightning&fontSize=20&fontColor=F7931A&animation=twinkling&fontAlignY=65" width="100%"/>
+
+<div align="center">
+
+<a href="https://github.com/altradits/yebo">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=yebo&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
+</a>
+<a href="https://github.com/altradits/go-lightning-grpc">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=go-lightning-grpc&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
+</a>
+
+<a href="https://github.com/altradits/go-bitcoin-rpc">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=go-bitcoin-rpc&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
+</a>
+<a href="https://github.com/altradits/bitcoin-bootcamp">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=bitcoin-bootcamp&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
+</a>
+
+</div>
+
+<img src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:2d1600&height=55&text=%F0%9F%92%B0%20Financial%20Freedom%20for%20Youth&fontSize=20&fontColor=F7931A&animation=twinkling&fontAlignY=65" width="100%"/>
+
+<div align="center">
+
+<a href="https://github.com/altradits/go-sats-savings">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=go-sats-savings&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
+</a>
+<a href="https://github.com/altradits/go-bursary-api">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=go-bursary-api&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
+</a>
+
+</div>
 
 | Repo | What It Does |
 |------|-------------|
-| [yebo](https://github.com/altradits/yebo) | **YeboBank** — open-source Bitcoin community bank for Africa. M-Pesa + Lightning. Zero external Go deps. |
-| [go-lightning-grpc](https://github.com/altradits/go-lightning-grpc) | LND gRPC client — generates invoices, checks balances, lists channels. Macaroon auth + TLS |
-| [go-bitcoin-rpc](https://github.com/altradits/go-bitcoin-rpc) | CLI: talk to Bitcoin Core via JSON-RPC — `getblockchaininfo`, `sendtoaddress`, `listtransactions` |
-| [bitcoin-bootcamp](https://github.com/altradits/bitcoin-bootcamp) | Go exercises connecting to `bitcoind` RPC in regtest |
-
-### 💰 Financial Freedom for Youth
-
-| Repo | What It Does |
-|------|-------------|
-| [go-sats-savings](https://github.com/altradits/go-sats-savings) | CLI savings tracker in KES + sats — set a goal, log deposits, see live BTC equivalent |
-| [go-bursary-api](https://github.com/altradits/go-bursary-api) | REST API for bursary eligibility in Kenya — `net/http` + SQLite + `slog` |
 | [bursaryhub](https://github.com/altradits/bursaryhub) | Fraud-proof scholarship disbursement connecting donors, schools, and students |
 
-### 📚 Learning
+<img src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:2d1600&height=55&text=%F0%9F%93%9A%20Learning&fontSize=20&fontColor=F7931A&animation=twinkling&fontAlignY=65" width="100%"/>
 
 | Repo | What It Is |
 |------|-----------|
@@ -141,14 +179,14 @@ Phase 7  (153–158)  Capstones         REST APIs → Bitcoin open source contri
 
 ## Why Bitcoin for Africa?
 
-M-Pesa moves money. Bitcoin moves value without a bank's permission.
+<div align="center">
+<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&weight=500&size=14&duration=4000&pause=1500&color=F7931A&center=true&vCenter=true&width=750&height=45&lines=M-Pesa+moves+money.+Bitcoin+moves+value+without+a+bank's+permission.;No+credit+history%3F+No+collateral%3F+No+bank%3F+—+A+Lightning+wallet+changes+that.;Go+is+the+language.+Bitcoin+is+the+mission." alt="Why Bitcoin"/>
+</div>
 
 Three walls Kenyan youth hit:
 - **No access to capital** — Lightning changes what collateral means
 - **No bank account** — a phone number becomes a bank
 - **Bursaries nobody hears about** — [bursaryhub](https://github.com/altradits/bursaryhub) is fixing this
-
-Go is the language. Bitcoin is the mission.
 
 ---
 
@@ -158,7 +196,17 @@ Go is the language. Bitcoin is the mission.
 
 <br/>
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/altradits/altradits/output/dist/github-contribution-grid-snake-dark.svg" />
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/altradits/altradits/output/dist/github-contribution-grid-snake.svg" />
+  <img alt="contribution snake" src="https://raw.githubusercontent.com/altradits/altradits/output/dist/github-contribution-grid-snake-dark.svg" />
+</picture>
+
+<br/><br/>
+
 **[challenges](https://github.com/altradits/challenges)** · **[yebo](https://github.com/altradits/yebo)** · **[go-lightning-grpc](https://github.com/altradits/go-lightning-grpc)** · **[go-bitcoin-rpc](https://github.com/altradits/go-bitcoin-rpc)** · **[go-sats-savings](https://github.com/altradits/go-sats-savings)**
+
+*Zone01 Kisumu · Kenya · Go + Bitcoin · Building in public*
 
 </div>
 
