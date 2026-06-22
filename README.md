@@ -8,7 +8,7 @@
 
 [![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://github.com/altradits/challenges)
 [![Bitcoin](https://img.shields.io/badge/Bitcoin-F7931A?style=for-the-badge&logo=bitcoin&logoColor=white)](https://github.com/altradits/yebo)
-[![Lightning](https://img.shields.io/badge/Lightning_Network-792EE5?style=for-the-badge&logo=lightning&logoColor=white)](https://github.com/altradits/go-lightning-grpc)
+[![Lightning](https://img.shields.io/badge/Lightning_Network-792EE5?style=for-the-badge&logo=lightning&logoColor=white)](https://github.com/altradits/yebo)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](#)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](#)
 [![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](#)
@@ -75,14 +75,6 @@ Phase 6  (145–151)  Backend Bridge    time · JSON · HTTP · SQL · config ·
 Phase 7  (152–158)  Capstones         REST APIs → Bitcoin open source contribution
 ```
 
-<div align="center">
-
-<a href="https://github.com/altradits/challenges">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=challenges&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
-</a>
-
-</div>
-
 ---
 
 ## Stack Toward LND Contribution
@@ -96,16 +88,16 @@ Phase 7  (152–158)  Capstones         REST APIs → Bitcoin open source contri
 | Skill | Status | Where I Practice |
 |-------|--------|-----------------|
 | Go 1.22+ | 🟠 **Active** | [challenges](https://github.com/altradits/challenges) — 158 lessons |
-| gRPC + protobuf | 🔵 Learning | [go-lightning-grpc](https://github.com/altradits/go-lightning-grpc) |
-| btcsuite/btcd | ⬜ Next | [go-bitcoin-rpc](https://github.com/altradits/go-bitcoin-rpc) |
-| macaroon auth | ⬜ Next | [go-lightning-grpc](https://github.com/altradits/go-lightning-grpc) |
+| gRPC + protobuf | 🔵 Learning | [yebo](https://github.com/altradits/yebo) Lightning service |
+| btcsuite/btcd | ⬜ Next | [yebo](https://github.com/altradits/yebo) treasury layer |
+| macaroon auth | ⬜ Next | LND node integration |
 | goroutines + context | 🟠 **Active** | challenges 28–152 |
-| database/sql | 🟠 **Active** | [go-bursary-api](https://github.com/altradits/go-bursary-api) · [yebo](https://github.com/altradits/yebo) |
+| database/sql | 🟠 **Active** | [yebo](https://github.com/altradits/yebo) |
 | golangci-lint + CI | ⬜ Next | LND itest framework |
 
 **Roadmap to a merged LND PR:**
 - [x] Build and deeply understand the full Go language (lessons 01–158)
-- [ ] Build `go-lightning-grpc` — speak gRPC to a real LND node
+- [ ] Build gRPC client — speak directly to a real LND node
 - [ ] Run LND on regtest, write integration tests with the `itest` framework
 - [ ] Find a small open issue in `lightningnetwork/lnd`, submit a PR, get it merged
 
@@ -138,31 +130,7 @@ flowchart LR
 <!-- flagship -->
 <div align="center">
 <a href="https://github.com/altradits/yebo">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=yebo&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117&description_lines_count=2" />
-</a>
-</div>
-
-<br/>
-
-### ⚡ Bitcoin Infrastructure
-
-<div align="center">
-<a href="https://github.com/altradits/go-lightning-grpc">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=go-lightning-grpc&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
-</a>
-<a href="https://github.com/altradits/go-bitcoin-rpc">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=go-bitcoin-rpc&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
-</a>
-</div>
-
-### 💰 Financial Access
-
-<div align="center">
-<a href="https://github.com/altradits/go-sats-savings">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=go-sats-savings&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
-</a>
-<a href="https://github.com/altradits/go-bursary-api">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=go-bursary-api&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=yebo&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
 </a>
 </div>
 
@@ -281,11 +249,10 @@ Three walls Kenyan youth hit:
 
 <br/><br/>
 
-**[challenges](https://github.com/altradits/challenges)** · **[yebo](https://github.com/altradits/yebo)** · **[go-lightning-grpc](https://github.com/altradits/go-lightning-grpc)** · **[go-bitcoin-rpc](https://github.com/altradits/go-bitcoin-rpc)** · **[go-sats-savings](https://github.com/altradits/go-sats-savings)**
+**[challenges](https://github.com/altradits/challenges)** · **[yebo](https://github.com/altradits/yebo)** · **[bursaryhub](https://github.com/altradits/bursaryhub)**
 
 *Zone01 Kisumu · Kenya · Go + Bitcoin · Building in public*
 
 </div>
 
 <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:F7931A,50:2d1600,100:0d1117&height=120&animation=fadeIn&section=footer" />
-
