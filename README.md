@@ -71,8 +71,8 @@ Phase 2  (06–27)    Foundations       structs · pointers · interfaces · gor
 Phase 3  (28–51)    Practice          one concept per exercise — building muscle memory
 Phase 4  (52–80)    Strings Mastery   every strings / fmt / strconv function
 Phase 5  (81–144)   Challenges        hard piscine-style problems, multiple concepts
-Phase 6  (145–152)  Backend Bridge    time · JSON · HTTP · SQL · config · logging · generics · graceful shutdown
-Phase 7  (153–158)  Capstones         REST APIs → Bitcoin open source contribution
+Phase 6  (145–151)  Backend Bridge    time · JSON · HTTP · SQL · config · logging · generics · graceful shutdown
+Phase 7  (152–158)  Capstones         REST APIs → Bitcoin open source contribution
 ```
 
 <div align="center">
@@ -97,10 +97,10 @@ Phase 7  (153–158)  Capstones         REST APIs → Bitcoin open source contri
 |-------|--------|-----------------|
 | Go 1.22+ | 🟠 **Active** | [challenges](https://github.com/altradits/challenges) — 158 lessons |
 | gRPC + protobuf | 🔵 Learning | [go-lightning-grpc](https://github.com/altradits/go-lightning-grpc) |
-| btcsuite/btcd | ⬜ Next | [bitcoin-bootcamp](https://github.com/altradits/bitcoin-bootcamp) |
+| btcsuite/btcd | ⬜ Next | [go-bitcoin-rpc](https://github.com/altradits/go-bitcoin-rpc) |
 | macaroon auth | ⬜ Next | [go-lightning-grpc](https://github.com/altradits/go-lightning-grpc) |
 | goroutines + context | 🟠 **Active** | challenges 28–152 |
-| database/sql + bbolt | 🟠 **Active** | [go-bursary-api](https://github.com/altradits/go-bursary-api) · [yebo](https://github.com/altradits/yebo) |
+| database/sql | 🟠 **Active** | [go-bursary-api](https://github.com/altradits/go-bursary-api) · [yebo](https://github.com/altradits/yebo) |
 | golangci-lint + CI | ⬜ Next | LND itest framework |
 
 **Roadmap to a merged LND PR:**
@@ -108,6 +108,28 @@ Phase 7  (153–158)  Capstones         REST APIs → Bitcoin open source contri
 - [ ] Build `go-lightning-grpc` — speak gRPC to a real LND node
 - [ ] Run LND on regtest, write integration tests with the `itest` framework
 - [ ] Find a small open issue in `lightningnetwork/lnd`, submit a PR, get it merged
+
+---
+
+## How YeboBank Works
+
+```mermaid
+flowchart LR
+    A[📱 Kenyan User] -->|M-Pesa STK Push| B[YeboBank]
+    B -->|KES → Sats| C[⚡ Lightning Wallet]
+    C -->|Lightning Payment| D[🌍 Global Recipient]
+    C -->|Lock Sats| E[💰 Savings Pool]
+    E -->|Monthly Interest| C
+    A -->|Chama Group| F[👥 Group Wallet]
+    F -->|Collective Savings| E
+
+    style A fill:#1a1a2e,color:#fff
+    style B fill:#2d1600,color:#F7931A
+    style C fill:#1a0a00,color:#F7931A
+    style D fill:#0d2818,color:#4ade80
+    style E fill:#1a0800,color:#F7931A
+    style F fill:#1a0800,color:#F7931A
+```
 
 ---
 
@@ -127,9 +149,6 @@ Phase 7  (153–158)  Capstones         REST APIs → Bitcoin open source contri
 <a href="https://github.com/altradits/go-bitcoin-rpc">
   <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=go-bitcoin-rpc&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
 </a>
-<a href="https://github.com/altradits/bitcoin-bootcamp">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=bitcoin-bootcamp&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
-</a>
 
 </div>
 
@@ -144,19 +163,79 @@ Phase 7  (153–158)  Capstones         REST APIs → Bitcoin open source contri
   <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=go-bursary-api&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
 </a>
 
-</div>
+<a href="https://github.com/altradits/bursaryhub">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=bursaryhub&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
+</a>
 
-| Repo | What It Does |
-|------|-------------|
-| [bursaryhub](https://github.com/altradits/bursaryhub) | Fraud-proof scholarship disbursement connecting donors, schools, and students |
+</div>
 
 <img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:161616&height=70&text=%F0%9F%93%9A%20Learning&fontSize=22&fontColor=ffffff&fontAlignY=65&animation=twinkling" />
 
 | Repo | What It Is |
 |------|-----------|
-| [challenges](https://github.com/altradits/challenges) | The 158-lesson Go curriculum — everything I know lives here |
-| [chouMi](https://github.com/altradits/chouMi) | Daily Go practice from ChouMi mentor challenges |
-| [playGo](https://github.com/altradits/playGo) | Team Go coding challenges |
+| [challenges](https://github.com/altradits/challenges) | 158-lesson Go curriculum — from `package main` to Bitcoin contributor |
+
+---
+
+## Test Your Bitcoin Knowledge
+
+*Click any question to reveal the answer.*
+
+<details>
+<summary>⚡ What is the Lightning Network and why does it matter for Africa?</summary>
+<br/>
+
+The Lightning Network is a second-layer payment protocol built on Bitcoin. Instead of writing every transaction to the blockchain (slow, expensive), two parties open a **payment channel** — a private ledger between them. Payments settle instantly and for fractions of a cent.
+
+For Africa: M-Pesa charges ~1% per transfer. Lightning charges ~0.001%. A Kenyan sending $10 pays $0.10 on M-Pesa — on Lightning, less than a cent.
+
+</details>
+
+<details>
+<summary>₿ How many satoshis are in 1 Bitcoin?</summary>
+<br/>
+
+**100,000,000 satoshis** — 1 sat = 0.00000001 BTC.
+
+Named after Satoshi Nakamoto. At $100,000/BTC, 1 satoshi = $0.001. Still useful for micropayments that no other payment system can touch.
+
+</details>
+
+<details>
+<summary>🔐 Why does YeboBank have zero external Go dependencies?</summary>
+<br/>
+
+Every external dependency is a trust decision — you're trusting that library author's code, their supply chain, and their continued maintenance. In financial software, that trust has a price.
+
+YeboBank uses only Go's standard library. The PostgreSQL wire protocol is implemented from scratch in `internal/pgdrv`. Zero deps means: no supply chain attack surface, no broken upgrades, no abandoned packages in a banking core.
+
+</details>
+
+<details>
+<summary>🏦 What is a Chama and why does YeboBank support them?</summary>
+<br/>
+
+A **chama** is an informal savings group common across Kenya and East Africa — typically 5–30 people who pool money, invest together, and distribute returns. Chamas manage an estimated **KES 4 billion** across Kenya.
+
+Traditional chamas use M-Pesa with a manual ledger and operate on trust alone. YeboBank gives chamas a transparent group wallet: every contribution, vote, and distribution is verifiable. The group's money is in Bitcoin — it cannot be quietly moved by one member.
+
+</details>
+
+<details>
+<summary>🚀 What does it take to contribute to lightningnetwork/lnd?</summary>
+<br/>
+
+`lightningnetwork/lnd` is 99.5% Go — 300,000+ lines. Getting a PR merged requires:
+
+1. **Deep Go knowledge** — goroutines, channels, context, interfaces, generics
+2. **gRPC fluency** — LND's entire API is protobuf/gRPC
+3. **Bitcoin protocol understanding** — scripts, HTLCs, commitment transactions
+4. **Test discipline** — every PR needs unit + integration tests via the `itest` framework
+5. **Reading existing code** — LND has strict conventions; PRs that ignore them are closed
+
+The [challenges](https://github.com/altradits/challenges) repo is my step-by-step path to earning that merge.
+
+</details>
 
 ---
 
@@ -193,9 +272,9 @@ Three walls Kenyan youth hit:
 <br/>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/altradits/altradits/output/dist/github-contribution-grid-snake-dark.svg" />
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/altradits/altradits/output/dist/github-contribution-grid-snake.svg" />
-  <img alt="contribution snake" src="https://raw.githubusercontent.com/altradits/altradits/output/dist/github-contribution-grid-snake-dark.svg" />
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/altradits/altradits/output/github-contribution-grid-snake-dark.svg" />
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/altradits/altradits/output/github-contribution-grid-snake.svg" />
+  <img alt="contribution snake" src="https://raw.githubusercontent.com/altradits/altradits/output/github-contribution-grid-snake-dark.svg" />
 </picture>
 
 <br/><br/>
