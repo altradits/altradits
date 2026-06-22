@@ -135,45 +135,47 @@ flowchart LR
 
 ## Projects
 
-<img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:2d1600&height=70&text=%E2%9A%A1%20Bitcoin%20%26%20Lightning&fontSize=22&fontColor=ffffff&fontAlignY=65&animation=twinkling" />
+<!-- flagship -->
+<div align="center">
+<a href="https://github.com/altradits/yebo">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=yebo&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117&description_lines_count=2" />
+</a>
+</div>
+
+<br/>
+
+### ⚡ Bitcoin Infrastructure
 
 <div align="center">
-
-<a href="https://github.com/altradits/yebo">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=yebo&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
-</a>
 <a href="https://github.com/altradits/go-lightning-grpc">
   <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=go-lightning-grpc&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
 </a>
-
 <a href="https://github.com/altradits/go-bitcoin-rpc">
   <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=go-bitcoin-rpc&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
 </a>
-
 </div>
 
-<img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:1a0800&height=70&text=%F0%9F%92%B0%20Financial%20Freedom%20for%20Youth&fontSize=22&fontColor=ffffff&fontAlignY=65&animation=twinkling" />
+### 💰 Financial Access
 
 <div align="center">
-
 <a href="https://github.com/altradits/go-sats-savings">
   <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=go-sats-savings&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
 </a>
 <a href="https://github.com/altradits/go-bursary-api">
   <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=go-bursary-api&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
 </a>
+</div>
 
+### 📚 Learning & Community
+
+<div align="center">
+<a href="https://github.com/altradits/challenges">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=challenges&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
+</a>
 <a href="https://github.com/altradits/bursaryhub">
   <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=bursaryhub&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
 </a>
-
 </div>
-
-<img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:161616&height=70&text=%F0%9F%93%9A%20Learning&fontSize=22&fontColor=ffffff&fontAlignY=65&animation=twinkling" />
-
-| Repo | What It Is |
-|------|-----------|
-| [challenges](https://github.com/altradits/challenges) | 158-lesson Go curriculum — from `package main` to Bitcoin contributor |
 
 ---
 
@@ -286,3 +288,4 @@ Three walls Kenyan youth hit:
 </div>
 
 <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:F7931A,50:2d1600,100:0d1117&height=120&animation=fadeIn&section=footer" />
+
