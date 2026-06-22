@@ -1,8 +1,8 @@
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,50:2d1600,100:F7931A&height=220&text=Stanley%20Chege%20Thuita&fontSize=48&fontColor=ffffff&fontAlignY=40&desc=Go%20%2B%20Bitcoin%20%2F%20Lightning%20Developer&descSize=20&descAlignY=58&descAlignX=50&animation=fadeIn" />
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,30:1a0800,70:2d1600,100:F7931A&height=240&text=Stanley%20Chege%20Thuita&fontSize=50&fontColor=ffffff&fontAlignY=38&desc=Go%20%2B%20Bitcoin%20%2F%20Lightning%20Developer%20%E2%80%94%20Zone01%20Kisumu%2C%20Kenya&descSize=18&descAlignY=58&descAlignX=50&animation=fadeIn" />
 
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&center=true&vCenter=true&color=F7931A&weight=700&size=18&duration=2800&pause=900&width=820&height=50&lines=158+Go+lessons+deep+and+still+going;Building+YeboBank+%E2%80%94+Bitcoin+community+bank+for+Africa;Zone01+Kisumu+%E2%86%92+lightningnetwork%2Flnd+contributor;Go+is+the+language.+Bitcoin+is+the+mission." alt="Typing SVG"/>
+<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&center=true&vCenter=true&color=F7931A&weight=700&size=19&duration=2800&pause=900&width=860&height=55&lines=158+Go+lessons+deep+and+still+going+%F0%9F%94%A5;Building+YeboBank+%E2%80%94+Bitcoin+bank+for+Africa+%F0%9F%8C%8D;Zone01+Kisumu+%E2%86%92+lightningnetwork%2Flnd+contributor+%E2%9A%A1;Go+is+the+language.+Bitcoin+is+the+mission.+%E2%82%BF" alt="Typing SVG"/>
 
 <br/><br/>
 
@@ -50,17 +50,17 @@
 
 ---
 
-## Who I Am
+<img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:1a0a00&height=55&text=%F0%9F%A7%A0+Who+I+Am&fontSize=20&fontColor=F7931A&fontAlignY=65&animation=twinkling" />
 
 Software engineering apprentice at **Zone01 Kisumu, Kenya**. I write Go.
 
 I chose Go because `lightningnetwork/lnd` is 99.5% Go — the most deployed Lightning node in the world. My goal: understand it well enough to merge production code into it. Everything I build is a step toward that.
 
-> **For a Kenyan youth with no credit history, no collateral, and no bank — a Lightning wallet is more powerful than any bank. I am learning the code that makes this possible.**
+> ⚡ **For a Kenyan youth with no credit history, no collateral, and no bank — a Lightning wallet is more powerful than any bank. I am learning the code that makes this possible.**
 
 ---
 
-## My Go Journey — 158 Lessons Deep
+<img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:001a33&height=55&text=%F0%9F%93%98+My+Go+Journey+%E2%80%94+158+Lessons+Deep&fontSize=20&fontColor=00ADD8&fontAlignY=65&animation=twinkling" />
 
 **[altradits/challenges](https://github.com/altradits/challenges)** — a 158-lesson curriculum designed to take me from `package main` to Bitcoin open source contributor.
 
@@ -77,7 +77,7 @@ Phase 7  (152–158)  Capstones         REST APIs → Bitcoin open source contri
 
 ---
 
-## Stack Toward LND Contribution
+<img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:1a0800&height=55&text=%F0%9F%9B%A0+Stack+Toward+LND+Contribution&fontSize=20&fontColor=F7931A&fontAlignY=65&animation=twinkling" />
 
 <div align="center">
 <img src="https://skillicons.dev/icons?i=go,linux,postgres,docker,git,github&perline=6&theme=dark" />
@@ -103,7 +103,7 @@ Phase 7  (152–158)  Capstones         REST APIs → Bitcoin open source contri
 
 ---
 
-## How YeboBank Works
+<img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:2d1600&height=55&text=%E2%9A%A1+How+YeboBank+Works&fontSize=20&fontColor=F7931A&fontAlignY=65&animation=twinkling" />
 
 ```mermaid
 flowchart LR
@@ -125,29 +125,28 @@ flowchart LR
 
 ---
 
-## Projects
+<img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:1a0020&height=55&text=%F0%9F%93%81+Projects&fontSize=20&fontColor=ffffff&fontAlignY=65&animation=twinkling" />
 
-<!-- flagship -->
 <div align="center">
 <a href="https://github.com/altradits/yebo">
   <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=yebo&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
 </a>
 </div>
 
-### 📚 Learning & Community
+<br/>
 
 <div align="center">
 <a href="https://github.com/altradits/challenges">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=challenges&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=challenges&theme=github_dark&hide_border=true&title_color=00ADD8&icon_color=00ADD8&bg_color=0d1117" />
 </a>
 <a href="https://github.com/altradits/bursaryhub">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=bursaryhub&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&bg_color=0d1117" />
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=altradits&repo=bursaryhub&theme=github_dark&hide_border=true&title_color=4ade80&icon_color=4ade80&bg_color=0d1117" />
 </a>
 </div>
 
 ---
 
-## Test Your Bitcoin Knowledge
+<img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:1a1a00&height=55&text=%F0%9F%A7%AA+Test+Your+Bitcoin+Knowledge&fontSize=20&fontColor=fbbf24&fontAlignY=65&animation=twinkling" />
 
 *Click any question to reveal the answer.*
 
@@ -209,7 +208,7 @@ The [challenges](https://github.com/altradits/challenges) repo is my step-by-ste
 
 ---
 
-## Open Source
+<img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:0d2818&height=55&text=%F0%9F%8C%B1+Open+Source&fontSize=20&fontColor=4ade80&fontAlignY=65&animation=twinkling" />
 
 | Contribution | Project | Status |
 |-------------|---------|--------|
@@ -218,7 +217,7 @@ The [challenges](https://github.com/altradits/challenges) repo is my step-by-ste
 
 ---
 
-## Why Bitcoin for Africa?
+<img width="100%" src="https://capsule-render.vercel.app/api?type=soft&color=0:0d1117,100:2d1600&height=55&text=%E2%82%BF+Why+Bitcoin+for+Africa%3F&fontSize=20&fontColor=F7931A&fontAlignY=65&animation=twinkling" />
 
 <div align="center">
 
@@ -237,7 +236,7 @@ Three walls Kenyan youth hit:
 
 <div align="center">
 
-[![Activity Graph](https://github-readme-activity-graph.vercel.app/graph?username=altradits&bg_color=0d1117&color=F7931A&line=F7931A&point=ffffff&area=true&hide_border=true)](https://github.com/altradits)
+[![Activity Graph](https://github-readme-activity-graph.vercel.app/graph?username=altradits&bg_color=0d1117&color=F7931A&line=F7931A&point=ffffff&area=true&hide_border=true&custom_title=Contribution+Activity)](https://github.com/altradits)
 
 <br/>
 
@@ -249,10 +248,10 @@ Three walls Kenyan youth hit:
 
 <br/><br/>
 
-**[challenges](https://github.com/altradits/challenges)** · **[yebo](https://github.com/altradits/yebo)** · **[bursaryhub](https://github.com/altradits/bursaryhub)**
+<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&center=true&vCenter=true&color=888888&weight=400&size=13&duration=5000&pause=2000&width=600&height=30&lines=Zone01+Kisumu+%C2%B7+Kenya+%C2%B7+Go+%2B+Bitcoin+%C2%B7+Building+in+public" alt="footer tagline"/>
 
-*Zone01 Kisumu · Kenya · Go + Bitcoin · Building in public*
+**[challenges](https://github.com/altradits/challenges)** · **[yebo](https://github.com/altradits/yebo)** · **[bursaryhub](https://github.com/altradits/bursaryhub)**
 
 </div>
 
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:F7931A,50:2d1600,100:0d1117&height=120&animation=fadeIn&section=footer" />
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:F7931A,50:2d1600,100:0d1117&height=130&animation=fadeIn&section=footer" />
