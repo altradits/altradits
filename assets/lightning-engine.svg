@@ -1,0 +1,232 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 460" width="100%" height="100%" style="background: transparent; font-family: 'Fira Code', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0e14"/>
+      <stop offset="100%" stop-color="#111620"/>
+    </linearGradient>
+
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#161b22"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+
+    <linearGradient id="goldCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#241400"/>
+      <stop offset="100%" stop-color="#120a00"/>
+    </linearGradient>
+
+    <linearGradient id="cyanCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#002333"/>
+      <stop offset="100%" stop-color="#00131c"/>
+    </linearGradient>
+
+    <!-- Glowing Filters -->
+    <filter id="glowOrange" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="glowCyan" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="glowGreen" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <style>
+      .sys-card {
+        fill: url(#cardGrad);
+        stroke: #30363d;
+        stroke-width: 1.5;
+        rx: 14;
+      }
+      .gold-card {
+        fill: url(#goldCardGrad);
+        stroke: #F7931A;
+        stroke-width: 1.5;
+        rx: 14;
+      }
+      .cyan-card {
+        fill: url(#cyanCardGrad);
+        stroke: #00ADD8;
+        stroke-width: 1.5;
+        rx: 14;
+      }
+
+      /* Animated Pipeline Streams */
+      @keyframes dashFlow {
+        to {
+          stroke-dashoffset: -40;
+        }
+      }
+      .stream-orange {
+        stroke: #F7931A;
+        stroke-width: 2.5;
+        stroke-dasharray: 6, 6;
+        fill: none;
+        animation: dashFlow 1.2s linear infinite;
+      }
+      .stream-cyan {
+        stroke: #00ADD8;
+        stroke-width: 2.5;
+        stroke-dasharray: 6, 6;
+        fill: none;
+        animation: dashFlow 1.2s linear infinite;
+      }
+      .stream-purple {
+        stroke: #A855F7;
+        stroke-width: 2.5;
+        stroke-dasharray: 6, 6;
+        fill: none;
+        animation: dashFlow 1.5s linear infinite;
+      }
+
+      /* Animated Moving Packets */
+      @keyframes movePacket1 {
+        0% { offset-distance: 0%; opacity: 0; }
+        15% { opacity: 1; }
+        85% { opacity: 1; }
+        100% { offset-distance: 100%; opacity: 0; }
+      }
+      .packet-1 {
+        offset-path: path("M 232 145 L 350 145");
+        animation: movePacket1 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        fill: #F7931A;
+      }
+      .packet-2 {
+        offset-path: path("M 570 145 L 688 145");
+        animation: movePacket1 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.9s;
+        fill: #38BDF8;
+      }
+      .packet-3 {
+        offset-path: path("M 460 225 L 460 295");
+        animation: movePacket1 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite 1.4s;
+        fill: #A855F7;
+      }
+
+      .title-text {
+        font-size: 14px;
+        font-weight: 700;
+        fill: #ffffff;
+      }
+      .sub-text {
+        font-size: 11px;
+        fill: #8b949e;
+        line-height: 1.4;
+      }
+      .tag-text {
+        font-size: 9.5px;
+        font-weight: 700;
+      }
+    </style>
+  </defs>
+
+  <!-- Container Base Frame -->
+  <rect x="10" y="10" width="900" height="440" rx="16" fill="url(#bgGrad)" stroke="#30363d" stroke-width="1.5" />
+
+
+
+  <!-- Animated Connection Pathways -->
+  <path d="M 232 145 L 350 145" class="stream-orange" />
+  <path d="M 570 145 L 688 145" class="stream-cyan" />
+  <path d="M 460 225 L 460 295" class="stream-purple" />
+
+  <!-- Moving Animated Light Packets -->
+  <circle r="5" class="packet-1" filter="url(#glowOrange)" />
+  <circle r="5" class="packet-2" filter="url(#glowCyan)" />
+  <circle r="5" class="packet-3" />
+
+  <!-- NODE 1: Tri-Country Mobile Money (Left) -->
+  <g transform="translate(32, 85)">
+    <rect width="200" height="120" class="sys-card" />
+    <circle cx="28" cy="28" r="16" fill="#1a1205" stroke="#F7931A" stroke-width="1.5"/>
+    <text x="28" y="34" text-anchor="middle" font-size="16">📱</text>
+    
+    <text x="54" y="26" class="title-text">East African Rails</text>
+    <text x="54" y="40" class="tag-text" fill="#F7931A">M-PESA · TELEBIRR · EVC</text>
+
+    <line x1="14" y1="56" x2="186" y2="56" stroke="#30363d" stroke-width="1"/>
+
+    <text x="16" y="74" class="sub-text">● Safaricom M-Pesa (Kenya 🇰🇪)</text>
+    <text x="16" y="90" class="sub-text">● Ethio Telecom Telebirr (ET 🇪🇹)</text>
+    <text x="16" y="106" class="sub-text">● Hormuud EVC Plus (Somalia 🇸🇴)</text>
+  </g>
+
+  <!-- NODE 2: Yebo Go Core & Zero-Dep Engine (Center Top) -->
+  <g transform="translate(350, 65)">
+    <rect width="220" height="160" class="gold-card" />
+    <circle cx="30" cy="30" r="17" fill="#2d1600" stroke="#F7931A" stroke-width="2"/>
+    <text x="30" y="36" text-anchor="middle" font-size="18">⚡</text>
+
+    <text x="58" y="28" class="title-text" fill="#F7931A">Yebo Go Core</text>
+    <text x="58" y="42" class="tag-text" fill="#00ADD8">ZERO-DEP SETTLEMENT ENGINE</text>
+
+    <line x1="15" y1="56" x2="205" y2="56" stroke="#F7931A" stroke-opacity="0.3" stroke-width="1"/>
+
+    <text x="16" y="76" class="sub-text" fill="#e6edf3">● Custom PG Wire (internal/pgdrv)</text>
+    <text x="16" y="94" class="sub-text" fill="#e6edf3">● Dynamic KES/ETB/Sats FX Ledger</text>
+    <text x="16" y="112" class="sub-text" fill="#e6edf3">● 16 Goroutine Worker Pipelines</text>
+    <text x="16" y="130" class="sub-text" fill="#10B981">● stdlib only · 100% compliant</text>
+  </g>
+
+  <!-- NODE 3: Lightning Network / LND (Right) -->
+  <g transform="translate(688, 85)">
+    <rect width="200" height="120" class="cyan-card" />
+    <circle cx="28" cy="28" r="16" fill="#001a26" stroke="#00ADD8" stroke-width="1.5"/>
+    <text x="28" y="34" text-anchor="middle" font-size="16">🌐</text>
+
+    <text x="54" y="26" class="title-text" fill="#38BDF8">LND &amp; Lightning</text>
+    <text x="54" y="40" class="tag-text" fill="#38BDF8">GLOBAL BITCOIN RAILS</text>
+
+    <line x1="14" y1="56" x2="186" y2="56" stroke="#00ADD8" stroke-opacity="0.3" stroke-width="1"/>
+
+    <text x="16" y="74" class="sub-text">● gRPC / Protobuf API Client</text>
+    <text x="16" y="90" class="sub-text">● HTLC Instant Onion Routing</text>
+    <text x="16" y="106" class="sub-text">● &lt;1 sat fee cross-border settle</text>
+  </g>
+
+  <!-- NODE 4: Chama Multi-Sig Savings Vault (Center Bottom) -->
+  <g transform="translate(350, 295)">
+    <rect width="220" height="130" class="sys-card" stroke="#A855F7" />
+    <circle cx="30" cy="28" r="16" fill="#1d0a2e" stroke="#A855F7" stroke-width="1.5"/>
+    <text x="30" y="34" text-anchor="middle" font-size="16">🏦</text>
+
+    <text x="58" y="26" class="title-text" fill="#C084FC">Chama Group Vault</text>
+    <text x="58" y="40" class="tag-text" fill="#A855F7">COMMUNITY SAVINGS POOL</text>
+
+    <line x1="15" y1="54" x2="205" y2="54" stroke="#30363d" stroke-width="1"/>
+
+    <text x="16" y="74" class="sub-text">● Multi-signature collective ledger</text>
+    <text x="16" y="92" class="sub-text">● Automated monthly Satoshi yield</text>
+    <text x="16" y="110" class="sub-text">● Transparent on-chain group voting</text>
+  </g>
+
+  <!-- Bottom Left: Mission & Bootcamps -->
+  <g transform="translate(32, 245)">
+    <rect width="200" height="180" rx="14" fill="#0d1117" stroke="#21262d" stroke-width="1"/>
+    <text x="16" y="24" font-size="11.5" font-weight="700" fill="#F7931A">💡 MISSION &amp; ORIGIN</text>
+    <text x="16" y="48" font-size="11" fill="#8b949e">Addis Lightning Bootcamp</text>
+    <text x="16" y="66" font-size="11" fill="#8b949e">Btrust / Africa Free Routing</text>
+    <text x="16" y="94" font-size="11" fill="#c9d1d9" font-weight="600">4-Dev Bitcoin Team</text>
+    <text x="16" y="112" font-size="11" fill="#38BDF8">Learning Bitcoin Core</text>
+    <text x="16" y="130" font-size="11" fill="#38BDF8">&amp; LND protocol</text>
+    <rect x="16" y="146" width="168" height="22" rx="6" fill="#161b22" stroke="#F7931A" stroke-width="1"/>
+    <text x="100" y="161" text-anchor="middle" font-size="9.5" font-weight="700" fill="#F7931A">BITDEVS KISUMU FOUNDER</text>
+  </g>
+
+  <!-- Bottom Right: Bitcoin Focus & Telemetry -->
+  <g transform="translate(688, 245)">
+    <rect width="200" height="180" rx="14" fill="#0d1117" stroke="#21262d" stroke-width="1"/>
+    <text x="16" y="24" font-size="11.5" font-weight="700" fill="#00ADD8">⚡ BITCOIN FOCUS</text>
+    <text x="16" y="50" font-size="11" fill="#8b949e">YeboBank: <tspan fill="#10B981" font-weight="700">Bitcoin Core Bank</tspan></text>
+    <text x="16" y="72" font-size="11" fill="#8b949e">BitDevs: <tspan fill="#10B981" font-weight="700">Socratic Seminar #1</tspan></text>
+    <text x="16" y="94" font-size="11" fill="#8b949e">Altradits: <tspan fill="#10B981" font-weight="700">Open-Source Devs</tspan></text>
+    <text x="16" y="116" font-size="11" fill="#8b949e">Curriculum: <tspan fill="#10B981" font-weight="700">158 Go Lessons</tspan></text>
+    <rect x="16" y="146" width="168" height="22" rx="6" fill="#161b22" stroke="#00ADD8" stroke-width="1"/>
+    <text x="100" y="161" text-anchor="middle" font-size="9.5" font-weight="700" fill="#00ADD8">BITCOIN FOR AFRICA</text>
+  </g>
+</svg>
