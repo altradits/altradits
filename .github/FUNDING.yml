@@ -1,0 +1,6 @@
+# GitHub Funding configuration file
+# Displays the official "Sponsor" button on repositories and profile
+
+github: [altradits]
+custom:
+  - https://walletofsatoshi.com/.well-known/lnurlp/potablesignal21

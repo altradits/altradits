@@ -10,8 +10,8 @@
 [![Lightning LND](https://img.shields.io/badge/Lightning_LND-792EE5?style=for-the-badge&logo=lightning&logoColor=white)](https://github.com/lightningnetwork/lnd)
 [![Payment Channels](https://img.shields.io/badge/Payment_Channels-minmoto-F7931A?style=for-the-badge&logo=github&logoColor=white)](https://github.com/minmoto/payment-channels)
 [![BitDevs Kisumu](https://img.shields.io/badge/BitDevs-Kisumu-F7931A?style=for-the-badge&logo=x&logoColor=white)](https://x.com/BitDevsKsm)
-[![PullOS Projects](https://img.shields.io/badge/PullOS-Open_Source_Projects-F7931A?style=for-the-badge&logo=bitcoin&logoColor=white)](https://www.pullos.dev/projects)
-[![Zap Sats](https://img.shields.io/badge/⚡_Zap_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](#-fuel-the-code--value-for-value-v4v)
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub-Payments-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/altradits)
+[![Zap Sats](https://img.shields.io/badge/⚡_Zap_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](#-fuel-the-code--value-for-value-v4v--sponsorship)
 
 <br/>
 
@@ -85,14 +85,15 @@ My active focus spans **[`minmoto/payment-channels`](https://github.com/minmoto/
 
 ---
 
-### ⚡ Fuel the Code · Value for Value (V4V)
+### ⚡ Fuel the Code · Value for Value (V4V) & Sponsorship
 
 <div align="center">
 
-> *"Proof of Work speaks for itself. If my code saved you hours, unlocked a payment rail, or fueled your Bitcoin stack, stream some sats back. Zero middlemen, zero friction — pure peer-to-peer energy."*
+> *"Proof of Work speaks for itself. If my code saved you hours, unlocked a payment rail, or fueled your Bitcoin stack, stream some sats or sponsor my work directly. Zero middlemen, zero friction — pure peer-to-peer value."*
 
 <br/>
 
+[![Sponsor on GitHub](https://img.shields.io/badge/💖_Sponsor-GitHub_Payments-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/altradits)
 [![⚡ Zap 21 Sats](https://img.shields.io/badge/⚡_Zap-21_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn)
 [![⚡ Zap 1,000 Sats](https://img.shields.io/badge/⚡_Zap-1%2C000_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn)
 [![☕ Buy a Coffee (2,100 Sats)](https://img.shields.io/badge/☕_Buy_Coffee-2%2C100_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn)
@@ -112,10 +113,20 @@ My active focus spans **[`minmoto/payment-channels`](https://github.com/minmoto/
 <a href="lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn">
   <img src="https://img.shields.io/badge/⚡_Zap_Now-Launch_Wallet-F7931A?style=for-the-badge&logo=lightning&logoColor=white" alt="Launch Lightning Wallet" />
 </a>
+&nbsp;&nbsp;
+<a href="https://github.com/sponsors/altradits">
+  <img src="https://img.shields.io/badge/💖_GitHub_Sponsor-Card_%2F_PayPal-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white" alt="Sponsor on GitHub" />
+</a>
 
 </div>
 
 <br/>
+
+#### 💳 GitHub Payments & Sponsorship `(Card / Apple Pay / PayPal / Monthly)`
+```text
+https://github.com/sponsors/altradits
+```
+> *Prefer credit cards, Apple Pay, PayPal, or monthly recurring sponsorship? Support my open-source protocol research and community seminars directly via [GitHub Sponsors](https://github.com/sponsors/altradits).*
 
 #### ⚡ Lightning Address `(click copy button on right ↗️)`
 ```text
@@ -155,6 +166,7 @@ I am actively available to collaborate, pair, and build on:
 [![Email](https://img.shields.io/badge/Email-altradits%40gmail.com-F7931A?style=for-the-badge&logo=gmail&logoColor=white)](mailto:altradits@gmail.com)
 [![X](https://img.shields.io/badge/X-@altradits-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/altradits)
 [![BitDevs Kisumu](https://img.shields.io/badge/BitDevs-@BitDevsKsm-F7931A?style=for-the-badge&logo=x&logoColor=white)](https://x.com/BitDevsKsm)
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub_Payments-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/altradits)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Stanley_Chege_Thuita-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/stanmobitech/)
 [![GitHub](https://img.shields.io/badge/GitHub-@altradits-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/altradits)
 
@@ -199,8 +211,9 @@ I am actively available to collaborate, pair, and build on:
 [![Email](https://img.shields.io/badge/Email-altradits%40gmail.com-F7931A?style=for-the-badge&logo=gmail&logoColor=white)](mailto:altradits@gmail.com)
 [![X](https://img.shields.io/badge/X-@altradits-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/altradits)
 [![BitDevs Kisumu](https://img.shields.io/badge/BitDevs-@BitDevsKsm-F7931A?style=for-the-badge&logo=x&logoColor=white)](https://x.com/BitDevsKsm)
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub_Payments-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/altradits)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Stanley_Chege_Thuita-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/stanmobitech/)
-[![Lightning Tip](https://img.shields.io/badge/Lightning-Tip_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](#-value-for-value--bitcoin-lightning-wallet)
+[![Lightning Tip](https://img.shields.io/badge/Lightning-Tip_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](#-fuel-the-code--value-for-value-v4v--sponsorship)
 
 <br/>
 
