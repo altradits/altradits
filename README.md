@@ -106,7 +106,7 @@ My active focus spans **[`minmoto/payment-channels`](https://github.com/minmoto/
 </a>
 
 <br/>
-<sub>⚡ <b>Scan with any Lightning wallet or click image to launch</b></sub>
+<sub>⚡ <b>Scan with any Lightning wallet</b></sub>
 
 <br/><br/>
 
@@ -121,17 +121,6 @@ My active focus spans **[`minmoto/payment-channels`](https://github.com/minmoto/
 </div>
 
 <br/>
-
-#### 💳 GitHub Payments & Sponsorship `(Card / Apple Pay / PayPal / Monthly)`
-```text
-https://github.com/sponsors/altradits
-```
-> *Prefer credit cards, Apple Pay, PayPal, or monthly recurring sponsorship? Support my open-source protocol research and community seminars directly via [GitHub Sponsors](https://github.com/sponsors/altradits).*
-
-#### ⚡ Lightning Address `(click copy button on right ↗️)`
-```text
-potablesignal21@walletofsatoshi.com
-```
 
 #### 🔗 Direct LNURL-Pay `(click copy button on right ↗️)`
 ```text
