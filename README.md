@@ -10,6 +10,7 @@
 [![Lightning LND](https://img.shields.io/badge/Lightning_LND-792EE5?style=for-the-badge&logo=lightning&logoColor=white)](https://github.com/lightningnetwork/lnd)
 [![BitDevs Kisumu](https://img.shields.io/badge/BitDevs-Kisumu-F7931A?style=for-the-badge&logo=x&logoColor=white)](https://x.com/BitDevsKsm)
 [![PullOS Projects](https://img.shields.io/badge/PullOS-Open_Source_Projects-F7931A?style=for-the-badge&logo=bitcoin&logoColor=white)](https://www.pullos.dev/projects)
+[![Lightning Tip](https://img.shields.io/badge/Lightning-Tip_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](#-value-for-value--bitcoin-lightning-wallet)
 
 <br/>
 
@@ -26,9 +27,9 @@
   <img src="./assets/contributor-live.svg" width="95%" alt="Open Source Contributor & Protocol Engineer" />
 </p>
 
-I am a software engineering apprentice at **Zone01 Kisumu, Kenya** and co-founder of **BitDevs Kisumu**, focused on open-source Bitcoin and Lightning Network development.
+I am a software engineering apprentice at **Zone01 Kisumu, Kenya** and co-founder of **BitDevs Kisumu**, fully dedicated to open-source Bitcoin and Lightning Network protocol development.
 
-My goal is simple: deeply understand Bitcoin protocols, hunt issues, review PRs, and merge quality open-source code into infrastructure like **`lightningnetwork/lnd`** while building practical financial tools for East Africa.
+My focus is unwavering: deeply master Bitcoin protocols, hunt issues, review PRs, and merge robust production code into critical infrastructure like **`lightningnetwork/lnd`** and payment channel registries while building sovereign financial tools for East Africa.
 
 ---
 
@@ -81,6 +82,70 @@ My goal is simple: deeply understand Bitcoin protocols, hunt issues, review PRs,
   <img src="./assets/lightning-engine.svg" width="100%" alt="YeboBank & Lightning Network Engine Architecture" />
 </p>
 
+---
+
+### ⚡ Value for Value · Bitcoin Lightning Wallet
+
+<div align="center">
+
+<p>Support open-source Bitcoin protocol development, upstream PR reviews, and grassroots developer education in East Africa.</p>
+
+<table>
+<tr>
+<td align="center" width="280">
+  <a href="lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn">
+    <img src="./assets/lightning-qr.svg" width="220" height="220" alt="Scan to pay via Bitcoin Lightning Network" />
+  </a>
+  <br/>
+  <sub>⚡ <b>Scan with any Lightning wallet</b></sub>
+</td>
+<td valign="middle">
+
+<p><b>⚡ Lightning Address:</b><br/>
+<code>potablesignal21@walletofsatoshi.com</code></p>
+
+<p><b>🔗 Direct LNURL (Tap to open or copy):</b><br/>
+<a href="lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn">
+  <img src="https://img.shields.io/badge/⚡_Send_Sats-Open_Lightning_Wallet-F7931A?style=for-the-badge&logo=lightning&logoColor=white" alt="Open Lightning Wallet" />
+</a>
+<br/>
+<sub><code>lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn</code></sub>
+</p>
+
+<sub><i>Works with Phoenix, Wallet of Satoshi, Zeus, Breez, Strike, Cash App, Blink, and all LNURL-pay wallets.</i></sub>
+
+</td>
+</tr>
+</table>
+
+</div>
+
+---
+
+### 🤝 100% In on Bitcoin · Ready to Engage
+
+<div align="center">
+
+> *"I am in this fully. My work is focused on mastering Bitcoin & Lightning protocols, shipping audited Go infrastructure, reviewing open-source pull requests, and scaling the Bitcoin developer ecosystem across East Africa."*
+
+</div>
+
+I am actively available to collaborate, pair, and build on:
+- ⚡ **Bitcoin & Lightning Protocol Development**: Upstream contributions to `lightningnetwork/lnd`, payment channels, and testing frameworks.
+- 🔍 **Open-Source PR Reviews & Bug Hunting**: Thorough code reviews, reproducing test failures, and patch verification.
+- 🎙️ **BitDevs Kisumu & Socratic Seminars**: Discussion of BIPs, BOLTs, Layer-2 scalability, and technical workshops.
+- 🌍 **African Financial Rails**: Dual-rail architecture bridging East African mobile money (M-Pesa, Telebirr) to Bitcoin Lightning.
+- 🚀 **FOSS Fellowships & Protocol Grants**: Dedicated full-time protocol contribution and research.
+
+<div align="center">
+
+[![Email](https://img.shields.io/badge/Email-altradits%40gmail.com-F7931A?style=for-the-badge&logo=gmail&logoColor=white)](mailto:altradits@gmail.com)
+[![X](https://img.shields.io/badge/X-@altradits-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/altradits)
+[![BitDevs Kisumu](https://img.shields.io/badge/BitDevs-@BitDevsKsm-F7931A?style=for-the-badge&logo=x&logoColor=white)](https://x.com/BitDevsKsm)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Stanley_Chege_Thuita-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/stanmobitech/)
+[![GitHub](https://img.shields.io/badge/GitHub-@altradits-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/altradits)
+
+</div>
 
 ---
 
@@ -119,8 +184,10 @@ My goal is simple: deeply understand Bitcoin protocols, hunt issues, review PRs,
 **Always open to collaborate on Bitcoin open source, code reviews, and developer community building.**
 
 [![Email](https://img.shields.io/badge/Email-altradits%40gmail.com-F7931A?style=for-the-badge&logo=gmail&logoColor=white)](mailto:altradits@gmail.com)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Stanley_Chege_Thuita-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/stanmobitech/)
 [![X](https://img.shields.io/badge/X-@altradits-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/altradits)
+[![BitDevs Kisumu](https://img.shields.io/badge/BitDevs-@BitDevsKsm-F7931A?style=for-the-badge&logo=x&logoColor=white)](https://x.com/BitDevsKsm)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Stanley_Chege_Thuita-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/stanmobitech/)
+[![Lightning Tip](https://img.shields.io/badge/Lightning-Tip_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](#-value-for-value--bitcoin-lightning-wallet)
 
 <br/>
 
