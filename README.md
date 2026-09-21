@@ -32,14 +32,18 @@ My goal is simple: deeply understand Bitcoin protocols, hunt issues, review PRs,
 
 ---
 
-### 🎯 Open-Source Repositories & Builds
+### 🎯 Open-Source Contributions
 
-| Project / Repository | Focus | Status |
+| Repository | Contribution | Status |
 | :--- | :--- | :---: |
-| **[lightningnetwork/lnd](https://github.com/lightningnetwork/lnd)** | Lightning Network Daemon: gRPC & `itest` suites | `In Progress ⏳` |
-| **[btrust-builders/first-contributions](https://github.com/btrust-builders/first-open-source-contributions)** | Btrust contributor milestone registry (PR #139) | `Merged ✅` |
-| **[PullOS Projects](https://www.pullos.dev/projects)** | Open-source Bitcoin & Lightning builder labs | `Active Builds 🚀` |
-| **[altradits/YeboBank](https://github.com/altradits/YeboBank)** | Zero-dependency Go Bitcoin & Lightning settlement | `Active Build ⚡` |
+| **[minmoto/payment-channels](https://github.com/minmoto/payment-channels)** | [PR #24](https://github.com/minmoto/payment-channels/pull/24): Southern Africa cash channels | `Merged ✅` |
+| **[minmoto/payment-channels](https://github.com/minmoto/payment-channels)** | [PR #23](https://github.com/minmoto/payment-channels/pull/23): East Africa cash channels | `Merged ✅` |
+| **[minmoto/payment-channels](https://github.com/minmoto/payment-channels)** | [PR #22](https://github.com/minmoto/payment-channels/pull/22): Telebirr ETB channel | `Open ⏳` |
+| **[nokia/ntt](https://github.com/nokia/ntt)** | [PR #778](https://github.com/nokia/ntt/pull/778): Windows tests & CI | `Open ⏳` |
+| **[jamaljsr/polar](https://github.com/jamaljsr/polar)** | [Issue #1383](https://github.com/jamaljsr/polar/issues/1383): Zero-sat payment bug | `Open ⏳` |
+| **[btrust-builders/first-contributions](https://github.com/btrust-builders/first-open-source-contributions)** | [PR #139](https://github.com/btrust-builders/first-open-source-contributions/pull/139), [PR #186](https://github.com/btrust-builders/first-open-source-contributions/pull/186): Contributor registry | `Merged ✅` |
+| **[btrust-builders/code-contributions](https://github.com/btrust-builders/open-source-code-contributions)** | [PR #133](https://github.com/btrust-builders/open-source-code-contributions/pull/133): Contributor card | `Merged ✅` |
+| **[annanodiyo/chemichemi](https://github.com/annanodiyo/chemichemi)** | [PR #1](https://github.com/annanodiyo/chemichemi/pull/1), [PR #5](https://github.com/annanodiyo/chemichemi/pull/5): IoT telemetry core | `Merged ✅` |
 
 ---
 
