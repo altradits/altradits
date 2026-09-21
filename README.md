@@ -100,33 +100,36 @@ My active focus spans **[`minmoto/payment-channels`](https://github.com/minmoto/
 
 <br/><br/>
 
-<table>
-<tr>
-<td align="center" width="290">
-  <a href="lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn">
-    <img src="./assets/lightning-qr.png" width="240" alt="Scan to pay via Bitcoin Lightning Network" style="border-radius: 16px;" />
-  </a>
-  <br/>
-  <sub>⚡ <b>Click or scan with any Lightning wallet</b></sub>
-</td>
-<td valign="middle">
-
-<p><b>⚡ Lightning Address:</b><br/>
-<code>potablesignal21@walletofsatoshi.com</code></p>
-
-<p><b>🔗 Direct LNURL (Tap to open in wallet):</b><br/>
 <a href="lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn">
-  <img src="https://img.shields.io/badge/⚡_Zap_Now-Open_in_Wallet-F7931A?style=for-the-badge&logo=lightning&logoColor=white" alt="Open Lightning Wallet" />
+  <img src="./assets/lightning-qr.png" width="280" alt="Wallet of Satoshi Lightning QR Code" style="border-radius: 16px;" />
 </a>
+
 <br/>
-<sub><code>lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn</code></sub>
-</p>
+<sub>⚡ <b>Scan with any Lightning wallet or click image to launch</b></sub>
 
-<sub><i>Instant settlement on Phoenix · Wallet of Satoshi · Zeus · Breez · Strike · Cash App · Blink · Alby · Cashu</i></sub>
+<br/><br/>
 
-</td>
-</tr>
-</table>
+<a href="lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn">
+  <img src="https://img.shields.io/badge/⚡_Zap_Now-Launch_Wallet-F7931A?style=for-the-badge&logo=lightning&logoColor=white" alt="Launch Lightning Wallet" />
+</a>
+
+</div>
+
+<br/>
+
+#### ⚡ Lightning Address `(click copy button on right ↗️)`
+```text
+potablesignal21@walletofsatoshi.com
+```
+
+#### 🔗 Direct LNURL-Pay `(click copy button on right ↗️)`
+```text
+lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn
+```
+
+<div align="center">
+
+<sub>⚡ <i>Instant settlement on Phoenix · Wallet of Satoshi · Zeus · Breez · Strike · Cash App · Blink · Alby · Cashu</i></sub>
 
 </div>
 
