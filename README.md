@@ -104,7 +104,7 @@ My active focus spans **[`minmoto/payment-channels`](https://github.com/minmoto/
 <tr>
 <td align="center" width="290">
   <a href="lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn">
-    <img src="./assets/lightning-qr.svg" width="230" height="230" alt="Scan to pay via Bitcoin Lightning Network" />
+    <img src="./assets/lightning-qr.png" width="240" alt="Scan to pay via Bitcoin Lightning Network" style="border-radius: 16px;" />
   </a>
   <br/>
   <sub>⚡ <b>Click or scan with any Lightning wallet</b></sub>
