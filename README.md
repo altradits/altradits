@@ -1,17 +1,16 @@
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,30:1a0800,70:2d1600,100:F7931A&height=210&text=Stanley%20Chege%20Thuita&fontSize=50&fontColor=ffffff&fontAlignY=42&desc=Protocol%20Contributor&descFontSize=22&descAlignY=62&descAlign=50&animation=fadeIn" />
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,30:1a0800,70:2d1600,100:F7931A&height=220&text=Stanley%20Chege%20Thuita&fontSize=48&fontColor=ffffff&fontAlignY=42&desc=Bitcoin%20Core%20%26%20Lightning%20Protocol%20Engineer%20%C2%B7%20Kisumu%2C%20Kenya&descFontSize=18&descAlignY=62&descAlign=50&animation=fadeIn" />
 
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com/?font=JetBrains+Mono&center=true&vCenter=true&color=F7931A&weight=800&size=44&duration=2200&pause=1000&width=600&height=75&lines=Fork.;Hunt.;Patch.;Review.;Verify.;Merge." alt="Action Verbs"/>
+<img src="https://readme-typing-svg.demolab.com/?font=JetBrains+Mono&center=true&vCenter=true&color=F7931A&weight=800&size=40&duration=2000&pause=1000&width=650&height=70&lines=Review.+Test.+Verify.+Build.+Ship." alt="Action Verbs"/>
 
-<br/><br/>
+<br/>
 
-[![Bitcoin Core](https://img.shields.io/badge/Bitcoin-F7931A?style=for-the-badge&logo=bitcoin&logoColor=white)](https://github.com/altradits/YeboBank)
-[![Lightning LND](https://img.shields.io/badge/Lightning_LND-792EE5?style=for-the-badge&logo=lightning&logoColor=white)](https://github.com/lightningnetwork/lnd)
-[![Payment Channels](https://img.shields.io/badge/Payment_Channels-minmoto-F7931A?style=for-the-badge&logo=github&logoColor=white)](https://github.com/minmoto/payment-channels)
-[![BitDevs Kisumu](https://img.shields.io/badge/BitDevs-Kisumu-F7931A?style=for-the-badge&logo=x&logoColor=white)](https://x.com/BitDevsKsm)
-[![GitHub Sponsors](https://img.shields.io/badge/GitHub-Payments-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/altradits)
-[![Zap Sats](https://img.shields.io/badge/⚡_Zap_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](#-fuel-the-code--value-for-value-v4v--sponsorship)
+[![Bitcoin Core](https://img.shields.io/badge/Bitcoin_Core-PR_Reviews-F7931A?style=for-the-badge&logo=bitcoin&logoColor=white)](https://github.com/altradits/bitcoin-core-lab)
+[![Lightning LND](https://img.shields.io/badge/Lightning_LND-Daemon-792EE5?style=for-the-badge&logo=lightning&logoColor=white)](https://github.com/lightningnetwork/lnd)
+[![BitDevs Kisumu](https://img.shields.io/badge/BitDevs-Kisumu_Seminars-F7931A?style=for-the-badge&logo=x&logoColor=white)](https://x.com/BitDevsKsm)
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/altradits)
+[![Zap Sats](https://img.shields.io/badge/⚡_Zap_Sats-V4V-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](#-value-for-value-v4v--sponsorship)
 
 <br/>
 
@@ -22,192 +21,79 @@
 
 ---
 
-### ⚡ Summary
+### ⚡ Mission: Establishing the Kisumu Circular Bitcoin Economy
 
-<p align="center">
-  <img src="./assets/contributor-live.svg" width="95%" alt="Open Source Contributor & Protocol Engineer" />
-</p>
+I am a software engineering apprentice at **Zone01 Kisumu, Kenya**, co-founder of **BitDevs Kisumu**, and an open-source Bitcoin protocol engineer.
 
-I am a software engineering apprentice at **Zone01 Kisumu, Kenya**, co-founder of **BitDevs Kisumu**, and an open-source Bitcoin protocol engineer. I am in this fully: mastering protocol internals, hunting issues, reviewing upstream PRs, and contributing production code into core Bitcoin infrastructure, payment channel registries, and Lightning Network daemons.
+My technical mission:
+1. **Upstream Protocol Contribution**: Actively reviewing PRs on **`bitcoin/bitcoin`** and building on **`lightningnetwork/lnd`** from first principles.
+2. **African Financial Rails**: Engineering low-latency Layer 2 settlement and dual-rail liquidity corridors connecting Bitcoin & Lightning directly to **Safaricom M-Pesa** and **Ethio Telecom Telebirr**.
 
-My active focus spans **[`minmoto/payment-channels`](https://github.com/minmoto/payment-channels)**, **[`lightningnetwork/lnd`](https://github.com/lightningnetwork/lnd)**, and **[`PullOS Projects`](https://www.pullos.dev/projects)** — engineering compliant, high-throughput financial rails for East Africa and beyond.
+*Actively preparing for full-time protocol contribution via the **Btrust Builders Fellowship**, **Brink**, and **OpenSats**.*
 
 ---
 
-### 🎯 Featured Open-Source Repositories & Upstream Contributions
+### 🚀 Live Deployed Applications & Hosted Production Rails
 
-| Repository / Project | Focus & Architecture | Merged Commits & Pull Requests | Status |
+<div align="center">
+
+| Project | Architecture & Bitcoin / LND Contribution | Live Deployment | Source Code |
+| :--- | :--- | :---: | :---: |
+| ⚡ **Yebente Gateway** | Dual-rail settlement engine bridging Safaricom M-Pesa STK Push directly to LND REST `/v2/router/send`, LNbits, and Blink | [**Launch Yebente**](https://yebente.onrender.com) | [GitHub](https://github.com/altradits/convert) |
+| 🏦 **YeboBank** | Custodial Bitcoin bank prototype for Kenyan savers with chama multi-user pools (pure Go stdlib, zero external deps) | [**Launch YeboBank**](https://yebobank.vercel.app) | [GitHub](https://github.com/altradits/YeboBank) |
+| 🛡️ **ProofChain** | Decentralized credential registry anchoring SHA-256 document fingerprints directly to Bitcoin blocks via `OP_RETURN` | — | [GitHub](https://github.com/altradits/ProofChain) |
+| ⚡ **Merchant Checkout** | Retail Point-of-Sale (POS) terminal generating dynamic Lightning invoices via LND with live KES/ETB fiat pricing | — | [GitHub](https://github.com/altradits/lightning-merchant-checkout) |
+| ☕ **Buy Me a ₿una** | Open-source creator tipping platform streaming instant, sub-cent micro-donations directly over the Lightning Network | — | [GitHub](https://github.com/altradits/buy-me-abunna) |
+| 🌍 **AfriSats** | Pan-African peer-to-peer freelance and digital services marketplace priced strictly in Satoshis | — | [GitHub](https://github.com/altradits/AfriSats-) |
+| ⚡ **LD Bootcamp** | Bitcoin Lightning developer platform built during the Addis Ababa Lightning Bootcamp (Btrust/AFR/HRF) | [**Launch Bootcamp**](https://ld-bootcamp.vercel.app) | [GitHub](https://github.com/altradits/LD_Bootcamp) |
+| 🎓 **BursaryHub** | Fraud-proof bursary and scholarship allocation platform for Kenyan educational institutions built in Go | [**Launch BursaryHub**](https://bursaryhub-lake.vercel.app) | [GitHub](https://github.com/altradits/bursaryhub) |
+| 🐟 **Chemichemi IoT** | Telemetry ingestion engine monitoring dissolved oxygen and water metrics for Lake Victoria aquaculture | [**Launch Chemichemi**](https://chemichemi-ci23.onrender.com) | [GitHub](https://github.com/annanodiyo/chemichemi) |
+| ☕ **Kabuna Coffee** | Cultural artifacts & Ethiopian coffee platform integrated with Safaricom M-Pesa Daraja | [**Launch Kabuna**](https://buna-beta.vercel.app/) | [GitHub](https://github.com/altradits/kabuna) |
+| ⌨️ **TouchType** | Arcade muscle-memory typing trainer with live telemetry | [**Launch TouchType**](https://touchtype-72i6.onrender.com/) | [GitHub](https://github.com/altradits/touchtype) |
+| 🎮 **Code Royale** | Competitive browser code battle arena with atomic JavaScript puzzle execution | [**Launch Code Royale**](https://js-mastery-livid.vercel.app) | [GitHub](https://github.com/altradits/js-mastery) |
+
+</div>
+
+---
+
+### 🎯 Verified Upstream Open-Source Contributions
+
+| Repository | Scope & Architecture | Merged Pull Requests | Status |
 | :--- | :--- | :--- | :---: |
-| **[minmoto/payment-channels](https://github.com/minmoto/payment-channels)** | Portable registry of fiat payment channel schemas for web, mobile & Lightning | • [PR #24](https://github.com/minmoto/payment-channels/pull/24) · Southern Africa cash channels ([`9d5c054`](https://github.com/minmoto/payment-channels/commit/9d5c0540ce85701b36620ff4531453c8118a2ee5))<br/>• [PR #23](https://github.com/minmoto/payment-channels/pull/23) · East Africa cash channels ([`3c84fde`](https://github.com/minmoto/payment-channels/commit/3c84fdee7175f3176da3d486cde187a931f2459f))<br/>• [PR #22](https://github.com/minmoto/payment-channels/pull/22) · Ethiopian Telebirr ETB channel | `Merged ✅`<br/>`Merged ✅`<br/>`Open ⏳` |
-| **[lightningnetwork/lnd](https://github.com/lightningnetwork/lnd)** | Lightning Network Daemon: gRPC automation, regtest testbeds & `itest` suites | • Custom Go gRPC client integration<br/>• Regtest cluster automation & integration testing | `In Progress ⏳` |
-| **[PullOS Projects](https://www.pullos.dev/projects)** | Open-source Bitcoin & Lightning builder labs & protocol experiments | • Dual-rail settlement corridors & East African liquidity bridges | `Active Builds 🚀` |
-| **[btrust-builders/first-open-source-contributions](https://github.com/btrust-builders/first-open-source-contributions)** | Btrust Builders open-source milestone & African developer registry | • [PR #139](https://github.com/btrust-builders/first-open-source-contributions/pull/139) · Milestone entry ([`d417d62`](https://github.com/btrust-builders/first-open-source-contributions/commit/d417d62fdbd9cbb28d68fe0be596841261d7d022))<br/>• [PR #186](https://github.com/btrust-builders/first-open-source-contributions/pull/186) · Contributor profile ([`6cfa17a`](https://github.com/btrust-builders/first-open-source-contributions/commit/6cfa17adfa225a0725a3be201a0cb6c5ff4c9be6)) | `Merged ✅` |
-| **[btrust-builders/open-source-code-contributions](https://github.com/btrust-builders/open-source-code-contributions)** | Btrust code contributions guide & portfolio showcase | • [PR #133](https://github.com/btrust-builders/open-source-code-contributions/pull/133) · Contributor profile card ([`c5f06df`](https://github.com/btrust-builders/open-source-code-contributions/commit/c5f06dfd864115167a33e387114fef5d898ba4f5)) | `Merged ✅` |
-| **[annanodiyo/chemichemi](https://github.com/annanodiyo/chemichemi)** | IoT telemetry platform monitoring dissolved oxygen for Lake Victoria aquaculture | • [PR #1](https://github.com/annanodiyo/chemichemi/pull/1) · Core telemetry engine ([`cf18a92`](https://github.com/annanodiyo/chemichemi/commit/cf18a92))<br/>• [PR #5](https://github.com/annanodiyo/chemichemi/pull/5) · Sensor ingestion fixes ([`aab069a`](https://github.com/annanodiyo/chemichemi/commit/aab069a)) | `Merged ✅` |
-| **[nokia/ntt](https://github.com/nokia/ntt)** | Modern tools & compiler toolchain for TTCN-3 test automation | • [PR #778](https://github.com/nokia/ntt/pull/778) · Fix Windows test suites & CI automation | `Open ⏳` |
-| **[jamaljsr/polar](https://github.com/jamaljsr/polar)** | One-click Bitcoin Lightning network sandbox for local app development | • [Issue #1383](https://github.com/jamaljsr/polar/issues/1383) · Insufficient balance error handling | `Open ⏳` |
+| **[minmoto/payment-channels](https://github.com/minmoto/payment-channels)** | Schema registry for fiat/mobile money channels across Africa | • [PR #23](https://github.com/minmoto/payment-channels/pull/23) · East Africa channels<br/>• [PR #24](https://github.com/minmoto/payment-channels/pull/24) · Southern Africa channels<br/>• [PR #22](https://github.com/minmoto/payment-channels/pull/22) · Telebirr channel<br/>• [PR #27](https://github.com/minmoto/payment-channels/pull/27) · North Africa channels | `Merged ✅`<br/>`Merged ✅`<br/>`Merged ✅`<br/>`Merged ✅` |
+| **[Flying-Tea-Squad/lms](https://github.com/Flying-Tea-Squad/lms)** | Backend education platform & automated testing engine | • [PR #321](https://github.com/Flying-Tea-Squad/lms/pull/321) · Materials persistence<br/>• [PR #320](https://github.com/Flying-Tea-Squad/lms/pull/320) · Upload pipelines<br/>• [PR #297](https://github.com/Flying-Tea-Squad/lms/pull/297) · Payment API security<br/>• [PR #290](https://github.com/Flying-Tea-Squad/lms/pull/290) · RBAC authentication | `12+ PRs Merged ✅` |
+| **[annanodiyo/chemichemi](https://github.com/annanodiyo/chemichemi)** | IoT aquaculture telemetry engine for Lake Victoria | • [PR #1](https://github.com/annanodiyo/chemichemi/pull/1) & [PR #5](https://github.com/annanodiyo/chemichemi/pull/5) · Core telemetry engine | `Merged ✅` |
+| **[btrust-builders](https://github.com/btrust-builders)** | Btrust African Bitcoin Open Source Contributor Registry | • [PR #139](https://github.com/btrust-builders/first-open-source-contributions/pull/139), [PR #186](https://github.com/btrust-builders/first-open-source-contributions/pull/186), [PR #133](https://github.com/btrust-builders/open-source-code-contributions/pull/133) | `Merged ✅` |
+| **[altradits/bitcoin-core-lab](https://github.com/altradits/bitcoin-core-lab)** | First-principles hourly research log & upstream PR review notes | • Daily hands-on challenge log, Python functional test runs, and consensus verification | `Active Lab 📝` |
 
 ---
 
-### 🚀 Featured Launches & Live Projects
+### 🗺️ Bitcoin Protocol Roadmap
 
-<div align="center">
-
-| App / Project | Description | Launch / Status |
-| :--- | :--- | :---: |
-| 🎮 **Code Royale** | Competitive browser coding battle arena with live in-browser execution & atomic JS puzzles | [![Launch Code Royale](https://img.shields.io/badge/Launch-Code_Royale-00ADD8?style=for-the-badge&logo=vercel&logoColor=white)](https://js-mastery-livid.vercel.app/) |
-| ⌨️ **TouchType** | High-speed muscle memory typing battle arena with live arcade telemetry | [![Launch TouchType](https://img.shields.io/badge/Launch-TouchType-46E3B7?style=for-the-badge&logo=render&logoColor=black)](https://touchtype-72i6.onrender.com/) |
-| ⚡ **YeboBank** | Open-source Bitcoin banking prototype written in pure Go (stdlib only, zero external deps) | [![YeboBank Repo](https://img.shields.io/badge/Active_Build-YeboBank-F7931A?style=for-the-badge&logo=github&logoColor=white)](https://github.com/altradits/YeboBank) |
-| 🎙️ **BitDevs Kisumu** | Western Kenya's Bitcoin developer community — Socratic Seminar #1 on 12 Sep 2026 @ LakeHub | ![BitDevs Kisumu](https://img.shields.io/badge/Status-Socratic_Seminar-30363d?style=for-the-badge&logo=bitcoin&logoColor=F7931A) |
-| 📚 **Go Challenges** | 158 structured challenges covering Go concurrency, pointers, channels, and network protocols | ![Go Challenges](https://img.shields.io/badge/Status-158_Lessons-30363d?style=for-the-badge&logo=github&logoColor=white) |
-
-</div>
-
----
-
-### 🗺️ The Open-Source Contributor Roadmap
-
-- [x] **Go Foundations**: Master Go memory model, goroutines, channels, and testing (**158 lessons deep**)
-- [x] **Addis Ababa Lightning Bootcamp**: Completed intensive Lightning development cohort sponsored by **Btrust Builders**, **Africa Free Routing**, and **HRF**
-- [x] **Grassroots Leadership**: Co-founded **BitDevs Kisumu** ([@BitDevsKsm](https://x.com/BitDevsKsm)) and organized Socratic Seminar #1
-- [x] **Live Product Delivery**: Shipped interactive apps including **[Code Royale](https://js-mastery-livid.vercel.app/)**, **[TouchType](https://touchtype-72i6.onrender.com/)**, and **[YeboBank](https://github.com/altradits/YeboBank) core**
-- [ ] **LND Regtest Environment**: Connect custom Go gRPC clients to local LND regtest clusters
-- [ ] **Integration Testing**: Write tests using LND's `itest` framework
-- [ ] **Upstream Merge**: Submit PR and merge production code into `lightningnetwork/lnd`
+- [x] **Go Concurrency & Systems Foundations**: Mastered Go memory model, goroutines, and network protocols (**158 lessons deep**)
+- [x] **Addis Ababa Lightning Bootcamp**: Completed intensive Lightning protocol cohort sponsored by **Btrust Builders**, **Africa Free Routing**, and **HRF**
+- [x] **Community Leadership**: Co-founded **BitDevs Kisumu** ([@BitDevsKsm](https://x.com/BitDevsKsm)), hosting regular Socratic Seminars
+- [x] **LND Regtest Environment**: Deployed native LND node with Bitcoin Core regtest & Go REST client integration
+- [x] **Dual-Rail Gateway Delivery**: Shipped **Yebente** automated M-Pesa ↔ Lightning settlement engine
+- [x] **Public Proof of Work**: Established **[bitcoin-core-lab](https://github.com/altradits/bitcoin-core-lab)** for hourly research & test logs
+- [ ] **Bitcoin Core PR Reviews**: Active weekly reviews on `bitcoin/bitcoin` pull requests
+- [ ] **Functional Test Additions**: Write upstream test cases using Bitcoin Core's Python test framework
+- [ ] **Kisumu Circular Pilot**: Deploy offline Bolt Card & merchant POS rails on Lake Victoria
+- [ ] **Full-Time Fellowship Onboarding**: Secure protocol development grant (Btrust Builders / Brink / OpenSats)
 
 ---
 
-### ⚡ East Africa Bitcoin Architecture
-
-<p align="center">
-  <img src="./assets/lightning-engine.svg" width="100%" alt="YeboBank & Lightning Network Engine Architecture" />
-</p>
-
----
-
-### ⚡ Fuel the Code · Value for Value (V4V) & Sponsorship
-
-<div align="center">
-
-> *"Proof of Work speaks for itself. If my code saved you hours, unlocked a payment rail, or fueled your Bitcoin stack, stream some sats or sponsor my work directly. Zero middlemen, zero friction — pure peer-to-peer value."*
-
-<br/>
-
-[![Sponsor on GitHub](https://img.shields.io/badge/💖_Sponsor-GitHub_Payments-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/altradits)
-[![⚡ Zap 21 Sats](https://img.shields.io/badge/⚡_Zap-21_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn)
-[![⚡ Zap 1,000 Sats](https://img.shields.io/badge/⚡_Zap-1%2C000_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn)
-[![☕ Buy a Coffee (2,100 Sats)](https://img.shields.io/badge/☕_Buy_Coffee-2%2C100_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn)
-[![🚀 Fuel a Node (21,000 Sats)](https://img.shields.io/badge/🚀_Fuel_a_Node-21%2C000_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn)
-
-<br/><br/>
-
-<a href="lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn">
-  <img src="./assets/lightning-qr.png" width="280" alt="Wallet of Satoshi Lightning QR Code" style="border-radius: 16px;" />
-</a>
-
-<br/>
-<sub>⚡ <b>Scan with any Lightning wallet</b></sub>
-
-<br/><br/>
-
-<a href="lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn">
-  <img src="https://img.shields.io/badge/⚡_Zap_Now-Launch_Wallet-F7931A?style=for-the-badge&logo=lightning&logoColor=white" alt="Launch Lightning Wallet" />
-</a>
-&nbsp;&nbsp;
-<a href="https://github.com/sponsors/altradits">
-  <img src="https://img.shields.io/badge/💖_GitHub_Sponsor-Card_%2F_PayPal-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white" alt="Sponsor on GitHub" />
-</a>
-
-</div>
-
-<br/>
-
-#### 🔗 Direct LNURL-Pay `(click copy button on right ↗️)`
-```text
-lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn
-```
-
-<div align="center">
-
-<sub>⚡ <i>Instant settlement on Phoenix · Wallet of Satoshi · Zeus · Breez · Strike · Cash App · Blink · Alby · Cashu</i></sub>
-
-</div>
-
----
-
-### 🤝 100% In on Bitcoin · Ready to Engage
-
-<div align="center">
-
-> *"I am in this fully. My days are dedicated to studying Bitcoin and Lightning internals, writing clean Go protocol code, reviewing upstream PRs, and expanding developer capacity across East Africa."*
-
-</div>
-
-I am actively available to collaborate, pair, and build on:
-- ⚡ **Bitcoin & Lightning Protocol Development**: Upstream contributions to `lightningnetwork/lnd`, `minmoto/payment-channels`, and testing frameworks.
-- 🔍 **Open-Source PR Reviews & Bug Hunting**: Thorough code reviews, reproducing test failures, and patch verification.
-- 🎙️ **BitDevs Kisumu & Socratic Seminars**: Discussion of BIPs, BOLTs, Layer-2 scalability, and technical workshops.
-- 🌍 **African Financial Rails**: Dual-rail architecture bridging East African mobile money (M-Pesa, Telebirr) to Bitcoin Lightning.
-- 🚀 **FOSS Fellowships & Protocol Grants**: Dedicated full-time protocol contribution and research.
+### 🤝 Connect & Value-for-Value (V4V)
 
 <div align="center">
 
 [![Email](https://img.shields.io/badge/Email-altradits%40gmail.com-F7931A?style=for-the-badge&logo=gmail&logoColor=white)](mailto:altradits@gmail.com)
 [![X](https://img.shields.io/badge/X-@altradits-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/altradits)
 [![BitDevs Kisumu](https://img.shields.io/badge/BitDevs-@BitDevsKsm-F7931A?style=for-the-badge&logo=x&logoColor=white)](https://x.com/BitDevsKsm)
-[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub_Payments-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/altradits)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Stanley_Chege_Thuita-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/stanmobitech/)
-[![GitHub](https://img.shields.io/badge/GitHub-@altradits-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/altradits)
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub_Payments-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/altradits)
+[![⚡ Zap Sats](https://img.shields.io/badge/⚡_Zap-Lightning-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](lightning:lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhqmm5v93xcetnd9nkuctvxgcsm55zyn)
 
 </div>
 
----
-
-### 📊 GitHub Activity & Telemetry
-
-<div align="center">
-
-<a href="https://github.com/altradits">
-  <img height="165" src="https://github-readme-stats.vercel.app/api?username=altradits&show_icons=true&theme=github_dark&hide_border=true&title_color=F7931A&icon_color=F7931A&text_color=c9d1d9&bg_color=0d1117&count_private=true&rank_icon=github" />
-</a>
-<a href="https://github.com/altradits">
-  <img height="165" src="https://streak-stats.demolab.com?user=altradits&theme=github-dark-blue&hide_border=true&fire=F7931A&ring=F7931A&currStreakLabel=F7931A&sideLabels=c9d1d9&dates=c9d1d9&background=0d1117" />
-</a>
-<a href="https://github.com/altradits">
-  <img height="165" src="https://github-readme-stats.vercel.app/api/top-langs/?username=altradits&layout=donut&theme=github_dark&hide_border=true&title_color=F7931A&bg_color=0d1117&langs_count=6&hide=html,css" />
-</a>
-
-<br/><br/>
-
-[![Activity Graph](https://github-readme-activity-graph.vercel.app/graph?username=altradits&bg_color=0d1117&color=F7931A&line=F7931A&point=ffffff&area=true&hide_border=true&custom_title=Contribution+Activity)](https://github.com/altradits)
-
-<br/>
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./assets/github-contribution-grid-snake-dark.svg" />
-  <source media="(prefers-color-scheme: light)" srcset="./assets/github-contribution-grid-snake.svg" />
-  <img alt="contribution snake" src="./assets/github-contribution-grid-snake-dark.svg" />
-</picture>
-
-<br/><br/>
-
-<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&center=true&vCenter=true&color=888888&weight=400&size=13&duration=5000&pause=2000&width=750&height=30&lines=Kisumu+%C2%B7+Go+%2B+Bitcoin+Core+%C2%B7+BitDevs+Kisumu+%C2%B7+Building+in+public" alt="footer tagline"/>
-
-<br/>
-
-**Always open to collaborate on Bitcoin open source, code reviews, and developer community building.**
-
-[![Email](https://img.shields.io/badge/Email-altradits%40gmail.com-F7931A?style=for-the-badge&logo=gmail&logoColor=white)](mailto:altradits@gmail.com)
-[![X](https://img.shields.io/badge/X-@altradits-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/altradits)
-[![BitDevs Kisumu](https://img.shields.io/badge/BitDevs-@BitDevsKsm-F7931A?style=for-the-badge&logo=x&logoColor=white)](https://x.com/BitDevsKsm)
-[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub_Payments-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/altradits)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Stanley_Chege_Thuita-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/stanmobitech/)
-[![Lightning Tip](https://img.shields.io/badge/Lightning-Tip_Sats-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](#-fuel-the-code--value-for-value-v4v--sponsorship)
-
-<br/>
-
-**[touchtype](https://touchtype-72i6.onrender.com/)** · **[code-royale](https://js-mastery-livid.vercel.app/)** · **[challenges](https://github.com/altradits/challenges)** · **[YeboBank](https://github.com/altradits/YeboBank)** · **[altradits](https://github.com/altradits/altradits)**
-
-</div>
-
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:F7931A,50:2d1600,100:0d1117&height=130&animation=fadeIn&section=footer" />
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:F7931A,50:2d1600,100:0d1117&height=120&animation=fadeIn&section=footer" />
