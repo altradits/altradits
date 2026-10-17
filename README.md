@@ -10,7 +10,7 @@
 [![Lightning LND](https://img.shields.io/badge/Lightning_LND-Daemon-792EE5?style=for-the-badge&logo=lightning&logoColor=white)](https://github.com/lightningnetwork/lnd)
 [![BitDevs Kisumu](https://img.shields.io/badge/BitDevs-Kisumu_Seminars-F7931A?style=for-the-badge&logo=x&logoColor=white)](https://x.com/BitDevsKsm)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/altradits)
-[![Zap Sats](https://img.shields.io/badge/⚡_Zap_Sats-V4V-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](#-value-for-value-v4v--sponsorship)
+[![Zap Sats](https://img.shields.io/badge/⚡_Zap_Sats-V4V-F7931A?style=for-the-badge&logo=lightning&logoColor=white)](#-connect--value-for-value-v4v)
 
 <br/>
 
@@ -21,36 +21,47 @@
 
 ---
 
-### ⚡ Mission: Establishing the Kisumu Circular Bitcoin Economy
+### ⚡ Mission: Pure Peer-to-Peer Bitcoin Protocol Engineering
 
-I am a software engineering apprentice at **Zone01 Kisumu, Kenya**, co-founder of **BitDevs Kisumu**, and an open-source Bitcoin protocol engineer.
+I am a software engineering apprentice at **Zone01 Kisumu, Kenya**, co-founder of **BitDevs Kisumu**, and an open-source Bitcoin & Lightning protocol engineer.
 
 My technical mission:
-1. **Upstream Protocol Contribution**: Actively reviewing PRs on **`bitcoin/bitcoin`** and building on **`lightningnetwork/lnd`** from first principles.
-2. **African Financial Rails**: Engineering low-latency Layer 2 settlement and dual-rail liquidity corridors connecting Bitcoin & Lightning directly to **Safaricom M-Pesa** and **Ethio Telecom Telebirr**.
+1. **Upstream Protocol Contribution**: Reviewing and testing pull requests on **`bitcoin/bitcoin`** (consensus, mempool policy, BIP431 TRUC package relay, Python functional tests) and building on **`lightningnetwork/lnd`** from first principles.
+2. **Sovereign Peer-to-Peer Circular Economy**: Engineering pure Satoshi-native, zero-fiat Bitcoin & Lightning infrastructure—airgapped BIP174 PSBT signing, BIP380 descriptor wallets, HTLC state machines, and non-custodial satoshi settlement for **Kisumu, Kenya**.
 
-*Actively preparing for full-time protocol contribution via the **Btrust Builders Fellowship**, **Brink**, and **OpenSats**.*
+*Actively preparing for full-time open-source protocol contribution via the **Btrust Builders Fellowship**, **Brink**, and **OpenSats**.*
 
 ---
 
-### 🚀 Live Deployed Applications & Hosted Production Rails
+### 🔬 Bitcoin Core & Lightning Protocol Lab ([`altradits/bitcoin-core-lab`](https://github.com/altradits/bitcoin-core-lab))
+
+| Stage | Protocol Domain | Upstream C++ / BIP Focus | Verification Artifact |
+| :---: | :--- | :--- | :---: |
+| **01** | **Consensus & Coinbase Maturity** | `COINBASE_MATURITY = 100` (`src/consensus/consensus.h`) & Halving Epochs | [`01-node-foundations`](https://github.com/altradits/bitcoin-core-lab/tree/main/01-node-foundations) |
+| **02** | **Raw Transactions & SegWit Weight** | `Consensus::CheckTxInputs`, `WITNESS_SCALE_FACTOR`, BIP141 Witness Commitment | [`02-raw-tx-and-mempool`](https://github.com/altradits/bitcoin-core-lab/tree/main/02-raw-tx-and-mempool) |
+| **03** | **Mempool Fee Bumping (RBF & CPFP)** | `PaysForRBF` DoS Rules (`src/policy/rbf.cpp`) & Ancestor Package Feerates | [`03-rbf-and-cpfp`](https://github.com/altradits/bitcoin-core-lab/tree/main/03-rbf-and-cpfp) |
+| **04** | **Python Functional Test Framework** | Multi-node P2P simulation using `BitcoinTestFramework` & `MiniWallet` | [`04-functional-test-framework`](https://github.com/altradits/bitcoin-core-lab/tree/main/04-functional-test-framework) |
+| **05** | **BIP431 TRUC (`v3`) & 1P1C Relay** | `PackageTRUCChecks` (`src/policy/truc_policy.cpp`) & 0-fee parent `submitpackage` | [`05-truc-package-relay-review`](https://github.com/altradits/bitcoin-core-lab/tree/main/05-truc-package-relay-review) |
+| **06** | **Lightning P2WSH HTLC State Machine** | `OP_SHA256` Preimage Settlement vs BIP68 `OP_CHECKSEQUENCEVERIFY` Timeout | [`06-lightning-htlc-state-machine`](https://github.com/altradits/bitcoin-core-lab/tree/main/06-lightning-htlc-state-machine) |
+| **07** | **Sovereign Descriptors & Airgapped PSBT** | BIP380 Watch-Only Descriptors (`src/script/descriptor.cpp`) & BIP174 PSBT Signing | [`07-psbt-descriptors-and-miniscript`](https://github.com/altradits/bitcoin-core-lab/tree/main/07-psbt-descriptors-and-miniscript) |
+
+---
+
+### 🚀 Open-Source Bitcoin & Systems Projects
 
 <div align="center">
 
 | Project | Architecture & Bitcoin / LND Contribution | Live Deployment | Source Code |
 | :--- | :--- | :---: | :---: |
-| ⚡ **Yebente Gateway** | Dual-rail settlement engine bridging Safaricom M-Pesa STK Push directly to LND REST `/v2/router/send`, LNbits, and Blink | [**Launch Yebente**](https://yebente.onrender.com) | [GitHub](https://github.com/altradits/convert) |
-| 🏦 **YeboBank** | Custodial Bitcoin bank prototype for Kenyan savers with chama multi-user pools (pure Go stdlib, zero external deps) | [**Launch YeboBank**](https://yebobank.vercel.app) | [GitHub](https://github.com/altradits/YeboBank) |
+| ⚡ **Bitcoin Core Lab** | First-principles C++ consensus verification, custom Python P2P functional tests, TRUC (`v3`) package relay & P2WSH HTLC scripts | — | [GitHub](https://github.com/altradits/bitcoin-core-lab) |
 | 🛡️ **ProofChain** | Decentralized credential registry anchoring SHA-256 document fingerprints directly to Bitcoin blocks via `OP_RETURN` | — | [GitHub](https://github.com/altradits/ProofChain) |
-| ⚡ **Merchant Checkout** | Retail Point-of-Sale (POS) terminal generating dynamic Lightning invoices via LND with live KES/ETB fiat pricing | — | [GitHub](https://github.com/altradits/lightning-merchant-checkout) |
-| ☕ **Buy Me a ₿una** | Open-source creator tipping platform streaming instant, sub-cent micro-donations directly over the Lightning Network | — | [GitHub](https://github.com/altradits/buy-me-abunna) |
 | 🌍 **AfriSats** | Pan-African peer-to-peer freelance and digital services marketplace priced strictly in Satoshis | — | [GitHub](https://github.com/altradits/AfriSats-) |
+| ☕ **Buy Me a ₿una** | Open-source creator tipping platform streaming instant, sub-cent micro-payments in Satoshis over the Lightning Network | — | [GitHub](https://github.com/altradits/buy-me-abunna) |
+| ⚡ **Lightning POS Checkout** | Non-custodial Point-of-Sale (POS) terminal generating BOLT11 Lightning invoices via LND gRPC/REST | — | [GitHub](https://github.com/altradits/lightning-merchant-checkout) |
 | ⚡ **LD Bootcamp** | Bitcoin Lightning developer platform built during the Addis Ababa Lightning Bootcamp (Btrust/AFR/HRF) | [**Launch Bootcamp**](https://ld-bootcamp.vercel.app) | [GitHub](https://github.com/altradits/LD_Bootcamp) |
-| 🎓 **BursaryHub** | Fraud-proof bursary and scholarship allocation platform for Kenyan educational institutions built in Go | [**Launch BursaryHub**](https://bursaryhub-lake.vercel.app) | [GitHub](https://github.com/altradits/bursaryhub) |
+| 🏦 **SatsPool (YeboBank)** | Multi-user Bitcoin savings pool prototype built in pure Go stdlib with zero external dependencies | [**Launch App**](https://yebobank.vercel.app) | [GitHub](https://github.com/altradits/YeboBank) |
+| 🎓 **BursaryHub** | Fraud-proof bursary and scholarship allocation platform built in Go | [**Launch BursaryHub**](https://bursaryhub-lake.vercel.app) | [GitHub](https://github.com/altradits/bursaryhub) |
 | 🐟 **Chemichemi IoT** | Telemetry ingestion engine monitoring dissolved oxygen and water metrics for Lake Victoria aquaculture | [**Launch Chemichemi**](https://chemichemi-ci23.onrender.com) | [GitHub](https://github.com/annanodiyo/chemichemi) |
-| ☕ **Kabuna Coffee** | Cultural artifacts & Ethiopian coffee platform integrated with Safaricom M-Pesa Daraja | [**Launch Kabuna**](https://buna-beta.vercel.app/) | [GitHub](https://github.com/altradits/kabuna) |
-| ⌨️ **TouchType** | Arcade muscle-memory typing trainer with live telemetry | [**Launch TouchType**](https://touchtype-72i6.onrender.com/) | [GitHub](https://github.com/altradits/touchtype) |
-| 🎮 **Code Royale** | Competitive browser code battle arena with atomic JavaScript puzzle execution | [**Launch Code Royale**](https://js-mastery-livid.vercel.app) | [GitHub](https://github.com/altradits/js-mastery) |
 
 </div>
 
@@ -60,11 +71,10 @@ My technical mission:
 
 | Repository | Scope & Architecture | Merged Pull Requests | Status |
 | :--- | :--- | :--- | :---: |
-| **[minmoto/payment-channels](https://github.com/minmoto/payment-channels)** | Schema registry for fiat/mobile money channels across Africa | • [PR #23](https://github.com/minmoto/payment-channels/pull/23) · East Africa channels<br/>• [PR #24](https://github.com/minmoto/payment-channels/pull/24) · Southern Africa channels<br/>• [PR #22](https://github.com/minmoto/payment-channels/pull/22) · Telebirr channel<br/>• [PR #27](https://github.com/minmoto/payment-channels/pull/27) · North Africa channels | `Merged ✅`<br/>`Merged ✅`<br/>`Merged ✅`<br/>`Merged ✅` |
-| **[Flying-Tea-Squad/lms](https://github.com/Flying-Tea-Squad/lms)** | Backend education platform & automated testing engine | • [PR #321](https://github.com/Flying-Tea-Squad/lms/pull/321) · Materials persistence<br/>• [PR #320](https://github.com/Flying-Tea-Squad/lms/pull/320) · Upload pipelines<br/>• [PR #297](https://github.com/Flying-Tea-Squad/lms/pull/297) · Payment API security<br/>• [PR #290](https://github.com/Flying-Tea-Squad/lms/pull/290) · RBAC authentication | `12+ PRs Merged ✅` |
-| **[annanodiyo/chemichemi](https://github.com/annanodiyo/chemichemi)** | IoT aquaculture telemetry engine for Lake Victoria | • [PR #1](https://github.com/annanodiyo/chemichemi/pull/1) & [PR #5](https://github.com/annanodiyo/chemichemi/pull/5) · Core telemetry engine | `Merged ✅` |
 | **[btrust-builders](https://github.com/btrust-builders)** | Btrust African Bitcoin Open Source Contributor Registry | • [PR #139](https://github.com/btrust-builders/first-open-source-contributions/pull/139), [PR #186](https://github.com/btrust-builders/first-open-source-contributions/pull/186), [PR #133](https://github.com/btrust-builders/open-source-code-contributions/pull/133) | `Merged ✅` |
-| **[altradits/bitcoin-core-lab](https://github.com/altradits/bitcoin-core-lab)** | First-principles hourly research log & upstream PR review notes | • Daily hands-on challenge log, Python functional test runs, and consensus verification | `Active Lab 📝` |
+| **[altradits/bitcoin-core-lab](https://github.com/altradits/bitcoin-core-lab)** | First-principles Bitcoin Core C++ consensus, mempool, HTLC & PSBT lab | • 7 completed verification labs + First-Principles Satoshi Workbook | `Active Lab 📝` |
+| **[Flying-Tea-Squad/lms](https://github.com/Flying-Tea-Squad/lms)** | Backend education platform & automated testing engine | • [PR #321](https://github.com/Flying-Tea-Squad/lms/pull/321) · Materials persistence<br/>• [PR #320](https://github.com/Flying-Tea-Squad/lms/pull/320) · Upload pipelines<br/>• [PR #297](https://github.com/Flying-Tea-Squad/lms/pull/297) · API security<br/>• [PR #290](https://github.com/Flying-Tea-Squad/lms/pull/290) · RBAC authentication | `12+ PRs Merged ✅` |
+| **[annanodiyo/chemichemi](https://github.com/annanodiyo/chemichemi)** | IoT aquaculture telemetry engine for Lake Victoria | • [PR #1](https://github.com/annanodiyo/chemichemi/pull/1) & [PR #5](https://github.com/annanodiyo/chemichemi/pull/5) · Core telemetry engine | `Merged ✅` |
 
 ---
 
@@ -73,13 +83,11 @@ My technical mission:
 - [x] **Go Concurrency & Systems Foundations**: Mastered Go memory model, goroutines, and network protocols (**158 lessons deep**)
 - [x] **Addis Ababa Lightning Bootcamp**: Completed intensive Lightning protocol cohort sponsored by **Btrust Builders**, **Africa Free Routing**, and **HRF**
 - [x] **Community Leadership**: Co-founded **BitDevs Kisumu** ([@BitDevsKsm](https://x.com/BitDevsKsm)), hosting regular Socratic Seminars
-- [x] **LND Regtest Environment**: Deployed native LND node with Bitcoin Core regtest & Go REST client integration
-- [x] **Dual-Rail Gateway Delivery**: Shipped **Yebente** automated M-Pesa ↔ Lightning settlement engine
-- [x] **Public Proof of Work**: Established **[bitcoin-core-lab](https://github.com/altradits/bitcoin-core-lab)** for hourly research & test logs
-- [ ] **Bitcoin Core PR Reviews**: Active weekly reviews on `bitcoin/bitcoin` pull requests
-- [ ] **Functional Test Additions**: Write upstream test cases using Bitcoin Core's Python test framework
-- [ ] **Kisumu Circular Pilot**: Deploy offline Bolt Card & merchant POS rails on Lake Victoria
-- [ ] **Full-Time Fellowship Onboarding**: Secure protocol development grant (Btrust Builders / Brink / OpenSats)
+- [x] **Bitcoin Core v29.0 Compilation & Consensus Labs**: Verified Coinbase Maturity, SegWit weight, BIP125 RBF, CPFP, BIP431 TRUC (`v3`) 1P1C packages, P2WSH HTLCs, and BIP174 PSBTs in **[bitcoin-core-lab](https://github.com/altradits/bitcoin-core-lab)**
+- [x] **Custom P2P Functional Tests**: Authored multi-node tests using `BitcoinTestFramework` and `MiniWallet`
+- [ ] **Upstream `bitcoin/bitcoin` PR Reviews**: Publish weekly `Tested ACK` reviews on active mempool, wallet, and P2P pull requests
+- [ ] **Sovereign Kisumu Circular Economy**: Deploy pure Satoshi-native Bolt Card & non-custodial Lightning POS rails on Lake Victoria
+- [ ] **Full-Time Fellowship Onboarding**: Secure protocol development grant (**Btrust Builders** / **Brink** / **OpenSats**)
 
 ---
 
