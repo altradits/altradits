@@ -96,8 +96,13 @@ My technical mission:
 - [ ] **Full-Time Grant Onboarding**: Transition into full-time Bitcoin open-source protocol development (**Btrust** / **Brink** / **OpenSats**)
 
 ---
-
-### 🤝 Connect & Value-for-Value (V4V)
+<!-- GitHub Streak -->
+<p align="center">
+  <a href="https://git.io/streak-stats">
+    <img src="https://streak-stats.demolab.com/?user=altradits&theme=dark&hide_border=true" alt="GitHub Streak" />
+  </a>
+</p>
+---
 
 <div align="center">
 
