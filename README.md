@@ -102,7 +102,6 @@ My technical mission:
     <img src="https://streak-stats.demolab.com/?user=altradits&theme=dark&hide_border=true" alt="GitHub Streak" />
   </a>
 </p>
----
 
 <div align="center">
 
