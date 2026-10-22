@@ -4,6 +4,7 @@ import { json, readBody, clean, siteUrl, safeEqual } from "../lib/http.js";
 import { getProposal, saveProposal, publicProposal, getLead, saveLead, logEvent, advanceStage, createApproval, proposalUrl } from "../lib/crm.js";
 import { sendEmail } from "../lib/email.js";
 import { BUSINESS } from "../data/catalog.js";
+import { lightningMode } from "../lib/lightning.js";
 
 async function load(id, t) {
   const p = await getProposal(clean(id, 40));
@@ -15,7 +16,7 @@ export async function GET(request) {
   const p = await load(u.searchParams.get("id"), u.searchParams.get("t"));
   if (!p) return json({ error: "Proposal not found. Check the link in your email." }, 404);
   if (p.status === "pending_approval") return json({ pending: true });
-  return json({ proposal: publicProposal(p) });
+  return json({ proposal: publicProposal(p), lightning: lightningMode() });
 }
 
 export async function POST(request) {
@@ -44,7 +45,7 @@ export async function POST(request) {
         cta: { label: "Pay and start", url: proposalUrl(base, p) },
       });
     }
-    return json({ proposal: publicProposal(p) });
+    return json({ proposal: publicProposal(p), lightning: lightningMode() });
   }
 
   if (body.action === "paid") {
@@ -65,7 +66,7 @@ export async function POST(request) {
         summary: `${lead.name || lead.email} says they paid $${p.totals.dueNow} via ${method}. Reference: ${reference || "none"}.\nProposal: ${p.title}.\nConfirm the money arrived, then approve to send the kick-off email.`,
       });
     }
-    return json({ proposal: publicProposal(p) });
+    return json({ proposal: publicProposal(p), lightning: lightningMode() });
   }
 
   if (body.action === "decline") {
