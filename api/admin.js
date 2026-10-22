@@ -4,8 +4,9 @@ import { json, readBody, clean, siteUrl, safeEqual } from "../lib/http.js";
 import { listIds, getMany, getJSON, setJSON, usingRedis } from "../lib/store.js";
 import {
   STAGES, getLead, saveLead, logEvent, getProposal, saveProposal, publishProposal,
-  recomputeTotals, proposalUrl, publicLead,
+  recomputeTotals, proposalUrl, publicLead, confirmPayment,
 } from "../lib/crm.js";
+import { lightningMode } from "../lib/lightning.js";
 import { sendEmail } from "../lib/email.js";
 import { agentLive } from "../lib/agent.js";
 import { BUSINESS } from "../data/catalog.js";
@@ -69,6 +70,7 @@ export async function GET(request) {
       email: process.env.SMTP_HOST ? `SMTP (${process.env.SMTP_HOST})` : process.env.EMAIL_TRANSPORT === "sendmail" ? "server mail (sendmail)" : process.env.RESEND_API_KEY ? "Resend" : "log only: set EMAIL_TRANSPORT=sendmail",
       storage: usingRedis ? "Redis" : `file store (${process.env.DATA_DIR || ".data"})`,
       ownerEmail: process.env.OWNER_EMAIL || BUSINESS.email,
+      lightning: lightningMode() === "lnd" ? "LND node (QR invoices, auto-confirmed)" : "Lightning address (QR invoices, you confirm payment)",
     },
   });
 }
@@ -101,12 +103,7 @@ async function resolveApproval(request, body) {
     const p = await getProposal(a.payload.proposalId);
     if (p && lead) {
       if (approve) {
-        p.status = "paid";
-        p.payment = { ...p.payment, confirmedAt: new Date().toISOString() };
-        lead.stage = "active";
-        logEvent(lead, "Payment confirmed. Client is active.");
-        await sendEmail({ to: lead.email, leadId: lead.id, subject: "Payment received: we're starting",
-          text: `Hi ${lead.name || "there"},\n\nPayment received, thank you. Work on "${p.title}" starts within 48 hours.\n\n${note || "Next: reply with the logins or files we need (never your passwords in plain email: we'll send a secure way to share them) and your top three priorities."}\n\n${BUSINESS.owner}, Altradits` });
+        await confirmPayment(lead, p, note);
       } else {
         p.status = "accepted";
         logEvent(lead, "Payment not found yet.");

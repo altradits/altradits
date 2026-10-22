@@ -175,6 +175,10 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 .pay{margin-top:1.5rem;border:2px solid rgba(255,255,255,.18);border-radius:1rem;padding:1.5rem}
 .pay h3{font-size:1.3rem;margin-bottom:.4rem}
 .pay p{margin:0 0 1rem;color:#D5DDE9;max-width:44rem}
+.paygrid{display:grid;grid-template-columns:auto 1fr;gap:1.5rem;align-items:center}
+.payqr{width:11rem;aspect-ratio:1;background:#fff;border-radius:.8rem;padding:.45rem;display:block}
+.payqr img{width:100%;height:100%;display:block}
+@media (max-width:560px){.paygrid{grid-template-columns:1fr}.payqr{width:12rem}}
 .addr{display:flex;flex-wrap:wrap;gap:.75rem;align-items:center}
 .addr code{background:rgba(255,255,255,.08);border-radius:.6rem;padding:.6rem .9rem;font:500 1rem ui-monospace,Menlo,monospace;color:#fff;overflow-wrap:anywhere}
 .pay .btn{border-color:var(--btc);color:var(--ink);background:var(--btc);padding:.6rem 1.1rem}
@@ -403,12 +407,17 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
       <p>I never hold your keys, never ask for your seed phrase and never move your money. You stay in full control.</p>
     </div>
     <div class="pay">
-      <h3>Pay me in Bitcoin over Lightning</h3>
-      <p>Once you've accepted a proposal, you can pay in sats to this receive-only Lightning address.</p>
-      <div class="addr">
-        <code id="ln"></code>
-        <button type="button" class="btn" id="copyln">Copy address</button>
-        <a class="btn ghost" id="lnopen" href="#">Open in wallet</a>
+      <div class="paygrid">
+        <a class="payqr" id="lnqr" href="#" aria-label="Lightning address QR code. Tap to open your wallet."><img src="/api/pay?qr=address" alt="QR code for the Altradits Lightning address" width="176" height="176" loading="lazy"></a>
+        <div>
+          <h3>Scan to pay over Lightning</h3>
+          <p>Scan with any Lightning wallet to pay in sats. Paying a proposal? Use the QR on your proposal page instead: it's for the exact amount due.</p>
+          <div class="addr">
+            <code id="ln"></code>
+            <button type="button" class="btn" id="copyln">Copy address</button>
+            <a class="btn ghost" id="lnopen" href="#">Open in wallet</a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -522,7 +531,7 @@ $("#guarantees").innerHTML = GUARANTEES.map((g) => `<div><h4>${esc(g.name)}</h4>
 
 // ---- lightning
 $("#ln").textContent = PAYMENTS.lightningAddress;
-$("#lnopen").href = "lightning:" + PAYMENTS.lightningAddress;
+$("#lnopen").href = $("#lnqr").href = "lightning:" + (PAYMENTS.lnurl || PAYMENTS.lightningAddress);
 $("#copyln").addEventListener("click", function () {
   const b = this;
   (navigator.clipboard ? navigator.clipboard.writeText(PAYMENTS.lightningAddress) : Promise.reject()).then(

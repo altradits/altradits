@@ -27,6 +27,29 @@ After changing them, press **Restart** on the app.
 Business settings (prices, services, payment details, booking link, approval
 limits) live in [`data/catalog.js`](data/catalog.js) and deploy like any other change.
 
+## Lightning payments (LND)
+
+Proposal pages show a "Pay with Bitcoin Lightning" QR for the exact amount due
+(USD converted at the live BTC price). Two modes:
+
+| Mode | Set up | Payment confirmation |
+| --- | --- | --- |
+| Lightning address (default) | `PAYMENTS.lightningAddress` in `data/catalog.js` | You confirm in the dashboard |
+| **LND node** | `LND_REST_URL`, `LND_INVOICE_MACAROON` (+ `LND_TLS_CERT` if self-signed) | Automatic: client is activated, kick-off email sent, you get one "Paid ⚡" email |
+
+The site only needs an **invoice macaroon**: it can create and look up invoices but
+can never move funds. On your node:
+
+```
+lncli bakemacaroon invoices:read invoices:write   # prints the hex for LND_INVOICE_MACAROON
+base64 < ~/.lnd/tls.cert | tr -d '\n'               # only if self-signed: LND_TLS_CERT
+```
+
+The node's REST port (default 8080) must be reachable from the hosting server
+(e.g. a hosted node such as Voltage, or your own node behind a domain). Add the
+variables in *Setup Node.js App*, then Restart. The dashboard's System panel
+shows which mode is active.
+
 ## Local development
 
 ```

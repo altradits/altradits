@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.1.0",
-    "nodemailer": "^10.2.1"
+    "nodemailer": "^10.2.1",
+    "qrcode": "^1.5.4"
   },
   "main": "app.cjs"
 }
