@@ -18,3 +18,9 @@ Thumbs.db
 .aider*
 *.tmp
 *.log
+
+# Site runtime
+node_modules/
+.env
+.data/
+.vercel/
