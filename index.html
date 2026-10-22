@@ -1,19 +1,682 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Altradits</title>
-  <style>
-    body { margin:0; min-height:100vh; display:grid; place-items:center;
-           background:#0b0b0f; color:#f7931a; font-family:system-ui,sans-serif; text-align:center; }
-    p { color:#9aa0a6; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Altradits – Your global virtual assistant</title>
+<meta name="description" content="A global virtual assistant for social media, office administration, personal assistance, customer support, websites, automations and Bitcoin. Chat with the AI concierge and get a proposal in minutes.">
+<meta name="theme-color" content="#EEF2F6">
+<meta property="og:title" content="Altradits – Hand off the busywork. Keep the business.">
+<meta property="og:description" content="Social media, admin, personal assistance and tech chores, handled for owners in any time zone. Get your free delegation plan.">
+<meta property="og:type" content="website">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"ProfessionalService","name":"Altradits","url":"https://altradits.com","description":"Global virtual assistant: social media management, office administration, personal assistance, customer support, bookkeeping prep, websites, automations and Bitcoin setup.","areaServed":"Worldwide","priceRange":"$$","email":"altradits@gmail.com","knowsAbout":["Virtual assistance","Social media management","Office administration","Personal assistance","Customer support","Bookkeeping","Web development","Business automation","Bitcoin","Lightning Network"],"sameAs":["https://github.com/altradits","https://x.com/altradits"]}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF2F6; --ink:#0F1B2D; --muted:#4B5A70; --line:#C9D3DF;
+  --blue:#2F5BEA; --btc:#F7931A; --night:#0F1B2D; --paper:#FFFFFF; --ok:#12A37F;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{overflow-x:hidden;margin:0;background:var(--bg) radial-gradient(#D5DDE8 1px,transparent 1px) 0 0/24px 24px;color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+h1,h2,h3{font-family:'Bricolage Grotesque',Figtree,system-ui,sans-serif;line-height:1.05;margin:0}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+[hidden]{display:none!important}
+.sr{position:absolute;left:-9999px}
+.wrap{max-width:66rem;margin:0 auto;padding:0 1.25rem}
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:1rem;top:1rem;background:var(--ink);color:#fff;padding:.5rem 1rem;z-index:99}
+
+header{position:sticky;top:0;z-index:20;background:rgba(238,242,246,.9);backdrop-filter:blur(8px)}
+header .wrap{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding-top:.9rem;padding-bottom:.9rem}
+.logo{font:800 1.3rem 'Bricolage Grotesque',sans-serif;text-decoration:none}
+nav{display:flex;gap:1.4rem;align-items:center}
+nav a{text-decoration:none;font-weight:600;font-size:.97rem;color:var(--muted)}
+nav a:hover{color:var(--ink)}
+nav .top{background:var(--ink);color:#fff;padding:.5rem 1.1rem;border-radius:99px;transition:background .2s}
+nav .top:hover{background:var(--blue);color:#fff}
+
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.85rem 1.4rem;border-radius:.75rem;font:600 1rem Figtree,sans-serif;text-decoration:none;border:2px solid var(--ink);cursor:pointer;background:transparent;color:var(--ink);transition:transform .15s,background .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.dark{background:var(--ink);color:#fff}
+.btn:disabled{opacity:.55;cursor:wait;transform:none}
+.actions{display:flex;flex-wrap:wrap;gap:.75rem}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1.25fr 1fr;gap:2.5rem;align-items:center;padding:3.5rem 0 3rem}
+.eyebrow{display:inline-block;font-weight:700;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:1rem}
+.hero h1{font-size:clamp(2.6rem,7vw,5rem);font-weight:800;letter-spacing:-.03em}
+.hero h1 em{font-style:normal;color:var(--blue)}
+.hero p.lead{max-width:34rem;font-size:1.2rem;color:var(--muted);margin:1.4rem 0 1.75rem}
+.sub{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;margin-top:1.5rem;color:var(--muted);font-size:.97rem}
+.sub span::before{content:"✓ ";color:var(--blue);font-weight:700}
+.demo{background:var(--paper);border:2px solid var(--ink);border-radius:1.25rem;box-shadow:8px 8px 0 var(--ink);padding:1.1rem;font-size:.95rem}
+.demo .bar{display:flex;align-items:center;gap:.5rem;font-weight:700;padding-bottom:.7rem;border-bottom:1px solid var(--line);margin-bottom:.8rem}
+.dot{width:.6rem;height:.6rem;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}
+.demo .m{max-width:88%;padding:.55rem .8rem;border-radius:.9rem;margin:.45rem 0;opacity:0;animation:in .4s forwards}
+.demo .a{background:var(--bg)}
+.demo .u{background:var(--blue);color:#fff;margin-left:auto}
+.demo .m:nth-child(2){animation-delay:.3s}.demo .m:nth-child(3){animation-delay:1.3s}.demo .m:nth-child(4){animation-delay:2.3s}.demo .m:nth-child(5){animation-delay:3.3s}
+.demo .card{background:var(--ink);color:#fff;border-radius:.9rem;padding:.7rem .9rem;margin-top:.6rem;opacity:0;animation:in .4s 4.3s forwards}
+.demo .card b{color:var(--btc)}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.marquee{width:100vw;margin:0 0 1rem calc(50% - 50vw);background:var(--ink);color:#fff;overflow:hidden;padding:.85rem 0}
+.track{display:flex;gap:2.5rem;width:max-content;animation:scroll 48s linear infinite}
+.marquee:hover .track{animation-play-state:paused}
+.track span{display:inline-flex;align-items:center;gap:.6rem;font:600 1.05rem Figtree,sans-serif;white-space:nowrap}
+.track span::before{content:"";width:.6rem;height:.6rem;border-radius:50%;background:var(--c)}
+@keyframes scroll{to{transform:translateX(-50%)}}
+
+section{padding:3.5rem 0}
+.h2{font-size:clamp(1.9rem,4.5vw,3rem);letter-spacing:-.02em;margin-bottom:.75rem;max-width:22ch}
+.intro{color:var(--muted);max-width:40rem;margin:0 0 2rem;font-size:1.1rem}
+
+/* delegation quiz: the lead magnet */
+.quiz{background:var(--paper);border:2px solid var(--ink);border-radius:1.25rem;padding:1.75rem;box-shadow:8px 8px 0 var(--ink);display:grid;grid-template-columns:1.5fr 1fr;gap:2rem}
+.quiz h3{font-size:1.15rem;margin:0 0 .7rem}
+.group{margin-bottom:1rem}
+.group>p{margin:0 0 .4rem;font-weight:700;font-size:.88rem;color:var(--c)}
+fieldset{border:0;padding:0;margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;inset:0;width:100%;height:100%;cursor:pointer;margin:0}
+.chip span{display:inline-block;padding:.42rem .85rem;border:2px solid var(--line);border-radius:99px;font-weight:500;font-size:.93rem;background:var(--bg);transition:transform .15s}
+.chip:hover span{transform:translateY(-2px)}
+.chip input:checked+span{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip input:checked+span::before{content:"✓ "}
+.chip input:focus-visible+span{outline:3px solid var(--blue);outline-offset:2px}
+.field{display:block;margin:0 0 1rem}
+.field>span{display:block;font-weight:600;font-size:.93rem;margin-bottom:.35rem}
+input[type=text],input[type=email],input[type=number],select,textarea{width:100%;padding:.75rem .9rem;border:2px solid var(--line);border-radius:.7rem;font:inherit;background:var(--bg);color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.result{background:var(--night);color:#fff;border-radius:1rem;padding:1.25rem;display:flex;flex-direction:column;gap:.9rem}
+.result .big{font:800 2.6rem/1 'Bricolage Grotesque',sans-serif;color:var(--btc)}
+.result small{color:#B9C4D4}
+.result .pkg{border-top:1px solid rgba(255,255,255,.15);padding-top:.8rem}
+.result input{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#fff}
+.result input::placeholder{color:#93A1B5}
+.result .btn.primary{width:100%;justify-content:center}
+.ok{background:color-mix(in srgb,var(--ok) 20%,transparent);border:2px solid var(--ok);border-radius:.8rem;padding:.8rem;font-size:.95rem}
+.err{color:#FFB4A8;font-size:.92rem;margin:0}
+
+/* services */
+.pillar{margin-bottom:2.25rem}
+.pillar>h3{font-size:1.35rem;display:flex;align-items:center;gap:.6rem;margin-bottom:1rem}
+.pillar>h3::before{content:"";width:.85rem;height:.85rem;border-radius:.25rem;background:var(--c)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:1rem}
+.svc{background:var(--paper);border:2px solid var(--line);border-radius:1rem;padding:1.15rem;display:flex;flex-direction:column;gap:.5rem;transition:border-color .2s,transform .2s}
+.svc:hover{border-color:var(--c);transform:translateY(-3px)}
+.svc h4{margin:0;font:700 1.08rem 'Bricolage Grotesque',sans-serif}
+.svc .out{margin:0;font-weight:600}
+.svc .inc{margin:0;color:var(--muted);font-size:.93rem;flex:1}
+.svc .foot{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-top:.3rem}
+.price{font-weight:700}
+.price small{font-weight:500;color:var(--muted)}
+.ask{font:600 .88rem Figtree,sans-serif;background:transparent;border:2px solid var(--c);color:var(--ink);border-radius:99px;padding:.3rem .85rem;cursor:pointer}
+.ask:hover{background:var(--c);color:#fff}
+
+/* how */
+.steps{list-style:none;counter-reset:s;padding:1.5rem 0 0;margin:0;display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem;border-top:2px solid var(--ink)}
+.steps li{counter-increment:s}
+.steps li::before{content:counter(s);font:800 2.2rem 'Bricolage Grotesque',sans-serif;color:var(--blue);display:block;line-height:1}
+.steps h3{font-size:1.15rem;margin:.5rem 0 .25rem}
+.steps p{margin:0;color:var(--muted);font-size:.97rem}
+.human{margin-top:2rem;display:flex;gap:1rem;align-items:flex-start;background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.25rem 1.5rem}
+.human b{font-family:'Bricolage Grotesque',sans-serif;font-size:1.15rem}
+.human p{margin:.2rem 0 0;color:var(--muted)}
+
+/* pricing */
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;align-items:stretch}
+.plan{background:var(--paper);border:2px solid var(--ink);border-radius:1.25rem;padding:1.5rem;display:flex;flex-direction:column;gap:.8rem;position:relative}
+.plan.pop{box-shadow:8px 8px 0 var(--blue);border-color:var(--blue)}
+.plan .tag{position:absolute;top:-.85rem;left:1.25rem;background:var(--blue);color:#fff;font-weight:700;font-size:.8rem;padding:.2rem .7rem;border-radius:99px}
+.plan h3{font-size:1.5rem}
+.plan .amt{font:800 2.4rem/1 'Bricolage Grotesque',sans-serif}
+.plan .amt small{font:500 1rem Figtree,sans-serif;color:var(--muted)}
+.plan p{margin:0;color:var(--muted)}
+.plan ul{margin:0;padding:0;list-style:none;flex:1}
+.plan li{padding:.3rem 0;border-bottom:1px dashed var(--line)}
+.plan li::before{content:"✓ ";color:var(--ok);font-weight:700}
+.plan .btn{justify-content:center}
+.extra{display:flex;flex-wrap:wrap;gap:1rem 2rem;margin-top:1.5rem;color:var(--muted)}
+.extra b{color:var(--ink)}
+.guar{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-top:2rem}
+.guar div{border-top:3px solid var(--ok);padding-top:.8rem}
+.guar h4{margin:0 0 .3rem;font:700 1.1rem 'Bricolage Grotesque',sans-serif}
+.guar p{margin:0;color:var(--muted);font-size:.97rem}
+
+/* trial */
+.trial{background:var(--blue);color:#fff;border-radius:1.5rem;padding:2.5rem;display:grid;grid-template-columns:1.4fr 1fr;gap:2rem;align-items:center}
+.trial h2{font-size:clamp(1.8rem,4vw,2.6rem)}
+.trial p{margin:.8rem 0 0;color:#DCE4FF;font-size:1.1rem}
+.trial .btn{background:#fff;color:var(--blue);border-color:#fff;justify-content:center}
+
+/* bitcoin band */
+.band{position:relative;overflow:hidden;background:var(--night);color:#fff;padding:4.5rem 0;margin:2rem 0}
+.band::after{content:"₿";position:absolute;right:-1rem;top:-3rem;font:800 24rem/1 'Bricolage Grotesque',sans-serif;color:rgba(247,147,26,.09);pointer-events:none;animation:drift 9s ease-in-out infinite}
+@keyframes drift{50%{transform:translateY(1.5rem) rotate(-4deg)}}
+.band .wrap{position:relative;z-index:1}
+.band .h2{color:#fff;max-width:18ch}
+.band .intro{color:#B9C4D4}
+.btc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.75rem}
+.btc-grid>div{border-top:3px solid var(--btc);padding-top:1rem}
+.btc-grid h3{font-size:1.2rem;color:var(--btc);margin-bottom:.4rem}
+.btc-grid p{margin:0;color:#D5DDE9}
+.promise{margin-top:2.5rem;border:2px solid var(--btc);border-radius:1rem;padding:1.5rem}
+.promise h3{font-size:1.4rem;margin-bottom:.5rem}
+.promise p{margin:0;color:#D5DDE9;max-width:44rem}
+.pay{margin-top:1.5rem;border:2px solid rgba(255,255,255,.18);border-radius:1rem;padding:1.5rem}
+.pay h3{font-size:1.3rem;margin-bottom:.4rem}
+.pay p{margin:0 0 1rem;color:#D5DDE9;max-width:44rem}
+.addr{display:flex;flex-wrap:wrap;gap:.75rem;align-items:center}
+.addr code{background:rgba(255,255,255,.08);border-radius:.6rem;padding:.6rem .9rem;font:500 1rem ui-monospace,Menlo,monospace;color:#fff;overflow-wrap:anywhere}
+.pay .btn{border-color:var(--btc);color:var(--ink);background:var(--btc);padding:.6rem 1.1rem}
+.pay .btn.ghost{background:transparent;color:#fff}
+
+/* team */
+.about{display:grid;grid-template-columns:1.2fr 1fr;gap:2.5rem;margin-bottom:2.5rem}
+.about p{margin:0 0 1rem;color:var(--muted)}
+.facts{list-style:none;padding:0 0 0 1.25rem;margin:0;border-left:3px solid var(--blue)}
+.facts li{padding:.35rem 0}
+.agents{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.agent{background:var(--paper);border:2px solid var(--line);border-radius:1rem;padding:1.1rem}
+.agent .ico{font-size:1.6rem}
+.agent h4{margin:.4rem 0 .1rem;font:700 1.05rem 'Bricolage Grotesque',sans-serif}
+.agent .r{font-size:.85rem;font-weight:700;color:var(--blue);margin:0 0 .4rem}
+.agent p{margin:0;color:var(--muted);font-size:.93rem}
+.credit{margin-top:1rem;font-size:.9rem;color:var(--muted)}
+
+/* faq */
+.faq details{border-bottom:1px solid var(--line);padding:1rem 0}
+.faq summary{cursor:pointer;font:700 1.12rem 'Bricolage Grotesque',sans-serif;list-style:none;display:flex;justify-content:space-between;gap:1rem}
+.faq summary::after{content:"+";color:var(--blue);font-size:1.4rem;line-height:1}
+.faq details[open] summary::after{content:"–"}
+.faq details p{margin:.6rem 0 0;color:var(--muted);max-width:46rem}
+
+.final{text-align:center;padding:4rem 0}
+.final .h2{margin:0 auto .75rem}
+.final .intro{margin:0 auto 1.5rem}
+.final .actions{justify-content:center}
+footer{padding:2.5rem 0 6rem;color:var(--muted);font-size:.95rem;border-top:1px solid var(--line)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-between}
+
+/* chat widget */
+.launcher{position:fixed;right:1.25rem;bottom:1.25rem;z-index:50;display:flex;align-items:center;gap:.6rem;background:var(--ink);color:#fff;border:0;border-radius:99px;padding:.85rem 1.25rem;font:700 1rem Figtree,sans-serif;cursor:pointer;box-shadow:0 10px 30px rgba(15,27,45,.3)}
+.launcher:hover{background:var(--blue)}
+.launcher .dot{background:#3BE3A4}
+.chat{position:fixed;right:1.25rem;bottom:1.25rem;z-index:60;width:min(25rem,calc(100vw - 2rem));height:min(37rem,calc(100dvh - 2.5rem));background:var(--paper);border:2px solid var(--ink);border-radius:1.25rem;box-shadow:8px 8px 0 var(--ink);display:flex;flex-direction:column;overflow:hidden}
+.chat-head{display:flex;align-items:center;gap:.6rem;padding:.85rem 1rem;background:var(--ink);color:#fff}
+.chat-head b{font-family:'Bricolage Grotesque',sans-serif;font-size:1.1rem}
+.chat-head small{display:block;color:#B9C4D4;font-size:.8rem}
+.chat-head button{margin-left:auto;background:transparent;border:0;color:#fff;font-size:1.5rem;cursor:pointer;line-height:1;padding:.2rem .4rem}
+.log{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:.55rem;background:var(--bg)}
+.msg{max-width:86%;padding:.6rem .85rem;border-radius:1rem;font-size:.97rem;line-height:1.5;overflow-wrap:anywhere}
+.msg.a{background:var(--paper);border:1px solid var(--line);border-bottom-left-radius:.3rem}
+.msg.u{background:var(--blue);color:#fff;margin-left:auto;border-bottom-right-radius:.3rem}
+.msg p{margin:0 0 .45rem}.msg p:last-child{margin:0}
+.msg ul{margin:.2rem 0 .45rem;padding-left:1.1rem}
+.msg .act{display:inline-flex;margin-top:.5rem;background:var(--ink);color:#fff;text-decoration:none;padding:.5rem .9rem;border-radius:.6rem;font-weight:700;font-size:.92rem}
+.typing{display:flex;gap:.25rem;padding:.8rem .9rem}
+.typing i{width:.45rem;height:.45rem;border-radius:50%;background:var(--muted);animation:blink 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes blink{50%{opacity:.25}}
+.quick{display:flex;flex-wrap:wrap;gap:.4rem;padding:.6rem 1rem 0;background:var(--bg)}
+.quick button{font:600 .85rem Figtree,sans-serif;border:2px solid var(--line);background:var(--paper);border-radius:99px;padding:.3rem .75rem;cursor:pointer}
+.quick button:hover{border-color:var(--blue)}
+.compose{display:flex;gap:.5rem;padding:.75rem;border-top:1px solid var(--line);background:var(--paper)}
+.compose textarea{flex:1;min-height:2.8rem;max-height:7rem;resize:none;padding:.65rem .8rem;font-size:.97rem}
+.compose button{background:var(--blue);color:#fff;border:0;border-radius:.7rem;padding:0 1rem;font:700 .95rem Figtree,sans-serif;cursor:pointer}
+.compose button:disabled{opacity:.5}
+.chat-note{font-size:.75rem;color:var(--muted);text-align:center;padding:0 .75rem .55rem;background:var(--paper)}
+
+@media (max-width:860px){
+  .hero,.quiz,.trial,.about{grid-template-columns:1fr}
+  .plans,.guar,.btc-grid{grid-template-columns:1fr}
+  .steps,.agents{grid-template-columns:1fr 1fr}
+  nav a:not(.top){display:none}
+  .quiz{padding:1.25rem;box-shadow:5px 5px 0 var(--ink)}
+  .trial{padding:1.75rem}
+}
+@media (max-width:520px){
+  .steps,.agents{grid-template-columns:1fr}
+  .chat{right:0;bottom:0;width:100vw;height:100dvh;border-radius:0;border:0;box-shadow:none}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::after{animation:none!important;transition:none!important}.demo .m,.demo .card{opacity:1}.track{flex-wrap:wrap;width:auto;padding:0 1.25rem}}
+</style>
 </head>
 <body>
-  <main>
-    <h1>Altradits</h1>
-    <p>Bitcoin &amp; Lightning infrastructure. Coming sooner than expected.</p>
-  </main>
+<a class="skip" href="#plan">Skip to the free delegation plan</a>
+<header>
+  <div class="wrap">
+    <a class="logo" href="#top">Altradits</a>
+    <nav aria-label="Main">
+      <a href="#services">Services</a>
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a class="top" href="#plan">Free plan</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <span class="eyebrow">Global virtual assistant · Any time zone</span>
+        <h1>Hand off the busywork. <em>Keep the business.</em></h1>
+        <p class="lead">Social media, inbox, admin, life errands, customer replies and the tech chores: handled by Stanley and a team of AI agents, checked by a human, reported in plain words.</p>
+        <div class="actions">
+          <a class="btn primary" href="#plan">Get my free delegation plan</a>
+          <button type="button" class="btn" data-chat="">Chat with Altra →</button>
+        </div>
+        <div class="sub">
+          <span>Proposal in minutes, not days</span>
+          <span>First task free</span>
+          <span>Month to month</span>
+        </div>
+      </div>
+      <div class="demo" aria-hidden="true">
+        <div class="bar"><span class="dot"></span> Altra · client concierge</div>
+        <div class="m a">Hi! What's the one thing you'd love off your plate this month?</div>
+        <div class="m u">Instagram, and my inbox is a disaster.</div>
+        <div class="m a">Roughly how many hours a week do those two take you?</div>
+        <div class="m u">Maybe 8. Evenings mostly.</div>
+        <div class="card">Proposal ready · <b>Core plan</b> · 35 hrs/month · $749/mo<br><small>Social + inbox · accept in one minute</small></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="marquee" aria-hidden="true"><div class="track" id="marquee"></div></div>
+
+  <section id="plan">
+    <div class="wrap">
+      <h2 class="h2">What's eating your week?</h2>
+      <p class="intro">Tick what you'd hand off, tell us roughly how long it takes, and get a free delegation plan by email: what to hand off first, the hours you get back, and the plan that fits.</p>
+      <form class="quiz" id="quiz" novalidate>
+        <div>
+          <h3>1. What would you hand off?</h3>
+          <fieldset id="taskGroups"><legend class="sr">Tasks to hand off</legend></fieldset>
+          <h3 style="margin-top:1.25rem">2. About you</h3>
+          <label class="field"><span>Hours a week this takes you now: <b id="hrsOut">8</b></span>
+            <input type="range" id="hrs" min="1" max="40" value="8"></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+            <label class="field"><span>You are a…</span>
+              <select id="role">
+                <option>Founder or business owner</option><option>Executive or manager</option>
+                <option>Creator or coach</option><option>E-commerce seller</option>
+                <option>Property host or agent</option><option>Busy professional</option><option>Other</option>
+              </select></label>
+            <label class="field"><span>Your hour is worth ($)</span>
+              <input type="number" id="hourValue" min="0" max="5000" value="50" inputmode="numeric"></label>
+          </div>
+        </div>
+        <div class="result" aria-live="polite">
+          <div><small>You could get back about</small>
+            <div class="big"><span id="hoursBack">24</span> hrs/mo</div>
+            <small>worth about <b id="valueBack">$1,200</b> of your time</small></div>
+          <div class="pkg"><small>Plan that fits</small>
+            <div style="font:700 1.3rem 'Bricolage Grotesque',sans-serif"><span id="pkgName">Core</span> · $<span id="pkgPrice">749</span>/month</div>
+            <small id="picked">Pick at least one task</small></div>
+          <div id="capture">
+            <label class="sr" for="qName">Your first name</label>
+            <input type="text" id="qName" placeholder="First name" autocomplete="given-name" style="margin-bottom:.5rem">
+            <label class="sr" for="qEmail">Your email</label>
+            <input type="email" id="qEmail" placeholder="you@business.com" autocomplete="email" required style="margin-bottom:.6rem">
+            <input type="text" id="qWebsite" class="sr" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <button class="btn primary" id="qSend" type="submit">Email me my plan</button>
+            <p class="err" id="qErr" role="alert"></p>
+            <small>No spam. One plan, a couple of useful follow-ups, unsubscribe any time.</small>
+          </div>
+          <div id="captured" hidden>
+            <div class="ok">✓ Your plan is on its way. Want to move faster? Altra can set up your free first task right now.</div>
+            <button type="button" class="btn primary" id="qChat" style="margin-top:.6rem">Talk it through with Altra</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section id="services">
+    <div class="wrap">
+      <h2 class="h2">One assistant for every part of the week</h2>
+      <p class="intro">Retainer hours work across all of these, so you're not hiring five freelancers. Starting prices are shown; Altra will tailor it.</p>
+      <div id="serviceList"></div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <h2 class="h2">From "I'm drowning" to handled in 48 hours</h2>
+      <ol class="steps">
+        <li><h3>Chat for two minutes</h3><p>Altra, the AI concierge, asks a few sharp questions about what's slowing you down. Any hour, any time zone.</p></li>
+        <li><h3>Get a proposal now</h3><p>A written plan in your words with a fixed price lands in the chat and your inbox. No sales call needed.</p></li>
+        <li><h3>Accept and pay</h3><p>Accept online in a minute. Pay by card, PayPal, Wise, M-Pesa or Bitcoin Lightning.</p></li>
+        <li><h3>Kick-off in 48 hours</h3><p>Stanley confirms, sets up a shared board, and your first summary arrives that week.</p></li>
+      </ol>
+      <div class="human">
+        <span style="font-size:1.6rem">🧑🏾‍💻</span>
+        <div><b>Humans in the loop, always.</b><p>AI agents handle the conversation and the first drafts. Stanley reviews every deliverable, every custom price and every payment personally.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing">
+    <div class="wrap">
+      <h2 class="h2">Simple monthly plans</h2>
+      <p class="intro">Blended hours across any service. Month to month. Unused hours roll over once.</p>
+      <div class="plans" id="plans"></div>
+      <div class="extra" id="extra"></div>
+      <div class="guar" id="guarantees"></div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="trial" id="trial">
+      <div>
+        <h2>Try it free: send one real task.</h2>
+        <p>Up to an hour of work: a messy spreadsheet, a week of posts, a travel plan, a supplier email. If you don't like the result, we part as friends.</p>
+      </div>
+      <button type="button" class="btn" data-chat="I'd like to try the free first task.">Send my free task →</button>
+    </div>
+  </div>
+</main>
+
+<div class="band" id="bitcoin">
+  <div class="wrap">
+    <h2 class="h2">Bitcoin, minus the headache</h2>
+    <p class="intro">Customers around the world want to pay in Bitcoin, and more owners want to accept it. I've built on Bitcoin and Lightning, so I can set it up with you in plain language.</p>
+    <div class="btc-grid">
+      <div><h3>Get paid in Bitcoin</h3><p>Lightning invoices and a checkout on your site or store. A sale counts only once the payment is confirmed.</p></div>
+      <div><h3>Keep your books clean</h3><p>Every payment recorded in a sheet your accountant can read, valued in your local currency on the day.</p></div>
+      <div><h3>Learn it once, properly</h3><p>A one-hour session: wallet, backups, sending and receiving. You leave able to do it yourself.</p></div>
+    </div>
+    <div class="promise">
+      <h3>The Zero-Seed Promise</h3>
+      <p>I never hold your keys, never ask for your seed phrase and never move your money. You stay in full control.</p>
+    </div>
+    <div class="pay">
+      <h3>Pay me in Bitcoin over Lightning</h3>
+      <p>Once you've accepted a proposal, you can pay in sats to this receive-only Lightning address.</p>
+      <div class="addr">
+        <code id="ln"></code>
+        <button type="button" class="btn" id="copyln">Copy address</button>
+        <a class="btn ghost" id="lnopen" href="#">Open in wallet</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <section id="team">
+    <h2 class="h2">Who you'll be working with</h2>
+    <div class="about">
+      <div>
+        <p>I'm Stanley, a software engineer and virtual assistant in Kenya. I build with Go and Next.js, contribute to open-source Bitcoin and Lightning projects, and I'm the person owners call when the to-do list has become a second job.</p>
+        <p>I run Altradits with a small team of AI agents that never sleep. They answer you instantly, draft the first pass and keep the paperwork moving. I check the work and I'm the one accountable for it.</p>
+      </div>
+      <ul class="facts">
+        <li>Based in Kenya (UTC+3)</li>
+        <li>Same-day overlap with Europe, Africa and the Middle East</li>
+        <li>Early-evening overlap with the Americas, overnight turnaround for Asia-Pacific</li>
+        <li>Card, PayPal, Wise, M-Pesa and Bitcoin welcome</li>
+      </ul>
+    </div>
+    <h3 style="font-size:1.4rem;margin-bottom:1rem">The agents behind the desk</h3>
+    <div class="agents">
+      <div class="agent"><div class="ico">💬</div><h4>Altra</h4><p class="r">Concierge & discovery</p><p>Asks the questions that uncover what's really eating your week, and tells you honestly if we're not the right fit.</p></div>
+      <div class="agent"><div class="ico">🧲</div><h4>Offer strategist</h4><p class="r">Plan & pricing fit</p><p>Matches your needs to the smallest plan that delivers the outcome, and builds your free delegation plan.</p></div>
+      <div class="agent"><div class="ico">🏹</div><h4>Proposal strategist</h4><p class="r">Proposals & follow-up</p><p>Writes your proposal in your own words, answers objections, and follows up so nothing goes cold.</p></div>
+      <div class="agent"><div class="ico">🧭</div><h4>Chief of staff</h4><p class="r">Triage</p><p>Routes anything that needs a human (custom work, payments, urgent issues) straight to Stanley.</p></div>
+    </div>
+    <p class="credit">Agent methods adapted from the open-source <a href="https://github.com/altradits/agency-agents">Agency agents</a> collection.</p>
+  </section>
+
+  <section id="faq" class="faq">
+    <h2 class="h2">Questions owners ask</h2>
+    <details><summary>Is the work done by AI or by a person?</summary><p>Both, deliberately. AI agents handle the chat, first drafts and routine follow-ups so you get speed. Stanley does the judgement work, reviews every deliverable, and is the person you can always email.</p></details>
+    <details><summary>How do you keep my accounts and data safe?</summary><p>Access through delegated logins or a password manager share, never passwords in plain email. Least access needed, removed when we finish. Your data is never used to train AI models, and a simple confidentiality agreement is available on request.</p></details>
+    <details><summary>I'm in a different time zone. Does that work?</summary><p>Yes. Clients are worldwide. Europe, Africa and the Middle East get same-day overlap; the Americas get early-evening overlap; Asia-Pacific wakes up to finished work. Altra answers instantly at any hour.</p></details>
+    <details><summary>What if I don't like the result?</summary><p>Start with the free first task, no commitment. On paid work, if what's delivered doesn't match the proposal it's fixed free for 14 days. Retainers are month to month.</p></details>
+    <details><summary>How do I pay?</summary><p>Card, PayPal, Wise, M-Pesa or Bitcoin over Lightning. Retainers are paid monthly in advance; projects take a 50% deposit and the rest on delivery.</p></details>
+    <details><summary>What don't you do?</summary><p>Anything that needs a licensed professional (legal, medical, regulated financial advice), anything unlawful, and holding anyone's crypto keys. Altra will say so plainly and point you somewhere better.</p></details>
+  </section>
+
+  <div class="final">
+    <h2 class="h2">Your hours back start with one message.</h2>
+    <p class="intro">Tell Altra what's on your plate. You'll have a plan and a price before you finish your coffee.</p>
+    <div class="actions">
+      <button type="button" class="btn primary" data-chat="">Chat with Altra</button>
+      <a class="btn" href="#plan">Get the free plan</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>© <span id="yr">2026</span> Altradits · Virtual assistance worldwide</span>
+    <span><a href="https://wa.me/254707172370">WhatsApp</a> · <a href="mailto:altradits@gmail.com">altradits@gmail.com</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://x.com/altradits">X</a></span>
+  </div>
+</footer>
+
+<button class="launcher" id="launcher" type="button" aria-controls="chat" aria-expanded="false"><span class="dot"></span> Ask Altra</button>
+<div class="chat" id="chat" role="dialog" aria-label="Chat with Altra" hidden>
+  <div class="chat-head">
+    <span class="dot"></span>
+    <div><b>Altra</b><small>Altradits concierge · replies in seconds</small></div>
+    <button type="button" id="chatClose" aria-label="Close chat">×</button>
+  </div>
+  <div class="log" id="log" aria-live="polite"></div>
+  <div class="quick" id="quick"></div>
+  <form class="compose" id="compose">
+    <label class="sr" for="chatInput">Message</label>
+    <textarea id="chatInput" rows="1" placeholder="Type your message…"></textarea>
+    <button type="submit" id="chatSend">Send</button>
+  </form>
+  <div class="chat-note">AI assistant. A human reviews proposals and payments. <a href="mailto:altradits@gmail.com">Email instead</a></div>
+</div>
+
+<script type="module">
+import { SERVICES, PILLARS, PACKAGES, PAYG, GUARANTEES, PAYMENTS, BUSINESS, recommend } from "./data/catalog.js";
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const money = (n) => "$" + Number(n).toLocaleString("en-US");
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+$("#yr").textContent = new Date().getFullYear();
+
+// ---- marquee
+const marq = SERVICES.map((s) => `<span style="--c:${PILLARS.find((p) => p.id === s.pillar).color}">${esc(s.name)}</span>`).join("");
+$("#marquee").innerHTML = marq + marq;
+
+// ---- services
+$("#serviceList").innerHTML = PILLARS.map((p) => `
+  <div class="pillar" style="--c:${p.color}"><h3>${esc(p.name)}</h3><div class="cards">
+  ${SERVICES.filter((s) => s.pillar === p.id).map((s) => `
+    <article class="svc" style="--c:${p.color}">
+      <h4>${esc(s.name)}</h4><p class="out">${esc(s.outcome)}</p><p class="inc">${esc(s.includes)}</p>
+      <div class="foot"><span class="price"><small>from</small> ${money(s.price)}${s.unit ? `<small>${s.unit}</small>` : ""}</span>
+      <button type="button" class="ask" data-service="${s.id}">Ask about this</button></div>
+    </article>`).join("")}
+  </div></div>`).join("");
+
+// ---- pricing
+$("#plans").innerHTML = PACKAGES.map((p) => `
+  <div class="plan${p.popular ? " pop" : ""}">${p.popular ? '<span class="tag">Most popular</span>' : ""}
+    <h3>${esc(p.name)}</h3><div class="amt">${money(p.price)}<small>/month</small></div>
+    <p>${esc(p.pitch)}</p><ul>${p.features.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>
+    <button type="button" class="btn ${p.popular ? "primary" : "dark"}" data-chat="I'm interested in the ${esc(p.name)} plan.">Start with ${esc(p.name)}</button>
+  </div>`).join("");
+$("#extra").innerHTML = `<span><b>Pay as you go:</b> ${money(PAYG.hourly)}/hour, ${PAYG.minimumHours}-hour minimum</span><span><b>One-off projects:</b> websites from ${money(600)}, automations from ${money(350)}, research from ${money(180)}</span>`;
+$("#guarantees").innerHTML = GUARANTEES.map((g) => `<div><h4>${esc(g.name)}</h4><p>${esc(g.text)}</p></div>`).join("");
+
+// ---- lightning
+$("#ln").textContent = PAYMENTS.lightningAddress;
+$("#lnopen").href = "lightning:" + PAYMENTS.lightningAddress;
+$("#copyln").addEventListener("click", function () {
+  const b = this;
+  (navigator.clipboard ? navigator.clipboard.writeText(PAYMENTS.lightningAddress) : Promise.reject()).then(
+    () => { b.textContent = "Copied"; },
+    () => { const r = document.createRange(); r.selectNodeContents($("#ln")); const x = getSelection(); x.removeAllRanges(); x.addRange(r); b.textContent = "Selected: press copy"; });
+  setTimeout(() => { b.textContent = "Copy address"; }, 2000);
+});
+
+// ---- delegation quiz (lead magnet)
+const POPULAR = ["social-management", "inbox-calendar", "data-docs", "bookkeeping-prep", "travel-life", "executive-assist", "customer-support", "ecommerce-ops", "lead-generation", "website", "automation-ai", "research"];
+$("#taskGroups").innerHTML += PILLARS.map((p) => {
+  const list = SERVICES.filter((s) => s.pillar === p.id && POPULAR.includes(s.id));
+  return list.length ? `<div class="group" style="--c:${p.color}"><p>${esc(p.name)}</p><div class="chips">${list.map((s) =>
+    `<label class="chip"><input type="checkbox" value="${s.id}"><span>${esc(s.name)}</span></label>`).join("")}</div></div>` : "";
+}).join("");
+
+function quizState() {
+  return {
+    tasks: [...document.querySelectorAll("#taskGroups input:checked")].map((b) => b.value),
+    hours: Number($("#hrs").value),
+    role: $("#role").value,
+    hourValue: Number($("#hourValue").value) || 0,
+  };
+}
+function renderQuiz() {
+  const q = quizState();
+  const r = recommend(q.hours, q.hourValue);
+  $("#hrsOut").textContent = q.hours;
+  $("#hoursBack").textContent = r.hoursBack;
+  $("#valueBack").textContent = money(r.valueBack);
+  $("#pkgName").textContent = r.pkg.name;
+  $("#pkgPrice").textContent = r.pkg.price.toLocaleString("en-US");
+  $("#picked").textContent = q.tasks.length ? `${q.tasks.length} task${q.tasks.length > 1 ? "s" : ""} selected · ${r.pkg.hours} hrs/month included` : "Pick at least one task";
+}
+$("#quiz").addEventListener("input", renderQuiz);
+renderQuiz();
+
+$("#quiz").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("#qEmail").value.trim();
+  const q = quizState();
+  $("#qErr").textContent = "";
+  if (!q.tasks.length) { $("#qErr").textContent = "Pick at least one task to hand off."; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { $("#qErr").textContent = "Please enter a valid email."; $("#qEmail").focus(); return; }
+  $("#qSend").disabled = true; $("#qSend").textContent = "Sending…";
+  const saved = store.get("altra.lead") || {};
+  try {
+    const res = await fetch("/api/lead", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: $("#qName").value.trim(), email, quiz: q, website: $("#qWebsite").value, leadId: saved.leadId, token: saved.token }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Something went wrong");
+    if (data.token) store.set("altra.lead", { leadId: data.leadId, token: data.token });
+    $("#capture").hidden = true; $("#captured").hidden = false;
+  } catch (err) {
+    $("#qErr").textContent = err.message + ". You can also email altradits@gmail.com.";
+  } finally {
+    $("#qSend").disabled = false; $("#qSend").textContent = "Email me my plan";
+  }
+});
+$("#qChat").addEventListener("click", () => {
+  const q = quizState();
+  const names = q.tasks.map((id) => SERVICES.find((s) => s.id === id).name.toLowerCase());
+  openChat(`I just got my delegation plan. I'd like help with ${names.join(", ")}, about ${q.hours} hours a week.`, { source: "delegation-quiz", needs: q.tasks, quiz: q });
+});
+
+// ---- chat widget
+const chat = $("#chat"), log = $("#log"), input = $("#chatInput");
+let busy = false;
+let history = store.get("altra.log") || [];
+let pendingContext = null;
+
+function md(text) {
+  const lines = esc(text).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").split("\n");
+  let html = "", list = false;
+  for (const l of lines) {
+    const li = l.match(/^\s*[-*•]\s+(.*)/);
+    if (li) { if (!list) { html += "<ul>"; list = true; } html += `<li>${li[1]}</li>`; continue; }
+    if (list) { html += "</ul>"; list = false; }
+    if (l.trim()) html += `<p>${l}</p>`;
+  }
+  return html + (list ? "</ul>" : "");
+}
+function addMsg(role, text, actions = [], save = true) {
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  div.innerHTML = md(text) + actions.filter((a) => /^https?:\/\//.test(a.url)).map((a) =>
+    `<div><a class="act" href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.label || "Open")} →</a></div>`).join("");
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+  if (save) { history.push({ role, text, actions }); history = history.slice(-40); store.set("altra.log", history); }
+}
+const QUICK = ["My inbox is out of control", "I need social media help", "Try a free task", "What does it cost?"];
+function renderQuick(show) {
+  $("#quick").innerHTML = show ? QUICK.map((q) => `<button type="button">${esc(q)}</button>`).join("") : "";
+}
+$("#quick").addEventListener("click", (e) => { if (e.target.tagName === "BUTTON") send(e.target.textContent); });
+
+function openChat(prompt, context) {
+  chat.hidden = false; $("#launcher").hidden = true; $("#launcher").setAttribute("aria-expanded", "true");
+  if (!log.children.length) {
+    if (history.length) history.forEach((m) => addMsg(m.role, m.text, m.actions, false));
+    else addMsg("a", `Hi, I'm Altra, ${BUSINESS.owner}'s assistant. 👋 What's the one thing you'd love off your plate this month?`, [], false);
+  }
+  renderQuick(!history.length && !prompt);
+  if (context) pendingContext = context;
+  if (prompt) send(prompt); else input.focus();
+}
+function closeChat() { chat.hidden = true; $("#launcher").hidden = false; $("#launcher").setAttribute("aria-expanded", "false"); $("#launcher").focus(); }
+
+async function send(text) {
+  text = text.trim();
+  if (!text || busy) return;
+  busy = true; $("#chatSend").disabled = true; renderQuick(false);
+  addMsg("u", text);
+  input.value = "";
+  const typing = document.createElement("div");
+  typing.className = "msg a typing"; typing.innerHTML = "<i></i><i></i><i></i>";
+  log.appendChild(typing); log.scrollTop = log.scrollHeight;
+  const saved = store.get("altra.lead") || {};
+  try {
+    const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text, leadId: saved.leadId, token: saved.token, context: { page: location.pathname, ...(pendingContext || {}) } }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Connection problem");
+    if (data.token) store.set("altra.lead", { leadId: data.leadId, token: data.token });
+    pendingContext = null;
+    typing.remove();
+    addMsg("a", data.reply, data.actions || []);
+  } catch (err) {
+    typing.remove();
+    addMsg("a", `${err.message}. You can reach Stanley directly on WhatsApp or by email.`,
+      [{ url: `https://wa.me/${BUSINESS.whatsapp}?text=${encodeURIComponent(text)}`, label: "WhatsApp Stanley" }], false);
+  } finally {
+    busy = false; $("#chatSend").disabled = false; input.focus();
+  }
+}
+
+$("#launcher").addEventListener("click", () => openChat());
+$("#chatClose").addEventListener("click", closeChat);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !chat.hidden) closeChat(); });
+$("#compose").addEventListener("submit", (e) => { e.preventDefault(); send(input.value); });
+input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input.value); } });
+document.addEventListener("click", (e) => {
+  const c = e.target.closest("[data-chat]");
+  if (c) return openChat(c.dataset.chat);
+  const s = e.target.closest("[data-service]");
+  if (s) {
+    const svc = SERVICES.find((x) => x.id === s.dataset.service);
+    openChat(`Tell me about ${svc.name.toLowerCase()}.`, { source: "service-card", service: svc.id, needs: [svc.id] });
+  }
+});
+const params = new URLSearchParams(location.search);
+if (params.get("chat") === "trial") openChat("I'd like to try the free first task.");
+else if (params.has("chat")) openChat();
+</script>
 </body>
 </html>

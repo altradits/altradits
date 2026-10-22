@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Your proposal – Altradits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2F5BEA;--btc:#F7931A;--paper:#fff;--ok:#12A37F}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+h1,h2,h3{font-family:'Bricolage Grotesque',Figtree,sans-serif;line-height:1.1;margin:0}
+a{color:inherit}
+[hidden]{display:none!important}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.wrap{max-width:46rem;margin:0 auto;padding:1.5rem 1rem 4rem}
+.logo{font:800 1.25rem 'Bricolage Grotesque',sans-serif;text-decoration:none;display:inline-block;margin-bottom:1.5rem}
+.doc{background:var(--paper);border:2px solid var(--ink);border-radius:1.25rem;box-shadow:8px 8px 0 var(--ink);padding:2rem}
+.meta{color:var(--muted);font-size:.93rem;margin:.5rem 0 1.5rem}
+h1{font-size:clamp(1.8rem,5vw,2.5rem);letter-spacing:-.02em}
+h2{font-size:1.25rem;margin:1.75rem 0 .6rem}
+.summary{white-space:pre-line}
+.themes{list-style:none;padding:0;margin:0;display:grid;gap:.5rem}
+.themes li{border-left:3px solid var(--blue);padding:.2rem 0 .2rem .8rem}
+table{width:100%;border-collapse:collapse;font-size:.98rem}
+th,td{text-align:left;padding:.65rem .4rem;border-bottom:1px solid var(--line);vertical-align:top}
+td.n,th.n{text-align:right;white-space:nowrap}
+td small{color:var(--muted);display:block}
+.totals td{border:0;padding:.3rem .4rem}
+.totals .due td{font-weight:800;font-size:1.15rem;border-top:2px solid var(--ink);padding-top:.7rem}
+.box{border:2px solid var(--line);border-radius:1rem;padding:1.25rem;margin-top:1.5rem}
+.box.go{border-color:var(--blue)}
+.box.done{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,white)}
+label{display:block;margin:.6rem 0}
+input[type=text],select{width:100%;padding:.7rem .85rem;border:2px solid var(--line);border-radius:.7rem;font:inherit;background:var(--bg)}
+.check{display:flex;gap:.6rem;align-items:flex-start}
+.check input{margin-top:.35rem;width:1.1rem;height:1.1rem;accent-color:var(--blue)}
+.btn{display:inline-flex;justify-content:center;padding:.85rem 1.4rem;border-radius:.75rem;font:600 1rem Figtree,sans-serif;text-decoration:none;border:2px solid var(--ink);cursor:pointer;background:transparent;color:var(--ink)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn:disabled{opacity:.55;cursor:wait}
+.row{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.8rem}
+.methods{display:grid;gap:.75rem;margin-top:.8rem}
+.method{border:1px solid var(--line);border-radius:.8rem;padding:.8rem 1rem}
+.method b{display:block}
+.method code{font:500 .92rem ui-monospace,Menlo,monospace;overflow-wrap:anywhere;background:var(--bg);padding:.2rem .4rem;border-radius:.4rem}
+.err{color:#B42318;margin:.5rem 0 0}
+.muted{color:var(--muted)}
+.link{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:.93rem}
+@media (max-width:560px){.doc{padding:1.25rem;box-shadow:4px 4px 0 var(--ink)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="logo" href="/">Altradits</a>
+  <div class="doc" id="doc" aria-live="polite"><p class="muted">Loading your proposal…</p></div>
+</div>
+<script type="module">
+import { PAYMENTS, GUARANTEES, BUSINESS, RULES } from "./data/catalog.js";
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const money = (n) => "$" + Number(n).toLocaleString("en-US");
+const q = new URLSearchParams(location.search);
+const id = q.get("id"), t = q.get("t");
+let P = null;
+
+async function api(body) {
+  const res = await fetch("/api/proposal", { method: body ? "POST" : "GET", headers: { "Content-Type": "application/json" },
+    ...(body ? { body: JSON.stringify({ id, t, ...body }) } : {}) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Something went wrong");
+  return data;
+}
+const url = `/api/proposal?id=${encodeURIComponent(id)}&t=${encodeURIComponent(t)}`;
+
+function methods() {
+  const m = [];
+  if (PAYMENTS.cardLink) m.push(["Card", `<a class="btn primary" href="${esc(PAYMENTS.cardLink)}" target="_blank" rel="noopener">Pay by card</a>`]);
+  if (PAYMENTS.paypal) m.push(["PayPal", `<a href="${esc(PAYMENTS.paypal)}" target="_blank" rel="noopener">${esc(PAYMENTS.paypal)}</a>`]);
+  if (PAYMENTS.wise) m.push(["Wise", `<a href="${esc(PAYMENTS.wise)}" target="_blank" rel="noopener">${esc(PAYMENTS.wise)}</a>`]);
+  if (PAYMENTS.mpesa) m.push(["M-Pesa", esc(PAYMENTS.mpesa)]);
+  if (PAYMENTS.lightningAddress) m.push(["Bitcoin (Lightning)", `<code>${esc(PAYMENTS.lightningAddress)}</code> · <a href="lightning:${esc(PAYMENTS.lightningAddress)}">open wallet</a><br><small class="muted">Send the USD amount in sats at today's rate.</small>`]);
+  m.push(["Bank transfer or other", `Reply to your proposal email and ${esc(BUSINESS.owner)} will send details.`]);
+  return m;
+}
+
+function render() {
+  const p = P;
+  const rows = p.items.map((i) => `<tr><td>${esc(i.label)}${i.description ? `<small>${esc(i.description)}</small>` : ""}</td>
+    <td class="n">${i.quantity > 1 ? i.quantity + " × " : ""}${money(i.price)}${i.type === "monthly" ? "/mo" : ""}</td></tr>`).join("");
+  const t = p.totals;
+  let action = "";
+  if (p.status === "sent") {
+    action = `<div class="box go"><h3>Accept this proposal</h3>
+      <form id="acceptForm">
+        <label>Your full name<input type="text" id="signer" autocomplete="name" value="${esc(p.client?.name)}" required></label>
+        <label class="check"><input type="checkbox" id="agree"> <span>I accept the scope and price above. Retainers are month to month; projects take a ${RULES.depositPctProjects}% deposit.</span></label>
+        <div class="row"><button class="btn primary" id="acceptBtn">Accept & continue to payment</button></div>
+        <p class="err" id="err" role="alert"></p>
+      </form>
+      <p class="muted" style="margin-top:1rem">Not right? <button class="link" id="declineBtn">Tell us what to change</button>, or reply to the email.</p></div>`;
+  } else if (p.status === "accepted" || p.status === "paid_claimed") {
+    action = `<div class="box go"><h3>${p.status === "accepted" ? "Pay to start" : "Thanks, we're checking your payment"}</h3>
+      <p>Accepted by ${esc(p.acceptedBy)}. Amount due to start: <b>${money(t.dueNow)}</b></p>
+      <div class="methods">${methods().map(([n, v]) => `<div class="method"><b>${n}</b>${v}</div>`).join("")}</div>
+      <form id="paidForm" style="margin-top:1rem">
+        <label>How did you pay?<select id="method">${methods().map(([n]) => `<option>${esc(n)}</option>`).join("")}</select></label>
+        <label>Reference or transaction ID (optional)<input type="text" id="ref" value="${esc(p.payment?.reference)}"></label>
+        <div class="row"><button class="btn primary" id="paidBtn">${p.status === "accepted" ? "I've paid" : "Update payment details"}</button></div>
+        <p class="err" id="err" role="alert"></p>
+      </form>
+      ${p.status === "paid_claimed" ? `<p class="muted">${esc(BUSINESS.owner)} has been notified and will confirm by email, usually within a few hours. Kick-off follows within 48 hours.</p>` : ""}</div>`;
+  } else if (p.status === "paid") {
+    action = `<div class="box done"><h3>✓ Paid. We're working on it.</h3><p>Kick-off details are in your inbox. Questions? Just reply to any of our emails.</p></div>`;
+  } else if (p.status === "declined") {
+    action = `<div class="box"><h3>This proposal is closed</h3><p>If anything changes, <a href="/?chat=1">chat with Altra</a> or email ${esc(BUSINESS.email)}.</p></div>`;
+  }
+
+  $("#doc").innerHTML = `
+    <h1>${esc(p.title)}</h1>
+    <p class="meta">Prepared for ${esc(p.client?.name || "you")}${p.client?.company ? `, ${esc(p.client.company)}` : ""} · Valid until ${esc(p.validUntil)}</p>
+    ${p.summary ? `<h2>Where you are, and where this takes you</h2><p class="summary">${esc(p.summary)}</p>` : ""}
+    ${p.themes?.length ? `<h2>Why this plan fits</h2><ul class="themes">${p.themes.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+    <h2>Scope & price</h2>
+    <table><thead><tr><th>Item</th><th class="n">Price</th></tr></thead><tbody>${rows}</tbody></table>
+    <table class="totals"><tbody>
+      ${p.discountPct ? `<tr><td>Discount</td><td class="n">${p.discountPct}% applied</td></tr>` : ""}
+      ${t.monthly ? `<tr><td>Monthly</td><td class="n">${money(t.monthly)}/month</td></tr>` : ""}
+      ${t.oneOff ? `<tr><td>One-off projects</td><td class="n">${money(t.oneOff)}</td></tr>` : ""}
+      <tr class="due"><td>Due to start</td><td class="n">${money(t.dueNow)}</td></tr>
+    </tbody></table>
+    <h2>Timeline</h2><p>${esc(p.timeline)}</p>
+    <h2>Our promises</h2><ul class="themes">${GUARANTEES.map((g) => `<li><b>${esc(g.name)}.</b> ${esc(g.text)}</li>`).join("")}</ul>
+    ${action}`;
+
+  $("#acceptForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const b = $("#acceptBtn"); b.disabled = true;
+    try { P = (await api({ action: "accept", name: $("#signer").value.trim(), agree: $("#agree").checked })).proposal; render(); }
+    catch (err) { $("#err").textContent = err.message; b.disabled = false; }
+  });
+  $("#paidForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const b = $("#paidBtn"); b.disabled = true;
+    try { P = (await api({ action: "paid", method: $("#method").value, reference: $("#ref").value.trim() })).proposal; render(); }
+    catch (err) { $("#err").textContent = err.message; b.disabled = false; }
+  });
+  $("#declineBtn")?.addEventListener("click", async () => {
+    const reason = prompt("What should change? (scope, budget, timing…)");
+    if (reason === null) return;
+    try { const d = await api({ action: "decline", reason }); P = d.proposal; render(); } catch (err) { alert(err.message); }
+  });
+}
+
+(async () => {
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    if (data.pending) { $("#doc").innerHTML = `<h1>Almost ready</h1><p>${esc(BUSINESS.owner)} is reviewing your proposal personally and will email you as soon as it's approved, usually within 12 hours.</p>`; return; }
+    P = data.proposal; render();
+  } catch (err) {
+    $("#doc").innerHTML = `<h1>We couldn't open this proposal</h1><p>${esc(err.message || "Check the link in your email.")}</p><p><a href="/?chat=1">Chat with Altra</a> or email ${esc(BUSINESS.email)}.</p>`;
+  }
+})();
+</script>
+</body>
+</html>
