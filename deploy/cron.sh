@@ -1,6 +1,6 @@
 #!/bin/sh
 # Deploys main to altradits.com. DirectAdmin cron runs this every 5 minutes:
-#   */5 * * * * cd /home/altradit/domains/altradits.com/public_html && { [ -f deploy/cron.sh ] || { git fetch -q origin main && git reset -q --hard origin/main; }; } && sh deploy/cron.sh
+#   */5 * * * * cd /home/altradit/domains/altradits.com/public_html && { [ -f deploy/cron.sh ] || { git fetch -q origin main && git reset -q --hard origin/main; }; } && sh deploy/cron.sh >> /home/altradit/deploy.log 2>&1
 # It hard-resets to origin/main (so hand edits on the server can never block a
 # deploy), installs dependencies when they change, and restarts the Node app.
 set -e
