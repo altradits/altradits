@@ -12,7 +12,7 @@ Merging a PR into `main` is the deploy. Within 5 minutes the server picks it up.
   restart the app (`tmp/restart.txt`) → ping `/healthz`.
   Cron line:
   ```
-  */5 * * * * cd /home/altradit/domains/altradits.com/public_html && { [ -f deploy/cron.sh ] || { git fetch -q origin main && git reset -q --hard origin/main; }; } && sh deploy/cron.sh
+  */5 * * * * cd /home/altradit/domains/altradits.com/public_html && { [ -f deploy/cron.sh ] || { git fetch -q origin main && git reset -q --hard origin/main; }; } && sh deploy/cron.sh >> /home/altradit/deploy.log 2>&1
   ```
 - **Never edit files on the server.** The reset discards them. Change the repo instead.
 - **Data** (leads, proposals, email log) lives in `DATA_DIR` outside the web root.
