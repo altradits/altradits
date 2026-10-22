@@ -107,3 +107,43 @@ test("admin and cron are locked", async () => {
   const r = await call(cron.GET, "GET", "/api/cron", null, { Authorization: "Bearer secret-cron" });
   assert.equal(r.status, 200);
 });
+
+test("scripted Altra handles the quick replies and real-world answers", async () => {
+  const talk = async (message, s = {}) => {
+    const r = await call(chat.POST, "POST", "/api/chat", { message, leadId: s.leadId, token: s.token });
+    return { ...s, ...r.body, token: s.token || r.body.token };
+  };
+  let s = await talk("What does it cost?");
+  assert.match(s.reply, /Core.*\$749/s, "pricing answered");
+  s = await talk("Try a free task");
+  assert.match(s.reply, /one real task/i, "trial offer explained");
+  s = await talk("Can I talk to a human?");
+  assert.ok(s.actions.some((a) => a.type === "whatsapp"), "human route offers WhatsApp");
+
+  // Vague answers keep moving instead of looping.
+  s = await talk("My inbox is out of control");
+  assert.match(s.reply, /hours a week/i);
+  s = await talk("not sure, a lot", s);
+  assert.match(s.reply, /8 hours a week/i, "unsure hours get a sensible default");
+  s = await talk("what does that cost?", s);
+  assert.match(s.reply, /fits best/i, "pricing tied to their hours");
+  s = await talk("I'm Dee, dee@example.com", s);
+  assert.ok(s.actions.some((a) => a.type === "proposal"), "proposal created");
+  const l = await crm.getLead(s.leadId);
+  assert.deepEqual(l.needs, ["inbox-calendar"], "an email address is not read as an inbox need");
+
+  // Hours written as words.
+  let w = await talk("I need help with social media posts");
+  w = await talk("maybe ten hours a week", w);
+  assert.match(w.reply, /email/i);
+  assert.equal((await crm.getLead(w.leadId)).hoursPerWeek, 10);
+
+  // Free trial task end to end: task then email -> one owner email.
+  let t = await talk("I'd like to try the free first task.");
+  t = await talk("Please clean up my supplier spreadsheet: dedupe 300 rows and add a total column", t);
+  assert.match(t.reply, /email/i);
+  t = await talk("ok it's tess@example.com", t);
+  assert.match(t.reply, /free task is with/i);
+  const o = (await call(admin.GET, "GET", "/api/admin", null, ADMIN)).body;
+  assert.ok(o.approvals.some((a) => a.type === "trial_task" && /supplier spreadsheet/.test(a.summary)));
+});
