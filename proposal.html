@@ -54,6 +54,10 @@ input[type=text],select{width:100%;padding:.7rem .85rem;border:2px solid var(--l
 .lnpay{display:grid;grid-template-columns:auto 1fr;gap:1.1rem;align-items:center;margin-top:.8rem}
 .qr{width:13rem;max-width:100%;aspect-ratio:1;background:#fff;border:2px solid var(--ink);border-radius:.8rem;padding:.4rem}
 .qr svg{display:block;width:100%;height:100%}
+.tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin:.6rem 0}
+.tab{font-weight:600;font-size:.85rem;font-family:inherit;border:2px solid var(--ink);background:transparent;color:inherit;border-radius:2rem;padding:.3rem .8rem;cursor:pointer}
+.tab[aria-selected=true]{background:var(--ink);color:#fff}
+.fees{margin-top:.8rem;font-size:.85rem}.fees summary{cursor:pointer;font-weight:700}.fees ul{margin:.4rem 0 0;padding-left:1.1rem}
 .sats{font:800 1.5rem 'Bricolage Grotesque',sans-serif}
 .inv{font:500 .78rem ui-monospace,Menlo,monospace;overflow-wrap:anywhere;color:var(--muted);max-height:3.2rem;overflow:hidden;margin:.4rem 0}
 .status{display:flex;align-items:center;gap:.45rem;font-weight:600;margin-top:.5rem}
@@ -85,10 +89,10 @@ let LN = false; // server says Lightning invoices are available
 async function showLightning() {
   const body = $("#lnBody");
   body.innerHTML = `<p class="muted">Creating your invoice…</p>`;
-  let inv;
+  let inv, data;
   try {
     const res = await fetch("/api/pay", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, t }) });
-    const data = await res.json();
+    data = await res.json();
     if (!res.ok) throw new Error(data.error);
     inv = data.invoice;
   } catch (err) {
@@ -96,29 +100,64 @@ async function showLightning() {
     $("#lnBtn").onclick = showLightning;
     return;
   }
-  body.innerHTML = `<div class="lnpay">
-      <a class="qr" href="lightning:${esc(inv.bolt11)}" aria-label="Lightning invoice QR code. Tap to open your wallet.">${inv.qr}</a>
+  const { onchain, unified, fees } = data;
+  const sats = inv.sats.toLocaleString("en-US");
+  const feeLine = (f) => f ? `~${f.sats.toLocaleString("en-US")} sats (${money(f.usd)})` : "";
+  const feeBox = `<details class="fees" open><summary>Fees</summary>
+      <ul>
+        <li><b>Altradits adds no fee.</b> You pay exactly ${sats} sats (${money(inv.usd)}).</li>
+        <li><b>Lightning:</b> your wallet may add a small network fee, usually a few sats and well under 1%.</li>
+        ${fees?.onchain ? `<li><b>On-chain:</b> your wallet adds a miner fee on top, right now about ${feeLine(fees.onchain.normal)} for ~30 min, or ${feeLine(fees.onchain.fast)} for ~10 min. Send the full ${sats} sats; the fee is added by your wallet, not taken from the amount.</li>` : ""}
+        <li>Exchanges (Binance, Coinbase…) may charge their own withdrawal fee; make sure the full amount arrives.</li>
+      </ul></details>`;
+  const views = {
+    any: unified && { qr: unified.qr, href: unified.uri, text: unified.uri, copy: "Copy payment link",
+      hint: "One QR for any Bitcoin wallet: Lightning wallets pay instantly, others pay on-chain." },
+    ln: { qr: inv.qr, href: `lightning:${inv.bolt11}`, text: inv.bolt11, copy: "Copy invoice",
+      hint: "Any Lightning wallet: Phoenix, Wallet of Satoshi, Muun, Breez, Strike, Cash App…" },
+    chain: onchain && { qr: onchain.qr, href: onchain.uri, text: onchain.address, copy: "Copy address",
+      hint: `Send exactly ${onchain.btc} BTC (${sats} sats) to this address from any wallet or exchange. Confirms in about 10–60 minutes.` },
+  };
+  const tabs = [["any", "Any wallet"], ["ln", "⚡ Lightning"], ["chain", "On-chain"]].filter(([k]) => views[k]);
+  body.innerHTML = `${tabs.length > 1 ? `<div class="tabs" role="tablist">${tabs.map(([k, n]) => `<button type="button" role="tab" class="tab" data-v="${k}">${n}</button>`).join("")}</div>` : ""}
+    <div class="lnpay">
+      <a class="qr" id="payQr"></a>
       <div>
-        <div class="sats">${inv.sats.toLocaleString("en-US")} sats</div>
-        <div class="muted">${money(inv.usd)} at ${money(inv.rate)}/BTC</div>
-        <div class="inv" title="Lightning invoice">${esc(inv.bolt11)}</div>
+        <div class="sats">${sats} sats</div>
+        <div class="muted">${money(inv.usd)} at ${money(inv.rate)}/BTC${onchain ? ` · ${onchain.btc} BTC` : ""}</div>
+        <div class="note" id="payHint" style="font-size:.85rem"></div>
+        <div class="inv" id="payText"></div>
         <div class="row" style="margin-top:.3rem">
-          <a class="btn btc" href="lightning:${esc(inv.bolt11)}">Open wallet</a>
-          <button type="button" class="btn" id="lnCopy">Copy invoice</button>
+          <a class="btn btc" id="payOpen">Open wallet</a>
+          <button type="button" class="btn" id="payCopy"></button>
           ${inv.lnurl ? `<button type="button" class="btn" id="lnurlCopy">Copy LNURL</button>` : ""}
         </div>
-        ${inv.lnurl ? `<div class="note" style="font-size:.82rem;margin-top:.3rem">${inv.lnurlFixedAmount ? `The LNURL is for the same ${inv.sats.toLocaleString("en-US")} sats and works in any LNURL wallet.` : "LNURL: enter the amount shown above in your wallet."}</div>` : ""}
+        ${inv.lnurl ? `<div class="note" style="font-size:.82rem;margin-top:.3rem">${inv.lnurlFixedAmount ? `The LNURL is for the same ${sats} sats and works in any LNURL wallet.` : "LNURL: enter the amount shown above in your wallet."}</div>` : ""}
         <div class="status" id="lnStatus"></div>
-      </div></div>`;
+      </div></div>${feeBox}`;
+  let view = tabs[0][0];
+  const show = (k) => {
+    view = k;
+    const v = views[k];
+    $("#payQr").innerHTML = v.qr;
+    $("#payQr").href = $("#payOpen").href = v.href;
+    $("#payQr").setAttribute("aria-label", `${tabs.find(([x]) => x === k)[1]} payment QR code. Tap to open your wallet.`);
+    $("#payHint").textContent = v.hint;
+    $("#payText").textContent = v.text;
+    $("#payCopy").textContent = v.copy;
+    body.querySelectorAll(".tab").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.v === k)));
+  };
+  body.querySelectorAll(".tab").forEach((b) => { b.onclick = () => show(b.dataset.v); });
+  show(view);
   if ($("#lnurlCopy")) $("#lnurlCopy").onclick = async (e) => {
     try { await navigator.clipboard.writeText(inv.lnurl); e.target.textContent = "Copied"; }
     catch { e.target.textContent = "Couldn't copy"; }
     setTimeout(() => { e.target.textContent = "Copy LNURL"; }, 2000);
   };
-  $("#lnCopy").onclick = async (e) => {
-    try { await navigator.clipboard.writeText(inv.bolt11); e.target.textContent = "Copied"; }
+  $("#payCopy").onclick = async (e) => {
+    try { await navigator.clipboard.writeText(views[view].text); e.target.textContent = "Copied"; }
     catch { e.target.textContent = "Select the text above"; }
-    setTimeout(() => { e.target.textContent = "Copy invoice"; }, 2000);
+    setTimeout(() => { e.target.textContent = views[view].copy; }, 2000);
   };
   const sel = $("#method");
   if (sel) [...sel.options].forEach((o) => { if (/lightning/i.test(o.value)) sel.value = o.value; });
@@ -128,18 +167,25 @@ async function showLightning() {
     const left = Math.max(0, Math.round((expires - Date.now()) / 1000));
     const st = $("#lnStatus");
     if (!st) return;
-    if (left === 0) {
+    if (left === 0 && !onchain) {
       st.innerHTML = `Invoice expired. <button type="button" class="link" id="lnNew">Get a new one</button>`;
       $("#lnNew").onclick = showLightning;
       return;
     }
     const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
-    if (inv.autoConfirm) {
-      st.innerHTML = `<span class="pulse"></span> Waiting for payment… (${clock})`;
-      if (n % 2 === 0) {
+    if (inv.autoConfirm || onchain) {
+      if (!st.dataset.seen) st.innerHTML = `<span class="pulse"></span> Waiting for payment…${left ? ` (Lightning invoice valid ${clock})` : ""}`;
+      // Lightning settles in seconds; on-chain is checked less often.
+      if (n % 2 === 0 && (left > 0 || n % 15 === 0)) {
         try {
           const r = await (await fetch(`/api/pay?id=${encodeURIComponent(id)}&t=${encodeURIComponent(t)}`)).json();
           if (r.status === "paid") { const d = await (await fetch(url)).json(); P = d.proposal; LN = Boolean(d.lightning); render(); return; }
+          if (r.onchainSeen) {
+            st.dataset.seen = "1";
+            st.innerHTML = r.onchainSeen === "partial"
+              ? `⚠️ We see a Bitcoin payment, but it's less than ${sats} sats. Please send the rest to the same address.`
+              : `<span class="pulse"></span> Payment seen on the Bitcoin network. Waiting for 1 confirmation (usually 10–60 min). You can close this page; we'll email you.`;
+          }
         } catch {}
       }
     } else {
@@ -190,8 +236,8 @@ function render() {
   } else if (p.status === "accepted" || p.status === "paid_claimed") {
     action = `<div class="box go"><h3>${p.status === "accepted" ? "Pay to start" : "Thanks, we're checking your payment"}</h3>
       <p>Accepted by ${esc(p.acceptedBy)}. Amount due to start: <b>${money(t.dueNow)}</b></p>
-      ${LN ? `<div class="ln" id="ln"><h4>⚡ Pay with Bitcoin Lightning</h4>
-        <p class="muted" style="margin:0">Scan with any Lightning wallet. The invoice is for the exact amount at today's rate.</p>
+      ${LN ? `<div class="ln" id="ln"><h4>₿ Pay with Bitcoin (any wallet)</h4>
+        <p class="muted" style="margin:0">Scan with any Bitcoin wallet. The amount is exact at today's rate, and fees are shown below.</p>
         <div id="lnBody"><p class="muted">Creating your payment QR…</p></div></div>` : ""}
       <div class="methods">${methods().map(([n, v]) => `<div class="method"><b>${n}</b>${v}</div>`).join("")}</div>
       <form id="paidForm" style="margin-top:1rem">
