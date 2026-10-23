@@ -28,6 +28,16 @@ const seen = [];
 const fake = (handler) => ({ beta: { messages: { stream: (p) => ({ finalMessage: async () => { seen.push(p); return handler(p); } }) } } });
 const tool = (name, input) => ({ stop_reason: "tool_use", content: [{ type: "tool_use", id: "z", name, input }] });
 
+test("/cv.html works before any CV is built: a facts-only CV, no ATS score", async () => {
+  const r = await cvApi.GET(req("GET", "/api/cv"));
+  assert.equal(r.status, 200);
+  const d = await r.json();
+  assert.match(d.cv, /^# Stanley Chege Thuita/);
+  assert.match(d.cv, /39 same-day quick jobs/);
+  assert.doesNotMatch(d.cv, /\[ADD/, "no placeholders on the public page");
+  assert.equal(d.ats, null);
+});
+
 test("fact sheet states real work and never invents numbers", async () => {
   let f = await career.factSheet();
   assert.match(f, /Founder & Managing Director, Altradits/);
@@ -75,11 +85,8 @@ test("Living CV is built from upload + notes + fact sheet; publishing controls /
   const p = await jobs.getProfile();
   assert.ok(p.master && p.cvFile && p.autoDiscover, "master, upload and settings preserved");
 
-  let pub = await cvApi.GET(req("GET", "/api/cv"));
-  assert.equal(pub.status, 404, "not public until published");
-  await call(admin.POST, "POST", "/api/admin", { action: "job_settings", publishCv: true });
-  pub = await cvApi.GET(req("GET", "/api/cv"));
-  assert.equal(pub.status, 200);
+  const pub = await cvApi.GET(req("GET", "/api/cv"));
+  assert.equal(pub.status, 200, "always public at /cv.html");
   assert.match((await pub.json()).cv, /Founder & operator, Altradits/);
 });
 
