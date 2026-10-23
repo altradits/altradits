@@ -6,7 +6,7 @@
 <title>Altradits – Pick a task. Pay. It's done.</title>
 <meta name="description" content="A global virtual assistant with fixed prices: social media, inbox, admin, personal errands, customer support, websites, automations and Bitcoin. Find your task, pay with any Bitcoin wallet, and your order starts.">
 <meta name="theme-color" content="#EEF2F6">
-<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
 <meta property="og:title" content="Altradits – Pick a task. Pay. It's done.">
 <meta property="og:description" content="Fixed-price virtual assistance for owners in any time zone. Every deliverable listed up front. Your payment places the order.">
 <meta property="og:type" content="website">
@@ -41,12 +41,11 @@ html.compact header::after{opacity:1}
 html.compact header .wrap{padding-top:.5rem;padding-bottom:.5rem}
 html.compact .filterbar{top:3.1rem}
 #bar{position:fixed;top:0;left:0;right:0;height:3px;z-index:60;background:linear-gradient(90deg,var(--blue),var(--btc));transform:scaleX(0);transform-origin:0 50%;pointer-events:none}
-.logo{position:relative;display:inline-flex;flex-direction:column;font:800 1.3rem/1.15 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em;text-decoration:none;padding-bottom:.3rem}
-.logo .sw{position:absolute;left:0;bottom:-.05rem;width:100%;height:auto;clip-path:inset(0 0 0 0);animation:swoosh .9s .25s cubic-bezier(.2,.7,.2,1) backwards}
-@keyframes swoosh{from{clip-path:inset(0 100% 0 0)}}
-.logo:hover .sw{transform:translateY(1px) scaleX(1.04);transform-origin:left;transition:transform .3s}
+.logo{display:inline-flex;align-items:center;text-decoration:none;line-height:0}
+.logo img{height:2.6rem;width:auto;display:block;transition:height .25s}
+html.compact header .logo img{height:2.1rem}
 .fbrand{flex-basis:100%;margin-bottom:.4rem}
-footer .logo{font-size:1.15rem;color:var(--ink)}
+footer .logo img{height:2.3rem}
 nav{display:flex;gap:1.4rem;align-items:center}
 nav a{position:relative;text-decoration:none;font-weight:600;font-size:.97rem;color:var(--muted);transition:color .2s}
 nav a::after{content:"";position:absolute;left:0;right:0;bottom:-.2rem;height:2px;border-radius:2px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
@@ -70,7 +69,7 @@ nav a:hover::after,nav a.here::after{transform:scaleX(1)}
 .eyebrow{display:inline-block;font-weight:700;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:1rem}
 .hero h1{font-size:clamp(2.6rem,7vw,5rem);font-weight:800;letter-spacing:-.03em}
 .hero h1 em{font-style:normal;color:var(--blue);position:relative;display:inline-block;isolation:isolate}
-.hero h1 em::after{content:"";position:absolute;left:-.02em;right:-.06em;bottom:-.08em;height:.3em;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='96 62 204 40' preserveAspectRatio='none'%3E%3ClinearGradient id='g'%3E%3Cstop offset='0' stop-color='%23E5484D'/%3E%3Cstop offset='1' stop-color='%23F7931A'/%3E%3C/linearGradient%3E%3Cpath d='M98 76 C140 104 218 98 298 66 C222 88 152 94 98 76 Z' fill='url(%23g)'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat;z-index:-1;transform:scaleX(0);transform-origin:left;animation:draw .7s .6s cubic-bezier(.2,.7,.2,1) forwards}
+.hero h1 em::after{content:"";position:absolute;left:-.02em;right:-.06em;bottom:-.08em;height:.3em;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='96 62 204 40' preserveAspectRatio='none'%3E%3ClinearGradient id='g'%3E%3Cstop offset='0' stop-color='%23EA5158'/%3E%3Cstop offset='1' stop-color='%23EA5158'/%3E%3C/linearGradient%3E%3Cpath d='M98 76 C140 104 218 98 298 66 C222 88 152 94 98 76 Z' fill='url(%23g)'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat;z-index:-1;transform:scaleX(0);transform-origin:left;animation:draw .7s .6s cubic-bezier(.2,.7,.2,1) forwards}
 @keyframes draw{to{transform:scaleX(1)}}
 .hero p.lead{max-width:30rem;font-size:1.2rem;color:var(--muted);margin:1.2rem 0 1.5rem}
 .sub{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;margin-top:1.5rem;color:var(--muted);font-size:.97rem}
@@ -375,7 +374,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 <div id="bar" aria-hidden="true"></div>
 <header>
   <div class="wrap">
-    <a class="logo" href="#top" aria-label="Altradits, back to top"><span>Altradits</span><svg class="sw" viewBox="30 62 300 40" aria-hidden="true" focusable="false"><defs><linearGradient id="swh" x1="0" x2="1"><stop offset="0" stop-color="#E5484D"/><stop offset="1" stop-color="#F7931A"/></linearGradient></defs><path d="M98 76 C140 104 218 98 298 66 C222 88 152 94 98 76 Z" fill="url(#swh)"/></svg></a>
+    <a class="logo" href="#top" aria-label="Altradits, back to top"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a>
     <nav aria-label="Main">
       <a href="#quick">Quick jobs</a>
       <a class="opt" href="#services">Services</a>
@@ -549,7 +548,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 
 <footer>
   <div class="wrap">
-    <div class="fbrand"><a class="logo" href="#top" aria-label="Altradits, back to top"><span>Altradits</span><svg class="sw" viewBox="30 62 300 40" aria-hidden="true" focusable="false"><defs><linearGradient id="swf" x1="0" x2="1"><stop offset="0" stop-color="#E5484D"/><stop offset="1" stop-color="#F7931A"/></linearGradient></defs><path d="M98 76 C140 104 218 98 298 66 C222 88 152 94 98 76 Z" fill="url(#swf)"/></svg></a></div>
+    <div class="fbrand"><a class="logo" href="#top" aria-label="Altradits, back to top"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a></div>
     <span>© <span id="yr">2026</span> Altradits · Virtual assistance worldwide</span>
     <span><a href="/cv.html">Stanley's CV</a> · <a href="/join.html">Join the team (we're hiring)</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://x.com/altradits">X</a></span>
   </div>
