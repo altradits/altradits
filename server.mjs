@@ -37,7 +37,7 @@ function publicUrl(req) {
 const server = http.createServer(async (req, res) => {
   const url = publicUrl(req);
   try {
-    if (url.pathname === "/healthz") { res.writeHead(200, { "Content-Type": "text/plain" }).end("ok"); return; }
+    if (url.pathname === "/healthz") { res.writeHead(200, { "Content-Type": "text/plain" }).end("ok"); import("./lib/workers.js").then((w) => w.kickQueue()).catch(() => {}); return; }
     const api = url.pathname.match(/^\/api\/([a-z]+)$/);
     if (api) {
       const file = path.join(ROOT, "api", `${api[1]}.js`);
@@ -86,3 +86,8 @@ async function maybeRunDaily() {
   console.log("daily follow-ups", today, await runFollowups(siteUrl.replace(/\/$/, "")));
 }
 setInterval(() => maybeRunDaily().catch((e) => console.error("daily", e)), 10 * 60 * 1000).unref();
+
+// The department AI agents work through queued client tasks in the background.
+const kick = () => import("./lib/workers.js").then((w) => w.processQueue()).catch((e) => console.error("queue", e));
+setInterval(kick, 2 * 60 * 1000).unref();
+setTimeout(kick, 5000).unref();

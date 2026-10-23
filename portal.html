@@ -35,6 +35,11 @@ textarea{min-height:4.5rem}
 .task h3{font-size:1.05rem}
 .st{display:inline-block;padding:.05rem .55rem;border-radius:99px;background:var(--bg);font-weight:600;font-size:.8rem}
 .st.review{background:color-mix(in srgb,var(--ok) 20%,white)}
+.st.waiting_client{background:color-mix(in srgb,var(--btc) 25%,white)}
+.stars{display:inline-flex;gap:.15rem}
+.stars button{border:0;background:none;font-size:1.5rem;line-height:1;cursor:pointer;color:var(--line);padding:0 .1rem}
+.stars button.on{color:var(--btc)}
+.files a{display:inline-block;margin:.2rem .4rem .2rem 0}
 .st.changes{background:color-mix(in srgb,var(--warn) 18%,white)}
 .meta{color:var(--muted);font-size:.86rem}
 .meter{height:.7rem;background:var(--bg);border-radius:99px;overflow:hidden;margin:.4rem 0}
@@ -58,8 +63,10 @@ import { DEPARTMENTS } from "./data/playbooks.js";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const c = new URLSearchParams(location.search).get("c");
-const LABEL = { new: "being assigned", assigned: "assigned", in_progress: "in progress", review: "ready for you", changes: "changes in progress", done: "done", cancelled: "cancelled" };
+const LABEL = { new: "being assigned", assigned: "assigned", in_progress: "in progress", review: "ready for you", changes: "changes in progress", done: "done ✓", cancelled: "cancelled",
+  queued: "in the queue", working: "being worked on", waiting_client: "question for you", owner: "final checks", follow_up: "done (we'll follow up)" };
 let D = null;
+const RATINGS = {};
 
 async function api(body) {
   const res = await fetch(body ? "/api/portal" : `/api/portal?c=${encodeURIComponent(c)}`, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ c, ...body }) } : {});
@@ -85,9 +92,15 @@ function onboardingForm() {
 function taskCard(t) {
   return `<div class="task ${t.status}"><h3>${esc(t.title)} <span class="st ${t.status}">${LABEL[t.status] || t.status}</span></h3>
     <div class="meta">${esc(DEPARTMENTS.find((d) => d.id === t.department)?.name || "")} · requested ${esc(t.createdAt.slice(0, 10))}${t.due ? ` · due ${esc(t.due)}` : ""}${t.hoursLogged ? ` · ${t.hoursLogged}h` : ""}</div>
-    ${t.deliverable ? `<p>${esc(t.deliverable.note)}${t.deliverable.url ? `<br><a href="${esc(t.deliverable.url)}" target="_blank" rel="noopener">Open deliverable →</a>` : ""}</p>` : ""}
-    ${t.status === "review" ? `<div class="row"><button class="btn ok" data-approve="${t.id}">Approve</button>
-      <input placeholder="What should change?" data-cn="${t.id}" style="flex:1;min-width:12rem"><button class="btn" data-changes="${t.id}">Request changes</button></div>` : ""}
+    ${t.question ? `<div class="row" style="display:block"><p><b>Question for you:</b> ${esc(t.question)}</p>
+      <input placeholder="Your answer" data-ans="${t.id}"><div class="row"><button class="btn primary" data-answer="${t.id}">Send answer</button></div></div>` : ""}
+    ${t.deliverable ? `<p>${esc(t.deliverable.summary)}${t.deliverable.url ? `<br><a href="${esc(t.deliverable.url)}" target="_blank" rel="noopener">Open deliverable →</a>` : ""}</p>
+      ${t.deliverable.files.length ? `<div class="files">${t.deliverable.files.map((f) => `<a class="btn" href="/api/portal?c=${encodeURIComponent(c)}&task=${t.id}&file=${f.i}">⬇ ${esc(f.name)}</a>`).join("")}</div>` : ""}
+      ${t.deliverable.sources.length ? `<p class="note">Sources: ${t.deliverable.sources.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(new URL(u).hostname)}</a>`).join(", ")}</p>` : ""}` : ""}
+    ${t.satisfaction ? `<p class="note">You rated this ${"★".repeat(t.satisfaction.rating)}${"☆".repeat(5 - t.satisfaction.rating)}</p>` : ""}
+    ${t.status === "review" ? `<div class="row"><span>Rate it:</span><span class="stars" data-stars="${t.id}">${[1, 2, 3, 4, 5].map((n) => `<button type="button" data-star="${n}" data-for="${t.id}" aria-label="${n} star${n > 1 ? "s" : ""}">★</button>`).join("")}</span>
+      <input placeholder="Comment (optional)" data-cm="${t.id}" style="flex:1;min-width:10rem"><button class="btn ok" data-approve="${t.id}">Approve</button></div>
+      <div class="row"><input placeholder="What should change?" data-cn="${t.id}" style="flex:1;min-width:12rem"><button class="btn" data-changes="${t.id}">Request changes</button></div>` : ""}
     <p class="err" data-err="${t.id}"></p></div>`;
 }
 
@@ -141,6 +154,18 @@ document.addEventListener("submit", async (e) => {
   }
 });
 document.addEventListener("click", async (e) => {
+  if (e.target.dataset.star) {
+    const id = e.target.dataset.for, n = Number(e.target.dataset.star);
+    RATINGS[id] = n;
+    document.querySelectorAll(`[data-for="${id}"]`).forEach((b) => b.classList.toggle("on", Number(b.dataset.star) <= n));
+    return;
+  }
+  if (e.target.dataset.answer) {
+    const id = e.target.dataset.answer;
+    try { D = await api({ action: "answer", task: id, answer: document.querySelector(`[data-ans="${id}"]`).value }); render(); }
+    catch (err) { document.querySelector(`[data-err="${id}"]`).textContent = err.message; }
+    return;
+  }
   const a = e.target.dataset.approve, ch = e.target.dataset.changes;
   if (e.target.id === "copyRef") {
     try { await navigator.clipboard.writeText(D.referral.url); e.target.textContent = "Copied"; } catch { e.target.textContent = "Select the link above"; }
@@ -149,7 +174,8 @@ document.addEventListener("click", async (e) => {
   if (!a && !ch) return;
   const id = a || ch;
   try {
-    D = await api(a ? { action: "approve", task: id } : { action: "changes", task: id, note: document.querySelector(`[data-cn="${id}"]`).value });
+    D = await api(a ? { action: "approve", task: id, rating: RATINGS[id], comment: document.querySelector(`[data-cm="${id}"]`)?.value || "" }
+      : { action: "changes", task: id, note: document.querySelector(`[data-cn="${id}"]`).value });
     render();
   } catch (err) { document.querySelector(`[data-err="${id}"]`).textContent = err.message; }
 });

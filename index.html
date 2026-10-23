@@ -238,6 +238,15 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 .compose textarea{flex:1;min-height:2.8rem;max-height:7rem;resize:none;padding:.65rem .8rem;font-size:.97rem}
 .compose button{background:var(--blue);color:#fff;border:0;border-radius:.7rem;padding:0 1rem;font:700 .95rem Figtree,sans-serif;cursor:pointer}
 .compose button:disabled{opacity:.5}
+.hc{margin-top:.6rem;background:var(--paper);border:2px solid var(--btc);border-radius:.8rem;padding:.7rem;text-align:center}
+.hc .qr{width:11rem;height:11rem;margin:0 auto .4rem;background:#fff;border-radius:.5rem;padding:.3rem}
+.hc .qr svg{width:100%;height:100%;display:block}
+.hc b{display:block;font-size:1.05rem}
+.hc code{display:block;font:500 .7rem ui-monospace,Menlo,monospace;overflow-wrap:anywhere;max-height:2.6rem;overflow:hidden;color:var(--muted);margin:.3rem 0}
+.hc .row{display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap}
+.hc .row a,.hc .row button{font:700 .85rem Figtree,sans-serif;border-radius:.5rem;padding:.4rem .7rem;border:2px solid var(--ink);background:transparent;color:var(--ink);text-decoration:none;cursor:pointer}
+.hc .row a{background:var(--btc);border-color:var(--btc)}
+.compose.locked textarea{opacity:.5}
 .chat-note{font-size:.75rem;color:var(--muted);text-align:center;padding:0 .75rem .55rem;background:var(--paper)}
 
 @media (max-width:860px){
@@ -440,17 +449,22 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
     </div>
     <h3 style="font-size:1.4rem;margin-bottom:1rem">The agents behind the desk</h3>
     <div class="agents">
-      <div class="agent"><div class="ico">💬</div><h4>Altra</h4><p class="r">Concierge & discovery</p><p>Asks the questions that uncover what's really eating your week, and tells you honestly if we're not the right fit.</p></div>
-      <div class="agent"><div class="ico">🧲</div><h4>Offer strategist</h4><p class="r">Plan & pricing fit</p><p>Matches your needs to the smallest plan that delivers the outcome, and builds your free delegation plan.</p></div>
-      <div class="agent"><div class="ico">🏹</div><h4>Proposal strategist</h4><p class="r">Proposals & follow-up</p><p>Writes your proposal in your own words, answers objections, and follows up so nothing goes cold.</p></div>
-      <div class="agent"><div class="ico">🧭</div><h4>Chief of staff</h4><p class="r">Triage</p><p>Routes anything that needs a human (custom work, payments, urgent issues) straight to Stanley.</p></div>
+      <div class="agent"><div class="ico">💬</div><h4>Altra</h4><p class="r">Front office</p><p>Answers instantly, tailors a plan to you, and sends your proposal. Hands anything sensitive to Stanley.</p></div>
+      <div class="agent"><div class="ico">📣</div><h4>Social & Content Agent</h4><p class="r">Social media & content</p><p>Content calendars, captions, newsletters and scripts in your voice.</p></div>
+      <div class="agent"><div class="ico">🗂️</div><h4>Operations & Admin Agent</h4><p class="r">Office administration</p><p>Clean spreadsheets, reconciliations, SOPs, email templates and briefs.</p></div>
+      <div class="agent"><div class="ico">🧳</div><h4>Personal Assistant Agent</h4><p class="r">Personal assistance</p><p>Researched options for travel, events and errands, side by side with prices.</p></div>
+      <div class="agent"><div class="ico">🤝</div><h4>Sales & Customer Care Agent</h4><p class="r">Sales & customer care</p><p>Reply templates, verified lead lists, outreach sequences and sourced research.</p></div>
+      <div class="agent"><div class="ico">🛠️</div><h4>Web, Automation & Bitcoin Agent</h4><p class="r">Tech</p><p>Landing pages, automation specs, payment setups. You always keep your own keys.</p></div>
+      <div class="agent"><div class="ico">🔍</div><h4>Quality Reviewer</h4><p class="r">Every deliverable</p><p>Checks each piece of work against the department's checklist before you see it.</p></div>
+      <div class="agent"><div class="ico">🧑🏾‍💻</div><h4>Stanley</h4><p class="r">Accountable for all of it</p><p>Handles the real-world steps, sensitive decisions and anything you're not 100% happy with.</p></div>
     </div>
     <p class="credit">Agent methods adapted from the open-source <a href="https://github.com/altradits/agency-agents">Agency agents</a> collection.</p>
   </section>
 
   <section id="faq" class="faq">
     <h2 class="h2">Questions owners ask</h2>
-    <details><summary>Is the work done by AI or by a person?</summary><p>Both, deliberately. AI agents handle the chat, first drafts and routine follow-ups so you get speed. Stanley does the judgement work, reviews every deliverable, and is the person you can always email.</p></details>
+    <details><summary>Is the work done by AI or by a person?</summary><p>Both, deliberately. Each department has an AI agent that does the work fast, using that department's written playbook. A quality reviewer checks every deliverable before it reaches you. Stanley takes the real-world steps (like posting from your account or making a booking you've approved), handles anything sensitive, and personally follows up if you rate any job below 4 stars.</p></details>
+    <details><summary>Why did the chat ask me to pay 100 sats?</summary><p>To keep Altra fast and available for real clients, chats that look automated, abusive or unrelated to our services are paused until a 100-sat Lightning payment (a few US cents) confirms a real person. Pay from any Lightning wallet and the chat reopens automatically, or simply email altradits@gmail.com instead.</p></details>
     <details><summary>How do you keep my accounts and data safe?</summary><p>Access through delegated logins or a password manager share, never passwords in plain email. Least access needed, removed when we finish. Your data is never used to train AI models, and a simple confidentiality agreement is available on request.</p></details>
     <details><summary>I'm in a different time zone. Does that work?</summary><p>Yes. Clients are worldwide. Europe, Africa and the Middle East get same-day overlap; the Americas get early-evening overlap; Asia-Pacific wakes up to finished work. Altra answers instantly at any hour.</p></details>
     <details><summary>What if I don't like the result?</summary><p>Start with the free first task, no commitment. On paid work, if what's delivered doesn't match the proposal it's fixed free for 14 days. Retainers are month to month.</p></details>
@@ -618,11 +632,47 @@ function addMsg(role, text, actions = [], save = true) {
   const div = document.createElement("div");
   div.className = "msg " + role;
   div.innerHTML = md(text) + actions.filter((a) => /^https?:\/\//.test(a.url)).map((a) =>
-    `<div><a class="act" href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.label || "Open")} →</a></div>`).join("");
+    `<div><a class="act" href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.label || "Open")} →</a></div>`).join("")
+    + actions.filter((a) => a.type === "human_check" && /^ln/i.test(a.bolt11 || "") && /^<svg/.test(a.qr || "")).map((a) =>
+    `<div class="hc"><div class="qr">${a.qr}</div><b>${Number(a.sats)} sats</b><code>${esc(a.bolt11)}</code>
+      <div class="row"><a href="lightning:${esc(a.bolt11)}">Open wallet</a><button type="button" data-copyinv="${esc(a.bolt11)}">Copy invoice</button></div></div>`).join("");
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
   if (save) { history.push({ role, text, actions }); history = history.slice(-40); store.set("altra.log", history); }
 }
+// Human check: the chat is paused until a small Lightning payment is made.
+let gateTimer = null;
+function setLocked(locked) {
+  $("#compose").classList.toggle("locked", locked);
+  input.disabled = locked; $("#chatSend").disabled = locked;
+  input.placeholder = locked ? "Paused until the human check is paid…" : "Type your message…";
+}
+function showGate(actions) {
+  const hc = actions.filter((a) => a.type === "human_check");
+  if (hc.length) addMsg("a", "", hc, false);
+  setLocked(true);
+  clearInterval(gateTimer);
+  gateTimer = setInterval(checkGateStatus, 4000);
+}
+async function checkGateStatus() {
+  const saved = store.get("altra.lead") || {};
+  if (!saved.leadId) return;
+  try {
+    const r = await fetch(`/api/chat?leadId=${encodeURIComponent(saved.leadId)}&token=${encodeURIComponent(saved.token)}`);
+    const d = await r.json();
+    if (r.ok && d.gated === false) {
+      clearInterval(gateTimer); gateTimer = null;
+      setLocked(false);
+      addMsg("a", "Payment received, thank you! You're verified. Where were we?");
+    }
+  } catch {}
+}
+document.addEventListener("click", async (e) => {
+  const inv = e.target.dataset && e.target.dataset.copyinv;
+  if (!inv) return;
+  try { await navigator.clipboard.writeText(inv); e.target.textContent = "Copied"; } catch { e.target.textContent = "Select the code above"; }
+});
+
 const QUICK = ["My inbox is out of control", "I need social media help", "Try a free task", "What does it cost?"];
 function renderQuick(show) {
   $("#quick").innerHTML = show ? QUICK.map((q) => `<button type="button">${esc(q)}</button>`).join("") : "";
@@ -636,8 +686,17 @@ function openChat(prompt, context) {
     else addMsg("a", `Hi, I'm Altra, ${BUSINESS.owner}'s assistant. 👋 What's the one thing you'd love off your plate this month?`, [], false);
   }
   renderQuick(!history.length && !prompt);
+  if ((store.get("altra.lead") || {}).leadId && !gateTimer) checkGateOnOpen();
   if (context) pendingContext = context;
   if (prompt) send(prompt); else input.focus();
+}
+async function checkGateOnOpen() {
+  const saved = store.get("altra.lead") || {};
+  try {
+    const r = await fetch(`/api/chat?leadId=${encodeURIComponent(saved.leadId)}&token=${encodeURIComponent(saved.token)}`);
+    const d = await r.json();
+    if (r.ok && d.gated) { setLocked(true); clearInterval(gateTimer); gateTimer = setInterval(checkGateStatus, 4000); }
+  } catch {}
 }
 function closeChat() { chat.hidden = true; $("#launcher").hidden = false; $("#launcher").setAttribute("aria-expanded", "false"); $("#launcher").focus(); }
 
@@ -659,13 +718,15 @@ async function send(text) {
     if (data.token) store.set("altra.lead", { leadId: data.leadId, token: data.token });
     pendingContext = null;
     typing.remove();
-    addMsg("a", data.reply, data.actions || []);
+    addMsg("a", data.reply, (data.actions || []).filter((a) => a.type !== "human_check"), true);
+    if (data.gated) { showGate(data.actions || []); }
   } catch (err) {
     typing.remove();
     addMsg("a", `${err.message}. You can reach Stanley directly on WhatsApp or by email.`,
       [{ url: `https://wa.me/${BUSINESS.whatsapp}?text=${encodeURIComponent(text)}`, label: "WhatsApp Stanley" }], false);
   } finally {
-    busy = false; $("#chatSend").disabled = false; input.focus();
+    busy = false;
+    if (!input.disabled) { $("#chatSend").disabled = false; input.focus(); }
   }
 }
 
