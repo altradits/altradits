@@ -284,3 +284,56 @@ test("amount above channel capacity: Lightning address invoice, LNURL refused, o
     delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON; delete process.env.LND_TLS_CERT;
   }
 });
+
+test("website order: price button -> QR for the full price -> payment confirms the order and queues the task", async () => {
+  const order = await import(new URL("api/order.js", root));
+  const chat = await import(new URL("api/chat.js", root));
+  const ops = await import(new URL("lib/ops.js", root));
+  process.env.LND_REST_URL = `https://localhost:${lnd.address().port}`;
+  process.env.LND_INVOICE_MACAROON = MACAROON;
+  process.env.LND_TLS_CERT = fs.readFileSync("cert.pem").toString("base64");
+  ln.resetCapacityCache();
+  try {
+    // No talking: the public chat is closed.
+    assert.equal((await call(chat.POST, "POST", "/api/chat", { message: "hi" })).status, 410);
+    assert.equal((await call(order.POST, "POST", "/api/order", { item: "nope" })).status, 400);
+
+    const o = (await call(order.POST, "POST", "/api/order", { item: "website" })).body;
+    assert.equal(o.item.usd, 600, "projects ordered online are paid in full");
+    const r = await call(pay.POST, "POST", "/api/pay", { id: o.id, t: o.t });
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.equal(r.body.invoice.sats, Math.ceil((600 / 80000) * 1e8));
+    assert.equal((await call(order.GET, "GET", `/api/order?id=${o.id}&t=${o.t}`)).body.status, "accepted");
+
+    assert.equal((await call(order.POST, "POST", "/api/order", { id: o.id, t: o.t, email: "bad" })).status, 400);
+    await call(order.POST, "POST", "/api/order", { id: o.id, t: o.t, email: "Buyer@Example.com", name: "Bo", task: "5 pages for my bakery" });
+
+    const [, onNode] = [...invoices.entries()].at(-1);
+    onNode.state = "SETTLED";
+    assert.equal((await call(pay.GET, "GET", `/api/pay?id=${o.id}&t=${o.t}`)).body.status, "paid");
+    const done = (await call(order.GET, "GET", `/api/order?id=${o.id}&t=${o.t}`)).body;
+    assert.equal(done.status, "paid");
+    assert.match(done.portal, /portal\.html\?c=/);
+    assert.equal(done.emailed, true);
+
+    const p = await crm.getProposal(o.id);
+    const lead = await crm.getLead(p.leadId);
+    assert.equal(lead.stage, "active");
+    assert.equal(lead.email, "buyer@example.com");
+    const task = await ops.getTask(p.order.taskId);
+    assert.equal(task.title, "Website or landing page");
+    assert.equal(task.details, "5 pages for my bakery");
+    assert.equal(task.department, "tech");
+
+    // Details added after paying reach the task.
+    await call(order.POST, "POST", "/api/order", { id: o.id, t: o.t, task: "5 pages for my bakery, launch by Friday" });
+    assert.match((await ops.getTask(p.order.taskId)).details, /Friday/);
+
+    // Monthly plans: first month in full.
+    const plan = (await call(order.POST, "POST", "/api/order", { item: "core" })).body;
+    assert.equal(plan.item.usd, 749);
+    assert.equal((await call(order.GET, "GET", `/api/order?id=${plan.id}&t=wrong`)).status, 404);
+  } finally {
+    delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON; delete process.env.LND_TLS_CERT;
+  }
+});

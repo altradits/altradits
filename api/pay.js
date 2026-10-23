@@ -125,8 +125,8 @@ export async function GET(request) {
     if (lead) {
       await confirmPayment(lead, p);
       // Work to start: one of the few things worth an email.
-      await emailOwner(`Paid ⚡ ${settled.sats.toLocaleString("en-US")} sats: start work for ${lead.name || lead.email}`,
-        `${lead.name || lead.email} paid $${p.totals.dueNow} (${settled.sats} sats) ${settled.onchain ? "on-chain" : "over Lightning"} for "${p.title}". It's confirmed on your node and the client has their kick-off email.\n\nKick-off is promised within 48 hours.`,
+      await emailOwner(`Paid ⚡ ${settled.sats.toLocaleString("en-US")} sats: start work for ${lead.name || lead.email || p.order?.name || "a client"}`,
+        `${lead.name || lead.email} paid $${p.totals.dueNow} (${settled.sats} sats) ${settled.onchain ? "on-chain" : "over Lightning"} for "${p.title}". It's confirmed${settled.onchain ? " on-chain" : " on your node"}${lead.email ? " and the client has their kick-off email" : ""}.${p.order ? `\n\nWebsite order: ${p.order.name}\nWhat they need: ${p.order.task || "(not given yet; they can add it from the order screen or the portal)"}\nThe ${p.order.kind === "service" ? "department agent has the task queued" : "client portal is open for their requests"}.` : ""}\n\nKick-off is promised within 48 hours.`,
         null, lead.id);
     } else {
       p.status = "paid";
