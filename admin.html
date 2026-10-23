@@ -176,7 +176,7 @@ dd{margin:0;overflow-wrap:anywhere}
         <p class="muted" style="font-size:.88rem">What application forms ask. Never put passwords, card or ID numbers here: the agent asks you in the browser if a form needs them.</p>
         <div class="grid2" style="gap:.6rem" id="appFields"></div>
         <label class="muted">Other standard answers <small>(e.g. "Yes, I can work UK hours"; "Available for interviews weekdays after 2pm EAT")</small><textarea id="aExtra"></textarea></label>
-        <div class="row"><button class="btn primary" id="aSave">Save applicant details</button><span class="muted" id="aMsg"></span></div></div>
+        <div class="row"><button class="btn" id="aSuggest">✨ Fill from my CV</button><button class="btn primary" id="aSave">Save applicant details</button><span class="muted" id="aMsg"></span></div></div>
       <div class="row"><button class="btn primary" id="pSave">Save profile</button><button class="btn" id="pImport">Import from my GitHub profile README</button><span class="muted" id="pMsg"></span></div></details>
     <div class="panel"><h2>Applications <span class="stage" id="agentBadge" style="font-size:.8rem"></span></h2>
       <div class="row" style="margin:0 0 .8rem"><select id="jobFilter" style="max-width:14rem"><option value="active">Active</option><option value="found">To review</option><option value="ready">Pack ready</option><option value="applying">AI applying</option><option value="applied">Applied</option><option value="interview">Interviewing</option><option value="closed">Closed</option><option value="">All</option></select></div>
@@ -457,17 +457,34 @@ function renderApplicant(a) {
   $("#aExtra").value = a.extra || "";
   $("#appFields").dataset.loaded = "1";
 }
+$("#aSuggest").addEventListener("click", async () => {
+  $("#aSuggest").disabled = true; $("#aMsg").textContent = "Reading your CV…";
+  try {
+    const { applicant } = await api("", { action: "job_applicant_suggest" });
+    document.querySelectorAll("[data-af]").forEach((i) => {
+      const v = applicant[i.dataset.af] || "";
+      if (v && v !== i.value) { i.value = v; i.style.outline = "2px solid var(--btc)"; }
+    });
+    if (applicant.extra && !$("#aExtra").value) $("#aExtra").value = applicant.extra;
+    $("#aMsg").textContent = "Filled from your CV (highlighted). Check them, fill any blanks, then Save to confirm.";
+  } catch (err) { $("#aMsg").textContent = err.message; }
+  $("#aSuggest").disabled = false;
+});
 $("#aSave").addEventListener("click", async () => {
   const body = { action: "job_applicant", extra: $("#aExtra").value };
   document.querySelectorAll("[data-af]").forEach((i) => { body[i.dataset.af] = i.value; });
   try { await api("", body); $("#aMsg").textContent = "Saved ✓"; } catch (err) { $("#aMsg").textContent = err.message; }
 });
+window.addEventListener("message", (e) => {
+  if (e.source !== window || e.data?.source !== "altradits-apply" || e.data.type !== "apply-ack" || e.data.ok) return;
+  $("#jobMsg").textContent = `Apply extension: ${e.data.error || "couldn't start"}`;
+  api("", { action: "job_apply_cancel", id: e.data.id }).then(loadJobs).catch(() => {});
+});
 function renderJobs() {
   const p = J.profile;
   renderApplicant(J.applicant || {});
-  const ag = J.applyAgent || {};
-  $("#agentBadge").textContent = ag.online ? "🟢 Apply Agent online" : "⚪ Apply Agent offline";
-  $("#agentBadge").title = ag.online ? "Running on your Mac" : "Start it on your Mac: cd ~/altradits/apply-agent && npm start";
+  const ext = document.documentElement.dataset.altraditsApply;
+  $("#agentBadge").innerHTML = ext ? `🟢 Apply extension ${esc(ext)} ready` : `⚪ <a href="https://github.com/altradits/altradits/tree/main/apply-extension#install" target="_blank" rel="noopener">Install the Apply extension</a>`;
   if (!$("#pCv").dataset.loaded) {
     $("#pCv").value = p.cv; $("#pTargets").value = p.targets; $("#pLocation").value = p.location; $("#pSalary").value = p.salary; $("#pLinks").value = p.links; $("#pNotes").value = p.notes;
     $("#pCv").dataset.loaded = "1";
@@ -504,7 +521,7 @@ function renderJobs() {
         ${[["applied", "I applied"], ["interview", "Interview"], ["offer", "Offer"], ["rejected", "Rejected"], ["withdrawn", "Not for me"]].filter(([st]) => st !== j.status).map(([st, l]) => `<button class="btn" data-jobstatus="${st}" data-jid="${j.id}">${l}</button>`).join("")}
       </div>
       ${j.apply?.log?.length ? `<details ${["applying", "awaiting_submit"].includes(j.status) ? "open" : ""}><summary>Apply Agent log</summary><ul class="events">${j.apply.log.slice(-15).reverse().map((h) => `<li>${esc(h.at.slice(11, 16))} ${esc(h.text)}</li>`).join("")}</ul></details>` : ""}
-      ${j.status === "awaiting_submit" ? `<p><b>👀 The form is filled in.</b> Review it in the Chrome window on your Mac, then press <b>Submit for me</b> in the agent's panel.</p>` : ""}
+      ${j.status === "awaiting_submit" ? `<p><b>👀 The form is filled in.</b> Review it in the tab that opened, then press <b>Submit for me</b> in the Altradits panel.</p>` : ""}
       ${j.apply?.confirmation ? `<p class="muted">✅ ${esc(j.apply.confirmation)}</p>` : ""}
       <details><summary class="muted">History</summary><ul class="events">${j.history.slice().reverse().map((h) => `<li>${esc(h.at.slice(0, 16).replace("T", " "))}: ${esc(h.text)}</li>`).join("")}</ul></details>
     </div>`;
@@ -627,8 +644,13 @@ document.addEventListener("click", async (e) => {
     e.target.disabled = true; e.target.textContent = "Preparing…";
     try { await api("", { action: "job_prepare", id: d.prepare }); await loadJobs(); } catch (err) { e.target.disabled = false; e.target.textContent = err.message; }
   } else if (d.applyai) {
-    if (!J.applyAgent?.online && !e.target.dataset.armed) { e.target.dataset.armed = "1"; e.target.textContent = "Agent offline: queue anyway?"; return; }
-    try { await api("", { action: "job_apply", id: d.applyai }); await loadJobs(); } catch (err) { e.target.textContent = err.message; }
+    if (!document.documentElement.dataset.altraditsApply) { e.target.textContent = "Install the Apply extension first (see the link above)"; return; }
+    try {
+      await api("", { action: "job_apply", id: d.applyai });
+      // The extension (same browser) opens the job in a new tab and takes it from there.
+      window.postMessage({ source: "altradits-dashboard", type: "apply", id: d.applyai }, location.origin);
+      await loadJobs();
+    } catch (err) { e.target.textContent = err.message; }
   } else if (d.applycancel) {
     try { await api("", { action: "job_apply_cancel", id: d.applycancel }); await loadJobs(); } catch (err) { e.target.textContent = err.message; }
   } else if (d.jobstatus) {

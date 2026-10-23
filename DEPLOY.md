@@ -74,12 +74,14 @@ Altra flags with `flag_misuse`) pause the chat behind a `RULES.humanCheckSats` (
 node. While paused no AI is called; paying reopens the chat automatically. `RULES.maxAiTurnsPerDay` caps AI chat
 turns per day. Tunables live in `data/catalog.js` → `RULES`.
 
-## Apply with AI (runs on Stanley's Mac)
+## Apply with AI (Chrome extension)
 
-`apply-agent/` is a separate program for Stanley's Mac (see its README). Jobs queued with
-**🤖 Apply with AI** in *My job hunt* are picked up by the agent, which drives Chrome with
-Claude, asks Stanley in an on-page panel when it needs him (unknown answers, logins,
-CAPTCHAs), and pauses for his approval before the final submit. Server side: `lib/apply.js`.
+`apply-extension/` is a Chrome extension Stanley loads in his own browser (see its README).
+**🤖 Apply with AI** in *My job hunt* hands the job to the extension, which opens it in a new
+tab, fills the form with AI, asks Stanley in an on-page panel when it needs him (unknown
+answers, logins, CAPTCHAs) and waits for his approval before the final submit. The AI steps,
+PDFs and progress run through the server (`lib/apply.js`, `lib/pdf.js`), so no API key lives
+in the browser. **Fill from my CV** proposes the Applicant details from his uploaded CV.
 
 ## Local development
 

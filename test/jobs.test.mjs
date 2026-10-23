@@ -155,36 +155,65 @@ test("CV upload: Word text is read; a PDF is attached to the Career Agent; bad f
   assert.equal((await admin.GET(req("GET", "/api/admin?view=cvfile"))).status, 404);
 });
 
-test("Apply with AI: queue needs a pack and applicant details; agent claims, reports, finishes", async () => {
+test("Apply with AI via the extension: CV-filled details, start, AI steps, PDFs, outcome", async () => {
+  const apply = await import(new URL("lib/apply.js", root));
   const job = (await jobs.allJobs()).find((x) => x.pack);
   let r = await call(admin.POST, "POST", "/api/admin", { action: "job_apply", id: job.id });
-  assert.equal(r.status, 400, "needs applicant details");
-  r = await call(admin.POST, "POST", "/api/admin", { action: "job_applicant", fullName: "Stanley Chege Thuita", email: "altradits@gmail.com", phone: "+254700000000", extra: "my password: hunter2" });
-  assert.equal(r.status, 400, "no passwords in applicant details");
-  r = await call(admin.POST, "POST", "/api/admin", { action: "job_applicant", fullName: "Stanley Chege Thuita", email: "altradits@gmail.com", phone: "+254700000000" });
-  assert.equal(r.body.applicant.demographics, "Prefer not to say", "sensible default");
+  assert.equal(r.status, 400, "needs confirmed applicant details");
 
-  r = await call(admin.GET, "GET", "/api/admin?view=jobs");
-  assert.equal(r.body.applyAgent.online, false);
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_applicant_suggest" });
+  assert.equal(r.status, 400, "needs the AI key");
+  await call(admin.POST, "POST", "/api/admin", { action: "job_cv_upload", name: "cv.txt", data: Buffer.from("Stanley Chege Thuita, Kisumu, Kenya. altradits@gmail.com. Software engineer: Go, Node.js, Bitcoin Lightning. github.com/altradits").toString("base64") });
+  // "Fill from my CV" proposes details; nothing is saved until Stanley saves.
+  apply.setApplyClient({ beta: { messages: { create: async (p) => {
+    assert.equal(p.tools[0].name, "submit_applicant_details");
+    return { stop_reason: "tool_use", content: [{ type: "tool_use", id: "s", name: "submit_applicant_details", input: {
+      fullName: "Stanley Chege Thuita", email: "altradits@gmail.com", phone: "+254 707 172370", city: "Kisumu", country: "Kenya",
+      linkedin: "https://www.linkedin.com/in/stanmobitech/", github: "https://github.com/altradits", website: "https://altradits.com",
+      workAuthorization: "", noticePeriod: "", salaryExpectation: "", relocate: "", startDate: "" } }] };
+  } } } });
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_applicant_suggest" });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.applicant.city, "Kisumu");
+  assert.equal(r.body.applicant.demographics, "Prefer not to say");
+  assert.equal((await call(admin.GET, "GET", "/api/admin?view=jobs")).body.applicant.fullName, undefined, "not saved until confirmed");
+
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_applicant", ...r.body.applicant, extra: "my password: hunter2" });
+  assert.equal(r.status, 400, "no passwords in applicant details");
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_applicant", fullName: "Stanley Chege Thuita", email: "altradits@gmail.com", phone: "+254707172370" });
+  assert.equal(r.status, 200);
+
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_agent_think", id: job.id, messages: [{ role: "user", content: "x" }] });
+  assert.equal(r.status, 400, "AI steps only while an application is running");
+
   r = await call(admin.POST, "POST", "/api/admin", { action: "job_apply", id: job.id });
   assert.equal(r.body.job.status, "apply_queued");
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_agent_start", id: job.id });
+  assert.equal(r.body.job.id, job.id);
+  assert.deepEqual(r.body.files.slice(0, 2), ["tailored_cv", "cover_letter"]);
+  assert.equal(r.body.applicant.fullName, "Stanley Chege Thuita");
 
-  r = await call(admin.POST, "POST", "/api/admin", { action: "job_agent_poll", version: "1.0.0", host: "mac" });
-  assert.equal(r.body.next.job.id, job.id);
-  assert.equal(r.body.next.applicant.fullName, "Stanley Chege Thuita");
-  assert.ok(r.body.next.pack.cv);
-  assert.equal((await call(admin.POST, "POST", "/api/admin", { action: "job_agent_poll" })).body.next, null, "claimed once");
-  assert.equal((await call(admin.GET, "GET", "/api/admin?view=jobs")).body.applyAgent.online, true);
+  // The AI runs on the server: the extension never holds the API key.
+  let sent;
+  apply.setApplyClient({ beta: { messages: { create: async (p) => { sent = p; return { stop_reason: "tool_use", content: [{ type: "tool_use", id: "a", name: "click", input: { id: "f0e1", why: "Apply" } }] }; } } } });
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_agent_think", id: job.id, messages: [{ role: "user", content: "CURRENT PAGE: ..." }] });
+  assert.equal(r.body.content[0].name, "click");
+  assert.match(sent.system, /Never click the final submit yourself/);
+  assert.ok(sent.tools.some((t) => t.name === "ready_to_submit"));
+
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_agent_file", id: job.id, file: "tailored_cv" });
+  assert.equal(r.body.name, "Stanley_Chege_Thuita_CV.pdf");
+  const pdf = Buffer.from(r.body.data, "base64").toString("latin1");
+  assert.ok(pdf.startsWith("%PDF-1.4") && pdf.trimEnd().endsWith("%%EOF"), "a real PDF");
 
   await call(admin.POST, "POST", "/api/admin", { action: "job_agent_update", id: job.id, note: "Filled contact details" });
   r = await call(admin.POST, "POST", "/api/admin", { action: "job_agent_update", id: job.id, status: "awaiting_submit", note: "Ready to submit" });
   assert.equal(r.body.job.status, "awaiting_submit");
   r = await call(admin.POST, "POST", "/api/admin", { action: "job_agent_update", id: job.id, status: "applied", confirmation: "Thank you! Application received." });
   assert.equal(r.body.job.status, "applied");
-  assert.ok(r.body.job.appliedAt);
   assert.equal(r.body.job.apply.log.length, 2, "two progress notes");
+  apply.setApplyClient(null);
 
-  // Without the admin token nothing works.
-  const anon = await admin.POST(new Request("https://altradits.test/api/admin", { method: "POST", body: JSON.stringify({ action: "job_agent_poll" }) }));
+  const anon = await admin.POST(new Request("https://altradits.test/api/admin", { method: "POST", body: JSON.stringify({ action: "job_agent_start", id: job.id }) }));
   assert.equal(anon.status, 401);
 });
