@@ -235,7 +235,6 @@ section{padding:3.5rem 0}
 .row .ln{font-size:.88rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row .ln b{font-weight:600;color:var(--ink)}
 .row details[open] .ln .h{display:none}
-.row .tag{display:inline-block;margin-left:.45rem;padding:.05rem .5rem;border-radius:99px;font:700 .72rem/1.5 Figtree,sans-serif;vertical-align:.12em;background:color-mix(in srgb,var(--c) 13%,white);color:color-mix(in srgb,var(--c) 70%,black)}
 .rd{padding:.55rem 0 .2rem;font-size:.92rem}
 .rd ul{margin:0;padding:0;list-style:none}
 .rd li{position:relative;padding:.12rem 0 .12rem 1.3rem}
@@ -326,7 +325,6 @@ html.js .step:not(.lit) h3{color:var(--muted)}
 .plan{background:var(--paper);border:2px solid var(--ink);border-radius:1.25rem;padding:1.5rem;display:flex;flex-direction:column;gap:.8rem;position:relative;isolation:isolate;transition:transform .25s cubic-bezier(.2,.7,.2,1)}
 .plan:hover{transform:translateY(-4px)}
 .plan.pop{box-shadow:8px 8px 0 var(--blue);border-color:var(--blue)}
-.plan .tag{position:absolute;top:-.85rem;left:1.25rem;background:var(--blue);color:#fff;font-weight:700;font-size:.8rem;padding:.2rem .7rem;border-radius:99px}
 .plan h3{font-size:1.5rem}
 .plan .amt{font:800 2.4rem/1 'Bricolage Grotesque',sans-serif}
 .plan .amt small{font:500 1rem Figtree,sans-serif;color:var(--muted)}
@@ -859,7 +857,6 @@ const pillarName = (id) => PILLARS.find((p) => p.id === id).name;
 const hay = (s) => `${s.name} ${s.outcome || ""} ${s.deliverables.join(" ")} ${s.keywords} ${pillarName(s.pillar)}`.toLowerCase();
 const QUICK = [...QUICK_JOBS].sort((a, b) => a.price - b.price);
 const BIG = [...SERVICES].sort((a, b) => (a.type === b.type ? a.price - b.price : a.type === "project" ? -1 : 1));
-const LOW = Object.fromEntries(PILLARS.map((p) => [p.id, QUICK.find((j) => j.pillar === p.id)?.id]));
 const TYPES = [
   { id: "all", label: "Everything" },
   { id: "quick", label: "Quick jobs", note: "same day" },
@@ -891,7 +888,7 @@ const row = (s, p) => {
   const price = `${money(s.price)}${s.unit ? `<small>${s.unit}</small>` : ""}`;
   return `<li class="row" id="job-${s.id}">
     <details>
-      <summary><span class="nm">${esc(s.name)}${LOW[p.id] === s.id ? `<span class="tag">Lowest price</span>` : ""}</span><span class="ln"><b>${esc(shortWhen(s))}</b><span class="h"> · ${esc(hint)}</span></span></summary>
+      <summary><span class="nm">${esc(s.name)}</span><span class="ln"><b>${esc(shortWhen(s))}</b><span class="h"> · ${esc(hint)}</span></span></summary>
       <div class="rd">
         <ul>${s.deliverables.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>
         <p><b>Delivery:</b> ${esc(s.delivery)}</p>
@@ -989,7 +986,7 @@ fromHash();
 
 // ---- plans, pay as you go, promises
 $("#planList").innerHTML = PACKAGES.map((p) => `
-  <div class="plan${p.popular ? " pop" : ""}">${p.popular ? '<span class="tag">Most popular</span>' : ""}
+  <div class="plan${p.popular ? " pop" : ""}">
     <h3>${esc(p.name)}</h3><div class="amt">${money(p.price)}<small>/month</small></div>
     <p>${esc(p.pitch)}</p><ul>${p.features.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>
     ${buyBtn(p.id, `Pay ${money(p.price)} · start ${p.name}`, `btn ${p.popular ? "primary" : "dark"}`)}
