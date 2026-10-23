@@ -146,7 +146,7 @@ Founder & AI Systems Engineer
 Nairobi, Kenya | altradits@gmail.com | altradits.com | github.com/altradits
 
 ## Professional Summary
-${"Founder who builds and runs a fixed-price virtual assistant business with AI agents and Bitcoin payments. ".repeat(4)}
+Founder of Altradits, a fixed-price virtual assistant business run with AI agents and a freelancer team. Built its storefront, order automation and Bitcoin payments end to end.
 
 ## Core Skills
 Engineering: Node.js, JavaScript, Go, REST APIs, GitHub Actions, CI/CD
@@ -166,6 +166,8 @@ ${"- Completed peer-learning projects in Go and JavaScript\n".repeat(30)}`;
   assert.equal(a.score, 100);
   assert.ok(career.atsAudit(good + "\n| a | b |\n| - | - |\n").issues.some((i) => /table/.test(i)));
   assert.ok(career.atsAudit(good.replace("## Core Skills", "## Toolbox 🚀")).issues.length >= 2);
+  assert.ok(career.atsAudit(good.replace("Jan 2024", "[ADD: start date]")).issues.some((i) => /ADD/.test(i)), "placeholders are flagged");
+  assert.ok(career.atsAudit(good.replace("Founder & AI Systems Engineer", "Founder & Full-Stack Engineer | AI Agent Systems · Bitcoin & Lightning Payments · Go / Node.js")).issues.some((i) => /Headline/.test(i)));
 
   let builds = 0;
   career.setCareerClient(fake(() => { builds++; return tool("submit_master_cv", { headline: "Founder", summary: "s", cv_markdown: good, skills: [], highlights: [], missing: [] }); }));
