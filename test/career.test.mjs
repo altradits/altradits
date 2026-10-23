@@ -189,3 +189,28 @@ ${"- Completed peer-learning projects in Go and JavaScript\n".repeat(30)}`;
   career.setCareerClient(null);
   assert.equal(await career.syncCv(), "skipped: no API key");
 });
+
+test("the top of the CV is always simple: short headline, one contact line, 2-sentence summary", () => {
+  const old = `# STANLEY CHEGE THUITA
+**Founder & Full-Stack Engineer | AI Agent Systems · Bitcoin & Lightning Payments · Go / Node.js**
+
+Nairobi & Kisumu, Kenya · altradits@gmail.com · +254 707 172 370
+
+altradits.com · github.com/altradits · linkedin.com/in/stanmobitech · altradits-portfolio.vercel.app · x.com/altradits
+
+---
+
+## Professional Summary
+Founder and engineer who designed, built and runs **Altradits**, a global virtual-assistant business operated by one person and a team of AI agents. The system covers AI sales chat.
+
+## Experience
+- kept as is`;
+  const out = career.simplifyTop(old).split("\n");
+  assert.equal(out[0], "# Stanley Chege Thuita");
+  assert.equal(out[1], "Founder & Full-Stack Engineer");
+  assert.equal(out[2], "Nairobi & Kisumu, Kenya | altradits@gmail.com | +254 707 172 370 | altradits.com | linkedin.com/in/stanmobitech");
+  const text = out.join("\n");
+  assert.doesNotMatch(text, /one person|sales chat|vercel|x\.com/);
+  assert.match(text, /## Professional Summary\nSoftware engineer and founder of Altradits/);
+  assert.match(text, /- kept as is/);
+});
