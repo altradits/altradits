@@ -21,14 +21,12 @@ const CSS = `
 .pw .b{display:inline-flex;justify-content:center;padding:.6rem 1rem;border-radius:.7rem;font:600 .95rem Figtree,sans-serif;text-decoration:none;border:2px solid var(--pw-ink);cursor:pointer;background:transparent;color:var(--pw-ink)}
 .pw .b.btc{background:var(--pw-btc);border-color:var(--pw-btc)}
 .pw .status{display:flex;align-items:center;gap:.45rem;font-weight:600;margin-top:.6rem}
-.pw .pulse{flex:none;width:.6rem;height:.6rem;border-radius:50%;background:var(--pw-btc);animation:pwp 1.2s infinite}
 .pw .err{color:#B42318}
 .pw .fees{margin-top:.9rem;font-size:.85rem}
 .pw .fees summary{cursor:pointer;font-weight:700}
 .pw .fees ul{margin:.4rem 0 0;padding-left:1.1rem}
-@keyframes pwp{50%{opacity:.25}}
 @media (max-width:560px){.pw .grid{grid-template-columns:1fr;justify-items:center;text-align:center}.pw .qr{width:min(20rem,100%)}.pw .row{justify-content:center}}
-@media (prefers-reduced-motion:reduce){.pw .pulse{animation:none}}`;
+`;
 
 function addStyles() {
   if (document.getElementById("pw-css")) return;
@@ -152,7 +150,7 @@ export function mountPay(el, { id, t, onPaid, onReady, claim = false }) {
           };
         } else $("[data-claim]").previousElementSibling.textContent = `Valid for ${clock}. After paying, press:`;
       } else {
-        if (!st.dataset.seen) st.innerHTML = `<span class="pulse"></span> Waiting for payment…${left ? ` (Lightning valid ${clock})` : ""}`;
+        if (!st.dataset.seen) st.innerHTML = `Waiting for payment…${left ? ` (Lightning valid ${clock})` : ""}`;
         // Lightning settles in seconds; on-chain is checked less often.
         if (n % 2 === 0 && (left > 0 || n % 15 === 0)) {
           try {
@@ -162,7 +160,7 @@ export function mountPay(el, { id, t, onPaid, onReady, claim = false }) {
               st.dataset.seen = "1";
               st.innerHTML = r.onchainSeen === "partial"
                 ? `⚠️ We see a Bitcoin payment, but it's less than ${sats} sats. Please send the rest to the same address.`
-                : `<span class="pulse"></span> Payment seen on the Bitcoin network. Waiting for 1 confirmation (usually 10–60 min). You can close this page: your order is saved.`;
+                : `Payment seen on the Bitcoin network. Waiting for 1 confirmation (usually 10–60 min). You can close this page: your order is saved.`;
             }
           } catch {}
         }
