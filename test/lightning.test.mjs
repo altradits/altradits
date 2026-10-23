@@ -19,6 +19,8 @@ execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days
   "-addext", "subjectAltName=DNS:localhost", "-keyout", "key.pem", "-out", "cert.pem"], { stdio: "ignore" });
 const MACAROON = "0201036c6e64";
 const invoices = new Map();
+let inbound = null;   // null = macaroon without offchain:read
+let addrCount = 0;
 let lnd;
 before(async () => {
   lnd = https.createServer({ key: fs.readFileSync("key.pem"), cert: fs.readFileSync("cert.pem") }, (req, res) => {
@@ -33,6 +35,12 @@ before(async () => {
         res.end(JSON.stringify({ r_hash: hash.toString("base64"), payment_request: `lnbc${value}0n1fake${invoices.size}` }));
         return;
       }
+      if (req.method === "GET" && req.url === "/v1/balance/channels") {
+        if (inbound === null) { res.writeHead(403).end(JSON.stringify({ message: "permission denied" })); return; }
+        res.end(JSON.stringify({ remote_balance: { sat: String(inbound) } }));
+        return;
+      }
+      if (req.method === "GET" && req.url.startsWith("/v1/newaddress")) { res.end(JSON.stringify({ address: `bcrt1qfakeaddress${++addrCount}` })); return; }
       const m = req.url.match(/^\/v1\/invoice\/([0-9a-f]+)$/);
       if (req.method === "GET" && m && invoices.has(m[1])) { res.end(JSON.stringify(invoices.get(m[1]))); return; }
       res.writeHead(404).end(JSON.stringify({ message: "not found" }));
@@ -45,8 +53,12 @@ after(() => lnd.close());
 // --- mocked internet: price feed + Lightning address ----------------------
 const realFetch = globalThis.fetch;
 let lnurlAmountOverride = null;
+const chain = new Map(); // address -> { confirmed, unconfirmed }
 globalThis.fetch = async (url, opts) => {
   const u = String(url);
+  if (u.includes("mempool.space/api/v1/fees/recommended")) return Response.json({ fastestFee: 5, halfHourFee: 3, hourFee: 2 });
+  const a = u.match(/mempool\.space\/api\/address\/(\w+)$/);
+  if (a) { const c = chain.get(a[1]) || { confirmed: 0, unconfirmed: 0 }; return Response.json({ chain_stats: { funded_txo_sum: c.confirmed }, mempool_stats: { funded_txo_sum: c.unconfirmed } }); }
   if (u.includes("api.coinbase.com")) return Response.json({ data: { amount: "80000.00" } });
   if (u.includes("/.well-known/lnurlp/")) return Response.json({ tag: "payRequest", callback: "https://wallet.test/cb", minSendable: 1000, maxSendable: 1e11, commentAllowed: 255 });
   if (u.startsWith("https://wallet.test/cb")) {
@@ -207,5 +219,121 @@ test("node offline: the client still gets a payable QR from the Lightning addres
     assert.match(r.body.invoice.qr, /^<svg/);
   } finally {
     delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON;
+  }
+});
+
+test("any wallet: on-chain address, unified QR, fees shown, on-chain payment confirms", async () => {
+  process.env.LND_REST_URL = `https://localhost:${lnd.address().port}`;
+  process.env.LND_INVOICE_MACAROON = MACAROON;
+  process.env.LND_TLS_CERT = fs.readFileSync("cert.pem").toString("base64");
+  ln.resetCapacityCache();
+  inbound = 10_000_000;
+  try {
+    const { lead, p } = await acceptedProposal("chain@example.com");
+    const r = await call(pay.POST, "POST", "/api/pay", { id: p.id, t: p.token });
+    const sats = Math.ceil((749 / 80000) * 1e8);
+    const { invoice, onchain, unified, fees } = r.body;
+    assert.equal(invoice.provider ?? "lnd", "lnd");
+    assert.match(onchain.address, /^bcrt1q/);
+    assert.equal(onchain.btc, (sats / 1e8).toFixed(8));
+    assert.equal(unified.uri, `bitcoin:${onchain.address}?amount=${onchain.btc}&label=Altradits&lightning=${invoice.bolt11}`, "BIP21 with Lightning fallback");
+    assert.match(unified.qr, /^<svg/);
+    assert.equal(fees.altradits, 0, "we add no fee");
+    assert.deepEqual(fees.onchain.normal, { satPerVb: 3, sats: 423, usd: Math.round(423 * 80000 / 1e8 * 100) / 100 });
+    assert.ok(fees.lightning.maxSats > 0);
+
+    // Same address on reload (one per proposal).
+    assert.equal((await call(pay.POST, "POST", "/api/pay", { id: p.id, t: p.token })).body.onchain.address, onchain.address);
+
+    // Partial, then seen in the mempool, then confirmed.
+    chain.set(onchain.address, { confirmed: 0, unconfirmed: 1000 });
+    assert.equal((await call(pay.GET, "GET", `/api/pay?id=${p.id}&t=${p.token}`)).body.onchainSeen, "partial");
+    chain.set(onchain.address, { confirmed: 0, unconfirmed: sats });
+    const seen = await call(pay.GET, "GET", `/api/pay?id=${p.id}&t=${p.token}`);
+    assert.equal(seen.body.paid, false);
+    assert.equal(seen.body.onchainSeen, true);
+    chain.set(onchain.address, { confirmed: sats, unconfirmed: 0 });
+    const done = await call(pay.GET, "GET", `/api/pay?id=${p.id}&t=${p.token}`);
+    assert.equal(done.body.status, "paid");
+    assert.equal((await crm.getProposal(p.id)).payment.method, "Bitcoin (on-chain)");
+    assert.equal((await crm.getLead(lead.id)).stage, "active");
+  } finally {
+    inbound = null;
+    delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON; delete process.env.LND_TLS_CERT;
+  }
+});
+
+test("amount above channel capacity: Lightning address invoice, LNURL refused, on-chain still offered", async () => {
+  const lnurlApi = await import(new URL("api/lnurl.js", root));
+  process.env.LND_REST_URL = `https://localhost:${lnd.address().port}`;
+  process.env.LND_INVOICE_MACAROON = MACAROON;
+  process.env.LND_TLS_CERT = fs.readFileSync("cert.pem").toString("base64");
+  ln.resetCapacityCache();
+  inbound = 50_000; // far below ~936k sats
+  try {
+    const { p } = await acceptedProposal("big@example.com");
+    const r = await call(pay.POST, "POST", "/api/pay", { id: p.id, t: p.token });
+    assert.match(r.body.invoice.bolt11, /addressinvoice/, "custodial address has no capacity limit");
+    assert.match(r.body.onchain.address, /^bcrt1q/);
+    const meta = await call(lnurlApi.GET, "GET", `/api/lnurl?p=${p.id}&t=${p.token}`);
+    assert.equal(meta.body.status, "ERROR");
+    assert.match(meta.body.reason, /On-chain/);
+  } finally {
+    inbound = null;
+    ln.resetCapacityCache();
+    delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON; delete process.env.LND_TLS_CERT;
+  }
+});
+
+test("website order: price button -> QR for the full price -> payment confirms the order and queues the task", async () => {
+  const order = await import(new URL("api/order.js", root));
+  const chat = await import(new URL("api/chat.js", root));
+  const ops = await import(new URL("lib/ops.js", root));
+  process.env.LND_REST_URL = `https://localhost:${lnd.address().port}`;
+  process.env.LND_INVOICE_MACAROON = MACAROON;
+  process.env.LND_TLS_CERT = fs.readFileSync("cert.pem").toString("base64");
+  ln.resetCapacityCache();
+  try {
+    // No talking: the public chat is closed.
+    assert.equal((await call(chat.POST, "POST", "/api/chat", { message: "hi" })).status, 410);
+    assert.equal((await call(order.POST, "POST", "/api/order", { item: "nope" })).status, 400);
+
+    const o = (await call(order.POST, "POST", "/api/order", { item: "website" })).body;
+    assert.equal(o.item.usd, 600, "projects ordered online are paid in full");
+    const r = await call(pay.POST, "POST", "/api/pay", { id: o.id, t: o.t });
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.equal(r.body.invoice.sats, Math.ceil((600 / 80000) * 1e8));
+    assert.equal((await call(order.GET, "GET", `/api/order?id=${o.id}&t=${o.t}`)).body.status, "accepted");
+
+    assert.equal((await call(order.POST, "POST", "/api/order", { id: o.id, t: o.t, email: "bad" })).status, 400);
+    await call(order.POST, "POST", "/api/order", { id: o.id, t: o.t, email: "Buyer@Example.com", name: "Bo", task: "5 pages for my bakery" });
+
+    const [, onNode] = [...invoices.entries()].at(-1);
+    onNode.state = "SETTLED";
+    assert.equal((await call(pay.GET, "GET", `/api/pay?id=${o.id}&t=${o.t}`)).body.status, "paid");
+    const done = (await call(order.GET, "GET", `/api/order?id=${o.id}&t=${o.t}`)).body;
+    assert.equal(done.status, "paid");
+    assert.match(done.portal, /portal\.html\?c=/);
+    assert.equal(done.emailed, true);
+
+    const p = await crm.getProposal(o.id);
+    const lead = await crm.getLead(p.leadId);
+    assert.equal(lead.stage, "active");
+    assert.equal(lead.email, "buyer@example.com");
+    const task = await ops.getTask(p.order.taskId);
+    assert.equal(task.title, "Website or landing page");
+    assert.equal(task.details, "5 pages for my bakery");
+    assert.equal(task.department, "tech");
+
+    // Details added after paying reach the task.
+    await call(order.POST, "POST", "/api/order", { id: o.id, t: o.t, task: "5 pages for my bakery, launch by Friday" });
+    assert.match((await ops.getTask(p.order.taskId)).details, /Friday/);
+
+    // Monthly plans: first month in full.
+    const plan = (await call(order.POST, "POST", "/api/order", { item: "core" })).body;
+    assert.equal(plan.item.usd, 749);
+    assert.equal((await call(order.GET, "GET", `/api/order?id=${plan.id}&t=wrong`)).status, 404);
+  } finally {
+    delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON; delete process.env.LND_TLS_CERT;
   }
 });

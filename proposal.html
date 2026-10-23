@@ -51,16 +51,6 @@ input[type=text],select{width:100%;padding:.7rem .85rem;border:2px solid var(--l
 .ln{border:2px solid var(--btc);border-radius:1rem;padding:1rem 1.1rem;margin-top:1rem;background:color-mix(in srgb,var(--btc) 6%,white)}
 .ln h4{margin:0 0 .3rem;font:700 1.1rem 'Bricolage Grotesque',sans-serif}
 .ln .btn.btc{background:var(--btc);border-color:var(--btc);color:var(--ink)}
-.lnpay{display:grid;grid-template-columns:auto 1fr;gap:1.1rem;align-items:center;margin-top:.8rem}
-.qr{width:13rem;max-width:100%;aspect-ratio:1;background:#fff;border:2px solid var(--ink);border-radius:.8rem;padding:.4rem}
-.qr svg{display:block;width:100%;height:100%}
-.sats{font:800 1.5rem 'Bricolage Grotesque',sans-serif}
-.inv{font:500 .78rem ui-monospace,Menlo,monospace;overflow-wrap:anywhere;color:var(--muted);max-height:3.2rem;overflow:hidden;margin:.4rem 0}
-.status{display:flex;align-items:center;gap:.45rem;font-weight:600;margin-top:.5rem}
-.pulse{width:.6rem;height:.6rem;border-radius:50%;background:var(--btc);animation:pl 1.2s infinite}
-@keyframes pl{50%{opacity:.25}}
-@media (max-width:560px){.lnpay{grid-template-columns:1fr;justify-items:center;text-align:center}}
-@media (prefers-reduced-motion:reduce){.pulse{animation:none}}
 .link{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:.93rem}
 @media (max-width:560px){.doc{padding:1.25rem;box-shadow:4px 4px 0 var(--ink)}}
 </style>
@@ -72,6 +62,7 @@ input[type=text],select{width:100%;padding:.7rem .85rem;border:2px solid var(--l
 </div>
 <script type="module">
 import { PAYMENTS, GUARANTEES, BUSINESS, RULES } from "./data/catalog.js";
+import { mountPay } from "./assets/pay-widget.js";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -79,76 +70,18 @@ const money = (n) => "$" + Number(n).toLocaleString("en-US");
 const q = new URLSearchParams(location.search);
 const id = q.get("id"), t = q.get("t");
 let P = null;
-let lnTimer = null;
 let LN = false; // server says Lightning invoices are available
 
-async function showLightning() {
-  const body = $("#lnBody");
-  body.innerHTML = `<p class="muted">Creating your invoice…</p>`;
-  let inv;
-  try {
-    const res = await fetch("/api/pay", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, t }) });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    inv = data.invoice;
-  } catch (err) {
-    body.innerHTML = `<p class="err">${esc(err.message || "Couldn't create an invoice.")}</p><div class="row"><button type="button" class="btn btc" id="lnBtn">Try again</button></div>`;
-    $("#lnBtn").onclick = showLightning;
-    return;
-  }
-  body.innerHTML = `<div class="lnpay">
-      <a class="qr" href="lightning:${esc(inv.bolt11)}" aria-label="Lightning invoice QR code. Tap to open your wallet.">${inv.qr}</a>
-      <div>
-        <div class="sats">${inv.sats.toLocaleString("en-US")} sats</div>
-        <div class="muted">${money(inv.usd)} at ${money(inv.rate)}/BTC</div>
-        <div class="inv" title="Lightning invoice">${esc(inv.bolt11)}</div>
-        <div class="row" style="margin-top:.3rem">
-          <a class="btn btc" href="lightning:${esc(inv.bolt11)}">Open wallet</a>
-          <button type="button" class="btn" id="lnCopy">Copy invoice</button>
-          ${inv.lnurl ? `<button type="button" class="btn" id="lnurlCopy">Copy LNURL</button>` : ""}
-        </div>
-        ${inv.lnurl ? `<div class="note" style="font-size:.82rem;margin-top:.3rem">${inv.lnurlFixedAmount ? `The LNURL is for the same ${inv.sats.toLocaleString("en-US")} sats and works in any LNURL wallet.` : "LNURL: enter the amount shown above in your wallet."}</div>` : ""}
-        <div class="status" id="lnStatus"></div>
-      </div></div>`;
-  if ($("#lnurlCopy")) $("#lnurlCopy").onclick = async (e) => {
-    try { await navigator.clipboard.writeText(inv.lnurl); e.target.textContent = "Copied"; }
-    catch { e.target.textContent = "Couldn't copy"; }
-    setTimeout(() => { e.target.textContent = "Copy LNURL"; }, 2000);
-  };
-  $("#lnCopy").onclick = async (e) => {
-    try { await navigator.clipboard.writeText(inv.bolt11); e.target.textContent = "Copied"; }
-    catch { e.target.textContent = "Select the text above"; }
-    setTimeout(() => { e.target.textContent = "Copy invoice"; }, 2000);
-  };
-  const sel = $("#method");
-  if (sel) [...sel.options].forEach((o) => { if (/lightning/i.test(o.value)) sel.value = o.value; });
-
-  const expires = Date.parse(inv.expiresAt);
-  const tick = async (n) => {
-    const left = Math.max(0, Math.round((expires - Date.now()) / 1000));
-    const st = $("#lnStatus");
-    if (!st) return;
-    if (left === 0) {
-      st.innerHTML = `Invoice expired. <button type="button" class="link" id="lnNew">Get a new one</button>`;
-      $("#lnNew").onclick = showLightning;
-      return;
-    }
-    const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
-    if (inv.autoConfirm) {
-      st.innerHTML = `<span class="pulse"></span> Waiting for payment… (${clock})`;
-      if (n % 2 === 0) {
-        try {
-          const r = await (await fetch(`/api/pay?id=${encodeURIComponent(id)}&t=${encodeURIComponent(t)}`)).json();
-          if (r.status === "paid") { const d = await (await fetch(url)).json(); P = d.proposal; LN = Boolean(d.lightning); render(); return; }
-        } catch {}
-      }
-    } else {
-      st.innerHTML = `<span class="muted">Valid for ${clock}. After paying, press "I've paid" below.</span>`;
-    }
-    lnTimer = setTimeout(() => tick(n + 1), 2000);
-  };
-  clearTimeout(lnTimer);
-  tick(0);
+let stopPay = null;
+function showLightning() {
+  stopPay?.();
+  stopPay = mountPay($("#lnBody"), { id, t,
+    onReady() {
+      const sel = $("#method");
+      if (sel) [...sel.options].forEach((o) => { if (/bitcoin|lightning/i.test(o.value)) sel.value = o.value; });
+    },
+    async onPaid() { const d = await (await fetch(url)).json(); P = d.proposal; LN = Boolean(d.lightning); render(); },
+  });
 }
 
 async function api(body) {
@@ -172,7 +105,7 @@ function methods() {
 }
 
 function render() {
-  clearTimeout(lnTimer);
+  stopPay?.();
   const p = P;
   const rows = p.items.map((i) => `<tr><td>${esc(i.label)}${i.description ? `<small>${esc(i.description)}</small>` : ""}</td>
     <td class="n">${i.quantity > 1 ? i.quantity + " × " : ""}${money(i.price)}${i.type === "monthly" ? "/mo" : ""}</td></tr>`).join("");
@@ -190,9 +123,9 @@ function render() {
   } else if (p.status === "accepted" || p.status === "paid_claimed") {
     action = `<div class="box go"><h3>${p.status === "accepted" ? "Pay to start" : "Thanks, we're checking your payment"}</h3>
       <p>Accepted by ${esc(p.acceptedBy)}. Amount due to start: <b>${money(t.dueNow)}</b></p>
-      ${LN ? `<div class="ln" id="ln"><h4>⚡ Pay with Bitcoin Lightning</h4>
-        <p class="muted" style="margin:0">Scan with any Lightning wallet. The invoice is for the exact amount at today's rate.</p>
-        <div id="lnBody"><p class="muted">Creating your payment QR…</p></div></div>` : ""}
+      ${LN ? `<div class="ln" id="ln"><h4>₿ Pay with Bitcoin (any wallet)</h4>
+        <p class="muted" style="margin:0">Scan with any Bitcoin wallet. The amount is exact at today's rate, and fees are shown below.</p>
+        <div id="lnBody" style="margin-top:.8rem"><p class="muted">Creating your payment QR…</p></div></div>` : ""}
       <div class="methods">${methods().map(([n, v]) => `<div class="method"><b>${n}</b>${v}</div>`).join("")}</div>
       <form id="paidForm" style="margin-top:1rem">
         <label>How did you pay?<select id="method">${methods().map(([n]) => `<option>${esc(n)}</option>`).join("")}</select></label>
@@ -204,7 +137,7 @@ function render() {
   } else if (p.status === "paid") {
     action = `<div class="box done"><h3>✓ Paid. We're working on it.</h3><p>Kick-off details are in your inbox. Questions? Just reply to any of our emails.</p></div>`;
   } else if (p.status === "declined") {
-    action = `<div class="box"><h3>This proposal is closed</h3><p>If anything changes, <a href="/?chat=1">chat with Altra</a> or email ${esc(BUSINESS.email)}.</p></div>`;
+    action = `<div class="box"><h3>This proposal is closed</h3><p>If anything changes, <a href="/#services">pick a service and order it on the site</a>.</p></div>`;
   }
 
   $("#doc").innerHTML = `
@@ -253,7 +186,7 @@ function render() {
     if (data.pending) { $("#doc").innerHTML = `<h1>Almost ready</h1><p>${esc(BUSINESS.owner)} is reviewing your proposal personally and will email you as soon as it's approved, usually within 12 hours.</p>`; return; }
     P = data.proposal; LN = Boolean(data.lightning); render();
   } catch (err) {
-    $("#doc").innerHTML = `<h1>We couldn't open this proposal</h1><p>${esc(err.message || "Check the link in your email.")}</p><p><a href="/?chat=1">Chat with Altra</a> or email ${esc(BUSINESS.email)}.</p>`;
+    $("#doc").innerHTML = `<h1>We couldn't open this proposal</h1><p>${esc(err.message || "Check the link in your email.")}</p><p><a href="/#services">Order on the site instead</a>.</p>`;
   }
 })();
 </script>

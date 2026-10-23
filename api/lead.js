@@ -35,8 +35,8 @@ export async function POST(request) {
   await sendEmail({
     to: email, leadId: lead.id, kind: "client",
     subject: "Your free delegation plan",
-    text: `Hi ${lead.name || "there"},\n\nHere is your delegation plan.\n\nWhat to hand off first:\n${tasks || "- Tell us your top task and we'll map it."}\n\nYou listed about ${quiz.hours} hours a week of this work. Handing it off could give you back around ${r.hoursBack} hours a month${r.valueBack ? `, worth about $${r.valueBack} of your time` : ""}.\n\nThe plan that fits: ${r.pkg.name} at $${r.pkg.price}/month (${r.pkg.hours} hours).\n\nThe easiest way to start: ${GUARANTEES[0].text}\n\nReply to this email with your first task, or open the chat on the site and Altra will set it up in two minutes.`,
-    cta: { label: "Start with a free task", url: `${siteUrl(request)}/?chat=trial` },
+    text: `Hi ${lead.name || "there"},\n\nHere is your delegation plan.\n\nWhat to hand off first:\n${tasks || "- Tell us your top task and we'll map it."}\n\nYou listed about ${quiz.hours} hours a week of this work. Handing it off could give you back around ${r.hoursBack} hours a month${r.valueBack ? `, worth about $${r.valueBack} of your time` : ""}.\n\nThe plan that fits: ${r.pkg.name} at $${r.pkg.price}/month (${r.pkg.hours} hours).\n\n${GUARANTEES[0].text} Pick the plan or the exact task on the site and pay with any Bitcoin wallet: your payment places the order.`,
+    cta: { label: "Choose and order", url: `${siteUrl(request)}/#services` },
   });
 
   return json({ ok: true, leadId: lead.id, token: isNew ? lead.token : undefined, plan: { hoursBack: r.hoursBack, valueBack: r.valueBack, package: r.pkg.id } });

@@ -12,6 +12,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "altradits-agents-"));
 process.chdir(tmp);
 for (const k of ["ANTHROPIC_API_KEY", "RESEND_API_KEY", "UPSTASH_REDIS_REST_URL", "KV_REST_API_URL"]) delete process.env[k];
 process.env.ADMIN_TOKEN = "secret-admin";
+process.env.CHAT_ENABLED = "1"; // chat is off on the public site
 process.env.SITE_URL = "https://altradits.test";
 
 // --- fake LND --------------------------------------------------------------

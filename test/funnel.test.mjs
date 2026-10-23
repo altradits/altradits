@@ -9,6 +9,7 @@ import path from "node:path";
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "altradits-"));
 process.chdir(tmp); // store writes .data/db.json under cwd
 delete process.env.ANTHROPIC_API_KEY;
+process.env.CHAT_ENABLED = "1"; // chat is off on the public site
 delete process.env.RESEND_API_KEY;
 delete process.env.UPSTASH_REDIS_REST_URL;
 delete process.env.KV_REST_API_URL;

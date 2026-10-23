@@ -9,7 +9,11 @@ import { saveLead } from "../lib/crm.js";
 
 const MAX_TURNS_PER_LEAD = 60;
 
+// The public site sells by price buttons only; chat is off unless CHAT_ENABLED=1.
+const chatOpen = () => process.env.CHAT_ENABLED === "1";
+
 export async function POST(request) {
+  if (!chatOpen()) return json({ error: "Chat is closed. Pick a service on altradits.com and pay to order." }, 410);
   const body = await readBody(request);
   const message = clean(body.message, 2000);
   if (!message) return json({ error: "Empty message" }, 400);
