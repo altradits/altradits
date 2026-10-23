@@ -11,8 +11,8 @@ const CSS = `
 .pw .tab{font:600 .85rem Figtree,system-ui,sans-serif;border:2px solid var(--pw-ink);background:transparent;color:var(--pw-ink);border-radius:2rem;padding:.3rem .8rem;cursor:pointer}
 .pw .tab[aria-selected=true]{background:var(--pw-ink);color:#fff}
 .pw .grid{display:grid;grid-template-columns:auto 1fr;gap:1.1rem;align-items:center}
-.pw .qr{display:block;width:13rem;max-width:100%;aspect-ratio:1;background:#fff;border:2px solid var(--pw-ink);border-radius:.8rem;padding:.4rem}
-.pw .qr svg{display:block;width:100%;height:100%}
+.pw .qr{display:block;width:clamp(15rem,32vw,18rem);height:auto;max-width:100%;aspect-ratio:1;box-sizing:border-box;background:#fff;border:2px solid var(--pw-ink);border-radius:.8rem;padding:.4rem}
+.pw .qr svg{display:block;width:100%;height:100%;shape-rendering:crispEdges}
 .pw .sats{font:800 1.5rem 'Bricolage Grotesque',Figtree,sans-serif}
 .pw .muted{color:var(--pw-muted)}
 .pw .hint{font-size:.85rem;margin:.3rem 0}
@@ -27,7 +27,7 @@ const CSS = `
 .pw .fees summary{cursor:pointer;font-weight:700}
 .pw .fees ul{margin:.4rem 0 0;padding-left:1.1rem}
 @keyframes pwp{50%{opacity:.25}}
-@media (max-width:560px){.pw .grid{grid-template-columns:1fr;justify-items:center;text-align:center}.pw .row{justify-content:center}}
+@media (max-width:560px){.pw .grid{grid-template-columns:1fr;justify-items:center;text-align:center}.pw .qr{width:min(20rem,100%)}.pw .row{justify-content:center}}
 @media (prefers-reduced-motion:reduce){.pw .pulse{animation:none}}`;
 
 function addStyles() {
