@@ -1,0 +1,36 @@
+name: Deploy altradits.com
+
+# Every push to main (including merged PRs) tells the live site to update
+# itself. The DirectAdmin cron remains as a 5-minute backup.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger deploy on the server
+        run: |
+          for attempt in 1 2 3; do
+            body=$(curl -sS --max-time 30 -X POST https://altradits.com/api/deploy -H "Content-Type: application/json" -d '{}' || true)
+            echo "attempt $attempt: $body"
+            case "$body" in
+              *'"started":true'*) echo "Deploy started."; exit 0 ;;
+              *'"started":false'*) echo "A deploy ran within the last minute; the cron backup will pick up anything newer."; exit 0 ;;
+            esac
+            sleep 20
+          done
+          echo "::error::The server did not accept the deploy request (possibly blocked by the host's bot protection). The 5-minute cron backup will still try."
+          exit 1
+
+      - name: Confirm the site is healthy
+        run: |
+          sleep 45
+          curl -fsS --max-time 30 https://altradits.com/healthz
