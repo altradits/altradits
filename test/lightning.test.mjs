@@ -193,3 +193,19 @@ test("instant QR + fixed-amount LNURL; paying via the LNURL confirms the proposa
     delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON; delete process.env.LND_TLS_CERT;
   }
 });
+
+test("node offline: the client still gets a payable QR from the Lightning address", async () => {
+  process.env.LND_REST_URL = "https://localhost:1"; // nothing listening
+  process.env.LND_INVOICE_MACAROON = MACAROON;
+  try {
+    const { p } = await acceptedProposal("offline@example.com");
+    const r = await call(pay.POST, "POST", "/api/pay", { id: p.id, t: p.token });
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.match(r.body.invoice.bolt11, /addressinvoice/, "invoice from the Lightning address");
+    assert.equal(r.body.invoice.autoConfirm, false, "Stanley confirms this one");
+    assert.equal(r.body.invoice.lnurlFixedAmount, false, "address LNURL while the node is down");
+    assert.match(r.body.invoice.qr, /^<svg/);
+  } finally {
+    delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON;
+  }
+});
