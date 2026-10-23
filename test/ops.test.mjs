@@ -85,13 +85,15 @@ test("team member: apply, approve, receive, deliver; client: changes then approv
   await call(team.POST, "POST", "/api/team", { m, action: "accept", task: taskId });
   await call(team.POST, "POST", "/api/team", { m, action: "submit", task: taskId, url: "https://docs.google.com/x", note: "Shortened caption two.", hours: 2 });
   r = await call(portal.POST, "POST", "/api/portal", { c: lead.portalToken, action: "approve", task: taskId });
+  assert.equal(r.status, 400, "rating required to approve");
+  r = await call(portal.POST, "POST", "/api/portal", { c: lead.portalToken, action: "approve", task: taskId, rating: 5, comment: "Perfect" });
   assert.equal(r.body.tasks.find((t) => t.id === taskId).status, "done");
   assert.equal(r.body.hours.used, 2);
   assert.equal(r.body.hours.plan, 35, "Core plan hours");
 
   // Other clients can't touch it.
   const other = await activeClient("Cy", "cy@example.com");
-  r = await call(portal.POST, "POST", "/api/portal", { c: other.portalToken, action: "approve", task: taskId });
+  r = await call(portal.POST, "POST", "/api/portal", { c: other.portalToken, action: "approve", task: taskId, rating: 5 });
   assert.equal(r.status, 404);
 });
 

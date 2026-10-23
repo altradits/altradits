@@ -30,6 +30,14 @@ export const DEPARTMENTS = [
       "Images sized for each platform, with alt text",
       "No health, financial or legal claims the client hasn't provided",
     ],
+    agent: {
+      name: "Social & Content Agent",
+      sources: ["marketing/marketing-social-media-strategist.md", "marketing/marketing-content-creator.md", "marketing/marketing-instagram-curator.md"],
+      persona: "A social media strategist and copywriter. Writes in the client's voice, plans calendars around their offers, adapts each post to the platform, and judges content by replies, clicks and bookings rather than vanity metrics.",
+      aiTools: ["web_search", "web_fetch"],
+      deliverables: "Content calendars (markdown table or CSV: date, platform, post copy, visual idea, hashtags, CTA), ready-to-post captions, newsletter drafts, video scripts and hooks.",
+      humanSteps: "Publishing or scheduling inside the client's accounts and replying to DMs from their account.",
+    },
     escalate: ["Negative comment storm or press enquiry", "Account locked or hacked", "Client asks to post something misleading"],
   },
   {
@@ -58,6 +66,14 @@ export const DEPARTMENTS = [
       "Calendar invites have agenda, link and timezone",
       "Personal data is shared only with the client and the people they named",
     ],
+    agent: {
+      name: "Operations & Admin Agent",
+      sources: ["specialized/specialized-chief-of-staff.md", "support/support-finance-tracker.md", "specialized/specialized-document-generator.md", "specialized/data-consolidation-agent.md"],
+      persona: "A chief of staff and operations assistant. Turns messy inputs into clean spreadsheets, clear documents, SOPs, email templates and reconciliations; flags anything that needs the client's decision instead of guessing.",
+      aiTools: ["web_fetch"],
+      deliverables: "Cleaned spreadsheets (CSV), invoice/payment reconciliations with exceptions listed, email reply templates in the client's voice, SOPs, meeting briefs and action lists, job posts and candidate scorecards.",
+      humanSteps: "Working inside the client's inbox, calendar, accounting or HR tools, and sending emails on their behalf.",
+    },
     escalate: ["Legal letters, tax notices or anything with a deadline under 48 hours", "Payment requests that look like fraud", "Any request to move money"],
   },
   {
@@ -83,6 +99,14 @@ export const DEPARTMENTS = [
       "Cancellation terms stated for every option",
       "No card numbers, passport scans or passwords in chat or email",
     ],
+    agent: {
+      name: "Personal Assistant Agent",
+      sources: ["specialized/specialized-chief-of-staff.md", "specialized/hospitality-guest-services.md"],
+      persona: "A meticulous executive and personal assistant. Researches options thoroughly, presents three clear choices side by side with prices and cancellation terms, and never books or pays without the client's approval.",
+      aiTools: ["web_search", "web_fetch"],
+      deliverables: "Option comparisons (travel, venues, restaurants, gifts, services) with prices, links, pros/cons and a recommendation; itineraries; event run-of-show; reminder schedules.",
+      humanSteps: "Making bookings or payments (the client pays), and calling or messaging venues.",
+    },
     escalate: ["Missed flight or cancelled booking", "Medical or safety issue", "Anything requiring the client's payment credentials"],
   },
   {
@@ -108,6 +132,14 @@ export const DEPARTMENTS = [
       "Every lead has a source and a reason it fits",
       "No spammy outreach: personalised, opt-out respected",
     ],
+    agent: {
+      name: "Sales & Customer Care Agent",
+      sources: ["support/support-support-responder.md", "specialized/customer-service.md", "specialized/sales-outreach.md", "research/research-synthesist.md"],
+      persona: "A customer-care lead, outbound researcher and analyst. Writes kind, firm replies within the client's rules, builds verified prospect lists with sources, and produces one-page research answers with every claim sourced.",
+      aiTools: ["web_search", "web_fetch"],
+      deliverables: "FAQ answer banks and reply templates, verified lead lists (CSV with name, company, role, source URL, why they fit), personalised outreach sequences, marketplace listing copy, one-page research reports with sources.",
+      humanSteps: "Sending replies or outreach from the client's accounts, issuing refunds, and editing live store listings.",
+    },
     escalate: ["Angry customer threatening chargeback or public complaint", "Refund above the written limit", "Data-protection request (delete my data)"],
   },
   {
@@ -134,9 +166,24 @@ export const DEPARTMENTS = [
       "Secrets live in the platform's secret store, never in code or docs",
       "Bitcoin: client holds keys; we never see seed phrases",
     ],
+    agent: {
+      name: "Web, Automation & Bitcoin Agent",
+      sources: ["engineering/engineering-frontend-developer.md", "engineering/engineering-rapid-prototyper.md", "specialized/specialized-workflow-architect.md"],
+      persona: "A pragmatic web developer and automation architect. Writes accessible, mobile-first pages and clear automation specs with failure alerts and off switches; on Bitcoin, sets things up so the client always holds their own keys.",
+      aiTools: ["web_search", "web_fetch"],
+      deliverables: "Landing page copy and complete single-file HTML pages, automation specs (trigger, steps, failure alerts, off switch) for Zapier/Make/n8n, payment setup checklists, plain-language guides, translations and transcripts.",
+      humanSteps: "Deploying to the client's hosting, connecting their accounts or payment providers, and anything touching funds or keys.",
+    },
     escalate: ["Production outage", "Suspected security breach or leaked secret", "Anything touching client funds or keys"],
   },
 ];
+
+// Reviews every AI deliverable before the client sees it.
+export const QA_AGENT = {
+  name: "Quality Reviewer",
+  sources: ["testing/testing-reality-checker.md", "testing/testing-evidence-collector.md"],
+  persona: "A skeptical reviewer who defaults to 'needs work' and approves only with evidence: the deliverable must answer exactly what the client asked, follow the department's quality checklist, contain no invented facts, and be ready to use.",
+};
 
 const BY_SERVICE = Object.fromEntries(DEPARTMENTS.flatMap((d) => d.services.map((s) => [s, d.id])));
 

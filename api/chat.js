@@ -4,6 +4,8 @@ import { json, readBody, clean, clientIp, siteUrl, safeEqual } from "../lib/http
 import { createLead, getLead, cleanQuiz } from "../lib/crm.js";
 import { handleTurn, agentLive } from "../lib/agent.js";
 import { hit } from "../lib/store.js";
+import { isGated, checkGate } from "../lib/guard.js";
+import { saveLead } from "../lib/crm.js";
 
 const MAX_TURNS_PER_LEAD = 60;
 
@@ -42,5 +44,18 @@ export async function POST(request) {
   }
 
   const { reply, actions } = await handleTurn(lead, message, siteUrl(request));
-  return json({ leadId: lead.id, token: isNew ? lead.token : undefined, reply, actions, stage: lead.stage, live: agentLive });
+  const gated = isGated(lead);
+  return json({ leadId: lead.id, token: isNew ? lead.token : undefined, reply, actions, stage: lead.stage, live: agentLive, gated });
+}
+
+// GET /api/chat?leadId=&token=  -> { gated } ; unlocks as soon as the human check is paid.
+export async function GET(request) {
+  const u = new URL(request.url);
+  if ((await hit(`rl:chatpoll:${clientIp(request)}`, 60)) > 40) return json({ error: "Slow down" }, 429);
+  const lead = await getLead(clean(u.searchParams.get("leadId"), 40));
+  if (!lead || !safeEqual(lead.token, u.searchParams.get("token"))) return json({ error: "Not found" }, 404);
+  if (!isGated(lead)) return json({ gated: false });
+  const c = await checkGate(lead);
+  await saveLead(lead);
+  return json({ gated: !c.unlocked });
 }

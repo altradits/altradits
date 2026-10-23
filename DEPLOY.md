@@ -59,6 +59,21 @@ shows which mode is active.
 - **Referrals:** `RULES.referralCreditPct` in `data/catalog.js` (default 10% of the new client's first month as credit).
 - **Growth tab:** outreach templates and a daily outreach counter in the dashboard.
 
+## AI department agents and task workflow
+
+With `ANTHROPIC_API_KEY` set, every client task goes to its department's AI agent (`data/playbooks.js` → `agent`):
+queued → agent works (web search/fetch, playbook, client onboarding) → Quality Reviewer → client review →
+approved and rated 4–5★ = **done**. The agent may ask the client one question (portal), and anything needing
+real-world steps, failing QA three times, or rated ≤3★ comes to Stanley (`owner` / `follow_up`).
+The queue runs inside the app (`lib/workers.js`), every 2 minutes and on every new task or answer.
+
+## Altra misuse guard
+
+`lib/guard.js`. Prompt-injection, abuse, spam, repetition, bot-speed and endless no-progress chats (plus anything
+Altra flags with `flag_misuse`) pause the chat behind a `RULES.humanCheckSats` (100) sat Lightning invoice from the
+node. While paused no AI is called; paying reopens the chat automatically. `RULES.maxAiTurnsPerDay` caps AI chat
+turns per day. Tunables live in `data/catalog.js` → `RULES`.
+
 ## Local development
 
 ```

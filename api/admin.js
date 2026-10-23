@@ -9,6 +9,7 @@ import {
 import { lightningMode } from "../lib/lightning.js";
 import { allMembers, allTasks, getMember, setMemberStatus, getTask, saveTask, assignTask, publicMember, notifyClient, OPEN } from "../lib/ops.js";
 import { DEPARTMENTS } from "../data/playbooks.js";
+import { kickQueue, workersLive, AGENT_ROSTER } from "../lib/workers.js";
 import { sendEmail } from "../lib/email.js";
 import { agentLive } from "../lib/agent.js";
 import { BUSINESS } from "../data/catalog.js";
@@ -31,8 +32,11 @@ export async function GET(request) {
     return json({
       members: members.map((m) => ({ ...publicMember(m), sample: m.sample, openHours: load(m.id) })),
       tasks: tasks.map((t) => ({ ...t, assignee: members.find((m) => m.id === t.assigneeId)?.name || null })),
-      departments: DEPARTMENTS.map((d) => ({ id: d.id, name: d.name,
+      departments: DEPARTMENTS.map((d) => ({ id: d.id, name: d.name, agent: d.agent.name,
         approved: members.filter((m) => m.status === "approved" && m.departments.includes(d.id)).length })),
+      pipeline: Object.fromEntries(["queued", "working", "waiting_client", "owner", "review", "follow_up", "done"].map((st) => [st, tasks.filter((t) => t.status === st).length])),
+      satisfaction: (() => { const r = tasks.filter((t) => t.satisfaction).map((t) => t.satisfaction.rating); return r.length ? { avg: Math.round((r.reduce((a, b) => a + b, 0) / r.length) * 10) / 10, count: r.length } : null; })(),
+      agents: AGENT_ROSTER, workersLive: workersLive(),
     });
   }
 
@@ -152,9 +156,35 @@ export async function POST(request) {
     try { await setMemberStatus(m, body.status); } catch (err) { return json({ error: err.message }, 400); }
     return json({ ok: true });
   }
+  if (["task_send_client", "task_rerun", "task_close"].includes(body.action)) {
+    const t = await getTask(clean(body.id, 40));
+    if (!t) return json({ error: "Task not found" }, 404);
+    const at = new Date().toISOString();
+    if (body.action === "task_send_client") {
+      if (!t.deliverable) return json({ error: "No deliverable to send." }, 409);
+      t.status = "review";
+      t.reviewAt = at;
+      t.history.push({ at, by: "Stanley", text: "Checked and sent to client" });
+      await saveTask(t);
+      await notifyClient(t, `Ready for your review: ${t.title}`, `${t.deliverable.summary || "Your task is done."}\n\nOpen your portal to download it, then approve and rate it, or ask for changes.`);
+    } else if (body.action === "task_rerun") {
+      const note = clean(body.note, 1000);
+      t.status = "queued";
+      t.attempts = 0;
+      t.history.push({ at, by: "Stanley", text: note ? `Changes requested: ${note}` : "Re-run requested" });
+      await saveTask(t);
+      kickQueue();
+    } else {
+      t.status = "done";
+      t.history.push({ at, by: "Stanley", text: `Follow-up closed${body.note ? `: ${clean(body.note, 500)}` : ""}` });
+      await saveTask(t);
+    }
+    return json({ ok: true });
+  }
+
   if (body.action === "task_submit") {
     const t = await getTask(clean(body.id, 40));
-    if (!t || !["new", "in_progress", "changes", "assigned"].includes(t.status)) return json({ error: "Task is not open" }, 409);
+    if (!t || !["new", "in_progress", "changes", "assigned", "owner"].includes(t.status)) return json({ error: "Task is not open" }, 409);
     const url = clean(body.url, 500), note = clean(body.note, 2000);
     if (!/^https?:\/\//.test(url) && note.length < 10) return json({ error: "Add a deliverable link or a note." }, 400);
     t.deliverable = { url: /^https?:\/\//.test(url) ? url : "", note, at: new Date().toISOString() };

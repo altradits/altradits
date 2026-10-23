@@ -20,6 +20,12 @@ export const RULES = {
   depositPctProjects: 50,      // one-off projects: 50% to start
   freeTrialMaxHours: 1,        // the free sample task
   referralCreditPct: 10,       // referrer earns this % of the new client's first month as credit
+  // Altra misuse guard: chats that look abusive, automated or off-purpose are
+  // paused until this many sats are paid over Lightning (proves a real person).
+  humanCheckSats: 100,
+  maxTurnsUnqualified: 20,     // messages without an email or proposal before the check
+  maxTurnsVerified: 40,        // more room after someone has paid the check
+  maxAiTurnsPerDay: 400,       // hard ceiling on AI chat turns per day across all visitors
 };
 
 export const PILLARS = [
