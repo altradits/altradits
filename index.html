@@ -54,10 +54,10 @@ nav a:hover::after,nav a.here::after{transform:scaleX(1)}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.85rem 1.4rem;border-radius:.75rem;font:700 1rem Figtree,sans-serif;text-decoration:none;border:2px solid var(--ink);cursor:pointer;background:transparent;color:var(--ink);transition:transform .15s,background .15s}
 .btn:hover{transform:translateY(-2px)}
-.btn:active,.buy:active,.jb:active{transform:scale(.97)}
+.btn:active,.jb:active{transform:scale(.97)}
 .btn.primary,.btn.btc,.btn.dark{position:relative;overflow:hidden;isolation:isolate}
-.btn.primary::after,.btn.btc::after,.btn.dark::after,.buy::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;z-index:-1;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:translateX(0) skewX(-18deg);opacity:0;pointer-events:none}
-.btn.primary:hover::after,.btn.btc:hover::after,.btn.dark:hover::after,.buy:hover::after{opacity:1;transform:translateX(420%) skewX(-18deg);transition:transform .7s ease,opacity .2s}
+.btn.primary::after,.btn.btc::after,.btn.dark::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;z-index:-1;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:translateX(0) skewX(-18deg);opacity:0;pointer-events:none}
+.btn.primary:hover::after,.btn.btc:hover::after,.btn.dark:hover::after{opacity:1;transform:translateX(420%) skewX(-18deg);transition:transform .7s ease,opacity .2s}
 .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
 .btn.dark{background:var(--ink);color:#fff}
 .btn.btc{background:var(--btc);border-color:var(--btc);color:var(--ink)}
@@ -191,44 +191,91 @@ section{padding:3.5rem 0}
 .h2{font-size:clamp(1.9rem,4.5vw,3rem);letter-spacing:-.02em;margin-bottom:.75rem;max-width:22ch}
 .intro{color:var(--muted);max-width:40rem;margin:0 0 2rem;font-size:1.1rem}
 
-/* services */
-.filterbar{position:sticky;top:3.9rem;z-index:10;padding:.6rem 0 1rem;background:linear-gradient(var(--bg) 80%,transparent)}
+/* catalogue: quick jobs, projects and monthly help in one searchable list */
+.catalog{position:relative}
+.anchor{position:absolute;top:0}
+.catalog .intro{margin-bottom:1.5rem}
+.filterbar{position:sticky;top:3.9rem;z-index:10;padding:.75rem 0 .8rem;background:var(--bg);box-shadow:0 0 0 100vmax var(--bg);clip-path:inset(0 -100vmax)}
 .filterbar .search{max-width:none;margin:0}
-.count{color:var(--muted);font-size:.93rem;margin:.5rem 0 0}
-.pillar{margin-bottom:2.25rem}
-.pillar>h3{font-size:1.35rem;display:flex;align-items:center;gap:.6rem;margin-bottom:1rem}
-.pillar>h3::before{content:"";width:.85rem;height:.85rem;border-radius:.25rem;background:var(--c)}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(18.5rem,1fr));gap:1rem}
-.svc{position:relative;isolation:isolate;background:var(--paper);border:2px solid var(--line);border-radius:1rem;padding:1.15rem;display:flex;flex-direction:column;gap:.55rem;transition:border-color .2s,transform .25s cubic-bezier(.2,.7,.2,1)}
-.svc:hover{border-color:var(--c);transform:translateY(-4px)}
-.svc::after,.qj::after,.plan::after,.agent::after{content:"";position:absolute;inset:-2px;border-radius:inherit;z-index:-1;pointer-events:none;box-shadow:0 18px 34px -16px color-mix(in srgb,var(--c,var(--blue)) 60%,transparent);opacity:0;transition:opacity .25s}
-.svc:hover::after,.qj:hover::after,.plan:hover::after,.agent:hover::after{opacity:1}
-.svc h4{margin:0;font:700 1.12rem 'Bricolage Grotesque',sans-serif}
-.svc .out{margin:0;font-weight:600}
-.svc .lbl{font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:.2rem 0 0}
-.svc ul{margin:0;padding:0;list-style:none;font-size:.93rem}
-.svc li{padding:.15rem 0 .15rem 1.3rem;position:relative}
-.svc li::before{content:"✓";position:absolute;left:0;color:var(--ok);font-weight:800}
-.svc .meta{font-size:.88rem;color:var(--muted);margin:0}
-.svc .meta b{color:var(--ink)}
-.svc .grow{flex:1}
-.buy{position:relative;overflow:hidden;isolation:isolate;display:flex;justify-content:space-between;align-items:center;gap:.6rem;width:100%;margin-top:.4rem;padding:.75rem 1rem;border:0;border-radius:.75rem;background:var(--ink);color:#fff;font:700 1rem Figtree,sans-serif;cursor:pointer;transition:background .15s,transform .15s}
-.buy:hover{background:var(--c,var(--blue))}
-.buy .p{font:800 1.15rem 'Bricolage Grotesque',sans-serif}
-.buy .p small{font:600 .8rem Figtree,sans-serif;opacity:.8}
-.qgroup{margin-bottom:1.8rem;scroll-margin-top:10rem}
-.qgroup>h3{font-size:1.15rem;display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem}
-.qgroup>h3::before{content:"";width:.75rem;height:.75rem;border-radius:.2rem;background:var(--c)}
-.qcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(15.5rem,1fr));gap:.8rem}
-.qj{position:relative;isolation:isolate;background:var(--paper);border:2px solid var(--line);border-radius:.9rem;padding:.95rem;display:flex;flex-direction:column;gap:.4rem;transition:border-color .2s,transform .25s cubic-bezier(.2,.7,.2,1);scroll-margin-top:9rem}
-.qj:hover,.qj:target{border-color:var(--c);transform:translateY(-3px)}
-.qj h4{margin:0;font:700 1.02rem/1.25 'Bricolage Grotesque',sans-serif}
-.qj ul{margin:0;padding:0;list-style:none;font-size:.88rem;flex:1}
-.qj li{padding:.1rem 0 .1rem 1.2rem;position:relative}
-.qj li::before{content:"✓";position:absolute;left:0;color:var(--ok);font-weight:800}
-.qj .meta{font-size:.82rem;color:var(--muted);margin:0}
-.qj .buy{padding:.6rem .85rem;font-size:.92rem}
-.none{background:var(--paper);border:2px dashed var(--line);border-radius:1rem;padding:1.25rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between}
+.filterbar .search input{padding:.8rem 1rem .8rem 2.8rem;border-radius:.8rem;box-shadow:none;font-size:1rem}
+.chips,.seg{border:0;margin:0;padding:0;min-width:0}
+.chiprow{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.7rem}
+.chip,.sgo{position:relative;display:inline-flex;cursor:pointer}
+.chip input,.sgo input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.chip span{display:inline-flex;align-items:center;gap:.45rem;padding:.4rem .85rem;border-radius:99px;background:var(--paper);color:var(--ink);font-weight:600;font-size:.92rem;white-space:nowrap;box-shadow:inset 0 0 0 1px var(--line);transition:background .15s,color .15s,box-shadow .15s}
+.chip span i{width:.55rem;height:.55rem;border-radius:50%;background:var(--c)}
+.chip small,.sgo small{font-size:.8rem;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.chip:hover span{box-shadow:inset 0 0 0 1px var(--ink)}
+.chip input:checked+span{background:var(--ink);color:#fff;box-shadow:none}
+.chip input:checked+span small{color:#C9D5EA}
+.chip.zero span{color:var(--muted)}
+.chip input:focus-visible+span,.sgo input:focus-visible+span{outline:3px solid var(--blue);outline-offset:2px}
+.resbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.6rem 1.5rem;margin:.6rem 0 1.75rem}
+.segrow{display:inline-flex;flex-wrap:wrap;gap:.15rem;padding:.2rem;border-radius:.8rem;background:#DFE6EE}
+.sgo span{display:inline-flex;align-items:baseline;gap:.35rem;padding:.38rem .8rem;border-radius:.6rem;font-weight:600;font-size:.9rem;color:var(--muted);white-space:nowrap;transition:background .15s,color .15s}
+.sgo:hover span{color:var(--ink)}
+.sgo input:checked+span{background:var(--paper);color:var(--ink);box-shadow:0 1px 2px rgba(15,27,45,.12)}
+.count{color:var(--muted);font-size:.93rem;margin:0}
+.dgroup{margin-bottom:2.75rem;scroll-margin-top:10rem}
+.dgroup:last-child{margin-bottom:0}
+.dhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem 1rem;margin-bottom:.85rem}
+.dhead h3{display:flex;align-items:center;gap:.55rem;font-size:1.35rem;letter-spacing:-.01em}
+.dhead h3::before{content:"";width:.7rem;height:.7rem;border-radius:.2rem;background:var(--c)}
+.dhead p{margin:0;color:var(--muted);font-size:.93rem}
+.lanes{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start}
+.lanes.one{grid-template-columns:1fr}
+.lane{background:var(--paper);border-radius:1rem;box-shadow:0 0 0 1px rgba(15,27,45,.07),0 1px 3px rgba(15,27,45,.05);overflow:hidden}
+.lane h4{margin:0;padding:.85rem 1.1rem .35rem;font:700 .75rem Figtree,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.lane ol{list-style:none;margin:0;padding:0}
+.lanes.one ol{display:grid;grid-template-columns:1fr 1fr;align-items:start}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:.9rem;padding:.75rem 1.1rem;border-top:1px solid #E7ECF2;scroll-margin-top:11rem;transition:background .15s}
+.lane ol>.row:first-child,.lanes.one ol>.row:nth-child(2){border-top:0}
+.row:hover,.row:has(details[open]){background:color-mix(in srgb,var(--c) 4%,white)}
+.row summary{position:relative;list-style:none;cursor:pointer;display:flex;flex-direction:column;gap:.1rem;min-width:0;padding-right:1.3rem;border-radius:.4rem}
+.row summary::-webkit-details-marker{display:none}
+.row .nm{font-weight:600;line-height:1.35}
+.row summary::after{content:"";position:absolute;right:.2rem;top:.45rem;width:.42rem;height:.42rem;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
+.row summary:hover::after{border-color:var(--ink)}
+.row details[open] summary::after{transform:translateY(.2rem) rotate(225deg)}
+.row .ln{font-size:.88rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .ln b{font-weight:600;color:var(--ink)}
+.row details[open] .ln .h{display:none}
+.row .tag{display:inline-block;margin-left:.45rem;padding:.05rem .5rem;border-radius:99px;font:700 .72rem/1.5 Figtree,sans-serif;vertical-align:.12em;background:color-mix(in srgb,var(--c) 13%,white);color:color-mix(in srgb,var(--c) 70%,black)}
+.rd{padding:.55rem 0 .2rem;font-size:.92rem}
+.rd ul{margin:0;padding:0;list-style:none}
+.rd li{position:relative;padding:.12rem 0 .12rem 1.3rem}
+.rd li::before{content:"✓";position:absolute;left:0;color:var(--ok);font-weight:800}
+.rd p{margin:.45rem 0 0;color:var(--muted)}
+.rd p b{color:var(--ink)}
+.pb{display:inline-flex;align-items:baseline;justify-content:center;gap:.1rem;min-width:4.4rem;padding:.5rem .8rem;border:0;border-radius:.65rem;background:var(--ink);color:#fff;font:800 1.02rem/1.2 'Bricolage Grotesque',sans-serif;font-variant-numeric:tabular-nums;cursor:pointer;transition:background .15s,transform .15s}
+.pb small{font:600 .74rem Figtree,sans-serif;opacity:.85}
+.pb:hover{background:color-mix(in srgb,var(--c,var(--blue)) 82%,black)}
+.pb:active{transform:scale(.97)}
+.more{display:block;padding:.75rem 1.1rem;border-top:1px solid #E7ECF2;font-weight:600;font-size:.92rem;color:var(--blue);text-decoration:none}
+.more:hover{text-decoration:underline;text-underline-offset:.2em}
+.none{background:var(--paper);border-radius:1rem;box-shadow:0 0 0 1px rgba(15,27,45,.07);padding:1.25rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between}
+.none p{margin:.2rem 0 0;color:var(--muted)}
+.none a{color:var(--blue);font-weight:600}
+@media (max-width:860px){
+  .lanes,.lanes.one ol{grid-template-columns:1fr}
+  .lanes.one ol>.row:nth-child(2){border-top:1px solid #E7ECF2}
+}
+@media (max-width:560px){
+  .filterbar{padding:.6rem 0 .65rem}
+  .chiprow{flex-wrap:nowrap;overflow-x:auto;margin:.6rem -1rem 0;padding:0 1rem 2px;scrollbar-width:none;scroll-padding:0 1rem}
+  .chiprow::-webkit-scrollbar{display:none}
+  .chip span{padding:.38rem .75rem;font-size:.88rem}
+  .resbar{margin-bottom:1.25rem}
+  .seg{flex:1 1 100%}
+  .segrow{display:flex;flex-wrap:nowrap;width:100%}
+  .sgo{flex:1}
+  .sgo span{width:100%;justify-content:center;padding:.38rem .4rem;font-size:.85rem}
+  .sgo small{display:none}
+  .row{padding:.7rem 1rem;gap:.7rem}
+  .lane h4{padding:.8rem 1rem .3rem}
+  .more{padding:.75rem 1rem}
+  .dgroup{margin-bottom:2.25rem}
+}
 
 /* how: steps light up as you scroll, a sticky mock shows each moment */
 .flow{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start;margin-top:1rem}
@@ -332,7 +379,7 @@ html.js .step:not(.lit) h3{color:var(--muted)}
 /* uses the independent translate property so hover transforms still work */
 html.js .rv{opacity:0;translate:0 22px;transition:opacity .6s ease var(--d,0ms),translate .7s cubic-bezier(.2,.7,.2,1) var(--d,0ms)}
 html.js .rv.in{opacity:1;translate:none}
-html.js .qj.rv,html.js .svc.rv,html.js .plan.rv,html.js .agent.rv,html.js .story.rv{transition:opacity .6s ease var(--d,0ms),translate .7s cubic-bezier(.2,.7,.2,1) var(--d,0ms),transform .3s cubic-bezier(.2,.7,.2,1),border-color .2s}
+html.js .plan.rv,html.js .agent.rv,html.js .story.rv{transition:opacity .6s ease var(--d,0ms),translate .7s cubic-bezier(.2,.7,.2,1) var(--d,0ms),transform .3s cubic-bezier(.2,.7,.2,1),border-color .2s}
 
 .final{text-align:center;padding:4rem 0}
 .final .h2{margin:0 auto .75rem}
@@ -397,8 +444,8 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
   .dcard{transition:opacity .2s!important}
   html.js .rv{opacity:1;translate:none}
   .hero h1 em::after{transform:none}
-  .btn:hover,.svc:hover,.qj:hover,.plan:hover,.agent:hover{transform:none}
-  .buy::after,.btn::after,.depts .glow{display:none}
+  .btn:hover,.plan:hover,.agent:hover{transform:none}
+  .btn::after,.depts .glow{display:none}
   .qr .line{display:none}
 }
 </style>
@@ -410,8 +457,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
   <div class="wrap">
     <a class="logo" href="#top" aria-label="Altradits, back to top"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a>
     <nav aria-label="Main">
-      <a href="#quick">Quick jobs</a>
-      <a class="opt" href="#services">Services</a>
+      <a href="#quick">Find a job</a>
       <a href="#plans">Monthly plans</a>
       <a class="opt" href="#how">How it works</a>
       <a class="opt" href="#faq">FAQ</a>
@@ -605,26 +651,29 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
     <div class="dots" id="dots" role="tablist" aria-label="Choose a department"></div>
   </section>
 
-  <section id="quick">
+  <section id="quick" class="catalog" aria-labelledby="quickTitle">
+    <span id="services" class="anchor"></span>
     <div class="wrap">
-      <h2 class="h2" id="quickTitle">Quick jobs from $5</h2>
-      <p class="intro">One job, one price, delivered the same day. In a rush? Pick "within hours" when you pay: 100+ freelancers are on standby. The button is the price.</p>
-      <div class="filterbar">
+      <h2 class="h2" id="quickTitle">Find your job</h2>
+      <p class="intro" id="quickIntro">Quick jobs delivered the same day, bigger projects and monthly help. Open a row to see exactly what you get. The button is the price.</p>
+      <div class="filterbar" id="filterbar">
         <div class="search">
           <label class="sr" for="find">Search all jobs and services</label>
-          <input type="search" id="find" placeholder="Search: captions, invoices, CVs, flights, website fix, translation…" autocomplete="off">
+          <input type="search" id="find" placeholder="Search: captions, invoices, CVs, flights, website fix…" autocomplete="off">
         </div>
+        <fieldset class="chips" role="radiogroup" aria-label="Department">
+          <legend class="sr">Department</legend>
+          <div class="chiprow" id="deptChips"></div>
+        </fieldset>
+      </div>
+      <div class="resbar">
+        <fieldset class="seg" role="radiogroup" aria-label="Type of job">
+          <legend class="sr">Type of job</legend>
+          <div class="segrow" id="typeChips"></div>
+        </fieldset>
         <p class="count" id="count" aria-live="polite"></p>
       </div>
       <div id="quickList"></div>
-    </div>
-  </section>
-
-  <section id="services">
-    <div class="wrap">
-      <h2 class="h2">Bigger jobs and ongoing help</h2>
-      <p class="intro">Full projects and monthly help. Fixed scope, fixed price.</p>
-      <div id="serviceList"></div>
     </div>
   </section>
 
@@ -634,7 +683,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
       <p class="intro">Scroll to watch an order go through.</p>
       <div class="flow">
         <ol class="steps" id="steps">
-          <li class="step"><h3>Find your task</h3><p>Search or browse. Every card lists the deliverables, delivery time and price.</p></li>
+          <li class="step"><h3>Find your task</h3><p>Search or pick a department. Every job lists the deliverables, delivery time and price.</p></li>
           <li class="step"><h3>Click the price</h3><p>The button is the price. No cart, no sign-up.</p></li>
           <li class="step"><h3>Scan the QR</h3><p>A QR for that exact amount appears at once. Any Bitcoin wallet, Lightning or on-chain. Altradits adds no fee; your wallet shows its network fee before you pay.</p></li>
           <li class="step"><h3>Paid = ordered</h3><p>Add your email and what you need in the same window. Your payment confirms the order.</p></li>
@@ -810,48 +859,112 @@ $("#stage").addEventListener("pointerup", (e) => {
   if (Math.abs(dx) > 40) go(active + (dx < 0 ? 1 : -1));
 });
 
-// ---- quick jobs + services, one search for both
+// ---- the catalogue: quick jobs, projects and monthly help in one list.
+// One search, a department filter and a type filter, all radio inputs so the
+// only buttons on the page are prices. Rows open inline to show everything.
 const pillarName = (id) => PILLARS.find((p) => p.id === id).name;
 const hay = (s) => `${s.name} ${s.outcome || ""} ${s.deliverables.join(" ")} ${s.keywords} ${pillarName(s.pillar)}`.toLowerCase();
 const QUICK = [...QUICK_JOBS].sort((a, b) => a.price - b.price);
-$("#quickTitle").textContent = `Quick jobs from ${money(QUICK[0].price)}`;
-function renderServices(q = "") {
-  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
-  const match = (s) => words.every((w) => hay(s).includes(w));
-  const quick = QUICK.filter(match), shown = SERVICES.filter(match);
-  $("#count").textContent = words.length
-    ? `${quick.length} quick job${quick.length === 1 ? "" : "s"} and ${shown.length} service${shown.length === 1 ? "" : "s"} match "${q.trim()}"`
-    : `${QUICK_JOBS.length} quick jobs from ${money(QUICK[0].price)} · ${SERVICES.length} bigger services below`;
-  $("#quickList").innerHTML = PILLARS.map((p) => {
-    const list = quick.filter((j) => j.pillar === p.id);
-    return list.length ? `<div class="qgroup" id="dept-${p.id}" style="--c:${p.color}"><h3>${esc(p.name)}</h3><div class="qcards">${list.map((j) => `
-      <article class="qj" id="job-${j.id}" style="--c:${p.color}">
-        <h4>${esc(j.name)}</h4>
-        <ul>${j.deliverables.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>
-        <p class="meta"><b>Delivery:</b> ${esc(j.delivery)}</p>
-        <button type="button" class="buy" data-buy="${j.id}"><span>Pay & order</span><span class="p">${money(j.price)}</span></button>
-      </article>`).join("")}</div></div>` : "";
-  }).join("");
-  $("#serviceList").innerHTML = PILLARS.map((p) => {
-    const list = shown.filter((s) => s.pillar === p.id);
-    return list.length ? `<div class="pillar" style="--c:${p.color}"><h3>${esc(p.name)}</h3><div class="cards">${list.map((s) => `
-      <article class="svc" style="--c:${p.color}">
-        <h4>${esc(s.name)}</h4>
-        <p class="out">${esc(s.outcome)}</p>
-        <p class="lbl">You get</p>
+const BIG = [...SERVICES].sort((a, b) => (a.type === b.type ? a.price - b.price : a.type === "project" ? -1 : 1));
+const LOW = Object.fromEntries(PILLARS.map((p) => [p.id, QUICK.find((j) => j.pillar === p.id)?.id]));
+const TYPES = [
+  { id: "all", label: "Everything" },
+  { id: "quick", label: "Quick jobs", note: "same day" },
+  { id: "project", label: "Projects", note: "one-off" },
+  { id: "monthly", label: "Monthly help" },
+];
+const kindOf = (s) => (s.service ? "quick" : s.type);
+const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+const shortWhen = (s) => {
+  if (s.service) return s.delivery;
+  if (s.type === "monthly") return "Monthly";
+  const d = /(\d+) business days?/.exec(s.delivery);
+  return d ? `${d[1]} days` : s.delivery;
+};
+$("#quickIntro").textContent = `${QUICK_JOBS.length} quick jobs from ${money(QUICK[0].price)} delivered the same day, plus ${SERVICES.length} bigger projects and monthly services. Open a row for the full list; the button is the price.`;
+// Short chip labels so all departments fit on one line; headings keep the full name.
+const SHORT = { social: "Social & content", admin: "Office admin", personal: "Personal", growth: "Sales & care", tech: "Web & Bitcoin" };
+const radio = (name, value, inner, cls, checked, style = "") =>
+  `<label class="${cls}"${style}><input type="radio" name="${name}" value="${value}"${checked ? " checked" : ""}><span>${inner}</span></label>`;
+$("#deptChips").innerHTML = radio("dept", "all", `All <small data-n="all"></small>`, "chip", true) +
+  PILLARS.map((p) => radio("dept", p.id, `<i aria-hidden="true"></i>${esc(SHORT[p.id] || p.name)} <small data-n="${p.id}"></small>`, "chip", false, ` style="--c:${p.color}"`)).join("");
+$("#typeChips").innerHTML = TYPES.map((t, i) => radio("type", t.id, `${t.label}${t.note ? ` <small>${t.note}</small>` : ""}`, "sgo", !i)).join("");
+const picked = (name) => $(`input[name=${name}]:checked`).value;
+const pick = (name, value) => { const r = $(`input[name=${name}][value="${value}"]`); if (r) r.checked = true; };
+
+const row = (s, p) => {
+  const quick = kindOf(s) === "quick";
+  const hint = quick ? s.deliverables[0] : s.outcome;
+  const price = `${money(s.price)}${s.unit ? `<small>${s.unit}</small>` : ""}`;
+  return `<li class="row" id="job-${s.id}">
+    <details>
+      <summary><span class="nm">${esc(s.name)}${LOW[p.id] === s.id ? `<span class="tag">Lowest price</span>` : ""}</span><span class="ln"><b>${esc(shortWhen(s))}</b><span class="h"> · ${esc(hint)}</span></span></summary>
+      <div class="rd">
         <ul>${s.deliverables.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>
-        <div class="grow"></div>
-        <p class="meta"><b>Delivery:</b> ${esc(s.delivery)}</p>
-        <p class="meta"><b>We need:</b> ${esc(s.youSend)}</p>
-        <button type="button" class="buy" data-buy="${s.id}"><span>${s.type === "monthly" ? "Pay & start" : "Pay & order"}</span><span class="p">${money(s.price)}${s.unit ? `<small>${s.unit}</small>` : ""}</span></button>
-      </article>`).join("")}</div></div>` : "";
+        <p><b>Delivery:</b> ${esc(s.delivery)}</p>
+        ${s.youSend ? `<p><b>We need:</b> ${esc(s.youSend)}</p>` : ""}
+      </div>
+    </details>
+    <button type="button" class="pb" data-buy="${s.id}" aria-label="${money(s.price)}${s.unit || ""}, order ${esc(s.name)}">${price}</button>
+  </li>`;
+};
+const lane = (title, list, cap, p, what) => {
+  const shown = list.slice(0, cap);
+  return `<div class="lane"><h4>${title}</h4><ol>${shown.map((s) => row(s, p)).join("")}</ol>${
+    list.length > shown.length ? `<a class="more" href="#dept-${p.id}">Show all ${plural(list.length, what)} →</a>` : ""}</div>`;
+};
+
+function renderServices(q = $("#find").value) {
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const dept = picked("dept"), type = picked("type");
+  const fits = (s) => (type === "all" || kindOf(s) === type) && words.every((w) => hay(s).includes(w));
+  const quick = QUICK.filter(fits), big = BIG.filter(fits);
+  // Chip counts follow the search and type, so a zero says "nothing here".
+  const per = (id) => quick.filter((s) => s.pillar === id).length + big.filter((s) => s.pillar === id).length;
+  document.querySelectorAll("#deptChips small[data-n]").forEach((el) => {
+    const n = el.dataset.n === "all" ? quick.length + big.length : per(el.dataset.n);
+    el.textContent = n;
+    el.closest(".chip").classList.toggle("zero", n === 0);
+  });
+  const inDept = (s) => dept === "all" || s.pillar === dept;
+  const nq = quick.filter(inDept).length, nb = big.filter(inDept).length;
+  const parts = [type === "all" || type === "quick" ? plural(nq, "quick job") : "", type === "all" ? plural(nb, "bigger service") : type === "quick" ? "" : plural(nb, type === "monthly" ? "monthly service" : "project")].filter(Boolean);
+  const where = dept === "all" ? "" : ` in ${pillarName(dept)}`;
+  $("#count").textContent = words.length ? `${parts.join(" and ")} match "${q.trim()}"${where}` : `${parts.join(" · ")}${where}`;
+
+  // Without a search or a chosen department, each department shows a short
+  // list (cheapest first) and a link to the rest.
+  const browsing = !words.length && dept === "all";
+  const html = PILLARS.filter((p) => dept === "all" || p.id === dept).map((p) => {
+    const qs = quick.filter((s) => s.pillar === p.id), bs = big.filter((s) => s.pillar === p.id);
+    if (!qs.length && !bs.length) return "";
+    const both = qs.length && bs.length;
+    const lanes = [
+      qs.length ? lane("Quick jobs · same day", qs, browsing ? (both ? 5 : 8) : Infinity, p, "quick job") : "",
+      bs.length ? lane(type === "monthly" ? "Monthly help" : type === "project" ? "Projects" : "Projects & monthly help", bs, browsing ? (both ? 3 : 8) : Infinity, p, "service") : "",
+    ].join("");
+    const all = QUICK_JOBS.filter((j) => j.pillar === p.id);
+    const from = Math.min(...all.map((j) => j.price));
+    return `<div class="dgroup" id="dept-${p.id}" style="--c:${p.color}">
+      <div class="dhead"><h3>${esc(p.name)}</h3><p>${plural(all.length, "quick job")} from ${money(from)} · ${plural(SERVICES.filter((s) => s.pillar === p.id).length, "bigger service")}</p></div>
+      <div class="lanes${both ? "" : " one"}">${lanes}</div>
+    </div>`;
   }).join("");
-  const none = `<div class="none"><div><b>No exact match for "${esc(q.trim())}".</b><br><span style="color:var(--muted)">Buy 2 hours of help and describe your task when you pay.</span></div>${buyBtn("hourly", `Pay ${money(PAYG.hourly * PAYG.minimumHours)} · 2 hours`, "btn btc")}</div>`;
-  if (!quick.length) $("#quickList").innerHTML = shown.length ? `<p class="count">No quick job matches; see the services below.</p>` : none;
-  $("#services").hidden = Boolean(words.length && !shown.length);
+  const elsewhere = dept !== "all" && quick.length + big.length;
+  $("#quickList").innerHTML = html || `<div class="none"><div><b>${words.length ? `No exact match for "${esc(q.trim())}"${esc(where)}.` : `Nothing of this type${esc(where)}.`}</b>
+      <p>${elsewhere ? `<a href="#dept-all">See ${plural(elsewhere, "match")} in all departments</a>, or buy` : "Buy"} 2 hours of help and describe your task when you pay.</p></div>
+      ${buyBtn("hourly", `Pay ${money(PAYG.hourly * PAYG.minimumHours)} · 2 hours`, "btn btc")}</div>`;
 }
-renderServices();
-$("#find").addEventListener("input", (e) => renderServices(e.target.value));
+
+// Keep the top of the list in view when a filter changes the page under you.
+const settle = () => {
+  const bar = $("#filterbar").getBoundingClientRect(), list = $("#quickList").getBoundingClientRect();
+  if (list.top < bar.bottom) scrollBy({ top: list.top - bar.bottom - 16, behavior: "instant" });
+};
+const onPick = (e) => { if (e.target.type === "radio") { renderServices(); settle(); } };
+$("#filterbar").addEventListener("change", onPick);
+$(".resbar").addEventListener("change", onPick);
+$("#find").addEventListener("input", (e) => { $("#heroFind").value = e.target.value; renderServices(e.target.value); settle(); });
 $("#heroFind").addEventListener("input", (e) => { $("#find").value = e.target.value; renderServices(e.target.value); });
 $("#heroFind").addEventListener("keydown", (e) => {
   if (e.key !== "Enter") return;
@@ -859,6 +972,27 @@ $("#heroFind").addEventListener("keydown", (e) => {
   $("#quick").scrollIntoView();
   $("#find").focus({ preventScroll: true });
 });
+
+// #dept-<id> links (carousel "See all", "Show all" in the list, shared URLs)
+// open the catalogue on that department.
+function showDept(id, { reset = false, scroll = true } = {}) {
+  if (id !== "all" && !PILLARS.some((p) => p.id === id)) return false;
+  if (reset) { $("#find").value = $("#heroFind").value = ""; pick("type", "all"); }
+  pick("dept", id);
+  renderServices();
+  history.replaceState(null, "", id === "all" ? location.pathname + location.search : `#dept-${id}`);
+  if (scroll) $("#quick").scrollIntoView();
+  return true;
+}
+document.addEventListener("click", (e) => {
+  const a = e.target.closest('a[href^="#dept-"]');
+  if (!a || e.defaultPrevented) return;
+  if (showDept(a.getAttribute("href").slice(6), { reset: Boolean(a.closest("#dcards")) })) e.preventDefault();
+});
+const fromHash = () => { const m = /^#dept-([a-z]+)$/.exec(location.hash); if (m) showDept(m[1], { reset: true }); };
+addEventListener("hashchange", fromHash);
+renderServices();
+fromHash();
 
 // ---- plans, pay as you go, promises
 $("#planList").innerHTML = PACKAGES.map((p) => `
@@ -1038,7 +1172,7 @@ function init() {
 root.classList.add("js");
 
 // ---- scroll reveal, staggered within each batch that enters together
-const REVEAL = ".hero>div:first-child>*,.story,.stats>div,.depts h2,section .h2,section .intro,.qgroup>h3,.pillar>h3,.qj,.svc,.plan,.payg,.guar>div,.about>*,.agent,.faq details,.final>*,.step";
+const REVEAL = ".hero>div:first-child>*,.story,.stats>div,.depts h2,section .h2,section .intro,.plan,.payg,.guar>div,.about>*,.agent,.faq details,.final>*,.step";
 const io = new IntersectionObserver((entries) => {
   let n = 0;
   for (const e of entries) {
@@ -1056,7 +1190,7 @@ const watch = (scope = document) => $$(REVEAL, scope).forEach((el) => {
 watch();
 // Cards re-render on every search; reveal the new ones too.
 const mo = new MutationObserver(() => watch());
-["#quickList", "#serviceList", "#planList", "#guarantees"].forEach((s) => $(s) && mo.observe($(s), { childList: true }));
+["#quickList", "#planList", "#guarantees"].forEach((s) => $(s) && mo.observe($(s), { childList: true }));
 
 // Pause CSS loops when their element is off-screen.
 const onScreen = new IntersectionObserver((es) => es.forEach((e) => e.target.classList.toggle("paused", !e.isIntersecting)));
