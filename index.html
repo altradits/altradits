@@ -133,10 +133,10 @@ nav a:hover::after,nav a.here::after{transform:scaleX(1)}
 @keyframes hsChip{0%,63%{opacity:0;transform:scale(.8)}66%,92%{opacity:1;transform:none}95%,100%{opacity:0}}
 @keyframes hsKite{from{transform:rotate(-6deg) translateY(0)}to{transform:rotate(5deg) translateY(-3%)}}
 @keyframes hsTick{to{transform:rotate(360deg)}}
-.qr{position:relative;width:5.2rem;height:5.2rem;padding:.3rem;border:2px solid var(--ink);border-radius:.7rem;background:#fff;overflow:hidden}
-.qr svg{display:block;width:100%;height:100%;transition:opacity .4s,transform .4s}
-.qr .line{position:absolute;left:0;right:0;top:0;height:2px;background:var(--btc);box-shadow:0 0 10px 2px rgba(247,147,26,.7);opacity:0}
-.qr .ok{position:absolute;inset:0;display:grid;place-items:center;font:800 2.2rem 'Bricolage Grotesque',sans-serif;color:#fff;background:var(--ok);opacity:0;transform:scale(.6);transition:opacity .35s,transform .45s cubic-bezier(.3,1.6,.5,1)}
+.scene .qr{position:relative;width:5.2rem;height:5.2rem;padding:.3rem;border:2px solid var(--ink);border-radius:.7rem;background:#fff;overflow:hidden}
+.scene .qr svg{display:block;width:100%;height:100%;transition:opacity .4s,transform .4s}
+.scene .qr .line{position:absolute;left:0;right:0;top:0;height:2px;background:var(--btc);box-shadow:0 0 10px 2px rgba(247,147,26,.7);opacity:0}
+.scene .qr .ok{position:absolute;inset:0;display:grid;place-items:center;font:800 2.2rem 'Bricolage Grotesque',sans-serif;color:#fff;background:var(--ok);opacity:0;transform:scale(.6);transition:opacity .35s,transform .45s cubic-bezier(.3,1.6,.5,1)}
 .viz[data-s="3"] .qr .line{opacity:1;animation:scan 1.6s ease-in-out infinite alternate}
 @keyframes scan{from{transform:translateY(0)}to{transform:translateY(4.4rem)}}
 .paused,.paused *{animation-play-state:paused!important}
