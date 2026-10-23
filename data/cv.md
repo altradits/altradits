@@ -1,6 +1,6 @@
 # Stanley Chege Thuita
 Founder & Software Engineer
-Nairobi, Kenya | altradits@gmail.com | +254 707 172 370 | altradits.com | linkedin.com/in/stanmobitech
+Nairobi, Kenya | altradits@gmail.com | {{phone}} | altradits.com | linkedin.com/in/stanmobitech
 
 ## Professional Summary
 Software engineer and founder of Altradits, a global virtual assistant business that sells fixed-price tasks online, delivered by AI agents and a freelancer team. Built and runs the whole system, from storefront and order automation to Bitcoin payments on his own Lightning node.
