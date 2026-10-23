@@ -172,9 +172,14 @@ dd{margin:0;overflow-wrap:anywhere}
       <label class="muted">Salary expectations<input id="pSalary"></label>
       <label class="muted">Links<input id="pLinks" placeholder="GitHub, LinkedIn, portfolio"></label></div>
       <label class="muted">Notes for the agent<textarea id="pNotes" placeholder="Strengths to emphasise, things to avoid, availability…"></textarea></label>
+      <div class="ap" style="margin-top:1rem"><h3>Applicant details (for "Apply with AI")</h3>
+        <p class="muted" style="font-size:.88rem">What application forms ask. Never put passwords, card or ID numbers here: the agent asks you in the browser if a form needs them.</p>
+        <div class="grid2" style="gap:.6rem" id="appFields"></div>
+        <label class="muted">Other standard answers <small>(e.g. "Yes, I can work UK hours"; "Available for interviews weekdays after 2pm EAT")</small><textarea id="aExtra"></textarea></label>
+        <div class="row"><button class="btn primary" id="aSave">Save applicant details</button><span class="muted" id="aMsg"></span></div></div>
       <div class="row"><button class="btn primary" id="pSave">Save profile</button><button class="btn" id="pImport">Import from my GitHub profile README</button><span class="muted" id="pMsg"></span></div></details>
-    <div class="panel"><h2>Applications</h2>
-      <div class="row" style="margin:0 0 .8rem"><select id="jobFilter" style="max-width:14rem"><option value="active">Active</option><option value="found">To review</option><option value="ready">Pack ready</option><option value="applied">Applied</option><option value="interview">Interviewing</option><option value="closed">Closed</option><option value="">All</option></select></div>
+    <div class="panel"><h2>Applications <span class="stage" id="agentBadge" style="font-size:.8rem"></span></h2>
+      <div class="row" style="margin:0 0 .8rem"><select id="jobFilter" style="max-width:14rem"><option value="active">Active</option><option value="found">To review</option><option value="ready">Pack ready</option><option value="applying">AI applying</option><option value="applied">Applied</option><option value="interview">Interviewing</option><option value="closed">Closed</option><option value="">All</option></select></div>
       <div class="kpis" id="jobKpis" style="margin:0 0 1rem"></div>
       <div id="jobList"></div></div>
   </div>
@@ -436,7 +441,7 @@ document.addEventListener("click", async (e) => {
 
 // ---------------------------------------------------------- job hunt
 let J = null, jobTimer = null;
-const JLABEL = { found: "to review", preparing: "preparing…", ready: "pack ready", applied: "applied", interview: "interviewing", offer: "offer 🎉", rejected: "rejected", withdrawn: "withdrawn", error: "error" };
+const JLABEL = { apply_queued: "🤖 queued for Apply Agent", applying: "🤖 AI applying…", awaiting_submit: "🤖 waiting for your OK", found: "to review", preparing: "preparing…", ready: "pack ready", applied: "applied", interview: "interviewing", offer: "offer 🎉", rejected: "rejected", withdrawn: "withdrawn", error: "error" };
 const REC = { apply: "✅ apply", apply_with_care: "⚠️ apply with care", skip: "⛔ skip" };
 async function loadJobs() {
   try { J = await api("?view=jobs"); renderJobs(); } catch {}
@@ -445,8 +450,24 @@ function mdToHtml(md) {
   return esc(md).replace(/^### (.*)$/gm, "<h3>$1</h3>").replace(/^## (.*)$/gm, "<h2>$1</h2>").replace(/^# (.*)$/gm, "<h1>$1</h1>")
     .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/^[-*] (.*)$/gm, "<li>$1</li>").replace(/(<li>.*<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`).replace(/\n{2,}/g, "<br><br>");
 }
+const AFIELDS = [["fullName", "Full name"], ["email", "Email"], ["phone", "Phone (with country code)"], ["city", "City"], ["country", "Country"], ["linkedin", "LinkedIn URL"], ["github", "GitHub URL"], ["website", "Website / portfolio"], ["workAuthorization", "Work authorisation / visa"], ["noticePeriod", "Notice period / availability"], ["salaryExpectation", "Salary expectation"], ["relocate", "Willing to relocate?"], ["startDate", "Earliest start date"], ["pronouns", "Pronouns (optional)"], ["demographics", "Demographic questions"]];
+function renderApplicant(a) {
+  if ($("#appFields").dataset.loaded) return;
+  $("#appFields").innerHTML = AFIELDS.map(([k, l]) => `<label class="muted">${l}<input data-af="${k}" value="${esc(a[k] || "")}"></label>`).join("");
+  $("#aExtra").value = a.extra || "";
+  $("#appFields").dataset.loaded = "1";
+}
+$("#aSave").addEventListener("click", async () => {
+  const body = { action: "job_applicant", extra: $("#aExtra").value };
+  document.querySelectorAll("[data-af]").forEach((i) => { body[i.dataset.af] = i.value; });
+  try { await api("", body); $("#aMsg").textContent = "Saved ✓"; } catch (err) { $("#aMsg").textContent = err.message; }
+});
 function renderJobs() {
   const p = J.profile;
+  renderApplicant(J.applicant || {});
+  const ag = J.applyAgent || {};
+  $("#agentBadge").textContent = ag.online ? "🟢 Apply Agent online" : "⚪ Apply Agent offline";
+  $("#agentBadge").title = ag.online ? "Running on your Mac" : "Start it on your Mac: cd ~/altradits/apply-agent && npm start";
   if (!$("#pCv").dataset.loaded) {
     $("#pCv").value = p.cv; $("#pTargets").value = p.targets; $("#pLocation").value = p.location; $("#pSalary").value = p.salary; $("#pLinks").value = p.links; $("#pNotes").value = p.notes;
     $("#pCv").dataset.loaded = "1";
@@ -456,7 +477,7 @@ function renderJobs() {
   renderCareer(p);
   const f = $("#jobFilter").value;
   const closed = ["offer", "rejected", "withdrawn"];
-  const list = J.jobs.filter((j) => f === "active" ? !closed.includes(j.status) : f === "closed" ? closed.includes(j.status) : !f || j.status === f)
+  const list = J.jobs.filter((j) => f === "active" ? !closed.includes(j.status) : f === "closed" ? closed.includes(j.status) : f === "applying" ? ["apply_queued", "applying", "awaiting_submit"].includes(j.status) : !f || j.status === f)
     .sort((a, b) => (b.pack?.fitScore ?? -1) - (a.pack?.fitScore ?? -1));
   const count = (st) => J.jobs.filter((j) => j.status === st).length;
   const follow = J.jobs.filter((j) => j.followUp).length;
@@ -477,14 +498,19 @@ function renderJobs() {
       <details><summary>Tailored CV</summary><pre style="max-height:20rem;overflow:auto">${esc(k.cv)}</pre><div class="row"><button class="btn" data-copyjob="${j.id}" data-part="cv">Copy CV</button><button class="btn" data-printcv="${j.id}">Print / save as PDF</button></div></details>` : ""}
       <div class="row">
         ${["found", "error", "ready"].includes(j.status) ? `<button class="btn ${k ? "" : "primary"}" data-prepare="${j.id}">${k ? "Re-prepare pack" : "Prepare application pack"}</button>` : ""}
-        <a class="btn ${j.status === "ready" ? "primary" : ""}" href="${esc(j.url)}" target="_blank" rel="noopener">Open & apply ↗</a>
+        ${j.status === "ready" ? `<button class="btn primary" data-applyai="${j.id}">🤖 Apply with AI</button>` : ""}
+        ${["apply_queued", "applying", "awaiting_submit"].includes(j.status) ? `<button class="btn" data-applycancel="${j.id}">Cancel AI apply</button>` : ""}
+        <a class="btn" href="${esc(j.url)}" target="_blank" rel="noopener">Open & apply myself ↗</a>
         ${[["applied", "I applied"], ["interview", "Interview"], ["offer", "Offer"], ["rejected", "Rejected"], ["withdrawn", "Not for me"]].filter(([st]) => st !== j.status).map(([st, l]) => `<button class="btn" data-jobstatus="${st}" data-jid="${j.id}">${l}</button>`).join("")}
       </div>
+      ${j.apply?.log?.length ? `<details ${["applying", "awaiting_submit"].includes(j.status) ? "open" : ""}><summary>Apply Agent log</summary><ul class="events">${j.apply.log.slice(-15).reverse().map((h) => `<li>${esc(h.at.slice(11, 16))} ${esc(h.text)}</li>`).join("")}</ul></details>` : ""}
+      ${j.status === "awaiting_submit" ? `<p><b>👀 The form is filled in.</b> Review it in the Chrome window on your Mac, then press <b>Submit for me</b> in the agent's panel.</p>` : ""}
+      ${j.apply?.confirmation ? `<p class="muted">✅ ${esc(j.apply.confirmation)}</p>` : ""}
       <details><summary class="muted">History</summary><ul class="events">${j.history.slice().reverse().map((h) => `<li>${esc(h.at.slice(0, 16).replace("T", " "))}: ${esc(h.text)}</li>`).join("")}</ul></details>
     </div>`;
   }).join("") || '<p class="muted">No jobs here yet. Paste a link above.</p>';
   clearTimeout(jobTimer);
-  const busy = J.jobs.some((j) => j.status === "preparing") || J.profile.masterBuilding || J.profile.discovery?.running;
+  const busy = J.jobs.some((j) => ["preparing", "apply_queued", "applying", "awaiting_submit"].includes(j.status)) || J.profile.masterBuilding || J.profile.discovery?.running;
   if (busy) jobTimer = setTimeout(loadJobs, 5000);
 }
 function renderCareer(p) {
@@ -600,6 +626,11 @@ document.addEventListener("click", async (e) => {
   if (d.prepare) {
     e.target.disabled = true; e.target.textContent = "Preparing…";
     try { await api("", { action: "job_prepare", id: d.prepare }); await loadJobs(); } catch (err) { e.target.disabled = false; e.target.textContent = err.message; }
+  } else if (d.applyai) {
+    if (!J.applyAgent?.online && !e.target.dataset.armed) { e.target.dataset.armed = "1"; e.target.textContent = "Agent offline: queue anyway?"; return; }
+    try { await api("", { action: "job_apply", id: d.applyai }); await loadJobs(); } catch (err) { e.target.textContent = err.message; }
+  } else if (d.applycancel) {
+    try { await api("", { action: "job_apply_cancel", id: d.applycancel }); await loadJobs(); } catch (err) { e.target.textContent = err.message; }
   } else if (d.jobstatus) {
     try { await api("", { action: "job_status", id: d.jid, status: d.jobstatus }); await loadJobs(); } catch (err) { e.target.textContent = err.message; }
   } else if (d.copyjob) {

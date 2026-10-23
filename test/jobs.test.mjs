@@ -154,3 +154,37 @@ test("CV upload: Word text is read; a PDF is attached to the Career Agent; bad f
   assert.equal(r.body.profile.cvFile, undefined);
   assert.equal((await admin.GET(req("GET", "/api/admin?view=cvfile"))).status, 404);
 });
+
+test("Apply with AI: queue needs a pack and applicant details; agent claims, reports, finishes", async () => {
+  const job = (await jobs.allJobs()).find((x) => x.pack);
+  let r = await call(admin.POST, "POST", "/api/admin", { action: "job_apply", id: job.id });
+  assert.equal(r.status, 400, "needs applicant details");
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_applicant", fullName: "Stanley Chege Thuita", email: "altradits@gmail.com", phone: "+254700000000", extra: "my password: hunter2" });
+  assert.equal(r.status, 400, "no passwords in applicant details");
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_applicant", fullName: "Stanley Chege Thuita", email: "altradits@gmail.com", phone: "+254700000000" });
+  assert.equal(r.body.applicant.demographics, "Prefer not to say", "sensible default");
+
+  r = await call(admin.GET, "GET", "/api/admin?view=jobs");
+  assert.equal(r.body.applyAgent.online, false);
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_apply", id: job.id });
+  assert.equal(r.body.job.status, "apply_queued");
+
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_agent_poll", version: "1.0.0", host: "mac" });
+  assert.equal(r.body.next.job.id, job.id);
+  assert.equal(r.body.next.applicant.fullName, "Stanley Chege Thuita");
+  assert.ok(r.body.next.pack.cv);
+  assert.equal((await call(admin.POST, "POST", "/api/admin", { action: "job_agent_poll" })).body.next, null, "claimed once");
+  assert.equal((await call(admin.GET, "GET", "/api/admin?view=jobs")).body.applyAgent.online, true);
+
+  await call(admin.POST, "POST", "/api/admin", { action: "job_agent_update", id: job.id, note: "Filled contact details" });
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_agent_update", id: job.id, status: "awaiting_submit", note: "Ready to submit" });
+  assert.equal(r.body.job.status, "awaiting_submit");
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_agent_update", id: job.id, status: "applied", confirmation: "Thank you! Application received." });
+  assert.equal(r.body.job.status, "applied");
+  assert.ok(r.body.job.appliedAt);
+  assert.equal(r.body.job.apply.log.length, 2, "two progress notes");
+
+  // Without the admin token nothing works.
+  const anon = await admin.POST(new Request("https://altradits.test/api/admin", { method: "POST", body: JSON.stringify({ action: "job_agent_poll" }) }));
+  assert.equal(anon.status, 401);
+});
