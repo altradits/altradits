@@ -46,7 +46,9 @@ const server = http.createServer(async (req, res) => {
       if (!handler) { res.writeHead(405).end("Method not allowed"); return; }
       const chunks = [];
       let size = 0;
-      for await (const c of req) { size += c.length; if (size > 100_000) { res.writeHead(413).end(); return; } chunks.push(c); }
+      // CV uploads (admin only) need room; everything else stays small.
+      const limit = api[1] === "admin" ? 8_000_000 : 100_000;
+      for await (const c of req) { size += c.length; if (size > limit) { res.writeHead(413, { "Content-Type": "application/json" }).end('{"error":"That file is too large."}'); return; } chunks.push(c); }
       const request = new Request(url, {
         method: req.method, headers: req.headers,
         body: ["GET", "HEAD"].includes(req.method) ? undefined : Buffer.concat(chunks),

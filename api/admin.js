@@ -10,11 +10,18 @@ import { lightningMode } from "../lib/lightning.js";
 import { allMembers, allTasks, getMember, setMemberStatus, getTask, saveTask, assignTask, publicMember, notifyClient, OPEN } from "../lib/ops.js";
 import { DEPARTMENTS } from "../data/playbooks.js";
 import { kickQueue, workersLive, AGENT_ROSTER } from "../lib/workers.js";
-import { getProfile, saveProfile, allJobs, addFromUrl, prepareJob, setJobStatus, htmlToText, jobsLive, getJob } from "../lib/jobs.js";
+import { getProfile, saveProfile, allJobs, addFromUrl, prepareJob, setJobStatus, htmlToText, jobsLive, getJob, hasCv, saveCvFile, removeCvFile, readCvFile } from "../lib/jobs.js";
 import fs from "node:fs";
 import { sendEmail } from "../lib/email.js";
 import { agentLive } from "../lib/agent.js";
 import { BUSINESS } from "../data/catalog.js";
+
+// The dashboard gets the uploaded CV's details, not its full text.
+function publicProfile(p) {
+  if (!p.cvFile) return p;
+  const { text, ...file } = p.cvFile;
+  return { ...p, cvFile: { ...file, textChars: (text || "").length } };
+}
 
 function authorized(request) {
   const token = process.env.ADMIN_TOKEN;
@@ -32,7 +39,15 @@ export async function GET(request) {
     const jobs = (await allJobs()).map(({ pageText, ...j }) => ({
       ...j, followUp: j.status === "applied" && Date.now() - Date.parse(j.appliedAt || j.updatedAt) > 7 * 864e5,
     }));
-    return json({ profile: await getProfile(), jobs, aiReady: jobsLive() });
+    return json({ profile: publicProfile(await getProfile()), jobs, aiReady: jobsLive() });
+  }
+
+  if (u.searchParams.get("view") === "cvfile") {
+    const p = await getProfile();
+    const buf = readCvFile(p);
+    if (!buf) return json({ error: "No CV uploaded." }, 404);
+    const types = { pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", txt: "text/plain", md: "text/markdown" };
+    return new Response(buf, { headers: { "Content-Type": types[p.cvFile.ext], "Content-Disposition": `attachment; filename="${p.cvFile.name.replace(/"/g, "")}"`, "Cache-Control": "no-store" } });
   }
 
   if (u.searchParams.get("view") === "ops") {
@@ -161,19 +176,21 @@ export async function POST(request) {
 
   if (body.action?.startsWith("job_")) {
     try {
-      if (body.action === "job_profile") return json({ profile: await saveProfile(body) });
+      if (body.action === "job_profile") return json({ profile: publicProfile(await saveProfile(body)) });
+      if (body.action === "job_cv_upload") return json({ profile: publicProfile(await saveCvFile(body)) });
+      if (body.action === "job_cv_remove") return json({ profile: publicProfile(await removeCvFile()) });
       if (body.action === "job_import_readme") {
         // Start the profile from the public GitHub profile README in this repo.
         const md = fs.readFileSync(new URL("../README.md", import.meta.url), "utf8");
         const text = htmlToText(md.replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/<img[^>]*>/gi, "")).replace(/[*_`#|]+/g, " ").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
         const p = await getProfile();
-        return json({ profile: await saveProfile({ ...p, cv: p.cv ? `${p.cv}\n\n${text}` : text }) });
+        return json({ profile: publicProfile(await saveProfile({ ...p, cv: p.cv ? `${p.cv}\n\n${text}` : text })) });
       }
       if (body.action === "job_add") return json(await addFromUrl(body.url));
       if (body.action === "job_prepare") {
         const id = clean(body.id, 40);
         if (!jobsLive()) return json({ error: "Add ANTHROPIC_API_KEY to use the Career Agent." }, 400);
-        if ((await getProfile()).cv.length < 200) return json({ error: "Add your CV/profile first (My profile, above)." }, 400);
+        if (!hasCv(await getProfile())) return json({ error: "Upload your CV or add your profile first (My profile, above)." }, 400);
         if (!(await getJob(id))) return json({ error: "Job not found" }, 404);
         // Runs in the background (can take a minute); the dashboard polls.
         prepareJob(id).catch((err) => console.error("job prepare", err.message));
