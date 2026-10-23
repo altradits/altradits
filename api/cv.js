@@ -6,7 +6,7 @@
 // A paid pass works for 30 days on that browser.
 import { json, clean, clientIp, safeEqual, newId } from "../lib/http.js";
 import { getJSON, setJSON, hit } from "../lib/store.js";
-import { publicCv } from "../lib/career.js";
+import { publicCv, syncCv } from "../lib/career.js";
 import { markdownToPdf } from "../lib/pdf.js";
 import { createInvoice, invoicePaid, qrSvg } from "../lib/lightning.js";
 
@@ -34,7 +34,17 @@ async function loadPass(id, t) {
   return pass;
 }
 
+// The host idles the app between requests, which cancels timers, so visits to
+// the CV page also nudge the Career Agent to rebuild when the CV is out of date.
+let lastSync = 0;
+function nudgeSync() {
+  if (Date.now() - lastSync < 30 * 60e3) return;
+  lastSync = Date.now();
+  syncCv().then((r) => console.log("CV sync", r)).catch((e) => console.error("CV sync", e.message));
+}
+
 export async function GET(request) {
+  nudgeSync();
   const u = new URL(request.url);
   const cv = await publicCv();
   if (!cv) return json({ error: "CV not available." }, 404);
