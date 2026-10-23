@@ -44,8 +44,9 @@ export async function POST(request) {
     await saveProposal(p);
   }
   // A fixed-amount LNURL for wallets that prefer it (needs our own node).
-  const lnurl = lightningMode() === "lnd" ? encodeLnurl(`${siteUrl(request)}/api/lnurl?p=${p.id}&t=${p.token}`) : (PAYMENTS.lnurl || "").toUpperCase();
-  return json({ invoice: { ...(await publicInvoice(p.lightning)), lnurl, lnurlFixedAmount: lightningMode() === "lnd" } });
+  const fromNode = p.lightning.provider === "lnd";
+  const lnurl = fromNode ? encodeLnurl(`${siteUrl(request)}/api/lnurl?p=${p.id}&t=${p.token}`) : (PAYMENTS.lnurl || "").toUpperCase();
+  return json({ invoice: { ...(await publicInvoice(p.lightning)), lnurl, lnurlFixedAmount: fromNode } });
 }
 
 export async function GET(request) {
