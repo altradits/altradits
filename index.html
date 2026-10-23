@@ -184,6 +184,14 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 .details .wide{grid-column:1/-1}
 .details input,.details textarea{display:block;width:100%;margin-top:.25rem;padding:.65rem .8rem;border:2px solid var(--line);border-radius:.7rem;font:inherit;font-weight:400;background:var(--bg);color:var(--ink)}
 .details textarea{min-height:5rem;resize:vertical}
+.urg{border:2px solid var(--line);border-radius:.8rem;padding:.7rem .9rem;margin:0 0 1rem}
+.urg input{width:auto;margin:0;accent-color:var(--blue)}
+.urg legend{font-weight:700;padding:0 .3rem}
+.urg label{display:flex;gap:.5rem;align-items:baseline;flex-wrap:wrap;font-weight:400;padding:.15rem 0}
+.urg small{color:var(--muted)}
+.urg p{margin:.4rem 0 0;font-size:.85rem;color:var(--muted)}
+.urgent{border:2px solid var(--btc);background:color-mix(in srgb,var(--btc) 10%,white);border-radius:1rem;padding:1rem;margin:1rem 0}
+.urgent p{margin:.3rem 0 .8rem}
 .saved{font-size:.85rem;color:var(--ok);min-height:1.2em;margin:0}
 .done{text-align:center;padding:1rem 0}
 .done .tick{font-size:3rem;line-height:1}
@@ -234,7 +242,8 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
         <div class="actions" id="heroBuy"></div>
         <div class="sub">
           <span>Price shown = price paid</span>
-          <span>Most quick jobs done in 1–2 days</span>
+          <span>Quick jobs delivered the same day</span>
+          <span>Urgent? 100+ freelancers on standby</span>
           <span>Deliverables listed up front</span>
           <span>Any Bitcoin wallet</span>
         </div>
@@ -257,7 +266,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
   <section id="quick">
     <div class="wrap">
       <h2 class="h2">Quick jobs from $9</h2>
-      <p class="intro">One small job, one fixed price, done in a day or two. Each card says exactly what you get. The button is the price: click it and pay.</p>
+      <p class="intro">One small job, one fixed price, delivered the same day. Need it in minutes or a few hours? Choose that when you pay: nothing is impossible, and 100+ freelancers are on standby for urgent work. Each card says exactly what you get. The button is the price: click it and pay.</p>
       <div class="filterbar">
         <div class="search">
           <label class="sr" for="find">Search all jobs and services</label>
@@ -302,14 +311,17 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 
 <div class="wrap">
   <section id="team">
-    <h2 class="h2">Who does the work</h2>
+    <h2 class="h2">A team, not a one-person shop</h2>
     <div class="about">
       <div>
-        <p>I'm Stanley, a software engineer and virtual assistant in Kenya. I build with Go and Next.js, contribute to open-source Bitcoin and Lightning projects, and I'm the person owners call when the to-do list has become a second job.</p>
-        <p>I run Altradits with a team of AI agents, one per department. They do the first pass fast, a quality reviewer checks it, and I take the real-world steps and I'm accountable for the result.</p>
+        <p>Altradits is led by Stanley, a software engineer and virtual assistant in Kenya who builds with Go and Next.js and contributes to open-source Bitcoin and Lightning projects.</p>
+        <p>Behind every order is a growing team. Our freelancers come from two developer communities: weVenture Hub in Addis Ababa and Zone01 in Kisumu. More than 100 of them are on standby, so urgent jobs start right away, and every new order helps us bring more people on.</p>
+        <p>Each department also has an AI agent that does the first pass in minutes. A quality reviewer checks the work, and a person takes the real-world steps.</p>
       </div>
       <ul class="facts">
-        <li>Based in Kenya (UTC+3)</li>
+        <li>100+ freelancers on standby for urgent jobs</li>
+        <li>Talent from weVenture Hub (Addis Ababa) and Zone01 (Kisumu)</li>
+        <li>Based in Kenya (UTC+3), working with clients worldwide</li>
         <li>Same-day overlap with Europe, Africa and the Middle East</li>
         <li>Early-evening overlap with the Americas, overnight turnaround for Asia-Pacific</li>
         <li>Pay with any Bitcoin wallet: Lightning or on-chain</li>
@@ -323,7 +335,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
       <div class="agent"><div class="ico">🤝</div><h4>Sales & Customer Care Agent</h4><p class="r">Sales & customer care</p><p>Reply templates, verified lead lists, outreach sequences and sourced research.</p></div>
       <div class="agent"><div class="ico">🛠️</div><h4>Web, Automation & Bitcoin Agent</h4><p class="r">Tech</p><p>Landing pages, automations, payment setups. You always keep your own keys.</p></div>
       <div class="agent"><div class="ico">🔍</div><h4>Quality Reviewer</h4><p class="r">Every deliverable</p><p>Checks each piece of work against the card's deliverables before you see it.</p></div>
-      <div class="agent"><div class="ico">🧑🏾‍💻</div><h4>Stanley</h4><p class="r">Accountable for all of it</p><p>Handles the real-world steps and anything you're not 100% happy with.</p></div>
+      <div class="agent"><div class="ico">🧑🏾‍🤝‍🧑🏽</div><h4>Freelancer team</h4><p class="r">100+ on standby</p><p>Developers and assistants from weVenture Hub and Zone01, led by Stanley, for the real-world steps and urgent work.</p></div>
     </div>
     <p class="credit">Agent methods adapted from the open-source <a href="https://github.com/altradits/agency-agents">Agency agents</a> collection.</p>
   </section>
@@ -335,7 +347,8 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
     <details><summary>How do you know what I need?</summary><p>The payment window has a box for your email and what you need. You can fill it in before or after paying. After payment you also get a client portal to add files, request changes and approve the work.</p></details>
     <details><summary>Why are quick jobs so affordable?</summary><p>Each one is small and fixed, and our AI agents do the first pass in minutes, with a person checking the result. You pay for a finished result, not for hours of someone's time.</p></details>
     <details><summary>My task isn't listed. Can I still order?</summary><p>Yes: buy the 2-hour pay-as-you-go block and describe the task. For ongoing work, a monthly plan covers any mix of the services listed here.</p></details>
-    <details><summary>Is the work done by AI or by a person?</summary><p>Both, deliberately. Each department has an AI agent that does the work fast from a written playbook, a quality reviewer checks every deliverable, and Stanley takes the real-world steps and handles anything sensitive.</p></details>
+    <details><summary>Is the work done by AI or by a person?</summary><p>Both, deliberately. Each department has an AI agent that does the work fast from a written playbook, a quality reviewer checks every deliverable, and our freelancer team, led by Stanley, takes the real-world steps and handles anything sensitive.</p></details>
+    <details><summary>Can you do it urgently, within minutes or hours?</summary><p>Yes. Nothing is impossible: more than 100 freelancers are on standby. When you order a quick job, choose "Within a few hours" or "Right now". Once you've paid, you'll see Stanley's direct number so you can flag it, and your job jumps to the front of the queue.</p></details>
     <details><summary>How do you keep my accounts and data safe?</summary><p>Access through delegated logins or a password manager share, never passwords in email. Least access needed, removed when we finish. Your data is never used to train AI models.</p></details>
     <details><summary>What if the result doesn't match the card?</summary><p>It's fixed free for 14 days after delivery. Monthly plans can be cancelled any month from your portal.</p></details>
     <details><summary>What don't you do?</summary><p>Anything that needs a licensed professional (legal, medical, regulated financial advice), anything unlawful, and holding anyone's crypto keys.</p></details>
@@ -351,7 +364,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 <footer>
   <div class="wrap">
     <span>© <span id="yr">2026</span> Altradits · Virtual assistance worldwide</span>
-    <span><a href="/cv.html">Stanley's CV</a> · <a href="/join.html">Join the team</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://x.com/altradits">X</a></span>
+    <span><a href="/cv.html">Stanley's CV</a> · <a href="/join.html">Join the team (we're hiring)</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://x.com/altradits">X</a></span>
   </div>
 </footer>
 
@@ -360,7 +373,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 </div>
 
 <script type="module">
-import { SERVICES, QUICK_JOBS, PILLARS, PACKAGES, PAYG, GUARANTEES, orderable } from "./data/catalog.js";
+import { SERVICES, QUICK_JOBS, PILLARS, PACKAGES, PAYG, GUARANTEES, URGENCY, STANDBY_FREELANCERS, orderable } from "./data/catalog.js";
 import { mountPay } from "./assets/pay-widget.js";
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -476,8 +489,13 @@ async function openOrder(itemId) {
       <div><p><b>You get</b></p><ul>${item.deliverables.map((d) => `<li>${esc(d)}</li>`).join("")}</ul></div>
       <div><p><b>Delivery:</b> ${esc(item.delivery)}</p>${item.youSend ? `<p><b>We need:</b> ${esc(item.youSend)}</p>` : ""}<p>Fixed price. Fixes free for 14 days.</p></div>
     </div>
+${item.urgentOk ? `<fieldset class="urg" id="urg"><legend>When do you need it?</legend>
+        ${URGENCY.map((u, i) => `<label><input type="radio" form="details" name="urgency" value="${u.id}"${i ? "" : " checked"}> <b>${esc(u.label)}</b><small>${esc(u.note)}</small></label>`).join("")}
+        <p>Nothing is impossible: ${STANDBY_FREELANCERS}+ freelancers are on standby for urgent jobs. Pay for an urgent order and you'll get Stanley's direct number to flag it straight away.</p>
+      </fieldset>` : ""}
     <div class="paybox"><h3>₿ Pay ${money(item.price)} with any Bitcoin wallet</h3><div id="pay"><p style="color:var(--muted)">Creating your payment QR…</p></div></div>
     <form class="details" id="details" novalidate>
+
       <label>Email for your receipt and client portal<input type="email" name="email" autocomplete="email" placeholder="you@business.com"></label>
       <label>Your name<input type="text" name="name" autocomplete="name"></label>
       <label class="wide">What exactly do you need? (links, deadlines, preferences)<textarea name="task" placeholder="${item.kind === "package" ? "Your first priorities for the month" : "Describe the task"}"></textarea></label>
@@ -507,40 +525,54 @@ async function openOrder(itemId) {
   let saveTimer = null;
   const save = async () => {
     const f = new FormData($("#details"));
-    const body = { id: order.id, t: order.t, email: f.get("email").trim(), name: f.get("name").trim(), task: f.get("task").trim() };
+    const body = { id: order.id, t: order.t, email: f.get("email").trim(), name: f.get("name").trim(), task: f.get("task").trim(), urgency: f.get("urgency") || undefined };
     if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(body.email)) { $("#saved").textContent = ""; return; }
     try {
       const r = await fetch("/api/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       $("#saved").textContent = r.ok ? "✓ Saved to your order" : "";
       session.set(`altra.d.${order.id}`, body);
+      if (r.ok && order.paid) showDone(item, order);
     } catch {}
   };
   const draft = session.get(`altra.d.${order.id}`);
   for (const k of ["email", "name", "task"]) if (draft[k]) $(`[name=${k}]`, sheet).value = draft[k];
+  if (draft.urgency) { const r = $(`[name=urgency][value="${draft.urgency}"]`, sheet); if (r) r.checked = true; }
   $("#details").addEventListener("input", () => { clearTimeout(saveTimer); $("#saved").textContent = ""; saveTimer = setTimeout(save, 700); });
   $("#details").addEventListener("change", () => { clearTimeout(saveTimer); save(); });
+  $("#urg")?.addEventListener("change", () => { clearTimeout(saveTimer); save(); });
 
   stopPay = mountPay($("#pay"), { id: order.id, t: order.t, claim: true, onPaid: () => paid(item, order, save) });
 }
 
 async function paid(item, order, save) {
-  await save();
+  order.paid = true;
+  await save(); // also shows the confirmation
   const o = session.get("altra.orders"); delete o[item.id]; session.set("altra.orders", o);
+}
+
+// Order confirmation. Urgent orders show Stanley's number (the server only
+// sends it once the order is paid and marked urgent).
+async function showDone(item, order) {
   let info = {};
   try { info = await (await fetch(`/api/order?id=${encodeURIComponent(order.id)}&t=${encodeURIComponent(order.t)}`)).json(); } catch {}
-  const form = $("#details");
-  form.remove();
+  const form = $("#details"), urg = $("#urg");
+  form.remove(); urg?.remove();
+  const msg = info.phone && encodeURIComponent(`URGENT order ${info.ref} on altradits.com: ${item.name}. I've paid. ${form.task.value.trim()}`.slice(0, 900));
   sheet.innerHTML = `<button type="button" class="x" aria-label="Close">×</button>
     <div class="done">
       <div class="tick">✅</div>
       <h2 id="mTitle">Order confirmed</h2>
       <p><b>${esc(item.name)}</b> · ${money(item.price)} paid</p>
       <p>Delivery: ${esc(info.delivery || item.delivery)}</p>
+      ${info.phone ? `<div class="urgent"><b>🚨 Urgent order ${esc(info.ref)}: tell Stanley now</b>
+        <p>Your job is already at the front of the queue. Message or call so the standby team starts right away.</p>
+        <div class="actions" style="justify-content:center"><a class="btn btc" href="https://wa.me/${esc(info.phone.replace(/\D/g, ""))}?text=${msg}" target="_blank" rel="noopener">WhatsApp ${esc(info.phone)}</a><a class="btn" href="tel:${esc(info.phone)}">Call</a></div></div>` : ""}
       <p>${info.emailed ? "Your receipt and portal link are in your inbox." : "Save your portal link: it's how you send files, track the work and approve it."}</p>
       ${info.portal ? `<p style="margin-top:1rem"><a class="btn primary" href="${esc(info.portal)}">Open your client portal</a></p>` : ""}
     </div>`;
+  if (urg) { $("legend", urg).textContent = "Need it faster? Change it here"; sheet.appendChild(urg); }
   sheet.appendChild(form);
-  form.hidden = Boolean(info.emailed && form.task?.value);
+  form.hidden = Boolean(info.emailed && form.task.value && !item.urgentOk);
   $(".x", sheet).onclick = closeModal;
 }
 
