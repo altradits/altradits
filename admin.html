@@ -145,8 +145,12 @@ dd{margin:0;overflow-wrap:anywhere}
       <div class="row" style="margin:0"><input id="jobUrl" placeholder="https://company.applytojob.com/apply/…" style="flex:1;min-width:14rem"><button class="btn primary" id="jobAdd">Add</button></div>
       <p class="muted" id="jobMsg" role="status"></p></div>
     <details class="panel" id="profilePanel"><summary style="font:700 1.15rem 'Bricolage Grotesque',sans-serif;cursor:pointer">My profile (used for every application)</summary>
-      <p class="muted">Your real experience only: the Career Agent never invents anything. Paste your CV, then add what's missing.</p>
-      <label class="muted">CV / experience<textarea id="pCv" style="min-height:14rem"></textarea></label>
+      <p class="muted">Your real experience only: the Career Agent never invents anything.</p>
+      <div class="ap" style="margin-bottom:1rem"><h3>Your CV file</h3>
+        <div id="cvFileBox"></div>
+        <div class="row"><input type="file" id="cvFile" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" style="max-width:20rem"><button class="btn primary" id="cvUpload">Upload CV</button><span class="muted" id="cvMsg" role="status"></span></div>
+        <p class="muted" style="font-size:.85rem">PDF, Word (.docx), .txt or .md, up to 5 MB. Used as the main reference for every application, together with the notes below.</p></div>
+      <label class="muted">Extra profile text <small>(optional if you uploaded a CV: add anything not in it, or paste your CV here instead)</small><textarea id="pCv" style="min-height:10rem"></textarea></label>
       <div class="grid2" style="gap:.8rem"><label class="muted">Target roles<input id="pTargets" placeholder="e.g. Backend engineer (Go), Bitcoin/Lightning developer, Executive/virtual assistant"></label>
       <label class="muted">Location & remote preferences<input id="pLocation" placeholder="e.g. Kisumu, Kenya · remote or Nairobi hybrid"></label>
       <label class="muted">Salary expectations<input id="pSalary"></label>
@@ -179,7 +183,7 @@ let D = null;
 async function api(path, body) {
   const res = await fetch("/api/admin" + path, { method: body ? "POST" : "GET",
     headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: body && JSON.stringify(body) });
-  const data = await res.json();
+  const data = await res.json().catch(() => ({ error: res.status === 413 ? "That file is too large (413)." : `Request failed (${res.status})` }));
   if (res.status === 401) { showLogin(data.error); throw new Error(data.error); }
   if (!res.ok) throw new Error(data.error || "Request failed");
   return data;
@@ -430,8 +434,9 @@ function renderJobs() {
   if (!$("#pCv").dataset.loaded) {
     $("#pCv").value = p.cv; $("#pTargets").value = p.targets; $("#pLocation").value = p.location; $("#pSalary").value = p.salary; $("#pLinks").value = p.links; $("#pNotes").value = p.notes;
     $("#pCv").dataset.loaded = "1";
-    if (!p.cv) $("#profilePanel").open = true;
+    if (!p.cv && !p.cvFile) $("#profilePanel").open = true;
   }
+  renderCvFile(p.cvFile);
   const f = $("#jobFilter").value;
   const closed = ["offer", "rejected", "withdrawn"];
   const list = J.jobs.filter((j) => f === "active" ? !closed.includes(j.status) : f === "closed" ? closed.includes(j.status) : !f || j.status === f)
@@ -463,6 +468,41 @@ function renderJobs() {
   clearTimeout(jobTimer);
   if (J.jobs.some((j) => j.status === "preparing")) jobTimer = setTimeout(loadJobs, 5000);
 }
+function renderCvFile(f) {
+  $("#cvFileBox").innerHTML = f
+    ? `<p>✅ <b>${esc(f.name)}</b> · ${(f.size / 1024).toFixed(0)} KB · uploaded ${esc(f.uploadedAt.slice(0, 10))}${f.ext === "pdf" ? " · attached as a PDF to every application" : ` · ${f.textChars.toLocaleString()} characters read`}</p>
+       <div class="row" style="margin-top:0"><button class="btn" id="cvDownload">Download</button><button class="btn" id="cvRemove">Remove</button></div>`
+    : '<p class="muted">No CV uploaded yet.</p>';
+  $("#cvUpload").textContent = f ? "Replace CV" : "Upload CV";
+}
+$("#cvUpload").addEventListener("click", () => {
+  const file = $("#cvFile").files[0];
+  if (!file) { $("#cvMsg").textContent = "Choose a file first."; return; }
+  if (file.size > 5 * 1024 * 1024) { $("#cvMsg").textContent = "Please keep it under 5 MB."; return; }
+  const reader = new FileReader();
+  reader.onload = async () => {
+    $("#cvUpload").disabled = true; $("#cvMsg").textContent = "Uploading…";
+    try {
+      const r = await api("", { action: "job_cv_upload", name: file.name, data: String(reader.result).split(",")[1] });
+      J.profile = r.profile; renderCvFile(r.profile.cvFile);
+      $("#cvMsg").textContent = "Uploaded ✓"; $("#cvFile").value = "";
+    } catch (err) { $("#cvMsg").textContent = /413|too large/i.test(err.message) ? "That file is too large for the server; try a smaller PDF." : err.message; }
+    $("#cvUpload").disabled = false;
+  };
+  reader.readAsDataURL(file);
+});
+document.addEventListener("click", async (e) => {
+  if (e.target.id === "cvRemove") {
+    if (!e.target.dataset.armed) { e.target.dataset.armed = "1"; e.target.textContent = "Click again to remove"; return; }
+    try { const r = await api("", { action: "job_cv_remove" }); J.profile = r.profile; renderCvFile(null); } catch (err) { $("#cvMsg").textContent = err.message; }
+  } else if (e.target.id === "cvDownload") {
+    const res = await fetch("/api/admin?view=cvfile", { headers: { Authorization: "Bearer " + token } });
+    if (!res.ok) { $("#cvMsg").textContent = "Couldn't download."; return; }
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a"); a.href = url; a.download = J.profile.cvFile.name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+});
 $("#jobFilter").addEventListener("change", renderJobs);
 $("#jobAdd").addEventListener("click", async () => {
   const url = $("#jobUrl").value.trim();
