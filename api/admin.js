@@ -10,6 +10,8 @@ import { lightningMode } from "../lib/lightning.js";
 import { allMembers, allTasks, getMember, setMemberStatus, getTask, saveTask, assignTask, publicMember, notifyClient, OPEN } from "../lib/ops.js";
 import { DEPARTMENTS } from "../data/playbooks.js";
 import { kickQueue, workersLive, AGENT_ROSTER } from "../lib/workers.js";
+import { getProfile, saveProfile, allJobs, addFromUrl, prepareJob, setJobStatus, htmlToText, jobsLive, getJob } from "../lib/jobs.js";
+import fs from "node:fs";
 import { sendEmail } from "../lib/email.js";
 import { agentLive } from "../lib/agent.js";
 import { BUSINESS } from "../data/catalog.js";
@@ -25,6 +27,13 @@ const deny = () => json({ error: process.env.ADMIN_TOKEN ? "Wrong admin token." 
 export async function GET(request) {
   if (!authorized(request)) return deny();
   const u = new URL(request.url);
+
+  if (u.searchParams.get("view") === "jobs") {
+    const jobs = (await allJobs()).map(({ pageText, ...j }) => ({
+      ...j, followUp: j.status === "applied" && Date.now() - Date.parse(j.appliedAt || j.updatedAt) > 7 * 864e5,
+    }));
+    return json({ profile: await getProfile(), jobs, aiReady: jobsLive() });
+  }
 
   if (u.searchParams.get("view") === "ops") {
     const [members, tasks] = await Promise.all([allMembers(), allTasks()]);
@@ -149,6 +158,33 @@ export async function POST(request) {
   const body = await readBody(request);
 
   if (body.action === "approval") return resolveApproval(request, body);
+
+  if (body.action?.startsWith("job_")) {
+    try {
+      if (body.action === "job_profile") return json({ profile: await saveProfile(body) });
+      if (body.action === "job_import_readme") {
+        // Start the profile from the public GitHub profile README in this repo.
+        const md = fs.readFileSync(new URL("../README.md", import.meta.url), "utf8");
+        const text = htmlToText(md.replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/<img[^>]*>/gi, "")).replace(/[*_`#|]+/g, " ").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+        const p = await getProfile();
+        return json({ profile: await saveProfile({ ...p, cv: p.cv ? `${p.cv}\n\n${text}` : text }) });
+      }
+      if (body.action === "job_add") return json(await addFromUrl(body.url));
+      if (body.action === "job_prepare") {
+        const id = clean(body.id, 40);
+        if (!jobsLive()) return json({ error: "Add ANTHROPIC_API_KEY to use the Career Agent." }, 400);
+        if ((await getProfile()).cv.length < 200) return json({ error: "Add your CV/profile first (My profile, above)." }, 400);
+        if (!(await getJob(id))) return json({ error: "Job not found" }, 404);
+        // Runs in the background (can take a minute); the dashboard polls.
+        prepareJob(id).catch((err) => console.error("job prepare", err.message));
+        return json({ started: true }, 202);
+      }
+      if (body.action === "job_status") return json({ job: await setJobStatus(clean(body.id, 40), body.status, body.note) });
+    } catch (err) {
+      return json({ error: err.message }, 400);
+    }
+    return json({ error: "Unknown job action" }, 400);
+  }
 
   if (body.action === "member_status") {
     const m = await getMember(clean(body.id, 40));

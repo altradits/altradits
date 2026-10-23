@@ -90,6 +90,7 @@ dd{margin:0;overflow-wrap:anywhere}
       <button role="tab" data-tab="tasks">Tasks <span class="badge" id="taskCount" hidden></span></button>
       <button role="tab" data-tab="team">Team <span class="badge" id="teamCount" hidden></span></button>
       <button role="tab" data-tab="growth">Growth</button>
+      <button role="tab" data-tab="jobs">My job hunt <span class="badge" id="jobCount" hidden></span></button>
       <button role="tab" data-tab="emails">Email log</button>
       <button type="button" class="btn" id="refresh">↻ Refresh</button>
     </div>
@@ -138,6 +139,26 @@ dd{margin:0;overflow-wrap:anywhere}
     <div class="panel"><h2>Where leads come from</h2><div id="sources"></div><h2 style="margin-top:1.2rem">Top referrers</h2><div id="referrers"></div></div></div>
   </div>
 
+  <div id="tab-jobs" hidden>
+    <div class="panel"><h2>Add a job</h2>
+      <p class="muted" style="margin-top:0">Paste a job link, or a whole careers page (e.g. a company's applytojob.com page) to list every opening. The Career Agent prepares a tailored pack from your profile; you review it and apply yourself.</p>
+      <div class="row" style="margin:0"><input id="jobUrl" placeholder="https://company.applytojob.com/apply/…" style="flex:1;min-width:14rem"><button class="btn primary" id="jobAdd">Add</button></div>
+      <p class="muted" id="jobMsg" role="status"></p></div>
+    <details class="panel" id="profilePanel"><summary style="font:700 1.15rem 'Bricolage Grotesque',sans-serif;cursor:pointer">My profile (used for every application)</summary>
+      <p class="muted">Your real experience only: the Career Agent never invents anything. Paste your CV, then add what's missing.</p>
+      <label class="muted">CV / experience<textarea id="pCv" style="min-height:14rem"></textarea></label>
+      <div class="grid2" style="gap:.8rem"><label class="muted">Target roles<input id="pTargets" placeholder="e.g. Backend engineer (Go), Bitcoin/Lightning developer, Executive/virtual assistant"></label>
+      <label class="muted">Location & remote preferences<input id="pLocation" placeholder="e.g. Kisumu, Kenya · remote or Nairobi hybrid"></label>
+      <label class="muted">Salary expectations<input id="pSalary"></label>
+      <label class="muted">Links<input id="pLinks" placeholder="GitHub, LinkedIn, portfolio"></label></div>
+      <label class="muted">Notes for the agent<textarea id="pNotes" placeholder="Strengths to emphasise, things to avoid, availability…"></textarea></label>
+      <div class="row"><button class="btn primary" id="pSave">Save profile</button><button class="btn" id="pImport">Import from my GitHub profile README</button><span class="muted" id="pMsg"></span></div></details>
+    <div class="panel"><h2>Applications</h2>
+      <div class="row" style="margin:0 0 .8rem"><select id="jobFilter" style="max-width:14rem"><option value="active">Active</option><option value="found">To review</option><option value="ready">Pack ready</option><option value="applied">Applied</option><option value="interview">Interviewing</option><option value="closed">Closed</option><option value="">All</option></select></div>
+      <div class="kpis" id="jobKpis" style="margin:0 0 1rem"></div>
+      <div id="jobList"></div></div>
+  </div>
+
   <div id="tab-emails" hidden><div class="panel"><h2>Emails sent by the agents</h2>
     <div style="overflow-x:auto"><table><thead><tr><th>When</th><th>To</th><th>Subject</th><th>Status</th></tr></thead><tbody id="emailRows"></tbody></table></div></div></div>
 </div>
@@ -174,7 +195,8 @@ function tab(name) {
   document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === name));
   if (["tasks", "team"].includes(name)) loadOps();
   if (name === "growth") renderGrowth();
-  ["overview", "approvals", "leads", "tasks", "team", "growth", "emails"].forEach((t) => { $("#tab-" + t).hidden = t !== name; });
+  if (name === "jobs") loadJobs();
+  ["overview", "approvals", "leads", "tasks", "team", "growth", "jobs", "emails"].forEach((t) => { $("#tab-" + t).hidden = t !== name; });
 }
 document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => tab(b.dataset.tab)));
 $("#refresh").addEventListener("click", () => load());
@@ -390,6 +412,98 @@ document.addEventListener("click", async (e) => {
   const i = e.target.dataset.copytpl;
   if (i === undefined) return;
   try { await navigator.clipboard.writeText(TEMPLATES[i][1]); e.target.textContent = "Copied ✓"; } catch { e.target.textContent = "Select and copy"; }
+});
+
+// ---------------------------------------------------------- job hunt
+let J = null, jobTimer = null;
+const JLABEL = { found: "to review", preparing: "preparing…", ready: "pack ready", applied: "applied", interview: "interviewing", offer: "offer 🎉", rejected: "rejected", withdrawn: "withdrawn", error: "error" };
+const REC = { apply: "✅ apply", apply_with_care: "⚠️ apply with care", skip: "⛔ skip" };
+async function loadJobs() {
+  try { J = await api("?view=jobs"); renderJobs(); } catch {}
+}
+function mdToHtml(md) {
+  return esc(md).replace(/^### (.*)$/gm, "<h3>$1</h3>").replace(/^## (.*)$/gm, "<h2>$1</h2>").replace(/^# (.*)$/gm, "<h1>$1</h1>")
+    .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/^[-*] (.*)$/gm, "<li>$1</li>").replace(/(<li>.*<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`).replace(/\n{2,}/g, "<br><br>");
+}
+function renderJobs() {
+  const p = J.profile;
+  if (!$("#pCv").dataset.loaded) {
+    $("#pCv").value = p.cv; $("#pTargets").value = p.targets; $("#pLocation").value = p.location; $("#pSalary").value = p.salary; $("#pLinks").value = p.links; $("#pNotes").value = p.notes;
+    $("#pCv").dataset.loaded = "1";
+    if (!p.cv) $("#profilePanel").open = true;
+  }
+  const f = $("#jobFilter").value;
+  const closed = ["offer", "rejected", "withdrawn"];
+  const list = J.jobs.filter((j) => f === "active" ? !closed.includes(j.status) : f === "closed" ? closed.includes(j.status) : !f || j.status === f)
+    .sort((a, b) => (b.pack?.fitScore ?? -1) - (a.pack?.fitScore ?? -1));
+  const count = (st) => J.jobs.filter((j) => j.status === st).length;
+  const follow = J.jobs.filter((j) => j.followUp).length;
+  $("#jobCount").hidden = !follow; $("#jobCount").textContent = follow;
+  $("#jobKpis").innerHTML = [["To review", count("found")], ["Packs ready", count("ready")], ["Applied", count("applied")], ["Interviews", count("interview")], ["Offers", count("offer")], ["Need follow-up", follow]]
+    .map(([k, v]) => `<div class="kpi"><small>${k}</small><div>${v}</div></div>`).join("");
+  $("#jobList").innerHTML = list.map((j) => {
+    const k = j.pack;
+    return `<div class="ap ${j.followUp ? "pending" : ""}" id="job-${j.id}">
+      <h3>${esc(j.title)} <span class="stage">${JLABEL[j.status] || j.status}</span>${k ? ` <span class="stage" style="background:${k.fitScore >= 70 ? "color-mix(in srgb,var(--ok) 22%,white)" : k.fitScore >= 45 ? "color-mix(in srgb,var(--btc) 22%,white)" : "color-mix(in srgb,var(--warn) 18%,white)"}">fit ${k.fitScore}/100 · ${REC[k.recommendation] || ""}</span>` : ""}${j.followUp ? ' <span class="stage pending_approval">follow up</span>' : ""}</h3>
+      <div class="meta">${esc(j.company)}${j.location ? ` · ${esc(j.location)}` : ""}${k?.deadline ? ` · deadline ${esc(k.deadline)}` : ""}${j.appliedAt ? ` · applied ${esc(j.appliedAt.slice(0, 10))}` : ""} · <a href="${esc(j.url)}" target="_blank" rel="noopener">job page</a></div>
+      ${j.error && j.status === "error" ? `<p class="err">${esc(j.error)}</p>` : ""}
+      ${k ? `<details><summary>Fit: why and gaps</summary><p><b>Strengths</b></p><ul>${k.fitReasons.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><p><b>Gaps (and how to address them)</b></p><ul>${k.gaps.map((x) => `<li>${esc(x)}</li>`).join("") || "<li>None noted</li>"}</ul>${k.salaryNotes ? `<p><b>Salary:</b> ${esc(k.salaryNotes)}</p>` : ""}</details>
+      <details><summary>Application form checklist</summary><ul>${k.checklist.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></details>
+      <details><summary>Cover letter</summary><pre>${esc(k.coverLetter)}</pre><button class="btn" data-copyjob="${j.id}" data-part="cover">Copy cover letter</button></details>
+      <details><summary>Screening answers (${k.answers.length})</summary>${k.answers.map((a, i) => `<p><b>${esc(a.q)}</b></p><pre>${esc(a.a)}</pre><button class="btn" data-copyjob="${j.id}" data-part="a${i}">Copy</button>`).join("")}</details>
+      <details><summary>Tailored CV</summary><pre style="max-height:20rem;overflow:auto">${esc(k.cv)}</pre><div class="row"><button class="btn" data-copyjob="${j.id}" data-part="cv">Copy CV</button><button class="btn" data-printcv="${j.id}">Print / save as PDF</button></div></details>` : ""}
+      <div class="row">
+        ${["found", "error", "ready"].includes(j.status) ? `<button class="btn ${k ? "" : "primary"}" data-prepare="${j.id}">${k ? "Re-prepare pack" : "Prepare application pack"}</button>` : ""}
+        <a class="btn ${j.status === "ready" ? "primary" : ""}" href="${esc(j.url)}" target="_blank" rel="noopener">Open & apply ↗</a>
+        ${[["applied", "I applied"], ["interview", "Interview"], ["offer", "Offer"], ["rejected", "Rejected"], ["withdrawn", "Not for me"]].filter(([st]) => st !== j.status).map(([st, l]) => `<button class="btn" data-jobstatus="${st}" data-jid="${j.id}">${l}</button>`).join("")}
+      </div>
+      <details><summary class="muted">History</summary><ul class="events">${j.history.slice().reverse().map((h) => `<li>${esc(h.at.slice(0, 16).replace("T", " "))}: ${esc(h.text)}</li>`).join("")}</ul></details>
+    </div>`;
+  }).join("") || '<p class="muted">No jobs here yet. Paste a link above.</p>';
+  clearTimeout(jobTimer);
+  if (J.jobs.some((j) => j.status === "preparing")) jobTimer = setTimeout(loadJobs, 5000);
+}
+$("#jobFilter").addEventListener("change", renderJobs);
+$("#jobAdd").addEventListener("click", async () => {
+  const url = $("#jobUrl").value.trim();
+  if (!url) return;
+  $("#jobAdd").disabled = true; $("#jobMsg").textContent = "Reading the page…";
+  try {
+    const r = await api("", { action: "job_add", url });
+    $("#jobMsg").textContent = r.listing ? `Found ${r.found} openings; added ${r.added.length} new. Prepare packs for the ones you like.` : r.duplicate ? "Already in your list." : "Added. Prepare its application pack below.";
+    $("#jobUrl").value = "";
+    await loadJobs();
+  } catch (err) { $("#jobMsg").textContent = err.message; }
+  $("#jobAdd").disabled = false;
+});
+$("#pSave").addEventListener("click", async () => {
+  try {
+    await api("", { action: "job_profile", cv: $("#pCv").value, targets: $("#pTargets").value, location: $("#pLocation").value, salary: $("#pSalary").value, links: $("#pLinks").value, notes: $("#pNotes").value });
+    $("#pMsg").textContent = "Saved ✓";
+  } catch (err) { $("#pMsg").textContent = err.message; }
+});
+$("#pImport").addEventListener("click", async () => {
+  try { const r = await api("", { action: "job_import_readme" }); $("#pCv").value = r.profile.cv; $("#pMsg").textContent = "Imported. Review it, add your work history, then Save."; }
+  catch (err) { $("#pMsg").textContent = err.message; }
+});
+document.addEventListener("click", async (e) => {
+  const d = e.target.dataset || {};
+  if (d.prepare) {
+    e.target.disabled = true; e.target.textContent = "Preparing…";
+    try { await api("", { action: "job_prepare", id: d.prepare }); await loadJobs(); } catch (err) { e.target.disabled = false; e.target.textContent = err.message; }
+  } else if (d.jobstatus) {
+    try { await api("", { action: "job_status", id: d.jid, status: d.jobstatus }); await loadJobs(); } catch (err) { e.target.textContent = err.message; }
+  } else if (d.copyjob) {
+    const k = J.jobs.find((j) => j.id === d.copyjob).pack;
+    const text = d.part === "cv" ? k.cv : d.part === "cover" ? k.coverLetter : k.answers[Number(d.part.slice(1))].a;
+    try { await navigator.clipboard.writeText(text); e.target.textContent = "Copied ✓"; } catch { e.target.textContent = "Select and copy above"; }
+  } else if (d.printcv) {
+    const j = J.jobs.find((x) => x.id === d.printcv);
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(`<!doctype html><meta charset="utf-8"><title>CV – ${esc(j.title)}</title><style>body{font:11pt/1.45 Georgia,serif;max-width:46rem;margin:2rem auto;padding:0 1rem;color:#111}h1{font-size:20pt;margin:0 0 .3rem}h2{font-size:13pt;border-bottom:1px solid #999;margin:1.2rem 0 .4rem}h3{font-size:11.5pt;margin:.8rem 0 .2rem}ul{margin:.2rem 0 .4rem 1.1rem;padding:0}@media print{body{margin:0}}</style>${mdToHtml(j.pack.cv)}`);
+    w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
+  }
 });
 
 async function load(navigate = true) {
