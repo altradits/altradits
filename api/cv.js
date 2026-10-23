@@ -21,7 +21,7 @@ function preview(cv) {
   const end = lines.findIndex((l, i) => i > start && /^##\s/.test(l));
   const summary = start < 0 ? [] : lines.slice(start + 1, end < 0 ? undefined : end).filter((l) => l.trim());
   const sections = lines.filter((l) => /^##\s/.test(l) && !/summary/i.test(l)).map((l) => l.replace(/^##\s+/, "").trim());
-  return { name, headline: cv.headline, summary: summary.join("\n").slice(0, 1200), sections, updated: cv.updated };
+  return { name, headline: cv.headline, summary: summary.join("\n").slice(0, 1200), sections, updated: cv.updated, agent: cv.agent };
 }
 
 async function loadPass(id, t) {
