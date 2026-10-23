@@ -551,7 +551,7 @@ function renderCareer(p) {
     ${m.missing.length ? `<p><b>Add these to make it stronger</b> (in My profile → notes):</p><ul>${m.missing.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
     <pre style="max-height:24rem;overflow:auto">${esc(m.cv)}</pre>
     <div class="row"><button class="btn" id="copyMaster">Copy CV</button><button class="btn" id="printMaster">Print / save as PDF</button>
-      <label class="muted" style="display:flex;gap:.4rem;align-items:center"><input type="checkbox" id="publishCv" style="width:auto" ${p.publishCv ? "checked" : ""}> Publish at <a href="/cv.html" target="_blank" rel="noopener">altradits.com/cv.html</a></label></div></details>` : "";
+      <span class="muted">Public at <a href="/cv.html" target="_blank" rel="noopener">altradits.com/cv.html</a></span></div></details>` : "";
 }
 function printCv(title, cvMd) {
   const w = window.open("", "_blank");
