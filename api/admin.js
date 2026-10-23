@@ -13,7 +13,7 @@ import { kickQueue, workersLive, AGENT_ROSTER } from "../lib/workers.js";
 import { getProfile, saveProfile, allJobs, addFromUrl, prepareJob, setJobStatus, htmlToText, jobsLive, getJob, hasCv, saveCvFile, removeCvFile, readCvFile } from "../lib/jobs.js";
 import fs from "node:fs";
 import { buildMasterCv, discoverJobs, updateSettings, careerLive } from "../lib/career.js";
-import { getApplicant, saveApplicant, queueApply, cancelApply, claimNext, agentStatus, agentUpdate } from "../lib/apply.js";
+import { getApplicant, saveApplicant, suggestApplicant, queueApply, cancelApply, startApply, applyFile, agentUpdate, think } from "../lib/apply.js";
 import { sendEmail } from "../lib/email.js";
 import { agentLive } from "../lib/agent.js";
 import { BUSINESS } from "../data/catalog.js";
@@ -41,7 +41,7 @@ export async function GET(request) {
     const jobs = (await allJobs()).map(({ pageText, ...j }) => ({
       ...j, followUp: j.status === "applied" && Date.now() - Date.parse(j.appliedAt || j.updatedAt) > 7 * 864e5,
     }));
-    return json({ profile: publicProfile(await getProfile()), jobs, aiReady: jobsLive(), applicant: await getApplicant(), applyAgent: await agentStatus() });
+    return json({ profile: publicProfile(await getProfile()), jobs, aiReady: jobsLive(), applicant: await getApplicant() });
   }
 
   if (u.searchParams.get("view") === "cvfile") {
@@ -182,8 +182,14 @@ export async function POST(request) {
       if (body.action === "job_applicant") return json({ applicant: await saveApplicant(body) });
       if (body.action === "job_apply") return json({ job: await queueApply(clean(body.id, 40)) });
       if (body.action === "job_apply_cancel") return json({ job: await cancelApply(clean(body.id, 40)) });
-      // Called by the Apply Agent on Stanley's Mac.
-      if (body.action === "job_agent_poll") return json({ next: await claimNext(body) });
+      if (body.action === "job_applicant_suggest") return json({ applicant: await suggestApplicant() });
+      // Called by the Altradits Apply extension in Stanley's Chrome.
+      if (body.action === "job_agent_start") return json(await startApply(body.id));
+      if (body.action === "job_agent_think") return json(await think(body.id, body.messages));
+      if (body.action === "job_agent_file") {
+        const f = await applyFile(body.id, body.file);
+        return json({ name: f.name, type: f.type, data: f.data.toString("base64") });
+      }
       if (body.action === "job_agent_update") return json({ job: await agentUpdate(body) });
       if (body.action === "job_settings") return json({ profile: publicProfile(await updateSettings(body)) });
       if (body.action === "job_master_build" || body.action === "job_discover") {

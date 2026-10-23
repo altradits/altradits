@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Altradits Apply",
+  "version": "1.0.0",
+  "description": "Applies to jobs from your Altradits dashboard in your own Chrome: fills the form with AI and waits for your OK before submitting.",
+  "permissions": ["tabs", "scripting", "webNavigation"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "content_scripts": [
+    {
+      "matches": ["https://altradits.com/admin.html*", "https://www.altradits.com/admin.html*", "http://localhost/admin.html*"],
+      "js": ["bridge.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": { "default_title": "Altradits Apply" }
+}
