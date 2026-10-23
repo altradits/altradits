@@ -437,7 +437,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 
   <section id="quick">
     <div class="wrap">
-      <h2 class="h2">Quick jobs from $9</h2>
+      <h2 class="h2" id="quickTitle">Quick jobs from $5</h2>
       <p class="intro">One job, one price, delivered the same day. In a rush? Pick "within hours" when you pay: 100+ freelancers are on standby. The button is the price.</p>
       <div class="filterbar">
         <div class="search">
@@ -644,6 +644,7 @@ $("#stage").addEventListener("pointerup", (e) => {
 const pillarName = (id) => PILLARS.find((p) => p.id === id).name;
 const hay = (s) => `${s.name} ${s.outcome || ""} ${s.deliverables.join(" ")} ${s.keywords} ${pillarName(s.pillar)}`.toLowerCase();
 const QUICK = [...QUICK_JOBS].sort((a, b) => a.price - b.price);
+$("#quickTitle").textContent = `Quick jobs from ${money(QUICK[0].price)}`;
 function renderServices(q = "") {
   const words = q.toLowerCase().split(/\s+/).filter(Boolean);
   const match = (s) => words.every((w) => hay(s).includes(w));

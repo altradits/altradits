@@ -344,7 +344,7 @@ test("quick job: $15 order, paid, routed to its department", async () => {
   const { QUICK_JOBS, findService } = await import(new URL("data/catalog.js", root));
   for (const q of QUICK_JOBS) {
     assert.ok(findService(q.service), `${q.id} has a parent service`);
-    assert.ok(q.price >= 9 && q.price <= 50 && q.deliverables.length >= 2 && q.delivery, `${q.id} is small, priced and clear`);
+    assert.ok(q.price >= 5 && q.price <= 50 && q.deliverables.length >= 2 && q.delivery, `${q.id} is small, priced and clear`);
   }
   process.env.LND_REST_URL = `https://localhost:${lnd.address().port}`;
   process.env.LND_INVOICE_MACAROON = MACAROON;
