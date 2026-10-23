@@ -50,7 +50,8 @@ test("/cv.html: free preview without contact details, full CV only with a paid p
   assert.match(full.cv, /^# Stanley Chege Thuita/);
   assert.match(full.cv, /39 same-day quick jobs/);
   assert.doesNotMatch(full.cv, /\[ADD/, "no placeholders on the public page");
-  assert.equal(full.ats, null);
+  assert.equal(full.ats, 100, "Stanley's edited CV passes the ATS check");
+  assert.match(full.cv, /Founder & Managing Director \| Altradits/);
 });
 
 test("fact sheet states real work and never invents numbers", async () => {
@@ -102,7 +103,7 @@ test("Living CV is built from upload + notes + fact sheet; publishing controls /
 
   const pub = await cvApi.GET(req("GET", `/api/cv?${PAID}`));
   assert.equal(pub.status, 200, "the agent's CV is what paying visitors see");
-  assert.match((await pub.json()).cv, /Founder & operator, Altradits/);
+  assert.match((await pub.json()).cv, /Founder & Managing Director \| Altradits/, "Stanley's edited CV wins over the agent's");
 });
 
 test("tailored packs start from the Living CV", async () => {
@@ -113,8 +114,8 @@ test("tailored packs start from the Living CV", async () => {
   try {
     await jobs.prepareJob(id);
     const text = seen.at(-1).messages[0].content[1].text;
-    assert.match(text, /MASTER CV \(maintained by the Career Agent/);
-    assert.match(text, /Built an AI front office/);
+    assert.match(text, /MASTER CV \(edited by Stanley/);
+    assert.match(text, /39 same-day quick jobs/, "website numbers filled in");
   } finally { jobs.setJobsClient(null); }
 });
 
