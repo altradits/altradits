@@ -26,13 +26,22 @@ a{color:var(--blue)}
 .doc li{margin:.15rem 0}
 .doc p{margin:.4rem 0}
 .meta{color:var(--muted);font-size:.85rem;margin-top:1rem}
+.lock{margin-top:1.6rem;border:2px solid #F7931A;border-radius:1rem;padding:1.25rem;background:color-mix(in srgb,#F7931A 7%,white);text-align:center}
+.lock h2{border:0!important;margin:0 0 .3rem!important}
+.lock .sections{color:var(--muted);font-size:.9rem;filter:blur(.6px)}
+.lock .go{background:#F7931A;border-color:#F7931A;font-size:1rem;padding:.75rem 1.3rem}
+.qr{width:13rem;max-width:100%;aspect-ratio:1;margin:.8rem auto .4rem;background:#fff;border:2px solid var(--ink);border-radius:.8rem;padding:.4rem;display:block}
+.qr svg{display:block;width:100%;height:100%}
+.inv{font:500 .72rem ui-monospace,Menlo,monospace;overflow-wrap:anywhere;color:var(--muted);max-height:2.4rem;overflow:hidden;margin:.3rem 0}
+.row{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-top:.5rem}
+.err{color:#B42318}
 @media (max-width:560px){.doc{padding:1.25rem;box-shadow:4px 4px 0 var(--ink)}.doc h1{font-size:1.6rem}}
 @media print{body{background:#fff}.top,.meta{display:none}.doc{border:0;box-shadow:none;padding:0}.wrap{padding:0}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a class="logo" href="/">Altradits</a><span><a class="btn" href="/api/cv?format=pdf" download>Download PDF</a> <button class="btn" onclick="print()">Print</button></span></div>
+  <div class="top"><a class="logo" href="/">Altradits</a><span id="tools" hidden><a class="btn" id="pdf" href="#" download>Download PDF</a> <button class="btn" onclick="print()">Print</button></span></div>
   <article class="doc" id="doc"><p>Loading…</p></article>
   <p class="meta" id="meta"></p>
 </div>
@@ -55,12 +64,81 @@ function md(src) {
   }
   return html + (list ? "</ul>" : "");
 }
-fetch("/api/cv").then((r) => r.ok ? r.json() : Promise.reject()).then((d) => {
-  document.getElementById("doc").innerHTML = md(d.cv);
-  document.getElementById("meta").textContent = `Updated ${d.updated} · maintained by the Altradits Career Agent from verified experience${d.ats != null ? ` · ATS check ${d.ats}/100` : ""}.`;
-}).catch(() => {
-  document.getElementById("doc").innerHTML = '<h1>CV not published</h1><p>Please get in touch via <a href="/">altradits.com</a>.</p>';
-});
+const doc = document.getElementById("doc"), meta = document.getElementById("meta");
+const KEY = "altra.cvpass";
+const saved = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch { return null; } })();
+const save = (v) => { try { v ? localStorage.setItem(KEY, JSON.stringify(v)) : localStorage.removeItem(KEY); } catch {} };
+const q = (p) => `pass=${encodeURIComponent(p.pass)}&t=${encodeURIComponent(p.t)}`;
+
+function showCv(d, p) {
+  doc.innerHTML = md(d.cv);
+  meta.textContent = `Updated ${d.updated} · maintained by the Altradits Career Agent from verified experience${d.ats != null ? ` · ATS check ${d.ats}/100` : ""}.`;
+  document.getElementById("pdf").href = `/api/cv?format=pdf&${q(p)}`;
+  document.getElementById("tools").hidden = false;
+}
+
+// Preview + paywall: name, headline and summary are free; the rest is 100 sats.
+function showLocked(d) {
+  const v = d.preview;
+  doc.innerHTML = `<h1>${esc(v.name)}</h1><p>${esc(v.headline)}</p>
+    ${v.summary ? `<h2>Professional Summary</h2>${md(v.summary)}` : ""}
+    <div class="lock" id="lock">
+      <h2>🔒 Full CV: ${d.sats} sats</h2>
+      <p>Experience, skills, contact details and the PDF download. Pay ${d.sats} sats (a few cents) from any Lightning wallet; it unlocks instantly on this browser for 30 days.</p>
+      <p class="sections">${v.sections.map(esc).join(" · ")}</p>
+      <button class="btn go" id="unlock">Unlock for ${d.sats} sats</button>
+      <div id="pay"></div>
+    </div>`;
+  meta.textContent = `Updated ${v.updated} · maintained by the Altradits Career Agent from verified experience.`;
+  document.getElementById("unlock").onclick = unlock;
+}
+
+let timer = null;
+async function unlock() {
+  const box = document.getElementById("pay"), btn = document.getElementById("unlock");
+  btn.disabled = true; box.innerHTML = "<p>Creating your invoice…</p>";
+  try {
+    const r = await fetch("/api/cv", { method: "POST" });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    const p = { pass: d.pass, t: d.t };
+    save(p);
+    btn.hidden = true;
+    box.innerHTML = `<a class="qr" href="lightning:${esc(d.bolt11)}" aria-label="Lightning invoice QR code for ${d.sats} sats. Tap to open your wallet.">${d.qr}</a>
+      <b>${d.sats} sats</b><div class="inv">${esc(d.bolt11)}</div>
+      <div class="row"><a class="btn go" href="lightning:${esc(d.bolt11)}">Open wallet</a><button class="btn" id="copy">Copy invoice</button></div>
+      <p id="st">Waiting for payment…</p>`;
+    document.getElementById("copy").onclick = async (e) => { try { await navigator.clipboard.writeText(d.bolt11); e.target.textContent = "Copied"; } catch { e.target.textContent = "Select the text above"; } };
+    const until = Date.parse(d.expiresAt);
+    const poll = async () => {
+      if (Date.now() > until) { document.getElementById("st").innerHTML = 'Invoice expired. <button class="btn" id="again">New invoice</button>'; document.getElementById("again").onclick = unlock; return; }
+      try {
+        const res = await fetch(`/api/cv?${q(p)}`);
+        if (res.ok) return showCv(await res.json(), p);
+      } catch {}
+      timer = setTimeout(poll, 2500);
+    };
+    clearTimeout(timer); poll();
+  } catch (err) {
+    btn.disabled = false;
+    box.innerHTML = `<p class="err">${esc(err.message || "Couldn't create the invoice.")}</p>`;
+  }
+}
+
+(async () => {
+  try {
+    if (saved) {
+      const r = await fetch(`/api/cv?${q(saved)}`);
+      if (r.ok) return showCv(await r.json(), saved);
+      if (r.status !== 402) save(null);
+    }
+    const r = await fetch("/api/cv");
+    if (!r.ok) throw new Error();
+    showLocked(await r.json());
+  } catch {
+    doc.innerHTML = '<h1>CV not available</h1><p>Please visit <a href="/">altradits.com</a>.</p>';
+  }
+})();
 </script>
 </body>
 </html>

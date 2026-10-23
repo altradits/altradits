@@ -28,14 +28,29 @@ const seen = [];
 const fake = (handler) => ({ beta: { messages: { stream: (p) => ({ finalMessage: async () => { seen.push(p); return handler(p); } }) } } });
 const tool = (name, input) => ({ stop_reason: "tool_use", content: [{ type: "tool_use", id: "z", name, input }] });
 
-test("/cv.html works before any CV is built: a facts-only CV, no ATS score", async () => {
+// A paid CV pass, as if the 100-sat invoice had settled.
+const store = await import(new URL("lib/store.js", root));
+await store.setJSON("cvpass:paid1", { id: "paid1", token: "tok", invoice: {}, createdAt: new Date().toISOString(), paidAt: new Date().toISOString() });
+const PAID = "pass=paid1&t=tok";
+
+test("/cv.html: free preview without contact details, full CV only with a paid pass", async () => {
   const r = await cvApi.GET(req("GET", "/api/cv"));
   assert.equal(r.status, 200);
   const d = await r.json();
-  assert.match(d.cv, /^# Stanley Chege Thuita/);
-  assert.match(d.cv, /39 same-day quick jobs/);
-  assert.doesNotMatch(d.cv, /\[ADD/, "no placeholders on the public page");
-  assert.equal(d.ats, null);
+  assert.equal(d.locked, true);
+  assert.equal(d.sats, 100);
+  assert.equal(d.preview.name, "Stanley Chege Thuita");
+  assert.match(d.preview.summary, /founder of Altradits/);
+  assert.ok(d.preview.sections.includes("Work Experience"));
+  assert.doesNotMatch(JSON.stringify(d), /@|github\.com|quick jobs \(/, "no contact details or experience before payment");
+  assert.equal((await cvApi.GET(req("GET", "/api/cv?format=pdf"))).headers.get("content-type").includes("json"), true, "no PDF without a pass");
+  assert.equal((await cvApi.GET(req("GET", "/api/cv?pass=paid1&t=wrong"))).status, 404);
+
+  const full = await (await cvApi.GET(req("GET", `/api/cv?${PAID}`))).json();
+  assert.match(full.cv, /^# Stanley Chege Thuita/);
+  assert.match(full.cv, /39 same-day quick jobs/);
+  assert.doesNotMatch(full.cv, /\[ADD/, "no placeholders on the public page");
+  assert.equal(full.ats, null);
 });
 
 test("fact sheet states real work and never invents numbers", async () => {
@@ -85,8 +100,8 @@ test("Living CV is built from upload + notes + fact sheet; publishing controls /
   const p = await jobs.getProfile();
   assert.ok(p.master && p.cvFile && p.autoDiscover, "master, upload and settings preserved");
 
-  const pub = await cvApi.GET(req("GET", "/api/cv"));
-  assert.equal(pub.status, 200, "always public at /cv.html");
+  const pub = await cvApi.GET(req("GET", `/api/cv?${PAID}`));
+  assert.equal(pub.status, 200, "the agent's CV is what paying visitors see");
   assert.match((await pub.json()).cv, /Founder & operator, Altradits/);
 });
 
@@ -162,13 +177,13 @@ ${"- Completed peer-learning projects in Go and JavaScript\n".repeat(30)}`;
   assert.equal(builds, 1, "clean CV: no repair pass");
   assert.equal(await career.syncCv(), "up to date");
 
-  const pdf = await cvApi.GET(req("GET", "/api/cv?format=pdf"));
+  const pdf = await cvApi.GET(req("GET", `/api/cv?format=pdf&${PAID}`));
   assert.equal(pdf.headers.get("content-type"), "application/pdf");
   assert.match(pdf.headers.get("content-disposition"), /Stanley_Chege_Thuita_CV\.pdf/);
   const text = Buffer.from(await pdf.arrayBuffer()).toString("latin1");
   assert.match(text, /^%PDF/);
   assert.match(text, /Work Experience/, "real, extractable text");
-  assert.equal((await (await cvApi.GET(req("GET", "/api/cv"))).json()).ats, 100);
+  assert.equal((await (await cvApi.GET(req("GET", `/api/cv?${PAID}`))).json()).ats, 100);
   career.setCareerClient(null);
   assert.equal(await career.syncCv(), "skipped: no API key");
 });
