@@ -86,9 +86,12 @@ async function maybeRunDaily() {
   await setJSON("daily:last", today);
   const { runFollowups } = await import("./lib/followups.js");
   console.log("daily follow-ups", today, await runFollowups(siteUrl.replace(/\/$/, "")));
-  const { dailyDiscovery } = await import("./lib/career.js");
+  const { dailyDiscovery, syncCv } = await import("./lib/career.js");
+  console.log("daily CV sync", await syncCv().catch((e) => `failed: ${e.message}`));
   console.log("daily job discovery", await dailyDiscovery().catch((e) => `failed: ${e.message}`));
 }
+// After each deploy, bring the CV in line with what the site now offers.
+setTimeout(() => import("./lib/career.js").then((c) => c.syncCv()).then((r) => console.log("CV sync", r)).catch((e) => console.error("CV sync", e.message)), 60 * 1000).unref();
 setInterval(() => maybeRunDaily().catch((e) => console.error("daily", e)), 10 * 60 * 1000).unref();
 
 // The department AI agents work through queued client tasks in the background.

@@ -545,6 +545,7 @@ function renderCareer(p) {
   const m = p.master;
   $("#masterBox").innerHTML = m ? `<details class="ap" style="margin-top:1rem" ${location.hash === "#cv" ? "open" : ""}><summary style="font-weight:700;cursor:pointer">📄 Your Living CV: ${esc(m.headline)}</summary>
     <p>${esc(m.summary)}</p>
+    ${m.ats ? `<p><b>ATS check: ${m.ats.score}/100</b>${m.ats.issues.length ? ` · to fix: ${m.ats.issues.map(esc).join(" ")}` : " · reads cleanly in applicant tracking systems"}</p>` : ""}
     <p><b>Strongest highlights</b></p><ul>${m.highlights.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
     ${m.missing.length ? `<p><b>Add these to make it stronger</b> (in My profile → notes):</p><ul>${m.missing.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
     <pre style="max-height:24rem;overflow:auto">${esc(m.cv)}</pre>

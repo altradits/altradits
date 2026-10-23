@@ -31,7 +31,7 @@ a{color:var(--blue)}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a class="logo" href="/">Altradits</a><button class="btn" onclick="print()">Print / save as PDF</button></div>
+  <div class="top"><a class="logo" href="/">Altradits</a><span><a class="btn" href="/api/cv?format=pdf" download>Download PDF</a> <button class="btn" onclick="print()">Print</button></span></div>
   <article class="doc" id="doc"><p>Loading…</p></article>
   <p class="meta" id="meta"></p>
 </div>
@@ -56,7 +56,7 @@ function md(src) {
 }
 fetch("/api/cv").then((r) => r.ok ? r.json() : Promise.reject()).then((d) => {
   document.getElementById("doc").innerHTML = md(d.cv);
-  document.getElementById("meta").textContent = `Updated ${d.updated} · maintained by the Altradits Career Agent from verified experience.`;
+  document.getElementById("meta").textContent = `Updated ${d.updated} · maintained by the Altradits Career Agent from verified experience${d.ats != null ? ` · ATS check ${d.ats}/100` : ""}.`;
 }).catch(() => {
   document.getElementById("doc").innerHTML = '<h1>CV not published</h1><p>Please get in touch via <a href="/">altradits.com</a>.</p>';
 });
