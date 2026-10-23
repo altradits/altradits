@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stanley Chege Thuita – CV</title>
+<meta name="description" content="CV of Stanley Chege Thuita: founder and operator of Altradits, software engineer (Go, Node.js, Bitcoin & Lightning).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2F5BEA;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.6 Figtree,system-ui,sans-serif}
+a{color:var(--blue)}
+.wrap{max-width:50rem;margin:0 auto;padding:1.5rem 1rem 4rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap}
+.logo{font:800 1.2rem 'Bricolage Grotesque',sans-serif;text-decoration:none;color:var(--ink)}
+.btn{display:inline-flex;padding:.55rem 1rem;border-radius:.6rem;font:600 .93rem Figtree,sans-serif;border:2px solid var(--ink);cursor:pointer;background:transparent;color:var(--ink);text-decoration:none}
+.doc{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;box-shadow:8px 8px 0 var(--ink);padding:2.25rem}
+.doc h1{font:800 2.1rem/1.1 'Bricolage Grotesque',sans-serif;margin:0 0 .3rem}
+.doc h2{font:700 1.2rem 'Bricolage Grotesque',sans-serif;margin:1.6rem 0 .5rem;padding-bottom:.25rem;border-bottom:2px solid var(--ink)}
+.doc h3{font:700 1.02rem 'Bricolage Grotesque',sans-serif;margin:1rem 0 .2rem}
+.doc ul{margin:.3rem 0 .6rem;padding-left:1.15rem}
+.doc li{margin:.15rem 0}
+.doc p{margin:.4rem 0}
+.meta{color:var(--muted);font-size:.85rem;margin-top:1rem}
+@media (max-width:560px){.doc{padding:1.25rem;box-shadow:4px 4px 0 var(--ink)}.doc h1{font-size:1.6rem}}
+@media print{body{background:#fff}.top,.meta{display:none}.doc{border:0;box-shadow:none;padding:0}.wrap{padding:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="logo" href="/">Altradits</a><button class="btn" onclick="print()">Print / save as PDF</button></div>
+  <article class="doc" id="doc"><p>Loading…</p></article>
+  <p class="meta" id="meta"></p>
+</div>
+<script>
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+function md(src) {
+  const inline = (t) => esc(t)
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" rel="noopener">$1</a>')
+    .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|\s)\*(.+?)\*(?=\s|$)/g, "$1<i>$2</i>")
+    .replace(/(^|\s)(https?:\/\/[^\s<]+)/g, '$1<a href="$2" rel="noopener">$2</a>');
+  let html = "", list = false;
+  for (const raw of src.split("\n")) {
+    const l = raw.trimEnd();
+    const li = l.match(/^\s*[-*•]\s+(.*)/);
+    if (li) { if (!list) { html += "<ul>"; list = true; } html += `<li>${inline(li[1])}</li>`; continue; }
+    if (list) { html += "</ul>"; list = false; }
+    const h = l.match(/^(#{1,3})\s+(.*)/);
+    if (h) html += `<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`;
+    else if (l.trim() && !/^-{3,}$/.test(l.trim())) html += `<p>${inline(l)}</p>`;
+  }
+  return html + (list ? "</ul>" : "");
+}
+fetch("/api/cv").then((r) => r.ok ? r.json() : Promise.reject()).then((d) => {
+  document.getElementById("doc").innerHTML = md(d.cv);
+  document.getElementById("meta").textContent = `Updated ${d.updated} · maintained by the Altradits Career Agent from verified experience.`;
+}).catch(() => {
+  document.getElementById("doc").innerHTML = '<h1>CV not published</h1><p>Please get in touch via <a href="/">altradits.com</a>.</p>';
+});
+</script>
+</body>
+</html>

@@ -12,6 +12,7 @@ import { DEPARTMENTS } from "../data/playbooks.js";
 import { kickQueue, workersLive, AGENT_ROSTER } from "../lib/workers.js";
 import { getProfile, saveProfile, allJobs, addFromUrl, prepareJob, setJobStatus, htmlToText, jobsLive, getJob, hasCv, saveCvFile, removeCvFile, readCvFile } from "../lib/jobs.js";
 import fs from "node:fs";
+import { buildMasterCv, discoverJobs, updateSettings, careerLive } from "../lib/career.js";
 import { sendEmail } from "../lib/email.js";
 import { agentLive } from "../lib/agent.js";
 import { BUSINESS } from "../data/catalog.js";
@@ -177,6 +178,21 @@ export async function POST(request) {
   if (body.action?.startsWith("job_")) {
     try {
       if (body.action === "job_profile") return json({ profile: publicProfile(await saveProfile(body)) });
+      if (body.action === "job_settings") return json({ profile: publicProfile(await updateSettings(body)) });
+      if (body.action === "job_master_build" || body.action === "job_discover") {
+        if (!careerLive()) return json({ error: "Add ANTHROPIC_API_KEY to use the Career Agent." }, 400);
+        const p = await getProfile();
+        if (body.action === "job_master_build") {
+          if (!hasCv(p)) return json({ error: "Upload your CV or add your profile first." }, 400);
+          if (p.masterBuilding && Date.now() - Date.parse(p.masterBuilding.since) < 10 * 60e3) return json({ started: false, error: "Already building." }, 409);
+          buildMasterCv().catch((err) => console.error("master cv", err.message));
+        } else {
+          if (!hasCv(p) && !p.targets) return json({ error: "Upload your CV and set target roles first." }, 400);
+          if (p.discovery?.running && Date.now() - Date.parse(p.discovery.startedAt) < 15 * 60e3) return json({ started: false, error: "Already searching." }, 409);
+          discoverJobs().catch((err) => console.error("discover", err.message));
+        }
+        return json({ started: true }, 202);
+      }
       if (body.action === "job_cv_upload") return json({ profile: publicProfile(await saveCvFile(body)) });
       if (body.action === "job_cv_remove") return json({ profile: publicProfile(await removeCvFile()) });
       if (body.action === "job_import_readme") {

@@ -439,6 +439,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
       <div>
         <p>I'm Stanley, a software engineer and virtual assistant in Kenya. I build with Go and Next.js, contribute to open-source Bitcoin and Lightning projects, and I'm the person owners call when the to-do list has become a second job.</p>
         <p>I run Altradits with a small team of AI agents that never sleep. They answer you instantly, draft the first pass and keep the paperwork moving. I check the work and I'm the one accountable for it.</p>
+        <p id="cvLink" hidden><a class="btn" href="/cv.html">View my full CV →</a></p>
       </div>
       <ul class="facts">
         <li>Based in Kenya (UTC+3)</li>
@@ -744,6 +745,7 @@ document.addEventListener("click", (e) => {
     openChat(`Tell me about ${svc.name.toLowerCase()}.`, { source: "service-card", service: svc.id, needs: [svc.id] });
   }
 });
+fetch("/api/cv").then((r) => { if (r.ok) $("#cvLink").hidden = false; }).catch(() => {});
 const params = new URLSearchParams(location.search);
 if (/^[a-z0-9]{4,12}$/.test(params.get("ref") || "")) store.set("altra.ref", params.get("ref"));
 const REF = store.get("altra.ref") || undefined;

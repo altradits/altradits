@@ -68,7 +68,11 @@ dd{margin:0;overflow-wrap:anywhere}
 .sys li{margin:.2rem 0}
 .prices{display:grid;gap:.4rem;margin:.5rem 0}
 .prices label{display:grid;grid-template-columns:1fr 7rem;gap:.5rem;align-items:center;font-size:.92rem}
-@media (max-width:820px){.grid2{grid-template-columns:1fr}.hide-sm{display:none}}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;list-style:none;padding:0;margin:0;counter-reset:st}
+.grid3>li{background:var(--bg);border-radius:.9rem;padding:1rem;counter-increment:st}
+.grid3>li h3::before{content:counter(st) ". ";color:var(--blue)}
+.grid3>li p{margin:.4rem 0}
+@media (max-width:820px){.grid3{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.hide-sm{display:none}}
 </style>
 </head>
 <body>
@@ -140,6 +144,18 @@ dd{margin:0;overflow-wrap:anywhere}
   </div>
 
   <div id="tab-jobs" hidden>
+    <div class="panel"><h2>Start here</h2>
+      <ol class="grid3" id="careerSteps">
+        <li><h3>Your CV</h3><p id="stepCv" class="muted"></p><button class="btn" id="goProfile">Open my profile</button></li>
+        <li><h3>Your Living CV</h3><p class="muted">The Career Agent rebuilds your master CV from your upload, your notes and your real work running Altradits. Every tailored application starts from it.</p>
+          <div class="row"><button class="btn primary" id="buildCv">Build my Living CV</button></div><p class="muted" id="cvStatus" role="status"></p></li>
+        <li><h3>Find jobs</h3><p class="muted">The Career Agent searches the web for current openings that fit you and adds them below.</p>
+          <div class="row"><button class="btn primary" id="discover">Find jobs for me</button></div>
+          <label class="muted" style="display:flex;gap:.4rem;align-items:center;margin-top:.5rem"><input type="checkbox" id="autoDiscover" style="width:auto"> Search automatically every day</label>
+          <p class="muted" id="discStatus" role="status"></p></li>
+      </ol>
+      <div id="masterBox"></div>
+    </div>
     <div class="panel"><h2>Add a job</h2>
       <p class="muted" style="margin-top:0">Paste a job link, or a whole careers page (e.g. a company's applytojob.com page) to list every opening. The Career Agent prepares a tailored pack from your profile; you review it and apply yourself.</p>
       <div class="row" style="margin:0"><input id="jobUrl" placeholder="https://company.applytojob.com/apply/…" style="flex:1;min-width:14rem"><button class="btn primary" id="jobAdd">Add</button></div>
@@ -437,6 +453,7 @@ function renderJobs() {
     if (!p.cv && !p.cvFile) $("#profilePanel").open = true;
   }
   renderCvFile(p.cvFile);
+  renderCareer(p);
   const f = $("#jobFilter").value;
   const closed = ["offer", "rejected", "withdrawn"];
   const list = J.jobs.filter((j) => f === "active" ? !closed.includes(j.status) : f === "closed" ? closed.includes(j.status) : !f || j.status === f)
@@ -451,6 +468,7 @@ function renderJobs() {
     return `<div class="ap ${j.followUp ? "pending" : ""}" id="job-${j.id}">
       <h3>${esc(j.title)} <span class="stage">${JLABEL[j.status] || j.status}</span>${k ? ` <span class="stage" style="background:${k.fitScore >= 70 ? "color-mix(in srgb,var(--ok) 22%,white)" : k.fitScore >= 45 ? "color-mix(in srgb,var(--btc) 22%,white)" : "color-mix(in srgb,var(--warn) 18%,white)"}">fit ${k.fitScore}/100 · ${REC[k.recommendation] || ""}</span>` : ""}${j.followUp ? ' <span class="stage pending_approval">follow up</span>' : ""}</h3>
       <div class="meta">${esc(j.company)}${j.location ? ` · ${esc(j.location)}` : ""}${k?.deadline ? ` · deadline ${esc(k.deadline)}` : ""}${j.appliedAt ? ` · applied ${esc(j.appliedAt.slice(0, 10))}` : ""} · <a href="${esc(j.url)}" target="_blank" rel="noopener">job page</a></div>
+      ${j.why ? `<p class="muted">🔎 ${esc(j.why)}${j.posted ? ` · posted ${esc(j.posted)}` : ""}</p>` : ""}
       ${j.error && j.status === "error" ? `<p class="err">${esc(j.error)}</p>` : ""}
       ${k ? `<details><summary>Fit: why and gaps</summary><p><b>Strengths</b></p><ul>${k.fitReasons.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><p><b>Gaps (and how to address them)</b></p><ul>${k.gaps.map((x) => `<li>${esc(x)}</li>`).join("") || "<li>None noted</li>"}</ul>${k.salaryNotes ? `<p><b>Salary:</b> ${esc(k.salaryNotes)}</p>` : ""}</details>
       <details><summary>Application form checklist</summary><ul>${k.checklist.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></details>
@@ -466,8 +484,59 @@ function renderJobs() {
     </div>`;
   }).join("") || '<p class="muted">No jobs here yet. Paste a link above.</p>';
   clearTimeout(jobTimer);
-  if (J.jobs.some((j) => j.status === "preparing")) jobTimer = setTimeout(loadJobs, 5000);
+  const busy = J.jobs.some((j) => j.status === "preparing") || J.profile.masterBuilding || J.profile.discovery?.running;
+  if (busy) jobTimer = setTimeout(loadJobs, 5000);
 }
+function renderCareer(p) {
+  $("#stepCv").innerHTML = p.cvFile ? `✅ ${esc(p.cvFile.name)}` : p.cv && p.cv.length >= 200 ? "✅ Profile text added" : "Upload your CV in <b>My profile</b> below.";
+  const b = p.masterBuilding && Date.now() - Date.parse(p.masterBuilding.since) < 10 * 60e3;
+  $("#buildCv").disabled = Boolean(b);
+  $("#buildCv").textContent = b ? "Building…" : p.master ? "Refresh my Living CV" : "Build my Living CV";
+  $("#cvStatus").textContent = b ? "The Career Agent is writing your CV (about a minute)…" : p.masterError ? `Error: ${p.masterError}` : p.master ? `Last built ${p.master.at.slice(0, 16).replace("T", " ")}` : "";
+  const d = p.discovery || {};
+  const running = d.running && Date.now() - Date.parse(d.startedAt || 0) < 15 * 60e3;
+  $("#discover").disabled = Boolean(running);
+  $("#discover").textContent = running ? "Searching…" : "Find jobs for me";
+  $("#discStatus").textContent = running ? "Searching job boards and career pages (a few minutes)…" : d.error ? `Last search failed: ${d.error}` : d.lastRun ? `Last search ${d.lastRun.slice(0, 16).replace("T", " ")}: ${d.added} new job${d.added === 1 ? "" : "s"} found` : "";
+  $("#autoDiscover").checked = Boolean(p.autoDiscover);
+  const m = p.master;
+  $("#masterBox").innerHTML = m ? `<details class="ap" style="margin-top:1rem" ${location.hash === "#cv" ? "open" : ""}><summary style="font-weight:700;cursor:pointer">📄 Your Living CV: ${esc(m.headline)}</summary>
+    <p>${esc(m.summary)}</p>
+    <p><b>Strongest highlights</b></p><ul>${m.highlights.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+    ${m.missing.length ? `<p><b>Add these to make it stronger</b> (in My profile → notes):</p><ul>${m.missing.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+    <pre style="max-height:24rem;overflow:auto">${esc(m.cv)}</pre>
+    <div class="row"><button class="btn" id="copyMaster">Copy CV</button><button class="btn" id="printMaster">Print / save as PDF</button>
+      <label class="muted" style="display:flex;gap:.4rem;align-items:center"><input type="checkbox" id="publishCv" style="width:auto" ${p.publishCv ? "checked" : ""}> Publish at <a href="/cv.html" target="_blank" rel="noopener">altradits.com/cv.html</a></label></div></details>` : "";
+}
+function printCv(title, cvMd) {
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(`<!doctype html><meta charset="utf-8"><title>CV – ${esc(title)}</title><style>body{font:11pt/1.45 Georgia,serif;max-width:46rem;margin:2rem auto;padding:0 1rem;color:#111}h1{font-size:20pt;margin:0 0 .3rem}h2{font-size:13pt;border-bottom:1px solid #999;margin:1.2rem 0 .4rem}h3{font-size:11.5pt;margin:.8rem 0 .2rem}ul{margin:.2rem 0 .4rem 1.1rem;padding:0}@media print{body{margin:0}}</style>${mdToHtml(cvMd)}`);
+  w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
+}
+$("#goProfile").addEventListener("click", () => { $("#profilePanel").open = true; $("#profilePanel").scrollIntoView({ behavior: "smooth" }); });
+$("#buildCv").addEventListener("click", async () => {
+  try { await api("", { action: "job_master_build" }); $("#cvStatus").textContent = "Started…"; setTimeout(loadJobs, 1500); }
+  catch (err) { $("#cvStatus").textContent = err.message; }
+});
+$("#discover").addEventListener("click", async () => {
+  try { await api("", { action: "job_discover" }); $("#discStatus").textContent = "Started…"; setTimeout(loadJobs, 1500); }
+  catch (err) { $("#discStatus").textContent = err.message; }
+});
+$("#autoDiscover").addEventListener("change", async (e) => {
+  try { await api("", { action: "job_settings", autoDiscover: e.target.checked }); $("#discStatus").textContent = e.target.checked ? "Daily search on ✓" : "Daily search off"; }
+  catch (err) { $("#discStatus").textContent = err.message; }
+});
+document.addEventListener("change", async (e) => {
+  if (e.target.id !== "publishCv") return;
+  try { const r = await api("", { action: "job_settings", publishCv: e.target.checked }); J.profile = r.profile; }
+  catch (err) { e.target.checked = !e.target.checked; alert(err.message); }
+});
+document.addEventListener("click", async (e) => {
+  if (e.target.id === "copyMaster") {
+    try { await navigator.clipboard.writeText(J.profile.master.cv); e.target.textContent = "Copied ✓"; } catch { e.target.textContent = "Select and copy above"; }
+  } else if (e.target.id === "printMaster") printCv(J.profile.master.headline, J.profile.master.cv);
+});
 function renderCvFile(f) {
   $("#cvFileBox").innerHTML = f
     ? `<p>✅ <b>${esc(f.name)}</b> · ${(f.size / 1024).toFixed(0)} KB · uploaded ${esc(f.uploadedAt.slice(0, 10))}${f.ext === "pdf" ? " · attached as a PDF to every application" : ` · ${f.textChars.toLocaleString()} characters read`}</p>
