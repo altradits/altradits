@@ -412,3 +412,36 @@ test("urgent quick job: phone shown only after payment, task jumps the queue, ow
     delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON; delete process.env.LND_TLS_CERT;
   }
 });
+
+test("CV paywall: 100-sat invoice from the node, unlocks when paid, refuses when payments can't be confirmed", async () => {
+  const cvApi = await import(new URL("api/cv.js", root));
+  process.env.LND_REST_URL = `https://localhost:${lnd.address().port}`;
+  process.env.LND_INVOICE_MACAROON = MACAROON;
+  process.env.LND_TLS_CERT = fs.readFileSync("cert.pem").toString("base64");
+  ln.resetCapacityCache();
+  try {
+    const r = await call(cvApi.POST, "POST", "/api/cv", {});
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.equal(r.body.sats, 100);
+    assert.match(r.body.bolt11, /^lnbc1000n1/);
+    assert.match(r.body.qr, /^<svg/);
+    const q = `pass=${r.body.pass}&t=${r.body.t}`;
+    assert.equal((await cvApi.GET(req("GET", `/api/cv?${q}`))).status, 402, "locked until paid");
+    [...invoices.values()].at(-1).state = "SETTLED";
+    const full = await cvApi.GET(req("GET", `/api/cv?${q}`));
+    assert.equal(full.status, 200);
+    assert.match((await full.json()).cv, /# Stanley Chege Thuita/);
+    const pdf = await cvApi.GET(req("GET", `/api/cv?format=pdf&${q}`));
+    assert.equal(pdf.headers.get("content-type"), "application/pdf");
+  } finally {
+    delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON; delete process.env.LND_TLS_CERT;
+  }
+  // Node offline: the Lightning-address fallback can't confirm, so no pass is sold.
+  process.env.LND_REST_URL = "https://localhost:1";
+  process.env.LND_INVOICE_MACAROON = MACAROON;
+  try {
+    assert.equal((await call(cvApi.POST, "POST", "/api/cv", {})).status, 503);
+  } finally {
+    delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON;
+  }
+});
