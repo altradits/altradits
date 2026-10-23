@@ -66,46 +66,80 @@ nav a:hover::after,nav a.here::after{transform:scaleX(1)}
 
 /* hero */
 .hero{display:grid;grid-template-columns:1.25fr 1fr;gap:2.5rem;align-items:center;padding:3.5rem 0 3rem}
-.eyebrow{display:inline-block;font-weight:700;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:1rem}
 .hero h1{font-size:clamp(2.6rem,7vw,5rem);font-weight:800;letter-spacing:-.03em}
-.hero h1 em{font-style:normal;color:var(--blue);position:relative;display:inline-block;isolation:isolate}
-.hero h1 em::after{content:"";position:absolute;left:-.02em;right:-.06em;bottom:-.08em;height:.3em;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='96 62 204 40' preserveAspectRatio='none'%3E%3ClinearGradient id='g'%3E%3Cstop offset='0' stop-color='%23EA5158'/%3E%3Cstop offset='1' stop-color='%23EA5158'/%3E%3C/linearGradient%3E%3Cpath d='M98 76 C140 104 218 98 298 66 C222 88 152 94 98 76 Z' fill='url(%23g)'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat;z-index:-1;transform:scaleX(0);transform-origin:left;animation:draw .7s .6s cubic-bezier(.2,.7,.2,1) forwards}
-@keyframes draw{to{transform:scaleX(1)}}
+.hero h1 em{font-style:normal;color:var(--blue)}
 .hero p.lead{max-width:30rem;font-size:1.2rem;color:var(--muted);margin:1.2rem 0 1.5rem}
 .sub{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;margin-top:1.5rem;color:var(--muted);font-size:.97rem}
 .sub span::before{content:"✓ ";color:var(--blue);font-weight:700}
 .search{position:relative;max-width:34rem;margin-bottom:1.1rem}
 .search input{width:100%;padding:1rem 1rem 1rem 2.9rem;border:2px solid var(--ink);border-radius:.9rem;font:500 1.05rem Figtree,sans-serif;background:var(--paper);color:var(--ink);box-shadow:4px 4px 0 var(--ink)}
 .search::before{content:"🔍";position:absolute;left:1rem;top:50%;transform:translateY(-50%);font-size:1rem}
-.receipt{position:relative;background:var(--paper);border:2px solid var(--ink);border-radius:1.25rem;box-shadow:8px 8px 0 var(--ink);padding:1.4rem;font-size:.97rem;transform:rotate(1.2deg);transition:transform .4s cubic-bezier(.2,.7,.2,1)}
-.receipt:hover{transform:rotate(0) translateY(-4px)}
-.receipt .scan{display:none}
-html.js .receipt .scan{display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:center;margin:0 0 .8rem}
+/* hero story: night (buried in tasks) -> hand-off -> day (time back). Static scene 2 unless .play */
+.hero .go{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1.2rem}
+.btn.test{font-size:1.08rem;padding:1rem 1.5rem;box-shadow:4px 4px 0 var(--ink)}
+.btn.test b{background:var(--btc);color:var(--ink);border-radius:.45rem;padding:.05rem .45rem;margin:0 .1rem}
+.hero .more{font-weight:600;color:var(--muted);text-underline-offset:.2em}
+.hero .more:hover{color:var(--ink)}
+.story{position:relative;width:100%;aspect-ratio:1;overflow:hidden;border:2px solid var(--ink);border-radius:1.25rem;box-shadow:8px 8px 0 var(--ink);background:#BFD8FF;isolation:isolate}
+.story .cam{position:absolute;left:0;top:50%;width:100%;aspect-ratio:1;margin-top:-50%;container-type:inline-size;transform-origin:0 0}
+.story .lyr{position:absolute;inset:0;width:100%;height:100%;display:block}
+.story .a{opacity:0}
+.story .b .lyr{transform-origin:50% 85%}
+.story .tk{position:absolute;left:var(--x);top:var(--y);width:16%;display:flex;align-items:center;gap:1cqw;padding:1cqw 1.4cqw;background:#fff;border-radius:1.4cqw;box-shadow:0 .8cqw 0 rgba(0,0,0,.25);font:700 2.5cqw/1.1 Figtree,sans-serif;color:var(--ink);transform:rotate(var(--r))}
+.story .tk i{flex:none;width:1.6cqw;height:1.6cqw;border-radius:50%;background:var(--c)}
+.story .team{position:absolute;left:68%;top:24.5%;width:29.5%;padding:1.6cqw;background:#fff;border:.5cqw solid #274C77;border-radius:2cqw;font:800 2.6cqw/1.1 'Bricolage Grotesque',sans-serif;color:var(--ink);text-align:center;opacity:0}
+.story .team svg{display:block;width:100%;height:auto;margin:1cqw 0}
+.story .team .st{display:grid;font:700 2.3cqw/1.2 Figtree,sans-serif}
+.story .team .st span{grid-area:1/1}
+.story .team .y{color:var(--ok);opacity:0}
+.story .kite{position:absolute;left:71.67%;top:23.33%;width:13.33%;transform-origin:50% 70.8%}
+.story .caps{position:absolute;left:4%;bottom:4%;display:grid;z-index:2}
+.story .caps span{grid-area:1/1;justify-self:start;background:var(--ink);color:#fff;border-radius:.6rem;padding:.4rem .8rem;font:800 clamp(1rem,2.4vw,1.25rem)/1.2 'Bricolage Grotesque',sans-serif;opacity:0}
+.story .caps .c4{opacity:1;background:#fff;color:var(--ink);border:2px solid var(--ink)}
+.story .chip{position:absolute;right:4%;top:4%;z-index:2;display:flex;align-items:center;gap:.45rem;background:#fff;border:2px solid var(--ink);border-radius:2rem;padding:.3rem .75rem .3rem .4rem;font:700 .92rem/1.2 Figtree,sans-serif;color:var(--ink)}
+.story .chip svg{width:1.6rem;height:1.6rem;flex:none}
+.story .chip b{color:#0E8566}
+/* the loop: 16s, every part on the same clock so pausing keeps them in step */
+.story.play *{animation-duration:16s;animation-iteration-count:infinite;animation-timing-function:ease-in-out}
+.story.play .a{animation-name:hsA}
+.story.play .a.cam{animation-name:hsA,hsZoom;animation-timing-function:linear,ease-in-out}
+.story.play .b{animation-name:hsB}
+.story.play .b .back{animation-name:hsKb1}
+.story.play .b .front{animation-name:hsKb2}
+.story.play .tk{animation-name:hsFly;animation-delay:calc(var(--i)*.22s)}
+.story.play .team{animation-name:hsTeam}
+.story.play .team .w{animation-name:hsWait}
+.story.play .team .y{animation-name:hsDone}
+.story.play .caps .c1{animation-name:hsC1}
+.story.play .caps .c2{animation-name:hsC2}
+.story.play .caps .c3{animation-name:hsC3}
+.story.play .caps .c4{animation-name:hsC4}
+.story.play .chip{animation-name:hsChip}
+.story.play .kite{animation:hsKite 3.2s ease-in-out infinite alternate}
+.story.play .sec{animation:hsTick 60s steps(60) infinite;transform-box:view-box;transform-origin:330px 92px}
+@keyframes hsA{0%,52%{opacity:1}58%,93%{opacity:0}100%{opacity:1}}
+@keyframes hsB{0%,52%{opacity:0}58%,100%{opacity:1}}
+@keyframes hsZoom{0%,4%{transform:translate(-211.8%,-151.73%) scale(3.4)}30%,57.5%{transform:none}58.5%,100%{transform:translate(-211.8%,-151.73%) scale(3.4)}}
+@keyframes hsKb1{0%,52%{transform:scale(1.1)}92%{transform:scale(1)}100%{transform:scale(1.05)}}
+@keyframes hsKb2{0%,52%{transform:scale(1.18) translateY(2%)}92%{transform:scale(1)}100%{transform:scale(1.14)}}
+@keyframes hsFly{0%,35%{transform:rotate(var(--r));opacity:1}38%{transform:translateY(-1.5cqw) scale(1.08)}44%{transform:translate(calc(var(--dx)*.94),calc(var(--dy)*.94)) scale(.4);opacity:1}46%,58%{transform:translate(var(--dx),var(--dy)) scale(.3);opacity:0}59%,100%{transform:rotate(var(--r));opacity:1}}
+@keyframes hsTeam{0%,31%{opacity:0;transform:translateX(12%)}34%,100%{opacity:1;transform:none}}
+@keyframes hsWait{0%,48%{opacity:1}50%,94%{opacity:0}100%{opacity:1}}
+@keyframes hsDone{0%,48%{opacity:0;transform:scale(.6)}50%{opacity:1;transform:scale(1.12)}52%,94%{opacity:1;transform:none}100%{opacity:0}}
+@keyframes hsC1{0%,18%{opacity:1;transform:none}20%,100%{opacity:0;transform:translateY(-.4rem)}}
+@keyframes hsC2{0%,20%{opacity:0;transform:translateY(.4rem)}22%,32%{opacity:1;transform:none}34%,100%{opacity:0;transform:translateY(-.4rem)}}
+@keyframes hsC3{0%,34%{opacity:0;transform:translateY(.4rem)}36%,53%{opacity:1;transform:none}55%,100%{opacity:0;transform:translateY(-.4rem)}}
+@keyframes hsC4{0%,58%{opacity:0;transform:translateY(.4rem)}61%,92%{opacity:1;transform:none}95%,100%{opacity:0}}
+@keyframes hsChip{0%,63%{opacity:0;transform:scale(.8)}66%,92%{opacity:1;transform:none}95%,100%{opacity:0}}
+@keyframes hsKite{from{transform:rotate(-6deg) translateY(0)}to{transform:rotate(5deg) translateY(-3%)}}
+@keyframes hsTick{to{transform:rotate(360deg)}}
 .qr{position:relative;width:5.2rem;height:5.2rem;padding:.3rem;border:2px solid var(--ink);border-radius:.7rem;background:#fff;overflow:hidden}
 .qr svg{display:block;width:100%;height:100%;transition:opacity .4s,transform .4s}
 .qr .line{position:absolute;left:0;right:0;top:0;height:2px;background:var(--btc);box-shadow:0 0 10px 2px rgba(247,147,26,.7);opacity:0}
 .qr .ok{position:absolute;inset:0;display:grid;place-items:center;font:800 2.2rem 'Bricolage Grotesque',sans-serif;color:#fff;background:var(--ok);opacity:0;transform:scale(.6);transition:opacity .35s,transform .45s cubic-bezier(.3,1.6,.5,1)}
-.receipt.waiting .qr .line,.viz[data-s="3"] .qr .line{opacity:1;animation:scan 1.6s ease-in-out infinite alternate}
+.viz[data-s="3"] .qr .line{opacity:1;animation:scan 1.6s ease-in-out infinite alternate}
 @keyframes scan{from{transform:translateY(0)}to{transform:translateY(4.4rem)}}
-.receipt:not(.waiting) .qr .ok{opacity:1;transform:none}
-.receipt:not(.waiting) .qr svg{opacity:.15;transform:scale(.9)}
-.scan .hint{margin:0;font-size:.9rem;color:var(--muted);line-height:1.4}
-.scan .hint b{display:block;color:var(--ink);font-size:1rem}
-.scan .hint .st{display:grid}
-.receipt .st{position:relative;display:inline-grid}
-.receipt .st>*{grid-area:1/1;transition:opacity .35s,transform .35s}
-.receipt .paid .st>*{text-align:right}
-.receipt .paid .st .w{color:var(--muted)}
-.receipt .st .w{opacity:0;transform:translateY(6px)}
-.receipt.waiting .st .w{opacity:1;transform:none}
-.receipt.waiting .st .y{opacity:0;transform:translateY(-6px)}
-.receipt .paid{transition:background-color .4s}
-.receipt.waiting .paid{background:color-mix(in srgb,var(--btc) 12%,white)}
 .paused,.paused *{animation-play-state:paused!important}
-.receipt .top{display:flex;justify-content:space-between;font-weight:700;border-bottom:1px dashed var(--line);padding-bottom:.7rem;margin-bottom:.7rem}
-.receipt ul{margin:0 0 .8rem;padding-left:1.1rem;color:var(--muted)}
-.receipt .paid{display:flex;justify-content:space-between;align-items:center;background:color-mix(in srgb,var(--ok) 14%,white);border-radius:.7rem;padding:.6rem .8rem;font-weight:700}
-.receipt .paid .y{color:var(--ok)}
 /* stats */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin:0 0 3rem;padding:1.4rem 0;border-top:2px solid var(--ink);border-bottom:1px solid var(--line)}
 .stats div{display:flex;flex-direction:column;gap:.15rem}
@@ -298,7 +332,7 @@ html.js .step:not(.lit) h3{color:var(--muted)}
 /* uses the independent translate property so hover transforms still work */
 html.js .rv{opacity:0;translate:0 22px;transition:opacity .6s ease var(--d,0ms),translate .7s cubic-bezier(.2,.7,.2,1) var(--d,0ms)}
 html.js .rv.in{opacity:1;translate:none}
-html.js .qj.rv,html.js .svc.rv,html.js .plan.rv,html.js .agent.rv,html.js .receipt.rv{transition:opacity .6s ease var(--d,0ms),translate .7s cubic-bezier(.2,.7,.2,1) var(--d,0ms),transform .3s cubic-bezier(.2,.7,.2,1),border-color .2s}
+html.js .qj.rv,html.js .svc.rv,html.js .plan.rv,html.js .agent.rv,html.js .story.rv{transition:opacity .6s ease var(--d,0ms),translate .7s cubic-bezier(.2,.7,.2,1) var(--d,0ms),transform .3s cubic-bezier(.2,.7,.2,1),border-color .2s}
 
 .final{text-align:center;padding:4rem 0}
 .final .h2{margin:0 auto .75rem}
@@ -343,7 +377,8 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
   .flow{grid-template-columns:1fr}
   .viz{display:none}
   .step{min-height:0;padding-bottom:2rem}
-  .receipt{transform:none}
+  .hero{padding-top:1.25rem;gap:1.5rem}
+  .story{aspect-ratio:4/3;max-width:34rem;order:-1}
   .plans,.guar{grid-template-columns:1fr}
   .agents{grid-template-columns:1fr 1fr}
   nav a.opt{display:none}
@@ -362,7 +397,6 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
   .dcard{transition:opacity .2s!important}
   html.js .rv{opacity:1;translate:none}
   .hero h1 em::after{transform:none}
-  .receipt,.receipt:hover{transform:none}
   .btn:hover,.svc:hover,.qj:hover,.plan:hover,.agent:hover{transform:none}
   .buy::after,.btn::after,.depts .glow{display:none}
   .qr .line{display:none}
@@ -389,31 +423,167 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
   <div class="wrap">
     <div class="hero">
       <div>
-        <span class="eyebrow">Global virtual assistant · Quick jobs from $9</span>
         <h1>Pick a task. Pay. <em>It's done.</em></h1>
-        <p class="lead">Fixed prices, every deliverable listed. Pay with any Bitcoin wallet and the work starts.</p>
+        <p class="lead">Fixed prices. Pay with any Bitcoin wallet and the work starts.</p>
         <div class="search">
           <label class="sr" for="heroFind">What do you want to hand off?</label>
           <input type="search" id="heroFind" placeholder="What do you want to hand off? e.g. Instagram, invoices, a website" autocomplete="off">
         </div>
-        <div class="actions" id="heroBuy"></div>
+        <div class="go" id="heroBuy"></div>
         <div class="sub">
-          <span>Price shown = price paid</span>
-          <span>Same-day quick jobs</span>
-          <span>No fee added by us</span>
+          <span>Fixed prices</span>
           <span>Any Bitcoin wallet</span>
+          <span>No fee added</span>
         </div>
       </div>
-      <div class="receipt" aria-hidden="true">
-        <div class="top"><span>Order #A7F3</span><span>Website or landing page</span></div>
-        <ul>
-          <li>Site of up to 5 pages</li>
-          <li>Copy written for you</li>
-          <li>Launched on your domain + 14 days of fixes</li>
-        </ul>
-        <div class="scan"><div class="qr" data-qr><span class="line"></span><span class="ok">✓</span></div><p class="hint"><span class="st"><b class="w">Scan to pay $600</b><b class="y">$600 received</b></span>Any Bitcoin wallet · Lightning or on-chain</p></div>
-        <div class="paid">$600 · Bitcoin <span class="st"><span class="w">Waiting for payment…</span><span class="y">✓ Paid, work started</span></span></div>
-        <p style="margin:.7rem 0 0;color:var(--muted);font-size:.9rem">Delivery: 10 business days · Track it in your client portal</p>
+      <div class="story" id="story">
+        <p class="sr">Illustration: at midnight a founder is buried under 247 unread messages and a pile of tasks. The tasks fly to the Altradits team, and in the next scene she is outside on a sunny day flying a kite with her child, with 20 hours back this month.</p>
+        <div class="cam b" aria-hidden="true">
+          <svg class="lyr back" viewBox="0 0 600 600" focusable="false">
+            <defs>
+              <linearGradient id="hsSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A9CBFF"/><stop offset=".7" stop-color="#E4EEFF"/><stop offset="1" stop-color="#FFF1DE"/></linearGradient>
+            </defs>
+            <rect width="600" height="600" fill="url(#hsSky)"/>
+            <circle cx="130" cy="120" r="76" fill="#FFF4DC" opacity=".85"/>
+            <circle cx="130" cy="120" r="44" fill="#F7931A"/>
+            <g fill="#fff" opacity=".9"><rect x="260" y="92" width="120" height="26" rx="13"/><rect x="290" y="76" width="56" height="30" rx="15"/><rect x="40" y="226" width="96" height="20" rx="10"/><rect x="456" y="296" width="92" height="20" rx="10"/></g>
+            <path d="M0 400V330h26v-24h20v40h22v-58h30v60h18v-34h24v52h20v-70h34v66h20v-40h26v48h22v-30h28v40h20v-62h30v56h22v-36h26v46h24v-28h28v40h20v-22h22v24h18v40z" fill="#B7CBEE"/>
+            <path d="M0 410Q150 350 320 396T600 380V600H0z" fill="#9FD3AD"/>
+          </svg>
+          <svg class="lyr front" viewBox="0 0 600 600" focusable="false">
+            <path d="M0 470Q200 428 380 458T600 446V600H0z" fill="#5FAF80"/>
+            <rect x="533" y="378" width="14" height="96" rx="4" fill="#6B4B32"/>
+            <g fill="#3F8E62"><circle cx="540" cy="352" r="42"/><circle cx="508" cy="384" r="28"/><circle cx="572" cy="388" r="30"/></g>
+            <g fill="#fff"><circle cx="90" cy="520" r="4"/><circle cx="120" cy="548" r="4"/><circle cx="470" cy="530" r="4"/></g>
+            <g fill="#F7931A"><circle cx="104" cy="534" r="4"/><circle cx="452" cy="552" r="4"/></g>
+            <ellipse cx="310" cy="552" rx="110" ry="10" fill="#0F1B2D" opacity=".14"/>
+            <path d="M373 406L469 232" stroke="#0F1B2D" stroke-width="1.6" fill="none"/>
+            <!-- founder -->
+            <g stroke-linecap="round" fill="none">
+              <path d="M262 470L256 544M280 470L288 544" stroke="#274C77" stroke-width="17"/>
+              <path d="M246 388L236 452" stroke="#EA5158" stroke-width="13"/>
+              <path d="M294 386L334 334" stroke="#EA5158" stroke-width="13"/>
+            </g>
+            <ellipse cx="252" cy="547" rx="13" ry="6" fill="#0F1B2D"/><ellipse cx="292" cy="547" rx="13" ry="6" fill="#0F1B2D"/>
+            <circle cx="235" cy="457" r="7" fill="#8A5634"/><circle cx="337" cy="329" r="7.5" fill="#8A5634"/>
+            <ellipse cx="270" cy="334" rx="33" ry="29" fill="#1B120D"/>
+            <rect x="262" y="364" width="16" height="16" fill="#7A4A2C"/>
+            <path d="M240 390Q242 376 258 374H282Q298 376 300 390L304 476H236z" fill="#EA5158"/>
+            <path d="M262 374L270 386L278 374z" fill="#F7E6D6"/>
+            <ellipse cx="270" cy="352" rx="21" ry="24" fill="#8A5634"/>
+            <path d="M248 346Q248 322 270 320Q292 322 292 346Q284 332 270 332Q256 332 248 346z" fill="#1B120D"/>
+            <circle cx="249" cy="360" r="3" fill="#F7931A"/>
+            <path d="M259 350q4-3 8 0M274 350q4-3 8 0M262 362q8 7 16 0" stroke="#2A1810" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+            <!-- child -->
+            <path d="M343 512L341 544M357 512L360 544" stroke="#9A6440" stroke-width="9" stroke-linecap="round"/>
+            <ellipse cx="339" cy="546" rx="8" ry="4.5" fill="#0F1B2D"/><ellipse cx="362" cy="546" rx="8" ry="4.5" fill="#0F1B2D"/>
+            <path d="M336 462L326 490M364 462L372 412" stroke="#2F5BEA" stroke-width="9" stroke-linecap="round"/>
+            <circle cx="326" cy="493" r="5" fill="#9A6440"/><circle cx="373" cy="407" r="5" fill="#9A6440"/>
+            <path d="M332 466Q334 456 344 456H356Q366 456 368 466L370 500H330z" fill="#2F5BEA"/>
+            <rect x="331" y="496" width="38" height="18" rx="4" fill="#274C77"/>
+            <circle cx="335" cy="424" r="9" fill="#1B120D"/><circle cx="365" cy="424" r="9" fill="#1B120D"/>
+            <circle cx="350" cy="440" r="16" fill="#9A6440"/>
+            <path d="M335 436Q338 422 350 422Q362 422 365 436Q358 430 350 430Q342 430 335 436z" fill="#1B120D"/>
+            <path d="M343 441v.5M357 441v.5" stroke="#2A1810" stroke-width="3.2" stroke-linecap="round"/>
+            <path d="M344 448q6 5 12 0" stroke="#2A1810" stroke-width="2" fill="none" stroke-linecap="round"/>
+          </svg>
+          <svg class="kite" viewBox="430 140 80 130" focusable="false">
+            <path d="M470 152L500 190L470 232L440 190z" fill="#2F5BEA"/>
+            <path d="M470 152L500 190H470zM470 190V232L440 190z" fill="#F7931A"/>
+            <path d="M470 152V232M440 190H500" stroke="#0F1B2D" stroke-width="1.5"/>
+            <path d="M470 232q-10 10-4 18t-8 18" stroke="#0F1B2D" stroke-width="1.4" fill="none"/>
+            <path d="M462 244l-6-3v6zM459 260l-6-3v6z" fill="#EA5158"/>
+          </svg>
+        </div>
+        <div class="cam a" aria-hidden="true">
+          <svg class="lyr" viewBox="0 0 600 600" focusable="false">
+            <defs>
+              <linearGradient id="hsWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A2F52"/><stop offset="1" stop-color="#0F1B2D"/></linearGradient>
+              <radialGradient id="hsGlow"><stop offset="0" stop-color="#6F97FF" stop-opacity=".5"/><stop offset="1" stop-color="#6F97FF" stop-opacity="0"/></radialGradient>
+              <linearGradient id="hsLamp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F7B54A" stop-opacity=".55"/><stop offset="1" stop-color="#F7B54A" stop-opacity="0"/></linearGradient>
+            </defs>
+            <rect width="600" height="600" fill="url(#hsWall)"/>
+            <rect x="30" y="50" width="200" height="230" rx="6" fill="#0A1428"/>
+            <g fill="#DCE6FF"><circle cx="60" cy="80" r="1.6"/><circle cx="104" cy="66" r="1.2"/><circle cx="140" cy="102" r="1.6"/><circle cx="82" cy="130" r="1.2"/><circle cx="210" cy="140" r="1.4"/></g>
+            <circle cx="185" cy="96" r="17" fill="#F3E7C4"/><circle cx="194" cy="89" r="15" fill="#0A1428"/>
+            <path d="M30 280V204h22v-22h18v40h16v-52h24v62h14v-30h20v48h18v-36h22v26h16v-44h30v84z" fill="#1C3052"/>
+            <g fill="#F7C46B"><rect x="58" y="196" width="5" height="6"/><rect x="92" y="186" width="5" height="6"/><rect x="100" y="210" width="5" height="6"/><rect x="152" y="234" width="5" height="6"/><rect x="204" y="214" width="5" height="6"/></g>
+            <rect x="30" y="50" width="200" height="230" rx="6" fill="none" stroke="#274C77" stroke-width="8"/>
+            <path d="M130 50V280" stroke="#274C77" stroke-width="6"/>
+            <circle cx="330" cy="92" r="34" fill="#F3F5F9" stroke="#274C77" stroke-width="6"/>
+            <path d="M330 64v6M358 92h-6M330 120v-6M302 92h6" stroke="#0F1B2D" stroke-width="3" stroke-linecap="round"/>
+            <path d="M330 92V72M330 92L325 67" stroke="#0F1B2D" stroke-width="4" stroke-linecap="round"/>
+            <path class="sec" d="M330 98V64" stroke="#EA5158" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="330" cy="92" r="3" fill="#EA5158"/>
+            <ellipse cx="255" cy="270" rx="160" ry="120" fill="url(#hsGlow)"/>
+            <path d="M92 322L36 400H190z" fill="url(#hsLamp)"/>
+            <!-- founder, behind the laptop -->
+            <ellipse cx="250" cy="226" rx="44" ry="40" fill="#1B120D"/>
+            <rect x="238" y="262" width="24" height="30" fill="#7A4A2C"/>
+            <path d="M176 336Q178 294 214 288H286Q322 294 324 336z" fill="#C8434A"/>
+            <path d="M236 288L250 308L264 288z" fill="#F3E3D6"/>
+            <ellipse cx="250" cy="248" rx="27" ry="31" fill="#8A5634"/>
+            <path d="M222 238Q224 204 250 202Q277 204 279 238Q268 222 250 222Q232 222 222 238z" fill="#1B120D"/>
+            <path d="M236 251q6 3 11 0M256 251q6 3 11 0M244 270q7-3 13 0" stroke="#2A1810" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+            <circle cx="277" cy="262" r="3" fill="#F7931A"/>
+            <path d="M202 306L150 392L222 262" stroke="#C8434A" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <circle cx="224" cy="256" r="12" fill="#8A5634"/>
+            <path d="M180 300h150a6 6 0 0 1 6 6v94H174v-94a6 6 0 0 1 6-6z" fill="#2B3F5E"/>
+            <path d="M181 301h148" stroke="#8FB0FF" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="255" cy="350" r="7" fill="#3A5279"/>
+            <rect x="196" y="318" width="22" height="22" fill="#F7C46B" transform="rotate(-6 207 329)"/>
+            <rect x="290" y="330" width="22" height="22" fill="#EA5158" transform="rotate(5 301 341)"/>
+            <!-- desk -->
+            <rect y="398" width="600" height="18" fill="#33476A"/>
+            <rect y="416" width="600" height="184" fill="#18263D"/>
+            <path d="M0 416H600" stroke="#4A6290" stroke-width="2"/>
+            <g fill="#1F304B" stroke="#2B4166" stroke-width="2"><rect x="300" y="432" width="150" height="54" rx="6"/><rect x="300" y="496" width="150" height="54" rx="6"/></g>
+            <path d="M360 459h30M360 523h30" stroke="#4A6290" stroke-width="5" stroke-linecap="round"/>
+            <path d="M486 600l8-78h72l8 78z" fill="#274C77"/>
+            <g fill="#E8EDF5"><circle cx="512" cy="520" r="13"/><circle cx="536" cy="514" r="15"/><circle cx="556" cy="522" r="11"/><circle cx="470" cy="588" r="10"/></g>
+            <path d="M505 516l8 6M532 508l6 8M552 518l5 5" stroke="#9FB3D6" stroke-width="2"/>
+            <ellipse cx="96" cy="400" rx="26" ry="6" fill="#274C77"/>
+            <path d="M96 398L72 344L96 316" stroke="#3E5F93" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M78 304L112 296L122 322L86 330z" fill="#F7931A"/>
+            <g fill="#E8EDF5"><rect x="344" y="372" width="22" height="27" rx="3"/><rect x="8" y="374" width="20" height="25" rx="3"/></g>
+            <path d="M366 379h4a5 5 0 0 1 0 12h-4M28 380h4a5 5 0 0 1 0 11h-4" stroke="#E8EDF5" stroke-width="3" fill="none"/>
+            <g fill="#F3F5F9" stroke="#9FB3D6" stroke-width="1"><rect x="376" y="388" width="44" height="10" rx="1"/><rect x="379" y="379" width="42" height="9" rx="1"/><rect x="375" y="370" width="44" height="9" rx="1"/><rect x="380" y="361" width="40" height="9" rx="1"/></g><rect x="402" y="354" width="10" height="10" fill="#F7931A"/>
+            <!-- phone: the close-up the camera starts on -->
+            <path d="M444 410l-8 6h52l-8-6z" fill="#0B1322"/>
+            <rect x="432" y="300" width="60" height="112" rx="9" fill="#0B1322"/>
+            <rect x="436" y="306" width="52" height="100" rx="6" fill="#16233B"/>
+            <g font-family="Figtree,sans-serif" fill="#fff" text-anchor="middle">
+              <text x="462" y="314" font-size="4.6" font-weight="600" fill="#9FB3D6">11:58 PM</text>
+              <text x="462" y="334" font-size="15" font-weight="800">247</text>
+              <text x="462" y="342" font-size="5.2" font-weight="600" fill="#C9D6EE">unread</text>
+            </g>
+            <circle cx="476" cy="323" r="3" fill="#EA5158"/>
+            <g font-family="Figtree,sans-serif" font-size="4.6" font-weight="700">
+              <rect x="439" y="348" width="46" height="14" rx="3" fill="#24365A"/>
+              <circle cx="444" cy="355" r="2" fill="#F7931A"/><text x="448" y="356.6" fill="#fff">Call · 9:00</text>
+              <rect x="439" y="365" width="46" height="14" rx="3" fill="#3A1F2E" stroke="#EA5158" stroke-width="1"/>
+              <circle cx="444" cy="372" r="2" fill="#EA5158"/><text x="448" y="373.6" fill="#fff">Board · 9:00</text>
+              <rect x="439" y="382" width="46" height="14" rx="3" fill="#24365A"/>
+              <circle cx="444" cy="389" r="2" fill="#2F5BEA"/><text x="448" y="390.6" fill="#fff">Invoice late</text>
+            </g>
+          </svg>
+          <div class="tk" style="--x:16%;--y:25%;--r:-7deg;--dx:58.8cqw;--dy:7.3cqw;--i:0;--c:#F7931A"><i></i>Invoices</div>
+          <div class="tk" style="--x:50%;--y:25.3%;--r:6deg;--dx:24.8cqw;--dy:7cqw;--i:1;--c:#EA5158"><i></i>Inbox</div>
+          <div class="tk" style="--x:6.7%;--y:39.3%;--r:5deg;--dx:68.2cqw;--dy:-7cqw;--i:2;--c:#2F5BEA"><i></i>Bookings</div>
+          <div class="tk" style="--x:51%;--y:39.3%;--r:-4deg;--dx:23.8cqw;--dy:-7cqw;--i:3;--c:#12A37F"><i></i>Slides</div>
+          <div class="tk" style="--x:32.7%;--y:21.3%;--r:3deg;--dx:42.2cqw;--dy:11cqw;--i:4;--c:#274C77"><i></i>Posts</div>
+          <div class="team">Altradits team
+            <svg viewBox="0 0 150 56" focusable="false">
+              <circle cx="25" cy="28" r="22" fill="#DCE6FF"/><circle cx="75" cy="28" r="22" fill="#FFE4C2"/><circle cx="125" cy="28" r="22" fill="#FFD9DB"/>
+              <path d="M9 50a16 12 0 0 1 32 0z" fill="#2F5BEA"/><circle cx="25" cy="26" r="9" fill="#5C3A21"/><path d="M16 24q0-11 9-11t9 11q-4-5-9-5t-9 5z" fill="#1B120D"/><path d="M18 30q7 8 14 0" stroke="#1B120D" stroke-width="3" fill="none"/>
+              <path d="M59 50a16 12 0 0 1 32 0z" fill="#274C77"/><path d="M64 34q-2-21 11-21t11 21l-3 8h-16z" fill="#0F1B2D"/><circle cx="75" cy="27" r="8" fill="#B07A4F"/>
+              <path d="M109 50a16 12 0 0 1 32 0z" fill="#EA5158"/><circle cx="125" cy="26" r="9" fill="#F0C8A0"/><path d="M115 26q0-13 10-13t10 13q-3-6-10-6t-10 6z" fill="#1B120D"/><path d="M119 26h4M127 26h4" stroke="#0F1B2D" stroke-width="1.6"/>
+            </svg>
+            <span class="st"><span class="w">On it…</span><span class="y">✓ All done</span></span>
+          </div>
+        </div>
+        <div class="caps" aria-hidden="true"><span class="c1">247 unread.</span><span class="c2">Midnight, again.</span><span class="c3">Handed off.</span><span class="c4">Time, delivered.</span></div>
+        <div class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#E3F6EF" stroke="#0F1B2D" stroke-width="1.6"/><path d="M12 6.5V12l3.5 2" stroke="#0F1B2D" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg><span><b>+20 hrs</b> back this month</span></div>
       </div>
     </div>
     <div class="stats" aria-label="At a glance">
@@ -541,7 +711,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 
   <div class="final">
     <h2 class="h2">Your hours back start with one payment.</h2>
-    <p class="intro">Start with a quick job from $9, or pick the plan that fits.</p>
+    <p class="intro">Start with a <span data-price>$5</span> test task, or pick the plan that fits.</p>
     <div class="actions" id="finalBuy"></div>
   </div>
 </div>
@@ -702,10 +872,10 @@ $("#payg").innerHTML = `<div><h3>Pay as you go: ${money(payg.price)} for ${PAYG.
   <ul>${payg.deliverables.map((d) => `<li>${esc(d)}</li>`).join("")}</ul></div>
   ${buyBtn("hourly", `Pay ${money(payg.price)} · 2 hours`, "btn btc")}`;
 $("#guarantees").innerHTML = GUARANTEES.map((g) => `<div><h4>${esc(g.name)}</h4><p>${esc(g.text)}</p></div>`).join("");
-const core = PACKAGES.find((p) => p.popular);
-const heroButtons = buyBtn(core.id, `Pay ${money(core.price)}/mo · ${core.name} plan`) + buyBtn("hourly", `Pay ${money(payg.price)} · 2 hours of help`, "btn");
-$("#heroBuy").innerHTML = heroButtons;
-$("#finalBuy").innerHTML = heroButtons;
+// Hero and final call to action: the cheapest way to test us, never a big amount.
+const test = orderable("q-try"), next = QUICK.find((j) => j.id !== test.id);
+$("#heroBuy").innerHTML = `<button type="button" class="btn primary test" data-buy="${test.id}">Test us · <b>${money(test.price)}</b> · started within 1 hour</button><a class="more" href="#quick">or browse quick jobs</a>`;
+$("#finalBuy").innerHTML = buyBtn(test.id, `Test us · ${money(test.price)} · one 15-minute task`) + buyBtn(next.id, `${money(next.price)} · ${next.name}`, "btn");
 $("#tryBuy").innerHTML = buyBtn(QUICK[0].id, `Try it: ${money(QUICK[0].price)} · ${QUICK[0].name}`);
 
 // ---- order pop-up: click a price -> payment QR for that amount
@@ -868,7 +1038,7 @@ function init() {
 root.classList.add("js");
 
 // ---- scroll reveal, staggered within each batch that enters together
-const REVEAL = ".hero>div:first-child>*,.receipt,.stats>div,.depts h2,section .h2,section .intro,.qgroup>h3,.pillar>h3,.qj,.svc,.plan,.payg,.guar>div,.about>*,.agent,.faq details,.final>*,.step";
+const REVEAL = ".hero>div:first-child>*,.story,.stats>div,.depts h2,section .h2,section .intro,.qgroup>h3,.pillar>h3,.qj,.svc,.plan,.payg,.guar>div,.about>*,.agent,.faq details,.final>*,.step";
 const io = new IntersectionObserver((entries) => {
   let n = 0;
   for (const e of entries) {
@@ -909,23 +1079,14 @@ const counters = new IntersectionObserver((es) => es.forEach((e) => {
 }), { threshold: 0.4 });
 $(".stats") && counters.observe($(".stats"));
 
-// ---- hero receipt: waiting for payment -> paid, on a slow loop while visible
-const receipt = $(".receipt");
-if (receipt && !calm) {
-  let timer = null, visible = false;
-  const cycle = () => {
-    receipt.classList.add("waiting");
-    timer = setTimeout(() => {
-      receipt.classList.remove("waiting");
-      timer = setTimeout(() => { if (visible && !document.hidden) cycle(); else timer = null; }, 4200);
-    }, 2600);
-  };
-  new IntersectionObserver(([e]) => {
-    visible = e.isIntersecting;
-    receipt.classList.toggle("paused", !visible);
-    if (visible && !timer) cycle();
-  }).observe(receipt);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden && visible && !timer) cycle(); });
+// ---- hero story: one 16s CSS loop; paused off-screen and in hidden tabs
+const story = $("#story");
+if (story && !calm) {
+  let seen = true;
+  const sync = () => story.classList.toggle("paused", !seen || document.hidden);
+  story.classList.add("play");
+  new IntersectionObserver(([e]) => { seen = e.isIntersecting; sync(); }).observe(story);
+  document.addEventListener("visibilitychange", sync);
 }
 
 // ---- cursor glow on the dark departments band (mouse only)
