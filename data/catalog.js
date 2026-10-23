@@ -19,6 +19,7 @@ export const RULES = {
   maxDiscountPct: 10,          // only for 3-month prepay or 3+ services bundled
   depositPctProjects: 50,      // one-off projects: 50% to start
   freeTrialMaxHours: 1,        // the free sample task
+  referralCreditPct: 10,       // referrer earns this % of the new client's first month as credit
 };
 
 export const PILLARS = [

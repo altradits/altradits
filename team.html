@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Team workspace – Altradits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2F5BEA;--paper:#fff;--ok:#12A37F;--warn:#E4572E}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.55 Figtree,system-ui,sans-serif}
+h1,h2,h3{font-family:'Bricolage Grotesque',Figtree,sans-serif;line-height:1.15;margin:0}
+[hidden]{display:none!important}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+a{color:var(--blue)}
+.wrap{max-width:56rem;margin:0 auto;padding:1.25rem 1rem 4rem}
+.top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem}
+.logo{font:800 1.2rem 'Bricolage Grotesque',sans-serif;text-decoration:none;color:var(--ink)}
+.task{background:var(--paper);border:2px solid var(--line);border-radius:1rem;padding:1.1rem;margin-bottom:1rem}
+.task.hot{border-color:var(--blue)}
+.task h3{font-size:1.15rem}
+.meta{color:var(--muted);font-size:.88rem;margin:.2rem 0 .6rem}
+.st{display:inline-block;padding:.05rem .55rem;border-radius:99px;background:var(--bg);font-weight:600;font-size:.8rem}
+.st.changes{background:color-mix(in srgb,var(--warn) 18%,white)}
+.st.review,.st.done{background:color-mix(in srgb,var(--ok) 18%,white)}
+.details{white-space:pre-wrap;background:var(--bg);border-radius:.6rem;padding:.7rem .9rem}
+details{margin-top:.7rem}
+summary{cursor:pointer;font-weight:600}
+ul,ol{margin:.4rem 0;padding-left:1.2rem}
+.hist{font-size:.88rem;color:var(--muted);margin:.6rem 0 0;padding-left:1rem}
+label{display:block;margin:.5rem 0;font-weight:600;font-size:.92rem}
+input,textarea{width:100%;margin-top:.25rem;padding:.6rem .75rem;border:2px solid var(--line);border-radius:.6rem;font:inherit;background:var(--bg)}
+textarea{min-height:4.5rem}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem}
+.btn{display:inline-flex;padding:.55rem 1rem;border-radius:.6rem;font:600 .93rem Figtree,sans-serif;border:2px solid var(--ink);cursor:pointer;background:transparent;color:var(--ink)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.err{color:#B42318}
+.muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="logo" href="/">Altradits</a><span class="muted" id="who"></span></div>
+  <div id="app"><p class="muted">Loading your workspace…</p></div>
+</div>
+<script type="module">
+import { findDepartment } from "./data/playbooks.js";
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const m = new URLSearchParams(location.search).get("m");
+const LABEL = { assigned: "new for you", in_progress: "in progress", changes: "changes requested", review: "with client", done: "approved", cancelled: "cancelled" };
+
+async function api(body) {
+  const res = await fetch(body ? "/api/team" : `/api/team?m=${encodeURIComponent(m)}`, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ m, ...body }) } : {});
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
+function playbook(d) {
+  return `<details><summary>${esc(d.name)} playbook</summary>
+    <p><b>Steps</b></p><ol>${d.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>
+    <p><b>Quality checklist</b></p><ul>${d.quality.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>
+    <p><b>Stop and ask Stanley if</b></p><ul>${d.escalate.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>
+    <p class="muted">Tools: ${esc(d.tools.join(", "))}</p></details>`;
+}
+
+function card(t) {
+  const d = findDepartment(t.department);
+  const open = ["assigned", "in_progress", "changes"].includes(t.status);
+  return `<div class="task ${location.hash === "#" + t.id ? "hot" : ""}" id="${t.id}">
+    <h3>${esc(t.title)} <span class="st ${t.status}">${LABEL[t.status] || t.status}</span></h3>
+    <div class="meta">${esc(t.client)} · ${esc(d.name)} · ~${t.estimateHours}h · ${t.due ? `due ${esc(t.due)}` : `turnaround ${d.turnaroundHours}h`}</div>
+    <div class="details">${esc(t.details || "(no extra details)")}</div>
+    ${playbook(d)}
+    ${["assigned", "changes"].includes(t.status) ? `<div class="row"><button class="btn primary" data-accept="${t.id}">Start task</button></div>` : ""}
+    ${t.status === "in_progress" ? `<form data-submit="${t.id}">
+      <label>Deliverable link (Google Doc, Drive folder, Canva…)<input type="url" name="url" placeholder="https://"></label>
+      <label>What you did (the client sees this)<textarea name="note"></textarea></label>
+      <label>Hours spent<input type="number" name="hours" min="0" max="40" step="0.25" value="${t.estimateHours}"></label>
+      <div class="row"><button class="btn primary">Submit for client review</button></div></form>` : ""}
+    ${open ? `<form data-note="${t.id}" class="row"><input name="note" placeholder="Add a progress note or question" style="flex:1"><button class="btn">Add note</button></form>` : ""}
+    ${t.deliverable ? `<p class="muted">Submitted: ${t.deliverable.url ? `<a href="${esc(t.deliverable.url)}" target="_blank" rel="noopener">deliverable</a> · ` : ""}${t.hoursLogged}h</p>` : ""}
+    <ul class="hist">${t.history.map((h) => `<li>${esc(h.at.slice(0, 16).replace("T", " "))} · ${esc(h.by)}: ${esc(h.text)}</li>`).join("")}</ul>
+    <p class="err" data-err="${t.id}"></p></div>`;
+}
+
+async function load() {
+  try {
+    const d = await api();
+    $("#who").textContent = `${d.member.name} · ${d.member.departments.map((x) => findDepartment(x).name).join(", ")}`;
+    const open = d.tasks.filter((t) => ["assigned", "in_progress", "changes"].includes(t.status));
+    const rest = d.tasks.filter((t) => !open.includes(t));
+    $("#app").innerHTML = `<h1 style="font-size:1.6rem;margin-bottom:1rem">Your tasks (${open.length} open)</h1>
+      ${open.map(card).join("") || '<p class="muted">No open tasks right now. New ones arrive by email.</p>'}
+      ${rest.length ? `<h2 style="font-size:1.2rem;margin:1.5rem 0 .8rem">Recent</h2>${rest.slice(0, 10).map(card).join("")}` : ""}`;
+    document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: "smooth" });
+  } catch (err) {
+    $("#app").innerHTML = `<h1 style="font-size:1.5rem">Workspace unavailable</h1><p>${esc(err.message)}</p>`;
+  }
+}
+
+document.addEventListener("click", async (e) => {
+  const id = e.target.dataset.accept;
+  if (!id) return;
+  try { await api({ action: "accept", task: id }); load(); } catch (err) { document.querySelector(`[data-err="${id}"]`).textContent = err.message; }
+});
+document.addEventListener("submit", async (e) => {
+  const f = e.target, id = f.dataset.submit || f.dataset.note;
+  if (!id) return;
+  e.preventDefault();
+  const body = f.dataset.submit
+    ? { action: "submit", task: id, url: f.url.value.trim(), note: f.note.value.trim(), hours: f.hours.value }
+    : { action: "note", task: id, note: f.note.value.trim() };
+  try { await api(body); load(); } catch (err) { document.querySelector(`[data-err="${id}"]`).textContent = err.message; }
+});
+load();
+</script>
+</body>
+</html>

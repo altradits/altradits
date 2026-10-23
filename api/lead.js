@@ -18,7 +18,7 @@ export async function POST(request) {
   let lead = body.leadId ? await getLead(clean(body.leadId, 40)) : null;
   if (lead && !safeEqual(lead.token, body.token)) lead = null;
   const isNew = !lead;
-  if (!lead) lead = await createLead({ source: "delegation-quiz", email, name: body.name });
+  if (!lead) lead = await createLead({ source: "delegation-quiz", email, name: body.name, referredBy: clean(body.ref, 12).toLowerCase() });
 
   lead.email = email;
   if (body.name) lead.name = clean(body.name, 120);

@@ -7,6 +7,8 @@ import {
   recomputeTotals, proposalUrl, publicLead, confirmPayment,
 } from "../lib/crm.js";
 import { lightningMode } from "../lib/lightning.js";
+import { allMembers, allTasks, getMember, setMemberStatus, getTask, saveTask, assignTask, publicMember, notifyClient, OPEN } from "../lib/ops.js";
+import { DEPARTMENTS } from "../data/playbooks.js";
 import { sendEmail } from "../lib/email.js";
 import { agentLive } from "../lib/agent.js";
 import { BUSINESS } from "../data/catalog.js";
@@ -22,6 +24,17 @@ const deny = () => json({ error: process.env.ADMIN_TOKEN ? "Wrong admin token." 
 export async function GET(request) {
   if (!authorized(request)) return deny();
   const u = new URL(request.url);
+
+  if (u.searchParams.get("view") === "ops") {
+    const [members, tasks] = await Promise.all([allMembers(), allTasks()]);
+    const load = (id) => tasks.filter((t) => t.assigneeId === id && OPEN.includes(t.status)).reduce((s, t) => s + t.estimateHours, 0);
+    return json({
+      members: members.map((m) => ({ ...publicMember(m), sample: m.sample, openHours: load(m.id) })),
+      tasks: tasks.map((t) => ({ ...t, assignee: members.find((m) => m.id === t.assigneeId)?.name || null })),
+      departments: DEPARTMENTS.map((d) => ({ id: d.id, name: d.name,
+        approved: members.filter((m) => m.status === "approved" && m.departments.includes(d.id)).length })),
+    });
+  }
 
   if (u.searchParams.get("view") === "lead") {
     const lead = await getLead(clean(u.searchParams.get("id"), 40));
@@ -62,6 +75,7 @@ export async function GET(request) {
     leads: leads.map((l) => ({
       id: l.id, name: l.name, email: l.email, company: l.company, stage: l.stage, score: l.score,
       needs: l.needs, source: l.source, createdAt: l.createdAt, updatedAt: l.updatedAt,
+      refCode: l.refCode || null, referredBy: l.referredBy || null,
       lastMessage: l.transcript.at(-1)?.text?.slice(0, 140) || "",
     })),
     emails,
@@ -131,6 +145,43 @@ export async function POST(request) {
   const body = await readBody(request);
 
   if (body.action === "approval") return resolveApproval(request, body);
+
+  if (body.action === "member_status") {
+    const m = await getMember(clean(body.id, 40));
+    if (!m) return json({ error: "Member not found" }, 404);
+    try { await setMemberStatus(m, body.status); } catch (err) { return json({ error: err.message }, 400); }
+    return json({ ok: true });
+  }
+  if (body.action === "task_submit") {
+    const t = await getTask(clean(body.id, 40));
+    if (!t || !["new", "in_progress", "changes", "assigned"].includes(t.status)) return json({ error: "Task is not open" }, 409);
+    const url = clean(body.url, 500), note = clean(body.note, 2000);
+    if (!/^https?:\/\//.test(url) && note.length < 10) return json({ error: "Add a deliverable link or a note." }, 400);
+    t.deliverable = { url: /^https?:\/\//.test(url) ? url : "", note, at: new Date().toISOString() };
+    t.hoursLogged = Math.max(0, Math.min(40, Number(body.hours) || 0));
+    t.status = "review";
+    t.history.push({ at: new Date().toISOString(), by: "Stanley", text: `Submitted for review (${t.hoursLogged}h)` });
+    await saveTask(t);
+    await notifyClient(t, `Ready for your review: ${t.title}`, `Your task "${t.title}" is done.\n\n${note}${t.deliverable.url ? `\n\nDeliverable: ${t.deliverable.url}` : ""}\n\nApprove it or ask for changes in your portal.`);
+    return json({ ok: true });
+  }
+  if (body.action === "task_assign" || body.action === "task_cancel") {
+    const t = await getTask(clean(body.id, 40));
+    if (!t) return json({ error: "Task not found" }, 404);
+    if (body.action === "task_cancel") {
+      t.status = "cancelled";
+      t.history.push({ at: new Date().toISOString(), by: "Stanley", text: "Cancelled" });
+      await saveTask(t);
+    } else if (body.memberId === "self") {
+      t.assigneeId = null;
+      t.status = "in_progress";
+      t.history.push({ at: new Date().toISOString(), by: "Stanley", text: "Stanley is doing this one" });
+      await saveTask(t);
+    } else {
+      await assignTask(t, body.memberId ? clean(body.memberId, 40) : undefined);
+    }
+    return json({ ok: true });
+  }
 
   const lead = await getLead(clean(body.id, 40));
   if (!lead) return json({ error: "Lead not found" }, 404);

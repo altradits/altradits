@@ -50,6 +50,15 @@ The node's REST port (default 8080) must be reachable from the hosting server
 variables in *Setup Node.js App*, then Restart. The dashboard's System panel
 shows which mode is active.
 
+## Operations (running without Stanley)
+
+- **Departments & playbooks:** `data/playbooks.js`. Each department's intake questions, delivery steps, quality checklist, tools and escalation rules. Edit and merge to update everywhere.
+- **Team:** freelancers apply at `/join.html`; approve them in the dashboard's **Team** tab. Approved members get a private workspace link (`/team.html?m=…`).
+- **Client portal:** sent in the kick-off email after payment (`/portal.html?c=…`): onboarding, task requests, approvals, hours meter, referral link.
+- **Routing:** each task is matched to a department, estimated, and assigned to the least-busy approved member with spare weekly hours. Stanley is emailed only when nobody has capacity, or (daily) when work is overdue.
+- **Referrals:** `RULES.referralCreditPct` in `data/catalog.js` (default 10% of the new client's first month as credit).
+- **Growth tab:** outreach templates and a daily outreach counter in the dashboard.
+
 ## Local development
 
 ```

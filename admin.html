@@ -87,6 +87,9 @@ dd{margin:0;overflow-wrap:anywhere}
       <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
       <button role="tab" data-tab="approvals">Approvals <span class="badge" id="apCount" hidden></span></button>
       <button role="tab" data-tab="leads">Leads & clients</button>
+      <button role="tab" data-tab="tasks">Tasks <span class="badge" id="taskCount" hidden></span></button>
+      <button role="tab" data-tab="team">Team <span class="badge" id="teamCount" hidden></span></button>
+      <button role="tab" data-tab="growth">Growth</button>
       <button role="tab" data-tab="emails">Email log</button>
       <button type="button" class="btn" id="refresh">↻ Refresh</button>
     </div>
@@ -111,6 +114,27 @@ dd{margin:0;overflow-wrap:anywhere}
       <div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Stage</th><th class="hide-sm">Needs</th><th class="hide-sm">Fit</th><th>Last activity</th></tr></thead><tbody id="leadRows"></tbody></table></div>
     </div>
     <div id="leadDetail"></div>
+  </div>
+
+  <div id="tab-tasks" hidden>
+    <div class="panel"><h2>Client tasks</h2>
+      <div class="row" style="margin:0 0 .8rem"><select id="taskFilter" style="max-width:14rem"><option value="open">Open</option><option value="new">Unassigned</option><option value="review">With client</option><option value="done">Done</option><option value="">All</option></select></div>
+      <div id="taskList"></div></div>
+  </div>
+
+  <div id="tab-team" hidden>
+    <div class="panel"><h2>Departments</h2><div class="kpis" id="deptKpis" style="margin:0"></div>
+      <p class="muted" style="font-size:.9rem">Tasks are routed to approved members of the matching department with spare weekly hours. If nobody has capacity, the task comes to you. Recruiting link: <a href="/join.html" target="_blank">/join.html</a></p></div>
+    <div class="panel"><h2>Team & applications</h2><div id="memberList"></div></div>
+  </div>
+
+  <div id="tab-growth" hidden>
+    <div class="panel"><h2>Today's outreach</h2>
+      <p class="muted" style="margin-top:0">Warm outreach first: people who already know you. Aim for 20 personal messages a day until you have 5 clients.</p>
+      <div class="row" style="margin:0"><button class="btn" id="outMinus">−</button><b id="outCount" style="font:800 2rem 'Bricolage Grotesque',sans-serif;min-width:3ch;text-align:center">0</b><button class="btn primary" id="outPlus">+1 sent</button><span class="muted" id="outGoal">/ 20 today</span></div>
+      <div class="meter" style="height:.7rem;background:var(--bg);border-radius:99px;overflow:hidden;margin-top:.8rem"><i id="outBar" style="display:block;height:100%;width:0;background:var(--ok)"></i></div></div>
+    <div class="grid2"><div class="panel"><h2>Message templates</h2><div id="templates"></div></div>
+    <div class="panel"><h2>Where leads come from</h2><div id="sources"></div><h2 style="margin-top:1.2rem">Top referrers</h2><div id="referrers"></div></div></div>
   </div>
 
   <div id="tab-emails" hidden><div class="panel"><h2>Emails sent by the agents</h2>
@@ -147,7 +171,9 @@ $("#login").addEventListener("submit", (e) => {
 
 function tab(name) {
   document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === name));
-  ["overview", "approvals", "leads", "emails"].forEach((t) => { $("#tab-" + t).hidden = t !== name; });
+  if (["tasks", "team"].includes(name)) loadOps();
+  if (name === "growth") renderGrowth();
+  ["overview", "approvals", "leads", "tasks", "team", "growth", "emails"].forEach((t) => { $("#tab-" + t).hidden = t !== name; });
 }
 document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => tab(b.dataset.tab)));
 $("#refresh").addEventListener("click", () => load());
@@ -260,12 +286,102 @@ document.addEventListener("click", async (e) => {
   } catch (err) { alert(err.message); e.target.disabled = false; }
 });
 
+// ---------------------------------------------------------- operations
+let O = null;
+const TLABEL = { new: "unassigned", assigned: "assigned", in_progress: "in progress", review: "with client", changes: "changes", done: "done", cancelled: "cancelled" };
+async function loadOps() {
+  try { O = await api("?view=ops"); renderOps(); } catch {}
+}
+function renderOps() {
+  const openSt = ["new", "assigned", "in_progress", "changes"];
+  const unassigned = O.tasks.filter((t) => t.status === "new").length;
+  $("#taskCount").hidden = !unassigned; $("#taskCount").textContent = unassigned;
+  const applied = O.members.filter((m) => m.status === "applied").length;
+  $("#teamCount").hidden = !applied; $("#teamCount").textContent = applied;
+  const f = $("#taskFilter").value;
+  const list = O.tasks.filter((t) => f === "open" ? openSt.includes(t.status) : !f || t.status === f);
+  const approved = O.members.filter((m) => m.status === "approved");
+  $("#taskList").innerHTML = list.map((t) => `<div class="ap ${t.status === "new" ? "pending" : ""}">
+    <h3>${esc(t.title)} <span class="stage">${TLABEL[t.status] || t.status}</span></h3>
+    <div class="meta">${esc(t.client)} · ${esc(t.department)} · ~${t.estimateHours}h${t.due ? ` · due ${esc(t.due)}` : ""} · ${t.assignee ? esc(t.assignee) : t.status === "in_progress" ? "you" : "nobody yet"}</div>
+    <pre>${esc(t.details)}</pre>
+    ${t.deliverable ? `<p>${t.deliverable.url ? `<a href="${esc(t.deliverable.url)}" target="_blank" rel="noopener">Deliverable</a> · ` : ""}${esc(t.deliverable.note)} (${t.hoursLogged}h)</p>` : ""}
+    ${openSt.includes(t.status) ? `<div class="row"><select data-assignsel="${t.id}" style="max-width:16rem"><option value="">Auto-assign</option>${approved.filter((m) => m.departments.includes(t.department)).concat(approved.filter((m) => !m.departments.includes(t.department))).map((m) => `<option value="${m.id}">${esc(m.name)} (${m.openHours}/${m.hoursPerWeek}h)</option>`).join("")}<option value="self">I'll do it</option></select>
+      <button class="btn" data-assign="${t.id}">Assign</button><button class="btn" data-cancel="${t.id}">Cancel task</button></div>` : ""}
+    ${!t.assignee && ["in_progress", "new", "changes"].includes(t.status) ? `<details style="margin-top:.5rem"><summary>Submit it yourself</summary>
+      <input placeholder="Deliverable link (https://…)" data-surl="${t.id}" style="margin-top:.4rem"><textarea placeholder="What was done (client sees this)" data-snote="${t.id}" style="margin-top:.4rem"></textarea>
+      <div class="row"><input type="number" min="0" step="0.25" value="${t.estimateHours}" data-shours="${t.id}" style="max-width:7rem"> hours <button class="btn ok" data-selfsubmit="${t.id}">Send to client</button></div></details>` : ""}
+  </div>`).join("") || '<p class="muted">No tasks here.</p>';
+  $("#deptKpis").innerHTML = O.departments.map((d) => `<div class="kpi"><small>${esc(d.name)}</small><div>${d.approved}</div><small>approved</small></div>`).join("");
+  const order = { applied: 0, approved: 1, paused: 2, rejected: 3 };
+  $("#memberList").innerHTML = O.members.slice().sort((a, b) => order[a.status] - order[b.status] || b.score - a.score).map((m) => `<div class="ap ${m.status === "applied" ? "pending" : ""}">
+    <h3>${esc(m.name)} <span class="stage">${esc(m.status)}</span> <span class="muted" style="font-size:.85rem">screen score ${m.score}/10</span></h3>
+    <div class="meta">${esc(m.email)} · ${esc(m.country)} ${esc(m.timezone)} · $${m.rate}/h · ${m.hoursPerWeek}h/week · ${esc(m.departments.join(", "))} · ${m.openHours}h open</div>
+    <details><summary>Application</summary><p><b>Skills:</b> ${esc(m.skills)}</p><p><b>Tools:</b> ${esc(m.tools)}</p>${m.portfolio ? `<p><a href="${esc(m.portfolio)}" target="_blank" rel="noopener">Portfolio</a></p>` : ""}<p><b>${esc(m.sampleQuestion || "Sample")}</b></p><pre>${esc(m.sample)}</pre></details>
+    <div class="row">${m.status !== "approved" ? `<button class="btn ok" data-mstatus="approved" data-mid="${m.id}">Approve</button>` : `<button class="btn" data-mstatus="paused" data-mid="${m.id}">Pause</button>`}
+    ${m.status === "applied" ? `<button class="btn" data-mstatus="rejected" data-mid="${m.id}">Decline</button>` : ""}</div></div>`).join("") || '<p class="muted">No applications yet. Share /join.html in VA communities and on LinkedIn.</p>';
+}
+$("#taskFilter").addEventListener("change", renderOps);
+document.addEventListener("click", async (e) => {
+  const d = e.target.dataset;
+  let body = null;
+  if (d.mstatus) body = { action: "member_status", id: d.mid, status: d.mstatus };
+  else if (d.assign) body = { action: "task_assign", id: d.assign, memberId: document.querySelector(`[data-assignsel="${d.assign}"]`).value };
+  else if (d.cancel) { if (!confirmCancel(e.target)) return; body = { action: "task_cancel", id: d.cancel }; }
+  else if (d.selfsubmit) body = { action: "task_submit", id: d.selfsubmit, url: document.querySelector(`[data-surl="${d.selfsubmit}"]`).value, note: document.querySelector(`[data-snote="${d.selfsubmit}"]`).value, hours: document.querySelector(`[data-shours="${d.selfsubmit}"]`).value };
+  if (!body) return;
+  e.target.disabled = true;
+  try { await api("", body); await loadOps(); } catch (err) { e.target.disabled = false; e.target.textContent = err.message; }
+});
+// Two-step cancel without a browser dialog.
+function confirmCancel(btn) {
+  if (btn.dataset.armed) return true;
+  btn.dataset.armed = "1"; btn.textContent = "Click again to cancel";
+  setTimeout(() => { delete btn.dataset.armed; btn.textContent = "Cancel task"; }, 4000);
+  return false;
+}
+
+// ---------------------------------------------------------- growth
+const SITE = location.origin;
+const TEMPLATES = [
+  ["WhatsApp: warm contact", `Hi [Name]! Quick one: I've started Altradits, helping busy owners hand off admin, inbox, social media and tech chores. If anything's eating your week, I'll do your first task free (up to an hour). Want me to take one thing off your plate? ${SITE}`],
+  ["WhatsApp: ask for a referral", `Hi [Name], hope you're well! I now run Altradits (virtual assistance: inbox, social media, bookings, invoices, websites). Do you know 1 or 2 business owners who are stretched thin? I'd love an intro, and their first task is free. ${SITE}`],
+  ["LinkedIn: connection note", `Hi [Name], I help founders get 10+ hours a week back by handling inbox, scheduling, social posts and admin. Happy to connect, and to share a free delegation plan if useful.`],
+  ["LinkedIn: follow-up after connecting", `Thanks for connecting, [Name]. Curious: what's the one recurring task you'd hand off tomorrow if you could? This 2-minute plan shows how many hours you'd get back: ${SITE}/#plan`],
+  ["Email: cold, personalised", `Subject: [Business]'s [specific thing you noticed]\n\nHi [Name],\n\nI noticed [specific observation, e.g. your Instagram hasn't posted since March / your site's contact form is broken on mobile].\n\nI run Altradits: we take admin, social media and tech chores off owners' plates. I'd be happy to [fix that one thing] free as a first task, no strings.\n\nWorth a try?\n\nStanley\n${SITE}`],
+  ["Follow-up (3 days later)", `Hi [Name], just bumping this in case it got buried. The free first task offer stands. Reply with whatever's annoying you most this week and I'll take it from there.`],
+];
+function outKey() { return "altra.out." + new Date().toISOString().slice(0, 10); }
+function outGet() { try { return Number(localStorage.getItem(outKey())) || 0; } catch { return 0; } }
+function outSet(n) { try { localStorage.setItem(outKey(), String(Math.max(0, n))); } catch {} renderOut(); }
+function renderOut() { const n = outGet(); $("#outCount").textContent = n; $("#outBar").style.width = Math.min(100, n * 5) + "%"; }
+$("#outPlus").onclick = () => outSet(outGet() + 1);
+$("#outMinus").onclick = () => outSet(outGet() - 1);
+function renderGrowth() {
+  renderOut();
+  $("#templates").innerHTML = TEMPLATES.map(([t, body], i) => `<div class="ap"><h3>${esc(t)}</h3><pre>${esc(body)}</pre><div class="row"><button class="btn" data-copytpl="${i}">Copy</button></div></div>`).join("");
+  if (!D) return;
+  const by = {};
+  D.leads.forEach((l) => { by[l.source] = (by[l.source] || 0) + 1; });
+  $("#sources").innerHTML = Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="r" style="display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:.35rem 0"><span>${esc(k)}</span><b>${v}</b></div>`).join("") || '<p class="muted">No leads yet.</p>';
+  const refs = {};
+  D.leads.filter((l) => l.referredBy).forEach((l) => { refs[l.referredBy] = (refs[l.referredBy] || 0) + 1; });
+  $("#referrers").innerHTML = Object.entries(refs).map(([code, n]) => { const r = D.leads.find((l) => l.refCode === code); return `<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:.35rem 0"><span>${esc(r?.name || r?.email || code)}</span><b>${n}</b></div>`; }).join("") || '<p class="muted">No referrals yet. Every active client gets a referral link in their portal.</p>';
+}
+document.addEventListener("click", async (e) => {
+  const i = e.target.dataset.copytpl;
+  if (i === undefined) return;
+  try { await navigator.clipboard.writeText(TEMPLATES[i][1]); e.target.textContent = "Copied ✓"; } catch { e.target.textContent = "Select and copy"; }
+});
+
 async function load(navigate = true) {
   try {
     D = await api("?view=overview");
     $("#login").hidden = true; $("#app").hidden = false;
     render();
     if (!navigate) return;
+    loadOps();
+    if (location.hash === "#tasks") tab("tasks");
     const h = location.hash.match(/^#(approval|lead)=(.+)$/);
     if (h?.[1] === "approval") { tab("approvals"); document.getElementById("ap-" + h[2])?.scrollIntoView(); }
     if (h?.[1] === "lead") openLead(h[2]);
