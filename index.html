@@ -65,21 +65,41 @@ nav a:hover{color:var(--ink)}
 .receipt .paid{display:flex;justify-content:space-between;align-items:center;background:color-mix(in srgb,var(--ok) 14%,white);border-radius:.7rem;padding:.6rem .8rem;font-weight:700}
 .receipt .paid span{color:var(--ok)}
 
-/* department strip: jump straight to a category */
-.depts{display:block;background:var(--ink);color:#fff;padding:1.4rem 0;margin-bottom:1rem}
-.depts .wrap{display:flex;align-items:center;gap:1rem 1.5rem}
-.depts .lead{flex:none;font:700 .8rem Figtree,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#93A1B5;max-width:7rem;line-height:1.35}
-.drow{flex:1;min-width:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.75rem}
-.dept{display:flex;flex-direction:column;gap:.15rem;padding:.8rem .9rem;border-radius:.9rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-top:3px solid var(--c);text-decoration:none;color:#fff;transition:background .15s,transform .15s}
-.dept:hover,.dept:focus-visible{background:rgba(255,255,255,.12);transform:translateY(-2px)}
-.dept .ic{font-size:1.3rem;line-height:1}
-.dept b{font:700 .98rem/1.2 'Bricolage Grotesque',sans-serif;margin-top:.3rem}
-.dept small{color:#B9C4D4;font-size:.82rem}
-.dept small em{font-style:normal;color:var(--btc);font-weight:700}
-@media (max-width:860px){
-  .depts .lead{display:none}
-  .drow{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-left:1.25rem;padding-bottom:.3rem;margin:0 -1.25rem;padding-left:1.25rem;padding-right:1.25rem}
-  .dept{flex:0 0 9.5rem;scroll-snap-align:start}
+/* departments: 3D cover-flow carousel */
+.depts{display:block;position:relative;overflow:hidden;color:#fff;padding:3.5rem 0 2.5rem;margin-bottom:1rem;
+  background:radial-gradient(ellipse 45% 55% at 50% 55%,rgba(47,91,234,.45),transparent 70%),linear-gradient(180deg,#0F1B2D,#142744 60%,#0F1B2D)}
+.depts .eyebrow2{display:block;text-align:center;font:600 .85rem ui-monospace,Menlo,monospace;letter-spacing:.35em;text-transform:uppercase;color:#9DB4FF}
+.depts h2{text-align:center;font-size:clamp(2rem,5vw,3rem);margin:.4rem 0 0;letter-spacing:-.02em}
+.stage{position:relative;height:30rem;margin-top:1.5rem;perspective:1400px;touch-action:pan-y}
+.dcard{position:absolute;left:50%;top:50%;width:20rem;height:27rem;margin:-13.5rem 0 0 -10rem;border-radius:1.25rem;overflow:hidden;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--c) 70%,#0F1B2D),#0F1B2D 75%);border:1px solid rgba(255,255,255,.14);
+  display:flex;flex-direction:column;padding:1.4rem;gap:.7rem;cursor:pointer;
+  transition:transform .55s cubic-bezier(.2,.7,.2,1),opacity .55s,filter .55s,box-shadow .55s;will-change:transform}
+.dcard.on{cursor:default;box-shadow:0 0 0 1px rgba(255,255,255,.25),0 0 70px 10px color-mix(in srgb,var(--c) 55%,transparent),0 25px 60px rgba(0,0,0,.5)}
+.dcard:not(.on){filter:brightness(.6) saturate(.8)}
+.dcard:not(.on) *{pointer-events:none}
+.dcard .art{width:4.2rem;height:4.2rem;border-radius:1.1rem;display:grid;place-items:center;font-size:2.2rem;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+.dcard h3{font-size:1.55rem;line-height:1.1}
+.dcard .sum{margin:0;color:#C9D5EA;font-size:.92rem}
+.dcard .sum em{font-style:normal;color:var(--btc);font-weight:700}
+.dcard .jobs{display:flex;flex-direction:column;gap:.45rem;margin-top:auto}
+.dcard .jb{display:flex;justify-content:space-between;align-items:center;gap:.6rem;width:100%;text-align:left;padding:.55rem .75rem;border-radius:.65rem;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font:600 .88rem Figtree,sans-serif;cursor:pointer;transition:background .15s}
+.dcard .jb:hover{background:rgba(255,255,255,.18)}
+.dcard .jb b{flex:none;font:800 1rem 'Bricolage Grotesque',sans-serif;color:var(--btc)}
+.dcard .all{color:#fff;font-weight:700;font-size:.9rem;text-align:center;text-decoration:none;padding:.3rem;opacity:.9}
+.dcard .all:hover{text-decoration:underline}
+.cnav{position:absolute;top:50%;z-index:30;width:3.4rem;height:3.4rem;margin-top:-1.7rem;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font-size:1.4rem;cursor:pointer;display:grid;place-items:center;transition:background .15s}
+.cnav:hover{background:rgba(255,255,255,.18)}
+.cnav.prev{left:max(1rem,calc(50% - 31rem))}.cnav.next{right:max(1rem,calc(50% - 31rem))}
+.dots{display:flex;justify-content:center;gap:.5rem;margin-top:1rem}
+.dots button{width:.6rem;height:.6rem;padding:0;border:0;border-radius:99px;background:rgba(255,255,255,.35);cursor:pointer;transition:width .3s,background .3s}
+.dots button[aria-current=true]{width:2.4rem;background:var(--blue)}
+@media (max-width:560px){
+  .stage{height:29rem}
+  .dcard{width:16.5rem;height:27rem;margin:-13.5rem 0 0 -8.25rem;padding:1.1rem;gap:.55rem}
+  .dcard h3{font-size:1.35rem}
+  .cnav{width:2.6rem;height:2.6rem;margin-top:-1.3rem;font-size:1.1rem;top:auto;bottom:-3.2rem}
+  .cnav.prev{left:1rem}.cnav.next{right:1rem}
 }
 
 section{padding:3.5rem 0}
@@ -220,7 +240,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
   .modal{padding:0}
   .sheet{border-radius:0;border:0;box-shadow:none;min-height:100%;padding:1.25rem 1rem}
 }
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::after{animation:none!important;transition:none!important}.dept:hover{transform:none}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::after{animation:none!important;transition:none!important}.dcard{transition:opacity .2s!important}}
 </style>
 </head>
 <body>
@@ -271,7 +291,16 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
     </div>
   </div>
 
-  <nav class="depts" aria-label="Job categories"><div class="wrap"><span class="lead">Browse by department</span><div class="drow" id="depts"></div></div></nav>
+  <section class="depts" aria-roledescription="carousel" aria-label="Departments">
+    <span class="eyebrow2" aria-hidden="true">&lt; Departments &gt;</span>
+    <h2>What can we take off your plate?</h2>
+    <div class="stage" id="stage">
+      <button type="button" class="cnav prev" aria-label="Previous department">‹</button>
+      <div id="dcards"></div>
+      <button type="button" class="cnav next" aria-label="Next department">›</button>
+    </div>
+    <div class="dots" id="dots" role="tablist" aria-label="Choose a department"></div>
+  </section>
 
   <section id="quick">
     <div class="wrap">
@@ -403,19 +432,65 @@ const REF = (() => { try { return localStorage.getItem("altra.ref") || ""; } cat
 const unitOf = (id) => (orderable(id).type === "monthly" ? "/mo" : "");
 const buyBtn = (id, label, cls = "btn primary") => `<button type="button" class="${cls}" data-buy="${esc(id)}">${esc(label)}</button>`;
 
-// ---- department strip: count and starting price per department
+// ---- departments carousel: the centre card shows that department's
+// cheapest quick jobs as pay buttons; side cards rotate away in 3D.
 const ICONS = { social: "📣", admin: "🗂️", personal: "🧳", growth: "🤝", tech: "🛠️" };
-$("#depts").innerHTML = PILLARS.map((p) => {
-  const jobs = QUICK_JOBS.filter((j) => j.pillar === p.id);
-  const from = Math.min(...jobs.map((j) => j.price));
-  return `<a class="dept" href="#dept-${p.id}" style="--c:${p.color}"><span class="ic" aria-hidden="true">${ICONS[p.id]}</span><b>${esc(p.name)}</b><small>${jobs.length} quick jobs · from <em>${money(from)}</em></small></a>`;
-}).join("");
-// A department link clears any search first so the whole group is there.
-$("#depts").addEventListener("click", (e) => {
-  const a = e.target.closest("a.dept");
-  if (!a || !$("#find").value) return;
-  $("#find").value = $("#heroFind").value = "";
-  renderServices();
+const DEPTS = PILLARS.map((p) => {
+  const jobs = QUICK_JOBS.filter((j) => j.pillar === p.id).sort((a, b) => a.price - b.price);
+  return { ...p, jobs, from: jobs[0].price };
+});
+$("#dcards").innerHTML = DEPTS.map((d, i) => `
+  <article class="dcard" data-i="${i}" style="--c:${d.color}" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${DEPTS.length}: ${esc(d.name)}">
+    <div class="art" aria-hidden="true">${ICONS[d.id]}</div>
+    <h3>${esc(d.name)}</h3>
+    <p class="sum">${d.jobs.length} quick jobs from <em>${money(d.from)}</em> · same-day delivery</p>
+    <div class="jobs">${d.jobs.slice(0, 3).map((j) => `<button type="button" class="jb" data-buy="${j.id}"><span>${esc(j.name)}</span><b>${money(j.price)}</b></button>`).join("")}</div>
+    <a class="all" href="#dept-${d.id}">See all ${d.jobs.length} jobs →</a>
+  </article>`).join("");
+$("#dots").innerHTML = DEPTS.map((d, i) => `<button type="button" role="tab" aria-label="${esc(d.name)}"></button>`).join("");
+const cards = [...document.querySelectorAll(".dcard")], dots = [...document.querySelectorAll("#dots button")];
+let active = 0;
+function layout() {
+  const n = cards.length, phone = innerWidth < 560;
+  cards.forEach((c, i) => {
+    let d = i - active;
+    if (d > n / 2) d -= n;
+    if (d < -n / 2) d += n;
+    const ad = Math.abs(d);
+    const x = d * (phone ? 48 : 62) - Math.sign(d) * (ad > 1 ? (phone ? 14 : 18) * (ad - 1) : 0);
+    c.style.transform = `translateX(${x}%) translateZ(${-ad * 120}px) rotateY(${-d * 28}deg) scale(${1 - ad * 0.12})`;
+    c.style.zIndex = 10 - ad;
+    c.style.opacity = ad > 2 ? 0 : ad === 2 ? 0.55 : 1;
+    c.classList.toggle("on", d === 0);
+    c.setAttribute("aria-hidden", String(d !== 0));
+    // Side cards stay clickable (to bring them forward) but out of the tab order.
+    c.querySelectorAll("button, a").forEach((el) => { el.tabIndex = d === 0 ? 0 : -1; });
+  });
+  dots.forEach((b, i) => b.setAttribute("aria-current", String(i === active)));
+}
+const go = (i) => { active = (i + cards.length) % cards.length; layout(); };
+// Start on the department with the most jobs, like a featured slide.
+go(DEPTS.reduce((best, d, i) => (d.jobs.length > DEPTS[best].jobs.length ? i : best), 0));
+addEventListener("resize", layout);
+$(".cnav.prev").onclick = () => go(active - 1);
+$(".cnav.next").onclick = () => go(active + 1);
+dots.forEach((b, i) => { b.onclick = () => go(i); });
+$("#dcards").addEventListener("click", (e) => {
+  const c = e.target.closest(".dcard");
+  if (c && !c.classList.contains("on")) { e.preventDefault(); e.stopPropagation(); go(Number(c.dataset.i)); return; }
+  // "See all" clears any search first so the whole department shows.
+  if (e.target.closest("a.all") && $("#find").value) { $("#find").value = $("#heroFind").value = ""; renderServices(); }
+}, true);
+$("#stage").addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft") { e.preventDefault(); go(active - 1); }
+  if (e.key === "ArrowRight") { e.preventDefault(); go(active + 1); }
+});
+let startX = null;
+$("#stage").addEventListener("pointerdown", (e) => { startX = e.clientX; });
+$("#stage").addEventListener("pointerup", (e) => {
+  if (startX === null) return;
+  const dx = e.clientX - startX; startX = null;
+  if (Math.abs(dx) > 40) go(active + (dx < 0 ? 1 : -1));
 });
 
 // ---- quick jobs + services, one search for both
