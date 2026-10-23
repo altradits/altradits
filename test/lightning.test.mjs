@@ -367,3 +367,48 @@ test("quick job: $15 order, paid, routed to its department", async () => {
     delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON; delete process.env.LND_TLS_CERT;
   }
 });
+
+test("urgent quick job: phone shown only after payment, task jumps the queue, owner alerted", async () => {
+  const order = await import(new URL("api/order.js", root));
+  const ops = await import(new URL("lib/ops.js", root));
+  const store = await import(new URL("lib/store.js", root));
+  const catalogSrc = fs.readFileSync(new URL("data/catalog.js", root), "utf8");
+  assert.doesNotMatch(catalogSrc, /707172370/, "the phone number is never in the public catalog");
+  process.env.LND_REST_URL = `https://localhost:${lnd.address().port}`;
+  process.env.LND_INVOICE_MACAROON = MACAROON;
+  process.env.LND_TLS_CERT = fs.readFileSync("cert.pem").toString("base64");
+  ln.resetCapacityCache();
+  try {
+    const o = (await call(order.POST, "POST", "/api/order", { item: "q-bio" })).body;
+    await call(order.POST, "POST", "/api/order", { id: o.id, t: o.t, urgency: "minutes", task: "Bio for my salon" });
+    await call(pay.POST, "POST", "/api/pay", { id: o.id, t: o.t });
+    const before = (await call(order.GET, "GET", `/api/order?id=${o.id}&t=${o.t}`)).body;
+    assert.equal(before.phone, undefined, "no number before payment");
+
+    [...invoices.values()].at(-1).state = "SETTLED";
+    await call(pay.GET, "GET", `/api/pay?id=${o.id}&t=${o.t}`);
+    const after = (await call(order.GET, "GET", `/api/order?id=${o.id}&t=${o.t}`)).body;
+    assert.equal(after.phone, "+254707172370");
+    assert.equal(after.delivery, "Started within minutes of payment");
+    const p = await crm.getProposal(o.id);
+    assert.equal((await ops.getTask(p.order.taskId)).urgency, "minutes");
+    const emails = await store.getMany("email", await store.listIds("emails", 50));
+    assert.ok(emails.some((e) => /URGENT \(right now\) Paid/.test(e.subject)), "Stanley gets an urgent alert");
+
+    // A same-day order paid, then switched to urgent: number appears, Stanley alerted.
+    const s = (await call(order.POST, "POST", "/api/order", { item: "q-captions" })).body;
+    await call(pay.POST, "POST", "/api/pay", { id: s.id, t: s.t });
+    [...invoices.values()].at(-1).state = "SETTLED";
+    await call(pay.GET, "GET", `/api/pay?id=${s.id}&t=${s.t}`);
+    assert.equal((await call(order.GET, "GET", `/api/order?id=${s.id}&t=${s.t}`)).body.phone, undefined, "same-day orders don't get the number");
+    await call(order.POST, "POST", "/api/order", { id: s.id, t: s.t, urgency: "hours" });
+    assert.equal((await call(order.GET, "GET", `/api/order?id=${s.id}&t=${s.t}`)).body.phone, "+254707172370");
+
+    // Monthly plans have no urgency option.
+    const plan = (await call(order.POST, "POST", "/api/order", { item: "lite" })).body;
+    await call(order.POST, "POST", "/api/order", { id: plan.id, t: plan.t, urgency: "minutes" });
+    assert.equal((await crm.getProposal(plan.id)).order.urgency, null);
+  } finally {
+    delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON; delete process.env.LND_TLS_CERT;
+  }
+});

@@ -1,13 +1,18 @@
 // Orders straight from the website: every price button opens a payment QR.
 // POST /api/order { item, ref? }                 -> { id, t, item }  (then POST /api/pay)
-// POST /api/order { id, t, email?, name?, task? } -> save the client's details
-// GET  /api/order?id=&t=                          -> { status, portal? }
+// POST /api/order { id, t, email?, name?, task?, urgency? } -> save the client's details
+// GET  /api/order?id=&t=  -> { status, portal?, phone? }  (phone only once an
+//                            urgent order is paid, so the client can flag it)
 import { json, readBody, clean, clientIp, safeEqual, EMAIL_RE } from "../lib/http.js";
 import { hit } from "../lib/store.js";
 import { createOrder, getProposal, saveProposal, getLead, saveLead, logEvent, sendKickoff } from "../lib/crm.js";
 import { emailOwner } from "../lib/email.js";
 import { getTask, saveTask, ensurePortal } from "../lib/ops.js";
-import { orderable } from "../data/catalog.js";
+import { orderable, URGENCY } from "../data/catalog.js";
+import { OWNER_PHONE } from "../lib/contact.js";
+
+const isUrgent = (o) => o.urgentOk && ["hours", "minutes"].includes(o.urgency);
+const urgencyNote = (o) => URGENCY.find((u) => u.id === o.urgency)?.note || "";
 
 async function load(id, t) {
   const p = await getProposal(clean(id, 40));
@@ -32,7 +37,8 @@ async function update(body) {
   const email = clean(body.email, 200).toLowerCase();
   if (email && !EMAIL_RE.test(email)) return json({ error: "Please check your email address." }, 400);
   const hadEmail = Boolean(lead.email);
-  const before = p.order.task;
+  const before = p.order.task, wasUrgent = isUrgent(p.order);
+  if (p.order.urgentOk && URGENCY.some((u) => u.id === body.urgency)) p.order.urgency = body.urgency;
   if (email) lead.email = email;
   if (body.name !== undefined) lead.name = clean(body.name, 120);
   if (body.task !== undefined) p.order.task = clean(body.task, 4000);
@@ -44,6 +50,11 @@ async function update(body) {
 
   if (p.status === "paid") {
     if (email && !hadEmail) await sendKickoff(lead, p);
+    if (isUrgent(p.order) && !wasUrgent) {
+      const t = p.order.taskId && (await getTask(p.order.taskId));
+      if (t) { t.urgency = p.order.urgency; t.history.push({ at: new Date().toISOString(), by: "client", text: `Marked urgent: ${urgencyNote(p.order)}` }); await saveTask(t); }
+      await emailOwner(`🚨 URGENT: ${p.order.name}`, `${lead.name || lead.email || "A client"} paid for "${p.order.name}" and now needs it urgently: ${urgencyNote(p.order)}.\n\n${p.order.task || "(no details yet)"}`, null, lead.id);
+    }
     if (p.order.task !== before) {
       const t = p.order.taskId && (await getTask(p.order.taskId));
       if (t) { t.details = p.order.task; t.history.push({ at: new Date().toISOString(), by: "client", text: "Added order details" }); await saveTask(t); }
@@ -59,5 +70,7 @@ export async function GET(request) {
   if (!p) return json({ error: "Order not found." }, 404);
   if (p.status !== "paid") return json({ status: p.status });
   const lead = await getLead(p.leadId);
-  return json({ status: "paid", item: p.order.name, delivery: p.timeline, portal: lead ? ensurePortal(lead) : null, emailed: Boolean(lead?.email) });
+  const urgent = isUrgent(p.order);
+  return json({ status: "paid", item: p.order.name, delivery: urgent ? urgencyNote(p.order) : p.timeline, portal: lead ? ensurePortal(lead) : null, emailed: Boolean(lead?.email),
+    ...(urgent ? { phone: `+${OWNER_PHONE}`, ref: p.id.slice(0, 6).toUpperCase() } : {}) });
 }

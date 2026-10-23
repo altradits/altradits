@@ -6,7 +6,6 @@ export const BUSINESS = {
   name: "Altradits",
   owner: "Stanley",
   email: "altradits@gmail.com",
-  whatsapp: "254707172370",
   timezone: "Africa/Nairobi (UTC+3)",
   // Paste a Cal.com / Calendly link to let the concierge offer self-serve calls.
   bookingUrl: "",
@@ -191,56 +190,56 @@ export const SERVICES = [
     keywords: "transcription transcribe translation translate swahili french audio interview subtitles" }),
 ];
 
-// Quick jobs: small, stand-alone tasks at prices any small business can say
+// Quick jobs: small, stand-alone tasks, delivered the same day at prices any small business can say
 // yes to. One fixed deliverable each, paid in full, routed to the department
 // of the parent service.
 const Q = (id, pillar, service, price, name, deliverables, delivery, youSend, keywords) =>
   ({ id, pillar, service, price, name, deliverables, delivery, youSend, keywords, type: "project" });
 export const QUICK_JOBS = [
   // social media & content
-  Q("q-bio", "social", "social-management", 9, "Profile bio rewrite for 3 platforms", ["A sharp bio for Instagram, LinkedIn and X (or any 3)", "Matching one-line tagline", "1 round of edits"], "1 business day", "Your current bios and what you sell", "bio profile instagram linkedin tagline"),
-  Q("q-captions", "social", "social-management", 15, "10 social media captions", ["10 ready-to-post captions in your voice", "Hashtags and a call to action on each", "1 round of edits"], "1 business day", "Your topic or photos", "captions posts hashtags instagram facebook linkedin tiktok"),
-  Q("q-schedule", "social", "social-management", 12, "Schedule a week of your posts", ["Up to 7 of your posts scheduled at the best times", "On up to 3 platforms", "A screenshot of the schedule"], "1 business day", "The posts and a safe way to access your accounts", "schedule posting buffer meta planner later"),
-  Q("q-graphics", "social", "social-management", 25, "5 branded post graphics", ["5 social media graphics in your brand colours (Canva)", "Sized for your platform", "Editable Canva link included"], "2 business days", "Logo, colours and the text for each post", "graphics design canva images posts flyer banner"),
-  Q("q-reel", "social", "short-video", 15, "Edit 1 short video or reel", ["1 video up to 60 seconds, trimmed and cut", "Captions and a hook on screen", "Exported for TikTok, Reels and Shorts"], "2 business days", "Your raw clip", "video reel tiktok shorts edit captions"),
-  Q("q-newsletter", "social", "content-writing", 25, "Write 1 newsletter email", ["1 newsletter up to 500 words in your voice", "Subject line and preview text", "1 round of edits"], "2 business days", "Your news, offer or notes", "newsletter email mailchimp campaign"),
-  Q("q-blog", "social", "content-writing", 35, "Write 1 blog post (600 words)", ["1 blog post of about 600 words", "Search-friendly title and headings", "1 round of edits"], "2 business days", "The topic and any links", "blog article post seo writing"),
-  Q("q-product-copy", "social", "content-writing", 29, "10 product descriptions", ["10 product descriptions that sell (up to 80 words each)", "Search keywords included", "Delivered in a sheet ready to paste"], "2 business days", "Product names, photos or specs", "product descriptions shopify etsy amazon copy"),
+  Q("q-bio", "social", "social-management", 9, "Profile bio rewrite for 3 platforms", ["A sharp bio for Instagram, LinkedIn and X (or any 3)", "Matching one-line tagline", "1 round of edits"], "Same day", "Your current bios and what you sell", "bio profile instagram linkedin tagline"),
+  Q("q-captions", "social", "social-management", 15, "10 social media captions", ["10 ready-to-post captions in your voice", "Hashtags and a call to action on each", "1 round of edits"], "Same day", "Your topic or photos", "captions posts hashtags instagram facebook linkedin tiktok"),
+  Q("q-schedule", "social", "social-management", 12, "Schedule a week of your posts", ["Up to 7 of your posts scheduled at the best times", "On up to 3 platforms", "A screenshot of the schedule"], "Same day", "The posts and a safe way to access your accounts", "schedule posting buffer meta planner later"),
+  Q("q-graphics", "social", "social-management", 25, "5 branded post graphics", ["5 social media graphics in your brand colours (Canva)", "Sized for your platform", "Editable Canva link included"], "Same day", "Logo, colours and the text for each post", "graphics design canva images posts flyer banner"),
+  Q("q-reel", "social", "short-video", 15, "Edit 1 short video or reel", ["1 video up to 60 seconds, trimmed and cut", "Captions and a hook on screen", "Exported for TikTok, Reels and Shorts"], "Same day", "Your raw clip", "video reel tiktok shorts edit captions"),
+  Q("q-newsletter", "social", "content-writing", 25, "Write 1 newsletter email", ["1 newsletter up to 500 words in your voice", "Subject line and preview text", "1 round of edits"], "Same day", "Your news, offer or notes", "newsletter email mailchimp campaign"),
+  Q("q-blog", "social", "content-writing", 35, "Write 1 blog post (600 words)", ["1 blog post of about 600 words", "Search-friendly title and headings", "1 round of edits"], "Same day", "The topic and any links", "blog article post seo writing"),
+  Q("q-product-copy", "social", "content-writing", 29, "10 product descriptions", ["10 product descriptions that sell (up to 80 words each)", "Search keywords included", "Delivered in a sheet ready to paste"], "Same day", "Product names, photos or specs", "product descriptions shopify etsy amazon copy"),
   // office administration
-  Q("q-data-entry", "admin", "data-docs", 12, "1 hour of data entry", ["1 hour of typing or copying data (about 200 rows)", "Into your sheet, CRM or form", "Spot-checked for errors"], "1 business day", "The source files and where it goes", "data entry typing copy paste crm excel"),
-  Q("q-pdf-sheet", "admin", "data-docs", 15, "PDF or scans to spreadsheet", ["Up to 10 pages of PDFs, scans or photos typed into a spreadsheet", "Clean columns and totals checked", "Excel or Google Sheets"], "1 business day", "The files", "pdf convert excel spreadsheet scans table"),
-  Q("q-sheet-cleanup", "admin", "data-docs", 19, "Clean up 1 spreadsheet", ["Duplicates removed and formatting fixed (up to 2,000 rows)", "Consistent names, dates and phone numbers", "Filters and a tidy header row"], "1 business day", "The spreadsheet", "spreadsheet excel google sheets clean duplicates format contacts list"),
-  Q("q-slides", "admin", "data-docs", 25, "Format a 10-slide presentation", ["Up to 10 slides made clean and consistent", "Your brand fonts and colours", "PowerPoint or Google Slides"], "2 business days", "Your draft slides", "slides powerpoint presentation deck pitch google slides"),
-  Q("q-sop", "admin", "data-docs", 25, "Write 1 SOP (how-to guide)", ["1 step-by-step guide from your screen recording or notes", "Screenshots where useful", "Google Doc or PDF"], "2 business days", "A recording or notes of the task", "sop procedure process guide how-to documentation"),
-  Q("q-inbox-cleanup", "admin", "inbox-calendar", 29, "One-time inbox clean-up", ["Up to 2,000 emails sorted, labelled or archived", "Unsubscribed from junk lists", "Simple filters so it stays clean"], "2 business days", "Temporary delegated access to your inbox", "inbox email cleanup gmail outlook unsubscribe zero"),
-  Q("q-meeting-notes", "admin", "project-coordination", 12, "Meeting notes from a recording", ["Notes from a meeting up to 60 minutes", "Decisions and action items with owners", "Ready to send to attendees"], "1 business day", "The recording link", "meeting notes minutes action items zoom recording"),
-  Q("q-invoices", "admin", "bookkeeping-prep", 19, "Invoice template + send 10 invoices", ["A branded invoice template", "Up to 10 invoices prepared and sent", "A sheet of who owes what"], "1 business day", "Client list, amounts and your invoicing tool", "invoice invoices billing template payment reminders"),
-  Q("q-receipts", "admin", "bookkeeping-prep", 25, "Match 50 receipts to your statement", ["Up to 50 receipts matched to bank or M-Pesa lines", "Missing receipts listed", "A summary sheet for your accountant"], "2 business days", "Statement and receipts", "receipts bank statement reconcile expenses mpesa bookkeeping"),
-  Q("q-job-post", "admin", "hr-recruiting", 19, "Write and post 1 job ad", ["1 clear job ad", "Posted on 2 free job boards", "Applications sent to one inbox"], "1 business day", "Role, pay range and must-haves", "job ad post hiring vacancy recruit"),
-  Q("q-cv-screen", "admin", "hr-recruiting", 35, "Screen 30 CVs, shortlist 5", ["Up to 30 CVs scored against your criteria", "Top 5 with one-line notes each", "Polite rejection email template"], "2 business days", "The CVs and your criteria", "cv resume screening shortlist candidates hiring"),
+  Q("q-data-entry", "admin", "data-docs", 12, "1 hour of data entry", ["1 hour of typing or copying data (about 200 rows)", "Into your sheet, CRM or form", "Spot-checked for errors"], "Same day", "The source files and where it goes", "data entry typing copy paste crm excel"),
+  Q("q-pdf-sheet", "admin", "data-docs", 15, "PDF or scans to spreadsheet", ["Up to 10 pages of PDFs, scans or photos typed into a spreadsheet", "Clean columns and totals checked", "Excel or Google Sheets"], "Same day", "The files", "pdf convert excel spreadsheet scans table"),
+  Q("q-sheet-cleanup", "admin", "data-docs", 19, "Clean up 1 spreadsheet", ["Duplicates removed and formatting fixed (up to 2,000 rows)", "Consistent names, dates and phone numbers", "Filters and a tidy header row"], "Same day", "The spreadsheet", "spreadsheet excel google sheets clean duplicates format contacts list"),
+  Q("q-slides", "admin", "data-docs", 25, "Format a 10-slide presentation", ["Up to 10 slides made clean and consistent", "Your brand fonts and colours", "PowerPoint or Google Slides"], "Same day", "Your draft slides", "slides powerpoint presentation deck pitch google slides"),
+  Q("q-sop", "admin", "data-docs", 25, "Write 1 SOP (how-to guide)", ["1 step-by-step guide from your screen recording or notes", "Screenshots where useful", "Google Doc or PDF"], "Same day", "A recording or notes of the task", "sop procedure process guide how-to documentation"),
+  Q("q-inbox-cleanup", "admin", "inbox-calendar", 29, "One-time inbox clean-up", ["Up to 2,000 emails sorted, labelled or archived", "Unsubscribed from junk lists", "Simple filters so it stays clean"], "Same day", "Temporary delegated access to your inbox", "inbox email cleanup gmail outlook unsubscribe zero"),
+  Q("q-meeting-notes", "admin", "project-coordination", 12, "Meeting notes from a recording", ["Notes from a meeting up to 60 minutes", "Decisions and action items with owners", "Ready to send to attendees"], "Same day", "The recording link", "meeting notes minutes action items zoom recording"),
+  Q("q-invoices", "admin", "bookkeeping-prep", 19, "Invoice template + send 10 invoices", ["A branded invoice template", "Up to 10 invoices prepared and sent", "A sheet of who owes what"], "Same day", "Client list, amounts and your invoicing tool", "invoice invoices billing template payment reminders"),
+  Q("q-receipts", "admin", "bookkeeping-prep", 25, "Match 50 receipts to your statement", ["Up to 50 receipts matched to bank or M-Pesa lines", "Missing receipts listed", "A summary sheet for your accountant"], "Same day", "Statement and receipts", "receipts bank statement reconcile expenses mpesa bookkeeping"),
+  Q("q-job-post", "admin", "hr-recruiting", 19, "Write and post 1 job ad", ["1 clear job ad", "Posted on 2 free job boards", "Applications sent to one inbox"], "Same day", "Role, pay range and must-haves", "job ad post hiring vacancy recruit"),
+  Q("q-cv-screen", "admin", "hr-recruiting", 35, "Screen 30 CVs, shortlist 5", ["Up to 30 CVs scored against your criteria", "Top 5 with one-line notes each", "Polite rejection email template"], "Same day", "The CVs and your criteria", "cv resume screening shortlist candidates hiring"),
   // personal assistance
-  Q("q-booking", "personal", "travel-life", 9, "Book 1 restaurant, appointment or gift", ["3 options with prices; you pick", "Booked or ordered for you", "Confirmation and reminder"], "Same or next business day", "What, when, budget; you approve any payment", "book booking restaurant appointment gift reservation errand"),
-  Q("q-trip", "personal", "travel-life", 19, "Trip plan with flights and hotels", ["3 flight and 3 hotel options with prices", "A day-by-day itinerary", "Visa and entry notes"], "1 business day", "Dates, budget and preferences", "travel trip flights hotels itinerary holiday vacation"),
-  Q("q-subscriptions", "personal", "travel-life", 19, "Subscription audit + cancel 5", ["Every recurring charge listed with cost", "Up to 5 cancelled for you", "Money saved per year"], "2 business days", "Recent statements; you approve cancellations", "subscriptions cancel bills save money audit recurring"),
-  Q("q-rsvp", "personal", "events", 19, "Send invitations and track RSVPs", ["Invitations to up to 50 guests", "RSVPs tracked in one sheet", "1 reminder to non-responders"], "1 business day", "Guest list and event details", "invitations rsvp guests event party wedding meetup"),
+  Q("q-booking", "personal", "travel-life", 9, "Book 1 restaurant, appointment or gift", ["3 options with prices; you pick", "Booked or ordered for you", "Confirmation and reminder"], "Same day", "What, when, budget; you approve any payment", "book booking restaurant appointment gift reservation errand"),
+  Q("q-trip", "personal", "travel-life", 19, "Trip plan with flights and hotels", ["3 flight and 3 hotel options with prices", "A day-by-day itinerary", "Visa and entry notes"], "Same day", "Dates, budget and preferences", "travel trip flights hotels itinerary holiday vacation"),
+  Q("q-subscriptions", "personal", "travel-life", 19, "Subscription audit + cancel 5", ["Every recurring charge listed with cost", "Up to 5 cancelled for you", "Money saved per year"], "Same day", "Recent statements; you approve cancellations", "subscriptions cancel bills save money audit recurring"),
+  Q("q-rsvp", "personal", "events", 19, "Send invitations and track RSVPs", ["Invitations to up to 50 guests", "RSVPs tracked in one sheet", "1 reminder to non-responders"], "Same day", "Guest list and event details", "invitations rsvp guests event party wedding meetup"),
   // sales & customer care
-  Q("q-leads", "growth", "lead-generation", 29, "25 researched leads", ["25 prospects that match your ideal customer", "Name, role, company and email or profile", "Delivered in a sheet"], "2 business days", "Who your ideal customer is", "leads prospects list emails b2b sales"),
-  Q("q-cold-email", "growth", "lead-generation", 19, "3-email outreach sequence", ["A first email and 2 follow-ups", "Subject lines that get opened", "1 round of edits"], "1 business day", "Your offer and audience", "cold email outreach sequence follow up sales"),
-  Q("q-reply-templates", "growth", "customer-support", 19, "10 customer reply templates", ["10 ready replies for your most common questions", "Friendly and in your voice", "For email, chat or WhatsApp"], "1 business day", "Your common questions and policies", "customer service replies templates support whatsapp canned responses"),
-  Q("q-faq", "growth", "customer-support", 25, "Write your FAQ page", ["Up to 15 questions and answers", "Written to cut support messages", "Ready to paste on your site"], "2 business days", "Your common questions", "faq questions website support page"),
-  Q("q-reviews", "growth", "host-assist", 12, "Reply to 20 reviews", ["Replies to up to 20 reviews on Google, Airbnb, Amazon or similar", "Thankful, professional, on-brand", "Posted for you or delivered to paste"], "1 business day", "Access or a list of the reviews", "reviews replies google airbnb amazon reputation"),
-  Q("q-listings", "growth", "ecommerce-ops", 25, "Upload or improve 10 product listings", ["10 listings added or improved on your store", "Titles, descriptions, tags and photos placed", "Checked live"], "2 business days", "Store access and product info", "listings products upload shopify etsy amazon jumia store"),
-  Q("q-competitors", "growth", "research", 29, "Compare 5 competitors", ["5 competitors compared in a one-page table", "Prices, offers and what they do better", "3 ideas you can use"], "2 business days", "Your business and any competitors you know", "competitors research compare market analysis"),
-  Q("q-suppliers", "growth", "research", 25, "Find 5 suppliers", ["5 suppliers with prices, minimum orders and contacts", "Reliability notes for each", "One-page table"], "2 business days", "What you need and where", "suppliers sourcing manufacturers wholesale vendors"),
+  Q("q-leads", "growth", "lead-generation", 29, "25 researched leads", ["25 prospects that match your ideal customer", "Name, role, company and email or profile", "Delivered in a sheet"], "Same day", "Who your ideal customer is", "leads prospects list emails b2b sales"),
+  Q("q-cold-email", "growth", "lead-generation", 19, "3-email outreach sequence", ["A first email and 2 follow-ups", "Subject lines that get opened", "1 round of edits"], "Same day", "Your offer and audience", "cold email outreach sequence follow up sales"),
+  Q("q-reply-templates", "growth", "customer-support", 19, "10 customer reply templates", ["10 ready replies for your most common questions", "Friendly and in your voice", "For email, chat or WhatsApp"], "Same day", "Your common questions and policies", "customer service replies templates support whatsapp canned responses"),
+  Q("q-faq", "growth", "customer-support", 25, "Write your FAQ page", ["Up to 15 questions and answers", "Written to cut support messages", "Ready to paste on your site"], "Same day", "Your common questions", "faq questions website support page"),
+  Q("q-reviews", "growth", "host-assist", 12, "Reply to 20 reviews", ["Replies to up to 20 reviews on Google, Airbnb, Amazon or similar", "Thankful, professional, on-brand", "Posted for you or delivered to paste"], "Same day", "Access or a list of the reviews", "reviews replies google airbnb amazon reputation"),
+  Q("q-listings", "growth", "ecommerce-ops", 25, "Upload or improve 10 product listings", ["10 listings added or improved on your store", "Titles, descriptions, tags and photos placed", "Checked live"], "Same day", "Store access and product info", "listings products upload shopify etsy amazon jumia store"),
+  Q("q-competitors", "growth", "research", 29, "Compare 5 competitors", ["5 competitors compared in a one-page table", "Prices, offers and what they do better", "3 ideas you can use"], "Same day", "Your business and any competitors you know", "competitors research compare market analysis"),
+  Q("q-suppliers", "growth", "research", 25, "Find 5 suppliers", ["5 suppliers with prices, minimum orders and contacts", "Reliability notes for each", "One-page table"], "Same day", "What you need and where", "suppliers sourcing manufacturers wholesale vendors"),
   // web, automation & bitcoin
-  Q("q-email-signature", "tech", "website", 9, "Professional email signature", ["A clean email signature with logo and links", "Installed in Gmail or Outlook, or sent to paste", "Works on mobile"], "1 business day", "Logo and details to show", "email signature gmail outlook branding"),
-  Q("q-site-fix", "tech", "website", 19, "Fix 1 website issue", ["1 fix: broken link, text or image change, or small bug", "Tested on phone and desktop", "Before and after screenshot"], "1 business day", "The page and what to change, plus access", "website fix bug broken update text image wordpress"),
-  Q("q-google-profile", "tech", "website", 25, "Google Business Profile setup", ["Profile set up or completed: hours, photos, services", "Categories and description for local search", "Review link to share with customers"], "2 business days", "Business details and photos", "google business profile maps local seo listing"),
-  Q("q-business-email", "tech", "website", 25, "Business email on your domain", ["Email like you@yourbusiness.com set up (up to 3 mailboxes)", "Works on phone and computer", "Spam settings done so emails land"], "2 business days", "Domain access and the provider you prefer", "business email domain google workspace zoho professional email"),
-  Q("q-automation", "tech", "automation-ai", 29, "1 simple automation", ["1 two-step automation, e.g. form to spreadsheet or new order to email", "Zapier, Make or n8n", "Tested, with a failure alert"], "2 business days", "The two apps and access to them", "automation zapier make n8n integrate form sheet"),
-  Q("q-lightning", "tech", "bitcoin", 15, "Get a Lightning address to accept Bitcoin", ["A Lightning wallet and address set up for your business", "A QR to show customers", "A 30-minute walkthrough. Your keys stay with you"], "1 business day", "Your phone", "bitcoin lightning wallet accept payments qr"),
-  Q("q-transcribe", "tech", "translation", 9, "Transcribe 15 minutes of audio", ["Up to 15 minutes transcribed", "Speaker names and timestamps", "Checked by a person"], "1 business day", "The audio or video file", "transcribe transcription audio interview podcast"),
-  Q("q-translate", "tech", "translation", 9, "Translate 1 page (300 words)", ["Up to 300 words translated", "English, Swahili, French and other major languages", "Checked by a person"], "1 business day", "The text", "translate translation swahili french document"),
+  Q("q-email-signature", "tech", "website", 9, "Professional email signature", ["A clean email signature with logo and links", "Installed in Gmail or Outlook, or sent to paste", "Works on mobile"], "Same day", "Logo and details to show", "email signature gmail outlook branding"),
+  Q("q-site-fix", "tech", "website", 19, "Fix 1 website issue", ["1 fix: broken link, text or image change, or small bug", "Tested on phone and desktop", "Before and after screenshot"], "Same day", "The page and what to change, plus access", "website fix bug broken update text image wordpress"),
+  Q("q-google-profile", "tech", "website", 25, "Google Business Profile setup", ["Profile set up or completed: hours, photos, services", "Categories and description for local search", "Review link to share with customers"], "Same day", "Business details and photos", "google business profile maps local seo listing"),
+  Q("q-business-email", "tech", "website", 25, "Business email on your domain", ["Email like you@yourbusiness.com set up (up to 3 mailboxes)", "Works on phone and computer", "Spam settings done so emails land"], "Same day", "Domain access and the provider you prefer", "business email domain google workspace zoho professional email"),
+  Q("q-automation", "tech", "automation-ai", 29, "1 simple automation", ["1 two-step automation, e.g. form to spreadsheet or new order to email", "Zapier, Make or n8n", "Tested, with a failure alert"], "Same day", "The two apps and access to them", "automation zapier make n8n integrate form sheet"),
+  Q("q-lightning", "tech", "bitcoin", 15, "Get a Lightning address to accept Bitcoin", ["A Lightning wallet and address set up for your business", "A QR to show customers", "A 30-minute walkthrough. Your keys stay with you"], "Same day", "Your phone", "bitcoin lightning wallet accept payments qr"),
+  Q("q-transcribe", "tech", "translation", 9, "Transcribe 15 minutes of audio", ["Up to 15 minutes transcribed", "Speaker names and timestamps", "Checked by a person"], "Same day", "The audio or video file", "transcribe transcription audio interview podcast"),
+  Q("q-translate", "tech", "translation", 9, "Translate 1 page (300 words)", ["Up to 300 words translated", "English, Swahili, French and other major languages", "Checked by a person"], "Same day", "The text", "translate translation swahili french document"),
 ];
 
 export function findQuick(id) {
@@ -261,7 +260,16 @@ export const PACKAGES = [
 ];
 
 export const PAYG = { hourly: 25, minimumHours: 2,
-  deliverables: ["2 hours of any task from the list above", "Done within 2 business days", "A note of what was done and the time used"] };
+  deliverables: ["2 hours of any task from the list above", "Done the same day", "A note of what was done and the time used"] };
+
+// How fast a small order is needed. Urgent orders get Stanley's direct number
+// after payment (never before) so the client can flag it straight away.
+export const URGENCY = [
+  { id: "same-day", label: "Today", note: "Delivered the same day" },
+  { id: "hours", label: "Within a few hours", note: "Delivered within a few hours of payment" },
+  { id: "minutes", label: "Right now", note: "Started within minutes of payment" },
+];
+export const STANDBY_FREELANCERS = 100;
 
 export const GUARANTEES = [
   { name: "Fixed price, fixed scope", text: "You pay the price shown for exactly what's listed. No hidden fees, no surprises." },
@@ -275,9 +283,9 @@ export function orderable(id) {
   if (pkg) return { id, kind: "package", name: `${pkg.name} plan (${pkg.hours} hrs/month)`, price: pkg.price, type: "monthly", draft: { package_id: id },
     deliverables: pkg.features, delivery: "Kick-off within 48 hours; billed monthly" };
   if (id === "hourly") return { id, kind: "hourly", name: `Pay as you go (${PAYG.minimumHours} hours)`, price: PAYG.hourly * PAYG.minimumHours, type: "project",
-    draft: { service_id: "hourly", quantity: PAYG.minimumHours }, deliverables: PAYG.deliverables, delivery: "2 business days" };
+    draft: { service_id: "hourly", quantity: PAYG.minimumHours }, deliverables: PAYG.deliverables, delivery: "Same day", urgentOk: true };
   const q = findQuick(id);
-  if (q) return { id, kind: "quick", name: q.name, price: q.price, type: "project", service: q.service, draft: { quick_id: id },
+  if (q) return { id, kind: "quick", name: q.name, price: q.price, type: "project", service: q.service, draft: { quick_id: id }, urgentOk: true,
     deliverables: q.deliverables, delivery: q.delivery, youSend: q.youSend };
   const svc = findService(id);
   if (svc) return { id, kind: "service", service: id, name: svc.name, price: svc.price, type: svc.type, draft: { service_id: id },
