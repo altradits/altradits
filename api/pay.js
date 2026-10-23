@@ -8,6 +8,8 @@ import { getProposal, saveProposal, getLead, logEvent, saveLead, confirmPayment 
 import { emailOwner } from "../lib/email.js";
 import { createInvoice, invoicePaid, qrSvg, lightningMode } from "../lib/lightning.js";
 import { PAYMENTS } from "../data/catalog.js";
+import { encodeLnurl } from "../lib/lnurl.js";
+import { siteUrl } from "../lib/http.js";
 
 async function load(id, t) {
   const p = await getProposal(clean(id, 40));
@@ -41,7 +43,9 @@ export async function POST(request) {
     }
     await saveProposal(p);
   }
-  return json({ invoice: await publicInvoice(p.lightning) });
+  // A fixed-amount LNURL for wallets that prefer it (needs our own node).
+  const lnurl = lightningMode() === "lnd" ? encodeLnurl(`${siteUrl(request)}/api/lnurl?p=${p.id}&t=${p.token}`) : (PAYMENTS.lnurl || "").toUpperCase();
+  return json({ invoice: { ...(await publicInvoice(p.lightning)), lnurl, lnurlFixedAmount: lightningMode() === "lnd" } });
 }
 
 export async function GET(request) {
@@ -58,20 +62,28 @@ export async function GET(request) {
   const p = await load(u.searchParams.get("id"), u.searchParams.get("t"));
   if (!p) return json({ error: "Proposal not found." }, 404);
   if (p.status === "paid") return json({ status: "paid" });
-  if (!p.lightning) return json({ status: p.status, paid: false });
+  const candidates = [p.lightning, ...(p.lnurlInvoices || [])].filter(Boolean);
+  if (!candidates.length) return json({ status: p.status, paid: false });
 
-  let paid = null;
-  try { paid = await invoicePaid(p.lightning); } catch (err) { console.error("lightning check", err); }
+  // Paid either through the QR invoice or an invoice fetched via the LNURL.
+  let paid = null, settled = null;
+  for (const inv of candidates) {
+    try {
+      const r = await invoicePaid(inv);
+      if (r) { paid = true; settled = inv; break; }
+      if (r === false) paid = false;
+    } catch (err) { console.error("lightning check", err); }
+  }
   if (paid) {
     const latest = await getProposal(p.id); // another check may have just confirmed it
     if (latest?.status === "paid") return json({ status: "paid" });
     const lead = await getLead(p.leadId);
-    p.payment = { method: "Bitcoin (Lightning)", reference: p.lightning.paymentHash || p.lightning.bolt11.slice(-24), claimedAt: new Date().toISOString(), sats: p.lightning.sats };
+    p.payment = { method: "Bitcoin (Lightning)", reference: settled.paymentHash || settled.bolt11.slice(-24), claimedAt: new Date().toISOString(), sats: settled.sats };
     if (lead) {
       await confirmPayment(lead, p);
       // Work to start: one of the few things worth an email.
-      await emailOwner(`Paid ⚡ ${p.lightning.sats.toLocaleString("en-US")} sats: start work for ${lead.name || lead.email}`,
-        `${lead.name || lead.email} paid $${p.totals.dueNow} (${p.lightning.sats} sats) over Lightning for "${p.title}". It's confirmed on your node and the client has their kick-off email.\n\nKick-off is promised within 48 hours.`,
+      await emailOwner(`Paid ⚡ ${settled.sats.toLocaleString("en-US")} sats: start work for ${lead.name || lead.email}`,
+        `${lead.name || lead.email} paid $${p.totals.dueNow} (${settled.sats} sats) over Lightning for "${p.title}". It's confirmed on your node and the client has their kick-off email.\n\nKick-off is promised within 48 hours.`,
         null, lead.id);
     } else {
       p.status = "paid";

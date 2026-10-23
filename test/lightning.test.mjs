@@ -27,9 +27,9 @@ before(async () => {
     req.on("data", (c) => { body += c; });
     req.on("end", () => {
       if (req.method === "POST" && req.url === "/v1/invoices") {
-        const { value, memo } = JSON.parse(body);
+        const { value, memo, description_hash } = JSON.parse(body);
         const hash = Buffer.from(String(invoices.size + 1).padStart(32, "0"));
-        invoices.set(hash.toString("hex"), { state: "OPEN", value, memo });
+        invoices.set(hash.toString("hex"), { state: "OPEN", value, memo, description_hash });
         res.end(JSON.stringify({ r_hash: hash.toString("base64"), payment_request: `lnbc${value}0n1fake${invoices.size}` }));
         return;
       }
@@ -141,6 +141,54 @@ test("LND mode: invoice on the node, settles, client activated automatically", a
     assert.equal(mine.filter((e) => /Payment received/.test(e.subject)).length, 1, "one kick-off email");
     assert.equal(o.emails.filter((e) => e.kind === "owner" && /Paid ⚡/.test(e.subject)).length, 1, "one owner email");
     assert.match(o.system.lightning, /LND/);
+  } finally {
+    delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON; delete process.env.LND_TLS_CERT;
+  }
+});
+
+test("LNURL encoding matches the LUD-01 test vector", async () => {
+  const { encodeLnurl } = await import(new URL("lib/lnurl.js", root));
+  assert.equal(encodeLnurl("https://service.com/api?q=3fc3645b439ce8e7f2553a69e5267081d96dcd340693afabe04be7b0ccd178df"),
+    "LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS");
+});
+
+test("instant QR + fixed-amount LNURL; paying via the LNURL confirms the proposal", async () => {
+  const crypto = await import("node:crypto");
+  const { encodeLnurl } = await import(new URL("lib/lnurl.js", root));
+  const lnurlApi = await import(new URL("api/lnurl.js", root));
+  process.env.LND_REST_URL = `https://localhost:${lnd.address().port}`;
+  process.env.LND_INVOICE_MACAROON = MACAROON;
+  process.env.LND_TLS_CERT = fs.readFileSync("cert.pem").toString("base64");
+  try {
+    const { lead, p } = await acceptedProposal("lnurl@example.com");
+    const r = await call(pay.POST, "POST", "/api/pay", { id: p.id, t: p.token });
+    const inv = r.body.invoice;
+    assert.match(inv.qr, /^<svg/, "QR for the exact amount");
+    assert.equal(inv.lnurlFixedAmount, true);
+    assert.equal(inv.lnurl, encodeLnurl(`https://altradits.test/api/lnurl?p=${p.id}&t=${p.token}`));
+
+    // Wallet step 1: pay request with the quoted amount (±2% for price moves).
+    const meta = await call(lnurlApi.GET, "GET", `/api/lnurl?p=${p.id}&t=${p.token}`);
+    assert.equal(meta.body.tag, "payRequest");
+    const sats = Math.ceil((749 / 80000) * 1e8);
+    assert.ok(meta.body.minSendable <= sats * 1000 && meta.body.maxSendable >= sats * 1000);
+    assert.equal((await call(lnurlApi.GET, "GET", `/api/lnurl?p=${p.id}&t=wrong`)).body.status, "ERROR");
+
+    // Wallet step 2: callback with the amount -> invoice from our node, committed to the metadata.
+    const bad = await call(lnurlApi.GET, "GET", `/api/lnurl?p=${p.id}&t=${p.token}&amount=1000`);
+    assert.equal(bad.body.status, "ERROR", "wrong amount refused");
+    const cb = await call(lnurlApi.GET, "GET", `/api/lnurl?p=${p.id}&t=${p.token}&amount=${sats * 1000}`);
+    assert.match(cb.body.pr, /^lnbc/);
+    const [hash, onNode] = [...invoices.entries()].at(-1);
+    assert.equal(Number(onNode.value), sats);
+    assert.equal(onNode.description_hash, crypto.createHash("sha256").update(meta.body.metadata).digest().toString("base64"), "description hash = sha256(metadata)");
+
+    // Paid through the LNURL invoice (not the QR one): still auto-confirmed.
+    onNode.state = "SETTLED";
+    const check = await call(pay.GET, "GET", `/api/pay?id=${p.id}&t=${p.token}`);
+    assert.equal(check.body.status, "paid");
+    assert.equal((await crm.getLead(lead.id)).stage, "active");
+    assert.equal((await call(lnurlApi.GET, "GET", `/api/lnurl?p=${p.id}&t=${p.token}`)).body.reason, "This proposal is already paid.");
   } finally {
     delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON; delete process.env.LND_TLS_CERT;
   }

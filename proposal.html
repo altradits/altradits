@@ -105,9 +105,16 @@ async function showLightning() {
         <div class="row" style="margin-top:.3rem">
           <a class="btn btc" href="lightning:${esc(inv.bolt11)}">Open wallet</a>
           <button type="button" class="btn" id="lnCopy">Copy invoice</button>
+          ${inv.lnurl ? `<button type="button" class="btn" id="lnurlCopy">Copy LNURL</button>` : ""}
         </div>
+        ${inv.lnurl ? `<div class="note" style="font-size:.82rem;margin-top:.3rem">${inv.lnurlFixedAmount ? `The LNURL is for the same ${inv.sats.toLocaleString("en-US")} sats and works in any LNURL wallet.` : "LNURL: enter the amount shown above in your wallet."}</div>` : ""}
         <div class="status" id="lnStatus"></div>
       </div></div>`;
+  if ($("#lnurlCopy")) $("#lnurlCopy").onclick = async (e) => {
+    try { await navigator.clipboard.writeText(inv.lnurl); e.target.textContent = "Copied"; }
+    catch { e.target.textContent = "Couldn't copy"; }
+    setTimeout(() => { e.target.textContent = "Copy LNURL"; }, 2000);
+  };
   $("#lnCopy").onclick = async (e) => {
     try { await navigator.clipboard.writeText(inv.bolt11); e.target.textContent = "Copied"; }
     catch { e.target.textContent = "Select the text above"; }
@@ -185,7 +192,7 @@ function render() {
       <p>Accepted by ${esc(p.acceptedBy)}. Amount due to start: <b>${money(t.dueNow)}</b></p>
       ${LN ? `<div class="ln" id="ln"><h4>⚡ Pay with Bitcoin Lightning</h4>
         <p class="muted" style="margin:0">Scan with any Lightning wallet. The invoice is for the exact amount at today's rate.</p>
-        <div id="lnBody"><div class="row"><button type="button" class="btn btc" id="lnBtn">Show payment QR</button></div></div></div>` : ""}
+        <div id="lnBody"><p class="muted">Creating your payment QR…</p></div></div>` : ""}
       <div class="methods">${methods().map(([n, v]) => `<div class="method"><b>${n}</b>${v}</div>`).join("")}</div>
       <form id="paidForm" style="margin-top:1rem">
         <label>How did you pay?<select id="method">${methods().map(([n]) => `<option>${esc(n)}</option>`).join("")}</select></label>
@@ -217,7 +224,8 @@ function render() {
     <h2>Our promises</h2><ul class="themes">${GUARANTEES.map((g) => `<li><b>${esc(g.name)}.</b> ${esc(g.text)}</li>`).join("")}</ul>
     ${action}`;
 
-  $("#lnBtn")?.addEventListener("click", showLightning);
+  // Payment QR appears straight away once the proposal is accepted.
+  if ($("#lnBody")) showLightning();
   $("#acceptForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const b = $("#acceptBtn"); b.disabled = true;

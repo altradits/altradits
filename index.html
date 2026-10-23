@@ -424,6 +424,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
           <div class="addr">
             <code id="ln"></code>
             <button type="button" class="btn" id="copyln">Copy address</button>
+            <button type="button" class="btn" id="copylnurl">Copy LNURL</button>
             <a class="btn ghost" id="lnopen" href="#">Open in wallet</a>
           </div>
         </div>
@@ -547,6 +548,11 @@ $("#guarantees").innerHTML = GUARANTEES.map((g) => `<div><h4>${esc(g.name)}</h4>
 // ---- lightning
 $("#ln").textContent = PAYMENTS.lightningAddress;
 $("#lnopen").href = $("#lnqr").href = "lightning:" + (PAYMENTS.lnurl || PAYMENTS.lightningAddress);
+$("#copylnurl").hidden = !PAYMENTS.lnurl;
+$("#copylnurl").addEventListener("click", async function () {
+  try { await navigator.clipboard.writeText(PAYMENTS.lnurl.toUpperCase()); this.textContent = "Copied"; } catch { this.textContent = "Couldn't copy"; }
+  setTimeout(() => { this.textContent = "Copy LNURL"; }, 2000);
+});
 $("#copyln").addEventListener("click", function () {
   const b = this;
   (navigator.clipboard ? navigator.clipboard.writeText(PAYMENTS.lightningAddress) : Promise.reject()).then(
