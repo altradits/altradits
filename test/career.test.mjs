@@ -30,7 +30,10 @@ const tool = (name, input) => ({ stop_reason: "tool_use", content: [{ type: "too
 
 test("fact sheet states real work and never invents numbers", async () => {
   let f = await career.factSheet();
-  assert.match(f, /Founder & operator, Altradits/);
+  assert.match(f, /Founder & Managing Director, Altradits/);
+  assert.match(f, /39 same-day "quick jobs" \(\$9–\$35\)/, "in sync with the website catalog");
+  assert.match(f, /weVenture Hub \(Addis Ababa\) and Zone01 \(Kisumu\)/);
+  assert.match(f, /unified BIP21 QR/);
   assert.match(f, /AI department agents/);
   assert.match(f, /LND node/);
   assert.match(f, /No client metrics yet/, "no clients yet: no numbers");
@@ -62,6 +65,9 @@ test("Living CV is built from upload + notes + fact sheet; publishing controls /
   assert.equal(call0.messages[0].content[0].type, "document", "uploaded PDF attached");
   assert.match(call0.messages[0].content[1].text, /FACT SHEET/);
   assert.match(call0.system, /Never fabricate/);
+  assert.match(call0.system, /ATS FORMAT/);
+  assert.ok(master.ats.issues.length, "a thin CV is flagged by the ATS check");
+  assert.match(seen.at(-1).messages.at(-1).content[0].content, /ATS check failed/, "one repair pass was requested");
 
   // Saving profile notes keeps the Living CV and settings.
   await call(admin.POST, "POST", "/api/admin", { action: "job_settings", publishCv: false, autoDiscover: true });
@@ -69,10 +75,10 @@ test("Living CV is built from upload + notes + fact sheet; publishing controls /
   const p = await jobs.getProfile();
   assert.ok(p.master && p.cvFile && p.autoDiscover, "master, upload and settings preserved");
 
-  let pub = await cvApi.GET();
+  let pub = await cvApi.GET(req("GET", "/api/cv"));
   assert.equal(pub.status, 404, "not public until published");
   await call(admin.POST, "POST", "/api/admin", { action: "job_settings", publishCv: true });
-  pub = await cvApi.GET();
+  pub = await cvApi.GET(req("GET", "/api/cv"));
   assert.equal(pub.status, 200);
   assert.match((await pub.json()).cv, /Founder & operator, Altradits/);
 });
@@ -110,4 +116,52 @@ test("Find jobs adds real, new postings and skips duplicates and bad links", asy
   assert.equal(found.why, "LND experience");
   assert.equal(await career.dailyDiscovery(), 0, "daily run: nothing new the second time (dup)");
   career.setCareerClient(null);
+});
+
+test("ATS check passes a clean CV; sync rebuilds only when the website changes; PDF download", async () => {
+  const good = `# Stanley Chege Thuita
+Founder & AI Systems Engineer
+Nairobi, Kenya | altradits@gmail.com | altradits.com | github.com/altradits
+
+## Professional Summary
+${"Founder who builds and runs a fixed-price virtual assistant business with AI agents and Bitcoin payments. ".repeat(4)}
+
+## Core Skills
+Engineering: Node.js, JavaScript, Go, REST APIs, GitHub Actions, CI/CD
+AI: Claude API, AI agents, tool use
+Payments: Bitcoin, Lightning Network, LND
+
+## Work Experience
+### Founder & Managing Director | Altradits | Remote
+Jan 2026 – Present
+${"- Launched a fixed-price storefront of 39 quick jobs, letting clients order and pay without a sales call\n".repeat(8)}
+## Education
+### Software Engineering | Zone01 Kisumu | Kisumu, Kenya
+Jan 2024 – Dec 2025
+${"- Completed peer-learning projects in Go and JavaScript\n".repeat(30)}`;
+  const a = career.atsAudit(good);
+  assert.deepEqual(a.issues, []);
+  assert.equal(a.score, 100);
+  assert.ok(career.atsAudit(good + "\n| a | b |\n| - | - |\n").issues.some((i) => /table/.test(i)));
+  assert.ok(career.atsAudit(good.replace("## Core Skills", "## Toolbox 🚀")).issues.length >= 2);
+
+  let builds = 0;
+  career.setCareerClient(fake(() => { builds++; return tool("submit_master_cv", { headline: "Founder", summary: "s", cv_markdown: good, skills: [], highlights: [], missing: [] }); }));
+  assert.equal(await career.syncCv(), "up to date", "nothing on the website changed since the last build");
+  const p = await jobs.getProfile();
+  p.master.factsHash = "something-else"; // the website's offer changed
+  await (await import(new URL("lib/store.js", root))).setJSON("jobprofile", p);
+  assert.equal(await career.syncCv(), "rebuilt");
+  assert.equal(builds, 1, "clean CV: no repair pass");
+  assert.equal(await career.syncCv(), "up to date");
+
+  const pdf = await cvApi.GET(req("GET", "/api/cv?format=pdf"));
+  assert.equal(pdf.headers.get("content-type"), "application/pdf");
+  assert.match(pdf.headers.get("content-disposition"), /Stanley_Chege_Thuita_CV\.pdf/);
+  const text = Buffer.from(await pdf.arrayBuffer()).toString("latin1");
+  assert.match(text, /^%PDF/);
+  assert.match(text, /Work Experience/, "real, extractable text");
+  assert.equal((await (await cvApi.GET(req("GET", "/api/cv"))).json()).ats, 100);
+  career.setCareerClient(null);
+  assert.equal(await career.syncCv(), "skipped: no API key");
 });
