@@ -65,12 +65,22 @@ nav a:hover{color:var(--ink)}
 .receipt .paid{display:flex;justify-content:space-between;align-items:center;background:color-mix(in srgb,var(--ok) 14%,white);border-radius:.7rem;padding:.6rem .8rem;font-weight:700}
 .receipt .paid span{color:var(--ok)}
 
-.marquee{width:100vw;margin:0 0 1rem calc(50% - 50vw);background:var(--ink);color:#fff;overflow:hidden;padding:.85rem 0}
-.track{display:flex;gap:2.5rem;width:max-content;animation:scroll 48s linear infinite}
-.marquee:hover .track{animation-play-state:paused}
-.track span{display:inline-flex;align-items:center;gap:.6rem;font:600 1.05rem Figtree,sans-serif;white-space:nowrap}
-.track span::before{content:"";width:.6rem;height:.6rem;border-radius:50%;background:var(--c)}
-@keyframes scroll{to{transform:translateX(-50%)}}
+/* department strip: jump straight to a category */
+.depts{display:block;background:var(--ink);color:#fff;padding:1.4rem 0;margin-bottom:1rem}
+.depts .wrap{display:flex;align-items:center;gap:1rem 1.5rem}
+.depts .lead{flex:none;font:700 .8rem Figtree,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#93A1B5;max-width:7rem;line-height:1.35}
+.drow{flex:1;min-width:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.75rem}
+.dept{display:flex;flex-direction:column;gap:.15rem;padding:.8rem .9rem;border-radius:.9rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-top:3px solid var(--c);text-decoration:none;color:#fff;transition:background .15s,transform .15s}
+.dept:hover,.dept:focus-visible{background:rgba(255,255,255,.12);transform:translateY(-2px)}
+.dept .ic{font-size:1.3rem;line-height:1}
+.dept b{font:700 .98rem/1.2 'Bricolage Grotesque',sans-serif;margin-top:.3rem}
+.dept small{color:#B9C4D4;font-size:.82rem}
+.dept small em{font-style:normal;color:var(--btc);font-weight:700}
+@media (max-width:860px){
+  .depts .lead{display:none}
+  .drow{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-left:1.25rem;padding-bottom:.3rem;margin:0 -1.25rem;padding-left:1.25rem;padding-right:1.25rem}
+  .dept{flex:0 0 9.5rem;scroll-snap-align:start}
+}
 
 section{padding:3.5rem 0}
 .h2{font-size:clamp(1.9rem,4.5vw,3rem);letter-spacing:-.02em;margin-bottom:.75rem;max-width:22ch}
@@ -99,7 +109,7 @@ section{padding:3.5rem 0}
 .buy:hover{background:var(--c,var(--blue))}
 .buy .p{font:800 1.15rem 'Bricolage Grotesque',sans-serif}
 .buy .p small{font:600 .8rem Figtree,sans-serif;opacity:.8}
-.qgroup{margin-bottom:1.8rem}
+.qgroup{margin-bottom:1.8rem;scroll-margin-top:10rem}
 .qgroup>h3{font-size:1.15rem;display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem}
 .qgroup>h3::before{content:"";width:.75rem;height:.75rem;border-radius:.2rem;background:var(--c)}
 .qcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(15.5rem,1fr));gap:.8rem}
@@ -210,7 +220,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
   .modal{padding:0}
   .sheet{border-radius:0;border:0;box-shadow:none;min-height:100%;padding:1.25rem 1rem}
 }
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::after{animation:none!important;transition:none!important}.track{flex-wrap:wrap;width:auto;padding:0 1.25rem}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::after{animation:none!important;transition:none!important}.dept:hover{transform:none}}
 </style>
 </head>
 <body>
@@ -261,7 +271,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
     </div>
   </div>
 
-  <div class="marquee" aria-hidden="true"><div class="track" id="marquee"></div></div>
+  <nav class="depts" aria-label="Job categories"><div class="wrap"><span class="lead">Browse by department</span><div class="drow" id="depts"></div></div></nav>
 
   <section id="quick">
     <div class="wrap">
@@ -393,9 +403,20 @@ const REF = (() => { try { return localStorage.getItem("altra.ref") || ""; } cat
 const unitOf = (id) => (orderable(id).type === "monthly" ? "/mo" : "");
 const buyBtn = (id, label, cls = "btn primary") => `<button type="button" class="${cls}" data-buy="${esc(id)}">${esc(label)}</button>`;
 
-// ---- marquee
-const marq = QUICK_JOBS.map((s) => `<span style="--c:${PILLARS.find((p) => p.id === s.pillar).color}">${esc(s.name)} · ${money(s.price)}</span>`).join("");
-$("#marquee").innerHTML = marq + marq;
+// ---- department strip: count and starting price per department
+const ICONS = { social: "📣", admin: "🗂️", personal: "🧳", growth: "🤝", tech: "🛠️" };
+$("#depts").innerHTML = PILLARS.map((p) => {
+  const jobs = QUICK_JOBS.filter((j) => j.pillar === p.id);
+  const from = Math.min(...jobs.map((j) => j.price));
+  return `<a class="dept" href="#dept-${p.id}" style="--c:${p.color}"><span class="ic" aria-hidden="true">${ICONS[p.id]}</span><b>${esc(p.name)}</b><small>${jobs.length} quick jobs · from <em>${money(from)}</em></small></a>`;
+}).join("");
+// A department link clears any search first so the whole group is there.
+$("#depts").addEventListener("click", (e) => {
+  const a = e.target.closest("a.dept");
+  if (!a || !$("#find").value) return;
+  $("#find").value = $("#heroFind").value = "";
+  renderServices();
+});
 
 // ---- quick jobs + services, one search for both
 const pillarName = (id) => PILLARS.find((p) => p.id === id).name;
@@ -410,7 +431,7 @@ function renderServices(q = "") {
     : `${QUICK_JOBS.length} quick jobs from ${money(QUICK[0].price)} · ${SERVICES.length} bigger services below`;
   $("#quickList").innerHTML = PILLARS.map((p) => {
     const list = quick.filter((j) => j.pillar === p.id);
-    return list.length ? `<div class="qgroup" style="--c:${p.color}"><h3>${esc(p.name)}</h3><div class="qcards">${list.map((j) => `
+    return list.length ? `<div class="qgroup" id="dept-${p.id}" style="--c:${p.color}"><h3>${esc(p.name)}</h3><div class="qcards">${list.map((j) => `
       <article class="qj" id="job-${j.id}" style="--c:${p.color}">
         <h4>${esc(j.name)}</h4>
         <ul>${j.deliverables.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>
