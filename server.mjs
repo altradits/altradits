@@ -25,7 +25,7 @@ if (!PROD) {
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|robots\.txt|data\/catalog\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|portal\.html|team\.html|join\.html|robots\.txt|data\/(?:catalog|playbooks)\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
 const SECURITY = { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "SAMEORIGIN" };
 
 function publicUrl(req) {
@@ -60,7 +60,7 @@ const server = http.createServer(async (req, res) => {
     if (!PUBLIC.test(rel)) { res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found"); return; }
     const file = path.join(ROOT, rel);
     const headers = { ...SECURITY, "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" };
-    if (/^\/(admin|proposal)\.html$/.test(rel)) headers["X-Robots-Tag"] = "noindex";
+    if (/^\/(admin|proposal|portal|team)\.html$/.test(rel)) headers["X-Robots-Tag"] = "noindex";
     headers["Cache-Control"] = rel.startsWith("/assets/") ? "public, max-age=86400" : "no-cache";
     fs.createReadStream(file)
       .on("open", () => res.writeHead(200, headers))

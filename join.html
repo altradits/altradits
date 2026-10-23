@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Join the team – Altradits</title>
+<meta name="description" content="Remote work for skilled virtual assistants: social media, admin, personal assistance, customer care, web and automation. Apply to join the Altradits team.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2F5BEA;--paper:#fff;--ok:#12A37F}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+h1,h2,h3{font-family:'Bricolage Grotesque',Figtree,sans-serif;line-height:1.1;margin:0}
+a{color:inherit}
+[hidden]{display:none!important}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.wrap{max-width:52rem;margin:0 auto;padding:1.5rem 1rem 4rem}
+.logo{font:800 1.25rem 'Bricolage Grotesque',sans-serif;text-decoration:none;display:inline-block;margin-bottom:2rem}
+h1{font-size:clamp(2rem,6vw,3.2rem);letter-spacing:-.02em}
+.lead{color:var(--muted);font-size:1.15rem;max-width:38rem;margin:1rem 0 2rem}
+.depts{display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));gap:.8rem;margin-bottom:2rem}
+.dept{background:var(--paper);border:2px solid var(--line);border-radius:1rem;padding:1rem;cursor:pointer;display:block;position:relative}
+.dept input{position:absolute;top:1rem;right:1rem;width:1.15rem;height:1.15rem;accent-color:var(--blue)}
+.dept:has(input:checked){border-color:var(--blue);box-shadow:4px 4px 0 var(--blue)}
+.dept h3{font-size:1.05rem;margin:0 1.6rem .35rem 0}
+.dept p{margin:0;color:var(--muted);font-size:.9rem}
+form.card{background:var(--paper);border:2px solid var(--ink);border-radius:1.25rem;box-shadow:8px 8px 0 var(--ink);padding:1.75rem}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:0 1rem}
+label{display:block;margin:0 0 1rem;font-weight:600;font-size:.95rem}
+label small{font-weight:400;color:var(--muted)}
+input[type=text],input[type=email],input[type=number],input[type=url],textarea{width:100%;margin-top:.35rem;padding:.7rem .85rem;border:2px solid var(--line);border-radius:.7rem;font:inherit;background:var(--bg)}
+textarea{min-height:6rem;resize:vertical}
+.task{background:var(--bg);border-left:4px solid var(--blue);border-radius:.6rem;padding:.8rem 1rem;margin:.3rem 0 .6rem;font-weight:400}
+.btn{display:inline-flex;padding:.85rem 1.4rem;border-radius:.75rem;font:600 1rem Figtree,sans-serif;border:2px solid var(--blue);cursor:pointer;background:var(--blue);color:#fff}
+.btn:disabled{opacity:.55}
+.err{color:#B42318}
+.ok{border:2px solid var(--ok);background:color-mix(in srgb,var(--ok) 10%,white);border-radius:1rem;padding:1.25rem}
+.rules{color:var(--muted);font-size:.93rem;margin-top:1.5rem}
+.sr{position:absolute;left:-9999px}
+@media (max-width:620px){.grid{grid-template-columns:1fr}form.card{padding:1.25rem;box-shadow:4px 4px 0 var(--ink)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="logo" href="/">Altradits</a>
+  <h1>Join the Altradits team</h1>
+  <p class="lead">Remote, flexible work for skilled assistants anywhere in the world. Tasks arrive with a clear brief, a written playbook and a quality checklist. You do great work; we bring the clients.</p>
+
+  <h2 style="font-size:1.3rem;margin-bottom:.8rem">1. Which departments fit you?</h2>
+  <div class="depts" id="depts"></div>
+
+  <form class="card" id="form" novalidate>
+    <h2 style="font-size:1.3rem;margin-bottom:1rem">2. About you</h2>
+    <div class="grid">
+      <label>Full name<input type="text" id="name" autocomplete="name" required></label>
+      <label>Email<input type="email" id="email" autocomplete="email" required></label>
+      <label>Country<input type="text" id="country" autocomplete="country-name"></label>
+      <label>Time zone <small>(e.g. UTC+3)</small><input type="text" id="timezone"></label>
+      <label>Hourly rate (USD)<input type="number" id="rate" min="0" max="500" inputmode="numeric"></label>
+      <label>Hours available per week<input type="number" id="hours" min="1" max="60" value="10" inputmode="numeric"></label>
+    </div>
+    <label>Skills and experience <small>(what you've done, for whom, results)</small><textarea id="skills"></textarea></label>
+    <label>Tools you use confidently<input type="text" id="tools" placeholder="Canva, Notion, Shopify, Zapier…"></label>
+    <label>Portfolio or LinkedIn <small>(optional)</small><input type="url" id="portfolio" placeholder="https://"></label>
+    <h2 style="font-size:1.3rem;margin:.5rem 0 .5rem">3. Sample task</h2>
+    <div class="task" id="sampleTask"></div>
+    <label class="sr" for="sample">Your answer</label>
+    <textarea id="sample" placeholder="Your answer, in a few sentences" style="min-height:8rem"></textarea>
+    <input type="text" id="website" class="sr" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button class="btn" id="send">Send application</button>
+    <p class="err" id="err" role="alert"></p>
+    <p class="rules">Our non-negotiables: never ask for or store passwords or card numbers in chat or email, never hold a client's crypto keys, follow the playbook, and ask when in doubt.</p>
+  </form>
+  <div class="ok" id="done" hidden><h2 style="font-size:1.3rem">Application received ✓</h2><p>Thanks! We review applications weekly and reply either way. Approved team members get a private workspace link by email.</p></div>
+</div>
+<script type="module">
+import { DEPARTMENTS } from "./data/playbooks.js";
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const SAMPLES = {
+  social: "A bakery client wants 3 Instagram captions for their new sourdough. Write one, and say how you'd pick the best posting time.",
+  admin: "A client's inbox has 400 unread emails after a holiday. Describe exactly how you'd get it to zero in 2 hours.",
+  personal: "Plan a 2-night Nairobi business trip for a client arriving Tuesday 9am. What 3 options would you present, and how?",
+  growth: "A customer writes angrily that their order is 5 days late. Write the reply you'd send.",
+  tech: "A client's Shopify checkout fails for some card payments. What are the first 4 things you check?",
+};
+$("#depts").innerHTML = DEPARTMENTS.map((d) => `<label class="dept"><input type="checkbox" value="${d.id}"><h3>${esc(d.name)}</h3><p>${esc(d.tools.slice(0, 3).join(" · "))}</p></label>`).join("");
+const picked = () => [...document.querySelectorAll("#depts input:checked")].map((i) => i.value);
+const showSample = () => { const d = picked()[0] || "admin"; $("#sampleTask").textContent = SAMPLES[d]; };
+$("#depts").addEventListener("change", showSample); showSample();
+
+$("#form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("#err").textContent = "";
+  const body = { action: "apply", departments: picked(), name: $("#name").value.trim(), email: $("#email").value.trim(),
+    country: $("#country").value.trim(), timezone: $("#timezone").value.trim(), rate: $("#rate").value, hoursPerWeek: $("#hours").value,
+    skills: $("#skills").value.trim(), tools: $("#tools").value.trim(), portfolio: $("#portfolio").value.trim(),
+    sampleQuestion: $("#sampleTask").textContent, sample: $("#sample").value.trim(), website: $("#website").value };
+  if (!body.departments.length) { $("#err").textContent = "Choose at least one department above."; return; }
+  $("#send").disabled = true;
+  try {
+    const res = await fetch("/api/team", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    $("#form").hidden = true; $("#done").hidden = false; $("#depts").closest("div").hidden = true;
+  } catch (err) { $("#err").textContent = err.message || "Something went wrong."; $("#send").disabled = false; }
+});
+</script>
+</body>
+</html>

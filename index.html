@@ -471,7 +471,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 <footer>
   <div class="wrap">
     <span>© <span id="yr">2026</span> Altradits · Virtual assistance worldwide</span>
-    <span><a href="https://wa.me/254707172370">WhatsApp</a> · <a href="mailto:altradits@gmail.com">altradits@gmail.com</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://x.com/altradits">X</a></span>
+    <span><a href="https://wa.me/254707172370">WhatsApp</a> · <a href="mailto:altradits@gmail.com">altradits@gmail.com</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="/join.html">Join the team</a> · <a href="https://x.com/altradits">X</a></span>
   </div>
 </footer>
 
@@ -580,7 +580,7 @@ $("#quiz").addEventListener("submit", async (e) => {
   const saved = store.get("altra.lead") || {};
   try {
     const res = await fetch("/api/lead", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: $("#qName").value.trim(), email, quiz: q, website: $("#qWebsite").value, leadId: saved.leadId, token: saved.token }) });
+      body: JSON.stringify({ name: $("#qName").value.trim(), email, quiz: q, website: $("#qWebsite").value, leadId: saved.leadId, token: saved.token, ref: REF }) });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Something went wrong");
     if (data.token) store.set("altra.lead", { leadId: data.leadId, token: data.token });
@@ -653,7 +653,7 @@ async function send(text) {
   const saved = store.get("altra.lead") || {};
   try {
     const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text, leadId: saved.leadId, token: saved.token, context: { page: location.pathname, ...(pendingContext || {}) } }) });
+      body: JSON.stringify({ message: text, leadId: saved.leadId, token: saved.token, context: { page: location.pathname, ref: REF, ...(pendingContext || {}) } }) });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Connection problem");
     if (data.token) store.set("altra.lead", { leadId: data.leadId, token: data.token });
@@ -684,6 +684,8 @@ document.addEventListener("click", (e) => {
   }
 });
 const params = new URLSearchParams(location.search);
+if (/^[a-z0-9]{4,12}$/.test(params.get("ref") || "")) store.set("altra.ref", params.get("ref"));
+const REF = store.get("altra.ref") || undefined;
 if (params.get("chat") === "trial") openChat("I'd like to try the free first task.");
 else if (params.has("chat")) openChat();
 </script>

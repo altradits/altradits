@@ -28,6 +28,7 @@ export async function POST(request) {
       source: clean(ctx.source || "chat", 40),
       needs: Array.isArray(ctx.needs) ? ctx.needs : [],
       context: { page: clean(ctx.page, 200), service: clean(ctx.service, 80), quiz: cleanQuiz(ctx.quiz) },
+      referredBy: clean(ctx.ref, 12).toLowerCase(),
     });
     isNew = true;
   }

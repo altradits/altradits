@@ -1,4 +1,6 @@
 User-agent: *
 Disallow: /admin.html
 Disallow: /proposal.html
+Disallow: /portal.html
+Disallow: /team.html
 Disallow: /api/
