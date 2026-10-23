@@ -337,3 +337,33 @@ test("website order: price button -> QR for the full price -> payment confirms t
     delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON; delete process.env.LND_TLS_CERT;
   }
 });
+
+test("quick job: $15 order, paid, routed to its department", async () => {
+  const order = await import(new URL("api/order.js", root));
+  const ops = await import(new URL("lib/ops.js", root));
+  const { QUICK_JOBS, findService } = await import(new URL("data/catalog.js", root));
+  for (const q of QUICK_JOBS) {
+    assert.ok(findService(q.service), `${q.id} has a parent service`);
+    assert.ok(q.price >= 9 && q.price <= 50 && q.deliverables.length >= 2 && q.delivery, `${q.id} is small, priced and clear`);
+  }
+  process.env.LND_REST_URL = `https://localhost:${lnd.address().port}`;
+  process.env.LND_INVOICE_MACAROON = MACAROON;
+  process.env.LND_TLS_CERT = fs.readFileSync("cert.pem").toString("base64");
+  ln.resetCapacityCache();
+  try {
+    const o = (await call(order.POST, "POST", "/api/order", { item: "q-captions" })).body;
+    assert.deepEqual(o.item, { id: "q-captions", name: "10 social media captions", usd: 15 });
+    const r = await call(pay.POST, "POST", "/api/pay", { id: o.id, t: o.t });
+    assert.equal(r.body.invoice.sats, Math.ceil((15 / 80000) * 1e8));
+    await call(order.POST, "POST", "/api/order", { id: o.id, t: o.t, email: "cafe@example.com", task: "Captions for my cafe's new menu" });
+    [...invoices.values()].at(-1).state = "SETTLED";
+    assert.equal((await call(pay.GET, "GET", `/api/pay?id=${o.id}&t=${o.t}`)).body.status, "paid");
+    const p = await crm.getProposal(o.id);
+    const task = await ops.getTask(p.order.taskId);
+    assert.equal(task.service, "social-management");
+    assert.equal(task.department, "social");
+    assert.equal(p.totals.dueNow, 15);
+  } finally {
+    delete process.env.LND_REST_URL; delete process.env.LND_INVOICE_MACAROON; delete process.env.LND_TLS_CERT;
+  }
+});

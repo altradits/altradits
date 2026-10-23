@@ -99,6 +99,18 @@ section{padding:3.5rem 0}
 .buy:hover{background:var(--c,var(--blue))}
 .buy .p{font:800 1.15rem 'Bricolage Grotesque',sans-serif}
 .buy .p small{font:600 .8rem Figtree,sans-serif;opacity:.8}
+.qgroup{margin-bottom:1.8rem}
+.qgroup>h3{font-size:1.15rem;display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem}
+.qgroup>h3::before{content:"";width:.75rem;height:.75rem;border-radius:.2rem;background:var(--c)}
+.qcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(15.5rem,1fr));gap:.8rem}
+.qj{background:var(--paper);border:2px solid var(--line);border-radius:.9rem;padding:.95rem;display:flex;flex-direction:column;gap:.4rem;transition:border-color .2s,transform .2s;scroll-margin-top:9rem}
+.qj:hover,.qj:target{border-color:var(--c);transform:translateY(-2px)}
+.qj h4{margin:0;font:700 1.02rem/1.25 'Bricolage Grotesque',sans-serif}
+.qj ul{margin:0;padding:0;list-style:none;font-size:.88rem;flex:1}
+.qj li{padding:.1rem 0 .1rem 1.2rem;position:relative}
+.qj li::before{content:"✓";position:absolute;left:0;color:var(--ok);font-weight:800}
+.qj .meta{font-size:.82rem;color:var(--muted);margin:0}
+.qj .buy{padding:.6rem .85rem;font-size:.92rem}
 .none{background:var(--paper);border:2px dashed var(--line);border-radius:1rem;padding:1.25rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between}
 
 /* how */
@@ -194,12 +206,13 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 </style>
 </head>
 <body>
-<a class="skip" href="#services">Skip to the services</a>
+<a class="skip" href="#quick">Skip to the jobs</a>
 <header>
   <div class="wrap">
     <a class="logo" href="#top">Altradits</a>
     <nav aria-label="Main">
-      <a href="#services">Services</a>
+      <a href="#quick">Quick jobs</a>
+      <a class="opt" href="#services">Services</a>
       <a href="#plans">Monthly plans</a>
       <a class="opt" href="#how">How it works</a>
       <a class="opt" href="#faq">FAQ</a>
@@ -211,9 +224,9 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
   <div class="wrap">
     <div class="hero">
       <div>
-        <span class="eyebrow">Global virtual assistant · Fixed prices</span>
+        <span class="eyebrow">Global virtual assistant · Quick jobs from $9</span>
         <h1>Pick a task. Pay. <em>It's done.</em></h1>
-        <p class="lead">Every service has a fixed price and a list of exactly what you get. Find yours, pay with any Bitcoin wallet, and your payment places the order.</p>
+        <p class="lead">From a $9 email signature to a full-time assistant: every job has a fixed price and a list of exactly what you get. Find yours, pay with any Bitcoin wallet, and your payment places the order.</p>
         <div class="search">
           <label class="sr" for="heroFind">What do you want to hand off?</label>
           <input type="search" id="heroFind" placeholder="What do you want to hand off? e.g. Instagram, invoices, a website" autocomplete="off">
@@ -221,6 +234,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
         <div class="actions" id="heroBuy"></div>
         <div class="sub">
           <span>Price shown = price paid</span>
+          <span>Most quick jobs done in 1–2 days</span>
           <span>Deliverables listed up front</span>
           <span>Any Bitcoin wallet</span>
         </div>
@@ -240,17 +254,25 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 
   <div class="marquee" aria-hidden="true"><div class="track" id="marquee"></div></div>
 
-  <section id="services">
+  <section id="quick">
     <div class="wrap">
-      <h2 class="h2">Find the task you want off your plate</h2>
-      <p class="intro">Each card lists exactly what you get, when, and what we need from you. The button is the price: click it and pay.</p>
+      <h2 class="h2">Quick jobs from $9</h2>
+      <p class="intro">One small job, one fixed price, done in a day or two. Each card says exactly what you get. The button is the price: click it and pay.</p>
       <div class="filterbar">
         <div class="search">
-          <label class="sr" for="find">Search services</label>
-          <input type="search" id="find" placeholder="Search: email, posts, bookkeeping, Airbnb, translation…" autocomplete="off">
+          <label class="sr" for="find">Search all jobs and services</label>
+          <input type="search" id="find" placeholder="Search: captions, invoices, CVs, flights, website fix, translation…" autocomplete="off">
         </div>
         <p class="count" id="count" aria-live="polite"></p>
       </div>
+      <div id="quickList"></div>
+    </div>
+  </section>
+
+  <section id="services">
+    <div class="wrap">
+      <h2 class="h2">Bigger jobs and ongoing help</h2>
+      <p class="intro">For more than a one-off: full projects and monthly services, each with a fixed scope and price.</p>
       <div id="serviceList"></div>
     </div>
   </section>
@@ -311,6 +333,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
     <details><summary>What exactly do I get?</summary><p>Exactly the ticked list on the card you paid for, delivered by the time shown. Nothing is open-ended: if a card says 12 posts, you get 12 posts.</p></details>
     <details><summary>How do I pay, and are there fees?</summary><p>Click any price and a QR code appears for that exact amount. Scan it with any Bitcoin wallet. Lightning wallets pay in seconds; any other wallet or exchange can pay on-chain. Altradits adds no fee. Your wallet may add a small network fee, which is shown in the payment window before you pay.</p></details>
     <details><summary>How do you know what I need?</summary><p>The payment window has a box for your email and what you need. You can fill it in before or after paying. After payment you also get a client portal to add files, request changes and approve the work.</p></details>
+    <details><summary>Why are quick jobs so affordable?</summary><p>Each one is small and fixed, and our AI agents do the first pass in minutes, with a person checking the result. You pay for a finished result, not for hours of someone's time.</p></details>
     <details><summary>My task isn't listed. Can I still order?</summary><p>Yes: buy the 2-hour pay-as-you-go block and describe the task. For ongoing work, a monthly plan covers any mix of the services listed here.</p></details>
     <details><summary>Is the work done by AI or by a person?</summary><p>Both, deliberately. Each department has an AI agent that does the work fast from a written playbook, a quality reviewer checks every deliverable, and Stanley takes the real-world steps and handles anything sensitive.</p></details>
     <details><summary>How do you keep my accounts and data safe?</summary><p>Access through delegated logins or a password manager share, never passwords in email. Least access needed, removed when we finish. Your data is never used to train AI models.</p></details>
@@ -320,7 +343,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 
   <div class="final">
     <h2 class="h2">Your hours back start with one payment.</h2>
-    <p class="intro">Pick the plan that fits, or a single task from the list above.</p>
+    <p class="intro">Start with a quick job from $9, or pick the plan that fits.</p>
     <div class="actions" id="finalBuy"></div>
   </div>
 </div>
@@ -337,7 +360,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 </div>
 
 <script type="module">
-import { SERVICES, PILLARS, PACKAGES, PAYG, GUARANTEES, orderable } from "./data/catalog.js";
+import { SERVICES, QUICK_JOBS, PILLARS, PACKAGES, PAYG, GUARANTEES, orderable } from "./data/catalog.js";
 import { mountPay } from "./assets/pay-widget.js";
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -358,17 +381,31 @@ const unitOf = (id) => (orderable(id).type === "monthly" ? "/mo" : "");
 const buyBtn = (id, label, cls = "btn primary") => `<button type="button" class="${cls}" data-buy="${esc(id)}">${esc(label)}</button>`;
 
 // ---- marquee
-const marq = SERVICES.map((s) => `<span style="--c:${PILLARS.find((p) => p.id === s.pillar).color}">${esc(s.name)}</span>`).join("");
+const marq = QUICK_JOBS.map((s) => `<span style="--c:${PILLARS.find((p) => p.id === s.pillar).color}">${esc(s.name)} · ${money(s.price)}</span>`).join("");
 $("#marquee").innerHTML = marq + marq;
 
-// ---- services (searchable)
-const hay = (s) => `${s.name} ${s.outcome} ${s.deliverables.join(" ")} ${s.keywords} ${PILLARS.find((p) => p.id === s.pillar).name}`.toLowerCase();
+// ---- quick jobs + services, one search for both
+const pillarName = (id) => PILLARS.find((p) => p.id === id).name;
+const hay = (s) => `${s.name} ${s.outcome || ""} ${s.deliverables.join(" ")} ${s.keywords} ${pillarName(s.pillar)}`.toLowerCase();
+const QUICK = [...QUICK_JOBS].sort((a, b) => a.price - b.price);
 function renderServices(q = "") {
   const words = q.toLowerCase().split(/\s+/).filter(Boolean);
   const match = (s) => words.every((w) => hay(s).includes(w));
-  const shown = SERVICES.filter(match);
-  $("#count").textContent = words.length ? `${shown.length} of ${SERVICES.length} services match "${q.trim()}"` : `${SERVICES.length} services, each with a fixed price`;
-  const groups = PILLARS.map((p) => {
+  const quick = QUICK.filter(match), shown = SERVICES.filter(match);
+  $("#count").textContent = words.length
+    ? `${quick.length} quick job${quick.length === 1 ? "" : "s"} and ${shown.length} service${shown.length === 1 ? "" : "s"} match "${q.trim()}"`
+    : `${QUICK_JOBS.length} quick jobs from ${money(QUICK[0].price)} · ${SERVICES.length} bigger services below`;
+  $("#quickList").innerHTML = PILLARS.map((p) => {
+    const list = quick.filter((j) => j.pillar === p.id);
+    return list.length ? `<div class="qgroup" style="--c:${p.color}"><h3>${esc(p.name)}</h3><div class="qcards">${list.map((j) => `
+      <article class="qj" id="job-${j.id}" style="--c:${p.color}">
+        <h4>${esc(j.name)}</h4>
+        <ul>${j.deliverables.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>
+        <p class="meta"><b>Delivery:</b> ${esc(j.delivery)}</p>
+        <button type="button" class="buy" data-buy="${j.id}"><span>Pay & order</span><span class="p">${money(j.price)}</span></button>
+      </article>`).join("")}</div></div>` : "";
+  }).join("");
+  $("#serviceList").innerHTML = PILLARS.map((p) => {
     const list = shown.filter((s) => s.pillar === p.id);
     return list.length ? `<div class="pillar" style="--c:${p.color}"><h3>${esc(p.name)}</h3><div class="cards">${list.map((s) => `
       <article class="svc" style="--c:${p.color}">
@@ -382,7 +419,9 @@ function renderServices(q = "") {
         <button type="button" class="buy" data-buy="${s.id}"><span>${s.type === "monthly" ? "Pay & start" : "Pay & order"}</span><span class="p">${money(s.price)}${s.unit ? `<small>${s.unit}</small>` : ""}</span></button>
       </article>`).join("")}</div></div>` : "";
   }).join("");
-  $("#serviceList").innerHTML = groups || `<div class="none"><div><b>No exact match for "${esc(q.trim())}".</b><br><span style="color:var(--muted)">Buy 2 hours of help and describe your task when you pay.</span></div>${buyBtn("hourly", `Pay ${money(PAYG.hourly * PAYG.minimumHours)} · 2 hours`, "btn btc")}</div>`;
+  const none = `<div class="none"><div><b>No exact match for "${esc(q.trim())}".</b><br><span style="color:var(--muted)">Buy 2 hours of help and describe your task when you pay.</span></div>${buyBtn("hourly", `Pay ${money(PAYG.hourly * PAYG.minimumHours)} · 2 hours`, "btn btc")}</div>`;
+  if (!quick.length) $("#quickList").innerHTML = shown.length ? `<p class="count">No quick job matches; see the services below.</p>` : none;
+  $("#services").hidden = Boolean(words.length && !shown.length);
 }
 renderServices();
 $("#find").addEventListener("input", (e) => renderServices(e.target.value));
@@ -390,7 +429,7 @@ $("#heroFind").addEventListener("input", (e) => { $("#find").value = e.target.va
 $("#heroFind").addEventListener("keydown", (e) => {
   if (e.key !== "Enter") return;
   e.preventDefault();
-  $("#services").scrollIntoView();
+  $("#quick").scrollIntoView();
   $("#find").focus({ preventScroll: true });
 });
 
