@@ -240,3 +240,72 @@ export const PLAN = {
     },
   ],
 };
+
+// Instagram joined after the week above was loaded: its 13:00 posts for the
+// same days and themes, filled into the empty Instagram slots only.
+const ig = (date, format, text, warmup) => ({ date, master: PLAN.days.find((d) => d.date === date).master, posts: { ig: { format, text, warmup } } });
+
+export const INSTAGRAM_PLAN = {
+  id: "week-2026-10-26-instagram",
+  note: PLAN.note,
+  days: [
+    ig("2026-10-26", "Single image + offer", `IMAGE: a navy background with one orange sticky note in the middle reading "15 minutes. $5." and a small line underneath: "Started within the hour."
+CAPTION: What's the one 15-minute task you keep pushing to next week?
+
+Hand it to us. One task, $5, started within an hour and sent back with a note of exactly what we did. No call, no contract.
+
+Tap the link in bio to try it.
+#smallbusiness #productivity #delegation #virtualassistant`,
+      { keywords: ["small business tips", "to do list"], hashtags: ["#smallbusiness", "#productivity"], comments: [q("What's the task that always ends up on next week's list?"), e("Writing tasks as verbs, like 'send', 'book', 'fix', makes them far easier to start."), f("My to-do list has been 'nearly done' since 2024.")] }),
+    ig("2026-10-27", "Before/after carousel", `IMAGE: a two-slide carousel. Slide 1: a phone showing "4,012 unread" in red. Slide 2: the same phone with three tidy labels (Act, Waiting, Reference) and "Sorted by lunch" in blue.
+CAPTION: Your inbox shouldn't be the first job of your day.
+
+Hand it over at breakfast. We archive the noise, set up labels and flag what needs you, done the same day for $29.
+
+Swipe for the after. Link in bio.
+#inboxzero #productivity #emailtips #smallbusiness`,
+      { keywords: ["inbox zero", "email tips"], hashtags: ["#inboxzero"], comments: [q("Be honest: what's your unread count right now?"), e("Unsubscribing from five newsletters today does more than any inbox app."), f("My inbox is less of a tool and more of a lifestyle.")] }),
+    ig("2026-10-28", "Process graphic", `IMAGE: a clean three-step graphic on navy: "1 · AI does the work" (blue), "2 · Quality check" (orange), "3 · People where it counts" (white), with a small "Same day" tag at the bottom.
+CAPTION: Who actually does the work when you order from us?
+
+AI department agents do it fast. Every deliverable gets a quality check before it goes out. Our freelancers step in wherever a human is needed.
+
+Speed of AI, judgement of people. Link in bio.
+#AI #behindthescenes #smallbusiness #futureofwork`,
+      { keywords: ["AI for business", "behind the scenes"], hashtags: ["#AI"], comments: [q("What's one job you'd happily give to AI tomorrow?"), e("AI is great at first drafts; a short human checklist is what makes them safe to send."), f("AI wrote my caption. It used the word 'synergy' four times.")] }),
+    ig("2026-10-29", "Demo image", `IMAGE: a hand holding a phone scanning a QR code on a laptop screen, with "Scan. Pay. Done." in bold white and a small Bitcoin orange accent.
+CAPTION: Paying for a service shouldn't take longer than the service.
+
+Every price on our site is one QR code. Any Bitcoin wallet can pay it, Lightning in seconds or on-chain, and the fees are shown before you pay.
+
+Want to accept Bitcoin in your own business? We'll set up a Lightning address for $15, the same day. Link in bio.
+#bitcoin #lightningnetwork #payments #smallbusiness`,
+      { keywords: ["bitcoin payments", "lightning network"], hashtags: ["#bitcoin"], comments: [q("Have you ever paid for something with Bitcoin? How did it go?"), e("Lightning payments settle in seconds, which makes them practical for small purchases."), f("Explaining Bitcoin at dinner: 40 minutes. Sending it: 3 seconds.")] }),
+    ig("2026-10-30", "Team photo", `IMAGE: a split photo of two workspaces (a desk in Kisumu, a hub in Addis Ababa) with "Built in Kenya. Delivered worldwide." across the middle.
+CAPTION: Altradits isn't a one-person show.
+
+Our freelancers come from the weVenture Hub in Addis Ababa and Zone01 in Kisumu, with 100+ on standby for urgent jobs. And as orders grow, we're hiring.
+
+Know someone talented? Send them our way. Link in bio.
+#africatech #remotework #hiring #teamwork`,
+      { keywords: ["african tech", "remote team"], hashtags: ["#africatech"], comments: [q("Which tech community do you think deserves more attention?"), e("Peer-learning programmes produce people who are used to shipping and reviewing each other's work."), f("Remote teamwork: three time zones, one shared playlist.")] }),
+    ig("2026-10-31", "Tip card", `IMAGE: a tip card in brand colours: "Weekend tip: search your bank app for repeat payments." with three crossed-out subscription icons below.
+CAPTION: You're probably paying for at least one thing you forgot about.
+
+Open your bank app and search for repeat payments. Or hand it over: we audit your subscriptions and cancel 5 for $19, the same day.
+
+Save this for your Saturday. Link in bio.
+#moneytips #subscriptions #savemoney #weekendvibes`,
+      { keywords: ["money saving tips", "subscriptions"], hashtags: ["#moneytips"], comments: [q("What's the most forgotten subscription you've ever found?"), e("A quick monthly look at your statement catches most surprise renewals."), f("Paying for four streaming apps to rewatch the same comfort show.")] }),
+    ig("2026-11-01", "Planner flat lay", `IMAGE: a flat lay of a notebook open to "This week: 5 people to reach out to", a pen and a coffee, in warm Sunday light.
+CAPTION: Most sales problems are outreach problems.
+
+Before Monday, write down five people you'll contact this week. Need the list? We research 25 leads that fit your business, each with a reason to reach out. $29, the same day.
+
+Who's first on your list? Link in bio.
+#sales #smallbusiness #sundayreset #entrepreneur`,
+      { keywords: ["sunday planning", "small business sales"], hashtags: ["#sundayreset"], comments: [q("What's the one thing you plan every Sunday night?"), e("A short list of five names turns 'I should do sales' into a Monday task."), f("Sunday plan: organise everything. Sunday reality: organise the snacks.")] }),
+  ],
+};
+
+export const PLANS = [PLAN, INSTAGRAM_PLAN];
