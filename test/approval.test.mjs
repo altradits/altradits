@@ -72,3 +72,18 @@ test("Stan turns an instruction into department drafts, queued for approval; bad
   stan.setStanClient(null);
   assert.equal((await stan.instruct({ text: "Anything" })).status, "error"); // no AI key: says so
 });
+
+test("emails carry the logo inside (no remote images, so no 'remote resources blocked' warning)", async () => {
+  const { default: nodemailer } = await import("nodemailer");
+  const sent = [];
+  const t = nodemailer.createTransport({ streamTransport: true, buffer: true, newline: "unix" });
+  email.setMailer({ sendMail: async (m) => { const info = await t.sendMail(m); sent.push(info.message.toString()); return info; } });
+  try {
+    await email.sendEmail({ to: "jo@shop.co", dept: "growth", approved: true, subject: "Hello", text: "Hi Jo" });
+    const raw = sent[0];
+    assert.match(raw, /Content-ID: <altradits-logo>/);
+    assert.match(raw, /src=3D"cid:altradits-logo"|src="cid:altradits-logo"/);
+    assert.doesNotMatch(raw, /assets\/logo\.png/); // nothing fetched from the web
+    assert.doesNotMatch(raw, /<img[^>]+src=(3D)?"https?:/i);
+  } finally { email.setMailer(undefined); }
+});
