@@ -56,6 +56,14 @@ export async function GET(request) {
   if (u.searchParams.get("view") === "marketing") return json(await marketingView());
 
   // Department inboxes (read-only IMAP); passwords stay in the environment.
+  // Payments held in the backup wallet, waiting to move to the node.
+  if (u.searchParams.get("view") === "held") {
+    const { heldPayments, checkHeld } = await import("../lib/finance.js");
+    await checkHeld();
+    const { qrSvg } = await import("../lib/lightning.js");
+    return json({ held: await Promise.all((await heldPayments()).map(async (p) => ({ id: p.id, title: p.title, client: p.client?.name || p.client?.email || "", sats: p.payment.sats, wallet: p.payment.wallet, at: p.payment.confirmedAt,
+      sweep: p.sweep && Date.parse(p.sweep.expiresAt) > Date.now() ? { bolt11: p.sweep.bolt11, qr: await qrSvg(`lightning:${p.sweep.bolt11}`), expiresAt: p.sweep.expiresAt } : null }))) });
+  }
   if (u.searchParams.get("view") === "statement") {
     const { statement, statementCsv } = await import("../lib/statement.js");
     if (u.searchParams.get("format") === "csv") return new Response(await statementCsv(), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="altradits-statement-${new Date().toISOString().slice(0, 10)}.csv"` } });
@@ -268,6 +276,12 @@ export async function POST(request) {
   if (body.action === "ln_lesson") {
     const { addLesson } = await import("../lib/channels.js");
     try { return json({ lesson: await addLesson(clean(body.text, 600)) }); } catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "move_to_node") {
+    const { moveToNode } = await import("../lib/finance.js");
+    const p = await getProposal(clean(body.id, 30));
+    if (!p) return json({ error: "Payment not found." }, 404);
+    try { const s = await moveToNode(p); return json({ bolt11: s.bolt11 }); } catch (err) { return json({ error: /connected|LND|ECONN|timed out/i.test(err.message) ? "The node isn't reachable yet. Start it on the Mac, then try again." : err.message }, 400); }
   }
   if (body.action === "archives") { const { listArchives } = await import("../lib/store.js"); return json({ archives: listArchives() }); }
   if (body.action === "archive_delete") {

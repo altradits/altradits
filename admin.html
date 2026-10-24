@@ -233,6 +233,11 @@ dd{margin:0;overflow-wrap:anywhere}
       </div>
       <h3 style="font-size:1rem;margin:1.2rem 0 .5rem">Every payment</h3><div id="finList" style="overflow-x:auto"></div>
     </div>
+    <div class="panel" id="heldPanel" hidden><h2>Waiting to move to the node</h2>
+      <p class="muted" style="margin-top:0">Paid while the node was down, so the money sits in the backup wallet. No receipt has gone out yet. For each one, make a node invoice for the exact sats and pay it from that wallet's app. When the node shows it settled (checked hourly, or now with Check), the client gets their official receipt automatically.</p>
+      <div class="row" style="margin:0 0 .6rem"><button class="btn" id="heldCheck">Check now</button></div>
+      <div id="heldList"></div>
+    </div>
     <div class="panel"><h2>Lightning channels</h2>
       <p class="muted" style="margin-top:0">Your node's channels: what the website can still receive over Lightning. You get an email when something needs action (checked hourly, at most once a day per alert).</p>
       <div id="lnAlerts"></div>
@@ -467,7 +472,7 @@ function tab(name) {
   document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === name));
   if (["tasks", "team"].includes(name)) loadOps();
   if (name === "growth") renderGrowth();
-  if (name === "finance") { loadFinance(); loadChannels(); }
+  if (name === "finance") { loadFinance(); loadHeld(); loadChannels(); }
   if (name === "jobs") loadJobs();
   if (name === "marketing") loadMarketing();
   if (name === "stan") loadStan();
@@ -1072,6 +1077,18 @@ async function loadFinance() {
   $("#finServices").innerHTML = table(F.services.map((s) => `<tr><td>${esc(s.key)}</td><td>${s.count}</td><td>${satsF(s.sats)}</td></tr>`), ["Service", "Orders", "Received"]);
   $("#finList").innerHTML = table(F.payments.map((x) => `<tr><td>${esc(new Date(x.at).toLocaleString())}</td><td>${esc(x.receipt || "")}</td><td>${esc(x.client)}</td><td>${esc(x.what)}${x.type === "donation" ? ' <span class="stage">donation</span>' : ""}</td><td>${satsF(x.sats)}</td><td>${x.channel === "onchain" ? "On-chain" : "Lightning"}${x.wallet ? `<br><small class="muted">${esc(x.wallet)}</small>` : ""}</td><td><code title="${esc(x.reference)}">${esc(x.reference.slice(0, 12))}…</code></td></tr>`), ["Date", "Receipt", "Client", "What", "Sats", "Channel", "Reference"]);
 }
+async function loadHeld() {
+  let H; try { H = await api("?view=held"); } catch { return; }
+  $("#heldPanel").hidden = !H.held.length;
+  $("#heldList").innerHTML = H.held.map((x) => `<div class="ap" style="margin:0 0 .8rem"><b>${esc(x.title)}</b> · ${esc(x.client)} · <b>${satsF(x.sats)}</b> in ${esc(x.wallet || "the backup wallet")} · ${ago(x.at)}
+    ${x.sweep ? `<div class="row" style="align-items:flex-start;margin-top:.6rem"><div style="width:11rem;background:#fff;padding:.4rem;border-radius:.5rem">${x.sweep.qr}</div><div style="flex:1;min-width:14rem"><p class="sm" style="margin:0 0 .4rem">Scan with ${esc(x.wallet || "the backup wallet")} and pay exactly ${satsF(x.sats)}. Valid until ${new Date(x.sweep.expiresAt).toLocaleString()}.</p><textarea readonly style="min-height:4rem;font-size:.75rem">${esc(x.sweep.bolt11)}</textarea></div></div>`
+      : `<div class="row" style="margin-top:.5rem"><button class="btn primary" data-move="${esc(x.id)}">Make node invoice for ${satsF(x.sats)}</button></div>`}</div>`).join("");
+}
+$("#heldList").addEventListener("click", async (e) => {
+  const id = e.target.dataset.move; if (!id) return;
+  try { await api("", { action: "move_to_node", id }); loadHeld(); } catch {}
+});
+$("#heldCheck").addEventListener("click", async () => { await loadHeld(); loadFinance(); });
 async function loadChannels() {
   let L; try { L = await api("?view=channels"); } catch (err) { $("#lnAlerts").textContent = err.message; return; }
   const color = { critical: "#B42318", warning: "#B54708" };

@@ -115,6 +115,7 @@ setInterval(() => {
   if (!process.env.LND_REST_URL || Date.now() - channelsAt < 3600e3) return;
   channelsAt = Date.now();
   import("./lib/channels.js").then((c) => c.watchChannels()).catch((e) => console.error("channels", e.message));
+  import("./lib/finance.js").then((f) => f.checkHeld()).then((r) => r.confirmed && console.log("moved to node", r)).catch((e) => console.error("held", e.message));
 }, 10 * 60 * 1000).unref();
 
 // The marketing team: plans the day's posts and publishes each at its slot.

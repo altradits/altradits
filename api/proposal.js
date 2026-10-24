@@ -61,10 +61,19 @@ export async function POST(request) {
       logEvent(lead, `Client reports payment via ${method} (${reference || "no reference"}).`);
       await saveLead(lead);
       // Critical: money to verify and work to start.
+      const backup = p.lightning?.provider === "address";
       await createApproval({
         type: "payment_check", lead, siteUrl: base, payload: { proposalId: p.id },
-        summary: `${lead.name || lead.email} says they paid $${p.totals.dueNow} via ${method}. Reference: ${reference || "none"}.\nProposal: ${p.title}.\nConfirm the money arrived, then approve to send the kick-off email.`,
+        summary: `${lead.name || lead.email || "A client"} says they paid $${p.totals.dueNow}${p.lightning?.sats ? ` (${p.lightning.sats.toLocaleString("en-US")} sats)` : ""} via ${method}. Reference: ${reference || "none"}.\nProposal: ${p.title}.\n${backup ? `The node was down, so this went to the backup Lightning address. In that wallet's history, look for the note "Altradits: ${p.title} (proposal ${p.id})". Approve to start the work; the official receipt goes out once you've moved the sats to the node (Finance tab).` : "Confirm the money arrived, then approve to send the kick-off email."}`,
       });
+      // The client hears at once; urgent orders also reach Stanley on WhatsApp.
+      const { acknowledgeClaim } = await import("../lib/crm.js");
+      await acknowledgeClaim(lead, p);
+      await saveProposal(p);
+      if (backup && p.order?.urgentOk && ["hours", "minutes"].includes(p.order.urgency)) {
+        const { whatsappOwner } = await import("../lib/notify.js");
+        await whatsappOwner(`Altradits URGENT: a paid order (${p.order.name}, ${p.lightning.sats} sats) is waiting. The node is down, so the payment went to the backup wallet. Check the Mac and the admin Approvals.`);
+      }
     }
     return json({ proposal: publicProposal(p), lightning: lightningMode() });
   }

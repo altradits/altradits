@@ -73,6 +73,16 @@ async function update(body) {
   logEvent(lead, "Order details updated.");
   await saveLead(lead);
 
+  // Paid but not yet confirmable (node down): acknowledge once they give an address; alert on urgency.
+  if (p.status === "paid_claimed") {
+    const { acknowledgeClaim } = await import("../lib/crm.js");
+    if (email && !hadEmail) { await acknowledgeClaim(lead, p); await saveProposal(p); }
+    if (isUrgent(p.order) && !wasUrgent) {
+      const { whatsappOwner } = await import("../lib/notify.js");
+      await emailOwner(`🚨 URGENT, payment to confirm: ${p.order.name}`, `${lead.name || lead.email || "A client"} paid for "${p.order.name}" while the node was down and now needs it urgently: ${urgencyNote(p.order)}.\n\nCheck the backup wallet and the Mac, then approve the payment check in Approvals to start the work.`, null, lead.id);
+      await whatsappOwner(`Altradits URGENT: ${p.order.name} was paid while the node was down and is now marked urgent. Check the Mac and the admin Approvals.`);
+    }
+  }
   if (p.status === "paid") {
     if (email && !hadEmail) { await sendKickoff(lead, p); await saveProposal(p); } // first address: their payment email and receipt
     if (isUrgent(p.order) && !wasUrgent) {

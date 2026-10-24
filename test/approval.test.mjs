@@ -255,19 +255,58 @@ test("node down: a payment confirmed by hand gets its sats and payment hash from
   o.p.lightning = { provider: "address", bolt11: pr, sats: 61000, rate: 82000 };
   o.p.status = "paid_claimed";
   o.p.payment = { method: "Bitcoin (Lightning)", reference: pr.slice(-24), claimedAt: new Date().toISOString() }; // what "I've paid" records
-  await crm.confirmPayment(o.lead, o.p, "", { approved: true }); // Stanley approves the payment check
+  // "I've paid": the client gets a plain acknowledgement, no receipt.
+  await crm.acknowledgeClaim(o.lead, o.p);
+  const ack = (await all()).find((e) => e.to === "offline@shop.co");
+  assert.equal(ack.status, "logged");
+  assert.match(ack.text, /recorded your payment of 61,000 sats/);
+  assert.match(ack.text, /official receipt with every detail/);
+  assert.deepEqual(ack.files, []);
+  await crm.confirmPayment(o.lead, o.p, "", { approved: true }); // Stanley has seen it in the wallet: work starts
   assert.equal(o.p.payment.sats, 61000);
   assert.equal(o.p.payment.wallet, "Wallet of Satoshi");
-  assert.equal(o.p.payment.reference, "8b099e4b0f65d2689a90a238c529119a77ea8efb08f8bec538ed48735027ff45");
-  const mail = (await all()).find((e) => e.to === "offline@shop.co");
-  assert.match(mail.text, /61,000 sats over Lightning/);
-  const { receiptPdf } = await import("../lib/finance.js");
-  const pdf = receiptPdf(o.lead, o.p, o.p.receipt.no).toString("latin1");
-  assert.ok(pdf.includes("Amount received: 61,000 sats"));
+  assert.equal(o.p.payment.held, true);
+  assert.equal(o.p.payment.reference, bolt11PaymentHash(pr)); // the real payment hash, not the tail the client sent
+  assert.equal(o.p.receipt, undefined); // no receipt until the sats are on the node
+  assert.ok(o.p.order.taskId); // but the work has started
+  const kick = (await all()).find((e) => e.to === "offline@shop.co" && /we're starting/.test(e.subject));
+  assert.match(kick.text, /61,000 sats over Lightning/);
+  assert.match(kick.text, /official receipt, with every detail of this payment, follows/);
+  assert.deepEqual(kick.files, []);
   await crm.saveProposal(o.p);
   const { statement, statementCsv } = await import("../lib/statement.js");
-  const s = await statement();
-  assert.ok(s.custodial.sats >= 61000);
-  assert.ok(s.payments.some((x) => x.wallet === "Wallet of Satoshi" && x.sats === 61000));
-  assert.match(await statementCsv(), /,61000,lightning,Wallet of Satoshi,8b099e4b0f65d2689a90a238c529119a77ea8efb08f8bec538ed48735027ff45,/);
+  assert.ok((await statement()).custodial.sats >= 61000);
+  assert.match(await statementCsv(), /,61000,lightning,Wallet of Satoshi,/);
+  // Moving the sats needs the node: refused while it's down.
+  const fin = await import("../lib/finance.js");
+  assert.ok((await fin.heldPayments()).some((x) => x.id === o.p.id));
+  await assert.rejects(fin.moveToNode(o.p), /node isn't connected/);
+  // Once the node shows the move settled: the official receipt goes out.
+  o.p.sweep = { paymentHash: "ab".repeat(32), provider: "lnd", sats: 61000 };
+  const r = await fin.confirmOnNode(o.lead, o.p);
+  assert.equal(o.p.payment.held, false);
+  assert.equal(o.p.payment.sweptFrom, "Wallet of Satoshi");
+  const official = (await all()).find((e) => e.to === "offline@shop.co" && /^Your official receipt R-/.test(e.subject));
+  assert.deepEqual(official.files, [`altradits-receipt-${r.no}.pdf`]);
+  const pdf = fin.receiptPdf(o.lead, o.p, r.no).toString("latin1");
+  assert.ok(pdf.includes("Amount received: 61,000 sats"));
+  assert.ok(pdf.includes("Received through our backup Lightning address while our node was offline") && pdf.includes("Altradits node on")); // wraps across two lines
+  assert.match(await statementCsv(), /,61000,lightning,node,/);
+  assert.ok(!(await fin.heldPayments()).some((x) => x.id === o.p.id));
+});
+
+test("WhatsApp alerts to Stanley: off without a CallMeBot key; with one, his number and the text go to CallMeBot only", async () => {
+  const { whatsappOwner } = await import("../lib/notify.js");
+  delete process.env.CALLMEBOT_APIKEY;
+  assert.equal(await whatsappOwner("hi"), false);
+  const real = globalThis.fetch, calls = [];
+  globalThis.fetch = async (u) => { calls.push(String(u)); return { ok: true }; };
+  try {
+    process.env.CALLMEBOT_APIKEY = "k123";
+    assert.equal(await whatsappOwner("Altradits URGENT: check the Mac"), true);
+    const u = new URL(calls[0]);
+    assert.equal(u.host, "api.callmebot.com");
+    assert.equal(u.searchParams.get("apikey"), "k123");
+    assert.equal(u.searchParams.get("text"), "Altradits URGENT: check the Mac");
+  } finally { globalThis.fetch = real; delete process.env.CALLMEBOT_APIKEY; }
 });
