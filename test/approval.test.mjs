@@ -169,21 +169,28 @@ test("email look: no letterhead, signature all on the logo's background, no AI l
   assert.match(html, /seed phrases by email\. <a href="[^"]+unsub=a[^"]*"[^>]*>Unsubscribe<\/a>/);
 });
 
-test("start fresh: communications and test clients are archived to a file, then cleared; the team stays", async () => {
+test("start fresh: communications and test clients are cleared; payments and their emails are never touched", async () => {
   const store = await import("../lib/store.js");
   await store.setJSON("member:m1", { id: "m1" }); await store.pushId("members", "m1");
-  assert.ok((await store.listIds("emails")).length > 0);
+  const paid = (await getMany("proposal", await store.listIds("proposals"))).filter((p) => p.status === "paid");
+  assert.equal(paid.length, 1); // the donation from the payments test
+  const payMail = (await all()).filter((e) => ["payment", "receipt", "finance"].includes(e.kind) || e.leadId === paid[0].leadId).map((e) => e.id);
+  assert.ok(payMail.length >= 3); // thank-you, receipt, Finance's confirmation
+  const seq = await store.getJSON("finance:seq");
   await assert.rejects(store.archiveAndClear(["nothing"]), /Choose/);
   const r = await store.archiveAndClear(["communications", "clients"]);
   assert.ok(r.archived > 5);
-  assert.equal((await store.listIds("emails")).length, 0);
-  assert.equal((await store.listIds("approvalq")).length, 0);
-  assert.equal((await store.listIds("leads")).length, 0);
-  assert.equal(await store.getJSON("finance:seq"), null); // receipts start again at 00001
+  assert.ok(r.keptPayments >= payMail.length + 2);
+  // Only the payment's records remain, in their lists.
+  assert.deepEqual((await store.listIds("proposals")), [paid[0].id]);
+  assert.deepEqual((await store.listIds("leads")), [paid[0].leadId]);
+  assert.deepEqual(new Set(await store.listIds("emails")), new Set(payMail));
+  assert.ok((await email.pendingApprovals()).every((e) => e.leadId === paid[0].leadId)); // Finance's confirmation still waits
+  assert.equal(await store.getJSON("finance:seq"), seq); // receipt numbers never restart
   assert.deepEqual(await store.listIds("members"), ["m1"]);
   const saved = JSON.parse(fs.readFileSync(path.join(store.dataDir(), "archive", r.file), "utf8"));
   assert.ok(Object.keys(saved.kv).some((k) => k.startsWith("email:")));
-  assert.ok(saved.lists.emails.length > 0);
+  assert.ok(!Object.keys(saved.kv).some((k) => k === `proposal:${paid[0].id}`));
 });
 
 test("delete for good keeps no copy; archives can be listed and deleted", async () => {
@@ -193,7 +200,8 @@ test("delete for good keeps no copy; archives can be listed and deleted", async 
   const r = await store.archiveAndClear(["communications"], { keep: false });
   assert.ok(r.cleared > 0);
   assert.equal(r.file, null);
-  assert.equal((await store.listIds("emails")).length, 0);
+  assert.ok((await getMany("email", await store.listIds("emails"))).every((e) => e.kind !== "client" || e.leadId)); // only payment mail left
+  assert.ok(!(await all()).some((e) => e.subject === "Hi" && e.to === "jo@shop.co")); // the plain email is gone
   assert.equal(store.listArchives().length, before); // no new archive file
   const [a] = store.listArchives();
   assert.ok(a.bytes > 0);
