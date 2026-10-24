@@ -56,6 +56,11 @@ export async function GET(request) {
   if (u.searchParams.get("view") === "marketing") return json(await marketingView());
 
   // Department inboxes (read-only IMAP); passwords stay in the environment.
+  if (u.searchParams.get("view") === "statement") {
+    const { statement, statementCsv } = await import("../lib/statement.js");
+    if (u.searchParams.get("format") === "csv") return new Response(await statementCsv(), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="altradits-statement-${new Date().toISOString().slice(0, 10)}.csv"` } });
+    return json(await statement());
+  }
   if (u.searchParams.get("view") === "donations") {
     const all = (await getMany("proposal", await listIds("proposals", 2000))).filter((p) => p.donation && p.status === "paid");
     return json({
