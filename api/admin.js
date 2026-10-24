@@ -56,6 +56,13 @@ export async function GET(request) {
   if (u.searchParams.get("view") === "marketing") return json(await marketingView());
 
   // Department inboxes (read-only IMAP); passwords stay in the environment.
+  if (u.searchParams.get("view") === "donations") {
+    const all = (await getMany("proposal", await listIds("proposals", 2000))).filter((p) => p.donation && p.status === "paid");
+    return json({
+      total: Math.round(all.reduce((t, p) => t + p.totals.dueNow, 0) * 100) / 100, count: all.length,
+      recent: all.slice(0, 50).map((p) => ({ at: p.payment?.confirmedAt || p.updatedAt, name: p.client?.name, email: p.client?.email, usd: p.totals.dueNow, sats: p.payment?.sats || null, message: p.donation.message, receipt: p.receipt?.no || null })),
+    });
+  }
   if (u.searchParams.get("view") === "inboxes") {
     const { listInboxes } = await import("../lib/inbox.js");
     return json({ boxes: await listInboxes({ fresh: u.searchParams.get("fresh") === "1" }) });
@@ -130,8 +137,9 @@ export async function GET(request) {
   ]);
 
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
-  const paid = proposals.filter((p) => p.status === "paid");
-  const open = proposals.filter((p) => ["sent", "accepted", "paid_claimed"].includes(p.status));
+  // Donations are tracked separately, not as revenue or open proposals.
+  const paid = proposals.filter((p) => p.status === "paid" && !p.donation);
+  const open = proposals.filter((p) => ["sent", "accepted", "paid_claimed"].includes(p.status) && !p.donation);
   const stats = {
     leads: leads.length,
     leads7d: leads.filter((l) => Date.now() - Date.parse(l.createdAt) < 7 * 864e5).length,

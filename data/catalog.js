@@ -294,6 +294,15 @@ export function orderable(id) {
   return null;
 }
 
+// Donations fund Bitcoin education in the community, so more people and
+// businesses can earn, save and pay in Bitcoin instead of fiat. Paid like any
+// order (one QR, any wallet), confirmed automatically, receipted by Finance.
+export const DONATIONS = {
+  purpose: "Bitcoin education in our community: helping people and businesses learn to earn, save and pay in Bitcoin instead of fiat currency.",
+  suggested: [5, 20, 50, 100], // USD
+  min: 1, max: 5000,
+};
+
 // Clean addresses: altradits.com/<slug> opens that item's order (quick jobs
 // drop their "q-": /inbox-cleanup, /try, /hourly, /core). Old ?buy= links still work.
 export const slugFor = (id) => String(id).replace(/^q-/, "");
