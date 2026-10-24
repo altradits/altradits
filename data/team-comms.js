@@ -13,8 +13,9 @@
 //   altradits@gmail.com). Every external email a department head sends copies
 //   stan@. Stanley has access to stan@ and monitors everything without having
 //   to approve anything.
-// - Names: an English first name and a Kenyan or Ethiopian surname. Every
-//   signature says the person is an AI agent; none passes as human staff.
+// - Names: an English first name and a Kenyan or Ethiopian surname.
+//   Signatures carry name, title and address only: Stanley approves every
+//   external email after Stan's QA, so each one leaves with his sign-off.
 // - Facts come from data/catalog.js only: fixed prices and scope, Bitcoin
 //   payments, same-day quick jobs, month-to-month retainers, and "If what I
 //   deliver doesn't match the proposal, I fix it free for 14 days after
@@ -30,13 +31,13 @@ const head = (name, title, source) => ({ name, title, role: title, kind: "ai", s
 const emp = (name, title, jurisdiction, source) => ({ name, title, jurisdiction, source });
 
 // Defaults shared by every sending department; each entry overrides what differs.
-const dept = ({ note = "A human reviews anything sensitive.", ...d }) => ({
+const dept = (d) => ({
   backup: STANLEY,
   cc: [STAN],
   internal: false,
   sendsAs: true,
   reportsTo: "founder",
-  signature: [d.head.name, `${d.head.title} (AI agent), Altradits. ${note}`, `${d.address} · altradits.com`],
+  signature: [d.head.name, `${d.head.title}, Altradits`, `${d.address} · altradits.com`],
   ...d,
 });
 
@@ -58,7 +59,7 @@ export const COMMS = [
     sla: { firstReply: "Escalation decision within 4 working hours (EAT)", resolution: "Decision or a dated plan within 1 working day" },
     escalate: ["Refunds, legal matters, hiring decisions and anything Stan cannot decide go to Stanley (altradits@gmail.com)"],
     cc: [],
-    signature: ["Stan", "Head of Quality and Internal Communications (AI agent), Altradits", "stan@altradits.com · altradits.com"],
+    signature: ["Stan", "Head of Quality and Internal Communications, Altradits", "stan@altradits.com · altradits.com"],
     strategy: ["Review every deliverable with the right experts before it reaches a client (data/qa-experts.js)", "Read every external thread through the CC; step in on escalations and audit findings", "Turn repeat causes into playbook or answer-bank updates each week", "Keep Stanley's inbox for payment confirmations and decisions only he can make"],
     metrics: ["Escalations per week by department", "Threads missing the stan@ copy", "Repeat escalations with the same cause"],
     internal: false,
@@ -267,7 +268,6 @@ export const COMMS = [
     escalate: ["Spam or abuse complaint (trust)", "Data-protection request (trust)", "A reply that is a lead or complaint (care@)"],
     strategy: ["Every send passes the Brand Guardian first", "Use the Growth Hacker's weekly results to pick the kit and offer to feature"],
     metrics: ["Kit downloads per week", "Follow-up click rate", "Subscribers who order", "Unsubscribe rate"],
-    note: "Reply to reach a human.",
     channels: { external: ["Kits, follow-ups, newsletters, social posts"], internal: ["Leads to care@, privacy to trust@", DAILY, WEEKLY] },
   }),
   dept({
@@ -285,7 +285,6 @@ export const COMMS = [
     voice: ["Respectful and honest; no promised volumes or pay beyond what is agreed", "AI agents do first drafts; freelancers handle the human steps", "Never ask applicants for passwords or card numbers by email"],
     sla: { firstReply: "2 working days (EAT)", resolution: "Decision within 10 working days" },
     escalate: ["Final approval of a team member (Stanley)", "Payment or contract questions (Stan)", "Conduct complaints (Stan)"],
-    note: "Stanley makes every hiring decision.",
     strategy: ["Answer every application, even when it's no", "Tell /join which departments are short of people"],
     metrics: ["Applications per week by department", "Time to decision", "New freelancers active within 30 days"],
     channels: { external: ["Applicant and freelancer emails"], internal: ["Shortlists to Stan for Stanley's decision", DAILY, WEEKLY] },
@@ -307,7 +306,6 @@ export const COMMS = [
     voice: ["Default to needs-work; approve only with evidence", "Quote the checklist item that failed, not the person (blameless)", "Specific fixes, not opinions", "Never email clients from this address"],
     sla: { firstReply: "2 working hours (EAT) per review", resolution: "Before the client's delivery deadline" },
     escalate: ["A deliverable fails twice (Stan)", "Invented facts or misleading claims (Stan)", "A review would make delivery late (head and Stan)"],
-    note: "Internal only.",
     strategy: ["Review against data/playbooks.js every time", "Feed repeat failures into playbook updates weekly"],
     metrics: ["First-pass approval rate by department", "Review turnaround", "Client fix requests after a pass"],
     internal: true,

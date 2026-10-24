@@ -130,6 +130,7 @@ dd{margin:0;overflow-wrap:anywhere}
 .stage.posted{background:color-mix(in srgb,var(--ok) 18%,white)}
 .stage.failed,.stage.rejected{background:color-mix(in srgb,var(--warn) 18%,white)}
 @media (max-width:820px){.grid3{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.hide-sm{display:none}}
+.fresh label{display:flex;gap:.5rem;align-items:flex-start;margin:.25rem 0}.fresh input[type=checkbox],.fresh input[type=radio]{width:auto;flex:none;margin:.2rem 0 0}
 </style>
 </head>
 <body>
@@ -207,7 +208,7 @@ dd{margin:0;overflow-wrap:anywhere}
 
   <div id="tab-growth" hidden>
     <div class="panel"><h2>Donations <span class="stage" id="donTotal" style="font-size:.8rem"></span></h2>
-      <p class="muted" style="margin-top:0">Donations to Bitcoin education at <a href="/donate" target="_blank" rel="noopener">/donate</a>. Confirmed automatically; Finance's receipts wait in the Stan tab.</p>
+      <p class="muted" style="margin-top:0">Donations to Bitcoin education at <a href="/donate" target="_blank" rel="noopener">/donate</a>. Confirmed automatically with a PDF receipt; Finance's personal confirmations wait in the Stan tab.</p>
       <div id="donList"></div>
     </div>
     <div class="panel"><h2>Free-kit subscribers <span class="stage" id="subTotal" style="font-size:.8rem"></span></h2>
@@ -327,6 +328,19 @@ dd{margin:0;overflow-wrap:anywhere}
     <div class="grid2">
       <div class="panel"><h2>Copied to Stan (external, from the heads)</h2><div id="stanCopied"></div></div>
       <div class="panel"><h2>Escalated to you</h2><div id="stanEsc"></div></div>
+    </div>
+    <div class="panel fresh"><h2>Start fresh</h2>
+      <p class="muted" style="margin-top:0">Clear old records so the dashboard only shows real work from now on. Your team, careers and marketing content are never touched.</p>
+      <label class="sm"><input type="checkbox" class="freshG" value="communications" checked> <span>Communications: every recorded email, the approval queue and Stan's instructions</span></label>
+      <label class="sm"><input type="checkbox" class="freshG" value="clients"> <span>Test clients: leads, orders, payments, donations, tasks, free-kit subscribers, hunt coupons, and receipt numbers back to 00001</span></label>
+      <div class="sm" style="margin-top:.6rem"><label><input type="radio" name="freshMode" value="archive" checked> <span>Archive first (kept in a file, can be restored)</span></label>
+      <label><input type="radio" name="freshMode" value="delete"> <span><b>Delete for good</b> (no copy kept, frees the space, can't be undone)</span></label></div>
+      <div class="row" style="margin-top:.6rem"><input id="freshConfirm" placeholder="Type START FRESH" style="max-width:14rem"><button class="btn" id="freshGo">Clear</button></div>
+      <p class="sm muted" id="freshMsg" role="status"></p>
+      <h3 style="margin:1.2rem 0 .4rem;font-size:1rem">Archives</h3>
+      <p class="sm muted" style="margin:0 0 .5rem">Deleting an archive frees its space for good. Type DELETE in the box, then click Delete on the file.</p>
+      <input id="archConfirm" placeholder="Type DELETE" style="max-width:14rem">
+      <div id="archList" class="sm" style="margin-top:.5rem"></div>
     </div>
   </div>
 
@@ -924,6 +938,30 @@ $("#mailList").addEventListener("click", async (e) => {
 
 // ---- Stan: instructions and approvals
 let STAN_D = null;
+const kb = (n) => n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1048576).toFixed(1)} MB`;
+async function loadArchives() {
+  try {
+    const { archives } = await api("", { action: "archives" });
+    $("#archList").innerHTML = archives.length ? archives.map((a) => `<div class="row" style="margin:.25rem 0;align-items:center"><span style="flex:1">${esc(a.name.replace(/^fresh-|\.json$/g, "").replace(/T(\d\d)-(\d\d).*/, " $1:$2 UTC"))} · ${kb(a.bytes)}</span><button class="btn" data-arch="${esc(a.name)}">Delete</button></div>`).join("") : '<p class="muted" style="margin:0">No archives.</p>';
+  } catch (err) { $("#archList").textContent = err.message; }
+}
+document.querySelectorAll('input[name="freshMode"]').forEach((r) => r.addEventListener("change", () => { $("#freshConfirm").placeholder = r.value === "delete" ? "Type DELETE FOREVER" : "Type START FRESH"; }));
+$("#freshGo").addEventListener("click", async (e) => {
+  const groups = [...document.querySelectorAll(".freshG:checked")].map((c) => c.value);
+  const mode = document.querySelector('input[name="freshMode"]:checked').value;
+  e.target.disabled = true;
+  try {
+    const r = await api("", { action: "start_fresh", groups, mode, confirm: $("#freshConfirm").value.trim() });
+    $("#freshMsg").textContent = r.file ? `Done: ${r.cleared} records cleared and archived.` : `Done: ${r.cleared} records deleted for good.`;
+    $("#freshConfirm").value = ""; loadStan(); loadArchives();
+  } catch (err) { $("#freshMsg").textContent = err.message; }
+  e.target.disabled = false;
+});
+$("#archList").addEventListener("click", async (e) => {
+  const name = e.target.dataset.arch; if (!name) return;
+  try { await api("", { action: "archive_delete", name, confirm: $("#archConfirm").value.trim() }); $("#archConfirm").value = ""; loadArchives(); }
+  catch (err) { $("#archList").insertAdjacentHTML("afterbegin", `<p class="muted" style="margin:0 0 .3rem">${esc(err.message)}</p>`); }
+});
 $("#stanGo").addEventListener("click", async (e) => {
   const text = $("#stanText").value.trim(); if (!text) { $("#stanMsg").textContent = "Write an instruction first."; return; }
   e.target.disabled = true; $("#stanMsg").textContent = "Stan is on it. Drafts appear below in a minute.";
@@ -941,6 +979,7 @@ $("#mailApprovals").addEventListener("click", async (e) => {
 
 // ---- Stan's desk (read-only monitoring)
 async function loadStan() {
+  loadArchives();
   let S; try { S = await api("?view=stan"); } catch { return; }
   STAN_D = S;
   $("#approvalCount").hidden = !S.approvals.length; $("#approvalCount").textContent = S.approvals.length;
