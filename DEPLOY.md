@@ -101,7 +101,7 @@ The marketing team (admin → Marketing) plans posts daily at 05:00 UTC and publ
 | LinkedIn · Stanley | `LINKEDIN_TOKEN` (optional `LINKEDIN_PERSON_URN`) | linkedin.com/developers → create an app → add **Share on LinkedIn** and **Sign In with LinkedIn using OpenID Connect** → OAuth token generator with scopes `openid profile w_member_social`. Expires after about 60 days: the team emails you when a post fails so you can renew it. |
 | LinkedIn · Altradits page | `LINKEDIN_ORG_ID` (+ `LINKEDIN_ORG_TOKEN` if different) | The number in your company page admin URL. Needs the **Community Management API** product (LinkedIn reviews the request) and scope `w_organization_social`. |
 | Facebook · Altradits page | `FB_PAGE_TOKEN` (optional `FB_PAGE_ID`, default 61579168157529) | developers.facebook.com → app → Graph API Explorer → Page access token with `pages_manage_posts`, `pages_read_engagement`; exchange for a long-lived token. |
-| Facebook · Stanley, TikTok | none | Meta doesn't allow posting to personal profiles by API, and TikTok needs a video file: these always arrive as ready-to-paste drafts. |
+| Facebook · Stanley, TikTok (@altradits and Stanley's @5tan_lee) | none | Meta doesn't allow posting to personal profiles by API, and TikTok needs a video file: these always arrive as ready-to-paste drafts. |
 
 Optional: `LINKEDIN_VERSION` (default 202608), `FB_GRAPH_VERSION` (default v25.0), `MARKETING_MODEL`. The GitHub Action "Wake the marketing team" pings the site at each slot because the host idles the app.
 

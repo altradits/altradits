@@ -43,11 +43,13 @@ export const CHANNELS = [
   { id: "fb_page", name: "Facebook · Altradits page", url: "https://www.facebook.com/profile.php?id=61579168157529", agent: "writer", mode: "api",
     env: ["FB_PAGE_TOKEN"], slots: ["15:00"], max: 1500, link: "body", ref: "mkfbpage" },
   // Meta's API cannot post to personal profiles, and TikTok's needs a video
-  // file: these two always come as ready-to-post drafts.
+  // file: these always come as ready-to-post drafts.
   { id: "fb_stan", name: "Facebook · Stanley", url: "https://www.facebook.com/profile.php?id=61579237182379", agent: "writer", mode: "manual",
     env: [], slots: ["16:00"], max: 1200, link: "body", ref: "mkfbstan" },
   { id: "tiktok", name: "TikTok · @altradits", url: "https://www.tiktok.com/@altradits", agent: "tiktok", mode: "manual",
     env: [], slots: ["17:00"], max: 2200, link: false, ref: "mktiktok" },
+  { id: "tt_stan", name: "TikTok · Stanley (@5tan_lee)", url: "https://www.tiktok.com/@5tan_lee", agent: "tiktok", mode: "manual",
+    env: [], slots: ["19:00"], max: 2200, link: false, ref: "mkttstan" },
 ];
 
 // Profiles the posts may point people to (the GitHub link is for developer audiences).
