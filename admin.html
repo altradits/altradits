@@ -457,7 +457,7 @@ document.addEventListener("click", async (e) => {
 
 // ---------------------------------------------------------- operations
 let O = null;
-const TLABEL = { new: "unassigned", assigned: "assigned (human)", in_progress: "in progress", review: "with client", changes: "changes", done: "done ✓", cancelled: "cancelled",
+const TLABEL = { held: "⚠ security hold", new: "unassigned", assigned: "assigned (human)", in_progress: "in progress", review: "with client", changes: "changes", done: "done ✓", cancelled: "cancelled",
   queued: "queued for agent", working: "agent working", waiting_client: "waiting for client", owner: "needs you", follow_up: "unhappy client" };
 async function loadOps() {
   try { O = await api("?view=ops"); renderOps(); } catch {}
@@ -479,7 +479,7 @@ function renderComms() {
 function renderInternal() {
   const I = O?.internal; if (!I) return;
   const dname = (ids) => ids.map((id) => O.comms.find((c) => c.id === id)?.address?.split("@")[0] || id).join(", ");
-  $("#internalProto").innerHTML = `<p class="sm"><b>Daily:</b> ${esc(I.cadence.daily)}<br><b>Weekly:</b> ${esc(I.cadence.weekly)}<br><b>Monthly:</b> ${esc(I.cadence.monthly)}</p>
+  $("#internalProto").innerHTML = `${I.security ? `<div class="sm" style="border-left:3px solid var(--warn);padding-left:.6rem;margin-bottom:.6rem"><b>Security, every message</b><ul style="margin:.2rem 0">${I.security.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></div>` : ""}<p class="sm"><b>Daily:</b> ${esc(I.cadence.daily)}<br><b>Weekly:</b> ${esc(I.cadence.weekly)}<br><b>Monthly:</b> ${esc(I.cadence.monthly)}</p>
     <b class="sm">Escalation</b><ol class="sm">${I.escalation.map((e) => `<li><b>${esc(e.who)}</b>: ${esc(e.trigger)} (${esc(e.respond)})</li>`).join("")}</ol>
     <b class="sm">Who owns what</b><div style="overflow-x:auto"><table class="sm"><thead><tr><th>Activity</th><th>Does it</th><th>Accountable</th><th>Consulted</th><th>Informed</th></tr></thead><tbody>${I.raci.map((r) => `<tr><td>${esc(r.activity)}</td><td>${esc(dname(r.responsible))}</td><td>${esc(dname(r.accountable))}</td><td>${esc(dname(r.consulted))}</td><td>${esc(dname(r.informed))}</td></tr>`).join("")}</tbody></table></div>
     <details><summary class="sm" style="cursor:pointer"><b>Handoff checklist and rules</b></summary><ul class="sm">${I.handoff.map((h) => `<li>${esc(h)}</li>`).join("")}</ul><ul class="sm">${I.rules.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></details>`;
@@ -491,8 +491,8 @@ function renderInternal() {
 function renderOps() {
   renderComms();
   renderInternal();
-  const openSt = ["new", "assigned", "in_progress", "changes", "queued", "working", "waiting_client", "owner", "follow_up"];
-  const unassigned = O.tasks.filter((t) => ["new", "owner", "follow_up"].includes(t.status)).length;
+  const openSt = ["held", "new", "assigned", "in_progress", "changes", "queued", "working", "waiting_client", "owner", "follow_up"];
+  const unassigned = O.tasks.filter((t) => ["held", "new", "owner", "follow_up"].includes(t.status)).length;
   $("#taskCount").hidden = !unassigned; $("#taskCount").textContent = unassigned;
   const applied = O.members.filter((m) => m.status === "applied").length;
   $("#teamCount").hidden = !applied; $("#teamCount").textContent = applied;
@@ -502,11 +502,15 @@ function renderOps() {
   const p = O.pipeline || {};
   $("#pipeKpis").innerHTML = [["Queued", p.queued], ["Agents working", p.working], ["Waiting on client", p.waiting_client], ["Needs you", p.owner], ["With client", p.review], ["Unhappy", p.follow_up], ["Done", p.done],
     ["Avg rating", O.satisfaction ? `${O.satisfaction.avg}★` : "–"]].map(([k, v]) => `<div class="kpi"><small>${k}</small><div>${v ?? 0}</div></div>`).join("");
-  $("#taskList").innerHTML = list.map((t) => `<div class="ap ${["new", "owner", "follow_up"].includes(t.status) ? "pending" : ""}">
+  $("#taskList").innerHTML = list.map((t) => `<div class="ap ${["held", "new", "owner", "follow_up"].includes(t.status) ? "pending" : ""}">
     <h3>${esc(t.title)} <span class="stage">${TLABEL[t.status] || t.status}</span></h3>
     <div class="meta">${esc(t.client)} · ${esc(t.department)} · ~${t.estimateHours}h${t.due ? ` · due ${esc(t.due)}` : ""} · ${t.assignee ? esc(t.assignee) : t.agent ? esc(t.agent) : t.status === "in_progress" ? "you" : "nobody yet"}${t.attempts ? ` · attempt ${t.attempts}` : ""}${t.satisfaction ? ` · rated ${t.satisfaction.rating}/5` : ""}</div>
     <pre>${esc(t.details)}</pre>
     ${t.question ? `<p><b>Agent asked the client:</b> ${esc(t.question)}</p>` : ""}
+    ${t.status === "held" && t.held ? `<div style="border:2px solid var(--warn);border-radius:.7rem;padding:.7rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 8%,white)">
+      <b>Security hold.</b> The ${esc(t.held.source)} contains ${esc(t.held.reasons.join(", "))}. All activity stopped; no AI has read it. Links below are shown as text only.
+      <pre style="margin:.5rem 0;max-height:12rem;overflow:auto">${esc(t.held.text)}</pre>
+      <div class="row"><input placeholder="Your instructions for the department (optional)" data-releasenote="${t.id}" style="flex:1;min-width:12rem"><button class="btn ok" data-release="${t.id}">Release: it's safe</button><button class="btn" data-cancel="${t.id}">Cancel task</button></div></div>` : ""}
     ${t.qa ? `<p class="muted">QA: ${t.qa.panel ? (t.qa.final?.approve ? "approved by Stan" : t.qa.final ? `sent back by Stan: ${esc((t.qa.final.issues || []).join("; "))}` : `${t.qa.panel.filter((p) => p.approved).length}/${t.qa.panel.length} areas approved`) : t.qa.pass ? "passed" : esc((t.qa.issues || []).join("; "))}</p>` : ""}
     ${t.deliverable ? `<details><summary>Deliverable: ${esc(t.deliverable.title || "")} (${t.hoursLogged}h)</summary>
       <p>${esc(t.deliverable.summary || t.deliverable.note || "")}</p>
@@ -540,6 +544,7 @@ document.addEventListener("click", async (e) => {
   else if (d.assign) body = { action: "task_assign", id: d.assign, memberId: document.querySelector(`[data-assignsel="${d.assign}"]`).value };
   else if (d.cancel) { if (!confirmCancel(e.target)) return; body = { action: "task_cancel", id: d.cancel }; }
   else if (d.sendclient) body = { action: "task_send_client", id: d.sendclient };
+  else if (d.release) body = { action: "task_release", id: d.release, note: document.querySelector(`[data-releasenote="${d.release}"]`)?.value || "" };
   else if (d.rerun) body = { action: "task_rerun", id: d.rerun, note: document.querySelector(`[data-rerunnote="${d.rerun}"]`)?.value || "" };
   else if (d.close) body = { action: "task_close", id: d.close, note: document.querySelector(`[data-closenote="${d.close}"]`)?.value || "" };
   else if (d.selfsubmit) body = { action: "task_submit", id: d.selfsubmit, url: document.querySelector(`[data-surl="${d.selfsubmit}"]`).value, note: document.querySelector(`[data-snote="${d.selfsubmit}"]`).value, hours: document.querySelector(`[data-shours="${d.selfsubmit}"]`).value };

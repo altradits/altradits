@@ -1149,7 +1149,7 @@ ${item.urgentOk ? `<fieldset class="urg" id="urg"><legend>When do you need it?</
 
       <label>Email for your receipt and client portal<input type="email" name="email" autocomplete="email" placeholder="you@business.com"></label>
       <label>Your name<input type="text" name="name" autocomplete="name"></label>
-      <label class="wide">What exactly do you need? (links, deadlines, preferences)<textarea name="task" placeholder="${item.kind === "package" ? "Your first priorities for the month" : "Describe the task"}"></textarea></label>
+      <label class="wide">What exactly do you need? (deadlines, preferences; any links are security-checked before we open them)<textarea name="task" placeholder="${item.kind === "package" ? "Your first priorities for the month" : "Describe the task"}"></textarea></label>
       <p class="saved wide" id="saved" role="status"></p>
     </form>`;
   $(".x", sheet).onclick = closeModal;

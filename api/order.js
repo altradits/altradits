@@ -4,6 +4,7 @@
 // POST /api/order { id, t, coupon }           -> apply a one-time hunt code -> { usd, pct }
 // GET  /api/order?id=&t=  -> { status, portal?, phone? }  (phone only once an
 //                            urgent order is paid, so the client can flag it)
+import { holdIfUnsafe } from "../lib/screen.js";
 import { json, readBody, clean, clientIp, safeEqual, EMAIL_RE } from "../lib/http.js";
 import { hit } from "../lib/store.js";
 import { createOrder, getProposal, saveProposal, getLead, saveLead, logEvent, sendKickoff } from "../lib/crm.js";
@@ -81,7 +82,11 @@ async function update(body) {
     }
     if (p.order.task !== before) {
       const t = p.order.taskId && (await getTask(p.order.taskId));
-      if (t) { t.details = p.order.task; t.history.push({ at: new Date().toISOString(), by: "client", text: "Added order details" }); await saveTask(t); }
+      if (t) {
+        t.details = p.order.task;
+        t.history.push({ at: new Date().toISOString(), by: "client", text: "Added order details" });
+        if (!(await holdIfUnsafe(t, p.order.task, "order details", saveTask))) await saveTask(t);
+      }
       await emailOwner(`Order details: ${p.order.name}`, `${lead.name || lead.email || "A client"} added details to their paid order:\n\n${p.order.task}`, null, lead.id);
     }
   }

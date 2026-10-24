@@ -335,6 +335,14 @@ test("Altradits only answers comments on its own posts: replies, escalates the s
   sent.length = 0;
   const again = await mk.marketingTick({ at: new Date("2026-11-05T10:00:00Z"), force: true });
   assert.equal(again.responses.handled, 0);
+  // A comment with a link or code is held: never sent to the AI, forwarded to Stanley defanged.
+  fbComments = [{ id: "c7", message: "Great post! Claim your prize at https://evil.example/win", from: { id: "u7", name: "Spam" } }];
+  const before = calls.length;
+  const held = await mk.marketingTick({ at: new Date("2026-11-05T10:40:00Z"), force: true });
+  assert.equal(held.responses.escalated, 1);
+  assert.ok(!calls.slice(before).some((c) => JSON.stringify(c.messages || "").includes("evil.example")), "no AI saw it");
+  const fwd = (await getMany("email", await listIds("emails", 80))).find((e) => /Security hold: 1 comment/.test(e.subject));
+  assert.match(fwd.text, /hxxps:\/\/evil\[\.\]example/);
   // Switched off: no reading, no replying.
   await mk.saveSettings({ autoReply: false });
   fbComments = [{ id: "c9", message: "Hello?", from: { id: "u9", name: "Ann" } }];

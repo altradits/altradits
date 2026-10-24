@@ -330,6 +330,19 @@ export async function POST(request) {
     await notifyClient(t, `Ready for your review: ${t.title}`, `Your task "${t.title}" is done.\n\n${note}${t.deliverable.url ? `\n\nDeliverable: ${t.deliverable.url}` : ""}\n\nApprove it or ask for changes in your portal.`);
     return json({ ok: true });
   }
+  if (body.action === "task_release") {
+    const t = await getTask(clean(body.id, 40));
+    if (!t) return json({ error: "Task not found" }, 404);
+    if (t.status !== "held") return json({ error: "This task isn't on hold." }, 409);
+    const at = new Date().toISOString();
+    t.held.releasedAt = at;
+    t.status = workersLive() ? "queued" : "new";
+    t.history.push({ at, by: "Stanley", text: `Released after security review${clean(body.note, 300) ? `: ${clean(body.note, 300)}` : ""}` });
+    await saveTask(t);
+    if (workersLive()) kickQueue(); else await assignTask(t);
+    return json({ ok: true, task: t });
+  }
+
   if (body.action === "task_assign" || body.action === "task_cancel") {
     const t = await getTask(clean(body.id, 40));
     if (!t) return json({ error: "Task not found" }, 404);

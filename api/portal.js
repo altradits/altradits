@@ -2,6 +2,7 @@
 // GET  /api/portal?c=<token>                         -> onboarding, tasks, hours, referral
 // GET  /api/portal?c=<token>&task=<id>&file=<n>      -> download a deliverable file
 // POST /api/portal { c, action: "onboarding"|"task"|"answer"|"approve"|"changes", ... }
+import { holdIfUnsafe } from "../lib/screen.js";
 import { reopen } from "../lib/qa.js";
 import { json, readBody, clean, clientIp } from "../lib/http.js";
 import { hit } from "../lib/store.js";
@@ -108,6 +109,7 @@ export async function POST(request) {
     t.history.push({ at, by: "client", text: `Client answered: ${answer}` });
     t.question = null;
     t.status = "queued";
+    if (await holdIfUnsafe(t, answer, "client answer", saveTask)) return json({ ok: true, held: true });
     await saveTask(t);
     kickQueue();
   } else if (body.action === "approve") {
@@ -148,6 +150,7 @@ export async function POST(request) {
       t.status = "queued";
       t.attempts = 0; // fresh revision cycle with the client's feedback
       reopen(t.qa, note); // Stan's QA re-tests everything, including the change
+      if (await holdIfUnsafe(t, note, "change request", saveTask)) return json({ ok: true, held: true });
       await saveTask(t);
       kickQueue();
     } else {
