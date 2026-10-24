@@ -51,6 +51,19 @@ nav a{position:relative;text-decoration:none;font-weight:600;font-size:.97rem;co
 nav a::after{content:"";position:absolute;left:0;right:0;bottom:-.2rem;height:2px;border-radius:2px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
 nav a:hover,nav a.here{color:var(--ink)}
 nav a:hover::after,nav a.here::after{transform:scaleX(1)}
+nav .short{display:none}
+/* Menu jumps land below the sticky header, not under it. */
+main section[id],section[id]{scroll-margin-top:4.5rem}
+@media (max-width:560px){
+  nav{gap:1rem}
+  nav .full{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  nav .short{display:inline}
+}
+@media (max-width:380px){
+  nav{gap:.8rem}
+  nav a{font-size:.92rem}
+  header .logo img,html.compact header .logo img{height:2rem}
+}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.85rem 1.4rem;border-radius:.75rem;font:700 1rem Figtree,sans-serif;text-decoration:none;border:2px solid var(--ink);cursor:pointer;background:transparent;color:var(--ink);transition:transform .15s,background .15s}
 .btn:hover{transform:translateY(-2px)}
@@ -426,7 +439,6 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
   .story{aspect-ratio:4/3;max-width:34rem;order:-1}
   .plans,.guar{grid-template-columns:1fr}
   .agents{grid-template-columns:1fr 1fr}
-  nav a.opt{display:none}
   .filterbar{top:3.6rem}
 }
 @media (max-width:560px){
@@ -455,10 +467,10 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
   <div class="wrap">
     <a class="logo" href="#top" aria-label="Altradits, back to top"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a>
     <nav aria-label="Main">
-      <a href="#quick">Find a job</a>
-      <a href="#plans">Monthly plans</a>
-      <a class="opt" href="#how">How it works</a>
-      <a class="opt" href="#faq">FAQ</a>
+      <a href="#quick"><span class="full">Find a job</span><span class="short" aria-hidden="true">Jobs</span></a>
+      <a href="#how"><span class="full">How it works</span><span class="short" aria-hidden="true">How</span></a>
+      <a href="#plans"><span class="full">Monthly plans</span><span class="short" aria-hidden="true">Plans</span></a>
+      <a href="#faq">FAQ</a>
     </nav>
   </div>
 </header>
@@ -1280,7 +1292,11 @@ function frame() {
   root.classList.toggle("compact", y > 40);
   if (howOn) how();
   let cur = null;
-  for (const t of targets) if (!t.hidden && t.getBoundingClientRect().top < innerHeight * 0.4) cur = t;
+  let best = -Infinity;
+  for (const t of targets) {
+    const top = t.getBoundingClientRect().top;
+    if (!t.hidden && top < innerHeight * 0.4 && top > best) { best = top; cur = t; }
+  }
   links.forEach((a) => a.classList.toggle("here", cur !== null && a.getAttribute("href") === "#" + cur.id));
 }
 addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(frame); } }, { passive: true });
