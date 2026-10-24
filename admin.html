@@ -177,7 +177,7 @@ dd{margin:0;overflow-wrap:anywhere}
 
   <div id="tab-team" hidden>
     <div class="panel"><h2>Department directory</h2>
-      <p class="muted" style="margin-top:0">Every department emails from its own address, headed by its AI agent; anything sensitive escalates to you at stan@altradits.com. Every email is blind-copied to altradits@gmail.com.</p>
+      <p class="muted" style="margin-top:0">Each department head has a name and emails from it. Department emails copy stan@altradits.com (your AI version and QA). Emails about paying clients are blind-copied to altradits@gmail.com.</p>
       <div id="commsList"></div>
     </div>
     <div class="panel"><h2>Departments</h2><div class="kpis" id="deptKpis" style="margin:0"></div>
@@ -440,7 +440,7 @@ async function loadOps() {
 }
 function renderComms() {
   if (!O?.comms) return;
-  $("#commsList").innerHTML = O.comms.map((c) => `<details class="ap"><summary style="cursor:pointer"><b>${esc(c.address)}</b> · ${esc(c.name)} <span class="stage">${c.head.kind === "ai" ? "AI head" : "Human"}: ${esc(c.head.name)}</span>${c.internal ? ' <span class="stage">internal</span>' : ""}<div class="muted sm" style="margin-top:.2rem">${esc(c.purpose)}</div></summary>
+  $("#commsList").innerHTML = O.comms.map((c) => `<details class="ap"><summary style="cursor:pointer"><b>${esc(c.address)}</b> · ${esc(c.name)} <span class="stage">${c.head.kind === "ai" ? "AI head" : "Human"}: ${esc(c.head.name)}${c.head.role ? ` · ${esc(c.head.role)}` : ""}</span>${c.internal ? ' <span class="stage">internal</span>' : ""}<div class="muted sm" style="margin-top:.2rem">${esc(c.purpose)}</div></summary>
     <div class="grid2" style="margin-top:.6rem;font-size:.92rem">
       <div><b>Receives</b><ul>${c.inbound.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><b>Sends</b><ul>${c.outbound.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><b>Voice</b><ul>${c.voice.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>
       <div><b>Response times</b><p class="sm" style="margin:.2rem 0 .6rem">First reply: ${esc(c.sla.firstReply)}<br>Resolution: ${esc(c.sla.resolution)}</p>

@@ -116,20 +116,43 @@ test("every kit's PDF renders", () => {
   }
 });
 
-test("emails go out from stan@ or the right department, blind-copied to the owner, with the letterhead", async () => {
+test("named department heads email from their own addresses, copy stan@, and blind-copy Stanley only for paying clients", async () => {
   const { sendEmail, emailOwner } = await import("../lib/email.js");
   const { COMMS } = await import("../data/team-comms.js");
-  assert.deepEqual(COMMS.map((c) => c.address), ["stan@altradits.com", "social@altradits.com", "admin@altradits.com", "assistant@altradits.com", "care@altradits.com", "tech@altradits.com", "orders@altradits.com", "marketing@altradits.com", "careers@altradits.com", "quality@altradits.com"]);
+  const { createLead, saveLead } = await import("../lib/crm.js");
+  assert.deepEqual(COMMS.map((c) => [c.id, c.head.name, c.address]), [
+    ["founder", "Stan", "stan@altradits.com"], ["social", "Amara", "amara@altradits.com"], ["admin", "Selam", "selam@altradits.com"],
+    ["personal", "Wanjiru", "wanjiru@altradits.com"], ["growth", "Dawit", "dawit@altradits.com"], ["tech", "Otieno", "otieno@altradits.com"],
+    ["orders", "Dawit", "dawit@altradits.com"], ["marketing", "Liya", "liya@altradits.com"], ["careers", "Selam", "selam@altradits.com"],
+    ["quality", "Stan", "stan@altradits.com"],
+  ]);
+  for (const c of COMMS) assert.ok(c.address.startsWith(c.head.name.toLowerCase() + "@"), `${c.id}: address from the head's name`);
   assert.ok(COMMS.every((c) => !/\d{3}[\s-]?\d{3}[\s-]?\d{3}/.test(JSON.stringify(c))), "no phone numbers");
-  const plain = await sendEmail({ to: "client@x.co", subject: "Hello", text: "Hi" });
-  assert.equal(plain.from, "Stanley at Altradits <stan@altradits.com>");
-  assert.equal(plain.bcc, "altradits@gmail.com");
-  const orders = await sendEmail({ to: "client@x.co", dept: "orders", subject: "Paid", text: "Thanks" });
-  assert.equal(orders.from, "Altradits Orders <orders@altradits.com>");
+
+  const lead = await createLead({ email: "client@x.co", source: "order" });
+  // Before any deposit: stan@ is the sender or copied; no blind copy to Stanley.
+  const plain = await sendEmail({ to: "client@x.co", leadId: lead.id, subject: "Hello", text: "Hi" });
+  assert.equal(plain.from, "Stan at Altradits <stan@altradits.com>");
+  assert.equal(plain.cc, null);
+  assert.equal(plain.bcc, null);
+  const care = await sendEmail({ to: "client@x.co", leadId: lead.id, dept: "growth", subject: "Your question", text: "Answer" });
+  assert.equal(care.from, "Dawit at Altradits <dawit@altradits.com>");
+  assert.equal(care.cc, "stan@altradits.com");
+  assert.equal(care.bcc, null);
+  // After a deposit: Stanley's inbox gets a blind copy.
+  const receipt = await sendEmail({ to: "client@x.co", leadId: lead.id, dept: "orders", paid: true, subject: "Payment received", text: "Thanks" });
+  assert.equal(receipt.bcc, "altradits@gmail.com");
+  lead.stage = "active"; await saveLead(lead);
+  const update = await sendEmail({ to: "client@x.co", leadId: lead.id, dept: "tech", subject: "Staging link", text: "Here" });
+  assert.equal(update.from, "Otieno at Altradits <otieno@altradits.com>");
+  assert.equal(update.cc, "stan@altradits.com");
+  assert.equal(update.bcc, "altradits@gmail.com");
   const owner = await emailOwner("Alert", "x");
   assert.equal(owner.bcc, null); // already going to that inbox
   const kit = (await emails()).find((e) => /Your free kit/.test(e.subject));
-  assert.equal(kit.from, "Altradits <marketing@altradits.com>");
+  assert.equal(kit.from, "Liya at Altradits <liya@altradits.com>");
+  assert.equal(kit.cc, "stan@altradits.com");
+  assert.equal(kit.bcc, null); // a free download isn't a deposit
   // Kit PDFs carry the letterhead.
   const pdf = subs.renderFile(KITS[0], KITS[0].files[0]).body.toString("latin1");
   assert.match(pdf, /\(stan@altradits\.com\) Tj/);

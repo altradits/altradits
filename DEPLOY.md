@@ -127,12 +127,26 @@ Every scheduled post comes with a warm-up kit written by the team: search terms 
 
 altradits.com/templates.html offers six free, complete kits (data/templates.js): inbox, social media, invoicing, customer replies, cold outreach and hiring. A visitor leaves an email to download one (PDF guide, plus a spreadsheet where it helps). They join the list tagged with that kit, become a lead in the CRM, and get three follow-ups over ten days (lib/subscribers.js): a tip plus "do it together" (pay-as-you-go hours), then the matching "done for you" quick job, then the monthly service. One email a day at most, one-click unsubscribe in every email, consent wording stored with each sign-up. See subscribers and export a CSV in admin → Growth. Emails go out through the same mail setup as the rest of the site (EMAIL_TRANSPORT / SMTP_*).
 
-## Email addresses, letterhead and BCC
+## Email addresses, letterhead, CC and BCC
 
-All email now goes out from **stan@altradits.com** or a department address (data/team-comms.js; see admin → Team → Department directory), with a blind copy to altradits@gmail.com (`EMAIL_BCC`, set to `none` to stop it). Emails carry the Altradits letterhead (logo, contact line, sender signature) and the kit PDFs carry it too.
+Each department head has a name and emails from it (data/team-comms.js; admin → Team → Department directory):
+
+| Head | Address | Department |
+|---|---|---|
+| Stan (Stanley's AI version and QA) | stan@altradits.com | Default sender, quality review, escalations |
+| Amara | amara@altradits.com | Social media & content |
+| Selam | selam@altradits.com | Office admin, and careers |
+| Wanjiru | wanjiru@altradits.com | Personal assistance |
+| Dawit | dawit@altradits.com | Sales & customer care, and orders |
+| Otieno | otieno@altradits.com | Web, automation & Bitcoin |
+| Liya | liya@altradits.com | Marketing, free kits and the mailing list |
+
+- Every department email **copies stan@altradits.com**.
+- Emails about a **paying client** (after a deposit) are **blind-copied to altradits@gmail.com** so anything that needs you reaches your own inbox. Free-kit and pre-payment emails aren't. `EMAIL_BCC=none` turns the blind copy off.
+- Emails and kit PDFs carry the Altradits letterhead. Signatures say each head is an AI agent.
 
 Set up in DirectAdmin → E-mail Manager (one time):
-1. Create the mailbox **stan@altradits.com** (or a forwarder to altradits@gmail.com).
-2. Create forwarders to stan@altradits.com (or altradits@gmail.com) for: social@, admin@, assistant@, care@, tech@, orders@, marketing@, careers@, quality@, so replies to any department reach you.
+1. Create the mailbox **stan@altradits.com**.
+2. Create forwarders for amara@, selam@, wanjiru@, dawit@, otieno@ and liya@ to stan@altradits.com (and/or altradits@gmail.com), so replies to any head reach you.
 3. In DNS management, check SPF and DKIM are enabled for altradits.com, so mail from these addresses isn't marked as spam.
 4. Keep `EMAIL_TRANSPORT=sendmail` (or SMTP_* for the stan@ mailbox) in Setup Node.js App.
