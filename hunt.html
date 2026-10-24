@@ -41,6 +41,8 @@ ol.steps p{margin:0}
 .box.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,white)}
 .link{font:600 .95rem ui-monospace,Menlo,monospace;overflow-wrap:anywhere;background:#fff;border:2px solid var(--line);border-radius:.6rem;padding:.6rem .75rem;margin:.6rem 0}
 .coupon{font:800 clamp(1.6rem,7vw,2.2rem) ui-monospace,Menlo,monospace;letter-spacing:.06em;margin:.4rem 0}
+#shoutForm input{flex:1 1 10rem;min-width:0;padding:.7rem .8rem;border:2px solid var(--line);border-radius:.6rem;font:inherit;background:#fff}
+.tag{color:var(--blue)}
 .fine{color:var(--muted);font-size:.88rem;margin:1.4rem 0 0}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:no-preference){.box{animation:in .4s ease}@keyframes in{from{opacity:0;transform:translateY(.4rem)}}}
@@ -54,7 +56,7 @@ ol.steps p{margin:0}
     <p class="lead">Every post we publish this week hides one letter of a secret word. Find them all, crack the word, earn a one-time <b><span class="pct">10</span>% off</b> any order.</p>
 
     <ol class="steps">
-      <li><div><h2>Collect the letters</h2><p>Look for the 🔎 line at the end of our posts. Each page carries different letters, so visit them all.</p>
+      <li><div><h2>Collect the letters</h2><p>Look for <b class="tag">#AltraditsHunt</b> at the end of our posts: it carries a letter and its place in the word. Each page carries different letters, so visit them all.</p>
         <div class="where"><a href="https://x.com/altradits" target="_blank" rel="noopener">X</a><a href="https://www.linkedin.com/company/altradits" target="_blank" rel="noopener">LinkedIn</a><a href="https://www.linkedin.com/in/stanmobitech/" target="_blank" rel="noopener">Stanley on LinkedIn</a><a href="https://www.facebook.com/profile.php?id=61579168157529" target="_blank" rel="noopener">Facebook</a><a href="https://www.tiktok.com/@altradits" target="_blank" rel="noopener">TikTok</a></div></div></li>
       <li><div><h2>Crack the word</h2><p>Put each letter in its numbered box.</p></div></li>
       <li><div><h2>Share your link</h2><p>You get a personal link. Send it to someone who'd find us useful, anywhere you like. When they open it, your code unlocks.</p></div></li>
@@ -79,6 +81,17 @@ ol.steps p{margin:0}
       <div class="coupon" id="code"></div>
       <p style="margin:0 0 .8rem"><span class="pct">10</span>% off one order. It works once, and expires on <span id="exp"></span>.</p>
       <div class="row"><a class="btn" href="/#quick">Use it on a job</a><button class="btn light" id="copyCode" type="button">Copy code</button></div>
+    </section>
+
+    <section class="box" id="shout" hidden>
+      <h2>Want a shoutout?</h2>
+      <p style="margin:0 0 .6rem">Winners are congratulated in our next post with <b class="tag">#AltraditsHunt</b>. Add your X handle and we'll tag you there, or just a first name. Leave both empty to stay anonymous.</p>
+      <form id="shoutForm" class="row" novalidate>
+        <input name="handle" placeholder="@yourhandle" autocomplete="off" spellcheck="false" aria-label="Your X handle">
+        <input name="name" placeholder="First name" autocomplete="given-name" aria-label="Your first name">
+        <button class="btn light">Save</button>
+      </form>
+      <p class="msg" id="shoutMsg" role="status"></p>
     </section>
 
     <p class="fine">One code per person per hunt. A new word starts every Monday (00:00 UTC). Codes are single-use, can't be exchanged for cash, and apply at checkout on altradits.com.</p>
@@ -120,6 +133,13 @@ $("#solve").addEventListener("submit", async (e) => {
 function show() {
   if (!claim) return;
   $("#solve").hidden = true;
+  $("#shout").hidden = false;
+  if (claim.shoutout && !$("#shoutForm").dataset.filled) {
+    $("#shoutForm").dataset.filled = "1";
+    $("#shoutForm [name=handle]").value = claim.shoutout.handle ? "@" + claim.shoutout.handle : "";
+    $("#shoutForm [name=name]").value = claim.shoutout.name || "";
+  }
+  $("#shoutMsg").textContent = claim.shoutDone ? "✓ You've had your shoutout. Thanks for playing!" : claim.shoutout ? "✓ You're on the list for our next post." : "";
   if (claim.coupon) {
     clearInterval(timer);
     $("#share").hidden = true; $("#won").hidden = false;
@@ -137,6 +157,18 @@ async function refresh() {
   if (!saved) return;
   try { const r = await fetch(`/api/hunt?claim=${encodeURIComponent(saved.id)}&t=${encodeURIComponent(saved.t)}`); if (r.ok) { claim = (await r.json()).claim; show(); } } catch {}
 }
+$("#shoutForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  $("#shoutMsg").textContent = "Saving…";
+  try {
+    const r = await fetch("/api/hunt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "shoutout", id: claim.id, t: claim.t, handle: f.get("handle"), name: f.get("name") }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    claim.shoutout = f.get("handle") || f.get("name") ? { handle: f.get("handle").replace(/^@/, ""), name: f.get("name") } : null;
+    $("#shoutMsg").textContent = claim.shoutout ? (claim.status === "earned" ? "✓ Saved. You'll be in our next post." : "✓ Saved. Once your code unlocks, you'll be in our next post.") : "Saved: you'll stay anonymous.";
+  } catch (err) { $("#shoutMsg").textContent = err.message || "Couldn't save that."; }
+});
 const text = "Altradits: fixed-price jobs for busy founders, done the same day, paid in Bitcoin.";
 $("#shareBtn").addEventListener("click", async () => {
   if (navigator.share) { try { await navigator.share({ title: "Altradits", text, url: claim.share }); } catch {} }

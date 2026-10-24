@@ -66,6 +66,7 @@ export const THEMES = [
 // works for one order.
 export const HUNT = {
   site: "https://altradits.com",
+  hashtag: "#AltraditsHunt", // the same tag on every post, every week: it markets the brand and marks the clue
   couponPct: 10,   // % off one order
   couponDays: 30,  // unused codes expire after this
   words: ["DELEGATE", "SAMEDAY", "FOUNDERS", "QUICKJOB", "SPEEDRUN", "SATOSHI", "HANDOVER", "FREEDOM", "BITCOIN", "FASTLANE"],

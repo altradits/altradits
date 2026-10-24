@@ -62,7 +62,8 @@ test("hard checks block invented prices, URLs, phones, testimonials, coupons and
   assert.match(mk.checkPost(ch("li_co"), "Call +254 707 172 370").join(), /phone/);
   assert.match(mk.checkPost(ch("li_co"), "Our clients say we're the best").join(), /testimonials/);
   assert.match(mk.checkPost(ch("li_co"), "Grab a coupon today").join(), /coupons/);
-  assert.match(mk.checkPost(ch("li_co"), "🔎 letter 2 of 8 is A").join(), /hunt line/);
+  assert.match(mk.checkPost(ch("li_co"), "🔎 letter 2 of 8 is A").join(), /hunt or winners line/);
+  assert.match(mk.checkPost(ch("x"), "Join the #AltraditsHunt").join(), /hunt or winners line/);
   assert.match(mk.checkPost(ch("x"), "x".repeat(250), 220).join(), /Too long/);
 });
 
@@ -90,9 +91,11 @@ test("the team keeps the next 7 days scheduled: one master per day, repurposed f
   const day1 = await getJSON("mkt:day:2026-11-02");
   // Every post carries a hunt letter; one day's posts cover the whole word.
   const h = hunt.huntFor(AT);
-  const letters = new Set(day1.posts.map((p) => p.trace.match(/(?:: |is ")([A-Z])/)[1]));
+  const letters = new Set(day1.posts.map((p) => p.trace.match(/: ([A-Z])\b/)[1]));
   assert.equal(letters.size, new Set(h.word).size);
-  assert.match(day1.posts.find((p) => p.channel === "x").trace, new RegExp(`^🔎 Hunt #${h.n} · letter \\d/${h.word.length}: [A-Z]$`));
+  // One fixed branded hashtag carries the clue, week after week.
+  assert.ok(day1.posts.every((p) => p.trace.startsWith("#AltraditsHunt letter ")));
+  assert.match(day1.posts.find((p) => p.channel === "x").trace, new RegExp(`^#AltraditsHunt letter \\d/${h.word.length}: [A-Z]$`));
   assert.match(day1.posts.find((p) => p.channel === "li_co").trace, /altradits\.com\/hunt/);
   // The writers were told how much room the hunt line leaves.
   const rep = calls.find((c) => c.tools[0].name === "submit_posts");
@@ -106,7 +109,7 @@ test("posts wait for their account: emailed when not connected, posted by themse
   const digest = emails.find((e) => /Ready to post/.test(e.subject));
   assert.ok(digest);
   assert.match(digest.text, /TikTok/);
-  assert.match(digest.text, /🔎/);
+  assert.match(digest.text, /#AltraditsHunt letter/);
 
   // 07:00 X slot, not connected: it becomes "manual" (no API call).
   await mk.marketingTick({ at: new Date("2026-11-02T07:01:00Z"), force: true });
@@ -120,7 +123,7 @@ test("posts wait for their account: emailed when not connected, posted by themse
   await mk.marketingTick({ at: new Date("2026-11-02T12:32:00Z"), force: true });
   assert.equal(sent.length, 1);
   const text = JSON.parse(sent[0].init.body).text;
-  assert.match(text, /Your inbox, handled the same day\. \(x\)\n\n🔎 Hunt #/);
+  assert.match(text, /Your inbox, handled the same day\. \(x\)\n\n#AltraditsHunt letter \d\/\d: [A-Z]$/);
   assert.ok(text.length <= 280);
   rec = await getJSON("mkt:day:2026-11-02");
   assert.equal(rec.posts.find((p) => p.channel === "x" && p.slot === "12:30").status, "posted");
@@ -218,4 +221,30 @@ test("hunt guesses are rate limited", async () => {
   let last;
   for (let i = 0; i < 14; i++) last = await huntApi.POST(req("/api/hunt", { action: "solve", answer: "NOPE" }, "9.9.9.9"));
   assert.equal(last.status, 429);
+});
+
+test("winners who opt in get a shoutout in the next post out: tagged on X, by name elsewhere", async () => {
+  const h = hunt.huntFor();
+  const { claim } = await (await huntApi.POST(req("/api/hunt", { action: "solve", answer: h.word }, "4.4.4.4"))).json();
+  // Strict formats only: this text is published.
+  assert.equal((await huntApi.POST(req("/api/hunt", { action: "shoutout", id: claim.id, t: claim.t, handle: "@bad handle!" }))).status, 400);
+  assert.equal((await huntApi.POST(req("/api/hunt", { action: "shoutout", id: claim.id, t: "wrong", handle: "amina_k" }))).status, 404);
+  assert.equal((await huntApi.POST(req("/api/hunt", { action: "shoutout", id: claim.id, t: claim.t, handle: "@amina_k", name: "Amina" }))).status, 200);
+  assert.equal((await hunt.pendingShoutouts()).length, 0); // not a winner until the coupon unlocks
+  await huntApi.POST(req("/api/hunt", { action: "visit", code: claim.share.split("=")[1] }, "5.5.5.5"));
+  assert.equal((await hunt.pendingShoutouts()).length, 1);
+
+  // The next X post that goes out carries the tag, between the post and the clue.
+  Object.assign(process.env, X_KEYS);
+  sent.length = 0;
+  await mk.marketingTick({ at: new Date("2026-11-03T07:01:00Z"), force: true });
+  const text = JSON.parse(sent[0].init.body).text;
+  assert.match(text, /\n\n🏆 Congrats to our latest #AltraditsHunt winners: @amina_k!\n\n#AltraditsHunt letter/);
+  assert.ok(text.length <= 280);
+  assert.equal((await hunt.pendingShoutouts()).length, 0); // once only
+  await mk.marketingTick({ at: new Date("2026-11-03T12:31:00Z"), force: true });
+  assert.doesNotMatch(JSON.parse(sent[1].init.body).text, /🏆/);
+  const status = await (await huntApi.GET(req(`/api/hunt?claim=${claim.id}&t=${claim.t}`))).json();
+  assert.equal(status.claim.shoutDone, true);
+  for (const k of Object.keys(X_KEYS)) delete process.env[k];
 });

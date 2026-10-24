@@ -738,7 +738,7 @@ async function loadMarketing() {
 const mkCh = (id) => M.channels.find((c) => c.id === id) || { name: id };
 const nl = (t) => esc(t).replace(/\n/g, "<br>");
 function preview(p) {
-  const c = mkCh(p.channel), when = p.at.slice(11, 16) + " UTC", body = p.text + (p.trace ? "\n\n" + p.trace : "");
+  const c = mkCh(p.channel), when = p.at.slice(11, 16) + " UTC", body = [p.text, p.shoutout, p.trace].filter(Boolean).join("\n\n");
   const text = mkEditing === p.id
     ? `<textarea class="pvedit" data-mkedittext="${p.id}">${esc(p.text)}</textarea><div class="pvcount">${p.trace ? "The hunt line is added below automatically." : ""}</div><div class="row"><button class="btn ok" data-mksave="${p.id}">Save</button><button class="btn" data-mkcancel-edit="1">Discard</button></div>`
     : null;
@@ -781,7 +781,8 @@ function renderMarketing() {
   $("#mkErr").hidden = !M.lastError || Date.now() - Date.parse(M.lastError.at) > 864e5;
   $("#mkErr").textContent = M.lastError ? `Last problem (${ago(M.lastError.at)}): ${M.lastError.error}` : "";
   const h = M.hunt;
-  $("#mkHunt").innerHTML = `<div class="kpi"><small>Hunt #${h.n} word</small><div style="font-size:1.3rem">${esc(h.word)}</div></div><div class="kpi"><small>Solved</small><div>${h.stats.solved}</div></div><div class="kpi"><small>Codes earned</small><div>${h.stats.earned}</div></div><div class="kpi"><small>Codes used</small><div>${h.stats.used}</div></div>`;
+  $("#mkHunt").innerHTML = `<div class="kpi"><small>${esc(h.hashtag)} word this week</small><div style="font-size:1.3rem">${esc(h.word)}</div></div><div class="kpi"><small>Solved</small><div>${h.stats.solved}</div></div><div class="kpi"><small>Codes earned</small><div>${h.stats.earned}</div></div><div class="kpi"><small>Codes used</small><div>${h.stats.used}</div></div>
+    <div class="kpi" style="grid-column:1/-1"><small>Waiting for a shoutout in the next post</small><div style="font:500 .95rem Figtree,sans-serif">${h.shoutouts.length ? h.shoutouts.map((w) => `${esc(w.handle ? "@" + w.handle : "")}${w.handle && w.name ? " · " : ""}${esc(w.name || "")} <button class="btn" style="padding:.1rem .5rem;font-size:.8rem" data-mkshout="${esc(w.claimId)}">Remove</button>`).join(" &nbsp; ") : `<span class="muted">Nobody yet. Winners who opt in appear here, then in the next post with ${esc(h.hashtag)}.</span>`}</div></div>`;
   // First view: open the first day with posts still to go out.
   if (!mkPicked) mkDay = (M.days.slice(2).find((d) => d.posts.some((p) => ["scheduled", "planned"].includes(p.status))) || M.days[2]).date;
   $("#mkDayTabs").innerHTML = M.days.map((d) => { const n = d.posts.filter((p) => p.status !== "cancelled").length; const lbl = new Date(d.date + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }); return `<button role="tab" data-mkday="${d.date}" aria-selected="${d.date === mkDay}">${lbl} <span class="muted">${n}</span></button>`; }).join("");
@@ -797,6 +798,11 @@ function renderMarketing() {
   $("#mkTeam").innerHTML = M.team.map((m) => `<li><b>${esc(m.name)}</b>: ${esc(m.role)}</li>`).join("");
   $("#mkResults").innerHTML = M.channels.map((c) => { const r = M.results[c.id]; return `<tr><td>${esc(c.name)}</td><td>${r.posts}</td><td>${r.leads}</td><td>${r.paid}</td><td>${money(r.revenue)}</td></tr>`; }).join("");
 }
+$("#mkHunt").addEventListener("click", async (e) => {
+  const id = e.target.dataset.mkshout; if (!id) return;
+  e.target.disabled = true;
+  try { await api("", { action: "mkt_shout_remove", id }); loadMarketing(); } catch (err) { e.target.textContent = err.message; }
+});
 $("#mkPause").addEventListener("click", async () => {
   try { await api("", { action: "mkt_pause", paused: !M.settings.paused }); loadMarketing(); } catch (err) { $("#mkMsg").textContent = err.message; }
 });
@@ -819,7 +825,7 @@ $("#mkDay").addEventListener("click", async (e) => {
   const id = d.mkpost || d.mkcancel || d.mkcopy || d.mkedit || d.mksave;
   const post = id && M.days.flatMap((x) => x.posts).find((p) => p.id === id);
   if (!post) return;
-  if (d.mkcopy) { navigator.clipboard?.writeText(post.text + (post.trace ? "\n\n" + post.trace : "") + (post.link ? "\n\n" + post.link : "")).then(() => { e.target.textContent = "Copied ✓"; }); return; }
+  if (d.mkcopy) { navigator.clipboard?.writeText([post.text, post.shoutout, post.trace, post.link].filter(Boolean).join("\n\n")).then(() => { e.target.textContent = "Copied ✓"; }); return; }
   if (d.mkedit) { mkEditing = id; renderMarketing(); return; }
   e.target.disabled = true;
   try {
