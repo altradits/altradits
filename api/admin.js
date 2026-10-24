@@ -154,13 +154,17 @@ export async function GET(request) {
     proposalsOpen: open.length,
     pipelineUsd: open.reduce((t, p) => t + p.totals.monthly + p.totals.oneOff, 0),
     wonMonthUsd: paid.filter((p) => Date.parse(p.payment?.confirmedAt || p.updatedAt) >= monthStart).reduce((t, p) => t + p.totals.dueNow, 0),
+    wonMonthSats: paid.filter((p) => Date.parse(p.payment?.confirmedAt || p.updatedAt) >= monthStart).reduce((t, p) => t + (Number(p.payment?.sats) || 0), 0),
     mrrUsd: paid.reduce((t, p) => t + p.totals.monthly, 0),
     activeClients: leads.filter((l) => l.stage === "active").length,
     pendingApprovals: approvals.filter((a) => a.status === "pending").length,
     byStage: Object.fromEntries(STAGES.map((s) => [s, leads.filter((l) => l.stage === s).length])),
   };
 
+  // The admin shows sats only: prices not yet paid are converted at this rate.
+  const btcUsd = await import("../lib/lightning.js").then((m) => m.btcUsd()).catch(() => null);
   return json({
+    btcUsd,
     stats,
     approvals: approvals.filter((a) => a.status === "pending").concat(approvals.filter((a) => a.status !== "pending").slice(0, 20)),
     leads: leads.map((l) => ({

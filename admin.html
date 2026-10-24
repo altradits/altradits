@@ -329,7 +329,7 @@ dd{margin:0;overflow-wrap:anywhere}
 
     <div class="panel"><h2>Master content</h2>
       <p class="muted" style="margin:0 0 .6rem">One message, many formats. Give the team a brief (or leave it empty to let them choose), then repurpose it into posts for every account.</p>
-      <textarea id="mkBrief" placeholder="Optional brief, e.g. push the $5 test task to agency owners this week"></textarea>
+      <textarea id="mkBrief" placeholder="Optional brief, e.g. push the quick test task to agency owners this week"></textarea>
       <div class="row"><button class="btn primary" id="mkNew">Create master</button></div>
       <div id="mkMasters" style="margin-top:1rem"></div>
     </div>
@@ -407,7 +407,12 @@ dd{margin:0;overflow-wrap:anywhere}
 import { SERVICES } from "/data/catalog.js";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const money = (n) => "$" + Number(n || 0).toLocaleString("en-US");
+// The admin is in sats only. Amounts priced in dollars (what clients see) are
+// converted at the current BTC rate and marked ≈; payments use the sats received.
+const sats = (n) => `${Math.round(Number(n) || 0).toLocaleString("en-US")} sats`;
+// Dollar amounts inside agent-written summaries, shown in sats.
+const satsText = (s) => String(s ?? "").replace(/\$(\d[\d,]*(?:\.\d+)?)/g, (m, n) => money(n.replace(/,/g, "")));
+const money = (usd) => (D?.btcUsd ? `≈ ${sats(((Number(usd) || 0) / D.btcUsd) * 1e8)}` : "– sats");
 const ago = (iso) => { const m = (Date.now() - Date.parse(iso)) / 6e4; return m < 60 ? `${Math.round(m)}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`; };
 const STAGES = ["new", "engaged", "qualified", "pending_approval", "proposal_sent", "won", "paid", "active", "lost"];
 const LABELS = { proposal_review: "Proposal needs your OK", payment_check: "Confirm payment & kick off", trial_task: "Free trial task", escalation: "Client needs you", call_request: "Call requested" };
@@ -470,6 +475,7 @@ function tab(name) {
   ["overview", "approvals", "leads", "tasks", "team", "finance", "growth", "marketing", "stan", "jobs", "emails"].forEach((t) => { $("#tab-" + t).hidden = t !== name; });
 }
 document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => tab(b.dataset.tab)));
+document.addEventListener("input", (e) => { if (e.target.matches("[data-price]")) { const s = e.target.parentElement.querySelector("[data-satsfor]"); if (s) s.textContent = money(e.target.value); } });
 $("#refresh").addEventListener("click", async (e) => {
   const b = e.currentTarget; lastBtn = null;
   b.classList.add("busy"); toast("Refreshing…", false, 0);
@@ -486,7 +492,7 @@ function approvalHtml(a) {
   return `<div class="ap ${pending ? "pending" : ""}" id="ap-${a.id}">
     <h3>${esc(LABELS[a.type] || a.type)} ${pending ? "" : `<span class="stage">${esc(a.status)}</span>`}</h3>
     <div class="meta">${lead ? `<a href="#lead=${lead.id}" data-lead="${lead.id}">${esc(lead.name || lead.email || "Lead")}</a> · ` : ""}${ago(a.createdAt)}</div>
-    <pre>${esc(a.summary)}</pre>
+    <pre>${esc(satsText(a.summary))}</pre>
     ${pending ? `
       ${isProposal ? `<div data-prices="${a.payload.proposalId}"><button class="btn" data-loadprop="${a.payload.proposalId}" data-ap="${a.id}">Review & edit prices</button></div>` : ""}
       <textarea placeholder="${a.type === "proposal_review" || a.type === "payment_check" ? "Optional note to the client" : "Note to the client (sent by email if filled in)"}" id="note-${a.id}"></textarea>
@@ -501,7 +507,7 @@ function render() {
   $("#apCount").hidden = !pending.length; $("#apCount").textContent = pending.length;
   $("#kpis").innerHTML = [
     ["Waiting for you", s.pendingApprovals], ["New leads (7d)", s.leads7d], ["Qualified", s.qualified],
-    ["Open proposals", s.proposalsOpen], ["Pipeline", money(s.pipelineUsd)], ["Won this month", money(s.wonMonthUsd)],
+    ["Open proposals", s.proposalsOpen], ["Pipeline", money(s.pipelineUsd)], ["Won this month", sats(s.wonMonthSats)],
     ["Monthly recurring", money(s.mrrUsd)], ["Active clients", s.activeClients],
   ].map(([k, v]) => `<div class="kpi"><small>${k}</small><div>${v}</div></div>`).join("");
   const max = Math.max(1, ...Object.values(s.byStage));
@@ -568,7 +574,7 @@ document.addEventListener("click", async (e) => {
     const a = D.approvals.find((x) => x.id === lp.dataset.ap);
     const { proposal: p } = await api(`?view=lead&id=${encodeURIComponent(a.leadId)}`);
     lp.parentElement.innerHTML = `<p><a href="${esc(p.url)}" target="_blank" rel="noopener">Preview proposal page</a></p>
-      <div class="prices">${p.items.map((i, n) => `<label>${esc(i.label)}${i.quantity > 1 ? ` × ${i.quantity}` : ""} (${i.type})<input type="number" min="1" data-price="${n}" value="${i.price}"></label>`).join("")}</div>
+      <div class="prices">${p.items.map((i, n) => `<label>${esc(i.label)}${i.quantity > 1 ? ` × ${i.quantity}` : ""} (${i.type})<input type="number" min="1" data-price="${n}" value="${i.price}"><small class="muted" data-satsfor="${n}">${money(i.price)}</small></label>`).join("")}<p class="sm muted" style="margin:.3rem 0 0">Prices are set in the currency clients see on the website; the sats beside each update as you type.</p></div>
       <label class="muted" style="font-size:.9rem">Executive summary<textarea data-summary>${esc(p.summary)}</textarea></label>`;
     return;
   }
@@ -661,7 +667,7 @@ function renderOps() {
   const order = { applied: 0, approved: 1, paused: 2, rejected: 3 };
   $("#memberList").innerHTML = O.members.slice().sort((a, b) => order[a.status] - order[b.status] || b.score - a.score).map((m) => `<div class="ap ${m.status === "applied" ? "pending" : ""}">
     <h3>${esc(m.name)} <span class="stage">${esc(m.status)}</span> <span class="muted" style="font-size:.85rem">screen score ${m.score}/10</span></h3>
-    <div class="meta">${esc(m.email)} · ${esc(m.country)} ${esc(m.timezone)} · $${m.rate}/h · ${m.hoursPerWeek}h/week · ${esc(m.departments.join(", "))} · ${m.openHours}h open</div>
+    <div class="meta">${esc(m.email)} · ${esc(m.country)} ${esc(m.timezone)} · ${money(m.rate)}/h · ${m.hoursPerWeek}h/week · ${esc(m.departments.join(", "))} · ${m.openHours}h open</div>
     <details><summary>Application</summary><p><b>Skills:</b> ${esc(m.skills)}</p><p><b>Tools:</b> ${esc(m.tools)}</p>${m.portfolio ? `<p><a href="${esc(m.portfolio)}" target="_blank" rel="noopener">Portfolio</a></p>` : ""}<p><b>${esc(m.sampleQuestion || "Sample")}</b></p><pre>${esc(m.sample)}</pre></details>
     <div class="row">${m.status !== "approved" ? `<button class="btn ok" data-mstatus="approved" data-mid="${m.id}">Approve</button>` : `<button class="btn" data-mstatus="paused" data-mid="${m.id}">Pause</button>`}
     ${m.status === "applied" ? `<button class="btn" data-mstatus="rejected" data-mid="${m.id}">Decline</button>` : ""}</div></div>`).join("") || '<p class="muted">No applications yet. Share /join in VA communities and on LinkedIn.</p>';
