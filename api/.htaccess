@@ -1,9 +1,12 @@
-# Server code, never served as files: only the Node app reads this folder.
-# (Copied into node_modules by deploy/cron.sh.)
-<IfModule mod_authz_core.c>
-  Require all denied
-</IfModule>
-<IfModule !mod_authz_core.c>
-  Order allow,deny
-  Deny from all
-</IfModule>
+# The handler source files are never served. Only files ending in .js are
+# denied: /api/order and the other API URLs aren't files, so they still reach
+# the Node app (a folder-wide deny would block them in Passenger's normal mode).
+<FilesMatch "\.(js|mjs|cjs)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>

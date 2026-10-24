@@ -12,7 +12,7 @@ import { emailOwner } from "../lib/email.js";
 import { getTask, saveTask, ensurePortal } from "../lib/ops.js";
 import { orderable, URGENCY } from "../data/catalog.js";
 import { OWNER_PHONE } from "../lib/contact.js";
-import { reserveCoupon, releaseCoupon, MIN_TO_PAY } from "../lib/hunt.js";
+import { reserveCoupon, releaseCoupon, holdCoupon, MIN_TO_PAY } from "../lib/hunt.js";
 
 const isUrgent = (o) => o.urgentOk && ["hours", "minutes"].includes(o.urgency);
 const urgencyNote = (o) => URGENCY.find((u) => u.id === o.urgency)?.note || "";
@@ -51,7 +51,12 @@ async function applyCoupon(body, request) {
   const code = clean(body.coupon, 20).toUpperCase();
   const full = p.totals.monthly + p.totals.oneOff;
   try {
-    if (p.coupon && p.coupon.code !== code) await releaseCoupon(p.coupon.code, p.id);
+    // A code stays reserved while an invoice made with it can still be paid
+    // (the invoice is retired, not cancelled): it can't be spent on another order meanwhile.
+    if (p.coupon && p.coupon.code !== code) {
+      const live = (p.retiredInvoices || []).filter((i) => i.coupon?.code === p.coupon.code && Date.parse(i.expiresAt) > Date.now()).map((i) => i.expiresAt).sort().at(-1);
+      if (live) await holdCoupon(p.coupon.code, p.id, live); else await releaseCoupon(p.coupon.code, p.id);
+    }
     if (!code) { p.coupon = null; p.totals.dueNow = full; await saveProposal(p); return json({ usd: full, pct: 0 }); }
     const c = await reserveCoupon(code, p.id);
     if (c.kind === "credit") {

@@ -527,6 +527,9 @@ test("security: wrong admin tokens are throttled; names can't add receipt lines;
   const html = await email.previewEmail({ kind: "owner", subject: "Donation", text: "Their message: [Review payment](https://altradits-admin.evil/login)" });
   const owner = html.replace(/<a [^>]*href="https:\/\/altradits\.(test|com)[^"]*"[^>]*>[\s\S]*?<\/a>/g, ""); // our own logo/site links
   assert.doesNotMatch(owner, /href="https:\/\/altradits-admin\.evil/);
+  assert.match(owner, /\[Review payment\]\(https:\/\/altradits-admin\.evil\/login\)/); // shown as plain text
+  const sys = await email.previewEmail({ kind: "owner", subject: "Warm up", text: "One tap: https://x.com/intent/post?text=hi" });
+  assert.match(sys, /href="https:\/\/x\.com\/intent\/post\?text=hi"/); // our own channels stay clickable
   const { defang } = await import("../lib/screen.js");
   assert.doesNotMatch(defang("see https://evil.example/x"), /https:\/\//);
 });
@@ -542,4 +545,39 @@ test("security: onboarding answers with links or code are refused (they'd reach 
   assert.equal(bad.status, 400);
   assert.match((await bad.json()).error, /Please remove/);
   assert.equal((await post("Mornings work best")).status, 200);
+});
+
+test("locks: one holder at a time; a holder only frees its own lock; stale locks expire", async () => {
+  const store = await import("../lib/store.js");
+  const a = await store.acquireLock("t1", 60);
+  assert.ok(a);
+  assert.equal(await store.acquireLock("t1", 60), null);
+  await a();
+  const b = await store.acquireLock("t1", 60);
+  assert.ok(b);
+  await a(); // the old holder's release can't free b's lock
+  assert.equal(await store.acquireLock("t1", 60), null);
+  await b();
+  const fs = await import("node:fs"), path = await import("node:path");
+  const c = await store.acquireLock("t2", 1);
+  const file = path.join(store.dataDir(), "locks", "lock_t2");
+  fs.utimesSync(file, new Date(Date.now() - 5000), new Date(Date.now() - 5000));
+  assert.ok(await store.acquireLock("t2", 1)); // stale: taken over
+  await c();
+});
+
+test("a code stays reserved while an older invoice made with it can still be paid", async () => {
+  const crm = await import("../lib/crm.js");
+  const hunt = await import("../lib/hunt.js");
+  const order = await import("../api/order.js");
+  const credit = await hunt.createCredit({ sats: 30000, usd: 20 });
+  const post = async (p, coupon, ip) => (await order.POST(new Request("http://x/api/order", { method: "POST", headers: { "Content-Type": "application/json", "x-forwarded-for": ip }, body: JSON.stringify({ id: p.id, t: p.token, coupon }) }))).json();
+  const a = await crm.createOrder(orderable("hourly")), b = await crm.createOrder(orderable("hourly"));
+  assert.equal((await post(a.p, credit.code, "2.2.2.1")).credit, 20);
+  const ap = await crm.getProposal(a.p.id);
+  ap.lightning = { usd: ap.totals.dueNow, sats: 1, bolt11: "lnbc1", coupon: ap.coupon, expiresAt: new Date(Date.now() + 3600e3).toISOString() }; // A's discounted QR
+  await crm.saveProposal(ap);
+  await post(a.p, "", "2.2.2.1"); // A drops the code, but its discounted QR is still payable
+  const r = await post(b.p, credit.code, "2.2.2.2");
+  assert.match(r.error, /being used on another order/); // B can't take it meanwhile
 });

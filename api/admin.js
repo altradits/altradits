@@ -227,9 +227,14 @@ async function resolveApproval(request, body) {
     }
   } else if (a.type === "payment_check") {
     const p = await getProposal(a.payload.proposalId);
-    // Already confirmed by the node meanwhile: resolve the approval, change nothing else.
-    if (p?.status === "paid") { /* nothing to do */ }
-    else if (p && lead) {
+    // Already confirmed by the node meanwhile: resolve the approval, change nothing else
+    // (and don't save the copies loaded above over fresher data).
+    if (p?.status === "paid") {
+      Object.assign(a, { status: "approved", resolvedAt: new Date().toISOString(), note: `${note ? `${note} · ` : ""}already confirmed by the node` });
+      await setJSON(`approval:${a.id}`, a);
+      return json({ ok: true, approval: a });
+    }
+    if (p && lead) {
       if (approve) {
         const { acquireLock } = await import("../lib/store.js");
         const release = await acquireLock(`confirm:${p.id}`, 300);
@@ -243,13 +248,25 @@ async function resolveApproval(request, body) {
         await setJSON(`approval:${a.id}`, a);
         return json({ ok: true, approval: a });
       } else {
-        p.status = "accepted";
+        // Decline under the same lock, on the latest record: never undo a confirmation that just landed.
+        const { acquireLock } = await import("../lib/store.js");
+        const release = await acquireLock(`confirm:${p.id}`, 300);
+        if (!release) return json({ error: "This payment is being confirmed right now. Refresh in a moment." }, 409);
+        try {
+          const latest = await getProposal(p.id);
+          if (latest?.status === "paid") {
+            Object.assign(a, { status: "approved", resolvedAt: new Date().toISOString(), note: "already confirmed by the node" });
+            await setJSON(`approval:${a.id}`, a);
+            return json({ ok: true, approval: a });
+          }
+          latest.status = "accepted";
+          await saveProposal(latest);
+        } finally { await release(); }
         logEvent(lead, "Payment not found yet.");
         await sendEmail({ to: lead.email, leadId: lead.id, dept: "orders", approved: true, subject: "We couldn't find your payment yet",
           text: note || `Hi ${lead.name || "there"}, we haven't received the payment yet. Could you reply with the transaction reference or a screenshot? Sometimes it just takes a little longer.` });
       }
-      await saveProposal(p);
-      await saveLead(lead);
+      await saveLead(lead); // the order itself was saved under the lock above
     }
   } else if (lead && note) {
     // trial_task, call_request, escalation: the note goes to the client.
