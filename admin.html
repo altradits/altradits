@@ -99,6 +99,9 @@ dd{margin:0;overflow-wrap:anywhere}
 .pv.fb .av{background:#1877F2}
 .pv.fb .lp{background:#F0F2F5;margin:0 -.9rem;padding:.6rem .9rem;display:flex;flex-direction:column}
 .pv.fb .lp small{color:#65676B}
+.pv.ig{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;border-radius:.5rem}
+.pv.ig .av{background:linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)}
+.pv.ig .igimg{aspect-ratio:1;max-height:9rem;display:grid;place-items:center;margin:0 -.9rem;background:linear-gradient(135deg,#0F1B2D,#2F5BEA);color:#fff;font-weight:700;font-size:.85rem}
 .pv.tt{background:transparent;border:0;padding:0}
 .pv.tt .screen{position:relative;aspect-ratio:9/14;max-height:26rem;overflow-y:auto;background:#121212;color:#fff;border-radius:1rem;padding:1rem 2.8rem 1rem 1rem;font-size:.86rem}
 .pv.tt .side{position:absolute;right:.8rem;bottom:1rem;text-align:center;line-height:2.2}
@@ -784,6 +787,9 @@ function preview(p) {
       ${text || `<div class="txt">${nl(body)}</div>`}
       ${p.link ? `<div class="lp"><small>ALTRADITS.COM</small><b>Altradits: fixed-price jobs, done the same day</b></div>` : ""}
       <div class="acts">👍 Like · 💬 Comment · ↗ Share</div></div>`;
+  } else if (p.channel === "ig") {
+    card = `<div class="pv ig"><div class="who"><span class="av">A</span><div><b>altradits</b><div class="muted sm">${when} · image post</div></div></div>
+      ${text || `<div class="igimg">Image idea</div><div class="txt">${nl(body)}</div>`}<div class="acts">♡ &nbsp; 💬 &nbsp; ↗</div></div>`;
   } else {
     card = `<div class="pv tt"><div class="screen">${text || `<div class="txt">${nl(body)}</div>`}<div class="side">♥<br>💬<br>↗</div></div><div class="muted sm">${p.channel === "tt_stan" ? "@5tan_lee" : "@altradits"} · ${when} · video script</div></div>`;
   }
