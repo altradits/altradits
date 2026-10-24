@@ -27,13 +27,14 @@ const forClient = (t) => ({
     sources: t.deliverable.sources || [], by: t.deliverable.by || null,
   } : null,
   satisfaction: t.satisfaction || null, hoursLogged: t.hoursLogged, createdAt: t.createdAt,
+  messages: (t.messages || []).slice(-5),
   history: t.history.filter((h) => h.by !== "ops").slice(-8),
 });
 
 async function view(lead) {
   const tasks = (await allTasks()).filter((t) => t.leadId === lead.id);
   return {
-    client: { name: lead.name, company: lead.company, email: lead.email },
+    client: { name: lead.name || lead.pickup || "", company: lead.company, email: lead.email, orderName: lead.pickup || null },
     onboarding: lead.onboarding || null,
     tasks: tasks.map(forClient),
     hours: { used: hoursThisMonth(tasks), plan: await planHours(lead) },
@@ -44,7 +45,7 @@ async function view(lead) {
 export async function GET(request) {
   const u = new URL(request.url);
   const lead = await leadByPortal(u.searchParams.get("c"));
-  if (!lead) return json({ error: "Portal link not found. Use the link from your kick-off email." }, 404);
+  if (!lead) return json({ error: "Portal link not found. Use the link from your kick-off email, or open your order with its order name at altradits.com/collect." }, 404);
   kickQueue();
 
   if (u.searchParams.get("task")) {

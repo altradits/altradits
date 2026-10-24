@@ -45,7 +45,8 @@ export async function POST(request) {
     name: lead.pickup, type: p.donation ? "donation" : "order", title: p.donation ? "Donation to Bitcoin education" : p.title,
     status: !paid ? (p.status === "paid_claimed" ? "being confirmed" : "not paid yet") : pay.held ? (pay.balanceDue ? "part paid" : "being confirmed") : "paid",
     delivery: p.donation ? null : p.timeline || null, due: task?.due || null,
-    work: task ? { status: task.status, ready: Boolean(task.deliverable) && ["review", "done"].includes(task.status), question: task.status === "waiting_client" ? task.question : null } : null,
+    work: task ? { status: task.status, ready: Boolean(task.deliverable) && ["review", "done"].includes(task.status), question: task.status === "waiting_client" ? task.question : null,
+      message: (task.messages || []).at(-1) || null } : null,
     portal, receipt: onNode, balance,
   });
 }

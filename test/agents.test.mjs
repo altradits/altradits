@@ -330,3 +330,66 @@ test("security: a task with a link or code stops before any AI reads it, goes to
     assert.ok(t.history.some((h) => /Released after security review: Known client/.test(h.text)));
   } finally { workers.setWorkerClient(null); }
 });
+
+// ============================================================ anonymous clients
+test("anonymous order, start to finish: paid without email, agent delivers, client reads the message, answers, downloads and approves by order name", async () => {
+  const pay = await import(new URL("api/pay.js", root));
+  const collect = await import(new URL("api/collect.js", root));
+  const { orderable } = await import(new URL("data/catalog.js", root));
+  const open = async (name) => (await call(collect.POST, "POST", "/api/collect", { name }, "8.8.4.4")).body;
+  let step = "ask";
+  workScript = (p) => {
+    if (isQA(p)) return qa(p);
+    if (step === "ask") { step = "deliver"; return tool("ask_client", { question: "Which platform are the captions for?" }); }
+    return deliverable();
+  };
+  workers.setWorkerClient(fake(() => workScript));
+  try {
+    // Order and pay with no email or name, through the real checkout and a node invoice.
+    const { lead, p } = await crm.createOrder(orderable("hourly"));
+    assert.match(lead.pickup, /^[A-Z]+-[A-Z]+-[A-Z]+-\d{4}$/);
+    const before = (await emails()).length;
+    await call(pay.POST, "POST", "/api/pay", { id: p.id, t: p.token });
+    payLast();
+    const chk = await call(pay.GET, "GET", `/api/pay?id=${p.id}&t=${p.token}`);
+    assert.equal(chk.body.status, "paid");
+    const paidP = await crm.getProposal(p.id);
+    assert.ok(paidP.receipt?.no, "receipt kept for collection (node-recorded payment)");
+    assert.equal(paidP.payment.held, false);
+    // The department agent gets the order name and the anonymous-delivery brief.
+    const taskId = paidP.order.taskId;
+    let t = await settle(taskId);
+    assert.equal(t.client, lead.pickup);
+    const brief = calls.filter((c) => c.tools?.some((x) => x.name === "submit_deliverable")).at(-1).messages[0].content;
+    assert.match(brief, new RegExp(`ANONYMOUS CLIENT: known only by the order name ${lead.pickup}`));
+    assert.match(brief, /Never ask for, guess or include personal details/);
+    // The agent asked a question: the client sees it with the order name, and answers in the workspace.
+    assert.equal(t.status, "waiting_client");
+    let c = await open(lead.pickup);
+    assert.equal(c.work.question, "Which platform are the captions for?");
+    const r = await call(portal.POST, "POST", "/api/portal", { c: new URL(c.portal).searchParams.get("c"), action: "answer", task: taskId, answer: "Instagram" });
+    assert.equal(r.status, 200);
+    t = await settle(taskId, ["queued", "working", "waiting_client"]);
+    assert.equal(t.status, "review");
+    // No email to anyone empty: the messages are on the task instead.
+    assert.ok(!(await emails()).slice(0, (await emails()).length - before).some((e) => !e.to));
+    assert.ok(t.messages.some((m) => /question/i.test(m.subject)));
+    assert.ok(t.messages.some((m) => m.subject === "Your captions are ready"));
+    // Collect: ready, Stan's message shown, workspace opens, file downloads, receipt downloads, approve 5★.
+    c = await open(lead.pickup.toLowerCase());
+    assert.equal(c.work.ready, true);
+    assert.equal(c.work.message.subject, "Your captions are ready");
+    assert.equal(c.receipt, true);
+    const token = new URL(c.portal).searchParams.get("c");
+    const view = (await call(portal.GET, "GET", `/api/portal?c=${token}`)).body;
+    assert.equal(view.client.orderName, lead.pickup);
+    assert.equal(view.tasks[0].deliverable.files[0].name, "captions.md");
+    assert.ok(view.tasks[0].messages.length >= 2);
+    const dl = await call(portal.GET, "GET", `/api/portal?c=${token}&task=${taskId}&file=0`);
+    assert.match(dl.body, /Fresh sourdough/);
+    const rc = await collect.POST(new Request("https://altradits.test/api/collect", { method: "POST", headers: { "Content-Type": "application/json", "x-forwarded-for": "8.8.4.5" }, body: JSON.stringify({ name: lead.pickup, receipt: true }) }));
+    assert.equal(rc.headers.get("content-type"), "application/pdf");
+    const ok = await call(portal.POST, "POST", "/api/portal", { c: token, action: "approve", task: taskId, rating: 5, comment: "Perfect" });
+    assert.equal(ok.body.tasks[0].status, "done");
+  } finally { workers.setWorkerClient(null); }
+});
