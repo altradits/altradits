@@ -31,7 +31,10 @@ test("every kit is complete and its offers are real catalog items", () => {
     assert.equal(k.nurture.length, 3);
     for (const id of k.done) assert.ok(orderable(id), `${k.id}: ${id} is orderable`);
     // Kit text never hard-codes prices: they come from the catalog.
-    for (const n of k.nurture) assert.doesNotMatch(n.text, /\$\d/, `${k.id} nurture has no typed prices`);
+    for (const n of k.nurture) {
+      assert.doesNotMatch(n.line, /\$\d/, `${k.id} nurture has no typed prices`);
+      assert.ok(!n.line.includes("\n") && n.line.length < 170, `${k.id}: follow-ups are one line`);
+    }
   }
   const pub = subs.publicKits();
   const inbox = pub.kits.find((k) => k.id === "inbox");
@@ -54,10 +57,12 @@ test("sign-up: email checked, bots blocked, joins the list as a lead, kit emaile
   const lead = await getLead(s.leadId);
   assert.equal(lead.source, "kit:inbox");
   assert.equal(lead.email, "owner@shop.co");
+  // Only what they asked for: one line, one download button, unsubscribe in the footer.
   const mail = (await emails()).find((e) => /Your free kit: Inbox Zero/.test(e.subject));
-  assert.match(mail.text, /api\/kits\?d=inbox/);
-  assert.match(mail.text, /Do it together \(DIT\)/);
-  assert.match(mail.text, /Unsubscribe in one click: https:\/\/altradits\.test\/api\/kits\?unsub=/);
+  assert.equal(mail.text, "Hi Amina, here's your Inbox Zero in 60 Minutes.");
+  assert.equal(mail.cta.label, "Download your kit");
+  assert.match(mail.cta.url, /\/api\/kits\?d=inbox&f=inbox-zero-in-60-minutes\.pdf&s=\w+&t=[\w-]+&c=[\w-]+$/);
+  assert.match(mail.unsubscribe, /^https:\/\/altradits\.test\/api\/kits\?unsub=/);
   // A second kit adds an interest, not a second subscriber or lead.
   await post({ kit: "social", email: "owner@shop.co" });
   assert.equal((await listIds("subs")).length, 1);
@@ -83,7 +88,7 @@ test("follow-ups: one a day at most, from the newest kit, climbing the ladder, t
   // Nothing until the address is confirmed by downloading from the emailed link.
   assert.equal((await subs.runNurture(new Date(Date.now() + 30 * 864e5))).sent, 0);
   const mailed = (await emails()).find((e) => /Your free kit: Inbox Zero/.test(e.subject));
-  const c = mailed.text.match(/&c=([\w-]+)/)[1];
+  const c = mailed.cta.url.match(/&c=([\w-]+)/)[1];
   await get(`?d=inbox&f=inbox-zero-in-60-minutes.pdf&s=${sub.id}&t=${sub.t}&c=${c}`);
   const s = await getJSON(`sub:${sub.id}`);
   assert.equal(s.confirmed, true);
@@ -229,4 +234,18 @@ test("security: someone else typing a subscriber's address gets nothing of their
   assert.doesNotMatch(csv, /(^|,)=/m);
   // Stan's drafted client message may only link to our own site.
   assert.equal(ownLinksOnly("Pay at https://evil.example/pay or see https://altradits.com/portal"), "Pay at [link removed] or see https://altradits.com/portal");
+});
+
+test("a kit with several files is one download (a zip of all of them); follow-ups are one line and one button", async () => {
+  const r = await (await post({ kit: "invoices", email: "zip@shop.co", name: "Zed" }, "8.8.8.8")).json();
+  const mail = (await emails()).find((e) => e.to === "zip@shop.co");
+  assert.equal(mail.text, "Hi Zed, here's your Get Paid on Time Kit.");
+  assert.match(mail.cta.url, /f=invoices-kit\.zip/);
+  const res = await get(mail.cta.url.replace("https://altradits.test/api/kits", ""));
+  assert.equal(res.headers.get("content-type"), "application/zip");
+  const zip = Buffer.from(await res.arrayBuffer()).toString("latin1");
+  assert.ok(zip.startsWith("PK\x03\x04"));
+  assert.match(zip, /get-paid-on-time-kit\.pdf/);
+  assert.match(zip, /invoice-tracker\.csv/);
+  assert.equal((await getJSON(`sub:${r.sub.id}`)).confirmed, true); // downloaded from the email: confirmed
 });

@@ -87,3 +87,12 @@ test("emails carry the logo inside (no remote images, so no 'remote resources bl
     assert.doesNotMatch(raw, /<img[^>]+src=(3D)?"https?:/i);
   } finally { email.setMailer(undefined); }
 });
+
+test("links in emails are embedded: worded links and buttons, never long raw addresses in the HTML", async () => {
+  const { previewEmail } = await import("../lib/email.js");
+  const html = await previewEmail({ dept: "growth", subject: "Hi", text: "See [your portal](https://altradits.com/portal?c=SECRET123) or https://altradits.com/hourly?x=TOKEN", unsubscribe: "https://altradits.com/api/kits?unsub=a&t=b" });
+  assert.match(html, /<a href="https:\/\/altradits\.com\/portal\?c=SECRET123"[^>]*>your portal<\/a>/);
+  assert.match(html, />altradits\.com\/hourly<\/a>/); // bare address shown short, no token
+  assert.doesNotMatch(html.replace(/href="[^"]*"/g, ""), /SECRET123|TOKEN|unsub=a/); // tokens only inside links
+  assert.match(html, />Unsubscribe<\/a>/);
+});
