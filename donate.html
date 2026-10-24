@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Donate · Altradits</title>
+<meta name="description" content="Donate in Bitcoin to fund Bitcoin education in our community, so more people and businesses earn, save and pay in Bitcoin instead of fiat.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2F5BEA;--btc:#F7931A;--ok:#12A37F;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:40rem;margin:0 auto;padding:1.25rem 1rem 4rem}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.75rem}
+.top img{height:2.5rem;width:auto;display:block}
+.top a.jobs{font-weight:600;text-decoration:none;color:var(--muted)}
+h1{font:800 clamp(2rem,6vw,2.8rem)/1.05 'Bricolage Grotesque',sans-serif;margin:0 0 .6rem}
+h1 em{font-style:normal;color:var(--btc)}
+.lead{color:var(--muted);font-size:1.1rem;margin:0 0 1.2rem}
+.raised{font-weight:600;margin:0 0 1.4rem}
+.card{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;box-shadow:6px 6px 0 var(--ink);padding:1.4rem}
+.amounts{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin:0 0 .7rem}
+.amounts button{font:800 1.2rem 'Bricolage Grotesque',sans-serif;padding:.75rem 0;border:2px solid var(--line);border-radius:.7rem;background:var(--paper);cursor:pointer;color:var(--ink)}
+.amounts button[aria-pressed=true]{border-color:var(--btc);background:color-mix(in srgb,var(--btc) 12%,white)}
+label{display:block;font-weight:600;font-size:.92rem;margin:.6rem 0 .2rem}
+input,textarea{width:100%;padding:.7rem .8rem;border:2px solid var(--line);border-radius:.6rem;font:inherit;background:var(--bg)}
+input:focus,textarea:focus{border-color:var(--ink);background:#fff}
+textarea{min-height:4.5rem;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.btn{display:flex;width:100%;justify-content:center;margin-top:1rem;padding:.9rem 1.2rem;border-radius:.7rem;font:700 1.05rem Figtree,sans-serif;border:2px solid var(--btc);cursor:pointer;background:var(--btc);color:var(--ink)}
+.msg{min-height:1.4rem;margin:.6rem 0 0;color:var(--muted)}
+.msg.err{color:#B42318}
+.thanks{text-align:center}
+.thanks h2{font:800 1.6rem 'Bricolage Grotesque',sans-serif;margin:.2rem 0}
+.note{color:var(--muted);font-size:.9rem;margin:1.2rem 0 0}
+@media (max-width:420px){.amounts{grid-template-columns:repeat(2,1fr)}.row2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><a class="jobs" href="/#quick">Find a job</a></div>
+  <h1>Fund Bitcoin <em>education.</em></h1>
+  <p class="lead" id="purpose">Help people and businesses in our community learn to earn, save and pay in Bitcoin instead of fiat currency.</p>
+  <p class="raised" id="raised" hidden></p>
+
+  <div class="card" id="give">
+    <div class="amounts" role="group" aria-label="Amount in US dollars" id="amounts"></div>
+    <label for="custom">Or another amount (USD)</label>
+    <input id="custom" type="number" min="1" step="1" inputmode="decimal" placeholder="e.g. 35">
+    <div class="row2">
+      <div><label for="name">Name (optional)</label><input id="name" autocomplete="name"></div>
+      <div><label for="email">Email for your receipt (optional)</label><input id="email" type="email" autocomplete="email"></div>
+    </div>
+    <label for="message">Message (optional)</label>
+    <textarea id="message" maxlength="600" placeholder="What made you give?"></textarea>
+    <button class="btn" id="go">Donate with Bitcoin</button>
+    <p class="msg" id="msg" role="status"></p>
+  </div>
+
+  <div class="card" id="payCard" hidden><div id="pay"></div></div>
+  <div class="card thanks" id="thanks" hidden><h2>Thank you ⚡</h2><p>Your donation has arrived. It goes to Bitcoin education in our community.</p></div>
+
+  <p class="note">Pay with any Bitcoin wallet: Lightning settles in seconds, on-chain once confirmed. Altradits adds no fee. With an email, Finance sends you a receipt.</p>
+</div>
+<script type="module">
+import { mountPay } from "/assets/pay-widget.js";
+const $ = (s) => document.querySelector(s);
+let info = { suggested: [5, 20, 50, 100], min: 1, max: 5000 }, amount = null;
+try {
+  info = await (await fetch("/api/donate")).json();
+  if (info.raised > 0) { $("#raised").hidden = false; $("#raised").textContent = `$${info.raised.toLocaleString("en-US")} raised from ${info.donors} donor${info.donors === 1 ? "" : "s"} so far.`; }
+} catch {}
+$("#amounts").innerHTML = info.suggested.map((a) => `<button type="button" aria-pressed="false" data-a="${a}">$${a}</button>`).join("");
+$("#amounts").addEventListener("click", (e) => {
+  const a = e.target.dataset.a; if (!a) return;
+  amount = Number(a); $("#custom").value = "";
+  document.querySelectorAll("#amounts button").forEach((b) => b.setAttribute("aria-pressed", b === e.target));
+});
+$("#custom").addEventListener("input", () => { amount = Number($("#custom").value) || null; document.querySelectorAll("#amounts button").forEach((b) => b.setAttribute("aria-pressed", "false")); });
+$("#go").addEventListener("click", async () => {
+  const msg = $("#msg");
+  if (!(amount >= info.min && amount <= info.max)) { msg.className = "msg err"; msg.textContent = `Choose an amount between $${info.min} and $${info.max}.`; return; }
+  msg.className = "msg"; msg.textContent = "Creating your payment QR…"; $("#go").disabled = true;
+  try {
+    const r = await fetch("/api/donate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ usd: amount, name: $("#name").value, email: $("#email").value, message: $("#message").value }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "Something went wrong.");
+    $("#give").hidden = true; $("#payCard").hidden = false;
+    mountPay($("#pay"), { id: d.id, t: d.t, claim: true, onPaid: () => { $("#payCard").hidden = true; $("#thanks").hidden = false; } });
+  } catch (err) { msg.className = "msg err"; msg.textContent = err.message; $("#go").disabled = false; }
+});
+</script>
+</body>
+</html>

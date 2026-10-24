@@ -15,13 +15,16 @@ const stan = await import("../lib/stan.js");
 const { listIds, getMany } = await import("../lib/store.js");
 const all = async () => getMany("email", await listIds("emails", 200));
 
-test("every department email waits for Stanley; only alerts to him skip the queue", async () => {
+test("every department email waits for Stanley; only alerts to him and payment confirmations skip the queue", async () => {
   const q = await email.sendEmail({ to: "jo@shop.co", dept: "growth", subject: "Your question", text: "Core includes 35 hours." });
   assert.equal(q.status, "awaiting approval");
   assert.equal(q.from, "Altradits Customer Care <care@altradits.com>");
   assert.equal(q.cc, "stan@altradits.com");
-  // Payment confirmations and kit emails wait too.
-  assert.equal((await email.sendEmail({ to: "jo@shop.co", kind: "payment", subject: "Payment received", text: "Thanks" })).status, "awaiting approval");
+  // Kit emails wait too; payment confirmations go at once (Bitcoin settles instantly).
+  assert.equal((await email.sendEmail({ to: "jo@shop.co", kind: "kit", dept: "marketing", subject: "Your kit", text: "Here" })).status, "awaiting approval");
+  const pay = await email.sendEmail({ to: "jo@shop.co", kind: "payment", subject: "Payment received", text: "Thanks" });
+  assert.equal(pay.status, "logged");
+  assert.equal(pay.bcc, "altradits@gmail.com");
   assert.equal((await email.pendingApprovals()).length, 2);
   // Stanley gets one heads-up, not one per draft.
   const heads = (await all()).filter((e) => /\[Approval needed\]/.test(e.subject));
@@ -95,4 +98,37 @@ test("links in emails are embedded: worded links and buttons, never long raw add
   assert.match(html, />altradits\.com\/hourly<\/a>/); // bare address shown short, no token
   assert.doesNotMatch(html.replace(/href="[^"]*"/g, ""), /SECRET123|TOKEN|unsub=a/); // tokens only inside links
   assert.match(html, />Unsubscribe<\/a>/);
+});
+
+test("payments: the confirmation is instant; Finance's receipt is QA-reconciled and waits for Stanley; donations work the same way", async () => {
+  const crm = await import("../lib/crm.js");
+  const pending = async () => (await email.pendingApprovals()).filter((e) => e.kind === "receipt");
+  // A donation, paid over Lightning.
+  const { lead, p } = await crm.createDonation({ usd: 20, name: "Amina", email: "amina@shop.co", message: "Teach more people!" });
+  assert.equal(p.status, "accepted");
+  assert.ok(p.donation);
+  p.lightning = { sats: 24000 };
+  p.payment = { method: "Bitcoin (Lightning)", reference: "abc123hash", sats: 24000 };
+  await crm.confirmPayment(lead, p);
+  const thanks = (await all()).find((e) => e.subject === "Thank you for your donation");
+  assert.equal(thanks.status, "logged"); // sent at once
+  assert.equal(thanks.from, "Stan at Altradits <stan@altradits.com>");
+  assert.match(thanks.text, /\$20 donation to Bitcoin education/);
+  const [receipt] = await pending();
+  assert.equal(receipt.status, "awaiting approval");
+  assert.match(receipt.from, /<finance@altradits\.com>$/);
+  assert.match(receipt.subject, /^Receipt R-\d{4}-00001: Donation$/);
+  assert.match(receipt.text, /Amount: \$20\.00 \(24,000 sats\), paid in Bitcoin \(Lightning\)/);
+  assert.equal(receipt.qa.pass, true);
+  assert.ok(receipt.qa.checks.every((c) => c.pass));
+  // Short payment: Stan's QA flags it for Stanley.
+  const { reconcile } = await import("../lib/finance.js");
+  const short = reconcile({ ...p, payment: { ...p.payment, sats: 1000 } });
+  assert.equal(short.pass, false);
+  assert.ok(short.checks.some((c) => c.check === "Sats received cover the invoice" && !c.pass));
+  // Donations aren't revenue or chased.
+  const api = await import("../api/donate.js");
+  const tally = await (await api.GET()).json();
+  assert.equal(tally.raised, 20);
+  assert.equal(tally.donors, 1);
 });

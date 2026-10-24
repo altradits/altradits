@@ -206,6 +206,10 @@ dd{margin:0;overflow-wrap:anywhere}
   </div>
 
   <div id="tab-growth" hidden>
+    <div class="panel"><h2>Donations <span class="stage" id="donTotal" style="font-size:.8rem"></span></h2>
+      <p class="muted" style="margin-top:0">Donations to Bitcoin education at <a href="/donate" target="_blank" rel="noopener">/donate</a>. Confirmed automatically; Finance's receipts wait in the Stan tab.</p>
+      <div id="donList"></div>
+    </div>
     <div class="panel"><h2>Free-kit subscribers <span class="stage" id="subTotal" style="font-size:.8rem"></span></h2>
       <p class="muted" style="margin-top:0">People who downloaded a free kit at <a href="/templates" target="_blank" rel="noopener">/templates</a>. Each one is also a lead and gets three follow-ups over ten days: do it together, then done for you.</p>
       <div class="kpis" id="subKits" style="margin:0 0 .8rem"></div>
@@ -619,8 +623,16 @@ $("#subCsv").addEventListener("click", async () => {
   const res = await fetch("/api/admin?view=subscribers&format=csv", { headers: { Authorization: "Bearer " + token } });
   const a = document.createElement("a"); a.href = URL.createObjectURL(await res.blob()); a.download = "altradits-subscribers.csv"; a.click();
 });
+async function loadDonations() {
+  try {
+    const d = await api("?view=donations");
+    $("#donTotal").textContent = `$${d.total.toLocaleString("en-US")} from ${d.count} donor${d.count === 1 ? "" : "s"}`;
+    $("#donList").innerHTML = d.recent.length ? `<table><thead><tr><th>When</th><th>Donor</th><th>Amount</th><th>Message</th><th>Receipt</th></tr></thead><tbody>${d.recent.map((x) => `<tr><td class="sm">${ago(x.at)}</td><td>${esc(x.name || x.email || "Anonymous")}</td><td>$${x.usd}${x.sats ? ` <span class="muted sm">${x.sats.toLocaleString("en-US")} sats</span>` : ""}</td><td class="sm">${esc(x.message || "")}</td><td class="sm">${x.receipt ? esc(x.receipt) : x.email ? "pending" : "no email"}</td></tr>`).join("")}</tbody></table>` : `<p class="muted">No donations yet.</p>`;
+  } catch {}
+}
 function renderGrowth() {
   loadSubscribers();
+  loadDonations();
   renderOut();
   $("#templates").innerHTML = TEMPLATES.map(([t, body], i) => `<div class="ap"><h3>${esc(t)}</h3><pre>${esc(body)}</pre><div class="row"><button class="btn" data-copytpl="${i}">Copy</button></div></div>`).join("");
   if (!D) return;
@@ -939,6 +951,7 @@ async function loadStan() {
       <input value="${esc(e.subject)}" data-apsubj style="margin:.4rem 0;font-weight:700">
       <textarea data-aptext style="min-height:9rem">${esc(e.text)}</textarea>
       ${e.cta ? `<p class="sm muted" style="margin:.3rem 0">Button: ${esc(e.cta.label)} → ${esc(e.cta.url)}</p>` : ""}
+      ${e.qa ? `<div class="sm" style="margin:.3rem 0;padding:.4rem .6rem;border-radius:.5rem;background:${e.qa.pass ? "color-mix(in srgb,var(--ok) 10%,white)" : "color-mix(in srgb,var(--warn) 12%,white)"}"><b>${esc(e.qa.by || "QA")}: ${e.qa.pass ? "reconciled ✓" : "check before approving ✗"}</b> ${(e.qa.checks || []).map((c) => `${c.pass ? "✓" : "✗"} ${esc(c.check)}`).join(" · ")}</div>` : ""}
       <div class="row"><button class="btn ok" data-apgo="1">Approve &amp; send</button><button class="btn" data-apno="1">Reject</button></div></div>`).join("") : `<p class="muted">Nothing waiting. You're all caught up.</p>`;
   const day = (iso) => Date.now() - Date.parse(iso) < 864e5;
   const KIND = { team: "internal", payment: "payment confirmation", client: "client", kit: "free kit", owner: "to you" };

@@ -124,6 +124,10 @@ export async function GET(request) {
     p.payment = { method: settled.onchain ? "Bitcoin (on-chain)" : "Bitcoin (Lightning)", reference: settled.paymentHash || settled.bolt11.slice(-24), claimedAt: new Date().toISOString(), sats: settled.sats };
     if (lead) {
       await confirmPayment(lead, p);
+      if (p.donation) {
+        await emailOwner(`Donation ⚡ ${settled.sats.toLocaleString("en-US")} sats ($${p.totals.dueNow})`, `${lead.name || lead.email || "Someone"} donated $${p.totals.dueNow} (${settled.sats} sats) ${settled.onchain ? "on-chain" : "over Lightning"} to Bitcoin education.${p.donation.message ? `\n\nTheir message: ${p.donation.message}` : ""}\n\nThey've been thanked automatically; Finance's receipt is in your approval queue.`, null, lead.id);
+        return json({ status: "paid" });
+      }
       // Work to start: one of the few things worth an email.
       const urgent = p.order?.urgentOk && ["hours", "minutes"].includes(p.order.urgency);
       await emailOwner(`${urgent ? `🚨 URGENT (${p.order.urgency === "minutes" ? "right now" : "within hours"}) ` : ""}Paid ⚡ ${settled.sats.toLocaleString("en-US")} sats: start work for ${lead.name || lead.email || p.order?.name || "a client"}`,
