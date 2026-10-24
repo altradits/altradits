@@ -6,8 +6,9 @@
 // sends an email, to route inbound mail to the right agent, and as the
 // communication playbook for the whole team (AI agents and freelancers).
 //
-// Each AI head has a name, and their address is built from it (amara@,
-// selam@, ...). stan@altradits.com is Stanley's AI version and QA: it's copied
+// Every department emails from its official address (social@, care@, ...);
+// its AI head signs with a full name: an English first name and a Kenyan or
+// Ethiopian surname. stan@altradits.com is Stanley's AI version and QA: it's copied
 // on every department email. Emails about paying clients (after a deposit)
 // are blind-copied to Stanley's own inbox, altradits@gmail.com.
 //
@@ -66,9 +67,9 @@ export const COMMS = [
   },
   {
     id: "social",
-    address: "amara@altradits.com",
-    name: "Amara at Altradits",
-    head: { name: "Amara", role: "Social & Content Agent", kind: "ai", source: "data/playbooks.js#social" },
+    address: "social@altradits.com",
+    name: "Altradits Social & Content",
+    head: { name: "Grace Wanjiru", role: "Social & Content Agent", kind: "ai", source: "data/playbooks.js#social" },
     backup: STAN,
     purpose: "Runs client social media and content work: briefs, drafts, approvals and monthly reports.",
     inbound: [
@@ -97,7 +98,7 @@ export const COMMS = [
       "Client asks to email account passwords",
     ],
     cc: [],
-    signature: ["Amara, Social & Content, Altradits", "AI head of department. A human reviews anything sensitive.", "altradits.com"],
+    signature: ["Grace Wanjiru", "Head of Social & Content (AI agent), Altradits. A human reviews anything sensitive.", "social@altradits.com · altradits.com"],
     strategy: [
       "One thread per client per month so approvals and history stay in one place",
       "Keep templates for: intake questions, draft for approval, approval reminder, monthly report",
@@ -109,9 +110,9 @@ export const COMMS = [
   },
   {
     id: "admin",
-    address: "selam@altradits.com",
-    name: "Selam at Altradits",
-    head: { name: "Selam", role: "Operations & Admin Agent", kind: "ai", source: "data/playbooks.js#admin" },
+    address: "admin@altradits.com",
+    name: "Altradits Admin",
+    head: { name: "Daniel Tesfaye", role: "Operations & Admin Agent", kind: "ai", source: "data/playbooks.js#admin" },
     backup: STAN,
     purpose: "Handles client admin work: inbox and calendar tasks, documents, data and invoicing preparation.",
     inbound: [
@@ -138,7 +139,7 @@ export const COMMS = [
       "Client sends passwords or card numbers by email",
     ],
     cc: [],
-    signature: ["Selam, Operations & Admin, Altradits", "AI head of department. A human reviews anything sensitive.", "altradits.com"],
+    signature: ["Daniel Tesfaye", "Head of Operations & Admin (AI agent), Altradits. A human reviews anything sensitive.", "admin@altradits.com · altradits.com"],
     strategy: [
       "Acknowledge every file with a checklist of what arrived and what is still needed",
       "Keep templates for: received and missing, delivered with notes, deadline confirmation",
@@ -150,9 +151,9 @@ export const COMMS = [
   },
   {
     id: "personal",
-    address: "wanjiru@altradits.com",
-    name: "Wanjiru at Altradits",
-    head: { name: "Wanjiru", role: "Personal Assistant Agent", kind: "ai", source: "data/playbooks.js#personal" },
+    address: "assistant@altradits.com",
+    name: "Altradits Personal Assistant",
+    head: { name: "Faith Achieng", role: "Personal Assistant Agent", kind: "ai", source: "data/playbooks.js#personal" },
     backup: STAN,
     purpose: "Handles bookings, travel and personal tasks, always presenting options for the client to approve.",
     inbound: [
@@ -178,7 +179,7 @@ export const COMMS = [
       "Anything requiring the client's payment credentials",
     ],
     cc: [],
-    signature: ["Wanjiru, Personal Assistance, Altradits", "AI head of department. A human reviews anything sensitive.", "altradits.com"],
+    signature: ["Faith Achieng", "Head of Personal Assistance (AI agent), Altradits. A human reviews anything sensitive.", "assistant@altradits.com · altradits.com"],
     strategy: [
       "Use one fixed comparison format so clients can decide from a phone in under a minute",
       "Keep templates for: three options, confirmation and itinerary, day-before reminder, change of plan",
@@ -190,9 +191,9 @@ export const COMMS = [
   },
   {
     id: "growth",
-    address: "dawit@altradits.com",
-    name: "Dawit at Altradits",
-    head: { name: "Dawit", role: "Sales & Customer Care Agent", kind: "ai", source: "data/playbooks.js#growth" },
+    address: "care@altradits.com",
+    name: "Altradits Customer Care",
+    head: { name: "Samuel Bekele", role: "Sales & Customer Care Agent", kind: "ai", source: "data/playbooks.js#growth" },
     backup: STAN,
     purpose: "Altradits' own customer care, plus client sales and support work: questions, leads, research and fixes.",
     inbound: [
@@ -222,7 +223,7 @@ export const COMMS = [
       "Anyone sending passwords, card numbers or seed phrases",
     ],
     cc: [],
-    signature: ["Dawit, Sales & Customer Care, Altradits", "AI head of department. A human reviews anything sensitive.", "altradits.com"],
+    signature: ["Samuel Bekele", "Head of Sales & Customer Care (AI agent), Altradits. A human reviews anything sensitive.", "care@altradits.com · altradits.com"],
     strategy: [
       "Answer from the FAQ bank; tag every new question and add it to the bank weekly",
       "Keep templates for: price answer with buy link, fix request received, post-handover check-in, retainer suggestion",
@@ -234,9 +235,9 @@ export const COMMS = [
   },
   {
     id: "tech",
-    address: "otieno@altradits.com",
-    name: "Otieno at Altradits",
-    head: { name: "Otieno", role: "Web, Automation & Bitcoin Agent", kind: "ai", source: "data/playbooks.js#tech" },
+    address: "tech@altradits.com",
+    name: "Altradits Web & Automation",
+    head: { name: "Brian Otieno", role: "Web, Automation & Bitcoin Agent", kind: "ai", source: "data/playbooks.js#tech" },
     backup: STAN,
     purpose: "Handles websites, automations and Bitcoin/Lightning setups, from plan to handover.",
     inbound: [
@@ -265,7 +266,7 @@ export const COMMS = [
       "Client sends a seed phrase or password by email (tell them to rotate it)",
     ],
     cc: [],
-    signature: ["Otieno, Web, Automation & Bitcoin, Altradits", "AI head of department. A human reviews anything sensitive.", "altradits.com"],
+    signature: ["Brian Otieno", "Head of Web, Automation & Bitcoin (AI agent), Altradits. A human reviews anything sensitive.", "tech@altradits.com · altradits.com"],
     strategy: [
       "No build without a written, approved plan; it is the reference for the 14-day promise",
       "Keep templates for: plan for approval, staging review, handover guide, outage update",
@@ -277,9 +278,9 @@ export const COMMS = [
   },
   {
     id: "orders",
-    address: "dawit@altradits.com",
-    name: "Dawit at Altradits (Orders)",
-    head: { name: "Dawit", role: "Sales & Customer Care Agent (orders)", kind: "ai", source: "data/playbooks.js#growth" },
+    address: "orders@altradits.com",
+    name: "Altradits Orders",
+    head: { name: "Samuel Bekele", role: "Sales & Customer Care Agent (orders)", kind: "ai", source: "data/playbooks.js#growth" },
     backup: STAN,
     purpose: "Sends the order lifecycle emails: confirmation, payment receipt, kickoff and delivery.",
     inbound: [
@@ -306,7 +307,7 @@ export const COMMS = [
       "Order emails bouncing or flagged as phishing",
     ],
     cc: ["care@altradits.com on payment problems, disputes and late deliveries"],
-    signature: ["Dawit, Orders, Altradits", "AI head of department. A human reviews anything sensitive.", "altradits.com"],
+    signature: ["Samuel Bekele", "Orders, Sales & Customer Care (AI agent), Altradits. A human reviews anything sensitive.", "orders@altradits.com · altradits.com"],
     strategy: [
       "Every order gets the same sequence: confirmation, receipt, kickoff, delivery",
       "Keep these as fixed templates filled from the catalog so prices and scope never drift",
@@ -318,9 +319,9 @@ export const COMMS = [
   },
   {
     id: "marketing",
-    address: "liya@altradits.com",
-    name: "Liya at Altradits",
-    head: { name: "Liya", role: "Social Media Strategist, head of marketing", kind: "ai", source: "data/marketing.js#strategist" },
+    address: "marketing@altradits.com",
+    name: "Altradits",
+    head: { name: "Hannah Alemu", role: "Social Media Strategist, head of marketing", kind: "ai", source: "data/marketing.js#strategist" },
     backup: STAN,
     purpose: "Sends free-kit emails and runs the mailing list and newsletters.",
     inbound: [
@@ -346,7 +347,7 @@ export const COMMS = [
       "A reply that is really a sales lead or complaint (hand to care@ or stan@)",
     ],
     cc: [],
-    signature: ["Liya, Marketing, Altradits", "AI head of department. Reply to reach a human.", "altradits.com"],
+    signature: ["Hannah Alemu", "Head of Marketing (AI agent), Altradits. Reply to reach a human.", "marketing@altradits.com · altradits.com"],
     strategy: [
       "Every newsletter passes the Brand Guardian checks before it is sent",
       "Keep templates for: kit delivery, the three ladder follow-ups, newsletter",
@@ -358,9 +359,9 @@ export const COMMS = [
   },
   {
     id: "careers",
-    address: "selam@altradits.com",
-    name: "Selam at Altradits (Careers)",
-    head: { name: "Selam", role: "Operations & Admin Agent (careers)", kind: "ai", source: "data/playbooks.js#admin" },
+    address: "careers@altradits.com",
+    name: "Altradits Careers",
+    head: { name: "Daniel Tesfaye", role: "Operations & Admin Agent (careers)", kind: "ai", source: "data/playbooks.js#admin" },
     backup: STAN,
     purpose: "Handles freelancer applications from /join.html and onboarding of new team members.",
     inbound: [
@@ -386,7 +387,7 @@ export const COMMS = [
       "Conduct complaints about a team member",
     ],
     cc: [],
-    signature: ["Selam, Careers, Altradits", "AI head of department. Stanley makes every hiring decision.", "altradits.com"],
+    signature: ["Daniel Tesfaye", "Careers, Operations & Admin (AI agent), Altradits. Stanley makes every hiring decision.", "careers@altradits.com · altradits.com"],
     strategy: [
       "Acknowledge every application, even when the answer is no",
       "Keep templates for: received, approved with playbook, standby list, not this time",

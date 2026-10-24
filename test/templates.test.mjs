@@ -116,17 +116,22 @@ test("every kit's PDF renders", () => {
   }
 });
 
-test("named department heads email from their own addresses, copy stan@, and blind-copy Stanley only for paying clients", async () => {
+test("departments email from their official addresses, signed by a named AI head, copy stan@, and blind-copy Stanley only for paying clients", async () => {
   const { sendEmail, emailOwner } = await import("../lib/email.js");
   const { COMMS } = await import("../data/team-comms.js");
   const { createLead, saveLead } = await import("../lib/crm.js");
   assert.deepEqual(COMMS.map((c) => [c.id, c.head.name, c.address]), [
-    ["founder", "Stan", "stan@altradits.com"], ["social", "Amara", "amara@altradits.com"], ["admin", "Selam", "selam@altradits.com"],
-    ["personal", "Wanjiru", "wanjiru@altradits.com"], ["growth", "Dawit", "dawit@altradits.com"], ["tech", "Otieno", "otieno@altradits.com"],
-    ["orders", "Dawit", "dawit@altradits.com"], ["marketing", "Liya", "liya@altradits.com"], ["careers", "Selam", "selam@altradits.com"],
+    ["founder", "Stan", "stan@altradits.com"], ["social", "Grace Wanjiru", "social@altradits.com"], ["admin", "Daniel Tesfaye", "admin@altradits.com"],
+    ["personal", "Faith Achieng", "assistant@altradits.com"], ["growth", "Samuel Bekele", "care@altradits.com"], ["tech", "Brian Otieno", "tech@altradits.com"],
+    ["orders", "Samuel Bekele", "orders@altradits.com"], ["marketing", "Hannah Alemu", "marketing@altradits.com"], ["careers", "Daniel Tesfaye", "careers@altradits.com"],
     ["quality", "Stan", "stan@altradits.com"],
   ]);
-  for (const c of COMMS) assert.ok(c.address.startsWith(c.head.name.toLowerCase() + "@"), `${c.id}: address from the head's name`);
+  // Official department addresses; the head's full name signs the email and says they're an AI.
+  for (const c of COMMS.filter((x) => x.head.name !== "Stan")) {
+    assert.equal(c.signature[0], c.head.name, `${c.id}: signed by the head`);
+    assert.match(c.signature[1], /\(AI agent\)/);
+    assert.match(c.head.name, /^[A-Z][a-z]+ [A-Z][a-z]+$/, `${c.id}: first and last name`);
+  }
   assert.ok(COMMS.every((c) => !/\d{3}[\s-]?\d{3}[\s-]?\d{3}/.test(JSON.stringify(c))), "no phone numbers");
 
   const lead = await createLead({ email: "client@x.co", source: "order" });
@@ -136,7 +141,7 @@ test("named department heads email from their own addresses, copy stan@, and bli
   assert.equal(plain.cc, null);
   assert.equal(plain.bcc, null);
   const care = await sendEmail({ to: "client@x.co", leadId: lead.id, dept: "growth", subject: "Your question", text: "Answer" });
-  assert.equal(care.from, "Dawit at Altradits <dawit@altradits.com>");
+  assert.equal(care.from, "Altradits Customer Care <care@altradits.com>");
   assert.equal(care.cc, "stan@altradits.com");
   assert.equal(care.bcc, null);
   // After a deposit: Stanley's inbox gets a blind copy.
@@ -144,13 +149,13 @@ test("named department heads email from their own addresses, copy stan@, and bli
   assert.equal(receipt.bcc, "altradits@gmail.com");
   lead.stage = "active"; await saveLead(lead);
   const update = await sendEmail({ to: "client@x.co", leadId: lead.id, dept: "tech", subject: "Staging link", text: "Here" });
-  assert.equal(update.from, "Otieno at Altradits <otieno@altradits.com>");
+  assert.equal(update.from, "Altradits Web & Automation <tech@altradits.com>");
   assert.equal(update.cc, "stan@altradits.com");
   assert.equal(update.bcc, "altradits@gmail.com");
   const owner = await emailOwner("Alert", "x");
   assert.equal(owner.bcc, null); // already going to that inbox
   const kit = (await emails()).find((e) => /Your free kit/.test(e.subject));
-  assert.equal(kit.from, "Liya at Altradits <liya@altradits.com>");
+  assert.equal(kit.from, "Altradits <marketing@altradits.com>");
   assert.equal(kit.cc, "stan@altradits.com");
   assert.equal(kit.bcc, null); // a free download isn't a deposit
   // Kit PDFs carry the letterhead.

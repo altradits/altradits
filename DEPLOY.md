@@ -129,17 +129,17 @@ altradits.com/templates.html offers six free, complete kits (data/templates.js):
 
 ## Email addresses, letterhead, CC and BCC
 
-Each department head has a name and emails from it (data/team-comms.js; admin → Team → Department directory):
+Each department emails from its official address; its AI head signs with their full name (data/team-comms.js; admin → Team → Department directory):
 
 | Head | Address | Department |
 |---|---|---|
 | Stan (Stanley's AI version and QA) | stan@altradits.com | Default sender, quality review, escalations |
-| Amara | amara@altradits.com | Social media & content |
-| Selam | selam@altradits.com | Office admin, and careers |
-| Wanjiru | wanjiru@altradits.com | Personal assistance |
-| Dawit | dawit@altradits.com | Sales & customer care, and orders |
-| Otieno | otieno@altradits.com | Web, automation & Bitcoin |
-| Liya | liya@altradits.com | Marketing, free kits and the mailing list |
+| Grace Wanjiru | social@altradits.com | Social media & content |
+| Daniel Tesfaye | admin@altradits.com, careers@altradits.com | Office admin, and careers |
+| Faith Achieng | assistant@altradits.com | Personal assistance |
+| Samuel Bekele | care@altradits.com, orders@altradits.com | Sales & customer care, and orders |
+| Brian Otieno | tech@altradits.com | Web, automation & Bitcoin |
+| Hannah Alemu | marketing@altradits.com | Marketing, free kits and the mailing list |
 
 - Every department email **copies stan@altradits.com**.
 - Emails about a **paying client** (after a deposit) are **blind-copied to altradits@gmail.com** so anything that needs you reaches your own inbox. Free-kit and pre-payment emails aren't. `EMAIL_BCC=none` turns the blind copy off.
@@ -147,6 +147,6 @@ Each department head has a name and emails from it (data/team-comms.js; admin �
 
 Set up in DirectAdmin → E-mail Manager (one time):
 1. Create the mailbox **stan@altradits.com**.
-2. Create forwarders for amara@, selam@, wanjiru@, dawit@, otieno@ and liya@ to stan@altradits.com (and/or altradits@gmail.com), so replies to any head reach you.
+2. Create forwarders for social@, admin@, assistant@, care@, tech@, orders@, marketing@ and careers@ to stan@altradits.com (and/or altradits@gmail.com), so replies to any head reach you.
 3. In DNS management, check SPF and DKIM are enabled for altradits.com, so mail from these addresses isn't marked as spam.
 4. Keep `EMAIL_TRANSPORT=sendmail` (or SMTP_* for the stan@ mailbox) in Setup Node.js App.
