@@ -152,6 +152,7 @@ dd{margin:0;overflow-wrap:anywhere}
       <button role="tab" data-tab="leads">Leads & clients</button>
       <button role="tab" data-tab="tasks">Tasks <span class="badge" id="taskCount" hidden></span></button>
       <button role="tab" data-tab="team">Team <span class="badge" id="teamCount" hidden></span></button>
+      <button role="tab" data-tab="finance">Finance</button>
       <button role="tab" data-tab="growth">Growth</button>
       <button role="tab" data-tab="marketing">Marketing</button>
       <button role="tab" data-tab="stan">Stan <span class="badge" id="approvalCount" hidden></span></button>
@@ -204,6 +205,19 @@ dd{margin:0;overflow-wrap:anywhere}
     <div class="panel"><h2>Departments</h2><div class="kpis" id="deptKpis" style="margin:0"></div>
       <p class="muted" style="font-size:.9rem">Tasks are routed to approved members of the matching department with spare weekly hours. If nobody has capacity, the task comes to you. Recruiting link: <a href="/join" target="_blank">/join</a></p></div>
     <div class="panel"><h2>Team & applications</h2><div id="memberList"></div></div>
+  </div>
+
+  <div id="tab-finance" hidden>
+    <div class="panel"><h2>Statement: money received through the website</h2>
+      <p class="muted" style="margin-top:0">Every paid order and donation, as confirmed on your node or on-chain. Donations are kept apart from sales. Payment records are never cleared.</p>
+      <div class="kpis" id="finKpis" style="margin:0 0 1rem"></div>
+      <div class="row" style="margin:0 0 1rem"><button class="btn" id="finCsv">Download CSV for the books</button></div>
+      <div class="grid2">
+        <div><h3 style="font-size:1rem;margin:.2rem 0 .5rem">By month</h3><div id="finMonths"></div></div>
+        <div><h3 style="font-size:1rem;margin:.2rem 0 .5rem">By service</h3><div id="finServices"></div></div>
+      </div>
+      <h3 style="font-size:1rem;margin:1.2rem 0 .5rem">Every payment</h3><div id="finList" style="overflow-x:auto"></div>
+    </div>
   </div>
 
   <div id="tab-growth" hidden>
@@ -387,11 +401,12 @@ function tab(name) {
   document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === name));
   if (["tasks", "team"].includes(name)) loadOps();
   if (name === "growth") renderGrowth();
+  if (name === "finance") loadFinance();
   if (name === "jobs") loadJobs();
   if (name === "marketing") loadMarketing();
   if (name === "stan") loadStan();
   if (name === "emails") loadInboxes();
-  ["overview", "approvals", "leads", "tasks", "team", "growth", "marketing", "stan", "jobs", "emails"].forEach((t) => { $("#tab-" + t).hidden = t !== name; });
+  ["overview", "approvals", "leads", "tasks", "team", "finance", "growth", "marketing", "stan", "jobs", "emails"].forEach((t) => { $("#tab-" + t).hidden = t !== name; });
 }
 document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => tab(b.dataset.tab)));
 $("#refresh").addEventListener("click", () => load());
@@ -946,6 +961,25 @@ async function loadArchives() {
   } catch (err) { $("#archList").textContent = err.message; }
 }
 document.querySelectorAll('input[name="freshMode"]').forEach((r) => r.addEventListener("change", () => { $("#freshConfirm").placeholder = r.value === "delete" ? "Type DELETE FOREVER" : "Type START FRESH"; }));
+// Finance: the statement of money received.
+const usd2 = (n) => `$${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const satsF = (n) => `${Number(n || 0).toLocaleString("en-US")} sats`;
+async function loadFinance() {
+  let F; try { F = await api("?view=statement"); } catch (err) { $("#finKpis").textContent = err.message; return; }
+  const kpi = (label, v, sub) => `<div class="kpi"><small>${esc(label)}</small><div>${v}</div>${sub ? `<small class="muted">${esc(sub)}</small>` : ""}</div>`;
+  $("#finKpis").innerHTML = kpi("Total received", usd2(F.total.usd), `${satsF(F.total.sats)} · ${F.total.count} payment${F.total.count === 1 ? "" : "s"}`)
+    + kpi("Sales", usd2(F.sales.usd), `${F.sales.count} order${F.sales.count === 1 ? "" : "s"}`) + kpi("Donations", usd2(F.donations.usd), `${F.donations.count} donation${F.donations.count === 1 ? "" : "s"}`)
+    + kpi("Lightning", satsF(F.channels.lightning.sats), usd2(F.channels.lightning.usd)) + kpi("On-chain", satsF(F.channels.onchain.sats), usd2(F.channels.onchain.usd));
+  const table = (rows, head) => rows.length ? `<table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>` : '<p class="muted">Nothing received yet.</p>';
+  $("#finMonths").innerHTML = table(F.months.map((m) => `<tr><td>${esc(m.key)}</td><td>${usd2(m.sales)}</td><td>${usd2(m.donations)}</td><td><b>${usd2(m.usd)}</b><br><small class="muted">${satsF(m.sats)}</small></td></tr>`), ["Month", "Sales", "Donations", "Total"]);
+  $("#finServices").innerHTML = table(F.services.map((s) => `<tr><td>${esc(s.key)}</td><td>${s.count}</td><td>${usd2(s.usd)}</td></tr>`), ["Service", "Orders", "Received"]);
+  $("#finList").innerHTML = table(F.payments.map((x) => `<tr><td>${esc(new Date(x.at).toLocaleString())}</td><td>${esc(x.receipt || "")}</td><td>${esc(x.client)}</td><td>${esc(x.what)}${x.type === "donation" ? ' <span class="stage">donation</span>' : ""}</td><td>${usd2(x.usd)}</td><td>${satsF(x.sats)}</td><td>${x.channel === "onchain" ? "On-chain" : "Lightning"}</td><td><code title="${esc(x.reference)}">${esc(x.reference.slice(0, 12))}…</code></td></tr>`), ["Date", "Receipt", "Client", "What", "USD", "Sats", "Channel", "Reference"]);
+}
+$("#finCsv").addEventListener("click", async () => {
+  const res = await fetch("/api/admin?view=statement&format=csv", { headers: { Authorization: "Bearer " + token } });
+  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(await res.blob()), download: `altradits-statement-${new Date().toISOString().slice(0, 10)}.csv` });
+  a.click(); URL.revokeObjectURL(a.href);
+});
 $("#freshGo").addEventListener("click", async (e) => {
   const groups = [...document.querySelectorAll(".freshG:checked")].map((c) => c.value);
   const mode = document.querySelector('input[name="freshMode"]:checked').value;
