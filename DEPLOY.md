@@ -104,3 +104,9 @@ The marketing team (admin → Marketing) plans posts daily at 05:00 UTC and publ
 | Facebook · Stanley, TikTok | none | Meta doesn't allow posting to personal profiles by API, and TikTok needs a video file: these always arrive as ready-to-paste drafts. |
 
 Optional: `LINKEDIN_VERSION` (default 202608), `FB_GRAPH_VERSION` (default v25.0), `MARKETING_MODEL`. The GitHub Action "Wake the marketing team" pings the site at each slot because the host idles the app.
+
+### Scheduler, repurposing and the treasure hunt
+
+- The team keeps the **next 7 days** scheduled: one master message a day, repurposed into a native post per account slot (admin → Marketing → Scheduler shows each post as it will look on its platform). Posts for unconnected accounts stay scheduled; once you add an account's keys, its queued posts go out on time with nothing else to do.
+- **Master content**: write a brief (or leave it empty), press *Create master*, then *Repurpose & schedule* onto any day (1–3 days). Slots already posted are kept; scheduled ones are replaced. Edit or cancel any post before it goes out; a day you change is left alone by the auto-planner.
+- **Treasure hunt** (altradits.com/hunt): every post carries one letter of the week's word (words and coupon % in `data/marketing.js` → `HUNT`). Solvers get a personal share link; the coupon (default 10% off one order, 30-day expiry) unlocks when someone else opens it, and is spent when the order is paid. Customers enter it under "Have a hunt code?" at checkout.

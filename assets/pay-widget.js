@@ -3,7 +3,7 @@
 // one QR any wallet can scan (plus Lightning and on-chain tabs), the fees, and
 // waits for the payment to confirm itself.
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const money = (n) => "$" + Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
+const money = (n) => "$" + Number(n).toLocaleString("en-US", Number.isInteger(Number(n)) ? {} : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const CSS = `
 .pw{--pw-ink:#0F1B2D;--pw-muted:#4B5A70;--pw-btc:#F7931A}

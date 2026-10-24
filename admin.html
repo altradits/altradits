@@ -73,6 +73,36 @@ dd{margin:0;overflow-wrap:anywhere}
 .grid3>li{background:var(--bg);border-radius:.9rem;padding:1rem;counter-increment:st}
 .grid3>li h3::before{content:counter(st) ". ";color:var(--blue)}
 .grid3>li p{margin:.4rem 0}
+.sm{font-size:.85rem}
+.pvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(19rem,1fr));gap:1rem}
+.pvwrap{display:flex;flex-direction:column;gap:.5rem;background:var(--bg);border-radius:1rem;padding:.75rem}
+.pvhead{display:flex;justify-content:space-between;gap:.5rem;align-items:center;font-size:.9rem}
+.pv{background:#fff;border:1px solid #CFD9DE;border-radius:.9rem;padding:.8rem .9rem;font-size:.92rem;line-height:1.45;display:flex;flex-direction:column;gap:.55rem}
+.pv .who{display:flex;gap:.55rem;align-items:center}
+.pv .av{flex:none;width:2.4rem;height:2.4rem;border-radius:.6rem;background:var(--ink);color:#fff;display:grid;place-items:center;font:800 1rem 'Bricolage Grotesque',sans-serif}
+.pv .txt{white-space:normal;overflow-wrap:anywhere}
+.pv .acts{color:#536471;font-size:.82rem;border-top:1px solid #EFF3F4;padding-top:.45rem}
+.pv .more{color:#666;cursor:pointer;font-weight:600}
+.pvcount{font-size:.78rem;color:#536471;text-align:right}
+.pv.x{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;border-radius:0;border-color:#EFF3F4}
+.pv.x .av{background:#000}
+.pv.li{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;border-radius:.5rem}
+.pv.li .av{background:#0A66C2}
+.pv.li .cmt{background:#F3F2EF;border-radius:.5rem;padding:.5rem .65rem;font-size:.85rem;overflow-wrap:anywhere}
+.pv.fb{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;border-radius:.5rem}
+.pv.fb .av{background:#1877F2}
+.pv.fb .lp{background:#F0F2F5;margin:0 -.9rem;padding:.6rem .9rem;display:flex;flex-direction:column}
+.pv.fb .lp small{color:#65676B}
+.pv.tt{background:transparent;border:0;padding:0}
+.pv.tt .screen{position:relative;aspect-ratio:9/14;max-height:26rem;overflow-y:auto;background:#121212;color:#fff;border-radius:1rem;padding:1rem 2.8rem 1rem 1rem;font-size:.86rem}
+.pv.tt .side{position:absolute;right:.8rem;bottom:1rem;text-align:center;line-height:2.2}
+.pv.tt textarea{background:#222;color:#fff}
+.pvedit{min-height:9rem}
+.pvfoot{display:flex;flex-direction:column;gap:.25rem}
+.pvfoot .row{margin-top:.2rem}
+.pvfoot .btn{padding:.35rem .7rem;font-size:.85rem}
+.stage.posted{background:color-mix(in srgb,var(--ok) 18%,white)}
+.stage.failed,.stage.rejected{background:color-mix(in srgb,var(--warn) 18%,white)}
 @media (max-width:820px){.grid3{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.hide-sm{display:none}}
 </style>
 </head>
@@ -188,13 +218,29 @@ dd{margin:0;overflow-wrap:anywhere}
 
   <div id="tab-marketing" hidden>
     <div class="panel"><h2>Marketing team <span class="stage" id="mkState" style="font-size:.8rem"></span></h2>
-      <p class="muted" style="margin:0 0 .8rem">Plans today's posts at 05:00 UTC, checks every one, then posts each at its time. Anything that can't post by itself comes to your inbox, ready to paste.</p>
-      <div class="row" style="margin:0 0 1rem"><button class="btn primary" id="mkPlan">Plan today again</button><button class="btn" id="mkPause"></button><span class="muted" id="mkMsg" role="status"></span></div>
-      <div class="grid2"><div><h3 style="margin-bottom:.4rem">Accounts</h3><div id="mkChannels"></div></div>
-      <div><h3 style="margin-bottom:.4rem">The team</h3><ul id="mkTeam" style="margin:0;padding-left:1.1rem"></ul></div></div>
+      <p class="muted" style="margin:0 0 .8rem">The team keeps the next 7 days scheduled: one master message a day, repurposed into a native post for every account. Posts go out at their time once the account is connected; until then they come to your inbox each morning, ready to paste.</p>
+      <div class="row" style="margin:0 0 .6rem"><button class="btn" id="mkPause"></button><span class="muted" id="mkMsg" role="status"></span></div>
+      <p class="err" id="mkErr" hidden></p>
+      <div class="kpis" id="mkHunt" style="margin:.4rem 0 0"></div>
+    </div>
+
+    <div class="panel"><h2>Scheduler</h2>
+      <div class="tabs" id="mkDayTabs" role="tablist" style="margin-bottom:1rem"></div>
+      <div class="pvgrid" id="mkDay"></div>
+    </div>
+
+    <div class="panel"><h2>Master content</h2>
+      <p class="muted" style="margin:0 0 .6rem">One message, many formats. Give the team a brief (or leave it empty to let them choose), then repurpose it into posts for every account.</p>
+      <textarea id="mkBrief" placeholder="Optional brief, e.g. push the $5 test task to agency owners this week"></textarea>
+      <div class="row"><button class="btn primary" id="mkNew">Create master</button></div>
+      <div id="mkMasters" style="margin-top:1rem"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel"><h2>Accounts</h2><div id="mkChannels"></div></div>
+      <div class="panel"><h2>The team</h2><ul id="mkTeam" style="margin:0;padding-left:1.1rem"></ul></div>
     </div>
     <div class="panel"><h2>Results, last 14 days</h2><div style="overflow-x:auto"><table><thead><tr><th>Account</th><th>Posts</th><th>Orders started</th><th>Paid</th><th>Revenue</th></tr></thead><tbody id="mkResults"></tbody></table></div></div>
-    <div class="panel"><h2>Posts</h2><div id="mkDays"></div></div>
   </div>
 
   <div id="tab-emails" hidden><div class="panel"><h2>Emails sent by the agents</h2>
@@ -683,39 +729,104 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-// ---- marketing team
-let M = null;
-const MK_STATUS = { planned: "scheduled", posting: "posting…", posted: "posted", failed: "failed", manual: "in your email", rejected: "blocked by review", cancelled: "cancelled" };
+// ---- marketing team: scheduler with platform previews, masters, repurposing
+let M = null, mkDay = new Date().toISOString().slice(0, 10), mkEditing = null, mkPicked = false;
+const MK_STATUS = { scheduled: "scheduled", planned: "scheduled", posting: "posting…", posted: "posted", failed: "failed", manual: "emailed to you", rejected: "blocked by review", cancelled: "cancelled" };
 async function loadMarketing() {
   try { M = await api("?view=marketing"); renderMarketing(); } catch (err) { $("#mkMsg").textContent = err.message; }
+}
+const mkCh = (id) => M.channels.find((c) => c.id === id) || { name: id };
+const nl = (t) => esc(t).replace(/\n/g, "<br>");
+function preview(p) {
+  const c = mkCh(p.channel), when = p.at.slice(11, 16) + " UTC", body = p.text + (p.trace ? "\n\n" + p.trace : "");
+  const text = mkEditing === p.id
+    ? `<textarea class="pvedit" data-mkedittext="${p.id}">${esc(p.text)}</textarea><div class="pvcount">${p.trace ? "The hunt line is added below automatically." : ""}</div><div class="row"><button class="btn ok" data-mksave="${p.id}">Save</button><button class="btn" data-mkcancel-edit="1">Discard</button></div>`
+    : null;
+  let card;
+  if (p.channel === "x") {
+    card = `<div class="pv x"><div class="who"><span class="av">A</span><div><b>Altradits</b> <span class="muted">@altradits · ${when}</span></div></div>
+      ${text || `<div class="txt">${nl(body)}</div><div class="pvcount ${body.length > c.max + 20 ? "err" : ""}">${body.length}/280</div>`}
+      <div class="acts">💬 &nbsp; 🔁 &nbsp; ♡ &nbsp; 📊</div></div>`;
+  } else if (p.channel.startsWith("li_")) {
+    const who = p.channel === "li_stan" ? ["S", "Stanley Chege Thuita", "Founder at Altradits"] : ["A", "Altradits", "Virtual assistance · Company page"];
+    const cut = body.length > 210 && mkEditing !== p.id;
+    card = `<div class="pv li"><div class="who"><span class="av">${who[0]}</span><div><b>${who[1]}</b><div class="muted sm">${who[2]}<br>${when} · 🌐</div></div></div>
+      ${text || `<div class="txt">${cut ? `${nl(body.slice(0, 210))}<span class="more">…see more</span><span class="rest" hidden>${nl(body.slice(210))}</span>` : nl(body)}</div>`}
+      <div class="acts">👍 Like · 💬 Comment · 🔁 Repost · ✉ Send</div>
+      ${p.link ? `<div class="cmt"><b>${who[1]}</b> · first comment<br>${esc(p.link)}</div>` : ""}</div>`;
+  } else if (p.channel.startsWith("fb_")) {
+    const who = p.channel === "fb_page" ? "Altradits" : "Stanley Chege Thuita";
+    card = `<div class="pv fb"><div class="who"><span class="av">${who[0]}</span><div><b>${who}</b><div class="muted sm">${when} · 🌎</div></div></div>
+      ${text || `<div class="txt">${nl(body)}</div>`}
+      ${p.link ? `<div class="lp"><small>ALTRADITS.COM</small><b>Altradits: fixed-price jobs, done the same day</b></div>` : ""}
+      <div class="acts">👍 Like · 💬 Comment · ↗ Share</div></div>`;
+  } else {
+    card = `<div class="pv tt"><div class="screen">${text || `<div class="txt">${nl(body)}</div>`}<div class="side">♥<br>💬<br>↗</div></div><div class="muted sm">@altradits · ${when} · video script</div></div>`;
+  }
+  const can = (s) => s.includes(p.status);
+  return `<article class="pvwrap"><div class="pvhead"><b>${esc(c.name)}</b><span class="stage ${p.status}">${esc(MK_STATUS[p.status] || p.status)}</span></div>
+    ${card}
+    <div class="pvfoot">${p.format ? `<span class="muted sm">${esc(p.format)}</span>` : ""}
+      ${["scheduled", "planned"].includes(p.status) ? `<span class="muted sm">${c.connected ? `Posts itself at ${when}` : c.mode === "manual" ? "Comes to your email that morning" : "Emailed to you unless connected by then"}</span>` : ""}
+      ${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">View post</a>` : ""}${p.error ? `<span class="err sm">${esc(p.error)}</span>` : ""}
+      ${p.status === "rejected" && p.issues?.length ? `<span class="err sm">${esc(p.issues.join(" · "))}</span>` : ""}
+      <div class="row">${can(["scheduled", "planned", "rejected", "failed", "manual"]) && mkEditing !== p.id ? `<button class="btn" data-mkedit="${p.id}">Edit</button>` : ""}
+      ${can(["scheduled", "planned", "failed", "manual"]) && c.connected ? `<button class="btn ok" data-mkpost="${p.id}">Post now</button>` : ""}
+      ${can(["scheduled", "planned", "manual", "failed", "rejected"]) ? `<button class="btn" data-mkcancel="${p.id}">Cancel</button>` : ""}
+      <button class="btn" data-mkcopy="${p.id}">Copy</button></div></div></article>`;
 }
 function renderMarketing() {
   $("#mkState").textContent = !M.live ? "off: set ANTHROPIC_API_KEY" : M.settings.paused ? "paused" : "running";
   $("#mkPause").textContent = M.settings.paused ? "Resume posting" : "Pause posting";
-  $("#mkChannels").innerHTML = M.channels.map((c) => `<p style="margin:.3rem 0"><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.name)}</a> · ${esc(c.slots.join(", "))} UTC<br><span class="muted" style="font-size:.88rem">${c.connected ? "✓ posts automatically" : c.mode === "manual" ? "No posting API: drafts come to your email" : `Not connected: set ${esc(c.env.join(", "))} in the hosting panel`}</span></p>`).join("");
+  $("#mkErr").hidden = !M.lastError || Date.now() - Date.parse(M.lastError.at) > 864e5;
+  $("#mkErr").textContent = M.lastError ? `Last problem (${ago(M.lastError.at)}): ${M.lastError.error}` : "";
+  const h = M.hunt;
+  $("#mkHunt").innerHTML = `<div class="kpi"><small>Hunt #${h.n} word</small><div style="font-size:1.3rem">${esc(h.word)}</div></div><div class="kpi"><small>Solved</small><div>${h.stats.solved}</div></div><div class="kpi"><small>Codes earned</small><div>${h.stats.earned}</div></div><div class="kpi"><small>Codes used</small><div>${h.stats.used}</div></div>`;
+  // First view: open the first day with posts still to go out.
+  if (!mkPicked) mkDay = (M.days.slice(2).find((d) => d.posts.some((p) => ["scheduled", "planned"].includes(p.status))) || M.days[2]).date;
+  $("#mkDayTabs").innerHTML = M.days.map((d) => { const n = d.posts.filter((p) => p.status !== "cancelled").length; const lbl = new Date(d.date + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }); return `<button role="tab" data-mkday="${d.date}" aria-selected="${d.date === mkDay}">${lbl} <span class="muted">${n}</span></button>`; }).join("");
+  const day = M.days.find((d) => d.date === mkDay) || M.days[2];
+  $("#mkDay").innerHTML = day.posts.length ? day.posts.map(preview).join("") : `<p class="muted">Nothing scheduled for this day yet. The team fills the week automatically, or create a master below and repurpose it.</p>`;
+  const opts = M.days.slice(2).map((d) => `<option value="${d.date}">${d.date}</option>`).join("");
+  $("#mkMasters").innerHTML = M.masters.map((m) => `<div class="ap"><h3>${esc(m.title)} <span class="stage">${esc(m.status)}</span> <span class="muted sm">${m.by === "stanley" ? "your brief" : "team"} · ${ago(m.createdAt)}</span></h3>
+    <p style="margin:.4rem 0"><b>${esc(m.message)}</b></p><p class="muted sm" style="margin:0">For: ${esc(m.audience)}</p>
+    <details><summary class="sm">Points, hooks and call to action</summary><ul>${m.points.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><p class="sm"><b>Hooks:</b> ${m.hooks.map(esc).join(" · ")}</p><p class="sm"><b>Call to action:</b> ${esc(m.cta)}</p>${m.growthNote ? `<p class="sm muted">${esc(m.growthNote)}</p>` : ""}</details>
+    ${m.scheduled?.length ? `<p class="sm muted" style="margin:.4rem 0 0">Scheduled: ${m.scheduled.join(", ")}</p>` : ""}
+    <div class="row"><label class="sm">Start <select data-mkstart="${m.id}" style="width:auto">${opts}</select></label><label class="sm">Days <select data-mkdays="${m.id}" style="width:auto"><option>1</option><option>2</option><option>3</option></select></label><button class="btn primary" data-mkrep="${m.id}">Repurpose &amp; schedule</button></div></div>`).join("") || `<p class="muted">No masters yet.</p>`;
+  $("#mkChannels").innerHTML = M.channels.map((c) => `<p style="margin:.3rem 0"><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.name)}</a> · ${esc(c.slots.join(", "))} UTC<br><span class="muted sm">${c.connected ? "✓ posts automatically" : c.mode === "manual" ? "No posting API: drafts come to your email" : `Not connected: set ${esc(c.env.join(", "))} in the hosting panel. Scheduled posts start going out as soon as you do.`}</span></p>`).join("");
   $("#mkTeam").innerHTML = M.team.map((m) => `<li><b>${esc(m.name)}</b>: ${esc(m.role)}</li>`).join("");
   $("#mkResults").innerHTML = M.channels.map((c) => { const r = M.results[c.id]; return `<tr><td>${esc(c.name)}</td><td>${r.posts}</td><td>${r.leads}</td><td>${r.paid}</td><td>${money(r.revenue)}</td></tr>`; }).join("");
-  $("#mkDays").innerHTML = M.days.length ? M.days.map((d) => `<h3 style="margin:.8rem 0 .3rem">${esc(d.date)}${d.theme ? ` · ${esc(d.theme)}` : ""} <span class="stage">${esc(d.status)}</span></h3>
-    ${d.error ? `<p class="err">${esc(d.error)}</p>` : ""}${d.growthNote ? `<p class="muted" style="margin:0 0 .5rem">${esc(d.growthNote)}</p>` : ""}
-    ${d.posts.map((p) => { const c = M.channels.find((x) => x.id === p.channel); return `<div class="ap${p.status === "failed" ? " pending" : ""}"><div class="meta">${esc(c?.name || p.channel)} · ${esc(p.at.slice(11, 16))} UTC · <span class="stage">${esc(MK_STATUS[p.status] || p.status)}</span>${p.url ? ` · <a href="${esc(p.url)}" target="_blank" rel="noopener">view</a>` : ""}</div>
-      <pre>${esc(p.text)}</pre>${p.link ? `<div class="meta">Link: ${esc(p.link)}</div>` : ""}${p.error ? `<p class="err">${esc(p.error)}</p>` : ""}${p.issues?.length && p.status === "rejected" ? `<p class="err">${esc(p.issues.join(" · "))}</p>` : ""}
-      <div class="row">${["planned", "failed"].includes(p.status) && c?.connected ? `<button class="btn ok" data-mkpost="${p.id}">Post now</button>` : ""}${["planned", "manual", "failed"].includes(p.status) ? `<button class="btn" data-mkcancel="${p.id}">Cancel</button>` : ""}${p.status === "manual" ? `<button class="btn" data-mkcopy="${p.id}">Copy text</button>` : ""}</div></div>`; }).join("")}`).join("")
-    : `<p class="muted">No posts yet. The team plans at 05:00 UTC, or press "Plan today again".</p>`;
 }
-$("#mkPlan").addEventListener("click", async () => {
-  $("#mkMsg").textContent = "Planning… (about 2 minutes)";
-  try { await api("", { action: "mkt_plan" }); setTimeout(loadMarketing, 90000); } catch (err) { $("#mkMsg").textContent = err.message; }
-});
 $("#mkPause").addEventListener("click", async () => {
   try { await api("", { action: "mkt_pause", paused: !M.settings.paused }); loadMarketing(); } catch (err) { $("#mkMsg").textContent = err.message; }
 });
-$("#mkDays").addEventListener("click", async (e) => {
+$("#mkNew").addEventListener("click", async (e) => {
+  e.target.disabled = true; $("#mkMsg").textContent = "The team is writing a master (about a minute)…";
+  try { await api("", { action: "mkt_master", brief: $("#mkBrief").value }); $("#mkBrief").value = ""; setTimeout(() => { e.target.disabled = false; $("#mkMsg").textContent = ""; loadMarketing(); }, 60000); }
+  catch (err) { e.target.disabled = false; $("#mkMsg").textContent = err.message; }
+});
+$("#mkMasters").addEventListener("click", async (e) => {
+  const id = e.target.dataset.mkrep; if (!id) return;
+  e.target.disabled = true; e.target.textContent = "Repurposing… (1-2 minutes)";
+  try { await api("", { action: "mkt_repurpose", id, start: $(`[data-mkstart="${id}"]`).value, days: $(`[data-mkdays="${id}"]`).value }); mkDay = $(`[data-mkstart="${id}"]`).value; mkPicked = true; setTimeout(loadMarketing, 100000); }
+  catch (err) { e.target.disabled = false; e.target.textContent = err.message; }
+});
+$("#mkDayTabs").addEventListener("click", (e) => { const d = e.target.closest("[data-mkday]")?.dataset.mkday; if (d) { mkDay = d; mkPicked = true; mkEditing = null; renderMarketing(); } });
+$("#mkDay").addEventListener("click", async (e) => {
   const d = e.target.dataset;
-  const post = M.days.flatMap((x) => x.posts).find((p) => p.id === (d.mkpost || d.mkcancel || d.mkcopy));
+  if (e.target.classList.contains("more")) { e.target.hidden = true; e.target.nextElementSibling.hidden = false; return; }
+  if (d.mkcancelEdit) { mkEditing = null; renderMarketing(); return; }
+  const id = d.mkpost || d.mkcancel || d.mkcopy || d.mkedit || d.mksave;
+  const post = id && M.days.flatMap((x) => x.posts).find((p) => p.id === id);
   if (!post) return;
-  if (d.mkcopy) { navigator.clipboard?.writeText(post.text + (post.link ? "\n\n" + post.link : "")).then(() => { e.target.textContent = "Copied ✓"; }); return; }
+  if (d.mkcopy) { navigator.clipboard?.writeText(post.text + (post.trace ? "\n\n" + post.trace : "") + (post.link ? "\n\n" + post.link : "")).then(() => { e.target.textContent = "Copied ✓"; }); return; }
+  if (d.mkedit) { mkEditing = id; renderMarketing(); return; }
   e.target.disabled = true;
-  try { await api("", { action: d.mkpost ? "mkt_post_now" : "mkt_cancel", id: post.id }); loadMarketing(); } catch (err) { e.target.disabled = false; e.target.textContent = err.message; }
+  try {
+    if (d.mksave) { await api("", { action: "mkt_edit", id, text: $(`[data-mkedittext="${id}"]`).value }); mkEditing = null; }
+    else await api("", { action: d.mkpost ? "mkt_post_now" : "mkt_cancel", id });
+    loadMarketing();
+  } catch (err) { e.target.disabled = false; e.target.textContent = err.message.slice(0, 120); }
 });
 
 async function load(navigate = true) {

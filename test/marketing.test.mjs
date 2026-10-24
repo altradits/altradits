@@ -1,6 +1,7 @@
-// The in-house marketing team: daily plan, Brand Guardian checks, scheduled
-// publishing, and the "ready to post" email, with a fake Claude client and a
-// fake social network. Run: npm test
+// The in-house marketing team: master content, repurposing into native posts,
+// the 7-day scheduler (posts wait for accounts to be connected), the treasure
+// hunt and its one-time coupons. Fake Claude client, fake social network.
+// Run: npm test
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -10,151 +11,211 @@ import crypto from "node:crypto";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "altradits-mkt-"));
 process.chdir(tmp);
-for (const k of ["ANTHROPIC_API_KEY", "RESEND_API_KEY", "UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "LINKEDIN_TOKEN", "LINKEDIN_ORG_ID", "FB_PAGE_TOKEN"]) delete process.env[k];
+for (const k of ["ANTHROPIC_API_KEY", "RESEND_API_KEY", "UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "LINKEDIN_TOKEN", "LINKEDIN_ORG_ID", "FB_PAGE_TOKEN", "X_API_KEY", "X_API_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_SECRET"]) delete process.env[k];
 process.env.SITE_URL = "https://altradits.test";
-Object.assign(process.env, { X_API_KEY: "ck", X_API_SECRET: "cs", X_ACCESS_TOKEN: "at", X_ACCESS_SECRET: "as" });
+const X_KEYS = { X_API_KEY: "ck", X_API_SECRET: "cs", X_ACCESS_TOKEN: "at", X_ACCESS_SECRET: "as" };
 
-const { CHANNELS } = await import("../data/marketing.js");
-const { setSocialFetch, oauthHeader, connected } = await import("../lib/social.js");
+const { CHANNELS, HUNT } = await import("../data/marketing.js");
+const { setSocialFetch, oauthHeader, connected, publish } = await import("../lib/social.js");
 const mk = await import("../lib/marketing.js");
+const hunt = await import("../lib/hunt.js");
 const { getJSON, listIds, getMany } = await import("../lib/store.js");
+const order = await import("../api/order.js");
+const huntApi = await import("../api/hunt.js");
+const { getProposal, getLead, confirmPayment } = await import("../lib/crm.js");
 
 const ch = (id) => CHANNELS.find((c) => c.id === id);
-const TEXT = {
-  x: "Most founders lose an hour a day to inbox triage. We clear it the same day, fixed price, paid in Bitcoin. #founders",
-  li_stan: "I stopped answering email at 7am.\n\nHere's what changed when I handed it to my team.",
-  li_co: "Busy week? Pick a fixed-price job and it's done the same day.",
-  fb_page: "Test us with one 15-minute task for $5.",
-  fb_stan: "Building Altradits with freelancers from Addis and Kisumu.",
-  tiktok: "HOOK: Your inbox at 7am vs. at 7:05.\nCAPTION: Same-day help #smallbusiness",
-};
+const req = (url, body, ip = "1.1.1.1") => new Request(`https://altradits.test${url}`, { method: body ? "POST" : "GET", headers: { "Content-Type": "application/json", "x-forwarded-for": ip }, body: body && JSON.stringify(body) });
 
-// Plans every slot; the review passes everything except a post we break on purpose.
+// --- fake Claude: a master, then one post per requested slot ------------------
 const calls = [];
-let planOverride = null;
+let breakSlot = null; // a slot id whose first draft quotes a fake price
 mk.setMarketingClient({ beta: { messages: { stream: (params) => ({ finalMessage: async () => {
   calls.push(params);
-  if (params.tools[0].name === "submit_plan") {
-    const posts = CHANNELS.flatMap((c) => c.slots.map((slot) => ({ channel: c.id, slot, text: TEXT[c.id] })));
-    return { stop_reason: "tool_use", content: [{ type: "tool_use", name: "submit_plan", input: planOverride?.(posts, params) || { theme: "Inbox", growth_note: "First day.", posts } }] };
+  const tool = params.tools[0].name;
+  const out = (input) => ({ stop_reason: "tool_use", content: [{ type: "tool_use", name: tool, input }] });
+  if (tool === "submit_master") return out({ title: "Inbox in an hour", theme: "Offer spotlight", audience: "Agency owners", message: "Hand us your inbox; it's sorted the same day.", points: ["Fixed price", "Same day"], hooks: ["What if 7am was quiet?", "Inbox zero is a service", "I stopped answering email"], cta: "Order the $5 test task", growth_note: "First week." });
+  if (tool === "submit_posts") {
+    const content = params.messages[0].content;
+    const ids = [...content.matchAll(/^- (\d{4}-\d\d-\d\d\/\w+\/\d\d:\d\d) \|/gm)].map((m) => m[1]);
+    const fixing = /FIX THESE/.test(content);
+    return out({ posts: ids.map((slot) => ({ slot, format: `format for ${slot}`, text: slot === breakSlot && !fixing ? "Everything for $3 only!" : `Your inbox, handled the same day. (${slot.split("/")[1]})` })) });
   }
   const n = params.messages[0].content.split(/\n\n#/).length;
-  return { stop_reason: "tool_use", content: [{ type: "tool_use", name: "review_posts", input: { verdicts: Array.from({ length: n }, (_, index) => ({ index, pass: true, issues: [] })) } }] };
+  return out({ verdicts: Array.from({ length: n }, (_, index) => ({ index, pass: true, issues: [] })) });
 } }) } } });
 
 const sent = [];
 setSocialFetch(async (url, init) => {
   sent.push({ url, init });
-  return new Response(JSON.stringify({ data: { id: String(1000 + sent.length) } }), { status: 201, headers: { "Content-Type": "application/json" } });
+  if (url.endsWith("/rest/posts")) return new Response("", { status: 201, headers: { "x-restli-id": "urn:li:share:9" } });
+  if (url.includes("graph.facebook.com")) return new Response(JSON.stringify({ id: "123_456" }), { status: 200 });
+  return new Response(JSON.stringify({ data: { id: String(1000 + sent.length) } }), { status: 201 });
 });
 
-test("hard checks block invented prices, URLs, phone numbers and testimonials", () => {
+// ------------------------------------------------------------------ checks
+test("hard checks block invented prices, URLs, phones, testimonials, coupons and hand-written hunt lines", () => {
   assert.deepEqual(mk.checkPost(ch("x"), "Inbox zero by tonight. $5 to test us."), []);
   assert.match(mk.checkPost(ch("x"), "Only $7 today!").join(), /not a catalog price/);
   assert.match(mk.checkPost(ch("fb_page"), "See https://altradits.com").join(), /No URLs/);
   assert.match(mk.checkPost(ch("x"), "Visit altradits.com").join(), /No domain names/);
   assert.match(mk.checkPost(ch("li_co"), "Call +254 707 172 370").join(), /phone/);
   assert.match(mk.checkPost(ch("li_co"), "Our clients say we're the best").join(), /testimonials/);
-  assert.match(mk.checkPost(ch("x"), "x".repeat(300)).join(), /Too long/);
-  assert.match(mk.checkPost(ch("x"), "#a #b").join(), /1 hashtag/);
+  assert.match(mk.checkPost(ch("li_co"), "Grab a coupon today").join(), /coupons/);
+  assert.match(mk.checkPost(ch("li_co"), "🔎 letter 2 of 8 is A").join(), /hunt line/);
+  assert.match(mk.checkPost(ch("x"), "x".repeat(250), 220).join(), /Too long/);
 });
 
 test("X requests are signed with OAuth 1.0a HMAC-SHA1", () => {
+  Object.assign(process.env, X_KEYS);
   const h = oauthHeader("POST", "https://api.x.com/2/tweets", { nonce: "n1", timestamp: 1700000000 });
   const base = "POST&https%3A%2F%2Fapi.x.com%2F2%2Ftweets&" + encodeURIComponent("oauth_consumer_key=ck&oauth_nonce=n1&oauth_signature_method=HMAC-SHA1&oauth_timestamp=1700000000&oauth_token=at&oauth_version=1.0");
-  const sig = crypto.createHmac("sha1", "cs&as").update(base).digest("base64");
-  assert.ok(h.startsWith("OAuth "));
-  assert.ok(h.includes(`oauth_signature="${encodeURIComponent(sig)}"`));
+  assert.ok(h.includes(`oauth_signature="${encodeURIComponent(crypto.createHmac("sha1", "cs&as").update(base).digest("base64"))}"`));
+  for (const k of Object.keys(X_KEYS)) delete process.env[k];
 });
 
-test("only channels with keys post automatically; the rest go to Stanley's email", () => {
-  assert.equal(connected(ch("x")), true);
-  assert.equal(connected(ch("li_stan")), false);
-  assert.equal(connected(ch("fb_stan")), false); // no API for personal profiles
-  assert.equal(connected(ch("tiktok")), false);
+// ------------------------------------------------------------------ the scheduler
+const AT = new Date("2026-11-02T04:00:00Z"); // a Monday, before the first slot
+
+test("the team keeps the next 7 days scheduled: one master per day, repurposed for every slot", async () => {
+  for (let i = 0; i < 8; i++) await mk.marketingTick({ at: AT, force: true });
+  const masters = await listIds("mkt:masters", 50);
+  assert.equal(masters.length, 7);
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(AT.getTime() + i * 864e5).toISOString().slice(0, 10);
+    const rec = await getJSON(`mkt:day:${day}`);
+    assert.equal(rec.posts.length, CHANNELS.reduce((n, c) => n + c.slots.length, 0), day);
+    assert.ok(rec.posts.every((p) => p.status === "scheduled" && p.masterId && p.format && p.trace));
+  }
+  const day1 = await getJSON("mkt:day:2026-11-02");
+  // Every post carries a hunt letter; one day's posts cover the whole word.
+  const h = hunt.huntFor(AT);
+  const letters = new Set(day1.posts.map((p) => p.trace.match(/(?:: |is ")([A-Z])/)[1]));
+  assert.equal(letters.size, new Set(h.word).size);
+  assert.match(day1.posts.find((p) => p.channel === "x").trace, new RegExp(`^🔎 Hunt #${h.n} · letter \\d/${h.word.length}: [A-Z]$`));
+  assert.match(day1.posts.find((p) => p.channel === "li_co").trace, /altradits\.com\/hunt/);
+  // The writers were told how much room the hunt line leaves.
+  const rep = calls.find((c) => c.tools[0].name === "submit_posts");
+  assert.match(rep.messages[0].content, /2026-11-02\/x\/07:00 \| X · @altradits .* \| max 2\d\d characters/);
 });
 
-test("the team plans the day at 05:00 UTC and posts each X slot once, on time", async () => {
-  const early = new Date("2026-11-02T04:30:00Z");
-  assert.equal((await mk.marketingTick({ at: early, force: true })).planned, false);
-
-  const r = await mk.marketingTick({ at: new Date("2026-11-02T05:05:00Z"), force: true });
-  assert.equal(r.planned, true);
-  const day = await getJSON("mkt:day:2026-11-02");
-  assert.equal(day.posts.length, CHANNELS.reduce((n, c) => n + c.slots.length, 0));
-  assert.deepEqual(day.posts.filter((p) => p.channel === "x").map((p) => p.status), ["planned", "planned", "planned"]);
-  assert.ok(day.posts.filter((p) => p.channel !== "x").every((p) => p.status === "manual"));
-  // The team saw the live catalog and the guard rails.
-  assert.match(calls[0].system, /Brand Guardian|never invent|Never invent/i);
-  assert.match(calls[0].system, /Test us: one 15-minute task, \$5/);
-  // Tracked links per channel; X never gets one.
-  assert.equal(day.posts.find((p) => p.channel === "fb_page").link, "https://altradits.test/?ref=mkfbpage");
-  assert.equal(day.posts.find((p) => p.channel === "x").link, null);
-
-  // The daily email carries everything that can't auto-post.
-  const emails = await getMany("email", await listIds("emails", 10));
+test("posts wait for their account: emailed when not connected, posted by themselves once it is", async () => {
+  // 05:00: the morning email lists today's posts for unconnected accounts.
+  await mk.marketingTick({ at: new Date("2026-11-02T05:10:00Z"), force: true });
+  const emails = await getMany("email", await listIds("emails", 20));
   const digest = emails.find((e) => /Ready to post/.test(e.subject));
   assert.ok(digest);
-  assert.match(digest.text, /Facebook · Stanley/);
   assert.match(digest.text, /TikTok/);
-  assert.match(digest.text, /\?ref=mkfbstan/);
+  assert.match(digest.text, /🔎/);
 
+  // 07:00 X slot, not connected: it becomes "manual" (no API call).
   await mk.marketingTick({ at: new Date("2026-11-02T07:01:00Z"), force: true });
-  await mk.marketingTick({ at: new Date("2026-11-02T07:02:00Z"), force: true });
+  let rec = await getJSON("mkt:day:2026-11-02");
+  assert.equal(rec.posts.find((p) => p.channel === "x" && p.slot === "07:00").status, "manual");
+  assert.equal(sent.length, 0);
+
+  // Stanley connects X: the 12:30 post goes out by itself, with its hunt line.
+  Object.assign(process.env, X_KEYS);
+  await mk.marketingTick({ at: new Date("2026-11-02T12:31:00Z"), force: true });
+  await mk.marketingTick({ at: new Date("2026-11-02T12:32:00Z"), force: true });
   assert.equal(sent.length, 1);
-  assert.equal(sent[0].url, "https://api.x.com/2/tweets");
-  assert.equal(JSON.parse(sent[0].init.body).text, TEXT.x);
-  const after = await getJSON("mkt:day:2026-11-02");
-  const first = after.posts.find((p) => p.channel === "x");
-  assert.equal(first.status, "posted");
-  assert.equal(first.url, "https://x.com/altradits/status/1001");
-  assert.equal(calls.filter((c) => c.tools[0].name === "submit_plan").length, 1); // planned once
+  const text = JSON.parse(sent[0].init.body).text;
+  assert.match(text, /Your inbox, handled the same day\. \(x\)\n\n🔎 Hunt #/);
+  assert.ok(text.length <= 280);
+  rec = await getJSON("mkt:day:2026-11-02");
+  assert.equal(rec.posts.find((p) => p.channel === "x" && p.slot === "12:30").status, "posted");
 });
 
-test("posts that fail review are rewritten once, then blocked if still wrong", async () => {
-  planOverride = (posts) => ({ theme: "Prices", growth_note: "", posts: posts.map((p) => (p.channel === "fb_page" ? { ...p, text: "Everything 50% off, $3 only!" } : p)) });
-  const rec = await mk.planDay(new Date("2026-11-03T05:10:00Z"));
-  planOverride = null;
-  const fb = rec.posts.find((p) => p.channel === "fb_page");
-  assert.equal(fb.status, "rejected");
-  assert.match(fb.issues.join(), /catalog price|discount/);
-  const rewrite = calls.filter((c) => c.tools[0].name === "submit_plan").at(-1);
-  assert.match(rewrite.messages[0].content, /REWRITE ONLY THESE POSTS/);
+test("Stanley can edit or cancel scheduled posts; edits are checked", async () => {
+  const rec = await getJSON("mkt:day:2026-11-03");
+  const p = rec.posts.find((x) => x.channel === "li_stan");
+  await assert.rejects(mk.editPost(p.id, "Only $3!"), /not a catalog price/);
+  const edited = await mk.editPost(p.id, "I stopped answering email at 7am. Here's why.");
+  assert.equal(edited.text, "I stopped answering email at 7am. Here's why.");
+  assert.equal((await mk.cancelPost(p.id)).status, "cancelled");
+  assert.equal((await getJSON("mkt:day:2026-11-03")).locked, true);
 });
 
-test("pausing stops all posting; cancelling a scheduled post skips it", async () => {
+test("repurpose: a master becomes new variants for a chosen day; bad drafts are rewritten once", async () => {
+  const master = await mk.createMaster({ brief: "Push the $5 test task", at: AT });
+  assert.equal(master.by, "stanley");
+  breakSlot = "2026-11-05/fb_page/15:00";
+  const r = await mk.repurpose(master.id, { start: "2026-11-05", days: 1, at: AT });
+  breakSlot = null;
+  assert.equal(r.rejected, 0);
+  const rec = await getJSON("mkt:day:2026-11-05");
+  assert.ok(rec.posts.filter((p) => p.status === "scheduled").every((p) => p.masterId === master.id));
+  assert.ok(calls.some((c) => /FIX THESE/.test(c.messages?.[0]?.content || "") && /\$3 is not a catalog price/.test(c.messages[0].content)));
+  assert.deepEqual((await getJSON(`mkt:master:${master.id}`)).scheduled, ["2026-11-05"]);
+});
+
+test("pausing stops everything", async () => {
   await mk.saveSettings({ paused: true });
-  assert.equal((await mk.marketingTick({ at: new Date("2026-11-02T12:40:00Z"), force: true })).skipped, "paused");
+  assert.equal((await mk.marketingTick({ at: new Date("2026-11-02T18:01:00Z"), force: true })).skipped, "paused");
   await mk.saveSettings({ paused: false });
-  const day = await getJSON("mkt:day:2026-11-02");
-  const noon = day.posts.find((p) => p.channel === "x" && p.status === "planned");
-  await mk.cancelPost(noon.id);
-  const before = sent.length;
-  await mk.marketingTick({ at: new Date("2026-11-02T12:40:00Z"), force: true });
-  assert.equal(sent.length, before);
 });
 
 test("LinkedIn posts with the link as first comment; the Facebook Page gets the link attached", async () => {
-  const { publish } = await import("../lib/social.js");
   Object.assign(process.env, { LINKEDIN_TOKEN: "li", LINKEDIN_PERSON_URN: "urn:li:person:abc", FB_PAGE_TOKEN: "fb" });
-  const reqs = [];
-  setSocialFetch(async (url, init) => {
-    reqs.push({ url, init });
-    if (url.endsWith("/rest/posts")) return new Response("", { status: 201, headers: { "x-restli-id": "urn:li:share:9" } });
-    return new Response(JSON.stringify({ id: "123_456" }), { status: 200 });
-  });
+  sent.length = 0;
   const li = await publish(ch("li_stan"), { text: "Hook line", link: "https://altradits.test/?ref=mklistan" });
   assert.equal(li.url, "https://www.linkedin.com/feed/update/urn:li:share:9/");
-  const body = JSON.parse(reqs[0].init.body);
-  assert.equal(body.author, "urn:li:person:abc");
-  assert.equal(body.commentary, "Hook line");
-  assert.ok(reqs[0].init.headers["LinkedIn-Version"]);
-  assert.match(reqs[1].url, /socialActions\/urn%3Ali%3Ashare%3A9\/comments$/);
-  assert.equal(JSON.parse(reqs[1].init.body).message.text, "https://altradits.test/?ref=mklistan");
-
-  const fb = await publish(ch("fb_page"), { text: "Test us for $5", link: "https://altradits.test/?ref=mkfbpage" });
-  assert.match(reqs[2].url, /graph\.facebook\.com\/v[\d.]+\/61579168157529\/feed$/);
-  assert.equal(reqs[2].init.body.get("link"), "https://altradits.test/?ref=mkfbpage");
-  assert.equal(fb.url, "https://www.facebook.com/123_456");
+  assert.equal(JSON.parse(sent[0].init.body).author, "urn:li:person:abc");
+  assert.match(sent[1].url, /socialActions\/urn%3Ali%3Ashare%3A9\/comments$/);
+  await publish(ch("fb_page"), { text: "Test us for $5", link: "https://altradits.test/?ref=mkfbpage" });
+  assert.match(sent[2].url, /graph\.facebook\.com\/v[\d.]+\/61579168157529\/feed$/);
+  assert.equal(sent[2].init.body.get("link"), "https://altradits.test/?ref=mkfbpage");
+  assert.equal(connected(ch("fb_stan")), false); // no API for personal profiles
   for (const k of ["LINKEDIN_TOKEN", "LINKEDIN_PERSON_URN", "FB_PAGE_TOKEN"]) delete process.env[k];
+});
+
+// ------------------------------------------------------------------ treasure hunt
+test("hunt: solve, share, a visit from someone else unlocks a one-time coupon", async () => {
+  const h = hunt.huntFor();
+  assert.equal((await huntApi.POST(req("/api/hunt", { action: "solve", answer: "WRONG" }))).status, 400);
+  const solved = await (await huntApi.POST(req("/api/hunt", { action: "solve", answer: h.word.toLowerCase() }, "2.2.2.2"))).json();
+  const claim = solved.claim;
+  assert.match(claim.share, /^https:\/\/altradits\.com\/\?h=[a-z2-9]{8}$/);
+  const code = claim.share.split("=")[1];
+
+  // The player opening their own link doesn't count.
+  await huntApi.POST(req("/api/hunt", { action: "visit", code }, "2.2.2.2"));
+  let status = await (await huntApi.GET(req(`/api/hunt?claim=${claim.id}&t=${claim.t}`))).json();
+  assert.equal(status.claim.coupon, null);
+  // Someone else opens it: the coupon unlocks.
+  await huntApi.POST(req("/api/hunt", { action: "visit", code }, "3.3.3.3"));
+  status = await (await huntApi.GET(req(`/api/hunt?claim=${claim.id}&t=${claim.t}`))).json();
+  const coupon = status.claim.coupon;
+  assert.match(coupon.code, /^HUNT-[A-Z2-9]{6}$/);
+  assert.equal(coupon.pct, HUNT.couponPct);
+  // Wrong token: nothing.
+  assert.equal((await huntApi.GET(req(`/api/hunt?claim=${claim.id}&t=nope`))).status, 404);
+  // Same player solving again gets the same claim, not a second coupon.
+  const again = await (await huntApi.POST(req("/api/hunt", { action: "solve", answer: h.word }, "2.2.2.2"))).json();
+  assert.equal(again.claim.id, claim.id);
+
+  // Checkout: the code takes 10% off, and works for one paid order only.
+  const o1 = await (await order.POST(req("/api/order", { item: "q-try" }))).json();
+  const applied = await (await order.POST(req("/api/order", { id: o1.id, t: o1.t, coupon: coupon.code.toLowerCase() }))).json();
+  assert.equal(applied.usd, 4.5);
+  const p1 = await getProposal(o1.id);
+  assert.equal(p1.totals.dueNow, 4.5);
+
+  // While reserved, another order can't take it.
+  const o2 = await (await order.POST(req("/api/order", { item: "q-try" }))).json();
+  const blocked = await order.POST(req("/api/order", { id: o2.id, t: o2.t, coupon: coupon.code }));
+  assert.equal(blocked.status, 400);
+  assert.match((await blocked.json()).error, /another order/);
+
+  await confirmPayment(await getLead(p1.leadId), p1);
+  assert.equal((await getJSON(`coupon:${coupon.code}`)).status, "used");
+  const reuse = await order.POST(req("/api/order", { id: o2.id, t: o2.t, coupon: coupon.code }));
+  assert.match((await reuse.json()).error, /already been used/);
+  assert.deepEqual(await hunt.huntStats(h.n), { solved: 1, earned: 1, used: 1 });
+});
+
+test("hunt guesses are rate limited", async () => {
+  let last;
+  for (let i = 0; i < 14; i++) last = await huntApi.POST(req("/api/hunt", { action: "solve", answer: "NOPE" }, "9.9.9.9"));
+  assert.equal(last.status, 429);
 });

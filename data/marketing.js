@@ -61,4 +61,17 @@ export const THEMES = [
   "Community: freelancers from weVenture Hub (Addis Ababa) and Zone01 (Kisumu), 100+ on standby",
 ];
 
+// The weekly treasure hunt (lib/hunt.js): one word a week, a letter in every post.
+// The coupon is earned by sharing a personal link that someone else opens, and
+// works for one order.
+export const HUNT = {
+  site: "https://altradits.com",
+  couponPct: 10,   // % off one order
+  couponDays: 30,  // unused codes expire after this
+  words: ["DELEGATE", "SAMEDAY", "FOUNDERS", "QUICKJOB", "SPEEDRUN", "SATOSHI", "HANDOVER", "FREEDOM", "BITCOIN", "FASTLANE"],
+};
+
+// How far ahead the scheduler keeps every slot filled.
+export const HORIZON_DAYS = 7;
+
 export const POSTS_PER_DAY = CHANNELS.reduce((n, c) => n + c.slots.length, 0);
