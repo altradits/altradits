@@ -172,7 +172,8 @@ dd{margin:0;overflow-wrap:anywhere}
     <div class="panel"><h2>Waiting for you</h2><div id="overviewApprovals"></div></div>
   </div>
 
-  <div id="tab-approvals" hidden><div class="panel"><h2>Approvals</h2><div id="approvals"></div></div></div>
+  <div id="tab-approvals" hidden><div class="panel"><h2>Approvals</h2><div id="approvals"></div></div>
+    <div class="panel fresh"><div class="clearbox" data-groups="approvals"></div></div></div>
 
   <div id="tab-leads" hidden>
     <div class="panel"><h2>Leads & clients</h2>
@@ -181,6 +182,7 @@ dd{margin:0;overflow-wrap:anywhere}
       <div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Stage</th><th class="hide-sm">Needs</th><th class="hide-sm">Fit</th><th>Last activity</th></tr></thead><tbody id="leadRows"></tbody></table></div>
     </div>
     <div id="leadDetail"></div>
+    <div class="panel fresh"><div class="clearbox" data-groups="leads"></div></div>
   </div>
 
   <div id="tab-tasks" hidden>
@@ -188,6 +190,7 @@ dd{margin:0;overflow-wrap:anywhere}
       <div class="row" style="margin:0 0 .8rem"><select id="taskFilter" style="max-width:14rem"><option value="open">Open</option><option value="owner">Needs me</option><option value="waiting_client">Waiting for client</option><option value="review">With client</option><option value="follow_up">Unhappy client</option><option value="done">Done</option><option value="">All</option></select></div>
       <div class="kpis" id="pipeKpis" style="margin:0 0 1rem"></div>
       <div id="taskList"></div></div>
+    <div class="panel fresh"><div class="clearbox" data-groups="tasks"></div></div>
   </div>
 
   <div id="tab-team" hidden>
@@ -249,6 +252,7 @@ dd{margin:0;overflow-wrap:anywhere}
       <div class="meter" style="height:.7rem;background:var(--bg);border-radius:99px;overflow:hidden;margin-top:.8rem"><i id="outBar" style="display:block;height:100%;width:0;background:var(--ok)"></i></div></div>
     <div class="grid2"><div class="panel"><h2>Message templates</h2><div id="templates"></div></div>
     <div class="panel"><h2>Where leads come from</h2><div id="sources"></div><h2 style="margin-top:1.2rem">Top referrers</h2><div id="referrers"></div></div></div>
+    <div class="panel fresh"><div class="clearbox" data-groups="subscribers,hunt"></div></div>
   </div>
 
   <div id="tab-jobs" hidden>
@@ -356,13 +360,17 @@ dd{margin:0;overflow-wrap:anywhere}
       <div class="panel"><h2>Escalated to you</h2><div id="stanEsc"></div></div>
     </div>
     <div class="panel fresh"><h2>Start fresh</h2>
-      <p class="muted" style="margin-top:0">Clear old records so the dashboard only shows real work from now on. Never touched: payments and every email about them (receipts, confirmations, anything sent to a paying client), your team, careers and marketing content.</p>
+      <p class="muted" style="margin-top:0">Clear old records so the dashboard only shows real work from now on. Never touched: payments and every email about them (receipts, confirmations, anything sent to a paying client), live work (drafts waiting for you, pending approvals, open tasks, unused coupons), your team, careers, marketing content and settings.</p>
       <label class="sm"><input type="checkbox" class="freshG" value="communications" checked> <span>Communications: every recorded email, the approval queue and Stan's instructions</span></label>
-      <label class="sm"><input type="checkbox" class="freshG" value="clients"> <span>Test clients: leads, orders, payments, donations, tasks, free-kit subscribers, and hunt coupons</span></label>
+      <label class="sm"><input type="checkbox" class="freshG" value="clients"> <span>Customer records: leads, unpaid orders and donation attempts, tasks, approvals, free-kit subscribers and the treasure hunt</span></label>
       <div class="sm" style="margin-top:.6rem"><label><input type="radio" name="freshMode" value="archive" checked> <span>Archive first (kept in a file, can be restored)</span></label>
       <label><input type="radio" name="freshMode" value="delete"> <span><b>Delete for good</b> (no copy kept, frees the space, can't be undone)</span></label></div>
       <div class="row" style="margin-top:.6rem"><input id="freshConfirm" placeholder="Type START FRESH" style="max-width:14rem"><button class="btn" id="freshGo">Clear</button></div>
       <p class="sm muted" id="freshMsg" role="status"></p>
+      <h3 style="margin:1.2rem 0 .4rem;font-size:1rem">Automatic clean-up (daily)</h3>
+      <p class="sm muted" style="margin:0 0 .4rem">Runs every morning and deletes for good what's past these periods, always with the same protection: payments, live work and internal records are never touched.</p>
+      <ul class="sm" id="autoRules" style="padding-left:1.1rem;margin:.2rem 0"></ul>
+      <p class="sm" id="autoLast"></p>
       <h3 style="margin:1.2rem 0 .4rem;font-size:1rem">Archives</h3>
       <p class="sm muted" style="margin:0 0 .5rem">Deleting an archive frees its space for good. Type DELETE in the box, then click Delete on the file.</p>
       <input id="archConfirm" placeholder="Type DELETE" style="max-width:14rem">
@@ -1010,6 +1018,35 @@ $("#finCsv").addEventListener("click", async () => {
   const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(await res.blob()), download: `altradits-statement-${new Date().toISOString().slice(0, 10)}.csv` });
   a.click(); URL.revokeObjectURL(a.href);
 });
+// A clear button for each dashboard: same rules as Start fresh, one group at a time.
+let CLEAN = null;
+async function loadCleanup() {
+  try { CLEAN = await api("?view=cleanup"); } catch { return; }
+  $("#autoRules").innerHTML = CLEAN.retention.map((r) => `<li>${esc(r.text)}${r.days ? `: after <b>${r.days} days</b>` : ""}</li>`).join("");
+  const L = CLEAN.last;
+  $("#autoLast").textContent = L ? `Last run ${new Date(L.at).toLocaleString()}: ${L.removed} record${L.removed === 1 ? "" : "s"} removed${L.removed ? ` (${Object.entries(L.counts).map(([k, n]) => `${n} ${k}`).join(", ")})` : ""}.` : "Not run yet: the first clean-up happens tomorrow morning.";
+  document.querySelectorAll(".clearbox").forEach((box) => {
+    if (box.dataset.ready) return; box.dataset.ready = "1";
+    const groups = box.dataset.groups.split(","), name = groups.map((g) => CLEAN.groups[g]).join(" and ");
+    box.innerHTML = `<details><summary class="sm" style="cursor:pointer"><b>Clear ${esc(name)}</b></summary>
+      <p class="sm muted" style="margin:.4rem 0">Clears this dashboard's records. Never touched: anything attached to a payment, live work (drafts waiting for you, pending approvals, open tasks, proposals awaiting an answer, unused coupons) and internal team details or settings.</p>
+      <label class="sm"><input type="radio" name="m-${groups[0]}" value="archive" checked> <span>Archive first (can be restored)</span></label>
+      <label class="sm"><input type="radio" name="m-${groups[0]}" value="delete"> <span><b>Delete for good</b> (frees the space, can't be undone)</span></label>
+      <div class="row" style="margin-top:.5rem"><input class="cbConfirm" placeholder="Type START FRESH" style="max-width:14rem"><button class="btn cbGo">Clear</button></div>
+      <p class="sm muted cbMsg" role="status"></p></details>`;
+    box.querySelectorAll("input[type=radio]").forEach((r) => r.addEventListener("change", () => { box.querySelector(".cbConfirm").placeholder = r.value === "delete" ? "Type DELETE FOREVER" : "Type START FRESH"; }));
+    box.querySelector(".cbGo").addEventListener("click", async (e) => {
+      const mode = box.querySelector("input[type=radio]:checked").value, msg = box.querySelector(".cbMsg");
+      e.target.disabled = true;
+      try {
+        const r = await api("", { action: "start_fresh", groups, mode, confirm: box.querySelector(".cbConfirm").value.trim() });
+        msg.textContent = `${r.cleared ? `Done: ${r.cleared} cleared${r.file ? " and archived" : " for good"}` : "Nothing to clear"}${r.kept ? `; ${r.kept} kept (payments or live work)` : ""}.`;
+        box.querySelector(".cbConfirm").value = ""; load(false);
+      } catch (err) { msg.textContent = err.message; }
+      e.target.disabled = false;
+    });
+  });
+}
 $("#freshGo").addEventListener("click", async (e) => {
   const groups = [...document.querySelectorAll(".freshG:checked")].map((c) => c.value);
   const mode = document.querySelector('input[name="freshMode"]:checked').value;
@@ -1017,7 +1054,7 @@ $("#freshGo").addEventListener("click", async (e) => {
   try {
     const r = await api("", { action: "start_fresh", groups, mode, confirm: $("#freshConfirm").value.trim() });
     $("#freshMsg").textContent = r.file ? `Done: ${r.cleared} records cleared and archived.` : `Done: ${r.cleared} records deleted for good.`;
-    if (r.keptPayments) $("#freshMsg").textContent += ` ${r.keptPayments} payment records kept.`;
+    if (r.kept) $("#freshMsg").textContent += ` ${r.kept} kept (payments or live work).`;
     $("#freshConfirm").value = ""; loadStan(); loadArchives();
   } catch (err) { $("#freshMsg").textContent = err.message; }
   e.target.disabled = false;
@@ -1044,7 +1081,7 @@ $("#mailApprovals").addEventListener("click", async (e) => {
 
 // ---- Stan's desk (read-only monitoring)
 async function loadStan() {
-  loadArchives();
+  loadArchives(); loadCleanup();
   let S; try { S = await api("?view=stan"); } catch { return; }
   STAN_D = S;
   $("#approvalCount").hidden = !S.approvals.length; $("#approvalCount").textContent = S.approvals.length;
@@ -1231,6 +1268,7 @@ async function load(navigate = true) {
     loadOps();
     if (location.hash === "#tasks") tab("tasks");
     if (location.hash === "#finance") tab("finance");
+    loadCleanup();
     if (location.hash === "#marketing") tab("marketing");
     if (location.hash === "#stan") tab("stan"); else loadStan(); // approval count on the tab
     const h = location.hash.match(/^#(approval|lead)=(.+)$/);

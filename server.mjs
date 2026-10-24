@@ -98,6 +98,8 @@ async function maybeRunDaily() {
   await setJSON("daily:last", today);
   const { runFollowups } = await import("./lib/followups.js");
   console.log("daily follow-ups", today, await runFollowups(siteUrl.replace(/\/$/, "")));
+  const { autoClean } = await import("./lib/cleanup.js");
+  console.log("daily clean-up", await autoClean().catch((e) => `failed: ${e.message}`));
   const { runNurture } = await import("./lib/subscribers.js");
   console.log("free-kit follow-ups", await runNurture().catch((e) => `failed: ${e.message}`));
   const { dailyDiscovery, syncCv } = await import("./lib/career.js");

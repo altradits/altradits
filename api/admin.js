@@ -61,6 +61,7 @@ export async function GET(request) {
     if (u.searchParams.get("format") === "csv") return new Response(await statementCsv(), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="altradits-statement-${new Date().toISOString().slice(0, 10)}.csv"` } });
     return json(await statement());
   }
+  if (u.searchParams.get("view") === "cleanup") { const { cleanupView } = await import("../lib/cleanup.js"); return json(await cleanupView()); }
   if (u.searchParams.get("view") === "channels") { const { channelReport } = await import("../lib/channels.js"); return json(await channelReport()); }
   if (u.searchParams.get("view") === "donations") {
     const all = (await getMany("proposal", await listIds("proposals", 2000))).filter((p) => p.donation && p.status === "paid");
@@ -256,8 +257,8 @@ export async function POST(request) {
   if (body.action === "start_fresh") {
     const forever = body.mode === "delete";
     if (body.confirm !== (forever ? "DELETE FOREVER" : "START FRESH")) return json({ error: `Type ${forever ? "DELETE FOREVER" : "START FRESH"} to confirm.` }, 400);
-    const { archiveAndClear } = await import("../lib/store.js");
-    try { return json(await archiveAndClear([].concat(body.groups || []).map((g) => clean(g, 30)), { keep: !forever })); }
+    const { clearGroups } = await import("../lib/cleanup.js");
+    try { return json(await clearGroups([].concat(body.groups || []).map((g) => clean(g, 30)), { keep: !forever })); }
     catch (err) { return json({ error: err.message }, 400); }
   }
   if (body.action === "ln_lesson") {
