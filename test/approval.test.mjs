@@ -52,6 +52,19 @@ test("approve (with edits) sends from the department; reject sends nothing", asy
   await assert.rejects(email.decideEmail(first.id, { approve: true }), /isn't waiting/);
 });
 
+test("bulk: several drafts approved or rejected at once from the admin", async () => {
+  const admin = await import("../api/admin.js");
+  process.env.ADMIN_TOKEN = "t0ken";
+  const a = await email.sendEmail({ to: "a@shop.co", dept: "growth", subject: "A", text: "A" });
+  const b = await email.sendEmail({ to: "b@shop.co", dept: "growth", subject: "B", text: "B" });
+  const call = async (body) => (await admin.POST(new Request("http://x/api/admin", { method: "POST", headers: { Authorization: "Bearer t0ken", "Content-Type": "application/json" }, body: JSON.stringify(body) }))).json();
+  const r = await call({ action: "mail_decide_bulk", ids: [a.id, b.id, "nope"], approve: true });
+  assert.equal(r.done, 2);
+  assert.equal(r.failed, 1);
+  assert.ok(!(await email.pendingApprovals()).some((e) => [a.id, b.id].includes(e.id)));
+  assert.match((await call({ action: "mail_decide_bulk", ids: [] })).error, /Select at least one/);
+});
+
 test("Stan turns an instruction into department drafts, queued for approval; bad recipients are skipped", async () => {
   let seen = null;
   stan.setStanClient({ beta: { messages: { stream: (p) => ({ finalMessage: async () => {

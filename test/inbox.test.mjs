@@ -18,7 +18,7 @@ const RAW = {
   7: "From: Jo Client <jo@shop.co>\r\nTo: care@altradits.com\r\nSubject: Question about the Core plan\r\nDate: Fri, 23 Oct 2026 10:00:00 +0300\r\n\r\nHi, how many hours does Core include?\r\n",
   8: "From: Someone <x@evil.example>\r\nTo: care@altradits.com\r\nSubject: Urgent invoice\r\nDate: Sat, 24 Oct 2026 09:00:00 +0300\r\n\r\nPay now at https://evil.example/pay\r\n",
 };
-const opened = [];
+const opened = [], moved = [];
 inbox.setImapFactory((b) => ({
   async connect() { if (b.id === "stan") { const e = new Error("Authentication failed"); e.authenticationFailed = true; throw e; } },
   async getMailboxLock(name, opts) { opened.push({ box: b.id, name, readOnly: opts?.readOnly }); return { release() {} }; },
@@ -28,6 +28,8 @@ inbox.setImapFactory((b) => ({
     yield { uid: 8, envelope: { subject: "Urgent invoice", from: [{ name: "Someone", address: "x@evil.example" }], date: new Date("2026-10-24T06:00:00Z") }, flags: new Set() };
   },
   async fetchOne(uid) { return { source: Buffer.from(RAW[uid]) }; },
+  async list() { return [{ path: "INBOX" }, { path: "INBOX.Trash", specialUse: "\\Trash" }]; },
+  async messageMove(range, to, opts) { moved.push({ box: b.id, range, to, uid: opts?.uid }); return true; },
   async logout() {},
 }));
 
@@ -57,4 +59,12 @@ test("reading a message: plain text, and a security warning when it has links", 
   const bad = await inbox.readMessage("care", 8);
   assert.match(bad.security, /Contains links/);
   await assert.rejects(inbox.readMessage("hello", 1), /isn't connected/);
+});
+
+test("selected messages move to the mailbox's Trash (by UID); nothing is deleted for good", async () => {
+  const r = await inbox.trashMessages("care", [8, "7", 8, -1, "x"]);
+  assert.deepEqual(r, { moved: 2, to: "INBOX.Trash" });
+  assert.deepEqual(moved, [{ box: "care", range: "8,7", to: "INBOX.Trash", uid: true }]);
+  await assert.rejects(inbox.trashMessages("care", []), /Select at least one/);
+  await assert.rejects(inbox.trashMessages("hello", [1]), /isn't connected/);
 });

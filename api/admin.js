@@ -271,6 +271,24 @@ export async function POST(request) {
     const { deleteArchive } = await import("../lib/store.js");
     try { return json(deleteArchive(clean(body.name, 80))); } catch (err) { return json({ error: err.message }, 400); }
   }
+  // Several drafts at once: each one sent (or rejected) as it stands.
+  if (body.action === "mail_decide_bulk") {
+    const { decideEmail } = await import("../lib/email.js");
+    // items carry any edits made on the cards; ids alone send the drafts as they are.
+    const items = [].concat(body.items || (body.ids || []).map((id) => ({ id }))).slice(0, 100)
+      .map((x) => ({ id: clean(x?.id, 30), subject: clean(x?.subject, 200), text: clean(x?.text, 10000) })).filter((x) => x.id);
+    if (!items.length) return json({ error: "Select at least one email." }, 400);
+    const results = [];
+    for (const { id, subject, text } of items) {
+      try { const r = await decideEmail(id, { approve: Boolean(body.approve), subject, text }); results.push({ id, ok: true, status: r.status }); }
+      catch (err) { results.push({ id, ok: false, error: err.message }); }
+    }
+    return json({ results, done: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length });
+  }
+  if (body.action === "mail_trash") {
+    const { trashMessages } = await import("../lib/inbox.js");
+    try { return json(await trashMessages(clean(body.box, 30), body.uids)); } catch (err) { return json({ error: err.message }, 400); }
+  }
   if (body.action === "mail_decide") {
     const { decideEmail } = await import("../lib/email.js");
     try { return json({ email: await decideEmail(clean(body.id, 30), { approve: Boolean(body.approve), subject: clean(body.subject, 200), text: clean(body.text, 10000), note: clean(body.note, 500) }) }); }
