@@ -177,8 +177,15 @@ dd{margin:0;overflow-wrap:anywhere}
 
   <div id="tab-team" hidden>
     <div class="panel"><h2>Department directory</h2>
-      <p class="muted" style="margin-top:0">Each department head has a name and emails from it. Department emails copy stan@altradits.com (your AI version and QA). Emails about paying clients are blind-copied to altradits@gmail.com.</p>
+      <p class="muted" style="margin-top:0">Every department emails from its official address, signed by its AI head. stan@altradits.com (Stan, your AI stand-in and Head of Quality) never sends: he's copied on every email. Emails about paying clients are blind-copied to altradits@gmail.com.</p>
       <div id="commsList"></div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h2>How the team communicates</h2><div id="internalProto"></div></div>
+      <div class="panel"><h2>Stan's QA expert panel <span class="stage" id="qaCount" style="font-size:.8rem"></span></h2>
+        <p class="muted" style="margin-top:0;font-size:.9rem">Before any verdict, Stan picks the experts for the task (always the Reality Checker and Client Safety), reviews through each one's checklist, and passes the work only if every expert does.</p>
+        <details><summary class="sm" style="cursor:pointer"><b>Stan's method</b></summary><ol id="stanMethod" class="sm"></ol></details>
+        <div id="qaExperts" style="margin-top:.6rem"></div></div>
     </div>
     <div class="panel"><h2>Departments</h2><div class="kpis" id="deptKpis" style="margin:0"></div>
       <p class="muted" style="font-size:.9rem">Tasks are routed to approved members of the matching department with spare weekly hours. If nobody has capacity, the task comes to you. Recruiting link: <a href="/join.html" target="_blank">/join.html</a></p></div>
@@ -440,7 +447,9 @@ async function loadOps() {
 }
 function renderComms() {
   if (!O?.comms) return;
-  $("#commsList").innerHTML = O.comms.map((c) => `<details class="ap"><summary style="cursor:pointer"><b>${esc(c.address)}</b> · ${esc(c.name)} <span class="stage">${c.head.kind === "ai" ? "AI head" : "Human"}: ${esc(c.head.name)}${c.head.role ? ` · ${esc(c.head.role)}` : ""}</span>${c.internal ? ' <span class="stage">internal</span>' : ""}<div class="muted sm" style="margin-top:.2rem">${esc(c.purpose)}</div></summary>
+  $("#commsList").innerHTML = O.comms.map((c) => `<details class="ap"><summary style="cursor:pointer"><b>${esc(c.address)}</b> · ${esc(c.name)} <span class="stage">${c.head.kind === "ai" ? "AI head" : "Human"}: ${esc(c.head.name)}${c.head.title || c.head.role ? ` · ${esc(c.head.title || c.head.role)}` : ""}</span>${c.sendsAs === false ? ' <span class="stage">copied only, never sends</span>' : ""}${c.internal ? ' <span class="stage">internal</span>' : ""} <span class="muted sm">${(c.staff || []).length} AI staff · reports to ${esc(c.reportsTo === "founder" ? "Stan" : c.reportsTo || "")}</span><div class="muted sm" style="margin-top:.2rem">${esc(c.purpose)}</div></summary>
+    ${(c.staff || []).length ? `<div style="margin-top:.6rem"><b class="sm">Team</b><ul class="sm">${c.staff.map((s) => `<li><b>${esc(s.name)}</b>, ${esc(s.title)}: ${esc(s.jurisdiction.join("; "))}</li>`).join("")}</ul></div>` : ""}
+    ${c.channels ? `<div class="grid2 sm"><div><b>External</b><ul>${c.channels.external.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div><div><b>Internal</b><ul>${c.channels.internal.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div></div>` : ""}
     <div class="grid2" style="margin-top:.6rem;font-size:.92rem">
       <div><b>Receives</b><ul>${c.inbound.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><b>Sends</b><ul>${c.outbound.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><b>Voice</b><ul>${c.voice.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>
       <div><b>Response times</b><p class="sm" style="margin:.2rem 0 .6rem">First reply: ${esc(c.sla.firstReply)}<br>Resolution: ${esc(c.sla.resolution)}</p>
@@ -450,8 +459,21 @@ function renderComms() {
         <b>Signature</b><pre class="sm" style="white-space:pre-wrap;margin:.2rem 0">${esc(c.signature.join("\n"))}</pre>${c.cc.length ? `<p class="sm muted">Copies: ${esc(c.cc.join(", "))}</p>` : ""}</div>
     </div></details>`).join("");
 }
+function renderInternal() {
+  const I = O?.internal; if (!I) return;
+  const dname = (ids) => ids.map((id) => O.comms.find((c) => c.id === id)?.address?.split("@")[0] || id).join(", ");
+  $("#internalProto").innerHTML = `<p class="sm"><b>Daily:</b> ${esc(I.cadence.daily)}<br><b>Weekly:</b> ${esc(I.cadence.weekly)}<br><b>Monthly:</b> ${esc(I.cadence.monthly)}</p>
+    <b class="sm">Escalation</b><ol class="sm">${I.escalation.map((e) => `<li><b>${esc(e.who)}</b>: ${esc(e.trigger)} (${esc(e.respond)})</li>`).join("")}</ol>
+    <b class="sm">Who owns what</b><div style="overflow-x:auto"><table class="sm"><thead><tr><th>Activity</th><th>Does it</th><th>Accountable</th><th>Consulted</th><th>Informed</th></tr></thead><tbody>${I.raci.map((r) => `<tr><td>${esc(r.activity)}</td><td>${esc(dname(r.responsible))}</td><td>${esc(dname(r.accountable))}</td><td>${esc(dname(r.consulted))}</td><td>${esc(dname(r.informed))}</td></tr>`).join("")}</tbody></table></div>
+    <details><summary class="sm" style="cursor:pointer"><b>Handoff checklist and rules</b></summary><ul class="sm">${I.handoff.map((h) => `<li>${esc(h)}</li>`).join("")}</ul><ul class="sm">${I.rules.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></details>`;
+  const Q = O.qa; if (!Q) return;
+  $("#qaCount").textContent = `${Q.experts.length} experts`;
+  $("#stanMethod").innerHTML = Q.stan.method.map((m) => `<li>${esc(m)}</li>`).join("");
+  $("#qaExperts").innerHTML = Q.experts.map((e) => `<details class="sm" style="margin:.2rem 0"><summary style="cursor:pointer"><b>${esc(e.name)}</b>${e.always ? ' <span class="stage">every task</span>' : ""} <span class="muted">${esc(e.domains.join(", "))}</span></summary><ul>${e.checklist.map((c) => `<li>${esc(c)}</li>`).join("")}</ul><span class="muted">Persona: ${esc(e.source)}</span></details>`).join("");
+}
 function renderOps() {
   renderComms();
+  renderInternal();
   const openSt = ["new", "assigned", "in_progress", "changes", "queued", "working", "waiting_client", "owner", "follow_up"];
   const unassigned = O.tasks.filter((t) => ["new", "owner", "follow_up"].includes(t.status)).length;
   $("#taskCount").hidden = !unassigned; $("#taskCount").textContent = unassigned;

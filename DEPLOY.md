@@ -129,24 +129,14 @@ altradits.com/templates.html offers six free, complete kits (data/templates.js):
 
 ## Email addresses, letterhead, CC and BCC
 
-Each department emails from its official address; its AI head signs with their full name (data/team-comms.js; admin → Team → Department directory):
+Every department emails from its official address, signed by its AI head with the Altradits logo in the brand colours (data/team-comms.js; admin → Team shows each department's AI staff, the internal protocol and Stan's QA panel). The Front Office (hello@) sends anything without a more specific department.
 
-| Head | Address | Department |
-|---|---|---|
-| Stan (Stanley's AI version and QA) | stan@altradits.com | Default sender, quality review, escalations |
-| Grace Wanjiru | social@altradits.com | Social media & content |
-| Daniel Tesfaye | admin@altradits.com, careers@altradits.com | Office admin, and careers |
-| Faith Achieng | assistant@altradits.com | Personal assistance |
-| Samuel Bekele | care@altradits.com, orders@altradits.com | Sales & customer care, and orders |
-| Brian Otieno | tech@altradits.com | Web, automation & Bitcoin |
-| Hannah Alemu | marketing@altradits.com | Marketing, free kits and the mailing list |
-
-- Every department email **copies stan@altradits.com**.
-- Emails about a **paying client** (after a deposit) are **blind-copied to altradits@gmail.com** so anything that needs you reaches your own inbox. Free-kit and pre-payment emails aren't. `EMAIL_BCC=none` turns the blind copy off.
-- Emails and kit PDFs carry the Altradits letterhead. Signatures say each head is an AI agent.
+- **stan@altradits.com never sends.** Stan (Stanley's AI stand-in and Head of Quality) is copied on every email that leaves, and reviews every deliverable with a panel of expert reviewers picked for the task (data/qa-experts.js) before it reaches a client.
+- Emails about a **paying client** (after a deposit) are **blind-copied to altradits@gmail.com**. `EMAIL_BCC=none` turns that off.
+- Departments: hello@ (Front Office), care@, orders@, social@, admin@, assistant@, tech@, finance@, trust@, marketing@, careers@, quality@ (internal QA notes).
 
 Set up in DirectAdmin → E-mail Manager (one time):
 1. Create the mailbox **stan@altradits.com**.
-2. Create forwarders for social@, admin@, assistant@, care@, tech@, orders@, marketing@ and careers@ to stan@altradits.com (and/or altradits@gmail.com), so replies to any head reach you.
+2. Create forwarders for hello@, care@, orders@, social@, admin@, assistant@, tech@, finance@, trust@, marketing@, careers@ and quality@ to stan@altradits.com (and/or altradits@gmail.com), so replies to any department reach you.
 3. In DNS management, check SPF and DKIM are enabled for altradits.com, so mail from these addresses isn't marked as spam.
 4. Keep `EMAIL_TRANSPORT=sendmail` (or SMTP_* for the stan@ mailbox) in Setup Node.js App.

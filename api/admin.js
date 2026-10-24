@@ -72,6 +72,8 @@ export async function GET(request) {
       satisfaction: (() => { const r = tasks.filter((t) => t.satisfaction).map((t) => t.satisfaction.rating); return r.length ? { avg: Math.round((r.reduce((a, b) => a + b, 0) / r.length) * 10) / 10, count: r.length } : null; })(),
       agents: AGENT_ROSTER, workersLive: workersLive(),
       comms: (await import("../data/team-comms.js")).COMMS,
+      internal: (await import("../data/team-comms.js")).INTERNAL,
+      qa: await import("../data/qa-experts.js").then((m) => ({ stan: m.STAN, experts: m.QA_EXPERTS.map(({ id, name, source, domains, always, checklist }) => ({ id, name, source, domains, always, checklist })) })),
     });
   }
 

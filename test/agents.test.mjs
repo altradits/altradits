@@ -153,6 +153,11 @@ async function client(name, email) {
   await crm.confirmPayment(lead, proposal);
   return crm.getLead(lead.id);
 }
+// Stan's QA verdict: one entry per panel expert named in his instructions.
+const qa = (p, pass = true, issues = []) => {
+  const ids = (p.system.match(/qa_result\.experts, using these ids: ([\w, -]+)/)?.[1] || "").split(", ").filter(Boolean);
+  return tool("qa_result", { panel: ids.join(", "), experts: ids.map((id) => ({ id, pass, issues })), pass, issues });
+};
 const deliverable = (extra = {}) => tool("submit_deliverable", {
   title: "Instagram captions", summary_for_client: "Three captions in your voice, ready to post.",
   files: [{ name: "captions.md", format: "md", content: "1. Fresh sourdough...\n2. ...\n3. ..." }],
@@ -160,7 +165,7 @@ const deliverable = (extra = {}) => tool("submit_deliverable", {
 });
 
 test("agent works the task, QA passes, client downloads, approves 5★: satisfied", async () => {
-  workScript = (p) => p.tools.some((t) => t.name === "qa_result") ? tool("qa_result", { pass: true, issues: [] }) : deliverable();
+  workScript = (p) => p.tools.some((t) => t.name === "qa_result") ? qa(p) : deliverable();
   workers.setWorkerClient(fake(() => workScript));
   try {
     const lead = await client("Ana", "ana@example.com");
@@ -190,7 +195,7 @@ test("agent works the task, QA passes, client downloads, approves 5★: satisfie
 });
 
 test("QA fails three times: Stanley is asked to step in", async () => {
-  workScript = (p) => p.tools.some((t) => t.name === "qa_result") ? tool("qa_result", { pass: false, issues: ["Captions too long"] }) : deliverable();
+  workScript = (p) => p.tools.some((t) => t.name === "qa_result") ? qa(p, false, ["Captions too long"]) : deliverable();
   workers.setWorkerClient(fake(() => workScript));
   try {
     const lead = await client("Cid", "cid@example.com");
@@ -202,10 +207,32 @@ test("QA fails three times: Stanley is asked to step in", async () => {
   } finally { workers.setWorkerClient(null); }
 });
 
+test("Stan's QA panel: experts picked for the task, and one expert's fail fails the work", async () => {
+  let qaPrompt = null;
+  workScript = (p) => {
+    if (!p.tools.some((t) => t.name === "qa_result")) return deliverable();
+    qaPrompt = p.system;
+    // Overall "pass", but the Bitcoin expert fails it: the work must not reach the client.
+    const ids = p.system.match(/using these ids: ([\w, -]+)/)[1].split(", ");
+    return tool("qa_result", { panel: "x", pass: true, issues: [], experts: ids.map((id) => ({ id, pass: id !== "bitcoin-lightning", issues: id === "bitcoin-lightning" ? ["Seed phrase shown in the guide"] : [] })) });
+  };
+  workers.setWorkerClient(fake(() => workScript));
+  try {
+    const lead = await client("Dee", "dee@example.com");
+    const t0 = await ops.createTask(lead, { title: "Set up a Lightning address", details: "accept bitcoin payments", service: "bitcoin" });
+    const t = await settle(t0.id);
+    assert.match(qaPrompt, /You are Stan, /);
+    assert.match(qaPrompt, /using these ids: .*bitcoin-lightning/);
+    assert.match(qaPrompt, /reality-checker/);
+    assert.notEqual(t.status, "review"); // never sent to the client
+    assert.ok(t.history.some((h) => /Seed phrase shown/.test(h.text) && /panel: /.test(h.text)));
+  } finally { workers.setWorkerClient(null); }
+});
+
 test("agent asks the client a question, client answers, work continues", async () => {
   let asked = false;
   workScript = (p) => {
-    if (p.tools.some((t) => t.name === "qa_result")) return tool("qa_result", { pass: true, issues: [] });
+    if (p.tools.some((t) => t.name === "qa_result")) return qa(p);
     if (!asked) { asked = true; return tool("ask_client", { question: "Which dates are you travelling?" }); }
     return deliverable({ title: "Trip options" });
   };
@@ -226,7 +253,7 @@ test("agent asks the client a question, client answers, work continues", async (
 });
 
 test("real-world steps go to Stanley first; low rating flags an unhappy client", async () => {
-  workScript = (p) => p.tools.some((t) => t.name === "qa_result") ? tool("qa_result", { pass: true, issues: [] }) : deliverable({ human_steps: ["Schedule the posts in Meta Business Suite"] });
+  workScript = (p) => p.tools.some((t) => t.name === "qa_result") ? qa(p) : deliverable({ human_steps: ["Schedule the posts in Meta Business Suite"] });
   workers.setWorkerClient(fake(() => workScript));
   try {
     const lead = await client("Eve", "eve@example.com");

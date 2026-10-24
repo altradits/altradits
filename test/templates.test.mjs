@@ -120,12 +120,17 @@ test("departments email from their official addresses, signed by a named AI head
   const { sendEmail, emailOwner } = await import("../lib/email.js");
   const { COMMS } = await import("../data/team-comms.js");
   const { createLead, saveLead } = await import("../lib/crm.js");
-  assert.deepEqual(COMMS.map((c) => [c.id, c.head.name, c.address]), [
-    ["founder", "Stan", "stan@altradits.com"], ["social", "Grace Wanjiru", "social@altradits.com"], ["admin", "Daniel Tesfaye", "admin@altradits.com"],
-    ["personal", "Faith Achieng", "assistant@altradits.com"], ["growth", "Samuel Bekele", "care@altradits.com"], ["tech", "Brian Otieno", "tech@altradits.com"],
-    ["orders", "Samuel Bekele", "orders@altradits.com"], ["marketing", "Hannah Alemu", "marketing@altradits.com"], ["careers", "Daniel Tesfaye", "careers@altradits.com"],
-    ["quality", "Stan", "stan@altradits.com"],
-  ]);
+  const by = Object.fromEntries(COMMS.map((c) => [c.id, c]));
+  for (const [id, head, address] of [["founder", "Stan", "stan@altradits.com"], ["office", null, "hello@altradits.com"], ["social", "Grace Wanjiru", "social@altradits.com"],
+    ["admin", "Daniel Tesfaye", "admin@altradits.com"], ["personal", "Faith Achieng", "assistant@altradits.com"], ["growth", "Samuel Bekele", "care@altradits.com"],
+    ["tech", "Brian Otieno", "tech@altradits.com"], ["orders", "Samuel Bekele", "orders@altradits.com"], ["finance", null, "finance@altradits.com"],
+    ["trust", null, "trust@altradits.com"], ["marketing", "Hannah Alemu", "marketing@altradits.com"], ["careers", "Daniel Tesfaye", "careers@altradits.com"], ["quality", null, "quality@altradits.com"]]) {
+    assert.equal(by[id]?.address, address, id);
+    if (head) assert.equal(by[id].head.name, head, id);
+  }
+  // Stan never sends; every department has named AI staff with a jurisdiction.
+  assert.equal(by.founder.sendsAs, false);
+  assert.ok(COMMS.every((c) => c.staff.length >= 1 && c.staff.every((s) => s.jurisdiction.length)));
   // Official department addresses; the head's full name signs the email and says they're an AI.
   for (const c of COMMS.filter((x) => x.head.name !== "Stan")) {
     assert.equal(c.signature[0], c.head.name, `${c.id}: signed by the head`);
@@ -135,11 +140,13 @@ test("departments email from their official addresses, signed by a named AI head
   assert.ok(COMMS.every((c) => !/\d{3}[\s-]?\d{3}[\s-]?\d{3}/.test(JSON.stringify(c))), "no phone numbers");
 
   const lead = await createLead({ email: "client@x.co", source: "order" });
-  // Before any deposit: stan@ is the sender or copied; no blind copy to Stanley.
+  // Before any deposit: the Front Office sends, stan@ is copied; no blind copy to Stanley.
   const plain = await sendEmail({ to: "client@x.co", leadId: lead.id, subject: "Hello", text: "Hi" });
-  assert.equal(plain.from, "Stan at Altradits <stan@altradits.com>");
-  assert.equal(plain.cc, null);
+  assert.equal(plain.from, `${by.office.name} <hello@altradits.com>`);
+  assert.equal(plain.cc, "stan@altradits.com");
   assert.equal(plain.bcc, null);
+  // stan@ never sends, even if a caller asks for it.
+  for (const d of ["founder", "nonsense"]) assert.equal((await sendEmail({ to: "client@x.co", dept: d, subject: "x", text: "x" })).from, `${by.office.name} <hello@altradits.com>`);
   const care = await sendEmail({ to: "client@x.co", leadId: lead.id, dept: "growth", subject: "Your question", text: "Answer" });
   assert.equal(care.from, "Altradits Customer Care <care@altradits.com>");
   assert.equal(care.cc, "stan@altradits.com");
@@ -154,12 +161,13 @@ test("departments email from their official addresses, signed by a named AI head
   assert.equal(update.bcc, "altradits@gmail.com");
   const owner = await emailOwner("Alert", "x");
   assert.equal(owner.bcc, null); // already going to that inbox
+  assert.equal(owner.cc, null);
   const kit = (await emails()).find((e) => /Your free kit/.test(e.subject));
   assert.equal(kit.from, "Altradits <marketing@altradits.com>");
   assert.equal(kit.cc, "stan@altradits.com");
   assert.equal(kit.bcc, null); // a free download isn't a deposit
   // Kit PDFs carry the letterhead.
   const pdf = subs.renderFile(KITS[0], KITS[0].files[0]).body.toString("latin1");
-  assert.match(pdf, /\(stan@altradits\.com\) Tj/);
+  assert.match(pdf, /\(hello@altradits\.com\) Tj/);
   assert.match(pdf, /\(Page 1 of \d\) Tj/);
 });
