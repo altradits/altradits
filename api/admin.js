@@ -245,12 +245,20 @@ export async function POST(request) {
     instruct({ text: body.text, dept: dept || null, to: to || null, context }).catch((e) => console.error("stan", e.message)); // takes up to a minute
     return json({ started: true });
   }
-  // Start fresh: archive old communications and/or test clients, then clear them.
+  // Start fresh: clear old communications and/or test clients, archived first
+  // unless Stanley chose to delete them for good. Archives can be deleted too.
   if (body.action === "start_fresh") {
-    if (body.confirm !== "START FRESH") return json({ error: 'Type START FRESH to confirm.' }, 400);
+    const forever = body.mode === "delete";
+    if (body.confirm !== (forever ? "DELETE FOREVER" : "START FRESH")) return json({ error: `Type ${forever ? "DELETE FOREVER" : "START FRESH"} to confirm.` }, 400);
     const { archiveAndClear } = await import("../lib/store.js");
-    try { return json(await archiveAndClear([].concat(body.groups || []).map((g) => clean(g, 30)))); }
+    try { return json(await archiveAndClear([].concat(body.groups || []).map((g) => clean(g, 30)), { keep: !forever })); }
     catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "archives") { const { listArchives } = await import("../lib/store.js"); return json({ archives: listArchives() }); }
+  if (body.action === "archive_delete") {
+    if (body.confirm !== "DELETE") return json({ error: "Type DELETE to confirm." }, 400);
+    const { deleteArchive } = await import("../lib/store.js");
+    try { return json(deleteArchive(clean(body.name, 80))); } catch (err) { return json({ error: err.message }, 400); }
   }
   if (body.action === "mail_decide") {
     const { decideEmail } = await import("../lib/email.js");

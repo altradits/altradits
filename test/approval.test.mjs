@@ -185,3 +185,20 @@ test("start fresh: communications and test clients are archived to a file, then 
   assert.ok(Object.keys(saved.kv).some((k) => k.startsWith("email:")));
   assert.ok(saved.lists.emails.length > 0);
 });
+
+test("delete for good keeps no copy; archives can be listed and deleted", async () => {
+  const store = await import("../lib/store.js");
+  await email.sendEmail({ to: "jo@shop.co", approved: true, subject: "Hi", text: "Hi" });
+  const before = store.listArchives().length;
+  const r = await store.archiveAndClear(["communications"], { keep: false });
+  assert.ok(r.cleared > 0);
+  assert.equal(r.file, null);
+  assert.equal((await store.listIds("emails")).length, 0);
+  assert.equal(store.listArchives().length, before); // no new archive file
+  const [a] = store.listArchives();
+  assert.ok(a.bytes > 0);
+  assert.throws(() => store.deleteArchive("../db.json"), /isn't an archive/);
+  store.deleteArchive(a.name);
+  assert.equal(store.listArchives().length, before - 1);
+  assert.throws(() => store.deleteArchive(a.name), /already gone/);
+});
