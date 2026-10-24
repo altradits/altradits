@@ -337,3 +337,42 @@ test("WhatsApp alerts to Stanley: off without a CallMeBot key; with one, his num
     assert.equal(u.searchParams.get("text"), "Altradits URGENT: check the Mac");
   } finally { globalThis.fetch = real; delete process.env.CALLMEBOT_APIKEY; }
 });
+
+test("several payments waiting for the node: each order's invoice sends its own client's receipt, with an apology; no mix-ups", async () => {
+  const crm = await import("../lib/crm.js");
+  const fin = await import("../lib/finance.js");
+  const held = async (email, name, sats) => {
+    const o = await crm.createOrder(orderable("hourly"));
+    Object.assign(o.lead, { email, name }); await crm.saveLead(o.lead);
+    o.p.client = { name, email };
+    o.p.lightning = { provider: "address", bolt11: "lnbc1x", sats };
+    o.p.payment = { method: "Bitcoin (Lightning)", reference: "x" };
+    await crm.confirmPayment(o.lead, o.p, "", { approved: true });
+    return o;
+  };
+  const a = await held("ann@shop.co", "Ann Wanjiku", 61000), b = await held("ben@shop.co", "Ben Tadesse", 61000); // same amount on purpose
+  assert.notEqual(fin.orderCode(a.p), fin.orderCode(b.p));
+  // Two admins each made an invoice for Ann's order at the same moment; one for Ben's.
+  a.p.sweeps = [{ paymentHash: "a1".repeat(32), provider: "lnd", expiresAt: new Date(Date.now() + 864e5).toISOString() }, { paymentHash: "a2".repeat(32), provider: "lnd", expiresAt: new Date(Date.now() + 864e5).toISOString() }];
+  b.p.sweeps = [{ paymentHash: "b1".repeat(32), provider: "lnd", expiresAt: new Date(Date.now() + 864e5).toISOString() }];
+  await crm.saveProposal(a.p); await crm.saveProposal(b.p);
+  const v = await fin.heldView();
+  assert.ok(v.held.some((x) => x.code === fin.orderCode(a.p) && x.client === "Ann Wanjiku"));
+  // Ben's invoice settles first (paid by any admin): only Ben gets a receipt.
+  await fin.confirmOnNode(b.lead, b.p, { sats: 61000, reference: "b1".repeat(32), at: new Date().toISOString() });
+  let receipts = (await all()).filter((e) => /^Your official receipt R-/.test(e.subject) && ["ann@shop.co", "ben@shop.co"].includes(e.to));
+  assert.deepEqual(receipts.map((e) => e.to), ["ben@shop.co"]);
+  assert.match(receipts[0].text, /sorry for the short delay/);
+  assert.equal(a.p.payment.held, true); // Ann's still waits
+  // The first (older) of Ann's two invoices is the one paid: it still counts.
+  await fin.confirmOnNode(a.lead, a.p, { sats: 61000, reference: "a1".repeat(32), at: new Date().toISOString() });
+  assert.equal(a.p.payment.sweepHash, "a1".repeat(32));
+  assert.deepEqual(a.p.payment.otherSweeps, ["a2".repeat(32)]); // watched in case it's paid too
+  receipts = (await all()).filter((e) => /^Your official receipt R-/.test(e.subject) && ["ann@shop.co", "ben@shop.co"].includes(e.to));
+  assert.deepEqual(receipts.map((e) => e.to).sort(), ["ann@shop.co", "ben@shop.co"]);
+  const [ra, rb] = [a, b].map((o) => receipts.find((e) => e.to === o.lead.email));
+  assert.ok(ra.subject.includes(a.p.receipt.no) && rb.subject.includes(b.p.receipt.no) && a.p.receipt.no !== b.p.receipt.no);
+  const after = await fin.heldView();
+  assert.ok(!after.held.some((x) => [a.p.id, b.p.id].includes(x.id)));
+  assert.ok(after.moved.some((m) => m.code === fin.orderCode(a.p) && m.to === "ann@shop.co"));
+});

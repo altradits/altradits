@@ -58,11 +58,11 @@ export async function GET(request) {
   // Department inboxes (read-only IMAP); passwords stay in the environment.
   // Payments held in the backup wallet, waiting to move to the node.
   if (u.searchParams.get("view") === "held") {
-    const { heldPayments, checkHeld } = await import("../lib/finance.js");
+    const { heldView, checkHeld } = await import("../lib/finance.js");
     await checkHeld();
     const { qrSvg } = await import("../lib/lightning.js");
-    return json({ held: await Promise.all((await heldPayments()).map(async (p) => ({ id: p.id, title: p.title, client: p.client?.name || p.client?.email || "", sats: p.payment.sats, wallet: p.payment.wallet, at: p.payment.confirmedAt,
-      sweep: p.sweep && Date.parse(p.sweep.expiresAt) > Date.now() ? { bolt11: p.sweep.bolt11, qr: await qrSvg(`lightning:${p.sweep.bolt11}`), expiresAt: p.sweep.expiresAt } : null }))) });
+    const v = await heldView();
+    return json({ ...v, held: await Promise.all(v.held.map(async (x) => ({ ...x, sweep: x.sweep ? { bolt11: x.sweep.bolt11, qr: await qrSvg(`lightning:${x.sweep.bolt11}`), expiresAt: x.sweep.expiresAt } : null }))) });
   }
   if (u.searchParams.get("view") === "statement") {
     const { statement, statementCsv } = await import("../lib/statement.js");

@@ -1079,10 +1079,11 @@ async function loadFinance() {
 }
 async function loadHeld() {
   let H; try { H = await api("?view=held"); } catch { return; }
-  $("#heldPanel").hidden = !H.held.length;
-  $("#heldList").innerHTML = H.held.map((x) => `<div class="ap" style="margin:0 0 .8rem"><b>${esc(x.title)}</b> · ${esc(x.client)} · <b>${satsF(x.sats)}</b> in ${esc(x.wallet || "the backup wallet")} · ${ago(x.at)}
-    ${x.sweep ? `<div class="row" style="align-items:flex-start;margin-top:.6rem"><div style="width:11rem;background:#fff;padding:.4rem;border-radius:.5rem">${x.sweep.qr}</div><div style="flex:1;min-width:14rem"><p class="sm" style="margin:0 0 .4rem">Scan with ${esc(x.wallet || "the backup wallet")} and pay exactly ${satsF(x.sats)}. Valid until ${new Date(x.sweep.expiresAt).toLocaleString()}.</p><textarea readonly style="min-height:4rem;font-size:.75rem">${esc(x.sweep.bolt11)}</textarea></div></div>`
-      : `<div class="row" style="margin-top:.5rem"><button class="btn primary" data-move="${esc(x.id)}">Make node invoice for ${satsF(x.sats)}</button></div>`}</div>`).join("");
+  $("#heldPanel").hidden = !H.held.length && !H.moved.length;
+  $("#heldList").innerHTML = H.held.map((x) => `<div class="ap" style="margin:0 0 .8rem"><span class="stage">${esc(x.code)}</span> <b>${esc(x.title)}</b> · ${esc(x.client)} · <b>${satsF(x.sats)}</b> in ${esc(x.wallet || "the backup wallet")} · ${ago(x.at)}
+    ${x.sweep ? `<div class="row" style="align-items:flex-start;margin-top:.6rem"><div style="width:11rem;background:#fff;padding:.4rem;border-radius:.5rem">${x.sweep.qr}</div><div style="flex:1;min-width:14rem"><p class="sm" style="margin:0 0 .4rem">Order <b>${esc(x.code)}</b> only. Scan with ${esc(x.wallet || "the backup wallet")} and pay exactly ${satsF(x.sats)}; the wallet shows the note "Altradits ${esc(x.code)}". Valid until ${new Date(x.sweep.expiresAt).toLocaleString()}.</p><textarea readonly style="min-height:4rem;font-size:.75rem">${esc(x.sweep.bolt11)}</textarea></div></div>`
+      : `<div class="row" style="margin-top:.5rem"><button class="btn primary" data-move="${esc(x.id)}">Make node invoice for ${satsF(x.sats)}</button></div>`}</div>`).join("") || '<p class="muted">Nothing waiting.</p>';
+  $("#heldList").insertAdjacentHTML("beforeend", H.moved.length ? `<h3 style="font-size:1rem;margin:1rem 0 .4rem">Recently moved to the node</h3><table><thead><tr><th>Order</th><th>What</th><th>Sats</th><th>Confirmed</th><th>Receipt sent to</th></tr></thead><tbody>${H.moved.map((m) => `<tr><td><span class="stage">${esc(m.code)}</span></td><td>${esc(m.title)}</td><td>${satsF(m.sats)}</td><td class="sm">${ago(m.at)}</td><td>${m.to ? `${esc(m.receipt)} → ${esc(m.to)}` : '<span class="muted">waiting for the client\'s email</span>'}</td></tr>`).join("")}</tbody></table>` : "");
 }
 $("#heldList").addEventListener("click", async (e) => {
   const id = e.target.dataset.move; if (!id) return;
