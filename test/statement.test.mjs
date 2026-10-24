@@ -21,16 +21,17 @@ test("totals, sales vs donations, channels, months, services, and a safe CSV", a
     payment: { method: "Bitcoin (on-chain)", sats: 25000, reference: "onchain:bc1qxyz", confirmedAt: "2026-11-05T10:00:00Z" } });
   await put({ id: "c", status: "accepted", title: "Not paid", totals: { dueNow: 999 } }); // ignored
   const s = await statement();
-  assert.deepEqual(s.total, { usd: 70, sats: 87000, count: 2 });
-  assert.equal(s.sales.usd, 50);
-  assert.equal(s.donations.usd, 20);
+  assert.deepEqual(s.total, { sats: 87000, count: 2 });
+  assert.equal(s.sales.sats, 62000);
+  assert.equal(s.donations.sats, 25000);
+  assert.ok(!JSON.stringify(s).includes('"usd"')); // sats only
   assert.equal(s.channels.lightning.sats, 62000);
   assert.equal(s.channels.onchain.sats, 25000);
-  assert.deepEqual(s.months.map((m) => [m.key, m.sales, m.donations]), [["2026-11", 0, 20], ["2026-10", 50, 0]]);
+  assert.deepEqual(s.months.map((m) => [m.key, m.sales, m.donations]), [["2026-11", 0, 25000], ["2026-10", 62000, 0]]);
   assert.deepEqual(s.services.map((x) => x.key), ["Pay as you go (2 hours)"]); // donations aren't a service
   assert.equal(s.payments[0].type, "donation"); // newest first
   const csv = await statementCsv();
-  assert.match(csv, /^date,receipt,type,client,email,what,usd,sats,channel,reference,coupon\n/);
-  assert.match(csv, /2026-10-02T10:00:00Z,R-2026-00001,sale,Jo,jo@x\.co,Pay as you go \(2 hours\),50\.00,62000,lightning,hash1,/);
+  assert.match(csv, /^date,receipt,type,client,email,what,sats,channel,reference,coupon\n/);
+  assert.match(csv, /2026-10-02T10:00:00Z,R-2026-00001,sale,Jo,jo@x\.co,Pay as you go \(2 hours\),62000,lightning,hash1,/);
   assert.match(csv, /,'=cmd\(\),/); // no spreadsheet formulas
 });

@@ -66,7 +66,7 @@ export async function GET(request) {
   if (u.searchParams.get("view") === "donations") {
     const all = (await getMany("proposal", await listIds("proposals", 2000))).filter((p) => p.donation && p.status === "paid");
     return json({
-      total: Math.round(all.reduce((t, p) => t + p.totals.dueNow, 0) * 100) / 100, count: all.length,
+      total: Math.round(all.reduce((t, p) => t + p.totals.dueNow, 0) * 100) / 100, sats: all.reduce((t, p) => t + (Number(p.payment?.sats) || 0), 0), count: all.length,
       recent: all.slice(0, 50).map((p) => ({ at: p.payment?.confirmedAt || p.updatedAt, name: p.client?.name, email: p.client?.email, usd: p.totals.dueNow, sats: p.payment?.sats || null, message: p.donation.message, receipt: p.receipt?.no || null })),
     });
   }
@@ -154,13 +154,17 @@ export async function GET(request) {
     proposalsOpen: open.length,
     pipelineUsd: open.reduce((t, p) => t + p.totals.monthly + p.totals.oneOff, 0),
     wonMonthUsd: paid.filter((p) => Date.parse(p.payment?.confirmedAt || p.updatedAt) >= monthStart).reduce((t, p) => t + p.totals.dueNow, 0),
+    wonMonthSats: paid.filter((p) => Date.parse(p.payment?.confirmedAt || p.updatedAt) >= monthStart).reduce((t, p) => t + (Number(p.payment?.sats) || 0), 0),
     mrrUsd: paid.reduce((t, p) => t + p.totals.monthly, 0),
     activeClients: leads.filter((l) => l.stage === "active").length,
     pendingApprovals: approvals.filter((a) => a.status === "pending").length,
     byStage: Object.fromEntries(STAGES.map((s) => [s, leads.filter((l) => l.stage === s).length])),
   };
 
+  // The admin shows sats only: prices not yet paid are converted at this rate.
+  const btcUsd = await import("../lib/lightning.js").then((m) => m.btcUsd()).catch(() => null);
   return json({
+    btcUsd,
     stats,
     approvals: approvals.filter((a) => a.status === "pending").concat(approvals.filter((a) => a.status !== "pending").slice(0, 20)),
     leads: leads.map((l) => ({
