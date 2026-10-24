@@ -61,6 +61,7 @@ export async function GET(request) {
     if (u.searchParams.get("format") === "csv") return new Response(await statementCsv(), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="altradits-statement-${new Date().toISOString().slice(0, 10)}.csv"` } });
     return json(await statement());
   }
+  if (u.searchParams.get("view") === "channels") { const { channelReport } = await import("../lib/channels.js"); return json(await channelReport()); }
   if (u.searchParams.get("view") === "donations") {
     const all = (await getMany("proposal", await listIds("proposals", 2000))).filter((p) => p.donation && p.status === "paid");
     return json({
@@ -258,6 +259,10 @@ export async function POST(request) {
     const { archiveAndClear } = await import("../lib/store.js");
     try { return json(await archiveAndClear([].concat(body.groups || []).map((g) => clean(g, 30)), { keep: !forever })); }
     catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "ln_lesson") {
+    const { addLesson } = await import("../lib/channels.js");
+    try { return json({ lesson: await addLesson(clean(body.text, 600)) }); } catch (err) { return json({ error: err.message }, 400); }
   }
   if (body.action === "archives") { const { listArchives } = await import("../lib/store.js"); return json({ archives: listArchives() }); }
   if (body.action === "archive_delete") {

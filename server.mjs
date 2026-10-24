@@ -107,6 +107,13 @@ async function maybeRunDaily() {
 // After each deploy, bring the CV in line with what the site now offers.
 setTimeout(() => import("./lib/career.js").then((c) => c.syncCv()).then((r) => console.log("CV sync", r)).catch((e) => console.error("CV sync", e.message)), 60 * 1000).unref();
 setInterval(() => maybeRunDaily().catch((e) => console.error("daily", e)), 10 * 60 * 1000).unref();
+// Hourly, once the node is connected: Lightning channel alerts to Stanley.
+let channelsAt = 0;
+setInterval(() => {
+  if (!process.env.LND_REST_URL || Date.now() - channelsAt < 3600e3) return;
+  channelsAt = Date.now();
+  import("./lib/channels.js").then((c) => c.watchChannels()).catch((e) => console.error("channels", e.message));
+}, 10 * 60 * 1000).unref();
 
 // The marketing team: plans the day's posts and publishes each at its slot.
 // Also nudged by /healthz (a scheduled GitHub Action wakes the app at slot times).
