@@ -24,7 +24,8 @@ test("healthy channel: no alerts; advice sized from what the website receives", 
 });
 
 test("alerts: low inbound, a full channel, an offline channel, no channel at all", () => {
-  const full = assess({ channels: [ch({ local: 950_000, remote: 50_000 })] }, need, { fast: 40, slow: 30 });
+  const full = assess({ channels: [ch({ local: 950_000, remote: 50_000, alias: "Satoshi 17" })] }, need, { fast: 40, slow: 30 });
+  assert.match(full.alerts[1].text, /Channel with Satoshi 17 is 95%/);
   assert.deepEqual(full.alerts.map((a) => [a.key, a.level]), [["inbound", "critical"], ["full:1", "warning"]]); // 40k < largest payment: critical
   assert.match(full.advice.fees, /high/);
   const down = assess({ channels: [ch({ active: false })] }, need, null);
