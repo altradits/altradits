@@ -122,3 +122,24 @@ Altradits never comments elsewhere, likes, follows or starts conversations; that
 ### Warm-up kits: you engage before each post drops
 
 Every scheduled post comes with a warm-up kit written by the team: search terms and hashtags for its topic, and 3–5 comments (entertaining, educational or a genuine question) you can leave on other people's posts. About 15 minutes before the post drops you get a "Warm up now" email and the kit appears under admin → Marketing → Engage now. On X it also finds real recent posts on the topic and drafts a reply to each, with a link that opens X with the reply filled in. Nothing is posted for you: X's automation rules ban automated replies to posts found by keyword search, and LinkedIn, Facebook and TikTok offer no API for it. Kit comments never pitch, link, quote prices or name Altradits. The reminder emails can be turned off in the admin.
+
+## Free kits and the mailing list
+
+altradits.com/templates.html offers six free, complete kits (data/templates.js): inbox, social media, invoicing, customer replies, cold outreach and hiring. A visitor leaves an email to download one (PDF guide, plus a spreadsheet where it helps). They join the list tagged with that kit, become a lead in the CRM, and get three follow-ups over ten days (lib/subscribers.js): a tip plus "do it together" (pay-as-you-go hours), then the matching "done for you" quick job, then the monthly service. One email a day at most, one-click unsubscribe in every email (plus List-Unsubscribe headers), consent wording stored with each sign-up. Follow-ups start only once the address is confirmed (the subscriber downloads from the emailed link). Re-entering an address already on the list never shows its links on the page, never renames it and never undoes an unsubscribe: the kit (or, after an unsubscribe, a confirmation link) goes to that inbox, at most twice a day; kit emails are capped at 300 a day site-wide. See subscribers and export a CSV in admin → Growth. Emails go out through the same mail setup as the rest of the site (EMAIL_TRANSPORT / SMTP_*).
+
+## Email addresses, letterhead, CC and BCC
+
+Every department emails from its official address, signed by its AI head with the Altradits logo in the brand colours (data/team-comms.js; admin → Team shows each department's AI staff, the internal protocol and Stan's QA panel). The Front Office (hello@) sends anything without a more specific department.
+
+- **Department heads send all external email**, each from its official address, with **stan@altradits.com copied**.
+- **Stan (stan@altradits.com), Head of Quality and Internal Communications,** reviews every deliverable with a panel of expert reviewers picked for the task (data/qa-experts.js), sends all internal mail (task assignments, QA notes, escalations to you) and sends each client's **payment confirmation, blind-copied to altradits@gmail.com**. `EMAIL_BCC=none` turns that blind copy off.
+- **How work earns its way to a client** (lib/qa.js): Stan splits each brief by area and assigns a specialist QA to each (always the Reality Checker and Client Safety), who writes acceptance criteria the department works to. Each QA tests its area item by item and approves or requires changes; the department revises and only failed areas are re-tested (up to 3 rounds, then it comes to you). When every area is approved, Stan makes the final decision and drafts the client message, which the department head sends.
+- You monitor everything from stan@ and admin → **Stan** (reviews, mail he sent, mail he was copied on, escalations), with nothing to approve.
+- Departments: hello@ (Front Office), care@, orders@, social@, admin@, assistant@, tech@, finance@, trust@, marketing@, careers@, quality@ (internal QA notes).
+
+Set up in DirectAdmin → E-mail Manager (one time):
+1. Create the mailbox **stan@altradits.com**.
+2. Create forwarders for hello@, care@, orders@, social@, admin@, assistant@, tech@, finance@, trust@, marketing@, careers@ and quality@ to stan@altradits.com (and/or altradits@gmail.com), so replies to any department reach you.
+3. In DNS management, check SPF and DKIM are enabled for altradits.com, so mail from these addresses isn't marked as spam.
+4. Keep `EMAIL_TRANSPORT=sendmail` (or SMTP_* for the stan@ mailbox) in Setup Node.js App.
+5. **Do steps 1–3 before merging this**, or replies to the department addresses will bounce. Until the forwarders exist you can set `EMAIL_REPLY_TO=altradits@gmail.com` so every reply lands in Gmail. If your mail host only lets the app send as one mailbox, set `EMAIL_FROM="Altradits <stan@altradits.com>"`: department names stay in the From name and Reply-To.

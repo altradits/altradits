@@ -141,6 +141,7 @@ dd{margin:0;overflow-wrap:anywhere}
       <button role="tab" data-tab="team">Team <span class="badge" id="teamCount" hidden></span></button>
       <button role="tab" data-tab="growth">Growth</button>
       <button role="tab" data-tab="marketing">Marketing</button>
+      <button role="tab" data-tab="stan">Stan</button>
       <button role="tab" data-tab="jobs">My job hunt <span class="badge" id="jobCount" hidden></span></button>
       <button role="tab" data-tab="emails">Email log</button>
       <button type="button" class="btn" id="refresh">↻ Refresh</button>
@@ -176,12 +177,29 @@ dd{margin:0;overflow-wrap:anywhere}
   </div>
 
   <div id="tab-team" hidden>
+    <div class="panel"><h2>Department directory</h2>
+      <p class="muted" style="margin-top:0">Department heads send external email from their official addresses, with stan@altradits.com copied. Stan, Head of Quality and Internal Communications, sends all internal mail and each payment confirmation, blind-copied to altradits@gmail.com. Watch him work in the Stan tab.</p>
+      <div id="commsList"></div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h2>How the team communicates</h2><div id="internalProto"></div></div>
+      <div class="panel"><h2>Stan's QA expert panel <span class="stage" id="qaCount" style="font-size:.8rem"></span></h2>
+        <p class="muted" style="margin-top:0;font-size:.9rem">Stan splits every brief by area and assigns a specialist QA to each (always the Reality Checker and Client Safety). Each writes acceptance criteria the department works to, tests its area item by item, and approves or requires changes. Only failed areas are re-tested. When every area is approved, Stan makes the final decision and drafts the client message for the department head to send.</p>
+        <details><summary class="sm" style="cursor:pointer"><b>Stan's method</b></summary><ol id="stanMethod" class="sm"></ol></details>
+        <div id="qaExperts" style="margin-top:.6rem"></div></div>
+    </div>
     <div class="panel"><h2>Departments</h2><div class="kpis" id="deptKpis" style="margin:0"></div>
       <p class="muted" style="font-size:.9rem">Tasks are routed to approved members of the matching department with spare weekly hours. If nobody has capacity, the task comes to you. Recruiting link: <a href="/join.html" target="_blank">/join.html</a></p></div>
     <div class="panel"><h2>Team & applications</h2><div id="memberList"></div></div>
   </div>
 
   <div id="tab-growth" hidden>
+    <div class="panel"><h2>Free-kit subscribers <span class="stage" id="subTotal" style="font-size:.8rem"></span></h2>
+      <p class="muted" style="margin-top:0">People who downloaded a free kit at <a href="/templates.html" target="_blank" rel="noopener">/templates.html</a>. Each one is also a lead and gets three follow-ups over ten days: do it together, then done for you.</p>
+      <div class="kpis" id="subKits" style="margin:0 0 .8rem"></div>
+      <div class="row" style="margin:0 0 .6rem"><button class="btn" id="subCsv">Download CSV</button></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Joined</th><th>Email</th><th>Name</th><th>Kits</th><th></th></tr></thead><tbody id="subRows"></tbody></table></div>
+    </div>
     <div class="panel"><h2>Today's outreach</h2>
       <p class="muted" style="margin-top:0">Warm outreach first: people who already know you. Aim for 20 personal messages a day until you have 5 clients.</p>
       <div class="row" style="margin:0"><button class="btn" id="outMinus">−</button><b id="outCount" style="font:800 2rem 'Bricolage Grotesque',sans-serif;min-width:3ch;text-align:center">0</b><button class="btn primary" id="outPlus">+1 sent</button><span class="muted" id="outGoal">/ 20 today</span></div>
@@ -270,6 +288,21 @@ dd{margin:0;overflow-wrap:anywhere}
     <div class="panel"><h2>Results, last 14 days</h2><div style="overflow-x:auto"><table><thead><tr><th>Account</th><th>Posts</th><th>Orders started</th><th>Paid</th><th>Revenue</th></tr></thead><tbody id="mkResults"></tbody></table></div></div>
   </div>
 
+  <div id="tab-stan" hidden>
+    <div class="panel"><h2>Stan's desk</h2>
+      <p class="muted" style="margin-top:0">Stan (stan@altradits.com) is Head of Quality and Internal Communications. He splits every job across his specialist QA team, holds the department to their criteria, makes the final decision and drafts the client message the department head sends. He sends all internal mail and each payment confirmation (blind-copied to you), and is copied on every external email. This view is read-only: watch, no buttons to press.</p>
+      <div class="kpis" id="stanKpis" style="margin:0"></div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h2>Decision records</h2><p class="muted sm" style="margin-top:0">Per job: Stan's QA team by area, every criterion with its evidence, the rounds of changes, and Stan's final decision with the message the department head sent.</p><div id="stanReviews"></div></div>
+      <div class="panel"><h2>Sent by Stan</h2><div id="stanSent"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h2>Copied to Stan (external, from the heads)</h2><div id="stanCopied"></div></div>
+      <div class="panel"><h2>Escalated to you</h2><div id="stanEsc"></div></div>
+    </div>
+  </div>
+
   <div id="tab-emails" hidden><div class="panel"><h2>Emails sent by the agents</h2>
     <div style="overflow-x:auto"><table><thead><tr><th>When</th><th>To</th><th>Subject</th><th>Status</th></tr></thead><tbody id="emailRows"></tbody></table></div></div></div>
 </div>
@@ -308,7 +341,8 @@ function tab(name) {
   if (name === "growth") renderGrowth();
   if (name === "jobs") loadJobs();
   if (name === "marketing") loadMarketing();
-  ["overview", "approvals", "leads", "tasks", "team", "growth", "marketing", "jobs", "emails"].forEach((t) => { $("#tab-" + t).hidden = t !== name; });
+  if (name === "stan") loadStan();
+  ["overview", "approvals", "leads", "tasks", "team", "growth", "marketing", "stan", "jobs", "emails"].forEach((t) => { $("#tab-" + t).hidden = t !== name; });
 }
 document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => tab(b.dataset.tab)));
 $("#refresh").addEventListener("click", () => load());
@@ -423,14 +457,42 @@ document.addEventListener("click", async (e) => {
 
 // ---------------------------------------------------------- operations
 let O = null;
-const TLABEL = { new: "unassigned", assigned: "assigned (human)", in_progress: "in progress", review: "with client", changes: "changes", done: "done ✓", cancelled: "cancelled",
+const TLABEL = { held: "⚠ security hold", new: "unassigned", assigned: "assigned (human)", in_progress: "in progress", review: "with client", changes: "changes", done: "done ✓", cancelled: "cancelled",
   queued: "queued for agent", working: "agent working", waiting_client: "waiting for client", owner: "needs you", follow_up: "unhappy client" };
 async function loadOps() {
   try { O = await api("?view=ops"); renderOps(); } catch {}
 }
+function renderComms() {
+  if (!O?.comms) return;
+  $("#commsList").innerHTML = O.comms.map((c) => `<details class="ap"><summary style="cursor:pointer"><b>${esc(c.address)}</b> · ${esc(c.name)} <span class="stage">${c.head.kind === "ai" ? "AI head" : "Human"}: ${esc(c.head.name)}${c.head.title || c.head.role ? ` · ${esc(c.head.title || c.head.role)}` : ""}</span>${c.sendsAs === false ? ' <span class="stage">inbox only</span>' : ""}${c.sends ? ` <span class="stage">sends ${esc(c.sends.join(" and "))} mail</span>` : ""}${c.internal ? ' <span class="stage">internal</span>' : ""} <span class="muted sm">${(c.staff || []).length} AI staff · reports to ${esc(c.reportsTo === "founder" ? "Stan" : c.reportsTo || "")}</span><div class="muted sm" style="margin-top:.2rem">${esc(c.purpose)}</div></summary>
+    ${(c.staff || []).length ? `<div style="margin-top:.6rem"><b class="sm">Team</b><ul class="sm">${c.staff.map((s) => `<li><b>${esc(s.name)}</b>, ${esc(s.title)}: ${esc(s.jurisdiction.join("; "))}</li>`).join("")}</ul></div>` : ""}
+    ${c.channels ? `<div class="grid2 sm"><div><b>External</b><ul>${c.channels.external.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div><div><b>Internal</b><ul>${c.channels.internal.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div></div>` : ""}
+    <div class="grid2" style="margin-top:.6rem;font-size:.92rem">
+      <div><b>Receives</b><ul>${c.inbound.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><b>Sends</b><ul>${c.outbound.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><b>Voice</b><ul>${c.voice.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div><b>Response times</b><p class="sm" style="margin:.2rem 0 .6rem">First reply: ${esc(c.sla.firstReply)}<br>Resolution: ${esc(c.sla.resolution)}</p>
+        <b>Escalates to Stanley when</b><ul>${c.escalate.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+        <b>Strategy</b><ul>${c.strategy.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+        <b>Track</b><ul>${c.metrics.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+        <b>Signature</b><pre class="sm" style="white-space:pre-wrap;margin:.2rem 0">${esc(c.signature.join("\n"))}</pre>${c.cc.length ? `<p class="sm muted">Copies: ${esc(c.cc.join(", "))}</p>` : ""}</div>
+    </div></details>`).join("");
+}
+function renderInternal() {
+  const I = O?.internal; if (!I) return;
+  const dname = (ids) => ids.map((id) => O.comms.find((c) => c.id === id)?.address?.split("@")[0] || id).join(", ");
+  $("#internalProto").innerHTML = `${I.security ? `<div class="sm" style="border-left:3px solid var(--warn);padding-left:.6rem;margin-bottom:.6rem"><b>Security, every message</b><ul style="margin:.2rem 0">${I.security.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></div>` : ""}<p class="sm"><b>Daily:</b> ${esc(I.cadence.daily)}<br><b>Weekly:</b> ${esc(I.cadence.weekly)}<br><b>Monthly:</b> ${esc(I.cadence.monthly)}</p>
+    <b class="sm">Escalation</b><ol class="sm">${I.escalation.map((e) => `<li><b>${esc(e.who)}</b>: ${esc(e.trigger)} (${esc(e.respond)})</li>`).join("")}</ol>
+    <b class="sm">Who owns what</b><div style="overflow-x:auto"><table class="sm"><thead><tr><th>Activity</th><th>Does it</th><th>Accountable</th><th>Consulted</th><th>Informed</th></tr></thead><tbody>${I.raci.map((r) => `<tr><td>${esc(r.activity)}</td><td>${esc(dname(r.responsible))}</td><td>${esc(dname(r.accountable))}</td><td>${esc(dname(r.consulted))}</td><td>${esc(dname(r.informed))}</td></tr>`).join("")}</tbody></table></div>
+    <details><summary class="sm" style="cursor:pointer"><b>Handoff checklist and rules</b></summary><ul class="sm">${I.handoff.map((h) => `<li>${esc(h)}</li>`).join("")}</ul><ul class="sm">${I.rules.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></details>`;
+  const Q = O.qa; if (!Q) return;
+  $("#qaCount").textContent = `${Q.experts.length} experts`;
+  $("#stanMethod").innerHTML = Q.stan.method.map((m) => `<li>${esc(m)}</li>`).join("");
+  $("#qaExperts").innerHTML = Q.experts.map((e) => `<details class="sm" style="margin:.2rem 0"><summary style="cursor:pointer"><b>${esc(e.name)}</b>${e.always ? ' <span class="stage">every task</span>' : ""} <span class="muted">${esc(e.domains.join(", "))}</span></summary><ul>${e.checklist.map((c) => `<li>${esc(c)}</li>`).join("")}</ul><span class="muted">Persona: ${esc(e.source)}</span></details>`).join("");
+}
 function renderOps() {
-  const openSt = ["new", "assigned", "in_progress", "changes", "queued", "working", "waiting_client", "owner", "follow_up"];
-  const unassigned = O.tasks.filter((t) => ["new", "owner", "follow_up"].includes(t.status)).length;
+  renderComms();
+  renderInternal();
+  const openSt = ["held", "new", "assigned", "in_progress", "changes", "queued", "working", "waiting_client", "owner", "follow_up"];
+  const unassigned = O.tasks.filter((t) => ["held", "new", "owner", "follow_up"].includes(t.status)).length;
   $("#taskCount").hidden = !unassigned; $("#taskCount").textContent = unassigned;
   const applied = O.members.filter((m) => m.status === "applied").length;
   $("#teamCount").hidden = !applied; $("#teamCount").textContent = applied;
@@ -440,12 +502,16 @@ function renderOps() {
   const p = O.pipeline || {};
   $("#pipeKpis").innerHTML = [["Queued", p.queued], ["Agents working", p.working], ["Waiting on client", p.waiting_client], ["Needs you", p.owner], ["With client", p.review], ["Unhappy", p.follow_up], ["Done", p.done],
     ["Avg rating", O.satisfaction ? `${O.satisfaction.avg}★` : "–"]].map(([k, v]) => `<div class="kpi"><small>${k}</small><div>${v ?? 0}</div></div>`).join("");
-  $("#taskList").innerHTML = list.map((t) => `<div class="ap ${["new", "owner", "follow_up"].includes(t.status) ? "pending" : ""}">
+  $("#taskList").innerHTML = list.map((t) => `<div class="ap ${["held", "new", "owner", "follow_up"].includes(t.status) ? "pending" : ""}">
     <h3>${esc(t.title)} <span class="stage">${TLABEL[t.status] || t.status}</span></h3>
     <div class="meta">${esc(t.client)} · ${esc(t.department)} · ~${t.estimateHours}h${t.due ? ` · due ${esc(t.due)}` : ""} · ${t.assignee ? esc(t.assignee) : t.agent ? esc(t.agent) : t.status === "in_progress" ? "you" : "nobody yet"}${t.attempts ? ` · attempt ${t.attempts}` : ""}${t.satisfaction ? ` · rated ${t.satisfaction.rating}/5` : ""}</div>
     <pre>${esc(t.details)}</pre>
     ${t.question ? `<p><b>Agent asked the client:</b> ${esc(t.question)}</p>` : ""}
-    ${t.qa ? `<p class="muted">QA: ${t.qa.pass ? "passed" : esc(t.qa.issues.join("; "))}</p>` : ""}
+    ${t.status === "held" && t.held ? `<div style="border:2px solid var(--warn);border-radius:.7rem;padding:.7rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 8%,white)">
+      <b>Security hold.</b> The ${esc(t.held.source)} contains ${esc(t.held.reasons.join(", "))}. All activity stopped; no AI has read it. Links below are shown as text only.
+      <pre style="margin:.5rem 0;max-height:12rem;overflow:auto">${esc(t.held.text)}</pre>
+      <div class="row"><input placeholder="Your instructions for the department (optional)" data-releasenote="${t.id}" style="flex:1;min-width:12rem"><button class="btn ok" data-release="${t.id}">Release: it's safe</button><button class="btn" data-cancel="${t.id}">Cancel task</button></div></div>` : ""}
+    ${t.qa ? `<p class="muted">QA: ${t.qa.panel ? (t.qa.final?.approve ? "approved by Stan" : t.qa.final ? `sent back by Stan: ${esc((t.qa.final.issues || []).join("; "))}` : `${t.qa.panel.filter((p) => p.approved).length}/${t.qa.panel.length} areas approved`) : t.qa.pass ? "passed" : esc((t.qa.issues || []).join("; "))}</p>` : ""}
     ${t.deliverable ? `<details><summary>Deliverable: ${esc(t.deliverable.title || "")} (${t.hoursLogged}h)</summary>
       <p>${esc(t.deliverable.summary || t.deliverable.note || "")}</p>
       ${t.deliverable.url ? `<p><a href="${esc(t.deliverable.url)}" target="_blank" rel="noopener">Open link</a></p>` : ""}
@@ -478,6 +544,7 @@ document.addEventListener("click", async (e) => {
   else if (d.assign) body = { action: "task_assign", id: d.assign, memberId: document.querySelector(`[data-assignsel="${d.assign}"]`).value };
   else if (d.cancel) { if (!confirmCancel(e.target)) return; body = { action: "task_cancel", id: d.cancel }; }
   else if (d.sendclient) body = { action: "task_send_client", id: d.sendclient };
+  else if (d.release) body = { action: "task_release", id: d.release, note: document.querySelector(`[data-releasenote="${d.release}"]`)?.value || "" };
   else if (d.rerun) body = { action: "task_rerun", id: d.rerun, note: document.querySelector(`[data-rerunnote="${d.rerun}"]`)?.value || "" };
   else if (d.close) body = { action: "task_close", id: d.close, note: document.querySelector(`[data-closenote="${d.close}"]`)?.value || "" };
   else if (d.selfsubmit) body = { action: "task_submit", id: d.selfsubmit, url: document.querySelector(`[data-surl="${d.selfsubmit}"]`).value, note: document.querySelector(`[data-snote="${d.selfsubmit}"]`).value, hours: document.querySelector(`[data-shours="${d.selfsubmit}"]`).value };
@@ -509,7 +576,20 @@ function outSet(n) { try { localStorage.setItem(outKey(), String(Math.max(0, n))
 function renderOut() { const n = outGet(); $("#outCount").textContent = n; $("#outBar").style.width = Math.min(100, n * 5) + "%"; }
 $("#outPlus").onclick = () => outSet(outGet() + 1);
 $("#outMinus").onclick = () => outSet(outGet() - 1);
+async function loadSubscribers() {
+  try {
+    const v = await api("?view=subscribers");
+    $("#subTotal").textContent = `${v.active} subscribed${v.unsubscribed ? ` · ${v.unsubscribed} unsubscribed` : ""}`;
+    $("#subKits").innerHTML = v.byKit.map((k) => `<div class="kpi"><small>${esc(k.title)}</small><div>${k.subscribers}</div><span class="muted sm">${k.downloads} downloads</span></div>`).join("");
+    $("#subRows").innerHTML = v.recent.map((r) => `<tr><td class="sm">${ago(r.createdAt)}</td><td>${esc(r.email)}</td><td>${esc(r.name || "")}</td><td class="sm">${esc(r.kits.join(", "))}</td><td class="sm muted">${r.unsubscribed ? "unsubscribed" : ""}</td></tr>`).join("") || `<tr><td colspan="5" class="muted">No sign-ups yet.</td></tr>`;
+  } catch {}
+}
+$("#subCsv").addEventListener("click", async () => {
+  const res = await fetch("/api/admin?view=subscribers&format=csv", { headers: { Authorization: "Bearer " + token } });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(await res.blob()); a.download = "altradits-subscribers.csv"; a.click();
+});
 function renderGrowth() {
+  loadSubscribers();
   renderOut();
   $("#templates").innerHTML = TEMPLATES.map(([t, body], i) => `<div class="ap"><h3>${esc(t)}</h3><pre>${esc(body)}</pre><div class="row"><button class="btn" data-copytpl="${i}">Copy</button></div></div>`).join("");
   if (!D) return;
@@ -755,6 +835,32 @@ document.addEventListener("click", async (e) => {
     w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
   }
 });
+
+// ---- Stan's desk (read-only monitoring)
+async function loadStan() {
+  let S; try { S = await api("?view=stan"); } catch { return; }
+  const day = (iso) => Date.now() - Date.parse(iso) < 864e5;
+  const KIND = { team: "internal", payment: "payment confirmation", client: "client", kit: "free kit", owner: "to you" };
+  $("#stanKpis").innerHTML = [
+    ["In QA now", S.records.filter((r) => !r.final).length],
+    ["Approved today", S.records.filter((r) => r.final?.approve && day(r.final.at)).length],
+    ["Changes required today", S.reviews.filter((r) => day(r.at) && !r.pass).length],
+    ["Sent by Stan today", S.sent.filter((e) => day(e.at)).length],
+    ["Copied today", S.copied.filter((e) => day(e.at)).length],
+    ["Escalated to you today", S.escalations.filter((e) => day(e.at)).length],
+  ].map(([k, v]) => `<div class="kpi"><small>${k}</small><div>${v}</div></div>`).join("");
+  const mail = (list, none) => list.length ? list.map((e) => `<details class="ap" style="padding:.6rem .8rem"><summary style="cursor:pointer"><b>${esc(e.subject)}</b> <span class="stage">${esc(KIND[e.kind] || e.kind)}</span><div class="muted sm">${ago(e.at)} · ${esc(e.from || "")} → ${esc(e.to)}${e.bcc ? ` · bcc ${esc(e.bcc)}` : ""} · ${esc(e.status)}</div></summary><pre class="sm" style="white-space:pre-wrap;margin:.4rem 0 0">${esc(e.text)}</pre></details>`).join("") : `<p class="muted">${none}</p>`;
+  $("#stanSent").innerHTML = mail(S.sent, "Nothing sent yet.");
+  $("#stanCopied").innerHTML = mail(S.copied, "No external emails yet.");
+  $("#stanEsc").innerHTML = mail(S.escalations, "Nothing escalated.");
+  $("#stanReviews").innerHTML = S.records.length ? S.records.map((r) => {
+    const latest = (id) => [...r.rounds].reverse().find((x) => x.results[id])?.results[id];
+    const state = r.final?.approve ? ["posted", "approved by Stan"] : r.final ? ["failed", "sent back by Stan"] : r.panel.every((p) => p.approved) ? ["", "awaiting Stan"] : ["", "in QA"];
+    return `<details class="ap" style="padding:.6rem .8rem"><summary style="cursor:pointer"><b>${esc(r.task)}</b> <span class="stage ${state[0]}">${state[1]}</span><div class="muted sm">${esc(r.client || "")} · ${esc(r.department || "")} · ${r.rounds.length} round(s) · ${r.panel.map((p) => `${p.approved ? "✓" : "✗"} ${esc(p.name)}`).join(" · ")}</div></summary>
+      ${r.panel.map((p) => { const l = latest(p.id); return `<div class="sm" style="margin:.5rem 0"><b>${esc(p.name)}</b> ${p.approved ? '<span class="stage posted">approved</span>' : '<span class="stage failed">changes required</span>'}<ul>${(l?.items || p.criteria.map((c) => ({ criterion: c, pass: false, evidence: "not reviewed yet" }))).map((i) => `<li>${i.pass ? "✓" : "✗"} ${esc(i.criterion)}<br><span class="muted">${esc(i.evidence || "")}${i.fix && !i.pass ? ` · Fix: ${esc(i.fix)}` : ""}</span></li>`).join("")}</ul></div>`; }).join("")}
+      ${r.final ? `<div class="sm" style="border-top:1px solid var(--line);padding-top:.5rem"><b>Stan's decision:</b> ${esc(r.final.reason || "")}${r.final.issues?.length ? `<br>Issues: ${esc(r.final.issues.join("; "))}` : ""}${r.final.approve && r.final.subject ? `<br><b>Draft sent by the department head:</b> ${esc(r.final.subject)}<pre class="sm" style="white-space:pre-wrap;margin:.3rem 0 0">${esc(r.final.body || "")}</pre>` : ""}</div>` : ""}
+    </details>`; }).join("") : `<p class="muted">No jobs reviewed yet.</p>`;
+}
 
 // ---- marketing team: scheduler with platform previews, masters, repurposing
 let M = null, mkDay = new Date().toISOString().slice(0, 10), mkEditing = null, mkPicked = false;

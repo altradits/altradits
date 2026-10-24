@@ -2,6 +2,8 @@
 // GET  /api/portal?c=<token>                         -> onboarding, tasks, hours, referral
 // GET  /api/portal?c=<token>&task=<id>&file=<n>      -> download a deliverable file
 // POST /api/portal { c, action: "onboarding"|"task"|"answer"|"approve"|"changes", ... }
+import { holdIfUnsafe } from "../lib/screen.js";
+import { reopen } from "../lib/qa.js";
 import { json, readBody, clean, clientIp } from "../lib/http.js";
 import { hit } from "../lib/store.js";
 import { saveLead, logEvent } from "../lib/crm.js";
@@ -107,6 +109,7 @@ export async function POST(request) {
     t.history.push({ at, by: "client", text: `Client answered: ${answer}` });
     t.question = null;
     t.status = "queued";
+    if (await holdIfUnsafe(t, answer, "client answer", saveTask)) return json({ ok: true, held: true });
     await saveTask(t);
     kickQueue();
   } else if (body.action === "approve") {
@@ -121,7 +124,7 @@ export async function POST(request) {
       t.status = "done";
       await saveTask(t);
       const m = t.assigneeId && (await getMember(t.assigneeId));
-      if (m) await sendEmail({ to: m.email, kind: "team", subject: `Approved: ${t.title}`, text: `${t.client} approved "${t.title}" (${rating}/5). Nice work, thank you!` });
+      if (m) await sendEmail({ to: m.email, kind: "team", dept: "quality", subject: `Approved: ${t.title}`, text: `${t.client} approved "${t.title}" (${rating}/5). Nice work, thank you!` });
     } else {
       // An unhappy client is one of the few things that always reaches Stanley.
       t.status = "follow_up";
@@ -140,12 +143,14 @@ export async function POST(request) {
     if (m && m.status === "approved") {
       t.status = "changes";
       await saveTask(t);
-      await sendEmail({ to: m.email, kind: "team", subject: `Changes requested: ${t.title}`,
+      await sendEmail({ to: m.email, kind: "team", dept: "quality", subject: `Changes requested: ${t.title}`,
         text: `${t.client} asked for changes on "${t.title}":\n\n${note}`,
         cta: { label: "Open task", url: `${base()}/team.html?m=${m.token}#${t.id}` } });
     } else if (workersLive()) {
       t.status = "queued";
       t.attempts = 0; // fresh revision cycle with the client's feedback
+      reopen(t.qa, note); // Stan's QA re-tests everything, including the change
+      if (await holdIfUnsafe(t, note, "change request", saveTask)) return json({ ok: true, held: true });
       await saveTask(t);
       kickQueue();
     } else {

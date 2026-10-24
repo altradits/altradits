@@ -39,7 +39,7 @@ export async function POST(request) {
       logEvent(lead, `Proposal accepted by ${signer}.`);
       await saveLead(lead);
       await sendEmail({
-        to: lead.email, leadId: lead.id,
+        to: lead.email, leadId: lead.id, dept: "orders",
         subject: "Proposal accepted: one step to kick-off",
         text: `Thanks ${signer}. Your proposal is accepted.\n\nTo start, pay $${p.totals.dueNow} using any method on the proposal page, then press "I've paid". Kick-off is within 48 hours of payment.`,
         cta: { label: "Pay and start", url: proposalUrl(base, p) },

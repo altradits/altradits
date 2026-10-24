@@ -55,6 +55,30 @@ export async function GET(request) {
 
   if (u.searchParams.get("view") === "marketing") return json(await marketingView());
 
+  // Stan's desk: everything Stan sent, was copied on and reviewed (read-only, for Stanley to monitor).
+  if (u.searchParams.get("view") === "stan") {
+    const STAN = "stan@altradits.com";
+    const mail = await getMany("email", await listIds("emails", 400));
+    const tasks = await allTasks();
+    const reviews = tasks.flatMap((t) => t.history.filter((h) => /^QA: /.test(h.text)).map((h) => ({ at: h.at, task: t.title, client: t.client, department: t.department, pass: !/^QA: (changes required|Stan sent it back)/.test(h.text), text: h.text })))
+      .sort((a, b) => b.at.localeCompare(a.at)).slice(0, 60);
+    const pick = (e) => ({ at: e.at, to: e.to, from: e.from, subject: e.subject, kind: e.kind, status: e.status, bcc: e.bcc || null, text: (e.text || "").slice(0, 400) });
+    const records = tasks.filter((t) => t.qa?.panel).sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || "")).slice(0, 40)
+      .map((t) => ({ id: t.id, task: t.title, client: t.client, department: t.department, status: t.status, panel: t.qa.panel, rounds: t.qa.rounds, final: t.qa.final }));
+    return json({
+      records,
+      sent: mail.filter((e) => (e.from || "").includes(STAN)).slice(0, 60).map(pick),
+      copied: mail.filter((e) => e.cc === STAN).slice(0, 60).map(pick),
+      escalations: mail.filter((e) => e.kind === "owner").slice(0, 30).map(pick),
+      reviews,
+    });
+  }
+  if (u.searchParams.get("view") === "subscribers") {
+    const { subscribersView, subscribersCsv } = await import("../lib/subscribers.js");
+    if (u.searchParams.get("format") === "csv") return new Response(await subscribersCsv(), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="altradits-subscribers.csv"', "Cache-Control": "no-store" } });
+    return json(await subscribersView());
+  }
+
   if (u.searchParams.get("view") === "ops") {
     const [members, tasks] = await Promise.all([allMembers(), allTasks()]);
     const load = (id) => tasks.filter((t) => t.assigneeId === id && OPEN.includes(t.status)).reduce((s, t) => s + t.estimateHours, 0);
@@ -66,6 +90,9 @@ export async function GET(request) {
       pipeline: Object.fromEntries(["queued", "working", "waiting_client", "owner", "review", "follow_up", "done"].map((st) => [st, tasks.filter((t) => t.status === st).length])),
       satisfaction: (() => { const r = tasks.filter((t) => t.satisfaction).map((t) => t.satisfaction.rating); return r.length ? { avg: Math.round((r.reduce((a, b) => a + b, 0) / r.length) * 10) / 10, count: r.length } : null; })(),
       agents: AGENT_ROSTER, workersLive: workersLive(),
+      comms: (await import("../data/team-comms.js")).COMMS,
+      internal: (await import("../data/team-comms.js")).INTERNAL,
+      qa: await import("../data/qa-experts.js").then((m) => ({ stan: m.STAN, experts: m.QA_EXPERTS.map(({ id, name, source, domains, always, checklist }) => ({ id, name, source, domains, always, checklist })) })),
     });
   }
 
@@ -143,7 +170,7 @@ async function resolveApproval(request, body) {
     } else if (p && lead) {
       p.status = "declined";
       await saveProposal(p);
-      await sendEmail({ to: lead.email, leadId: lead.id, subject: "About your proposal",
+      await sendEmail({ to: lead.email, leadId: lead.id, dept: "growth", subject: "About your proposal",
         text: note || `Hi ${lead.name || "there"}, thanks for your patience. ${BUSINESS.owner} would like to talk this through before sending a proposal. Just reply with a good time.` });
     }
   } else if (a.type === "payment_check") {
@@ -154,7 +181,7 @@ async function resolveApproval(request, body) {
       } else {
         p.status = "accepted";
         logEvent(lead, "Payment not found yet.");
-        await sendEmail({ to: lead.email, leadId: lead.id, subject: "We couldn't find your payment yet",
+        await sendEmail({ to: lead.email, leadId: lead.id, dept: "orders", subject: "We couldn't find your payment yet",
           text: note || `Hi ${lead.name || "there"}, we haven't received the payment yet. Could you reply with the transaction reference or a screenshot? Sometimes it just takes a little longer.` });
       }
       await saveProposal(p);
@@ -278,6 +305,7 @@ export async function POST(request) {
       const note = clean(body.note, 1000);
       t.status = "queued";
       t.attempts = 0;
+      (await import("../lib/qa.js")).reopen(t.qa, note);
       t.history.push({ at, by: "Stanley", text: note ? `Changes requested: ${note}` : "Re-run requested" });
       await saveTask(t);
       kickQueue();
@@ -302,6 +330,19 @@ export async function POST(request) {
     await notifyClient(t, `Ready for your review: ${t.title}`, `Your task "${t.title}" is done.\n\n${note}${t.deliverable.url ? `\n\nDeliverable: ${t.deliverable.url}` : ""}\n\nApprove it or ask for changes in your portal.`);
     return json({ ok: true });
   }
+  if (body.action === "task_release") {
+    const t = await getTask(clean(body.id, 40));
+    if (!t) return json({ error: "Task not found" }, 404);
+    if (t.status !== "held") return json({ error: "This task isn't on hold." }, 409);
+    const at = new Date().toISOString();
+    t.held.releasedAt = at;
+    t.status = workersLive() ? "queued" : "new";
+    t.history.push({ at, by: "Stanley", text: `Released after security review${clean(body.note, 300) ? `: ${clean(body.note, 300)}` : ""}` });
+    await saveTask(t);
+    if (workersLive()) kickQueue(); else await assignTask(t);
+    return json({ ok: true, task: t });
+  }
+
   if (body.action === "task_assign" || body.action === "task_cancel") {
     const t = await getTask(clean(body.id, 40));
     if (!t) return json({ error: "Task not found" }, 404);
