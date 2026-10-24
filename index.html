@@ -44,8 +44,6 @@ html.compact .filterbar{top:3.1rem}
 .logo{display:inline-flex;align-items:center;text-decoration:none;line-height:0}
 .logo img{height:2.6rem;width:auto;display:block;transition:height .25s}
 html.compact header .logo img{height:2.1rem}
-.fbrand{flex-basis:100%;margin-bottom:.4rem}
-footer .logo img{height:2.3rem}
 nav{display:flex;gap:1.4rem;align-items:center}
 nav a{position:relative;text-decoration:none;font-weight:600;font-size:.97rem;color:var(--muted);transition:color .2s}
 nav a::after{content:"";position:absolute;left:0;right:0;bottom:-.2rem;height:2px;border-radius:2px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
@@ -390,8 +388,46 @@ html.js .plan.rv,html.js .agent.rv,html.js .story.rv{transition:opacity .6s ease
 .final .h2{margin:0 auto .75rem}
 .final .intro{margin:0 auto 1.5rem}
 .final .actions{justify-content:center}
-footer{padding:2.5rem 0 3rem;color:var(--muted);font-size:.95rem;border-top:1px solid var(--line)}
-footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-between}
+footer{background:var(--paper);border-top:1px solid var(--line);color:var(--muted);font-size:.95rem;padding:3rem 0 1.75rem}
+footer ul{list-style:none;margin:0;padding:0}
+footer a{text-decoration:none;transition:color .2s}
+.fgrid{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:2.5rem 2rem;padding-bottom:2.25rem}
+footer .logo img{height:2.5rem}
+.ftag{margin:.6rem 0 1.1rem;color:var(--ink);font-weight:500}
+.fcol h2{font:700 .8rem/1.2 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);margin:.35rem 0 1rem}
+.fcol ul:not(.fsoc) li a{display:inline-flex;align-items:center;gap:.5rem;min-height:2.5rem;color:var(--muted);font-weight:500}
+.fcol ul:not(.fsoc) li a:hover{color:var(--blue)}
+.fcol .fsoc+ul{margin-top:.6rem}
+.fsub{color:var(--blue);font-weight:600;font-size:.88rem}
+.ftagx{font:700 .7rem/1 Figtree,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#7A4300;background:#FDEBD3;border:1px solid #F5C890;border-radius:.35rem;padding:.3rem .45rem}
+.fsoc{display:flex;flex-wrap:wrap;gap:.6rem}
+.si{--h:var(--ink);display:grid;place-items:center;width:2.75rem;height:2.75rem;border:1px solid var(--line);border-radius:.6rem;background:var(--bg);color:var(--ink);transition:color .2s,border-color .2s,background .2s,transform .2s}
+.si svg{width:1.15rem;height:1.15rem;fill:currentColor}
+.si:hover{color:var(--h);border-color:var(--h);background:var(--paper);transform:translateY(-2px)}
+.si.li{--h:#0A66C2}.si.fb{--h:#1877F2}.si.tt{--h:#EE1D52}.si.x,.si.gh{--h:#000}
+.fbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem 2rem;border-top:1px solid var(--line);padding-top:1.25rem;font-size:.88rem}
+.ftrust{display:flex;flex-wrap:wrap;gap:.35rem 0}
+.ftrust li+li{border-left:1px solid var(--line);margin-left:.85rem;padding-left:.85rem}
+.fend{display:flex;align-items:center;gap:1.5rem}
+.ftop{display:inline-flex;align-items:center;gap:.35rem;min-height:2.5rem;color:var(--ink);font-weight:600}
+.ftop svg{width:1rem;height:1rem;transition:transform .2s}
+.ftop:hover{color:var(--blue)}
+.ftop:hover svg{transform:translateY(-2px)}
+@media (max-width:860px){
+  .fgrid{grid-template-columns:1fr 1fr}
+  .fbrand{grid-column:1/-1}
+}
+@media (max-width:560px){
+  footer{padding-top:2.25rem}
+  .fgrid{grid-template-columns:1fr;gap:2rem}
+  .fbar{flex-direction:column;align-items:flex-start;gap:.75rem}
+  .ftrust{flex-direction:column}
+  .ftrust li+li{border-left:0;margin-left:0;padding-left:0}
+  .fend{width:100%;justify-content:space-between}
+}
+@media (prefers-reduced-motion:reduce){
+  .si:hover,.ftop:hover svg{transform:none}
+}
 
 /* order pop-up */
 .modal{position:fixed;inset:0;z-index:100;background:rgba(15,27,45,.55);display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
@@ -775,10 +811,55 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 </div>
 
 <footer>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></symbol>
+    <symbol id="i-li" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.125 2.062 2.062 0 0 1 0 4.125zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></symbol>
+    <symbol id="i-fb" viewBox="0 0 24 24"><path d="M13.9 23.5V12.8h3.6l.54-4.2H13.9V5.93c0-1.21.34-2.04 2.08-2.04h2.22V.13A29.7 29.7 0 0 0 14.96 0C11.76 0 9.57 1.95 9.57 5.54v3.06H5.95v4.2h3.62v10.7z"/></symbol>
+    <symbol id="i-tt" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></symbol>
+    <symbol id="i-gh" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></symbol>
+  </svg>
   <div class="wrap">
-    <div class="fbrand"><a class="logo" href="#top" aria-label="Altradits, back to top"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a></div>
-    <span>© <span id="yr">2026</span> Altradits · Virtual assistance worldwide</span>
-    <span><a href="/cv.html">Stanley's CV</a> · <a href="/join.html">Join the team (we're hiring)</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://x.com/altradits">X</a> · <a href="/hunt.html">Treasure hunt</a></span>
+    <div class="fgrid">
+      <div class="fbrand">
+        <a class="logo" href="#top" aria-label="Altradits, back to top"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a>
+        <p class="ftag">Virtual assistance worldwide.</p>
+        <ul class="fsoc" aria-label="Altradits on social media">
+          <li><a class="si x" href="https://x.com/altradits" target="_blank" rel="noopener" aria-label="Altradits on X"><svg aria-hidden="true" focusable="false"><use href="#i-x"/></svg></a></li>
+          <li><a class="si li" href="https://www.linkedin.com/company/altradits" target="_blank" rel="noopener" aria-label="Altradits on LinkedIn"><svg aria-hidden="true" focusable="false"><use href="#i-li"/></svg></a></li>
+          <li><a class="si fb" href="https://www.facebook.com/profile.php?id=61579168157529" target="_blank" rel="noopener" aria-label="Altradits on Facebook"><svg aria-hidden="true" focusable="false"><use href="#i-fb"/></svg></a></li>
+          <li><a class="si tt" href="https://www.tiktok.com/@altradits" target="_blank" rel="noopener" aria-label="Altradits on TikTok"><svg aria-hidden="true" focusable="false"><use href="#i-tt"/></svg></a></li>
+          <li><a class="si gh" href="https://github.com/altradits" target="_blank" rel="noopener" aria-label="Altradits on GitHub"><svg aria-hidden="true" focusable="false"><use href="#i-gh"/></svg></a></li>
+        </ul>
+      </div>
+      <div class="fcol">
+        <h2 id="fMore">More</h2>
+        <ul aria-labelledby="fMore">
+          <li><a href="/join.html">Join the team <span class="ftagx">Hiring</span></a></li>
+          <li><a href="/hunt.html">Treasure hunt <span class="fsub">#AltraditsHunt</span></a></li>
+          <li><a href="https://github.com/altradits" target="_blank" rel="noopener">Source code</a></li>
+        </ul>
+      </div>
+      <div class="fcol">
+        <h2 id="fFounder">Follow the founder</h2>
+        <ul class="fsoc" aria-labelledby="fFounder">
+          <li><a class="si li" href="https://www.linkedin.com/in/stanmobitech/" target="_blank" rel="noopener" aria-label="Stanley on LinkedIn"><svg aria-hidden="true" focusable="false"><use href="#i-li"/></svg></a></li>
+          <li><a class="si fb" href="https://www.facebook.com/profile.php?id=61579237182379" target="_blank" rel="noopener" aria-label="Stanley on Facebook"><svg aria-hidden="true" focusable="false"><use href="#i-fb"/></svg></a></li>
+          <li><a class="si tt" href="https://www.tiktok.com/@5tan_lee" target="_blank" rel="noopener" aria-label="Stanley on TikTok"><svg aria-hidden="true" focusable="false"><use href="#i-tt"/></svg></a></li>
+        </ul>
+        <ul><li><a href="/cv.html">Stanley's CV</a></li></ul>
+      </div>
+    </div>
+    <div class="fbar">
+      <ul class="ftrust">
+        <li>Any Bitcoin wallet, Lightning or on-chain</li>
+        <li>Fixed prices</li>
+        <li>No sales calls</li>
+      </ul>
+      <div class="fend">
+        <span>© <span id="yr">2026</span> Altradits</span>
+        <a class="ftop" href="#top">Back to top <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </div>
+    </div>
   </div>
 </footer>
 
