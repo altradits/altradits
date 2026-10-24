@@ -497,6 +497,10 @@ footer .logo img{height:2.5rem;width:auto;display:block}
   .btn::after{display:none}
   .qr .line{display:none}
 }
+.ordername{margin-top:1rem;padding:.8rem 1rem;border:2px dashed var(--line);border-radius:.8rem;background:var(--paper)}
+.ordername p,.ordername-inner p{margin:.2rem 0}.ordername .on code,.ordername-inner .on code{font:700 1.05rem ui-monospace,Menlo,monospace;letter-spacing:.03em}
+.ordername.big{border-color:var(--btc);text-align:left;margin:1rem 0}
+.ordername .btn,.ordername-inner .btn{padding:.25rem .7rem;font-size:.85rem;margin-left:.4rem}
 </style>
 </head>
 <body>
@@ -840,6 +844,7 @@ footer .logo img{height:2.5rem;width:auto;display:block}
         <ul aria-labelledby="fMore">
           <li><a href="/products">Products</a></li>
           <li><a href="/donate">Donate to Bitcoin education</a></li>
+          <li><a href="/collect">Collect an order</a></li>
           <li><a href="/join">Join the team <span class="ftagx">Hiring</span></a></li>
           <li><a href="/hunt">Treasure hunt <span class="fsub">#AltraditsHunt</span></a></li>
           <li><a href="https://github.com/altradits" target="_blank" rel="noopener">Source code</a></li>
@@ -1169,11 +1174,12 @@ ${item.urgentOk ? `<fieldset class="urg" id="urg"><legend>When do you need it?</
         <p>Nothing is impossible: ${STANDBY_FREELANCERS}+ freelancers are on standby for urgent jobs. Pay for an urgent order and you'll get Stanley's direct number to flag it straight away.</p>
       </fieldset>` : ""}
     <div class="paybox"><h3>₿ Pay <span id="payAmt">${money(item.price)}</span> with any Bitcoin wallet</h3>
-      <details class="code" id="code"><summary>Have a hunt code?</summary><form id="codeForm" class="coderow"><input name="code" autocomplete="off" spellcheck="false" placeholder="HUNT-XXXXXX" aria-label="Hunt code"><button class="btn dark">Apply</button></form><p id="codeMsg" role="status"></p></details>
-      <div id="pay"><p style="color:var(--muted)">Creating your payment QR…</p></div></div>
+      <details class="code" id="code"><summary>Have a hunt or credit code?</summary><form id="codeForm" class="coderow"><input name="code" autocomplete="off" spellcheck="false" placeholder="HUNT-XXXXXX or CREDIT-XXXXXX" aria-label="Hunt or credit code"><button class="btn dark">Apply</button></form><p id="codeMsg" role="status"></p></details>
+      <div id="pay"><p style="color:var(--muted)">Creating your payment QR…</p></div>
+      <div class="ordername" id="orderName" hidden></div></div>
     <form class="details" id="details" novalidate>
 
-      <label>Email for your receipt and client portal<input type="email" name="email" autocomplete="email" placeholder="you@business.com"></label>
+      <label>Email for your receipt and client portal (optional: without it, keep your order name)<input type="email" name="email" autocomplete="email" placeholder="you@business.com"></label>
       <label>Your name<input type="text" name="name" autocomplete="name"></label>
       <label class="wide">What exactly do you need? (deadlines, preferences; any links are security-checked before we open them)<textarea name="task" placeholder="${item.kind === "package" ? "Your first priorities for the month" : "Describe the task"}"></textarea></label>
       <p class="saved wide" id="saved" role="status"></p>
@@ -1189,7 +1195,7 @@ ${item.urgentOk ? `<fieldset class="urg" id="urg"><legend>When do you need it?</
       const res = await fetch("/api/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ item: itemId, ref: REF }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Couldn't start the order");
-      order = { id: data.id, t: data.t };
+      order = { id: data.id, t: data.t, name: data.name };
       session.set("altra.orders", { ...orders, [itemId]: order });
     }
   } catch (err) {
@@ -1218,10 +1224,11 @@ ${item.urgentOk ? `<fieldset class="urg" id="urg"><legend>When do you need it?</
   $("#details").addEventListener("change", () => { clearTimeout(saveTimer); save(); });
   $("#urg")?.addEventListener("change", () => { clearTimeout(saveTimer); save(); });
 
+  if (order.name) { $("#orderName").innerHTML = orderNameBox(order.name).replace('class="ordername"', 'class="ordername-inner"'); $("#orderName").hidden = false; }
   const pay = () => { stopPay?.(); stopPay = mountPay($("#pay"), { id: order.id, t: order.t, claim: true, onPaid: () => paid(item, order, save) }); };
   // A one-time code from the treasure hunt: the price drops before you pay.
   try { const won = localStorage.getItem("altra.coupon"); if (won) { $("#codeForm [name=code]").value = won; $("#code").open = true; } } catch {}
-  if (order.coupon) { $("#codeForm [name=code]").value = order.coupon.code; $("#code").open = true; $("#payAmt").textContent = money(order.coupon.usd); $("#codeMsg").textContent = `✓ ${order.coupon.pct}% off applied`; }
+  if (order.coupon) { $("#codeForm [name=code]").value = order.coupon.code; $("#code").open = true; $("#payAmt").textContent = money(order.coupon.usd); $("#codeMsg").textContent = order.coupon.credit ? `✓ ${money(order.coupon.credit)} credit applied` : `✓ ${order.coupon.pct}% off applied`; }
   $("#codeForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const code = e.target.code.value.trim();
@@ -1231,8 +1238,8 @@ ${item.urgentOk ? `<fieldset class="urg" id="urg"><legend>When do you need it?</
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "That code didn't work.");
       $("#payAmt").textContent = money(d.usd);
-      $("#codeMsg").textContent = d.pct ? `✓ ${d.pct}% off applied. Your new QR is below.` : "";
-      order.coupon = d.pct ? { code: d.code, pct: d.pct, usd: d.usd } : null;
+      $("#codeMsg").textContent = d.credit ? `✓ ${money(d.credit)} credit applied${d.left > 0 ? ` (${money(d.left)} stays on your code)` : ""}. Your new QR is below.` : d.pct ? `✓ ${d.pct}% off applied. Your new QR is below.` : "";
+      order.coupon = d.credit ? { code: d.code, credit: d.credit, usd: d.usd } : d.pct ? { code: d.code, pct: d.pct, usd: d.usd } : null;
       session.set("altra.orders", { ...session.get("altra.orders"), [itemId]: order });
       pay();
     } catch (err) { $("#codeMsg").textContent = err.message; }
@@ -1240,6 +1247,9 @@ ${item.urgentOk ? `<fieldset class="urg" id="urg"><legend>When do you need it?</
   pay();
 }
 
+// The order name: a client who gives no email collects the work and the receipt with it.
+const orderNameBox = (name, big = false) => `<div class="ordername${big ? " big" : ""}"><p><b>Your order name</b></p><p class="on"><code>${esc(name)}</code> <button type="button" class="btn" data-copyname="${esc(name)}">Copy</button></p><p class="sm">No email needed: save this name. When your work is due, enter it at <a href="/collect">altradits.com/collect</a> to collect the work and your receipt.</p></div>`;
+document.addEventListener("click", async (e) => { const n = e.target.dataset?.copyname; if (!n) return; try { await navigator.clipboard.writeText(n); e.target.textContent = "Copied ✓"; } catch { e.target.textContent = "Select and copy it"; } });
 async function paid(item, order, save) {
   order.paid = true;
   if (order.coupon) try { localStorage.removeItem("altra.coupon"); } catch {}
@@ -1264,7 +1274,8 @@ async function showDone(item, order) {
       ${info.phone ? `<div class="urgent"><b>🚨 Urgent order ${esc(info.ref)}: tell Stanley now</b>
         <p>Your job is already at the front of the queue. Message or call so the standby team starts right away.</p>
         <div class="actions" style="justify-content:center"><a class="btn btc" href="https://wa.me/${esc(info.phone.replace(/\D/g, ""))}?text=${msg}" target="_blank" rel="noopener">WhatsApp ${esc(info.phone)}</a><a class="btn" href="tel:${esc(info.phone)}">Call</a></div></div>` : ""}
-      <p>${info.emailed ? "Your receipt and portal link are in your inbox." : "Save your portal link: it's how you send files, track the work and approve it."}</p>
+      ${!info.emailed && info.name ? orderNameBox(info.name, true) : ""}
+      <p>${info.emailed ? "Your receipt and portal link are in your inbox." : "Save your portal link or your order name: either one is how you send files, track the work, collect it and get your receipt."}</p>
       ${info.portal ? `<p style="margin-top:1rem"><a class="btn primary" href="${esc(info.portal)}">Open your client portal</a></p>` : ""}
     </div>`;
   if (urg) { $("legend", urg).textContent = "Need it faster? Change it here"; sheet.appendChild(urg); }

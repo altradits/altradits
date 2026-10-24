@@ -11,6 +11,7 @@ for (const k of ["ANTHROPIC_API_KEY", "RESEND_API_KEY", "SMTP_HOST", "EMAIL_TRAN
 process.env.SITE_URL = "https://altradits.test";
 
 const email = await import("../lib/email.js");
+const { orderable } = await import("../data/catalog.js");
 const stan = await import("../lib/stan.js");
 const { listIds, getMany } = await import("../lib/store.js");
 const all = async () => getMany("email", await listIds("emails", 200));
@@ -116,39 +117,53 @@ test("links in emails are embedded: worded links and buttons, never long raw add
   assert.match(html, />Unsubscribe<\/a>/);
 });
 
-test("payments: instant payment email, then Finance's QA-reconciled PDF receipt at once, then Finance's confirmation waits for Stanley", async () => {
+test("payments: one automatic email with the complete receipt attached; nothing waits for approval", async () => {
   const crm = await import("../lib/crm.js");
-  const pending = async () => (await email.pendingApprovals()).filter((e) => e.kind === "finance");
+  const before = (await email.pendingApprovals()).length;
   // A donation, paid over Lightning.
   const { lead, p } = await crm.createDonation({ usd: 20, name: "Amina", email: "amina@shop.co", message: "Teach more people!" });
   assert.equal(p.status, "accepted");
   assert.ok(p.donation);
-  p.lightning = { sats: 24000 };
+  p.lightning = { sats: 24000, rate: 83333 };
   p.payment = { method: "Bitcoin (Lightning)", reference: "abc123hash", sats: 24000 };
-  await crm.confirmPayment(lead, p);
-  const thanks = (await all()).find((e) => e.subject === "Thank you for your donation");
+  // Without the node's record, no receipt: the payment is held.
+  const probe = structuredClone(p);
+  await crm.confirmPayment(structuredClone(lead), probe);
+  assert.equal(probe.payment.held, true);
+  assert.equal(probe.receipt, undefined);
+  const node = (sats, reference) => ({ sats, reference, at: new Date().toISOString(), onchain: false });
+  await crm.confirmPayment(lead, p, "", { settlement: node(24000, "abc123hash") });
+  const mine = (await all()).filter((e) => e.to === "amina@shop.co" && e.files?.length);
+  assert.equal(mine.length, 1); // one email with the receipt, not two receipts
+  const [thanks] = mine;
+  assert.equal(thanks.subject, "Thank you for your donation");
   assert.equal(thanks.status, "logged"); // sent at once
   assert.equal(thanks.from, "Stan at Altradits <stan@altradits.com>");
-  assert.match(thanks.text, /\$20 donation to Bitcoin education.*\(24,000 sats\)/);
-  // The detailed receipt: sent automatically, PDF attached, from Finance.
-  const receipt = (await all()).find((e) => /^Receipt R-\d{4}-00001: Donation$/.test(e.subject));
-  assert.equal(receipt.status, "logged");
-  assert.equal(receipt.kind, "receipt");
-  assert.match(receipt.from, /<finance@altradits\.com>$/);
-  assert.deepEqual(receipt.files, [`altradits-receipt-${receipt.subject.match(/R-\d{4}-\d{5}/)[0]}.pdf`]);
-  assert.equal(receipt.cta, null);
-  assert.equal(receipt.qa.pass, true);
+  assert.equal(thanks.bcc, "altradits@gmail.com");
+  assert.match(thanks.text, /\$20 donation to Bitcoin education.*\(24,000 sats\)\. Your receipt R-\d{4}-00001 is attached\./);
+  assert.deepEqual(thanks.files, [`altradits-receipt-${p.receipt.no}.pdf`]);
+  assert.equal(p.receipt.qa, true);
+  assert.equal((await email.pendingApprovals()).length, before); // nothing for Stanley to approve
+  // The receipt has everything a receipt needs.
   const { receiptPdf } = await import("../lib/finance.js");
   const pdf = receiptPdf(lead, p, "R-2026-00001").toString("latin1");
   assert.ok(pdf.startsWith("%PDF"));
-  for (const s of ["Receipt R-2026-00001", "Donation to Bitcoin education", "24,000 sats", "Settled on the Lightning Network", "abc123hash"]) assert.ok(pdf.includes(s), s);
-  // Finance's personal confirmation waits for Stanley.
-  const [conf] = await pending();
-  assert.equal(conf.status, "awaiting approval");
-  assert.match(conf.from, /<finance@altradits\.com>$/);
-  assert.match(conf.text, /Donation to Bitcoin education: \$20\.00\nTotal: \$20\.00, received as 24,000 sats via Bitcoin \(Lightning\)/);
-  assert.match(conf.text, /Your receipt is R-\d{4}-00001/);
-  assert.ok(conf.qa.checks.every((c) => c.pass));
+  for (const s of ["Receipt R-2026-00001", "PAID IN FULL", "Issued by Altradits", "finance@altradits.com", `Order reference: ${p.id}`, "Amina", "amina@shop.co",
+    "Donation to Bitcoin education", "24,000 sats", "$20.00 at $83,333 per BTC", "Bitcoin Lightning Network", "abc123hash", "Settled on the Lightning Network",
+    "No goods or services were provided"]) assert.ok(pdf.includes(s), s);
+  // An order: same single email, items with quantity and price, and the portal button.
+  const o = await crm.createOrder(orderable("hourly"));
+  o.lead.email = "buyer@shop.co"; o.lead.name = "Kip";
+  o.p.lightning = { sats: 60000, rate: 83333 };
+  o.p.payment = { method: "Bitcoin (Lightning)", reference: "def456hash", sats: 60000 };
+  await crm.confirmPayment(o.lead, o.p, "", { settlement: node(60000, "def456hash") });
+  const paid = (await all()).filter((e) => e.to === "buyer@shop.co");
+  assert.equal(paid.length, 1);
+  assert.match(paid[0].text, /Your receipt R-\d{4}-00002 is attached/);
+  assert.ok(paid[0].cta.url.includes("/portal"));
+  const opdf = receiptPdf(o.lead, o.p, o.p.receipt.no).toString("latin1");
+  assert.ok(opdf.includes("Pay-as-you-go hours: 2 x $25.00 = $50.00"));
+  assert.ok(opdf.includes("fixed free for 14 days"));
   // Short payment: Stan's QA flags it for Stanley.
   const { reconcile } = await import("../lib/finance.js");
   const short = reconcile({ ...p, payment: { ...p.payment, sats: 1000 } });
@@ -187,25 +202,25 @@ test("start fresh: communications and test clients are cleared; payments and the
   const cleanup = await import("../lib/cleanup.js");
   await store.setJSON("member:m1", { id: "m1" }); await store.pushId("members", "m1");
   const paid = (await getMany("proposal", await store.listIds("proposals"))).filter((p) => p.status === "paid");
-  assert.equal(paid.length, 1); // the donation from the payments test
-  const payMail = (await all()).filter((e) => ["payment", "receipt", "finance"].includes(e.kind) || e.leadId === paid[0].leadId).map((e) => e.id);
-  assert.ok(payMail.length >= 3); // thank-you, receipt, Finance's confirmation
+  assert.equal(paid.length, 2); // the donation and the order from the payments test
+  const payLeads = new Set(paid.map((p) => p.leadId));
+  const payMail = (await all()).filter((e) => ["payment", "receipt", "finance"].includes(e.kind) || payLeads.has(e.leadId)).map((e) => e.id);
+  assert.ok(payMail.length >= 2); // each payment's email, with its receipt
   const seq = await store.getJSON("finance:seq");
   await assert.rejects(cleanup.clearGroups(["nothing"]), /Choose/);
   const r = await cleanup.clearGroups(["communications", "clients"]);
   assert.ok(r.archived > 5);
-  assert.ok(r.keptPayments >= payMail.length + 2);
+  assert.ok(r.kept >= payMail.length + 2);
   // Only the payment's records remain, in their lists.
-  assert.deepEqual((await store.listIds("proposals")), [paid[0].id]);
-  assert.deepEqual((await store.listIds("leads")), [paid[0].leadId]);
+  assert.deepEqual(new Set(await store.listIds("proposals")), new Set(paid.map((p) => p.id)));
+  assert.deepEqual(new Set(await store.listIds("leads")), payLeads);
   const waiting = (await all()).filter((e) => e.status === "awaiting approval").map((e) => e.id);
   assert.deepEqual(new Set(await store.listIds("emails")), new Set([...payMail, ...waiting])); // payments, and drafts still waiting for Stanley
-  assert.ok((await email.pendingApprovals()).some((e) => e.leadId === paid[0].leadId && e.kind === "finance")); // Finance's confirmation still waits
   assert.equal(await store.getJSON("finance:seq"), seq); // receipt numbers never restart
   assert.deepEqual(await store.listIds("members"), ["m1"]);
   const saved = JSON.parse(fs.readFileSync(path.join(store.dataDir(), "archive", r.file), "utf8"));
   assert.ok(Object.keys(saved.kv).some((k) => k.startsWith("email:")));
-  assert.ok(!Object.keys(saved.kv).some((k) => k === `proposal:${paid[0].id}`));
+  assert.ok(!paid.some((p) => saved.kv[`proposal:${p.id}`]));
 });
 
 test("delete for good keeps no copy; archives can be listed and deleted", async () => {
@@ -225,4 +240,254 @@ test("delete for good keeps no copy; archives can be listed and deleted", async 
   store.deleteArchive(a.name);
   assert.equal(store.listArchives().length, before - 1);
   assert.throws(() => store.deleteArchive(a.name), /already gone/);
+});
+
+test("PDFs keep underscores inside ids and file names; only emphasis marks are removed", async () => {
+  const { markdownToPdf } = await import("../lib/pdf.js");
+  const s = markdownToPdf("Order reference: R0hgf_nMSB0z, file get_paid.pdf, _emphasis_ and **bold**").toString("latin1");
+  for (const x of ["R0hgf_nMSB0z", "get_paid.pdf", "emphasis and bold"]) assert.ok(s.includes(x), x);
+  assert.ok(!s.includes("_emphasis_"));
+});
+
+test("node down: a payment confirmed by hand gets its sats and payment hash from the invoice, labelled with the wallet that holds it", async () => {
+  const crm = await import("../lib/crm.js");
+  const { bolt11PaymentHash } = await import("../lib/lightning.js");
+  // A real (1-sat, unpaid) Wallet of Satoshi invoice; its hash as decoded by LND.
+  const pr = "lnbc10n1p4d6gplpp53vyeujc0vhfx3x5s5guv22g3nfm74rhmpruta3fca4y8x5p8lazshp5ta737ug0ktfwaen9g9ymhynh2s55h6yaac5zpv764asxp4y79fwscqzzsxqyz5vqsp5tn5sjxqggnggrmev9mwq7z5xcq2mpzyd4jkx2sxktsh8wqd4t4ms9qxpqysgquxmqqpfuts8shm6qyj2r0c2dzmk2crx3c2yuwduer04dsda0rpcj8r4gxaymwfhc6mz7s6rgff5ta5nkz4krehkdpdnre5w6xwyapygq8hnjgf";
+  assert.equal(bolt11PaymentHash(pr), "8b099e4b0f65d2689a90a238c529119a77ea8efb08f8bec538ed48735027ff45");
+  assert.equal(bolt11PaymentHash("not an invoice"), null);
+  const o = await crm.createOrder(orderable("hourly"));
+  o.lead.email = "offline@shop.co";
+  o.p.lightning = { provider: "address", bolt11: pr, sats: 61000, rate: 82000 };
+  o.p.status = "paid_claimed";
+  o.p.payment = { method: "Bitcoin (Lightning)", reference: pr.slice(-24), claimedAt: new Date().toISOString() }; // what "I've paid" records
+  // "I've paid": the client gets a plain acknowledgement, no receipt.
+  await crm.acknowledgeClaim(o.lead, o.p);
+  const ack = (await all()).find((e) => e.to === "offline@shop.co");
+  assert.equal(ack.status, "logged");
+  assert.match(ack.text, /recorded your payment of 61,000 sats/);
+  assert.match(ack.text, /official receipt with every detail/);
+  assert.deepEqual(ack.files, []);
+  await crm.confirmPayment(o.lead, o.p, "", { approved: true }); // Stanley has seen it in the wallet: work starts
+  assert.equal(o.p.payment.sats, 61000);
+  assert.equal(o.p.payment.wallet, "Wallet of Satoshi");
+  assert.equal(o.p.payment.held, true);
+  assert.equal(o.p.payment.reference, bolt11PaymentHash(pr)); // the real payment hash, not the tail the client sent
+  assert.equal(o.p.receipt, undefined); // no receipt until the sats are on the node
+  assert.ok(o.p.order.taskId); // but the work has started
+  const kick = (await all()).find((e) => e.to === "offline@shop.co" && /we're starting/.test(e.subject));
+  assert.match(kick.text, /61,000 sats over Lightning/);
+  assert.match(kick.text, /official receipt, with every detail of this payment, follows/);
+  assert.deepEqual(kick.files, []);
+  await crm.saveProposal(o.p);
+  const { statement, statementCsv } = await import("../lib/statement.js");
+  assert.ok((await statement()).custodial.sats >= 61000);
+  assert.match(await statementCsv(), /,61000,lightning,Wallet of Satoshi,/);
+  // Moving the sats needs the node: refused while it's down.
+  const fin = await import("../lib/finance.js");
+  assert.ok((await fin.heldPayments()).some((x) => x.id === o.p.id));
+  await assert.rejects(fin.moveToNode(o.p), /node isn't connected/);
+  // Once the node shows the move settled: the official receipt goes out.
+  o.p.sweep = { paymentHash: "ab".repeat(32), provider: "lnd", sats: 61000 };
+  await assert.rejects(fin.confirmOnNode(o.lead, o.p), /needs the node's record/); // no record, no receipt
+  const r = await fin.confirmOnNode(o.lead, o.p, { sats: 61000, reference: "ab".repeat(32), at: new Date().toISOString() });
+  assert.equal(o.p.payment.held, false);
+  assert.equal(o.p.payment.sweptFrom, "Wallet of Satoshi");
+  const official = (await all()).find((e) => e.to === "offline@shop.co" && /^Your official receipt R-/.test(e.subject));
+  assert.deepEqual(official.files, [`altradits-receipt-${r.no}.pdf`]);
+  // To the client who paid; Stanley, who moved the sats, only gets the blind copy.
+  const receipts = (await all()).filter((e) => /^Your official receipt R-/.test(e.subject));
+  assert.deepEqual(receipts.map((e) => e.to), ["offline@shop.co"]);
+  assert.equal(official.bcc, "altradits@gmail.com");
+  assert.equal(o.p.payment.receiptOwed, false);
+  // A client with no email yet: the receipt waits, and goes the moment they give one; never to an Altradits address.
+  const q = await crm.createOrder(orderable("hourly"));
+  q.p.lightning = { provider: "address", bolt11: pr, sats: 5000 };
+  q.p.payment = { method: "Bitcoin (Lightning)", reference: pr.slice(-24) };
+  await crm.confirmPayment(q.lead, q.p, "", { approved: true });
+  q.p.sweep = { paymentHash: "cd".repeat(32), provider: "lnd" };
+  assert.equal(await fin.confirmOnNode(q.lead, q.p, { sats: 5000, reference: "cd".repeat(32), at: new Date().toISOString() }), null);
+  assert.equal(q.p.payment.receiptOwed, true);
+  q.lead.email = "stan@altradits.com";
+  assert.equal(await fin.sendOfficialReceipt(q.lead, q.p), null); // never to us
+  q.lead.email = "late@shop.co";
+  const late = await fin.sendOfficialReceipt(q.lead, q.p);
+  assert.ok(late.no);
+  assert.ok((await all()).some((e) => e.to === "late@shop.co" && e.subject.startsWith(`Your official receipt ${late.no}`)));
+  const pdf = fin.receiptPdf(o.lead, o.p, r.no).toString("latin1");
+  assert.ok(pdf.includes("Amount received: 61,000 sats"));
+  assert.ok(pdf.includes("Received through our backup Lightning address while our node was offline") && pdf.includes("Altradits node on")); // wraps across two lines
+  assert.ok(pdf.includes("Altradits node payment hash:") && pdf.includes("ab".repeat(32))); // the hash may wrap to its own line
+  assert.match(await statementCsv(), /,61000,lightning,node,/);
+  assert.ok(!(await fin.heldPayments()).some((x) => x.id === o.p.id));
+});
+
+test("WhatsApp alerts to Stanley: off without a CallMeBot key; with one, his number and the text go to CallMeBot only", async () => {
+  const { whatsappOwner } = await import("../lib/notify.js");
+  delete process.env.CALLMEBOT_APIKEY;
+  assert.equal(await whatsappOwner("hi"), false);
+  const real = globalThis.fetch, calls = [];
+  globalThis.fetch = async (u) => { calls.push(String(u)); return { ok: true }; };
+  try {
+    process.env.CALLMEBOT_APIKEY = "k123";
+    assert.equal(await whatsappOwner("Altradits URGENT: check the Mac"), true);
+    const u = new URL(calls[0]);
+    assert.equal(u.host, "api.callmebot.com");
+    assert.equal(u.searchParams.get("apikey"), "k123");
+    assert.equal(u.searchParams.get("text"), "Altradits URGENT: check the Mac");
+  } finally { globalThis.fetch = real; delete process.env.CALLMEBOT_APIKEY; }
+});
+
+test("several payments waiting for the node: each order's invoice sends its own client's receipt, with an apology; no mix-ups", async () => {
+  const crm = await import("../lib/crm.js");
+  const fin = await import("../lib/finance.js");
+  const held = async (email, name, sats) => {
+    const o = await crm.createOrder(orderable("hourly"));
+    Object.assign(o.lead, { email, name }); await crm.saveLead(o.lead);
+    o.p.client = { name, email };
+    o.p.lightning = { provider: "address", bolt11: "lnbc1x", sats };
+    o.p.payment = { method: "Bitcoin (Lightning)", reference: "x" };
+    await crm.confirmPayment(o.lead, o.p, "", { approved: true });
+    return o;
+  };
+  const a = await held("ann@shop.co", "Ann Wanjiku", 61000), b = await held("ben@shop.co", "Ben Tadesse", 61000); // same amount on purpose
+  assert.notEqual(fin.orderCode(a.p), fin.orderCode(b.p));
+  // Two admins each made an invoice for Ann's order at the same moment; one for Ben's.
+  a.p.sweeps = [{ paymentHash: "a1".repeat(32), provider: "lnd", expiresAt: new Date(Date.now() + 864e5).toISOString() }, { paymentHash: "a2".repeat(32), provider: "lnd", expiresAt: new Date(Date.now() + 864e5).toISOString() }];
+  b.p.sweeps = [{ paymentHash: "b1".repeat(32), provider: "lnd", expiresAt: new Date(Date.now() + 864e5).toISOString() }];
+  await crm.saveProposal(a.p); await crm.saveProposal(b.p);
+  const v = await fin.heldView();
+  assert.ok(v.held.some((x) => x.code === fin.orderCode(a.p) && x.client === "Ann Wanjiku"));
+  // Ben's invoice settles first (paid by any admin): only Ben gets a receipt.
+  await fin.confirmOnNode(b.lead, b.p, { sats: 61000, reference: "b1".repeat(32), at: new Date().toISOString() });
+  let receipts = (await all()).filter((e) => /^Your official receipt R-/.test(e.subject) && ["ann@shop.co", "ben@shop.co"].includes(e.to));
+  assert.deepEqual(receipts.map((e) => e.to), ["ben@shop.co"]);
+  assert.match(receipts[0].text, /sorry for the short delay/);
+  assert.equal(a.p.payment.held, true); // Ann's still waits
+  // The first (older) of Ann's two invoices is the one paid: it still counts.
+  await fin.confirmOnNode(a.lead, a.p, { sats: 61000, reference: "a1".repeat(32), at: new Date().toISOString() });
+  assert.equal(a.p.payment.sweepHash, "a1".repeat(32));
+  assert.deepEqual(a.p.payment.otherSweeps, ["a2".repeat(32)]); // watched in case it's paid too
+  receipts = (await all()).filter((e) => /^Your official receipt R-/.test(e.subject) && ["ann@shop.co", "ben@shop.co"].includes(e.to));
+  assert.deepEqual(receipts.map((e) => e.to).sort(), ["ann@shop.co", "ben@shop.co"]);
+  const [ra, rb] = [a, b].map((o) => receipts.find((e) => e.to === o.lead.email));
+  assert.ok(ra.subject.includes(a.p.receipt.no) && rb.subject.includes(b.p.receipt.no) && a.p.receipt.no !== b.p.receipt.no);
+  const after = await fin.heldView();
+  assert.ok(!after.held.some((x) => [a.p.id, b.p.id].includes(x.id)));
+  assert.ok(after.moved.some((m) => m.code === fin.orderCode(a.p) && m.to === "ann@shop.co"));
+});
+
+test("short payment: part-payment receipt and a balance QR; when the balance arrives, the full receipt. Extra: a credit code that works at checkout", async () => {
+  const crm = await import("../lib/crm.js");
+  const fin = await import("../lib/finance.js");
+  let n = 0;
+  fin.setInvoiceMaker(async ({ sats, nodeOnly }) => { assert.equal(nodeOnly, true); n++; return { bolt11: `lnbc${sats}n1test${n}`, paymentHash: String(n).repeat(64).slice(0, 64), provider: "lnd", sats, expiresAt: new Date(Date.now() + 7 * 864e5).toISOString() }; });
+  try {
+    const held = async (email, sats) => {
+      const o = await crm.createOrder(orderable("hourly"));
+      Object.assign(o.lead, { email, name: "Cy" }); await crm.saveLead(o.lead);
+      o.p.lightning = { provider: "address", bolt11: "lnbc1x", sats, rate: 80000 };
+      o.p.payment = { method: "Bitcoin (Lightning)", reference: "x" };
+      await crm.confirmPayment(o.lead, o.p, "", { approved: true });
+      return o;
+    };
+    // Short: the client sent 40,000 of 62,500; the admin moves exactly 40,000.
+    const s = await held("short@shop.co", 62500);
+    const sweep = await fin.moveToNode(s.p, 40000);
+    assert.equal(sweep.sats, 40000);
+    s.p = await crm.getProposal(s.p.id);
+    const part = await fin.confirmOnNode(s.lead, s.p, { sats: 40000, reference: sweep.paymentHash, at: new Date().toISOString() });
+    assert.equal(part.balance, 22500);
+    assert.equal(s.p.payment.held, true);
+    assert.equal(s.p.receipt, undefined); // no full receipt yet
+    const ask = (await all()).find((e) => e.to === "short@shop.co" && /^Part payment received/.test(e.subject));
+    assert.match(ask.text, /received 40,000 sats/);
+    assert.match(ask.text, /22,500 sats remain/);
+    assert.match(ask.cta.url, /^lightning:lnbc22500n1test/);
+    assert.deepEqual(ask.files.map((f) => f.replace(/R-\d{4}-\d{5}/, "R")), ["altradits-receipt-R-part-payment.pdf", `altradits-balance-${fin.orderCode(s.p)}.png`]);
+    const partPdf = fin.receiptPdf(s.lead, s.p, part.part, { part: true }).toString("latin1");
+    assert.ok(partPdf.includes("PART PAYMENT. Balance due: 22,500 sats"));
+    // The balance arrives on the node: the full receipt, listing both payments.
+    const bal = s.p.balances.at(-1);
+    await fin.confirmOnNode(s.lead, s.p, { sats: 22500, reference: bal.paymentHash, at: new Date().toISOString() });
+    assert.equal(s.p.payment.held, false);
+    assert.equal(s.p.payment.sats, 62500);
+    const full = (await all()).find((e) => e.to === "short@shop.co" && /^Your official receipt/.test(e.subject));
+    assert.match(full.text, /62,500 sats \(in 2 payments\)/);
+    const fullPdf = fin.receiptPdf(s.lead, s.p, s.p.receipt.no).toString("latin1");
+    assert.ok(fullPdf.includes("PAID IN FULL") && fullPdf.includes("in 2 payments"));
+    // The same node payment is never counted twice.
+    assert.equal(await fin.confirmOnNode(s.lead, s.p, { sats: 22500, reference: bal.paymentHash, at: new Date().toISOString() }), null);
+    // Extra: 70,000 sent for 62,500: a credit code for 7,500 sats (≈ $6 at 80,000 $/BTC).
+    const x = await held("extra@shop.co", 62500);
+    const sw = await fin.moveToNode(x.p, 70000);
+    x.p = await crm.getProposal(x.p.id);
+    await fin.confirmOnNode(x.lead, x.p, { sats: 70000, reference: sw.paymentHash, at: new Date().toISOString() });
+    assert.equal(x.p.payment.credit.sats, 7500);
+    assert.equal(x.p.payment.credit.usd, 6);
+    const got = (await all()).find((e) => e.to === "extra@shop.co" && /^Your official receipt/.test(e.subject));
+    assert.match(got.text, new RegExp(`use the code ${x.p.payment.credit.code} at checkout to take \\$6\\.00 off`));
+    // At checkout: $6 off, and the code is spent only by what the order used.
+    const order = await import("../api/order.js");
+    const next = await crm.createOrder(orderable("q-try"));
+    const r = await (await order.POST(new Request("http://x/api/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: next.p.id, t: next.p.token, coupon: x.p.payment.credit.code }) }))).json();
+    const price = orderable("q-try").price;
+    assert.equal(r.credit, Math.min(6, price - 1)); // always leaves at least $1 to pay
+    assert.equal(r.usd, Math.round((price - r.credit) * 100) / 100);
+  } finally { fin.setInvoiceMaker(null); }
+});
+
+test("a credit code is used up gradually: what an order doesn't use stays on it", async () => {
+  const hunt = await import("../lib/hunt.js");
+  const c = await hunt.createCredit({ sats: 12500, usd: 10 });
+  assert.match(c.code, /^CREDIT-[A-Z2-9]{6}$/);
+  let left = await hunt.useCoupon(c.code, "p1", 4);
+  assert.equal(left.usd, 6);
+  assert.equal(left.status, "active");
+  left = await hunt.useCoupon(c.code, "p2", 6);
+  assert.equal(left.status, "used");
+  await assert.rejects(hunt.reserveCoupon(c.code, "p3"), /already been used/);
+});
+
+test("anonymous: an order name collects the order, its receipt and any balance; agents are told how to deliver; wrong names get nothing", async () => {
+  const crm = await import("../lib/crm.js");
+  const pickup = await import("../lib/pickup.js");
+  const collect = await import("../api/collect.js");
+  const ask = async (body, ip = "9.9.9.9") => collect.POST(new Request("http://x/api/collect", { method: "POST", headers: { "Content-Type": "application/json", "x-forwarded-for": ip }, body: JSON.stringify(body) }));
+  // Anonymous donation: no name or email kept, a donation name returned.
+  const donate = await import("../api/donate.js");
+  const d = await (await donate.POST(new Request("http://x/api/donate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ usd: 5, anonymous: true, name: "Should Vanish", email: "gone@x.co" }) }))).json();
+  assert.match(d.name, /^[A-Z]+-[A-Z]+-[A-Z]+-\d{4}$/);
+  const dp = await crm.getProposal(d.id), dl = await crm.getLead(dp.leadId);
+  assert.equal(dl.email, ""); assert.equal(dl.name, ""); assert.equal(dp.donation.anonymous, true);
+  // Before it's paid: found, but no receipt.
+  let r = await (await ask({ name: d.name.toLowerCase() })).json(); // any case works
+  assert.equal(r.status, "not paid yet"); assert.equal(r.receipt, false);
+  await crm.confirmPayment(dl, dp, "", { settlement: { sats: 6000, reference: "anonhash", at: new Date().toISOString() } });
+  r = await (await ask({ name: d.name })).json();
+  assert.equal(r.status, "paid"); assert.equal(r.receipt, true); assert.equal(r.portal, null);
+  const pdf = await ask({ name: d.name, receipt: true });
+  assert.equal(pdf.headers.get("content-type"), "application/pdf");
+  assert.ok(Buffer.from(await pdf.arrayBuffer()).toString("latin1").includes("PAID IN FULL"));
+  // Anonymous order: the order name reaches the agents' brief with delivery instructions.
+  const o = await crm.createOrder(orderable("hourly"));
+  assert.ok(o.lead.pickup);
+  const workers = await import("../lib/workers.js");
+  assert.equal(typeof workers.processTask, "function");
+  const src = (await import("node:fs")).readFileSync(new URL("../lib/workers.js", import.meta.url), "utf8");
+  assert.match(src, /ANONYMOUS CLIENT: known only by the order name/);
+  // Held payment: no receipt on the collection page until the node records it.
+  o.p.lightning = { provider: "address", bolt11: "lnbc1x", sats: 62500 };
+  o.p.payment = { method: "Bitcoin (Lightning)", reference: "x" };
+  await crm.confirmPayment(o.lead, o.p, "", { approved: true });
+  await crm.saveProposal(o.p);
+  r = await (await ask({ name: o.lead.pickup })).json();
+  assert.equal(r.status, "being confirmed"); assert.equal(r.receipt, false); assert.ok(r.portal);
+  assert.equal((await ask({ name: o.lead.pickup, receipt: true })).status, 409);
+  // Wrong or malformed names: nothing, and guessing is rate-limited.
+  assert.equal((await ask({ name: "AMBER-FALCON-RIVER-0000" }, "7.7.7.7")).status, 404);
+  assert.equal(await pickup.leadIdForPickup("not a name"), null);
+  let last;
+  for (let i = 0; i < 13; i++) last = await ask({ name: "AMBER-FALCON-RIVER-0001" }, "6.6.6.6");
+  assert.equal(last.status, 429);
 });

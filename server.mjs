@@ -25,7 +25,7 @@ if (!PROD) {
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|portal\.html|team\.html|join\.html|cv\.html|hunt\.html|templates\.html|donate\.html|va\.html|bitcoin\.html|products\.html|robots\.txt|data\/(?:catalog|playbooks|community)\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|portal\.html|team\.html|join\.html|cv\.html|hunt\.html|templates\.html|donate\.html|va\.html|bitcoin\.html|products\.html|collect\.html|robots\.txt|data\/(?:catalog|playbooks|community)\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
 const SECURITY = { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "SAMEORIGIN" };
 
 function publicUrl(req) {
@@ -65,7 +65,7 @@ const server = http.createServer(async (req, res) => {
     if (old && req.method === "GET") { res.writeHead(301, { Location: `/${old[1] === "templates" ? "products" : old[1]}${url.search}` }).end(); return; }
     // The free kits now live under Products.
     if (/^\/templates\/?$/.test(url.pathname) && req.method === "GET") { res.writeHead(301, { Location: `/products${url.search}` }).end(); return; }
-    const page = url.pathname.match(/^\/(hunt|cv|join|team|portal|proposal|admin|donate|va|bitcoin|products)\/?$/);
+    const page = url.pathname.match(/^\/(hunt|cv|join|team|portal|proposal|admin|donate|va|bitcoin|products|collect)\/?$/);
     const { idForSlug } = await import("./data/catalog.js");
     // /<job> opens that order on the VA page; /r/<ref> and /h/<code> land on the homepage.
     const order = idForSlug(url.pathname.slice(1).replace(/\/$/, ""));
@@ -115,6 +115,7 @@ setInterval(() => {
   if (!process.env.LND_REST_URL || Date.now() - channelsAt < 3600e3) return;
   channelsAt = Date.now();
   import("./lib/channels.js").then((c) => c.watchChannels()).catch((e) => console.error("channels", e.message));
+  import("./lib/finance.js").then((f) => f.checkHeld()).then((r) => r.confirmed && console.log("moved to node", r)).catch((e) => console.error("held", e.message));
 }, 10 * 60 * 1000).unref();
 
 // The marketing team: plans the day's posts and publishes each at its slot.

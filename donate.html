@@ -40,6 +40,9 @@ textarea{min-height:4.5rem;resize:vertical}
 .thanks h2{font:800 1.6rem 'Bricolage Grotesque',sans-serif;margin:.2rem 0}
 .note{color:var(--muted);font-size:.9rem;margin:1.2rem 0 0}
 @media (max-width:420px){.amounts{grid-template-columns:repeat(2,1fr)}.row2{grid-template-columns:1fr}}
+.anon{display:flex;gap:.5rem;align-items:flex-start;font-weight:400;margin:.9rem 0 .2rem}.anon input{width:auto;margin-top:.3rem}
+.dname{margin-top:1rem;padding:.8rem 1rem;border:2px dashed var(--line);border-radius:.8rem;text-align:left}
+.dname code{font:700 1.05rem ui-monospace,Menlo,monospace}.dname p{margin:.2rem 0}.dname button{font:600 .85rem Figtree,sans-serif;padding:.25rem .7rem;border:2px solid var(--ink);border-radius:.5rem;background:#fff;cursor:pointer;margin-left:.4rem}
 .topnav{display:flex;gap:1.1rem}
 .topnav a{font-weight:600;text-decoration:none;color:var(--muted)}
 .topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
@@ -56,7 +59,8 @@ textarea{min-height:4.5rem;resize:vertical}
     <div class="amounts" role="group" aria-label="Amount in US dollars" id="amounts"></div>
     <label for="custom">Or another amount (USD)</label>
     <input id="custom" type="number" min="1" step="1" inputmode="decimal" placeholder="e.g. 35">
-    <div class="row2">
+    <label class="anon"><input type="checkbox" id="anon"> <span><b>Give anonymously.</b> No name or email is kept. You get a donation name instead, to collect your receipt.</span></label>
+    <div class="row2" id="who">
       <div><label for="name">Name (optional)</label><input id="name" autocomplete="name"></div>
       <div><label for="email">Email for your receipt (optional)</label><input id="email" type="email" autocomplete="email"></div>
     </div>
@@ -66,10 +70,10 @@ textarea{min-height:4.5rem;resize:vertical}
     <p class="msg" id="msg" role="status"></p>
   </div>
 
-  <div class="card" id="payCard" hidden><div id="pay"></div></div>
-  <div class="card thanks" id="thanks" hidden><h2>Thank you ⚡</h2><p>Your donation has arrived. It goes to Bitcoin education in our community.</p></div>
+  <div class="card" id="payCard" hidden><div id="pay"></div><div class="dname" id="dname" hidden></div></div>
+  <div class="card thanks" id="thanks" hidden><h2>Thank you ⚡</h2><p>Your donation has arrived. It goes to Bitcoin education in our community.</p><div class="dname" id="dname2" hidden></div></div>
 
-  <p class="note">Pay with any Bitcoin wallet: Lightning settles in seconds, on-chain once confirmed. Altradits adds no fee. With an email, Finance sends you a receipt.</p>
+  <p class="note">Pay with any Bitcoin wallet: Lightning settles in seconds, on-chain once confirmed. Altradits adds no fee. With an email, your receipt arrives by email; without one, collect it with your donation name.</p>
 </div>
 <script type="module">
 import { mountPay } from "/assets/pay-widget.js";
@@ -85,16 +89,21 @@ $("#amounts").addEventListener("click", (e) => {
   amount = Number(a); $("#custom").value = "";
   document.querySelectorAll("#amounts button").forEach((b) => b.setAttribute("aria-pressed", b === e.target));
 });
+$("#anon").addEventListener("change", (e) => { $("#who").hidden = e.target.checked; if (e.target.checked) { $("#name").value = ""; $("#email").value = ""; } });
+const nameBox = (n) => `<p><b>Your donation name</b></p><p><code>${n.replace(/[^A-Z0-9-]/g, "")}</code><button type="button" data-copy="${n.replace(/[^A-Z0-9-]/g, "")}">Copy</button></p><p class="note" style="margin:.3rem 0 0">Save it: enter it at <a href="/collect">altradits.com/collect</a> to download your receipt once the payment is confirmed.</p>`;
+document.addEventListener("click", async (e) => { const n = e.target.dataset?.copy; if (!n) return; try { await navigator.clipboard.writeText(n); e.target.textContent = "Copied ✓"; } catch { e.target.textContent = "Select and copy it"; } });
 $("#custom").addEventListener("input", () => { amount = Number($("#custom").value) || null; document.querySelectorAll("#amounts button").forEach((b) => b.setAttribute("aria-pressed", "false")); });
 $("#go").addEventListener("click", async () => {
   const msg = $("#msg");
   if (!(amount >= info.min && amount <= info.max)) { msg.className = "msg err"; msg.textContent = `Choose an amount between $${info.min} and $${info.max}.`; return; }
   msg.className = "msg"; msg.textContent = "Creating your payment QR…"; $("#go").disabled = true;
   try {
-    const r = await fetch("/api/donate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ usd: amount, name: $("#name").value, email: $("#email").value, message: $("#message").value }) });
+    const r = await fetch("/api/donate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ usd: amount, anonymous: $("#anon").checked, name: $("#name").value, email: $("#email").value, message: $("#message").value }) });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || "Something went wrong.");
     $("#give").hidden = true; $("#payCard").hidden = false;
+    const showName = !$("#email").value.trim() && d.name;
+    if (showName) for (const id of ["#dname", "#dname2"]) { $(id).innerHTML = nameBox(d.name); $(id).hidden = false; }
     mountPay($("#pay"), { id: d.id, t: d.t, claim: true, onPaid: () => { $("#payCard").hidden = true; $("#thanks").hidden = false; } });
   } catch (err) { msg.className = "msg err"; msg.textContent = err.message; $("#go").disabled = false; }
 });

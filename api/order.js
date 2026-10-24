@@ -12,7 +12,7 @@ import { emailOwner } from "../lib/email.js";
 import { getTask, saveTask, ensurePortal } from "../lib/ops.js";
 import { orderable, URGENCY } from "../data/catalog.js";
 import { OWNER_PHONE } from "../lib/contact.js";
-import { reserveCoupon, releaseCoupon } from "../lib/hunt.js";
+import { reserveCoupon, releaseCoupon, MIN_TO_PAY } from "../lib/hunt.js";
 
 const isUrgent = (o) => o.urgentOk && ["hours", "minutes"].includes(o.urgency);
 const urgencyNote = (o) => URGENCY.find((u) => u.id === o.urgency)?.note || "";
@@ -29,8 +29,8 @@ export async function POST(request) {
   const item = orderable(clean(body.item, 40));
   if (!item) return json({ error: "Unknown item." }, 400);
   if ((await hit(`rl:order:${clientIp(request)}`, 3600)) > 20) return json({ error: "Too many orders from this connection. Try again in an hour." }, 429);
-  const { p } = await createOrder(item, { ref: clean(body.ref, 12).toLowerCase() });
-  return json({ id: p.id, t: p.token, item: { id: item.id, name: item.name, usd: p.totals.dueNow } });
+  const { lead, p } = await createOrder(item, { ref: clean(body.ref, 12).toLowerCase() });
+  return json({ id: p.id, t: p.token, name: lead.pickup, item: { id: item.id, name: item.name, usd: p.totals.dueNow } });
 }
 
 // One code per order; the price drops before the invoice is made, and the code
@@ -45,6 +45,15 @@ async function applyCoupon(body) {
     if (p.coupon && p.coupon.code !== code) await releaseCoupon(p.coupon.code, p.id);
     if (!code) { p.coupon = null; p.totals.dueNow = full; await saveProposal(p); return json({ usd: full, pct: 0 }); }
     const c = await reserveCoupon(code, p.id);
+    if (c.kind === "credit") {
+      // Credit from an earlier overpayment: off the price, leaving at least MIN_TO_PAY to pay.
+      const credit = Math.round(Math.min(c.usd, full - MIN_TO_PAY) * 100) / 100;
+      if (credit <= 0) { await releaseCoupon(c.code, p.id); return json({ error: "This order is too small to use that credit. Keep it for a bigger one." }, 400); }
+      p.coupon = { code: c.code, credit };
+      p.totals.dueNow = Math.round((full - credit) * 100) / 100;
+      await saveProposal(p);
+      return json({ usd: p.totals.dueNow, credit, code: c.code, left: Math.round((c.usd - credit) * 100) / 100 });
+    }
     p.coupon = { code: c.code, pct: c.pct };
     p.totals.dueNow = Math.round(full * (100 - c.pct)) / 100;
     await saveProposal(p);
@@ -73,8 +82,19 @@ async function update(body) {
   logEvent(lead, "Order details updated.");
   await saveLead(lead);
 
+  // Paid but not yet confirmable (node down): acknowledge once they give an address; alert on urgency.
+  if (p.status === "paid_claimed") {
+    const { acknowledgeClaim } = await import("../lib/crm.js");
+    if (email && !hadEmail) { await acknowledgeClaim(lead, p); await saveProposal(p); }
+    if (isUrgent(p.order) && !wasUrgent) {
+      const { whatsappOwner } = await import("../lib/notify.js");
+      await emailOwner(`🚨 URGENT, payment to confirm: ${p.order.name}`, `${lead.name || lead.email || "A client"} paid for "${p.order.name}" while the node was down and now needs it urgently: ${urgencyNote(p.order)}.\n\nCheck the backup wallet and the Mac, then approve the payment check in Approvals to start the work.`, null, lead.id);
+      await whatsappOwner(`Altradits URGENT: ${p.order.name} was paid while the node was down and is now marked urgent. Check the Mac and the admin Approvals.`);
+    }
+  }
   if (p.status === "paid") {
-    if (email && !hadEmail) await sendKickoff(lead, p);
+    if (email && !hadEmail && p.payment?.receiptOwed) { const { sendOfficialReceipt } = await import("../lib/finance.js"); await sendOfficialReceipt(lead, p); } // the node recorded it before they gave an address
+    else if (email && !hadEmail) { await sendKickoff(lead, p); await saveProposal(p); } // first address: their payment email and receipt
     if (isUrgent(p.order) && !wasUrgent) {
       const t = p.order.taskId && (await getTask(p.order.taskId));
       if (t) { t.urgency = p.order.urgency; t.history.push({ at: new Date().toISOString(), by: "client", text: `Marked urgent: ${urgencyNote(p.order)}` }); await saveTask(t); }
@@ -100,6 +120,6 @@ export async function GET(request) {
   if (p.status !== "paid") return json({ status: p.status });
   const lead = await getLead(p.leadId);
   const urgent = isUrgent(p.order);
-  return json({ status: "paid", item: p.order.name, delivery: urgent ? urgencyNote(p.order) : p.timeline, portal: lead ? ensurePortal(lead) : null, emailed: Boolean(lead?.email),
+  return json({ status: "paid", item: p.order.name, delivery: urgent ? urgencyNote(p.order) : p.timeline, portal: lead ? ensurePortal(lead) : null, emailed: Boolean(lead?.email), name: lead?.pickup || null,
     ...(urgent ? { phone: `+${OWNER_PHONE}`, ref: p.id.slice(0, 6).toUpperCase() } : {}) });
 }

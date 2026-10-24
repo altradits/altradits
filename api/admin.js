@@ -56,6 +56,14 @@ export async function GET(request) {
   if (u.searchParams.get("view") === "marketing") return json(await marketingView());
 
   // Department inboxes (read-only IMAP); passwords stay in the environment.
+  // Payments held in the backup wallet, waiting to move to the node.
+  if (u.searchParams.get("view") === "held") {
+    const { heldView, checkHeld } = await import("../lib/finance.js");
+    await checkHeld();
+    const { qrSvg } = await import("../lib/lightning.js");
+    const v = await heldView();
+    return json({ ...v, held: await Promise.all(v.held.map(async (x) => ({ ...x, sweep: x.sweep ? { bolt11: x.sweep.bolt11, qr: await qrSvg(`lightning:${x.sweep.bolt11}`), expiresAt: x.sweep.expiresAt } : null }))) });
+  }
   if (u.searchParams.get("view") === "statement") {
     const { statement, statementCsv } = await import("../lib/statement.js");
     if (u.searchParams.get("format") === "csv") return new Response(await statementCsv(), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="altradits-statement-${new Date().toISOString().slice(0, 10)}.csv"` } });
@@ -268,6 +276,12 @@ export async function POST(request) {
   if (body.action === "ln_lesson") {
     const { addLesson } = await import("../lib/channels.js");
     try { return json({ lesson: await addLesson(clean(body.text, 600)) }); } catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "move_to_node") {
+    const { moveToNode } = await import("../lib/finance.js");
+    const p = await getProposal(clean(body.id, 30));
+    if (!p) return json({ error: "Payment not found." }, 404);
+    try { const s = await moveToNode(p, body.sats); return json({ bolt11: s.bolt11, sats: s.sats }); } catch (err) { return json({ error: /connected|LND|ECONN|timed out/i.test(err.message) ? "The node isn't reachable yet. Start it on the Mac, then try again." : err.message }, 400); }
   }
   if (body.action === "archives") { const { listArchives } = await import("../lib/store.js"); return json({ archives: listArchives() }); }
   if (body.action === "archive_delete") {

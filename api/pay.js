@@ -6,7 +6,7 @@ import { json, readBody, clean, clientIp, safeEqual } from "../lib/http.js";
 import { hit } from "../lib/store.js";
 import { getProposal, saveProposal, getLead, logEvent, saveLead, confirmPayment } from "../lib/crm.js";
 import { emailOwner } from "../lib/email.js";
-import { createInvoice, invoicePaid, qrSvg, lightningMode, newOnchainAddress, onchainFeeRates, addressReceived } from "../lib/lightning.js";
+import { createInvoice, invoicePaid, qrSvg, lightningMode, newOnchainAddress, onchainFeeRates, addressReceived, nodeSettlement } from "../lib/lightning.js";
 import { PAYMENTS } from "../data/catalog.js";
 import { encodeLnurl } from "../lib/lnurl.js";
 import { siteUrl } from "../lib/http.js";
@@ -117,21 +117,24 @@ export async function GET(request) {
       else if (got.confirmed + got.unconfirmed > 0) onchainSeen = "partial";
     } catch (err) { console.error("onchain check", err.message); }
   }
+  // A receipt needs the node's own record; a payment seen only elsewhere (the
+  // backup address, a block explorer while the node is offline) is held.
+  const settlement = paid ? await nodeSettlement({ invoices: candidates, address: settled?.onchain ? p.onchain.address : null, need: Math.floor((p.onchain?.sats || 0) * 0.99) }).catch(() => null) : null;
   if (paid) {
     const latest = await getProposal(p.id); // another check may have just confirmed it
     if (latest?.status === "paid") return json({ status: "paid" });
     const lead = await getLead(p.leadId);
     p.payment = { method: settled.onchain ? "Bitcoin (on-chain)" : "Bitcoin (Lightning)", reference: settled.paymentHash || settled.bolt11.slice(-24), claimedAt: new Date().toISOString(), sats: settled.sats };
     if (lead) {
-      await confirmPayment(lead, p);
+      await confirmPayment(lead, p, "", { settlement });
       if (p.donation) {
-        await emailOwner(`Donation ⚡ ${settled.sats.toLocaleString("en-US")} sats ($${p.totals.dueNow})`, `${lead.name || lead.email || "Someone"} donated $${p.totals.dueNow} (${settled.sats} sats) ${settled.onchain ? "on-chain" : "over Lightning"} to Bitcoin education.${p.donation.message ? `\n\nTheir message: ${p.donation.message}` : ""}\n\nThey've been thanked and sent their PDF receipt automatically; Finance's confirmation is in your approval queue.`, null, lead.id);
+        await emailOwner(`Donation ⚡ ${settled.sats.toLocaleString("en-US")} sats ($${p.totals.dueNow})`, `${lead.name || lead.email || "Someone"} donated $${p.totals.dueNow} (${settled.sats} sats) ${settled.onchain ? "on-chain" : "over Lightning"} to Bitcoin education.${p.donation.message ? `\n\nTheir message: ${p.donation.message}` : ""}\n\nThey've been thanked automatically${p.payment.held ? "; their receipt goes out once the node records the payment (Finance tab)" : ", with their receipt attached"}.`, null, lead.id);
         return json({ status: "paid" });
       }
       // Work to start: one of the few things worth an email.
       const urgent = p.order?.urgentOk && ["hours", "minutes"].includes(p.order.urgency);
       await emailOwner(`${urgent ? `🚨 URGENT (${p.order.urgency === "minutes" ? "right now" : "within hours"}) ` : ""}Paid ⚡ ${settled.sats.toLocaleString("en-US")} sats: start work for ${lead.name || lead.email || p.order?.name || "a client"}`,
-        `${lead.name || lead.email} paid $${p.totals.dueNow} (${settled.sats} sats) ${settled.onchain ? "on-chain" : "over Lightning"} for "${p.title}". It's confirmed${settled.onchain ? " on-chain" : " on your node"}${lead.email ? " and the client has their kick-off email" : ""}.${p.order ? `\n\nWebsite order: ${p.order.name}\nWhat they need: ${p.order.task || "(not given yet; they can add it from the order screen or the portal)"}\nThe department agent has the task queued.` : ""}\n\nKick-off is promised within 48 hours.`,
+        `${lead.name || lead.email} paid $${p.totals.dueNow} (${settled.sats} sats) ${settled.onchain ? "on-chain" : "over Lightning"} for "${p.title}". ${p.payment.held ? "The node hasn't recorded it yet, so no receipt has gone out: see Finance → Waiting to move to the node." : `It's confirmed on your node${lead.email ? " and the client has their kick-off email and receipt" : ""}.`}${p.order ? `\n\nWebsite order: ${p.order.name}\nWhat they need: ${p.order.task || "(not given yet; they can add it from the order screen or the portal)"}\nThe department agent has the task queued.` : ""}\n\nKick-off is promised within 48 hours.`,
         null, lead.id);
     } else {
       p.status = "paid";

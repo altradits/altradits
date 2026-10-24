@@ -145,7 +145,7 @@ export function mountPay(el, { id, t, onPaid, onReady, claim = false }) {
                 body: JSON.stringify({ id, t, action: "paid", method: "Bitcoin (Lightning)", reference: inv.bolt11.slice(-24) }) });
               if (!res.ok) throw new Error((await res.json()).error);
               stop();
-              st.innerHTML = `✓ Thanks! Your order is saved. This payment is checked by hand, usually within a few hours, and your confirmation comes by email: add your email below.`;
+              st.innerHTML = `✓ Payment recorded, thank you. Our payment system is briefly offline, so we're confirming it by hand. Your official receipt, with every detail of this payment, follows by email once it's confirmed on the Altradits node. If you haven't yet, add your email below.`;
             } catch (err) { e.target.disabled = false; st.insertAdjacentHTML("beforeend", ` <span class="err">${esc(err.message || "Try again")}</span>`); }
           };
         } else $("[data-claim]").previousElementSibling.textContent = `Valid for ${clock}. After paying, press:`;
