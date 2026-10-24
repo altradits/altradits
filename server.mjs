@@ -37,7 +37,7 @@ function publicUrl(req) {
 const server = http.createServer(async (req, res) => {
   const url = publicUrl(req);
   try {
-    if (url.pathname === "/healthz") { res.writeHead(200, { "Content-Type": "text/plain" }).end("ok"); import("./lib/workers.js").then((w) => w.kickQueue()).catch(() => {}); return; }
+    if (url.pathname === "/healthz") { res.writeHead(200, { "Content-Type": "text/plain" }).end("ok"); import("./lib/workers.js").then((w) => w.kickQueue()).catch(() => {}); marketing(); return; }
     const api = url.pathname.match(/^\/api\/([a-z]+)$/);
     if (api) {
       const file = path.join(ROOT, "api", `${api[1]}.js`);
@@ -93,6 +93,11 @@ async function maybeRunDaily() {
 // After each deploy, bring the CV in line with what the site now offers.
 setTimeout(() => import("./lib/career.js").then((c) => c.syncCv()).then((r) => console.log("CV sync", r)).catch((e) => console.error("CV sync", e.message)), 60 * 1000).unref();
 setInterval(() => maybeRunDaily().catch((e) => console.error("daily", e)), 10 * 60 * 1000).unref();
+
+// The marketing team: plans the day's posts and publishes each at its slot.
+// Also nudged by /healthz (a scheduled GitHub Action wakes the app at slot times).
+const marketing = () => import("./lib/marketing.js").then((m) => m.marketingTick()).then((r) => r.posted?.length && console.log("marketing", r)).catch((e) => console.error("marketing", e.message));
+setInterval(marketing, 5 * 60 * 1000).unref();
 
 // The department AI agents work through queued client tasks in the background.
 const kick = () => import("./lib/workers.js").then((w) => w.processQueue()).catch((e) => console.error("queue", e));

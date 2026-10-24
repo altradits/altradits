@@ -16,6 +16,7 @@ import { buildMasterCv, discoverJobs, updateSettings, careerLive } from "../lib/
 import { getApplicant, saveApplicant, suggestApplicant, queueApply, cancelApply, startApply, applyFile, agentUpdate, think } from "../lib/apply.js";
 import { sendEmail } from "../lib/email.js";
 import { agentLive } from "../lib/agent.js";
+import { marketingView, saveSettings as saveMarketing, replanToday, cancelPost, postNow, marketingLive } from "../lib/marketing.js";
 import { BUSINESS } from "../data/catalog.js";
 
 // The dashboard gets the uploaded CV's details, not its full text.
@@ -51,6 +52,8 @@ export async function GET(request) {
     const types = { pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", txt: "text/plain", md: "text/markdown" };
     return new Response(buf, { headers: { "Content-Type": types[p.cvFile.ext], "Content-Disposition": `attachment; filename="${p.cvFile.name.replace(/"/g, "")}"`, "Cache-Control": "no-store" } });
   }
+
+  if (u.searchParams.get("view") === "marketing") return json(await marketingView());
 
   if (u.searchParams.get("view") === "ops") {
     const [members, tasks] = await Promise.all([allMembers(), allTasks()]);
@@ -175,6 +178,20 @@ export async function POST(request) {
   const body = await readBody(request);
 
   if (body.action === "approval") return resolveApproval(request, body);
+
+  if (body.action?.startsWith("mkt_")) {
+    try {
+      if (body.action === "mkt_pause") return json({ settings: await saveMarketing({ paused: Boolean(body.paused) }) });
+      if (body.action === "mkt_cancel") return json({ post: await cancelPost(clean(body.id, 20)) });
+      if (body.action === "mkt_post_now") return json({ post: await postNow(clean(body.id, 20)) });
+      if (body.action === "mkt_plan") {
+        if (!marketingLive()) return json({ error: "Set ANTHROPIC_API_KEY to switch the marketing team on." }, 400);
+        replanToday().catch((e) => console.error("marketing plan", e.message)); // takes a minute or two
+        return json({ started: true });
+      }
+    } catch (err) { return json({ error: err.message }, 400); }
+    return json({ error: "Unknown marketing action" }, 400);
+  }
 
   if (body.action?.startsWith("job_")) {
     try {

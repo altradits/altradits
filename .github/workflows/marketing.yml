@@ -1,0 +1,18 @@
+name: Wake the marketing team
+
+# The host idles the app when nobody visits, so its timers stop. This wakes it
+# at planning time (05:00 UTC) and at each posting slot in data/marketing.js;
+# the app then plans or publishes whatever is due. Times are UTC.
+on:
+  schedule:
+    - cron: "2 5,7,8,11,15,16,17,18 * * *"
+    - cron: "32 12 * * *"
+  workflow_dispatch:
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping the site
+        run: curl -fsS --max-time 30 https://altradits.com/healthz

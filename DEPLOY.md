@@ -90,3 +90,17 @@ npm install
 npm run dev     # http://localhost:3000, admin password "dev"
 npm test
 ```
+
+## Marketing team: connecting the social accounts
+
+The marketing team (admin → Marketing) plans posts daily at 05:00 UTC and publishes each at its slot. Accounts without keys get their posts in your daily "Ready to post" email instead, so nothing is lost while you set these up. Add the values as environment variables in DirectAdmin → Setup Node.js App, then restart the app.
+
+| Account | Variables | Where to get them |
+|---|---|---|
+| X @altradits | `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_SECRET` | developer.x.com → your app → Keys and tokens. Set app permissions to **Read and write** *before* generating the access token. X bills per post (about $0.015 each; posts have no links to avoid the higher link price). |
+| LinkedIn · Stanley | `LINKEDIN_TOKEN` (optional `LINKEDIN_PERSON_URN`) | linkedin.com/developers → create an app → add **Share on LinkedIn** and **Sign In with LinkedIn using OpenID Connect** → OAuth token generator with scopes `openid profile w_member_social`. Expires after about 60 days: the team emails you when a post fails so you can renew it. |
+| LinkedIn · Altradits page | `LINKEDIN_ORG_ID` (+ `LINKEDIN_ORG_TOKEN` if different) | The number in your company page admin URL. Needs the **Community Management API** product (LinkedIn reviews the request) and scope `w_organization_social`. |
+| Facebook · Altradits page | `FB_PAGE_TOKEN` (optional `FB_PAGE_ID`, default 61579168157529) | developers.facebook.com → app → Graph API Explorer → Page access token with `pages_manage_posts`, `pages_read_engagement`; exchange for a long-lived token. |
+| Facebook · Stanley, TikTok | none | Meta doesn't allow posting to personal profiles by API, and TikTok needs a video file: these always arrive as ready-to-paste drafts. |
+
+Optional: `LINKEDIN_VERSION` (default 202608), `FB_GRAPH_VERSION` (default v25.0), `MARKETING_MODEL`. The GitHub Action "Wake the marketing team" pings the site at each slot because the host idles the app.
