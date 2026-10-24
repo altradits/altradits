@@ -307,7 +307,7 @@ export const DONATIONS = {
 // drop their "q-": /inbox-cleanup, /try, /hourly, /core). Old ?buy= links still work.
 // Pages own these words, so the items that share them get another address.
 const SLUG_ALIAS = { bitcoin: "bitcoin-setup" };
-const PAGES = new Set(["va", "bitcoin", "products", "donate", "templates", "hunt", "cv", "join", "team", "portal", "proposal", "admin"]);
+const PAGES = new Set(["va", "bitcoin", "products", "donate", "templates", "hunt", "cv", "join", "team", "portal", "proposal", "admin", "collect"]);
 export const slugFor = (id) => SLUG_ALIAS[id] || String(id).replace(/^q-/, "");
 export function idForSlug(slug) {
   const s = String(slug || "").toLowerCase();

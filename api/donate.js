@@ -1,5 +1,6 @@
 // Donations to Bitcoin education, paid in Bitcoin like any order.
-// POST /api/donate { usd, name?, email?, message? } -> { id, t, usd }  (then POST /api/pay)
+// POST /api/donate { usd, name?, email?, message?, anonymous? } -> { id, t, usd, name }  (then POST /api/pay)
+//   anonymous: no name or email is kept; the donation name collects the receipt (/collect).
 // GET  /api/donate                                  -> purpose, suggested amounts, total raised
 import { json, readBody, clean, clientIp, EMAIL_RE } from "../lib/http.js";
 import { hit, listIds, getMany } from "../lib/store.js";
@@ -13,8 +14,10 @@ export async function POST(request) {
   const email = clean(body.email, 200).toLowerCase();
   if (email && !EMAIL_RE.test(email)) return json({ error: "Please check your email address." }, 400);
   if ((await hit(`rl:donate:${clientIp(request)}`, 3600)) > 20) return json({ error: "Too many attempts. Try again in an hour." }, 429);
-  const { p } = await createDonation({ usd, name: body.name, email, message: body.message, ref: clean(body.ref, 12).toLowerCase() });
-  return json({ id: p.id, t: p.token, usd: p.totals.dueNow });
+  const anon = Boolean(body.anonymous);
+  const { lead, p } = await createDonation({ usd, name: anon ? "" : body.name, email: anon ? "" : email, message: body.message, ref: clean(body.ref, 12).toLowerCase() });
+  if (anon) { p.donation.anonymous = true; const { saveProposal } = await import("../lib/crm.js"); await saveProposal(p); }
+  return json({ id: p.id, t: p.token, usd: p.totals.dueNow, name: lead.pickup });
 }
 
 export async function GET() {

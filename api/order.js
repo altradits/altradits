@@ -29,8 +29,8 @@ export async function POST(request) {
   const item = orderable(clean(body.item, 40));
   if (!item) return json({ error: "Unknown item." }, 400);
   if ((await hit(`rl:order:${clientIp(request)}`, 3600)) > 20) return json({ error: "Too many orders from this connection. Try again in an hour." }, 429);
-  const { p } = await createOrder(item, { ref: clean(body.ref, 12).toLowerCase() });
-  return json({ id: p.id, t: p.token, item: { id: item.id, name: item.name, usd: p.totals.dueNow } });
+  const { lead, p } = await createOrder(item, { ref: clean(body.ref, 12).toLowerCase() });
+  return json({ id: p.id, t: p.token, name: lead.pickup, item: { id: item.id, name: item.name, usd: p.totals.dueNow } });
 }
 
 // One code per order; the price drops before the invoice is made, and the code
@@ -120,6 +120,6 @@ export async function GET(request) {
   if (p.status !== "paid") return json({ status: p.status });
   const lead = await getLead(p.leadId);
   const urgent = isUrgent(p.order);
-  return json({ status: "paid", item: p.order.name, delivery: urgent ? urgencyNote(p.order) : p.timeline, portal: lead ? ensurePortal(lead) : null, emailed: Boolean(lead?.email),
+  return json({ status: "paid", item: p.order.name, delivery: urgent ? urgencyNote(p.order) : p.timeline, portal: lead ? ensurePortal(lead) : null, emailed: Boolean(lead?.email), name: lead?.pickup || null,
     ...(urgent ? { phone: `+${OWNER_PHONE}`, ref: p.id.slice(0, 6).toUpperCase() } : {}) });
 }

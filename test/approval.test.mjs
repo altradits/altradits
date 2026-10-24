@@ -448,3 +448,46 @@ test("a credit code is used up gradually: what an order doesn't use stays on it"
   assert.equal(left.status, "used");
   await assert.rejects(hunt.reserveCoupon(c.code, "p3"), /already been used/);
 });
+
+test("anonymous: an order name collects the order, its receipt and any balance; agents are told how to deliver; wrong names get nothing", async () => {
+  const crm = await import("../lib/crm.js");
+  const pickup = await import("../lib/pickup.js");
+  const collect = await import("../api/collect.js");
+  const ask = async (body, ip = "9.9.9.9") => collect.POST(new Request("http://x/api/collect", { method: "POST", headers: { "Content-Type": "application/json", "x-forwarded-for": ip }, body: JSON.stringify(body) }));
+  // Anonymous donation: no name or email kept, a donation name returned.
+  const donate = await import("../api/donate.js");
+  const d = await (await donate.POST(new Request("http://x/api/donate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ usd: 5, anonymous: true, name: "Should Vanish", email: "gone@x.co" }) }))).json();
+  assert.match(d.name, /^[A-Z]+-[A-Z]+-[A-Z]+-\d{4}$/);
+  const dp = await crm.getProposal(d.id), dl = await crm.getLead(dp.leadId);
+  assert.equal(dl.email, ""); assert.equal(dl.name, ""); assert.equal(dp.donation.anonymous, true);
+  // Before it's paid: found, but no receipt.
+  let r = await (await ask({ name: d.name.toLowerCase() })).json(); // any case works
+  assert.equal(r.status, "not paid yet"); assert.equal(r.receipt, false);
+  await crm.confirmPayment(dl, dp, "", { settlement: { sats: 6000, reference: "anonhash", at: new Date().toISOString() } });
+  r = await (await ask({ name: d.name })).json();
+  assert.equal(r.status, "paid"); assert.equal(r.receipt, true); assert.equal(r.portal, null);
+  const pdf = await ask({ name: d.name, receipt: true });
+  assert.equal(pdf.headers.get("content-type"), "application/pdf");
+  assert.ok(Buffer.from(await pdf.arrayBuffer()).toString("latin1").includes("PAID IN FULL"));
+  // Anonymous order: the order name reaches the agents' brief with delivery instructions.
+  const o = await crm.createOrder(orderable("hourly"));
+  assert.ok(o.lead.pickup);
+  const workers = await import("../lib/workers.js");
+  assert.equal(typeof workers.processTask, "function");
+  const src = (await import("node:fs")).readFileSync(new URL("../lib/workers.js", import.meta.url), "utf8");
+  assert.match(src, /ANONYMOUS CLIENT: known only by the order name/);
+  // Held payment: no receipt on the collection page until the node records it.
+  o.p.lightning = { provider: "address", bolt11: "lnbc1x", sats: 62500 };
+  o.p.payment = { method: "Bitcoin (Lightning)", reference: "x" };
+  await crm.confirmPayment(o.lead, o.p, "", { approved: true });
+  await crm.saveProposal(o.p);
+  r = await (await ask({ name: o.lead.pickup })).json();
+  assert.equal(r.status, "being confirmed"); assert.equal(r.receipt, false); assert.ok(r.portal);
+  assert.equal((await ask({ name: o.lead.pickup, receipt: true })).status, 409);
+  // Wrong or malformed names: nothing, and guessing is rate-limited.
+  assert.equal((await ask({ name: "AMBER-FALCON-RIVER-0000" }, "7.7.7.7")).status, 404);
+  assert.equal(await pickup.leadIdForPickup("not a name"), null);
+  let last;
+  for (let i = 0; i < 13; i++) last = await ask({ name: "AMBER-FALCON-RIVER-0001" }, "6.6.6.6");
+  assert.equal(last.status, 429);
+});

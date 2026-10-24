@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Collect your order · Altradits</title>
+<meta name="description" content="Collect your Altradits order or donation receipt with your order name. No email needed.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2F5BEA;--btc:#F7931A;--ok:#12A37F;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:40rem;margin:0 auto;padding:1.25rem 1rem 4rem}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.75rem}
+.top img{height:2.5rem;width:auto;display:block}
+.topnav{display:flex;gap:1.1rem}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted)}
+.topnav a:hover{color:var(--ink)}
+h1{font:800 clamp(2rem,6vw,2.8rem)/1.05 'Bricolage Grotesque',sans-serif;margin:0 0 .6rem}
+h1 em{font-style:normal;color:var(--btc)}
+.lead{color:var(--muted);font-size:1.1rem;margin:0 0 1.4rem}
+.card{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;box-shadow:6px 6px 0 var(--ink);padding:1.4rem;margin-bottom:1.4rem}
+label{display:block;font-weight:600;font-size:.92rem;margin:0 0 .3rem}
+input{width:100%;padding:.75rem .85rem;border:2px solid var(--line);border-radius:.6rem;font:600 1.05rem ui-monospace,Menlo,monospace;letter-spacing:.03em;background:var(--bg);text-transform:uppercase}
+input:focus{border-color:var(--ink);background:#fff}
+.btn{display:inline-flex;justify-content:center;align-items:center;margin-top:.9rem;padding:.85rem 1.2rem;border-radius:.7rem;font:700 1rem Figtree,sans-serif;border:2px solid var(--ink);cursor:pointer;background:var(--ink);color:#fff;text-decoration:none}
+.btn.line{background:transparent;color:var(--ink)}
+.btn.btc{background:var(--btc);border-color:var(--btc);color:var(--ink)}
+.btn[disabled]{opacity:.6;cursor:wait}
+.msg{min-height:1.4rem;margin:.6rem 0 0;color:var(--muted)}
+.msg.err{color:#B42318}
+.pill{display:inline-block;font:700 .78rem Figtree,sans-serif;letter-spacing:.04em;text-transform:uppercase;padding:.2rem .55rem;border-radius:.4rem;background:#E4E9F0}
+.pill.paid{background:#D1FADF;color:#05603A}.pill.wait{background:#FDEBD3;color:#7A4300}
+dl{display:grid;grid-template-columns:auto 1fr;gap:.35rem 1rem;margin:1rem 0}
+dt{color:var(--muted)}dd{margin:0;font-weight:600}
+.qr{width:13rem;background:#fff;padding:.4rem;border-radius:.6rem;border:1px solid var(--line)}
+.note{color:var(--muted);font-size:.92rem}
+.actions{display:flex;flex-wrap:wrap;gap:.6rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">VA</a><a href="/bitcoin">Bitcoin</a><a href="/products">Products</a></nav></div>
+  <h1>Collect your <em>order.</em></h1>
+  <p class="lead">Enter the order name you saved when you paid. It opens your order, your finished work and your receipt. No email needed.</p>
+
+  <form class="card" id="find" novalidate>
+    <label for="name">Order name</label>
+    <input id="name" name="name" autocomplete="off" spellcheck="false" placeholder="AMBER-FALCON-RIVER-7342" required>
+    <button class="btn" id="go">Open my order</button>
+    <p class="msg" id="msg" role="status"></p>
+  </form>
+
+  <div class="card" id="out" hidden></div>
+  <p class="note">Your order name works like a key: anyone who has it can open the order, so keep it private. Lost it? Write to <a href="mailto:hello@altradits.com">hello@altradits.com</a> with when you paid and the amount.</p>
+</div>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const fmt = (n) => `${Number(n || 0).toLocaleString("en-US")} sats`;
+let current = "";
+const STATUS = {
+  "paid": ["paid", "Paid"], "part paid": ["wait", "Part paid"], "being confirmed": ["wait", "Payment being confirmed"], "not paid yet": ["", "Not paid yet"],
+};
+const WORK = { ready: "Ready: download it in your workspace", waiting_client: "We have a question for you", done: "Delivered", review: "Ready for your review" };
+$("#find").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = $("#name").value.trim();
+  if (!name) { $("#msg").className = "msg err"; $("#msg").textContent = "Enter your order name."; return; }
+  $("#go").disabled = true; $("#msg").className = "msg"; $("#msg").textContent = "Looking it up…";
+  try {
+    const r = await fetch("/api/collect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "Something went wrong.");
+    current = name; $("#msg").textContent = ""; show(d);
+  } catch (err) { $("#msg").className = "msg err"; $("#msg").textContent = err.message; $("#out").hidden = true; }
+  $("#go").disabled = false;
+});
+function show(d) {
+  const [cls, label] = STATUS[d.status] || ["", d.status];
+  const work = d.work ? (d.work.question ? WORK.waiting_client : d.work.ready ? WORK[d.work.status] || WORK.ready : "In progress") : null;
+  $("#out").innerHTML = `<p style="margin:0"><code style="font-weight:700">${esc(d.name)}</code></p>
+    <h2 style="font:800 1.4rem 'Bricolage Grotesque',sans-serif;margin:.4rem 0">${esc(d.title)}</h2>
+    <span class="pill ${cls}">${esc(label)}</span>
+    <dl>${d.delivery ? `<dt>Delivery</dt><dd>${esc(d.delivery)}</dd>` : ""}${d.due ? `<dt>Due</dt><dd>${esc(new Date(d.due).toLocaleDateString())}</dd>` : ""}${work ? `<dt>Work</dt><dd>${esc(work)}</dd>` : ""}</dl>
+    ${d.work?.question ? `<p><b>Our question:</b> ${esc(d.work.question)}</p>` : ""}
+    ${d.balance ? `<p><b>Balance due: ${fmt(d.balance.sats)}.</b> Scan with any Lightning wallet:</p><div class="qr">${d.balance.qr}</div><p class="actions"><a class="btn btc" href="lightning:${esc(d.balance.bolt11)}">Open in my wallet</a></p>` : ""}
+    ${d.status === "being confirmed" ? `<p class="note">Your payment is recorded and being confirmed by hand. Your receipt appears here once it's confirmed on the Altradits node.</p>` : ""}
+    <div class="actions">${d.portal ? `<a class="btn" href="${esc(d.portal)}">${d.work?.ready || d.work?.question ? "Open my workspace" : "Open my workspace (send files, follow the work)"}</a>` : ""}${d.receipt ? `<button type="button" class="btn line" id="rcpt">Download my receipt</button>` : ""}</div>`;
+  $("#out").hidden = false;
+  $("#rcpt")?.addEventListener("click", async (e) => {
+    e.target.disabled = true;
+    try {
+      const r = await fetch("/api/collect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: current, receipt: true }) });
+      if (!r.ok) throw new Error((await r.json()).error);
+      const url = URL.createObjectURL(await r.blob());
+      Object.assign(document.createElement("a"), { href: url, download: (r.headers.get("Content-Disposition") || "").match(/filename="([^"]+)"/)?.[1] || "altradits-receipt.pdf" }).click();
+      URL.revokeObjectURL(url);
+    } catch (err) { e.target.textContent = err.message; }
+    e.target.disabled = false;
+  });
+}
+</script>
+</body>
+</html>
