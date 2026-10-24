@@ -55,6 +55,17 @@ export async function GET(request) {
 
   if (u.searchParams.get("view") === "marketing") return json(await marketingView());
 
+  // Department inboxes (read-only IMAP); passwords stay in the environment.
+  if (u.searchParams.get("view") === "inboxes") {
+    const { listInboxes } = await import("../lib/inbox.js");
+    return json({ boxes: await listInboxes({ fresh: u.searchParams.get("fresh") === "1" }) });
+  }
+  if (u.searchParams.get("view") === "message") {
+    const { readMessage } = await import("../lib/inbox.js");
+    try { return json(await readMessage(clean(u.searchParams.get("box"), 30), Number(u.searchParams.get("uid")))); }
+    catch (err) { return json({ error: err.message }, 400); }
+  }
+
   // Stan's desk: everything Stan sent, was copied on and reviewed (read-only, for Stanley to monitor).
   if (u.searchParams.get("view") === "stan") {
     const STAN = "stan@altradits.com";
@@ -65,7 +76,12 @@ export async function GET(request) {
     const pick = (e) => ({ at: e.at, to: e.to, from: e.from, subject: e.subject, kind: e.kind, status: e.status, bcc: e.bcc || null, text: (e.text || "").slice(0, 400) });
     const records = tasks.filter((t) => t.qa?.panel).sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || "")).slice(0, 40)
       .map((t) => ({ id: t.id, task: t.title, client: t.client, department: t.department, status: t.status, panel: t.qa.panel, rounds: t.qa.rounds, final: t.qa.final }));
+    const { pendingApprovals } = await import("../lib/email.js");
+    const { recentInstructions, senders } = await import("../lib/stan.js");
     return json({
+      approvals: (await pendingApprovals()).map(({ payload, ...e }) => e),
+      instructions: await recentInstructions(20),
+      departments: senders().map((c) => ({ id: c.id, address: c.address, name: c.name, head: c.head.name })),
       records,
       sent: mail.filter((e) => (e.from || "").includes(STAN)).slice(0, 60).map(pick),
       copied: mail.filter((e) => e.cc === STAN).slice(0, 60).map(pick),
@@ -166,22 +182,22 @@ async function resolveApproval(request, body) {
         body.edits.prices.forEach((price, i) => { if (p.items[i] && Number(price) > 0) p.items[i].price = Math.round(Number(price)); });
       }
       recomputeTotals(p);
-      await publishProposal(base, lead, p);
+      await publishProposal(base, lead, p, { approved: true }); // Stanley just approved it
     } else if (p && lead) {
       p.status = "declined";
       await saveProposal(p);
-      await sendEmail({ to: lead.email, leadId: lead.id, dept: "growth", subject: "About your proposal",
+      await sendEmail({ to: lead.email, leadId: lead.id, dept: "growth", approved: true, subject: "About your proposal",
         text: note || `Hi ${lead.name || "there"}, thanks for your patience. ${BUSINESS.owner} would like to talk this through before sending a proposal. Just reply with a good time.` });
     }
   } else if (a.type === "payment_check") {
     const p = await getProposal(a.payload.proposalId);
     if (p && lead) {
       if (approve) {
-        await confirmPayment(lead, p, note);
+        await confirmPayment(lead, p, note, { approved: true });
       } else {
         p.status = "accepted";
         logEvent(lead, "Payment not found yet.");
-        await sendEmail({ to: lead.email, leadId: lead.id, dept: "orders", subject: "We couldn't find your payment yet",
+        await sendEmail({ to: lead.email, leadId: lead.id, dept: "orders", approved: true, subject: "We couldn't find your payment yet",
           text: note || `Hi ${lead.name || "there"}, we haven't received the payment yet. Could you reply with the transaction reference or a screenshot? Sometimes it just takes a little longer.` });
       }
       await saveProposal(p);
@@ -189,7 +205,7 @@ async function resolveApproval(request, body) {
     }
   } else if (lead && note) {
     // trial_task, call_request, escalation: the note goes to the client.
-    await sendEmail({ to: lead.email, leadId: lead.id, subject: a.type === "trial_task" ? "Your free task is done" : "A note from Stanley", text: note });
+    await sendEmail({ to: lead.email, leadId: lead.id, approved: true, subject: a.type === "trial_task" ? "Your free task is done" : "A note from Stanley", text: note });
   }
 
   if (lead) { logEvent(lead, `${a.type} ${approve ? "approved" : "declined"} by Stanley.`); await saveLead(lead); }
@@ -205,6 +221,27 @@ export async function POST(request) {
   const body = await readBody(request);
 
   if (body.action === "approval") return resolveApproval(request, body);
+
+  // Stanley → Stan: an instruction, optionally about a message in one of the inboxes.
+  if (body.action === "stan_instruct") {
+    const { instruct } = await import("../lib/stan.js");
+    let context = null, to = clean(body.to, 200), dept = clean(body.dept, 30);
+    if (body.box && body.uid) {
+      const { readMessage, mailboxes } = await import("../lib/inbox.js");
+      const { COMMS } = await import("../data/team-comms.js");
+      try { context = await readMessage(clean(body.box, 30), Number(body.uid)); } catch (err) { return json({ error: err.message }, 400); }
+      to ||= (context.from.match(/[^\s<>]+@[^\s<>]+/) || [""])[0];
+      const address = mailboxes().find((b) => b.id === body.box)?.address;
+      dept ||= COMMS.find((c) => c.address === address && c.sendsAs !== false && !c.internal && c.id !== "founder")?.id || "";
+    }
+    instruct({ text: body.text, dept: dept || null, to: to || null, context }).catch((e) => console.error("stan", e.message)); // takes up to a minute
+    return json({ started: true });
+  }
+  if (body.action === "mail_decide") {
+    const { decideEmail } = await import("../lib/email.js");
+    try { return json({ email: await decideEmail(clean(body.id, 30), { approve: Boolean(body.approve), subject: clean(body.subject, 200), text: clean(body.text, 10000), note: clean(body.note, 500) }) }); }
+    catch (err) { return json({ error: err.message }, 400); }
+  }
 
   if (body.action?.startsWith("mkt_")) {
     try {
@@ -300,7 +337,7 @@ export async function POST(request) {
       t.reviewAt = at;
       t.history.push({ at, by: "Stanley", text: "Checked and sent to client" });
       await saveTask(t);
-      await notifyClient(t, `Ready for your review: ${t.title}`, `${t.deliverable.summary || "Your task is done."}\n\nOpen your portal to download it, then approve and rate it, or ask for changes.`);
+      await notifyClient(t, `Ready for your review: ${t.title}`, `${t.deliverable.summary || "Your task is done."}\n\nOpen your portal to download it, then approve and rate it, or ask for changes.`, { approved: true });
     } else if (body.action === "task_rerun") {
       const note = clean(body.note, 1000);
       t.status = "queued";
@@ -327,7 +364,7 @@ export async function POST(request) {
     t.status = "review";
     t.history.push({ at: new Date().toISOString(), by: "Stanley", text: `Submitted for review (${t.hoursLogged}h)` });
     await saveTask(t);
-    await notifyClient(t, `Ready for your review: ${t.title}`, `Your task "${t.title}" is done.\n\n${note}${t.deliverable.url ? `\n\nDeliverable: ${t.deliverable.url}` : ""}\n\nApprove it or ask for changes in your portal.`);
+    await notifyClient(t, `Ready for your review: ${t.title}`, `Your task "${t.title}" is done.\n\n${note}${t.deliverable.url ? `\n\nDeliverable: ${t.deliverable.url}` : ""}\n\nApprove it or ask for changes in your portal.`, { approved: true });
     return json({ ok: true });
   }
   if (body.action === "task_release") {
@@ -372,7 +409,7 @@ export async function POST(request) {
   }
   if (body.action === "email_client") {
     if (!lead.email) return json({ error: "This lead has no email." }, 400);
-    const sent = await sendEmail({ to: lead.email, leadId: lead.id, subject: clean(body.subject, 200) || "A note from Altradits", text: clean(body.text, 8000) });
+    const sent = await sendEmail({ to: lead.email, leadId: lead.id, approved: true, subject: clean(body.subject, 200) || "A note from Altradits", text: clean(body.text, 8000) });
     logEvent(lead, `Stanley emailed: ${sent.subject}`);
     await saveLead(lead);
     return json({ ok: true, status: sent.status });

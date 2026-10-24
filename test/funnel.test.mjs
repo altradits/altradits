@@ -1,5 +1,6 @@
 // End-to-end funnel test against the real handlers, in scripted-agent mode with
 // the local file store. Run: npm test
+process.env.EMAIL_APPROVAL = "off"; // these tests check delivery; the approval gate has its own tests
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

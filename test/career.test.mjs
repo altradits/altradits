@@ -1,5 +1,6 @@
 // Living CV (fact sheet + master CV + public page) and job discovery.
 // Fake Claude. Run: npm test
+process.env.EMAIL_APPROVAL = "off"; // these tests check delivery; the approval gate has its own tests
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

@@ -1,5 +1,6 @@
 // Free kits: sign-up, downloads, the follow-up ladder and unsubscribe.
 // Run: npm test
+process.env.EMAIL_APPROVAL = "off"; // these tests check delivery; the approval gate has its own tests
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
