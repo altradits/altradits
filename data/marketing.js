@@ -24,6 +24,9 @@ export const MARKETING_TEAM = [
   { id: "community", name: "Community Manager", role: "Replies as Altradits, never starts conversations",
     source: "marketing/marketing-twitter-engager.md (engagement and crisis rules)",
     rules: "Answers people who comment on Altradits' own posts or mention @altradits: short, warm, specific, helpful, in the commenter's language. Never comments elsewhere, likes, follows or starts threads (that's Stanley, from his personal accounts). Complaints, payment or refund issues, anything legal, abusive or uncertain go to Stanley instead of a public reply. Spam is ignored." },
+  { id: "instagram", name: "Instagram Curator", role: "Instagram posts",
+    source: "marketing/marketing-instagram-curator.md",
+    rules: "Visual first: every post is an image idea (what to show, plus a short line of text on the image) and a caption whose first line hooks before the 'more' cut. Clean, consistent look in Altradits' navy, blue and orange. 3 to 5 specific hashtags, no links in the caption (they aren't clickable: say 'link in bio')." },
   { id: "guardian", name: "Brand Guardian", role: "Checks every post before it goes out",
     source: "marketing (QA, as in the department agents' Quality Reviewer)",
     rules: "Blocks anything that invents clients, reviews, testimonials, results or statistics; quotes a price that is not in the catalog; promises what the site doesn't offer; reveals a phone number; is spammy, clickbait or off-brand; or breaks the platform's length rules." },
@@ -42,12 +45,14 @@ export const CHANNELS = [
     env: ["LINKEDIN_ORG_ID"], slots: ["11:00"], max: 2800, link: "comment", ref: "mklico" },
   { id: "fb_page", name: "Facebook · Altradits page", url: "https://www.facebook.com/profile.php?id=61579168157529", agent: "writer", mode: "api",
     env: ["FB_PAGE_TOKEN"], slots: ["15:00"], max: 1500, link: "body", ref: "mkfbpage" },
-  // Meta's API cannot post to personal profiles, and TikTok's needs a video
-  // file: these always come as ready-to-post drafts.
+  // Meta's API cannot post to personal profiles, and TikTok's and Instagram's
+  // need a video or image file: these always come as ready-to-post drafts.
   { id: "fb_stan", name: "Facebook · Stanley", url: "https://www.facebook.com/profile.php?id=61579237182379", agent: "writer", mode: "manual",
     env: [], slots: ["16:00"], max: 1200, link: "body", ref: "mkfbstan" },
   { id: "tiktok", name: "TikTok · @altradits", url: "https://www.tiktok.com/@altradits", agent: "tiktok", mode: "manual",
     env: [], slots: ["17:00"], max: 2200, link: false, ref: "mktiktok" },
+  { id: "ig", name: "Instagram · @altradits", url: "https://www.instagram.com/altradits", agent: "instagram", mode: "manual",
+    env: [], slots: ["13:00"], max: 2200, link: false, ref: "mkinsta" },
   { id: "tt_stan", name: "TikTok · Stanley (@5tan_lee)", url: "https://www.tiktok.com/@5tan_lee", agent: "tiktok", mode: "manual",
     env: [], slots: ["19:00"], max: 2200, link: false, ref: "mkttstan" },
 ];
