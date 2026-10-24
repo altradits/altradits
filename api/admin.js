@@ -66,7 +66,7 @@ export async function GET(request) {
   if (u.searchParams.get("view") === "donations") {
     const all = (await getMany("proposal", await listIds("proposals", 2000))).filter((p) => p.donation && p.status === "paid");
     return json({
-      total: Math.round(all.reduce((t, p) => t + p.totals.dueNow, 0) * 100) / 100, count: all.length,
+      total: Math.round(all.reduce((t, p) => t + p.totals.dueNow, 0) * 100) / 100, sats: all.reduce((t, p) => t + (Number(p.payment?.sats) || 0), 0), count: all.length,
       recent: all.slice(0, 50).map((p) => ({ at: p.payment?.confirmedAt || p.updatedAt, name: p.client?.name, email: p.client?.email, usd: p.totals.dueNow, sats: p.payment?.sats || null, message: p.donation.message, receipt: p.receipt?.no || null })),
     });
   }

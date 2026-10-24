@@ -721,8 +721,8 @@ $("#subCsv").addEventListener("click", async () => {
 async function loadDonations() {
   try {
     const d = await api("?view=donations");
-    $("#donTotal").textContent = `$${d.total.toLocaleString("en-US")} from ${d.count} donor${d.count === 1 ? "" : "s"}`;
-    $("#donList").innerHTML = d.recent.length ? `<table><thead><tr><th>When</th><th>Donor</th><th>Amount</th><th>Message</th><th>Receipt</th></tr></thead><tbody>${d.recent.map((x) => `<tr><td class="sm">${ago(x.at)}</td><td>${esc(x.name || x.email || "Anonymous")}</td><td>$${x.usd}${x.sats ? ` <span class="muted sm">${x.sats.toLocaleString("en-US")} sats</span>` : ""}</td><td class="sm">${esc(x.message || "")}</td><td class="sm">${x.receipt ? esc(x.receipt) : x.email ? "pending" : "no email"}</td></tr>`).join("")}</tbody></table>` : `<p class="muted">No donations yet.</p>`;
+    $("#donTotal").textContent = `${(d.sats || 0).toLocaleString("en-US")} sats from ${d.count} donor${d.count === 1 ? "" : "s"}`;
+    $("#donList").innerHTML = d.recent.length ? `<table><thead><tr><th>When</th><th>Donor</th><th>Amount</th><th>Message</th><th>Receipt</th></tr></thead><tbody>${d.recent.map((x) => `<tr><td class="sm">${ago(x.at)}</td><td>${esc(x.name || x.email || "Anonymous")}</td><td>${(x.sats || 0).toLocaleString("en-US")} sats</td><td class="sm">${esc(x.message || "")}</td><td class="sm">${x.receipt ? esc(x.receipt) : x.email ? "pending" : "no email"}</td></tr>`).join("")}</tbody></table>` : `<p class="muted">No donations yet.</p>`;
   } catch {}
 }
 function renderGrowth() {
@@ -1052,18 +1052,18 @@ async function loadArchives() {
 }
 document.querySelectorAll('input[name="freshMode"]').forEach((r) => r.addEventListener("change", () => { $("#freshConfirm").placeholder = r.value === "delete" ? "Type DELETE FOREVER" : "Type START FRESH"; }));
 // Finance: the statement of money received.
-const usd2 = (n) => `$${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const satsF = (n) => `${Number(n || 0).toLocaleString("en-US")} sats`;
 async function loadFinance() {
   let F; try { F = await api("?view=statement"); } catch (err) { $("#finKpis").textContent = err.message; return; }
   const kpi = (label, v, sub) => `<div class="kpi"><small>${esc(label)}</small><div>${v}</div>${sub ? `<small class="muted">${esc(sub)}</small>` : ""}</div>`;
-  $("#finKpis").innerHTML = kpi("Total received", usd2(F.total.usd), `${satsF(F.total.sats)} · ${F.total.count} payment${F.total.count === 1 ? "" : "s"}`)
-    + kpi("Sales", usd2(F.sales.usd), `${F.sales.count} order${F.sales.count === 1 ? "" : "s"}`) + kpi("Donations", usd2(F.donations.usd), `${F.donations.count} donation${F.donations.count === 1 ? "" : "s"}`)
-    + kpi("Lightning", satsF(F.channels.lightning.sats), usd2(F.channels.lightning.usd)) + kpi("On-chain", satsF(F.channels.onchain.sats), usd2(F.channels.onchain.usd));
+  const n = (c, one) => `${c} ${one}${c === 1 ? "" : "s"}`;
+  $("#finKpis").innerHTML = kpi("Total received", satsF(F.total.sats), n(F.total.count, "payment"))
+    + kpi("Sales", satsF(F.sales.sats), n(F.sales.count, "order")) + kpi("Donations", satsF(F.donations.sats), n(F.donations.count, "donation"))
+    + kpi("Lightning", satsF(F.channels.lightning.sats), n(F.channels.lightning.count, "payment")) + kpi("On-chain", satsF(F.channels.onchain.sats), n(F.channels.onchain.count, "payment"));
   const table = (rows, head) => rows.length ? `<table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>` : '<p class="muted">Nothing received yet.</p>';
-  $("#finMonths").innerHTML = table(F.months.map((m) => `<tr><td>${esc(m.key)}</td><td>${usd2(m.sales)}</td><td>${usd2(m.donations)}</td><td><b>${usd2(m.usd)}</b><br><small class="muted">${satsF(m.sats)}</small></td></tr>`), ["Month", "Sales", "Donations", "Total"]);
-  $("#finServices").innerHTML = table(F.services.map((s) => `<tr><td>${esc(s.key)}</td><td>${s.count}</td><td>${usd2(s.usd)}</td></tr>`), ["Service", "Orders", "Received"]);
-  $("#finList").innerHTML = table(F.payments.map((x) => `<tr><td>${esc(new Date(x.at).toLocaleString())}</td><td>${esc(x.receipt || "")}</td><td>${esc(x.client)}</td><td>${esc(x.what)}${x.type === "donation" ? ' <span class="stage">donation</span>' : ""}</td><td>${usd2(x.usd)}</td><td>${satsF(x.sats)}</td><td>${x.channel === "onchain" ? "On-chain" : "Lightning"}</td><td><code title="${esc(x.reference)}">${esc(x.reference.slice(0, 12))}…</code></td></tr>`), ["Date", "Receipt", "Client", "What", "USD", "Sats", "Channel", "Reference"]);
+  $("#finMonths").innerHTML = table(F.months.map((m) => `<tr><td>${esc(m.key)}</td><td>${satsF(m.sales)}</td><td>${satsF(m.donations)}</td><td><b>${satsF(m.sats)}</b></td></tr>`), ["Month", "Sales", "Donations", "Total"]);
+  $("#finServices").innerHTML = table(F.services.map((s) => `<tr><td>${esc(s.key)}</td><td>${s.count}</td><td>${satsF(s.sats)}</td></tr>`), ["Service", "Orders", "Received"]);
+  $("#finList").innerHTML = table(F.payments.map((x) => `<tr><td>${esc(new Date(x.at).toLocaleString())}</td><td>${esc(x.receipt || "")}</td><td>${esc(x.client)}</td><td>${esc(x.what)}${x.type === "donation" ? ' <span class="stage">donation</span>' : ""}</td><td>${satsF(x.sats)}</td><td>${x.channel === "onchain" ? "On-chain" : "Lightning"}</td><td><code title="${esc(x.reference)}">${esc(x.reference.slice(0, 12))}…</code></td></tr>`), ["Date", "Receipt", "Client", "What", "Sats", "Channel", "Reference"]);
 }
 async function loadChannels() {
   let L; try { L = await api("?view=channels"); } catch (err) { $("#lnAlerts").textContent = err.message; return; }
