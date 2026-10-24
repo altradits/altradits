@@ -64,7 +64,7 @@ export async function POST(request) {
       const backup = p.lightning?.provider === "address";
       await createApproval({
         type: "payment_check", lead, siteUrl: base, payload: { proposalId: p.id },
-        summary: `${lead.name || lead.email || "A client"} says they paid $${p.totals.dueNow}${p.lightning?.sats ? ` (${p.lightning.sats.toLocaleString("en-US")} sats)` : ""} via ${method}. Reference: ${reference || "none"}.\nProposal: ${p.title}.\n${backup ? `The node was down, so this went to the backup Lightning address. In that wallet's history, look for the note "Altradits: ${p.title} (proposal ${p.id})". Approve to start the work; the official receipt goes out once you've moved the sats to the node (Finance tab).` : "Confirm the money arrived, then approve to send the kick-off email."}`,
+        summary: `${lead.name || lead.email || "A client"} says they paid $${p.totals.dueNow}${p.lightning?.sats ? ` (${p.lightning.sats.toLocaleString("en-US")} sats)` : ""} via ${method}. Reference: ${reference || "none"}.\nProposal: ${p.title}.\n${backup ? `The node was down, so this went to the backup Lightning address. In that wallet's history, look for the note "Altradits: ${p.title} (proposal ${p.id})". Approve to start the work; the official receipt goes out once you've moved the sats to the node (Finance tab).` : "Approve once you've seen the money, to start the work. The receipt goes out only when the node itself records the payment."}`,
       });
       // The client hears at once; urgent orders also reach Stanley on WhatsApp.
       const { acknowledgeClaim } = await import("../lib/crm.js");

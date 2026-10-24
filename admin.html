@@ -1093,6 +1093,7 @@ async function loadChannels() {
   let L; try { L = await api("?view=channels"); } catch (err) { $("#lnAlerts").textContent = err.message; return; }
   const color = { critical: "#B42318", warning: "#B54708" };
   $("#lnAlerts").innerHTML = L.alerts.length ? L.alerts.map((a) => `<p style="margin:0 0 .6rem;padding:.6rem .8rem;border-radius:.6rem;border:1px solid ${color[a.level] || "var(--line)"};color:${color[a.level] || "inherit"}"><b>${a.level === "critical" ? "Action needed" : "Heads-up"}:</b> ${esc(a.text)}</p>`).join("") : '<p style="margin:0 0 .6rem;color:#067647"><b>All good:</b> enough inbound for what the website receives.</p>';
+  if (L.receiveOnly !== null) $("#lnAlerts").insertAdjacentHTML("beforeend", L.receiveOnly ? '<p class="sm" style="margin:0 0 .6rem;color:#067647"><b>Website node key: receive only ✓</b> It can create invoices and read the node, and has no permission to send.</p>' : "");
   const T = L.totals;
   $("#lnKpis").innerHTML = T ? [["Can receive (inbound)", satsF(T.inbound)], ["Held on our side", satsF(T.local)], ["Total capacity", satsF(T.capacity)], ["Channels active", `${T.active} of ${T.channels}`], ["Received in 30 days", satsF(L.demand.month)]]
     .map(([k, v]) => `<div class="kpi"><small>${k}</small><div>${v}</div></div>`).join("") : "";

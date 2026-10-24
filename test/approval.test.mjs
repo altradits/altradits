@@ -126,9 +126,15 @@ test("payments: one automatic email with the complete receipt attached; nothing 
   assert.ok(p.donation);
   p.lightning = { sats: 24000, rate: 83333 };
   p.payment = { method: "Bitcoin (Lightning)", reference: "abc123hash", sats: 24000 };
-  await crm.confirmPayment(lead, p);
-  const mine = (await all()).filter((e) => e.to === "amina@shop.co");
-  assert.equal(mine.length, 1); // one email, not two receipts
+  // Without the node's record, no receipt: the payment is held.
+  const probe = structuredClone(p);
+  await crm.confirmPayment(structuredClone(lead), probe);
+  assert.equal(probe.payment.held, true);
+  assert.equal(probe.receipt, undefined);
+  const node = (sats, reference) => ({ sats, reference, at: new Date().toISOString(), onchain: false });
+  await crm.confirmPayment(lead, p, "", { settlement: node(24000, "abc123hash") });
+  const mine = (await all()).filter((e) => e.to === "amina@shop.co" && e.files?.length);
+  assert.equal(mine.length, 1); // one email with the receipt, not two receipts
   const [thanks] = mine;
   assert.equal(thanks.subject, "Thank you for your donation");
   assert.equal(thanks.status, "logged"); // sent at once
@@ -150,7 +156,7 @@ test("payments: one automatic email with the complete receipt attached; nothing 
   o.lead.email = "buyer@shop.co"; o.lead.name = "Kip";
   o.p.lightning = { sats: 60000, rate: 83333 };
   o.p.payment = { method: "Bitcoin (Lightning)", reference: "def456hash", sats: 60000 };
-  await crm.confirmPayment(o.lead, o.p);
+  await crm.confirmPayment(o.lead, o.p, "", { settlement: node(60000, "def456hash") });
   const paid = (await all()).filter((e) => e.to === "buyer@shop.co");
   assert.equal(paid.length, 1);
   assert.match(paid[0].text, /Your receipt R-\d{4}-00002 is attached/);
@@ -283,7 +289,8 @@ test("node down: a payment confirmed by hand gets its sats and payment hash from
   await assert.rejects(fin.moveToNode(o.p), /node isn't connected/);
   // Once the node shows the move settled: the official receipt goes out.
   o.p.sweep = { paymentHash: "ab".repeat(32), provider: "lnd", sats: 61000 };
-  const r = await fin.confirmOnNode(o.lead, o.p);
+  await assert.rejects(fin.confirmOnNode(o.lead, o.p), /needs the node's record/); // no record, no receipt
+  const r = await fin.confirmOnNode(o.lead, o.p, { sats: 61000, reference: "ab".repeat(32), at: new Date().toISOString() });
   assert.equal(o.p.payment.held, false);
   assert.equal(o.p.payment.sweptFrom, "Wallet of Satoshi");
   const official = (await all()).find((e) => e.to === "offline@shop.co" && /^Your official receipt R-/.test(e.subject));
@@ -291,6 +298,7 @@ test("node down: a payment confirmed by hand gets its sats and payment hash from
   const pdf = fin.receiptPdf(o.lead, o.p, r.no).toString("latin1");
   assert.ok(pdf.includes("Amount received: 61,000 sats"));
   assert.ok(pdf.includes("Received through our backup Lightning address while our node was offline") && pdf.includes("Altradits node on")); // wraps across two lines
+  assert.ok(pdf.includes("Altradits node payment hash:") && pdf.includes("ab".repeat(32))); // the hash may wrap to its own line
   assert.match(await statementCsv(), /,61000,lightning,node,/);
   assert.ok(!(await fin.heldPayments()).some((x) => x.id === o.p.id));
 });
