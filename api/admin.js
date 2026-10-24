@@ -245,6 +245,13 @@ export async function POST(request) {
     instruct({ text: body.text, dept: dept || null, to: to || null, context }).catch((e) => console.error("stan", e.message)); // takes up to a minute
     return json({ started: true });
   }
+  // Start fresh: archive old communications and/or test clients, then clear them.
+  if (body.action === "start_fresh") {
+    if (body.confirm !== "START FRESH") return json({ error: 'Type START FRESH to confirm.' }, 400);
+    const { archiveAndClear } = await import("../lib/store.js");
+    try { return json(await archiveAndClear([].concat(body.groups || []).map((g) => clean(g, 30)))); }
+    catch (err) { return json({ error: err.message }, 400); }
+  }
   if (body.action === "mail_decide") {
     const { decideEmail } = await import("../lib/email.js");
     try { return json({ email: await decideEmail(clean(body.id, 30), { approve: Boolean(body.approve), subject: clean(body.subject, 200), text: clean(body.text, 10000), note: clean(body.note, 500) }) }); }

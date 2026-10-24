@@ -44,7 +44,7 @@ test("every kit is complete and its offers are real catalog items", () => {
 });
 
 let sub, files;
-test("sign-up: email checked, bots blocked, joins the list as a lead, kit emailed with download links", async () => {
+test("sign-up: email checked, bots blocked, joins the list as a lead, kit emailed as attachments", async () => {
   assert.equal((await post({ kit: "inbox", email: "nope" })).status, 400);
   assert.equal((await post({ kit: "inbox", email: "a@b.co", website: "spam" })).status, 400);
   assert.equal((await post({ kit: "nothing", email: "a@b.co" })).status, 400);
@@ -57,11 +57,11 @@ test("sign-up: email checked, bots blocked, joins the list as a lead, kit emaile
   const lead = await getLead(s.leadId);
   assert.equal(lead.source, "kit:inbox");
   assert.equal(lead.email, "owner@shop.co");
-  // Only what they asked for: one line, one download button, unsubscribe in the footer.
+  // Only what they asked for: one line with the kit attached, no link or button.
   const mail = (await emails()).find((e) => /Your free kit: Inbox Zero/.test(e.subject));
-  assert.equal(mail.text, "Hi Amina, here's your Inbox Zero in 60 Minutes.");
-  assert.equal(mail.cta.label, "Download your kit");
-  assert.match(mail.cta.url, /\/api\/kits\?d=inbox&f=inbox-zero-in-60-minutes\.pdf&s=\w+&t=[\w-]+&c=[\w-]+$/);
+  assert.equal(mail.text, "Hi Amina, your Inbox Zero in 60 Minutes is attached.");
+  assert.equal(mail.cta, null);
+  assert.deepEqual(mail.files, ["inbox-zero-in-60-minutes.pdf"]);
   assert.match(mail.unsubscribe, /^https:\/\/altradits\.test\/api\/kits\?unsub=/);
   // A second kit adds an interest, not a second subscriber or lead.
   await post({ kit: "social", email: "owner@shop.co" });
@@ -85,11 +85,7 @@ test("downloads: a real PDF with the next steps, and the spreadsheet; wrong toke
 });
 
 test("follow-ups: one a day at most, from the newest kit, climbing the ladder, then stop", async () => {
-  // Nothing until the address is confirmed by downloading from the emailed link.
-  assert.equal((await subs.runNurture(new Date(Date.now() + 30 * 864e5))).sent, 0);
-  const mailed = (await emails()).find((e) => /Your free kit: Inbox Zero/.test(e.subject));
-  const c = mailed.cta.url.match(/&c=([\w-]+)/)[1];
-  await get(`?d=inbox&f=inbox-zero-in-60-minutes.pdf&s=${sub.id}&t=${sub.t}&c=${c}`);
+  // Confirmed at sign-up (consent ticked; follow-ups wait for Stanley's approval in production).
   const s = await getJSON(`sub:${sub.id}`);
   assert.equal(s.confirmed, true);
   const start = Date.parse(s.kits[1].at);
@@ -144,10 +140,10 @@ test("heads send external mail with stan@ copied; Stan sends internal mail and p
   }
   // Every department has named AI staff with a jurisdiction.
   assert.ok(COMMS.every((c) => c.staff.length >= 1 && c.staff.every((s) => s.jurisdiction.length)));
-  // Official department addresses; the head's full name signs the email and says they're an AI.
+  // Official department addresses; the head's full name and title sign the email.
   for (const c of COMMS.filter((x) => x.head.name !== "Stan")) {
     assert.equal(c.signature[0], c.head.name, `${c.id}: signed by the head`);
-    assert.match(c.signature[1], /\(AI agent\)/);
+    assert.equal(c.signature[1], `${c.head.title}, Altradits`);
     assert.match(c.head.name, /^[A-Z][a-z]+ [A-Z][a-z]+$/, `${c.id}: first and last name`);
   }
   assert.ok(COMMS.every((c) => !/\d{3}[\s-]?\d{3}[\s-]?\d{3}/.test(JSON.stringify(c))), "no phone numbers");
@@ -236,16 +232,18 @@ test("security: someone else typing a subscriber's address gets nothing of their
   assert.equal(ownLinksOnly("Pay at https://evil.example/pay or see https://altradits.com/portal"), "Pay at [link removed] or see https://altradits.com/portal");
 });
 
-test("a kit with several files is one download (a zip of all of them); follow-ups are one line and one button", async () => {
-  const r = await (await post({ kit: "invoices", email: "zip@shop.co", name: "Zed" }, "8.8.8.8")).json();
-  const mail = (await emails()).find((e) => e.to === "zip@shop.co");
-  assert.equal(mail.text, "Hi Zed, here's your Get Paid on Time Kit.");
-  assert.match(mail.cta.url, /f=invoices-kit\.zip/);
-  const res = await get(mail.cta.url.replace("https://altradits.test/api/kits", ""));
-  assert.equal(res.headers.get("content-type"), "application/zip");
-  const zip = Buffer.from(await res.arrayBuffer()).toString("latin1");
-  assert.ok(zip.startsWith("PK\x03\x04"));
-  assert.match(zip, /get-paid-on-time-kit\.pdf/);
-  assert.match(zip, /invoice-tracker\.csv/);
-  assert.equal((await getJSON(`sub:${r.sub.id}`)).confirmed, true); // downloaded from the email: confirmed
+test("a kit with several files arrives with every file attached (PDF and spreadsheet)", async () => {
+  const { setMailer } = await import("../lib/email.js");
+  const { default: nodemailer } = await import("nodemailer");
+  const t = nodemailer.createTransport({ streamTransport: true, buffer: true, newline: "unix" }), raw = [];
+  setMailer({ sendMail: async (m) => { const info = await t.sendMail(m); raw.push(info.message.toString()); return info; } });
+  try {
+    await post({ kit: "invoices", email: "zip@shop.co", name: "Zed" }, "8.8.8.8");
+    const mail = (await emails()).find((e) => e.to === "zip@shop.co");
+    assert.equal(mail.text, "Hi Zed, your Get Paid on Time Kit is attached.");
+    assert.deepEqual(mail.files, ["get-paid-on-time-kit.pdf", "invoice-tracker.csv"]);
+    assert.match(raw[0], /Content-Type: application\/pdf; name=get-paid-on-time-kit\.pdf/);
+    assert.match(raw[0], /Content-Disposition: attachment; filename=invoice-tracker\.csv/);
+    assert.doesNotMatch(raw[0], /api\/kits\?d=/); // no download link in the email
+  } finally { setMailer(undefined); }
 });

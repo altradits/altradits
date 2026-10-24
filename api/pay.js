@@ -125,7 +125,7 @@ export async function GET(request) {
     if (lead) {
       await confirmPayment(lead, p);
       if (p.donation) {
-        await emailOwner(`Donation ⚡ ${settled.sats.toLocaleString("en-US")} sats ($${p.totals.dueNow})`, `${lead.name || lead.email || "Someone"} donated $${p.totals.dueNow} (${settled.sats} sats) ${settled.onchain ? "on-chain" : "over Lightning"} to Bitcoin education.${p.donation.message ? `\n\nTheir message: ${p.donation.message}` : ""}\n\nThey've been thanked automatically; Finance's receipt is in your approval queue.`, null, lead.id);
+        await emailOwner(`Donation ⚡ ${settled.sats.toLocaleString("en-US")} sats ($${p.totals.dueNow})`, `${lead.name || lead.email || "Someone"} donated $${p.totals.dueNow} (${settled.sats} sats) ${settled.onchain ? "on-chain" : "over Lightning"} to Bitcoin education.${p.donation.message ? `\n\nTheir message: ${p.donation.message}` : ""}\n\nThey've been thanked and sent their PDF receipt automatically; Finance's confirmation is in your approval queue.`, null, lead.id);
         return json({ status: "paid" });
       }
       // Work to start: one of the few things worth an email.

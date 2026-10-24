@@ -207,7 +207,7 @@ dd{margin:0;overflow-wrap:anywhere}
 
   <div id="tab-growth" hidden>
     <div class="panel"><h2>Donations <span class="stage" id="donTotal" style="font-size:.8rem"></span></h2>
-      <p class="muted" style="margin-top:0">Donations to Bitcoin education at <a href="/donate" target="_blank" rel="noopener">/donate</a>. Confirmed automatically; Finance's receipts wait in the Stan tab.</p>
+      <p class="muted" style="margin-top:0">Donations to Bitcoin education at <a href="/donate" target="_blank" rel="noopener">/donate</a>. Confirmed automatically with a PDF receipt; Finance's personal confirmations wait in the Stan tab.</p>
       <div id="donList"></div>
     </div>
     <div class="panel"><h2>Free-kit subscribers <span class="stage" id="subTotal" style="font-size:.8rem"></span></h2>
@@ -327,6 +327,13 @@ dd{margin:0;overflow-wrap:anywhere}
     <div class="grid2">
       <div class="panel"><h2>Copied to Stan (external, from the heads)</h2><div id="stanCopied"></div></div>
       <div class="panel"><h2>Escalated to you</h2><div id="stanEsc"></div></div>
+    </div>
+    <div class="panel"><h2>Start fresh</h2>
+      <p class="muted" style="margin-top:0">Clear old records so the dashboard only shows real work from now on. They're moved to an archive file in the data folder, not destroyed. Your team, careers and marketing content stay.</p>
+      <label class="sm"><input type="checkbox" class="freshG" value="communications" checked> Communications: every recorded email, the approval queue and Stan's instructions</label><br>
+      <label class="sm"><input type="checkbox" class="freshG" value="clients"> Test clients: leads, orders, payments, donations, tasks, free-kit subscribers, hunt coupons, and receipt numbers back to 00001</label>
+      <div class="row" style="margin-top:.6rem"><input id="freshConfirm" placeholder="Type START FRESH" style="max-width:14rem"><button class="btn" id="freshGo">Archive and clear</button></div>
+      <p class="sm muted" id="freshMsg" role="status"></p>
     </div>
   </div>
 
@@ -924,6 +931,13 @@ $("#mailList").addEventListener("click", async (e) => {
 
 // ---- Stan: instructions and approvals
 let STAN_D = null;
+$("#freshGo").addEventListener("click", async (e) => {
+  const groups = [...document.querySelectorAll(".freshG:checked")].map((c) => c.value);
+  e.target.disabled = true;
+  try { const r = await api("", { action: "start_fresh", groups, confirm: $("#freshConfirm").value.trim() }); $("#freshMsg").textContent = `Done: ${r.archived} records archived to ${r.file}.`; $("#freshConfirm").value = ""; loadStan(); }
+  catch (err) { $("#freshMsg").textContent = err.message; }
+  e.target.disabled = false;
+});
 $("#stanGo").addEventListener("click", async (e) => {
   const text = $("#stanText").value.trim(); if (!text) { $("#stanMsg").textContent = "Write an instruction first."; return; }
   e.target.disabled = true; $("#stanMsg").textContent = "Stan is on it. Drafts appear below in a minute.";
