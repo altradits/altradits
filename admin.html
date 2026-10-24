@@ -218,6 +218,18 @@ dd{margin:0;overflow-wrap:anywhere}
       </div>
       <h3 style="font-size:1rem;margin:1.2rem 0 .5rem">Every payment</h3><div id="finList" style="overflow-x:auto"></div>
     </div>
+    <div class="panel"><h2>Lightning channels</h2>
+      <p class="muted" style="margin-top:0">Your node's channels: what the website can still receive over Lightning. You get an email when something needs action (checked hourly, at most once a day per alert).</p>
+      <div id="lnAlerts"></div>
+      <div class="kpis" id="lnKpis" style="margin:0 0 1rem"></div>
+      <div id="lnList" style="overflow-x:auto"></div>
+      <div class="grid2" style="margin-top:1rem">
+        <div><h3 style="font-size:1rem;margin:.2rem 0 .5rem">Opening the next channel</h3><div id="lnAdvice" class="sm"></div></div>
+        <div><h3 style="font-size:1rem;margin:.2rem 0 .5rem">What we've learned</h3>
+          <div class="row"><input id="lnLesson" placeholder="What happened, and what we'll do differently"><button class="btn" id="lnAdd">Add</button></div>
+          <ul id="lnLessons" class="sm" style="padding-left:1.1rem"></ul></div>
+      </div>
+    </div>
   </div>
 
   <div id="tab-growth" hidden>
@@ -401,7 +413,7 @@ function tab(name) {
   document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === name));
   if (["tasks", "team"].includes(name)) loadOps();
   if (name === "growth") renderGrowth();
-  if (name === "finance") loadFinance();
+  if (name === "finance") { loadFinance(); loadChannels(); }
   if (name === "jobs") loadJobs();
   if (name === "marketing") loadMarketing();
   if (name === "stan") loadStan();
@@ -975,6 +987,24 @@ async function loadFinance() {
   $("#finServices").innerHTML = table(F.services.map((s) => `<tr><td>${esc(s.key)}</td><td>${s.count}</td><td>${usd2(s.usd)}</td></tr>`), ["Service", "Orders", "Received"]);
   $("#finList").innerHTML = table(F.payments.map((x) => `<tr><td>${esc(new Date(x.at).toLocaleString())}</td><td>${esc(x.receipt || "")}</td><td>${esc(x.client)}</td><td>${esc(x.what)}${x.type === "donation" ? ' <span class="stage">donation</span>' : ""}</td><td>${usd2(x.usd)}</td><td>${satsF(x.sats)}</td><td>${x.channel === "onchain" ? "On-chain" : "Lightning"}</td><td><code title="${esc(x.reference)}">${esc(x.reference.slice(0, 12))}…</code></td></tr>`), ["Date", "Receipt", "Client", "What", "USD", "Sats", "Channel", "Reference"]);
 }
+async function loadChannels() {
+  let L; try { L = await api("?view=channels"); } catch (err) { $("#lnAlerts").textContent = err.message; return; }
+  const color = { critical: "#B42318", warning: "#B54708" };
+  $("#lnAlerts").innerHTML = L.alerts.length ? L.alerts.map((a) => `<p style="margin:0 0 .6rem;padding:.6rem .8rem;border-radius:.6rem;border:1px solid ${color[a.level] || "var(--line)"};color:${color[a.level] || "inherit"}"><b>${a.level === "critical" ? "Action needed" : "Heads-up"}:</b> ${esc(a.text)}</p>`).join("") : '<p style="margin:0 0 .6rem;color:#067647"><b>All good:</b> enough inbound for what the website receives.</p>';
+  const T = L.totals;
+  $("#lnKpis").innerHTML = T ? [["Can receive (inbound)", satsF(T.inbound)], ["Held on our side", satsF(T.local)], ["Total capacity", satsF(T.capacity)], ["Channels active", `${T.active} of ${T.channels}`], ["Received in 30 days", satsF(L.demand.month)]]
+    .map(([k, v]) => `<div class="kpi"><small>${k}</small><div>${v}</div></div>`).join("") : "";
+  const rows = [...L.channels, ...L.pending].map((c) => { const pct = c.capacity ? Math.round((c.local / c.capacity) * 100) : 0;
+    return `<tr><td>${c.alias ? `<b>${esc(c.alias)}</b><br>` : ""}<code title="${esc(c.peer)}">${esc(c.peer.slice(0, 16))}…</code>${c.private ? ' <span class="stage">private</span>' : ""}</td><td>${satsF(c.capacity)}</td><td>${satsF(c.remote)}</td><td>${satsF(c.local)}</td><td><div style="background:#E4E9F0;border-radius:4px;height:8px;width:7rem"><div style="background:#2F5BEA;border-radius:4px;height:8px;width:${pct}%"></div></div><small class="muted">${pct}% ours</small></td><td>${c.status ? esc(c.status) : c.active ? "Active" : '<b style="color:#B42318">Offline</b>'}</td></tr>`; });
+  $("#lnList").innerHTML = rows.length ? `<table><thead><tr><th>Peer</th><th>Capacity</th><th>Can receive</th><th>Ours</th><th>Balance</th><th>Status</th></tr></thead><tbody>${rows.join("")}</tbody></table>` : "";
+  const A = L.advice;
+  $("#lnAdvice").innerHTML = `<p style="margin:0 0 .5rem"><b>Suggested size: ${satsF(A.capacity)} of inbound.</b> ${esc(A.why)}</p>${A.fees ? `<p style="margin:0 0 .5rem">${esc(A.fees)}</p>` : ""}<b>Avoid</b><ul style="padding-left:1.1rem;margin:.3rem 0">${A.avoid.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  $("#lnLessons").innerHTML = L.lessons.map((l) => `<li><b>${esc(l.at)}</b> ${esc(l.text)}</li>`).join("");
+}
+$("#lnAdd").addEventListener("click", async () => {
+  try { await api("", { action: "ln_lesson", text: $("#lnLesson").value }); $("#lnLesson").value = ""; loadChannels(); }
+  catch (err) { $("#lnLessons").insertAdjacentHTML("afterbegin", `<li class="muted">${esc(err.message)}</li>`); }
+});
 $("#finCsv").addEventListener("click", async () => {
   const res = await fetch("/api/admin?view=statement&format=csv", { headers: { Authorization: "Bearer " + token } });
   const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(await res.blob()), download: `altradits-statement-${new Date().toISOString().slice(0, 10)}.csv` });
@@ -1200,6 +1230,7 @@ async function load(navigate = true) {
     if (!navigate) return;
     loadOps();
     if (location.hash === "#tasks") tab("tasks");
+    if (location.hash === "#finance") tab("finance");
     if (location.hash === "#marketing") tab("marketing");
     if (location.hash === "#stan") tab("stan"); else loadStan(); // approval count on the tab
     const h = location.hash.match(/^#(approval|lead)=(.+)$/);
