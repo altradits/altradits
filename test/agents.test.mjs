@@ -347,7 +347,7 @@ test("anonymous order, start to finish: paid without email, agent delivers, clie
   try {
     // Order and pay with no email or name, through the real checkout and a node invoice.
     const { lead, p } = await crm.createOrder(orderable("hourly"));
-    assert.match(lead.pickup, /^[A-Z]+-[A-Z]+-[A-Z]+-\d{4}$/);
+    assert.match(lead.pickup, /^([A-Z]+-){4}\d{4}$/);
     const before = (await emails()).length;
     await call(pay.POST, "POST", "/api/pay", { id: p.id, t: p.token });
     payLast();
@@ -392,4 +392,41 @@ test("anonymous order, start to finish: paid without email, agent delivers, clie
     const ok = await call(portal.POST, "POST", "/api/portal", { c: token, action: "approve", task: taskId, rating: 5, comment: "Perfect" });
     assert.equal(ok.body.tasks[0].status, "done");
   } finally { workers.setWorkerClient(null); }
+});
+
+// ============================================================ payment races and codes
+test("security: removing a code after its invoice was made still spends the code; ten checks at once confirm once", async () => {
+  const pay = await import(new URL("api/pay.js", root));
+  const order = await import(new URL("api/order.js", root));
+  const hunt = await import(new URL("lib/hunt.js", root));
+  const { orderable } = await import(new URL("data/catalog.js", root));
+  // Apply a 50% code, get the discounted QR, remove the code, then pay the old discounted invoice.
+  const { lead, p } = await crm.createOrder(orderable("hourly"));
+  lead.email = "racer@shop.co"; await crm.saveLead(lead);
+  const c = await hunt.createCoupon({ pct: 50 });
+  const full = orderable("hourly").price;
+  let r = await call(order.POST, "POST", "/api/order", { id: p.id, t: p.token, coupon: c.code }, "3.3.3.1");
+  assert.equal(r.body.usd, full / 2);
+  await call(pay.POST, "POST", "/api/pay", { id: p.id, t: p.token }, "3.3.3.1");
+  r = await call(order.POST, "POST", "/api/order", { id: p.id, t: p.token, coupon: "" }, "3.3.3.1");
+  assert.equal(r.body.usd, full);
+  payLast(); // the discounted invoice, still watched
+  // Ten payment checks at the same moment.
+  const results = await Promise.all(Array.from({ length: 10 }, () => call(pay.GET, "GET", `/api/pay?id=${p.id}&t=${p.token}`, undefined, "3.3.3.2")));
+  assert.ok(results.some((x) => x.body.status === "paid"));
+  let done = await crm.getProposal(p.id);
+  for (let i = 0; i < 50 && done.status !== "paid"; i++) { await new Promise((res) => setTimeout(res, 20)); done = await crm.getProposal(p.id); }
+  assert.equal(done.status, "paid");
+  assert.equal(done.totals.dueNow, full / 2); // the price of the invoice that settled
+  assert.equal(done.coupon?.code, c.code);
+  assert.equal((await hunt.reserveCoupon(c.code, "another").catch((e) => e.message)), "That code has already been used."); // spent
+  const kick = (await emails()).filter((e) => e.to === "racer@shop.co" && /we're starting/.test(e.subject));
+  assert.equal(kick.length, 1); // one confirmation, one receipt
+  assert.ok(done.receipt?.no);
+  const tasks = (await ops.allTasks()).filter((t) => t.leadId === lead.id);
+  assert.equal(tasks.length, 1);
+  // Guessing codes is rate-limited.
+  let last;
+  for (let i = 0; i < 11; i++) last = await call(order.POST, "POST", "/api/order", { id: p.id, t: p.token, coupon: `HUNT-NOPE${i}` }, "3.3.3.9");
+  assert.equal(last.status, 429);
 });

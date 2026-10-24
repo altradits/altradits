@@ -3,7 +3,8 @@
 // GET  /api/pay?id=&t=             -> has it been paid? (auto-confirms on LND)
 // GET  /api/pay?qr=address         -> QR of the public Lightning address (homepage)
 import { json, readBody, clean, clientIp, safeEqual } from "../lib/http.js";
-import { hit } from "../lib/store.js";
+import { hit, acquireLock } from "../lib/store.js";
+import { defang } from "../lib/screen.js";
 import { getProposal, saveProposal, getLead, logEvent, saveLead, confirmPayment } from "../lib/crm.js";
 import { emailOwner } from "../lib/email.js";
 import { createInvoice, invoicePaid, qrSvg, lightningMode, newOnchainAddress, onchainFeeRates, addressReceived, nodeSettlement } from "../lib/lightning.js";
@@ -33,10 +34,20 @@ export async function POST(request) {
   if (!["accepted", "paid_claimed"].includes(p.status)) return json({ error: "Accept the proposal first." }, 409);
   if (!lightningMode()) return json({ error: "Lightning payments aren't set up yet." }, 503);
 
+  // The code must still be this order's (a reservation can lapse); otherwise the full price.
+  if (p.coupon) {
+    const { holdCoupon } = await import("../lib/hunt.js");
+    if (!(await holdCoupon(p.coupon.code, p.id, new Date(Date.now() + 2 * 3600e3).toISOString()))) {
+      p.coupon = null; p.totals.dueNow = p.totals.monthly + p.totals.oneOff; await saveProposal(p);
+    }
+  }
   const usd = p.totals.dueNow;
-  if (!fresh(p.lightning, usd)) {
+  if (!fresh(p.lightning, usd) || (p.lightning?.coupon?.code || null) !== (p.coupon?.code || null)) {
     try {
-      p.lightning = await createInvoice({ usd, memo: `Altradits: ${p.title} (proposal ${p.id})` });
+      // Older invoices stay watched (a client may still pay one); each records the
+      // price and code it was made with, so whichever settles is accounted exactly.
+      if (p.lightning) p.retiredInvoices = [...(p.retiredInvoices || []), p.lightning].slice(-10);
+      p.lightning = { ...(await createInvoice({ usd, memo: `Altradits: ${p.title} (proposal ${p.id})` })), coupon: p.coupon ? { ...p.coupon } : null };
     } catch (err) {
       console.error("lightning invoice", err);
       return json({ error: "Couldn't create a Lightning invoice right now. Please use another payment method or try again shortly." }, 502);
@@ -93,7 +104,7 @@ export async function GET(request) {
   const p = await load(u.searchParams.get("id"), u.searchParams.get("t"));
   if (!p) return json({ error: "Proposal not found." }, 404);
   if (p.status === "paid") return json({ status: "paid" });
-  const candidates = [p.lightning, ...(p.lnurlInvoices || [])].filter(Boolean);
+  const candidates = [p.lightning, ...(p.lnurlInvoices || []), ...(p.retiredInvoices || [])].filter(Boolean);
   if (!candidates.length && !p.onchain?.address) return json({ status: p.status, paid: false });
 
   // Paid either through the QR invoice or an invoice fetched via the LNURL.
@@ -121,14 +132,21 @@ export async function GET(request) {
   // backup address, a block explorer while the node is offline) is held.
   const settlement = paid ? await nodeSettlement({ invoices: candidates, address: settled?.onchain ? p.onchain.address : null, need: Math.floor((p.onchain?.sats || 0) * 0.99) }).catch(() => null) : null;
   if (paid) {
+    // One confirmation per order, however many checks arrive at once.
+    const release = await acquireLock(`confirm:${p.id}`, 300);
+    if (!release) return json({ status: p.status, paid: false, confirming: true });
+    try {
     const latest = await getProposal(p.id); // another check may have just confirmed it
     if (latest?.status === "paid") return json({ status: "paid" });
+    // The invoice that settled decides the price and code (not what the order shows now).
+    if (settled && !settled.onchain && settled.usd != null && settled.usd !== p.totals.dueNow) Object.assign(p, { coupon: settled.coupon || null, totals: { ...p.totals, dueNow: settled.usd } });
     const lead = await getLead(p.leadId);
-    p.payment = { method: settled.onchain ? "Bitcoin (on-chain)" : "Bitcoin (Lightning)", reference: settled.paymentHash || settled.bolt11.slice(-24), claimedAt: new Date().toISOString(), sats: settled.sats };
+    p.payment = { method: settled.onchain ? "Bitcoin (on-chain)" : "Bitcoin (Lightning)", reference: settled.paymentHash || settled.bolt11.slice(-24), claimedAt: new Date().toISOString(), sats: settled.sats,
+      ...(settled.onchain ? {} : { expectedSats: settled.sats }) };
     if (lead) {
       await confirmPayment(lead, p, "", { settlement });
       if (p.donation) {
-        await emailOwner(`Donation ⚡ ${settled.sats.toLocaleString("en-US")} sats ($${p.totals.dueNow})`, `${lead.name || lead.email || "Someone"} donated $${p.totals.dueNow} (${settled.sats} sats) ${settled.onchain ? "on-chain" : "over Lightning"} to Bitcoin education.${p.donation.message ? `\n\nTheir message: ${p.donation.message}` : ""}\n\nThey've been thanked automatically${p.payment.held ? "; their receipt goes out once the node records the payment (Finance tab)" : ", with their receipt attached"}.`, null, lead.id);
+        await emailOwner(`Donation ⚡ ${settled.sats.toLocaleString("en-US")} sats ($${p.totals.dueNow})`, `${lead.name || lead.email || "Someone"} donated $${p.totals.dueNow} (${settled.sats} sats) ${settled.onchain ? "on-chain" : "over Lightning"} to Bitcoin education.${p.donation.message ? `\n\nTheir message: ${defang(p.donation.message)}` : ""}\n\nThey've been thanked automatically${p.payment.held ? "; their receipt goes out once the node records the payment (Finance tab)" : ", with their receipt attached"}.`, null, lead.id);
         return json({ status: "paid" });
       }
       // Work to start: one of the few things worth an email.
@@ -141,6 +159,7 @@ export async function GET(request) {
       await saveProposal(p);
     }
     return json({ status: "paid" });
+    } finally { await release(); }
   }
   return json({ status: p.status, paid: false, verifiable: paid !== null || Boolean(p.onchain), onchainSeen });
 }

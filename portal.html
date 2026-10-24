@@ -98,7 +98,7 @@ function taskCard(t) {
       <input placeholder="Your answer" data-ans="${t.id}"><div class="row"><button class="btn primary" data-answer="${t.id}">Send answer</button></div></div>` : ""}
     ${t.deliverable ? `<p>${esc(t.deliverable.summary)}${t.deliverable.url ? `<br><a href="${esc(t.deliverable.url)}" target="_blank" rel="noopener">Open deliverable →</a>` : ""}</p>
       ${t.deliverable.files.length ? `<div class="files">${t.deliverable.files.map((f) => `<a class="btn" href="/api/portal?c=${encodeURIComponent(c)}&task=${t.id}&file=${f.i}">⬇ ${esc(f.name)}</a>`).join("")}</div>` : ""}
-      ${t.deliverable.sources.length ? `<p class="note">Sources: ${t.deliverable.sources.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(new URL(u).hostname)}</a>`).join(", ")}</p>` : ""}` : ""}
+      ${t.deliverable.sources.length ? `<p class="note">Sources: ${t.deliverable.sources.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc((() => { try { return new URL(u).hostname; } catch { return "source"; } })())}</a>`).join(", ")}</p>` : ""}` : ""}
     ${t.satisfaction ? `<p class="note">You rated this ${"★".repeat(t.satisfaction.rating)}${"☆".repeat(5 - t.satisfaction.rating)}</p>` : ""}
     ${t.status === "review" ? `<div class="row"><span>Rate it:</span><span class="stars" data-stars="${t.id}">${[1, 2, 3, 4, 5].map((n) => `<button type="button" data-star="${n}" data-for="${t.id}" aria-label="${n} star${n > 1 ? "s" : ""}">★</button>`).join("")}</span>
       <input placeholder="Comment (optional)" data-cm="${t.id}" style="flex:1;min-width:10rem"><button class="btn ok" data-approve="${t.id}">Approve</button></div>

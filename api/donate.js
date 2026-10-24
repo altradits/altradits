@@ -14,6 +14,7 @@ export async function POST(request) {
   const email = clean(body.email, 200).toLowerCase();
   if (email && !EMAIL_RE.test(email)) return json({ error: "Please check your email address." }, 400);
   if ((await hit(`rl:donate:${clientIp(request)}`, 3600)) > 20) return json({ error: "Too many attempts. Try again in an hour." }, 429);
+  if ((await hit(`rl:donate:all:${new Date().toISOString().slice(0, 13)}`, 3600)) > 200) return json({ error: "We're very busy right now. Please try again in a few minutes." }, 429);
   const anon = Boolean(body.anonymous);
   const { lead, p } = await createDonation({ usd, name: anon ? "" : body.name, email: anon ? "" : email, message: body.message, ref: clean(body.ref, 12).toLowerCase() });
   if (anon) { p.donation.anonymous = true; const { saveProposal } = await import("../lib/crm.js"); await saveProposal(p); }

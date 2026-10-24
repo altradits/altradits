@@ -2,7 +2,7 @@
 // GET  /api/portal?c=<token>                         -> onboarding, tasks, hours, referral
 // GET  /api/portal?c=<token>&task=<id>&file=<n>      -> download a deliverable file
 // POST /api/portal { c, action: "onboarding"|"task"|"answer"|"approve"|"changes", ... }
-import { holdIfUnsafe } from "../lib/screen.js";
+import { holdIfUnsafe, screen, describe, defang } from "../lib/screen.js";
 import { reopen } from "../lib/qa.js";
 import { json, readBody, clean, clientIp } from "../lib/http.js";
 import { hit } from "../lib/store.js";
@@ -84,6 +84,9 @@ export async function POST(request) {
     if (/password\s*[:=]|pwd\s*[:=]|\bpin\s*[:=]/i.test(JSON.stringify(lead.onboarding))) {
       return json({ error: "Please don't share passwords here. Describe how you'll grant access (e.g. delegate access or a password-manager share) instead." }, 400);
     }
+    // Onboarding goes into every task brief, so it gets the same security screen as task requests.
+    const s = screen(Object.values(lead.onboarding).join("\n"));
+    if (s.flagged) return json({ error: `Please remove ${describe(s.reasons)} from your onboarding answers. Send anything like that as a task request instead, so our security check can review it first.` }, 400);
     logEvent(lead, "Completed onboarding.");
     await saveLead(lead);
     return json(await view(lead));
@@ -131,7 +134,7 @@ export async function POST(request) {
       t.status = "follow_up";
       await saveTask(t);
       await emailOwner(`Unhappy client: ${t.title} rated ${rating}/5`,
-        `${t.client} approved "${t.title}" but rated it ${rating}/5.\n\n${comment || "(no comment)"}\n\nReach out personally, then close the follow-up in the dashboard.`,
+        `${t.client} approved "${t.title}" but rated it ${rating}/5.\n\n${comment ? defang(comment) : "(no comment)"}\n\nReach out personally, then close the follow-up in the dashboard.`,
         { label: "Open tasks", url: `${base()}/admin#tasks` }, t.leadId);
     }
   } else if (body.action === "changes") {

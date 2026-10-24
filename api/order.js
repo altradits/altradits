@@ -4,8 +4,8 @@
 // POST /api/order { id, t, coupon }           -> apply a one-time hunt code -> { usd, pct }
 // GET  /api/order?id=&t=  -> { status, portal?, phone? }  (phone only once an
 //                            urgent order is paid, so the client can flag it)
-import { holdIfUnsafe } from "../lib/screen.js";
-import { json, readBody, clean, clientIp, safeEqual, EMAIL_RE } from "../lib/http.js";
+import { json, readBody, clean, oneLine, clientIp, safeEqual, EMAIL_RE } from "../lib/http.js";
+import { holdIfUnsafe, screen, defang } from "../lib/screen.js";
 import { hit } from "../lib/store.js";
 import { createOrder, getProposal, saveProposal, getLead, saveLead, logEvent, sendKickoff } from "../lib/crm.js";
 import { emailOwner } from "../lib/email.js";
@@ -24,21 +24,30 @@ async function load(id, t) {
 
 export async function POST(request) {
   const body = await readBody(request);
-  if (body.id && body.coupon !== undefined) return applyCoupon(body);
+  if (body.id && body.coupon !== undefined) return applyCoupon(body, request);
   if (body.id) return update(body);
   const item = orderable(clean(body.item, 40));
   if (!item) return json({ error: "Unknown item." }, 400);
   if ((await hit(`rl:order:${clientIp(request)}`, 3600)) > 20) return json({ error: "Too many orders from this connection. Try again in an hour." }, 429);
+  // Site-wide: unpaid checkouts can't flood the store, whatever the connection.
+  if ((await hit(`rl:order:all:${new Date().toISOString().slice(0, 13)}`, 3600)) > 300) return json({ error: "We're very busy right now. Please try again in a few minutes." }, 429);
   const { lead, p } = await createOrder(item, { ref: clean(body.ref, 12).toLowerCase() });
   return json({ id: p.id, t: p.token, name: lead.pickup, item: { id: item.id, name: item.name, usd: p.totals.dueNow } });
 }
 
 // One code per order; the price drops before the invoice is made, and the code
 // is spent only when the order is paid (lib/crm.js confirmPayment).
-async function applyCoupon(body) {
+async function applyCoupon(body, request) {
+  // Codes can't be guessed at scale: per connection and site-wide limits.
+  if ((await hit(`rl:coupon:${clientIp(request)}`, 600)) > 10) return json({ error: "Too many tries. Wait ten minutes and try again." }, 429);
+  if ((await hit(`rl:coupon:all:${new Date().toISOString().slice(0, 13)}`, 3600)) > 400) return json({ error: "Codes can't be checked right now. Please try again shortly." }, 429);
   const p = await load(body.id, body.t);
   if (!p) return json({ error: "Order not found." }, 404);
   if (p.status !== "accepted") return json({ error: "This order can't take a code now." }, 409);
+  // A new code means a new price: the current invoice is retired (still watched,
+  // with the code it was made with) and the next payment QR uses the new price.
+  if (p.lightning) { p.retiredInvoices = [...(p.retiredInvoices || []), p.lightning].slice(-10); p.lightning = null; }
+  if (p.onchain) p.onchain.sats = null;
   const code = clean(body.coupon, 20).toUpperCase();
   const full = p.totals.monthly + p.totals.oneOff;
   try {
@@ -74,7 +83,11 @@ async function update(body) {
   const before = p.order.task, wasUrgent = isUrgent(p.order);
   if (p.order.urgentOk && URGENCY.some((u) => u.id === body.urgency)) p.order.urgency = body.urgency;
   if (email) lead.email = email;
-  if (body.name !== undefined) lead.name = clean(body.name, 120);
+  if (body.name !== undefined) {
+    const name = oneLine(body.name, 120);
+    if (screen(name).flagged) return json({ error: "Please enter just your name (no links or code)." }, 400);
+    lead.name = name;
+  }
   if (body.task !== undefined) p.order.task = clean(body.task, 4000);
   p.client = { ...p.client, name: lead.name, email: lead.email };
   p.summary = p.order.task;
@@ -107,7 +120,8 @@ async function update(body) {
         t.history.push({ at: new Date().toISOString(), by: "client", text: "Added order details" });
         if (!(await holdIfUnsafe(t, p.order.task, "order details", saveTask))) await saveTask(t);
       }
-      await emailOwner(`Order details: ${p.order.name}`, `${lead.name || lead.email || "A client"} added details to their paid order:\n\n${p.order.task}`, null, lead.id);
+      // Held by the security screen: Stanley gets the defanged copy from the hold, not the raw text.
+      if (!(t && t.status === "held")) await emailOwner(`Order details: ${p.order.name}`, `${lead.name || lead.email || "A client"} added details to their paid order:\n\n${defang(p.order.task)}`, null, lead.id);
     }
   }
   return json({ ok: true });

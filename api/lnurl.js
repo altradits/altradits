@@ -37,7 +37,7 @@ export async function GET(request) {
   const msats = Number(amount);
   if (!Number.isInteger(msats) || msats < min || msats > max || msats % 1000) return error(`Please pay ${sats.toLocaleString("en-US")} sats.`);
   const inv = await createInvoice({ sats: msats / 1000, memo: "", descriptionHash: crypto.createHash("sha256").update(metadata).digest("hex"), expiry: 3600 });
-  p.lnurlInvoices = [...(p.lnurlInvoices || []).slice(-9), { ...inv, viaLnurl: true }];
+  p.lnurlInvoices = [...(p.lnurlInvoices || []).slice(-9), { ...inv, viaLnurl: true, usd: p.totals.dueNow, coupon: p.coupon ? { ...p.coupon } : null }];
   await saveProposal(p);
   return reply({ pr: inv.bolt11, routes: [] });
 }
