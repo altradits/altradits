@@ -54,6 +54,11 @@ export async function GET(request) {
   }
 
   if (u.searchParams.get("view") === "marketing") return json(await marketingView());
+  if (u.searchParams.get("view") === "subscribers") {
+    const { subscribersView, subscribersCsv } = await import("../lib/subscribers.js");
+    if (u.searchParams.get("format") === "csv") return new Response(await subscribersCsv(), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="altradits-subscribers.csv"', "Cache-Control": "no-store" } });
+    return json(await subscribersView());
+  }
 
   if (u.searchParams.get("view") === "ops") {
     const [members, tasks] = await Promise.all([allMembers(), allTasks()]);

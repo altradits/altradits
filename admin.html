@@ -182,6 +182,12 @@ dd{margin:0;overflow-wrap:anywhere}
   </div>
 
   <div id="tab-growth" hidden>
+    <div class="panel"><h2>Free-kit subscribers <span class="stage" id="subTotal" style="font-size:.8rem"></span></h2>
+      <p class="muted" style="margin-top:0">People who downloaded a free kit at <a href="/templates.html" target="_blank" rel="noopener">/templates.html</a>. Each one is also a lead and gets three follow-ups over ten days: do it together, then done for you.</p>
+      <div class="kpis" id="subKits" style="margin:0 0 .8rem"></div>
+      <div class="row" style="margin:0 0 .6rem"><button class="btn" id="subCsv">Download CSV</button></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Joined</th><th>Email</th><th>Name</th><th>Kits</th><th></th></tr></thead><tbody id="subRows"></tbody></table></div>
+    </div>
     <div class="panel"><h2>Today's outreach</h2>
       <p class="muted" style="margin-top:0">Warm outreach first: people who already know you. Aim for 20 personal messages a day until you have 5 clients.</p>
       <div class="row" style="margin:0"><button class="btn" id="outMinus">−</button><b id="outCount" style="font:800 2rem 'Bricolage Grotesque',sans-serif;min-width:3ch;text-align:center">0</b><button class="btn primary" id="outPlus">+1 sent</button><span class="muted" id="outGoal">/ 20 today</span></div>
@@ -509,7 +515,20 @@ function outSet(n) { try { localStorage.setItem(outKey(), String(Math.max(0, n))
 function renderOut() { const n = outGet(); $("#outCount").textContent = n; $("#outBar").style.width = Math.min(100, n * 5) + "%"; }
 $("#outPlus").onclick = () => outSet(outGet() + 1);
 $("#outMinus").onclick = () => outSet(outGet() - 1);
+async function loadSubscribers() {
+  try {
+    const v = await api("?view=subscribers");
+    $("#subTotal").textContent = `${v.active} subscribed${v.unsubscribed ? ` · ${v.unsubscribed} unsubscribed` : ""}`;
+    $("#subKits").innerHTML = v.byKit.map((k) => `<div class="kpi"><small>${esc(k.title)}</small><div>${k.subscribers}</div><span class="muted sm">${k.downloads} downloads</span></div>`).join("");
+    $("#subRows").innerHTML = v.recent.map((r) => `<tr><td class="sm">${ago(r.createdAt)}</td><td>${esc(r.email)}</td><td>${esc(r.name || "")}</td><td class="sm">${esc(r.kits.join(", "))}</td><td class="sm muted">${r.unsubscribed ? "unsubscribed" : ""}</td></tr>`).join("") || `<tr><td colspan="5" class="muted">No sign-ups yet.</td></tr>`;
+  } catch {}
+}
+$("#subCsv").addEventListener("click", async () => {
+  const res = await fetch("/api/admin?view=subscribers&format=csv", { headers: { Authorization: "Bearer " + token } });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(await res.blob()); a.download = "altradits-subscribers.csv"; a.click();
+});
 function renderGrowth() {
+  loadSubscribers();
   renderOut();
   $("#templates").innerHTML = TEMPLATES.map(([t, body], i) => `<div class="ap"><h3>${esc(t)}</h3><pre>${esc(body)}</pre><div class="row"><button class="btn" data-copytpl="${i}">Copy</button></div></div>`).join("");
   if (!D) return;
