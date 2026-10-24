@@ -118,3 +118,7 @@ Altradits never comments elsewhere, likes, follows or starts conversations; that
 - **Facebook Page token:** also `pages_read_user_content` and `pages_manage_engagement`.
 - **LinkedIn company page:** also `r_organization_social` (part of the Community Management API).
 - **X:** no extra keys; reading mentions is billed per request under X's pay-per-use plan (a few cents a day at this volume).
+
+### Warm-up kits: you engage before each post drops
+
+Every scheduled post comes with a warm-up kit written by the team: search terms and hashtags for its topic, and 3–5 comments (entertaining, educational or a genuine question) you can leave on other people's posts. About 15 minutes before the post drops you get a "Warm up now" email and the kit appears under admin → Marketing → Engage now. On X it also finds real recent posts on the topic and drafts a reply to each, with a link that opens X with the reply filled in. Nothing is posted for you: X's automation rules ban automated replies to posts found by keyword search, and LinkedIn, Facebook and TikTok offer no API for it. Kit comments never pitch, link, quote prices or name Altradits. The reminder emails can be turned off in the admin.

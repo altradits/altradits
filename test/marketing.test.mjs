@@ -39,7 +39,16 @@ mk.setMarketingClient({ beta: { messages: { stream: (params) => ({ finalMessage:
     const content = params.messages[0].content;
     const ids = [...content.matchAll(/^- (\d{4}-\d\d-\d\d\/\w+\/\d\d:\d\d) \|/gm)].map((m) => m[1]);
     const fixing = /FIX THESE/.test(content);
-    return out({ posts: ids.map((slot) => ({ slot, format: `format for ${slot}`, text: slot === breakSlot && !fixing ? "Everything for $3 only!" : `Your inbox, handled the same day. (${slot.split("/")[1]})` })) });
+    return out({ posts: ids.map((slot) => ({ slot, format: `format for ${slot}`, text: slot === breakSlot && !fixing ? "Everything for $3 only!" : `Your inbox, handled the same day. (${slot.split("/")[1]})`,
+      warmup: { keywords: ["inbox zero", "email overload"], hashtags: ["#productivity"], comments: [
+        { style: "question", text: "What's the one email you dread opening every morning?" },
+        { style: "educational", text: "Batching email twice a day saved me about an hour. Anyone else tried it?" },
+        { style: "entertaining", text: "Check out Altradits for this!" },
+      ] } })) });
+  }
+  if (tool === "draft_replies") {
+    const ids = [...params.messages[0].content.matchAll(/^\[(\S+)\]/gm)].map((m) => m[1]);
+    return out({ replies: ids.map((id) => ({ id, text: id === "t2" ? "Try altradits.com" : "Honestly the 7am inbox is where good mornings go to die. What's your rule for it?" })) });
   }
   if (tool === "respond") {
     const ids = [...params.messages[0].content.matchAll(/^\[(\S+)\]/gm)].map((m) => m[1]);
@@ -58,6 +67,13 @@ setSocialFetch(async (url, init = {}) => {
   sent.push({ url, init });
   if (url === "https://api.x.com/2/users/me") return new Response(JSON.stringify({ data: { id: "42", username: "altradits" } }));
   if (url.includes("/mentions")) return new Response(JSON.stringify({ meta: {} }));
+  if (url.includes("/tweets/search/recent")) return new Response(JSON.stringify({
+    data: [
+      { id: "t1", text: "My inbox has 4,000 unread emails. Send help.", author_id: "u1", public_metrics: { reply_count: 12, like_count: 40, retweet_count: 3 } },
+      { id: "t2", text: "How do you all handle email overload?", author_id: "u2", public_metrics: { reply_count: 2, like_count: 5, retweet_count: 0 } },
+    ],
+    includes: { users: [{ id: "u1", username: "busyfounder" }, { id: "u2", username: "opsjane" }] },
+  }));
   if (url.includes("/comments?fields=")) return new Response(JSON.stringify({ data: fbComments }));
   if (url.endsWith("/rest/posts")) return new Response("", { status: 201, headers: { "x-restli-id": "urn:li:share:9" } });
   if (url.includes("graph.facebook.com")) return new Response(JSON.stringify({ id: "123_456" }), { status: 200 });
@@ -325,4 +341,44 @@ test("Altradits only answers comments on its own posts: replies, escalates the s
   assert.equal((await mk.marketingTick({ at: new Date("2026-11-05T11:00:00Z"), force: true })).responses, null);
   await mk.saveSettings({ autoReply: true });
   delete process.env.FB_PAGE_TOKEN;
+});
+
+test("warm-up kits: 15 minutes before a post, Stanley gets real posts to reply to and comments to leave (nothing is auto-posted)", async () => {
+  const { cleanWarmup, checkWarm } = await import("../lib/warmup.js");
+  assert.match(checkWarm("Check out Altradits for this!").join(), /Don't name Altradits/);
+  assert.match(checkWarm("Only $5 at our place").join(), /No prices/);
+  assert.match(checkWarm("see https://x.co").join(), /No links/);
+  assert.deepEqual(checkWarm("What's the one email you dread opening?"), []);
+  // The brand pitch was dropped from the kit when it was written.
+  const rec = await getJSON("mkt:day:2026-11-06");
+  const xPost = rec.posts.find((p) => p.channel === "x" && p.slot === "07:00");
+  assert.equal(xPost.warmup.comments.length, 2);
+  assert.ok(!cleanWarmup({ comments: [{ style: "question", text: "Try Altradits" }] }).comments.length);
+
+  Object.assign(process.env, X_KEYS);
+  sent.length = 0;
+  // 06:30: too early. 06:45: kits for the 07:00 post(s).
+  await mk.marketingTick({ at: new Date("2026-11-06T06:30:00Z"), force: true });
+  assert.equal((await getJSON("mkt:day:2026-11-06")).posts.find((p) => p.id === xPost.id).warmup.preparedAt, undefined);
+  const r = await mk.marketingTick({ at: new Date("2026-11-06T06:45:00Z"), force: true });
+  assert.equal(r.warmups.prepared, 1);
+  const kit = (await getJSON("mkt:day:2026-11-06")).posts.find((p) => p.id === xPost.id).warmup;
+  assert.match(kit.links[0].url, /^https:\/\/x\.com\/search\?q=inbox%20zero%20email%20overload%20%23productivity&f=live$/);
+  // The best real post, with a drafted reply; the pitchy draft for t2 was dropped.
+  assert.equal(kit.targets.length, 1);
+  assert.equal(kit.targets[0].author, "@busyfounder");
+  assert.match(kit.targets[0].replyUrl, /^https:\/\/x\.com\/intent\/post\?in_reply_to=t1&text=Honestly/);
+  // The search excluded our own posts, retweets and replies.
+  const search = sent.find((x) => x.url.includes("/tweets/search/recent"));
+  assert.match(decodeURIComponent(search.url), /-is:retweet -is:reply -from:altradits/);
+  // Nothing was posted to anyone.
+  assert.equal(tweets().length, 0);
+  const emails = await getMany("email", await listIds("emails", 80));
+  const mail = emails.find((e) => /Warm up now: X · @altradits drops at 07:00/.test(e.subject));
+  assert.ok(mail);
+  assert.match(mail.text, /x\.com\/intent\/post\?in_reply_to=t1/);
+  assert.match(mail.text, /\(question\) What's the one email you dread/);
+  // Once per post.
+  assert.equal((await mk.marketingTick({ at: new Date("2026-11-06T06:50:00Z"), force: true })).warmups, null);
+  for (const k of Object.keys(X_KEYS)) delete process.env[k];
 });

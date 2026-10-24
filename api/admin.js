@@ -182,6 +182,7 @@ export async function POST(request) {
   if (body.action?.startsWith("mkt_")) {
     try {
       if (body.action === "mkt_pause") return json({ settings: await saveMarketing({ paused: Boolean(body.paused) }) });
+      if (body.action === "mkt_warmmail") return json({ settings: await saveMarketing({ warmupEmails: Boolean(body.on) }) });
       if (body.action === "mkt_autoreply") return json({ settings: await saveMarketing({ autoReply: Boolean(body.on) }) });
       if (body.action === "mkt_cancel") return json({ post: await cancelPost(clean(body.id, 20)) });
       if (body.action === "mkt_post_now") return json({ post: await postNow(clean(body.id, 20)) });

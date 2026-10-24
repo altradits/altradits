@@ -98,6 +98,11 @@ dd{margin:0;overflow-wrap:anywhere}
 .pv.tt .side{position:absolute;right:.8rem;bottom:1rem;text-align:center;line-height:2.2}
 .pv.tt textarea{background:#222;color:#fff}
 .pvedit{min-height:9rem}
+.warm{background:#fff;border:1px dashed var(--line);border-radius:.7rem;padding:.5rem .7rem;font-size:.9rem}
+.warm summary{cursor:pointer;font-weight:700;font-size:.88rem}
+.warm p{margin:.3rem 0}
+.warm .tgt{border-left:3px solid var(--blue);padding:.2rem 0 .3rem .6rem;margin:.35rem 0;display:flex;flex-direction:column;gap:.2rem;align-items:flex-start}
+.warm .cm{margin:.3rem 0;font-size:.88rem}
 .pvfoot{display:flex;flex-direction:column;gap:.25rem}
 .pvfoot .row{margin-top:.2rem}
 .pvfoot .btn{padding:.35rem .7rem;font-size:.85rem}
@@ -222,6 +227,12 @@ dd{margin:0;overflow-wrap:anywhere}
       <div class="row" style="margin:0 0 .6rem"><button class="btn" id="mkPause"></button><span class="muted" id="mkMsg" role="status"></span></div>
       <p class="err" id="mkErr" hidden></p>
       <div class="kpis" id="mkHunt" style="margin:.4rem 0 0"></div>
+    </div>
+
+    <div class="panel"><h2>Engage now</h2>
+      <p class="muted" style="margin:0 0 .6rem">About 15 minutes before each post drops, join conversations on its topic from your personal account, so people are already talking when it lands. A reminder email comes with each kit.</p>
+      <div class="row" style="margin:0 0 .8rem"><button class="btn" id="mkWarmMail"></button></div>
+      <div id="mkEngage"></div>
     </div>
 
     <div class="panel"><h2>Scheduler</h2>
@@ -772,6 +783,7 @@ function preview(p) {
   const can = (s) => s.includes(p.status);
   return `<article class="pvwrap"><div class="pvhead"><b>${esc(c.name)}</b><span class="stage ${p.status}">${esc(MK_STATUS[p.status] || p.status)}</span></div>
     ${card}
+    ${warmKit(p)}
     <div class="pvfoot">${p.format ? `<span class="muted sm">${esc(p.format)}</span>` : ""}
       ${["scheduled", "planned"].includes(p.status) ? `<span class="muted sm">${c.connected ? `Posts itself at ${when}` : c.mode === "manual" ? "Comes to your email that morning" : "Emailed to you unless connected by then"}</span>` : ""}
       ${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">View post</a>` : ""}${p.error ? `<span class="err sm">${esc(p.error)}</span>` : ""}
@@ -780,6 +792,17 @@ function preview(p) {
       ${can(["scheduled", "planned", "failed", "manual"]) && c.connected ? `<button class="btn ok" data-mkpost="${p.id}">Post now</button>` : ""}
       ${can(["scheduled", "planned", "manual", "failed", "rejected"]) ? `<button class="btn" data-mkcancel="${p.id}">Cancel</button>` : ""}
       <button class="btn" data-mkcopy="${p.id}">Copy</button></div></div></article>`;
+}
+// The warm-up kit for one post: search, real X posts to reply to, comments to leave.
+function warmKit(p) {
+  const w = p.warmup; if (!w) return "";
+  const links = w.links || [];
+  return `<details class="warm"${w.preparedAt && !["posted", "cancelled"].includes(p.status) ? " open" : ""}><summary>Warm-up kit${w.preparedAt ? " · ready" : ""}</summary>
+    <p class="sm"><b>Search:</b> ${[...w.keywords, ...w.hashtags].map(esc).join(" · ")}${links.map((l) => ` · <a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join("")}</p>
+    ${w.targets?.length ? `<p class="sm" style="margin:.4rem 0 .2rem"><b>Reply to these on X</b> (opens X with the reply filled in):</p>${w.targets.map((t) => `<div class="tgt"><div class="sm"><a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(t.author)}</a>: ${esc(t.text.slice(0, 160))}</div><div class="sm"><i>${esc(t.reply)}</i></div><a class="btn ok" style="padding:.2rem .6rem;font-size:.8rem" href="${esc(t.replyUrl)}" target="_blank" rel="noopener">Reply on X</a></div>`).join("")}` : ""}
+    <p class="sm" style="margin:.4rem 0 .2rem"><b>Comments to leave</b> on posts you find:</p>
+    ${w.comments.map((c, i) => `<div class="cm"><span class="stage">${esc(c.style)}</span> ${esc(c.text)} <button class="btn" style="padding:.1rem .5rem;font-size:.78rem" data-mkcopywarm="${p.id}:${i}">Copy</button></div>`).join("")}
+  </details>`;
 }
 function renderMarketing() {
   $("#mkState").textContent = !M.live ? "off: set ANTHROPIC_API_KEY" : M.settings.paused ? "paused" : "running";
@@ -801,6 +824,10 @@ function renderMarketing() {
     ${m.scheduled?.length ? `<p class="sm muted" style="margin:.4rem 0 0">Scheduled: ${m.scheduled.join(", ")}</p>` : ""}
     <div class="row"><label class="sm">Start <select data-mkstart="${m.id}" style="width:auto">${opts}</select></label><label class="sm">Days <select data-mkdays="${m.id}" style="width:auto"><option>1</option><option>2</option><option>3</option></select></label><button class="btn primary" data-mkrep="${m.id}">Repurpose &amp; schedule</button></div></div>`).join("") || `<p class="muted">No masters yet.</p>`;
   $("#mkChannels").innerHTML = M.channels.map((c) => `<p style="margin:.3rem 0"><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.name)}</a> · ${esc(c.slots.join(", "))} UTC<br><span class="muted sm">${c.connected ? "✓ posts automatically" : c.mode === "manual" ? "No posting API: drafts come to your email" : `Not connected: set ${esc(c.env.join(", "))} in the hosting panel. Scheduled posts start going out as soon as you do.`}</span></p>`).join("");
+  $("#mkWarmMail").textContent = M.settings.warmupEmails === false ? "Turn reminder emails on" : "Turn reminder emails off";
+  const soon = M.days.flatMap((d) => d.posts).filter((p) => ["scheduled", "planned"].includes(p.status) && p.warmup && Date.parse(p.at) > Date.now() && Date.parse(p.at) - Date.now() < 3 * 3600e3);
+  $("#mkEngage").innerHTML = soon.length ? soon.map((p) => `<div class="ap"><h3>${esc(mkCh(p.channel).name)} · drops at ${esc(p.at.slice(11, 16))} UTC</h3><p class="sm muted" style="margin:.2rem 0">${esc(p.text.slice(0, 180))}${p.text.length > 180 ? "…" : ""}</p>${warmKit({ ...p, warmup: { ...p.warmup, preparedAt: p.warmup.preparedAt || "soon" } })}</div>`).join("")
+    : `<p class="muted">Nothing in the next 3 hours.</p>`;
   $("#mkReply").textContent = M.settings.autoReply === false ? "Turn replies on" : "Turn replies off";
   const ACT = { reply: "replied", escalate: "sent to you", ignore: "ignored" };
   $("#mkResponses").innerHTML = M.responses.length ? `<div style="overflow-x:auto"><table><thead><tr><th>When</th><th>Where</th><th>Comment</th><th>What Altradits did</th></tr></thead><tbody>${M.responses.map((r) => `<tr><td class="sm">${ago(r.at)}</td><td class="sm">${esc(mkCh(r.channel).name)}</td><td><b>${esc(r.author)}</b>: ${esc(r.comment)}${r.url ? ` <a href="${esc(r.url)}" target="_blank" rel="noopener">open</a>` : ""}</td><td><span class="stage ${r.action === "escalate" ? "failed" : r.action === "reply" ? "posted" : ""}">${ACT[r.action]}</span>${r.reply ? `<div class="sm">${esc(r.reply)}</div>` : ""}<div class="muted sm">${esc(r.reason || "")}</div>${r.draft ? `<div class="sm"><i>Suggested: ${esc(r.draft)}</i></div>` : ""}</td></tr>`).join("")}</tbody></table></div>`
@@ -812,6 +839,16 @@ $("#mkHunt").addEventListener("click", async (e) => {
   const id = e.target.dataset.mkshout; if (!id) return;
   e.target.disabled = true;
   try { await api("", { action: "mkt_shout_remove", id }); loadMarketing(); } catch (err) { e.target.textContent = err.message; }
+});
+$("#mkWarmMail").addEventListener("click", async () => {
+  try { await api("", { action: "mkt_warmmail", on: M.settings.warmupEmails === false }); loadMarketing(); } catch (err) { $("#mkMsg").textContent = err.message; }
+});
+// Copy buttons inside warm-up kits (scheduler and Engage now).
+document.addEventListener("click", (e) => {
+  const k = e.target.dataset?.mkcopywarm; if (!k || !M) return;
+  const [id, i] = k.split(":");
+  const p = M.days.flatMap((d) => d.posts).find((x) => x.id === id);
+  navigator.clipboard?.writeText(p.warmup.comments[Number(i)].text).then(() => { e.target.textContent = "Copied ✓"; });
 });
 $("#mkReply").addEventListener("click", async () => {
   try { await api("", { action: "mkt_autoreply", on: M.settings.autoReply === false }); loadMarketing(); } catch (err) { $("#mkMsg").textContent = err.message; }
