@@ -121,7 +121,7 @@ export async function POST(request) {
       t.status = "done";
       await saveTask(t);
       const m = t.assigneeId && (await getMember(t.assigneeId));
-      if (m) await sendEmail({ to: m.email, kind: "team", subject: `Approved: ${t.title}`, text: `${t.client} approved "${t.title}" (${rating}/5). Nice work, thank you!` });
+      if (m) await sendEmail({ to: m.email, kind: "team", dept: "quality", subject: `Approved: ${t.title}`, text: `${t.client} approved "${t.title}" (${rating}/5). Nice work, thank you!` });
     } else {
       // An unhappy client is one of the few things that always reaches Stanley.
       t.status = "follow_up";
@@ -140,7 +140,7 @@ export async function POST(request) {
     if (m && m.status === "approved") {
       t.status = "changes";
       await saveTask(t);
-      await sendEmail({ to: m.email, kind: "team", subject: `Changes requested: ${t.title}`,
+      await sendEmail({ to: m.email, kind: "team", dept: "quality", subject: `Changes requested: ${t.title}`,
         text: `${t.client} asked for changes on "${t.title}":\n\n${note}`,
         cta: { label: "Open task", url: `${base()}/team.html?m=${m.token}#${t.id}` } });
     } else if (workersLive()) {

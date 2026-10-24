@@ -176,6 +176,10 @@ dd{margin:0;overflow-wrap:anywhere}
   </div>
 
   <div id="tab-team" hidden>
+    <div class="panel"><h2>Department directory</h2>
+      <p class="muted" style="margin-top:0">Every department emails from its own address, headed by its AI agent; anything sensitive escalates to you at stan@altradits.com. Every email is blind-copied to altradits@gmail.com.</p>
+      <div id="commsList"></div>
+    </div>
     <div class="panel"><h2>Departments</h2><div class="kpis" id="deptKpis" style="margin:0"></div>
       <p class="muted" style="font-size:.9rem">Tasks are routed to approved members of the matching department with spare weekly hours. If nobody has capacity, the task comes to you. Recruiting link: <a href="/join.html" target="_blank">/join.html</a></p></div>
     <div class="panel"><h2>Team & applications</h2><div id="memberList"></div></div>
@@ -434,7 +438,20 @@ const TLABEL = { new: "unassigned", assigned: "assigned (human)", in_progress: "
 async function loadOps() {
   try { O = await api("?view=ops"); renderOps(); } catch {}
 }
+function renderComms() {
+  if (!O?.comms) return;
+  $("#commsList").innerHTML = O.comms.map((c) => `<details class="ap"><summary style="cursor:pointer"><b>${esc(c.address)}</b> · ${esc(c.name)} <span class="stage">${c.head.kind === "ai" ? "AI head" : "Human"}: ${esc(c.head.name)}</span>${c.internal ? ' <span class="stage">internal</span>' : ""}<div class="muted sm" style="margin-top:.2rem">${esc(c.purpose)}</div></summary>
+    <div class="grid2" style="margin-top:.6rem;font-size:.92rem">
+      <div><b>Receives</b><ul>${c.inbound.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><b>Sends</b><ul>${c.outbound.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><b>Voice</b><ul>${c.voice.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div><b>Response times</b><p class="sm" style="margin:.2rem 0 .6rem">First reply: ${esc(c.sla.firstReply)}<br>Resolution: ${esc(c.sla.resolution)}</p>
+        <b>Escalates to Stanley when</b><ul>${c.escalate.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+        <b>Strategy</b><ul>${c.strategy.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+        <b>Track</b><ul>${c.metrics.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+        <b>Signature</b><pre class="sm" style="white-space:pre-wrap;margin:.2rem 0">${esc(c.signature.join("\n"))}</pre>${c.cc.length ? `<p class="sm muted">Copies: ${esc(c.cc.join(", "))}</p>` : ""}</div>
+    </div></details>`).join("");
+}
 function renderOps() {
+  renderComms();
   const openSt = ["new", "assigned", "in_progress", "changes", "queued", "working", "waiting_client", "owner", "follow_up"];
   const unassigned = O.tasks.filter((t) => ["new", "owner", "follow_up"].includes(t.status)).length;
   $("#taskCount").hidden = !unassigned; $("#taskCount").textContent = unassigned;

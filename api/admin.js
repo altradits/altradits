@@ -71,6 +71,7 @@ export async function GET(request) {
       pipeline: Object.fromEntries(["queued", "working", "waiting_client", "owner", "review", "follow_up", "done"].map((st) => [st, tasks.filter((t) => t.status === st).length])),
       satisfaction: (() => { const r = tasks.filter((t) => t.satisfaction).map((t) => t.satisfaction.rating); return r.length ? { avg: Math.round((r.reduce((a, b) => a + b, 0) / r.length) * 10) / 10, count: r.length } : null; })(),
       agents: AGENT_ROSTER, workersLive: workersLive(),
+      comms: (await import("../data/team-comms.js")).COMMS,
     });
   }
 
@@ -148,7 +149,7 @@ async function resolveApproval(request, body) {
     } else if (p && lead) {
       p.status = "declined";
       await saveProposal(p);
-      await sendEmail({ to: lead.email, leadId: lead.id, subject: "About your proposal",
+      await sendEmail({ to: lead.email, leadId: lead.id, dept: "growth", subject: "About your proposal",
         text: note || `Hi ${lead.name || "there"}, thanks for your patience. ${BUSINESS.owner} would like to talk this through before sending a proposal. Just reply with a good time.` });
     }
   } else if (a.type === "payment_check") {
@@ -159,7 +160,7 @@ async function resolveApproval(request, body) {
       } else {
         p.status = "accepted";
         logEvent(lead, "Payment not found yet.");
-        await sendEmail({ to: lead.email, leadId: lead.id, subject: "We couldn't find your payment yet",
+        await sendEmail({ to: lead.email, leadId: lead.id, dept: "orders", subject: "We couldn't find your payment yet",
           text: note || `Hi ${lead.name || "there"}, we haven't received the payment yet. Could you reply with the transaction reference or a screenshot? Sometimes it just takes a little longer.` });
       }
       await saveProposal(p);

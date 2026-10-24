@@ -115,3 +115,23 @@ test("every kit's PDF renders", () => {
     else assert.ok(out.body.length > 100, f.name);
   }
 });
+
+test("emails go out from stan@ or the right department, blind-copied to the owner, with the letterhead", async () => {
+  const { sendEmail, emailOwner } = await import("../lib/email.js");
+  const { COMMS } = await import("../data/team-comms.js");
+  assert.deepEqual(COMMS.map((c) => c.address), ["stan@altradits.com", "social@altradits.com", "admin@altradits.com", "assistant@altradits.com", "care@altradits.com", "tech@altradits.com", "orders@altradits.com", "marketing@altradits.com", "careers@altradits.com", "quality@altradits.com"]);
+  assert.ok(COMMS.every((c) => !/\d{3}[\s-]?\d{3}[\s-]?\d{3}/.test(JSON.stringify(c))), "no phone numbers");
+  const plain = await sendEmail({ to: "client@x.co", subject: "Hello", text: "Hi" });
+  assert.equal(plain.from, "Stanley at Altradits <stan@altradits.com>");
+  assert.equal(plain.bcc, "altradits@gmail.com");
+  const orders = await sendEmail({ to: "client@x.co", dept: "orders", subject: "Paid", text: "Thanks" });
+  assert.equal(orders.from, "Altradits Orders <orders@altradits.com>");
+  const owner = await emailOwner("Alert", "x");
+  assert.equal(owner.bcc, null); // already going to that inbox
+  const kit = (await emails()).find((e) => /Your free kit/.test(e.subject));
+  assert.equal(kit.from, "Altradits <marketing@altradits.com>");
+  // Kit PDFs carry the letterhead.
+  const pdf = subs.renderFile(KITS[0], KITS[0].files[0]).body.toString("latin1");
+  assert.match(pdf, /\(stan@altradits\.com\) Tj/);
+  assert.match(pdf, /\(Page 1 of \d\) Tj/);
+});

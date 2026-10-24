@@ -33,7 +33,7 @@ export async function POST(request) {
   const r = recommend(quiz.hours, quiz.hourValue);
   const tasks = lead.needs.map((id) => `- ${findService(id).name}: ${findService(id).outcome}`).join("\n");
   await sendEmail({
-    to: email, leadId: lead.id, kind: "client",
+    to: email, leadId: lead.id, kind: "client", dept: "growth",
     subject: "Your free delegation plan",
     text: `Hi ${lead.name || "there"},\n\nHere is your delegation plan.\n\nWhat to hand off first:\n${tasks || "- Tell us your top task and we'll map it."}\n\nYou listed about ${quiz.hours} hours a week of this work. Handing it off could give you back around ${r.hoursBack} hours a month${r.valueBack ? `, worth about $${r.valueBack} of your time` : ""}.\n\nThe plan that fits: ${r.pkg.name} at $${r.pkg.price}/month (${r.pkg.hours} hours).\n\n${GUARANTEES[0].text} Pick the plan or the exact task on the site and pay with any Bitcoin wallet: your payment places the order.`,
     cta: { label: "Choose and order", url: `${siteUrl(request)}/#services` },
