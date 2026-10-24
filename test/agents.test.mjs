@@ -1,5 +1,6 @@
 // Altra's misuse guard (100-sat human check) and the department AI agents'
 // task workflow, with a fake LND node and a fake Claude client. Run: npm test
+process.env.EMAIL_APPROVAL = "off"; // these tests check delivery; the approval gate has its own tests
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

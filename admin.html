@@ -153,7 +153,7 @@ dd{margin:0;overflow-wrap:anywhere}
       <button role="tab" data-tab="team">Team <span class="badge" id="teamCount" hidden></span></button>
       <button role="tab" data-tab="growth">Growth</button>
       <button role="tab" data-tab="marketing">Marketing</button>
-      <button role="tab" data-tab="stan">Stan</button>
+      <button role="tab" data-tab="stan">Stan <span class="badge" id="approvalCount" hidden></span></button>
       <button role="tab" data-tab="jobs">My job hunt <span class="badge" id="jobCount" hidden></span></button>
       <button role="tab" data-tab="emails">Emails <span class="badge" id="mailCount" hidden></span></button>
       <button type="button" class="btn" id="refresh">↻ Refresh</button>
@@ -301,6 +301,17 @@ dd{margin:0;overflow-wrap:anywhere}
   </div>
 
   <div id="tab-stan" hidden>
+    <div class="panel"><h2>Instruct Stan</h2>
+      <p class="muted" style="margin-top:0">Tell Stan what you need. He routes it to the right department, has its head draft the email, checks it, and puts it below for your approval. Nothing is sent until you approve it.</p>
+      <textarea id="stanText" placeholder="e.g. Reply to Jo's question about the Core plan, or tell all retainer clients we're closed on Friday"></textarea>
+      <div class="row"><select id="stanDept" style="max-width:16rem"><option value="">Stan decides the department</option></select><input id="stanTo" placeholder="Recipient email (optional)" style="flex:1;min-width:12rem"><button class="btn primary" id="stanGo">Send to Stan</button></div>
+      <p class="muted sm" id="stanMsg" role="status"></p>
+      <div id="stanInstrs"></div>
+    </div>
+    <div class="panel"><h2>Awaiting your approval <span class="stage" id="approvalTotal" style="font-size:.8rem"></span></h2>
+      <p class="muted" style="margin-top:0">Every email from every department waits here. Edit if you like, then approve to send it from the department's address (stan@ copied), or reject it.</p>
+      <div id="mailApprovals"></div>
+    </div>
     <div class="panel"><h2>Stan's desk</h2>
       <p class="muted" style="margin-top:0">Stan (stan@altradits.com) is Head of Quality and Internal Communications. He splits every job across his specialist QA team, holds the department to their criteria, makes the final decision and drafts the client message the department head sends. He sends all internal mail and each payment confirmation (blind-copied to you), and is copied on every external email. This view is read-only: watch, no buttons to press.</p>
       <div class="kpis" id="stanKpis" style="margin:0"></div>
@@ -876,6 +887,15 @@ function renderInboxes() {
     : b.messages.length ? `<table class="mlist"><tbody>${b.messages.map((m) => `<tr class="click${m.unread ? " unread" : ""}" data-muid="${m.uid}"><td>${esc(m.from)}</td><td>${esc(m.subject)}</td><td class="sm muted">${m.date ? ago(m.date) : ""}</td></tr>`).join("")}</tbody></table>` : `<p class="muted">No messages in ${esc(b.address)}.</p>`;
 }
 $("#mailFresh").addEventListener("click", () => loadInboxes(true));
+$("#mailRead").addEventListener("click", async (e) => {
+  const uid = e.target.dataset.askstan; if (!uid) return;
+  e.target.disabled = true;
+  const hint = $("[data-replyhint]").value.trim();
+  try {
+    await api("", { action: "stan_instruct", box: mbSel, uid, text: `Draft a reply to this message${hint ? `: ${hint}` : "."}` });
+    $("[data-replymsg]").textContent = "Stan is drafting it. It will appear in the Stan tab for your approval.";
+  } catch (err) { e.target.disabled = false; $("[data-replymsg]").textContent = err.message; }
+});
 $("#mailBoxes").addEventListener("click", (e) => { const id = e.target.closest("[data-mbox]")?.dataset.mbox; if (id) { mbSel = id; renderInboxes(); } });
 $("#mailList").addEventListener("click", async (e) => {
   const uid = e.target.closest("[data-muid]")?.dataset.muid; if (!uid) return;
@@ -885,13 +905,41 @@ $("#mailList").addEventListener("click", async (e) => {
     $("#mailRead").innerHTML = `<div class="ap" style="margin-top:.8rem">${m.security ? `<p style="border:2px solid var(--warn);border-radius:.6rem;padding:.5rem .7rem;margin:0 0 .6rem;background:color-mix(in srgb,var(--warn) 8%,white)"><b>⚠ Security:</b> ${esc(m.security)}</p>` : ""}
       <h3>${esc(m.subject)}</h3><div class="meta">From ${esc(m.from)} · to ${esc(m.to)}${m.cc ? ` · cc ${esc(m.cc)}` : ""}${m.date ? ` · ${new Date(m.date).toLocaleString()}` : ""}</div>
       <pre style="white-space:pre-wrap;max-height:30rem;overflow:auto;margin-top:.6rem">${esc(m.text)}</pre>
-      ${m.attachments.length ? `<p class="sm muted">Attachments (not opened here): ${m.attachments.map((a) => `${esc(a.name)} (${Math.ceil(a.size / 1024)} KB)`).join(", ")}</p>` : ""}</div>`;
+      ${m.attachments.length ? `<p class="sm muted">Attachments (not opened here): ${m.attachments.map((a) => `${esc(a.name)} (${Math.ceil(a.size / 1024)} KB)`).join(", ")}</p>` : ""}
+      <div class="row"><input placeholder="What should the reply say? (optional)" data-replyhint style="flex:1;min-width:12rem"><button class="btn primary" data-askstan="${uid}">Ask Stan to draft a reply</button></div><p class="muted sm" data-replymsg></p></div>`;
   } catch (err) { $("#mailRead").innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+});
+
+// ---- Stan: instructions and approvals
+let STAN_D = null;
+$("#stanGo").addEventListener("click", async (e) => {
+  const text = $("#stanText").value.trim(); if (!text) { $("#stanMsg").textContent = "Write an instruction first."; return; }
+  e.target.disabled = true; $("#stanMsg").textContent = "Stan is on it. Drafts appear below in a minute.";
+  try { await api("", { action: "stan_instruct", text, dept: $("#stanDept").value, to: $("#stanTo").value }); $("#stanText").value = ""; setTimeout(() => { e.target.disabled = false; loadStan(); }, 45000); }
+  catch (err) { e.target.disabled = false; $("#stanMsg").textContent = err.message; }
+});
+$("#mailApprovals").addEventListener("click", async (e) => {
+  const card = e.target.closest("[data-apid]"); if (!card || !(e.target.dataset.apgo || e.target.dataset.apno)) return;
+  e.target.disabled = true;
+  try {
+    await api("", { action: "mail_decide", id: card.dataset.apid, approve: Boolean(e.target.dataset.apgo), subject: $("[data-apsubj]", card).value, text: $("[data-aptext]", card).value });
+    loadStan();
+  } catch (err) { e.target.disabled = false; e.target.textContent = err.message; }
 });
 
 // ---- Stan's desk (read-only monitoring)
 async function loadStan() {
   let S; try { S = await api("?view=stan"); } catch { return; }
+  STAN_D = S;
+  $("#approvalCount").hidden = !S.approvals.length; $("#approvalCount").textContent = S.approvals.length;
+  $("#approvalTotal").textContent = `${S.approvals.length} waiting`;
+  if ($("#stanDept").options.length === 1) $("#stanDept").insertAdjacentHTML("beforeend", S.departments.map((d) => `<option value="${esc(d.id)}">${esc(d.address)} · ${esc(d.head)}</option>`).join(""));
+  $("#stanInstrs").innerHTML = S.instructions.length ? `<details style="margin-top:.6rem"><summary class="sm" style="cursor:pointer"><b>Recent instructions</b></summary>${S.instructions.map((i) => `<div class="sm" style="margin:.4rem 0"><b>${esc(i.text.slice(0, 140))}</b> <span class="stage ${i.status === "drafted" ? "posted" : i.status === "error" || i.status === "needs you" ? "failed" : ""}">${esc(i.status)}</span> <span class="muted">${ago(i.at)}</span>${i.plan ? `<br>${esc(i.plan)}` : ""}${i.error ? `<br><span class="err">${esc(i.error)}</span>` : ""}${(i.questions || []).length ? `<br><b>Stan asks:</b> ${esc(i.questions.join(" · "))}` : ""}</div>`).join("")}</details>` : "";
+  $("#mailApprovals").innerHTML = S.approvals.length ? S.approvals.map((e) => `<div class="ap pending" data-apid="${esc(e.id)}"><div class="meta">${ago(e.at)} · From <b>${esc(e.from)}</b> → ${esc(e.to)}${e.cc ? ` · cc ${esc(e.cc)}` : ""}${e.bcc ? ` · bcc ${esc(e.bcc)}` : ""} · <span class="stage">${esc(e.kind)}</span></div>
+      <input value="${esc(e.subject)}" data-apsubj style="margin:.4rem 0;font-weight:700">
+      <textarea data-aptext style="min-height:9rem">${esc(e.text)}</textarea>
+      ${e.cta ? `<p class="sm muted" style="margin:.3rem 0">Button: ${esc(e.cta.label)} → ${esc(e.cta.url)}</p>` : ""}
+      <div class="row"><button class="btn ok" data-apgo="1">Approve &amp; send</button><button class="btn" data-apno="1">Reject</button></div></div>`).join("") : `<p class="muted">Nothing waiting. You're all caught up.</p>`;
   const day = (iso) => Date.now() - Date.parse(iso) < 864e5;
   const KIND = { team: "internal", payment: "payment confirmation", client: "client", kit: "free kit", owner: "to you" };
   $("#stanKpis").innerHTML = [
@@ -1066,6 +1114,7 @@ async function load(navigate = true) {
     loadOps();
     if (location.hash === "#tasks") tab("tasks");
     if (location.hash === "#marketing") tab("marketing");
+    if (location.hash === "#stan") tab("stan"); else loadStan(); // approval count on the tab
     const h = location.hash.match(/^#(approval|lead)=(.+)$/);
     if (h?.[1] === "approval") { tab("approvals"); document.getElementById("ap-" + h[2])?.scrollIntoView(); }
     if (h?.[1] === "lead") openLead(h[2]);

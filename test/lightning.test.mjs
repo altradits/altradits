@@ -1,5 +1,6 @@
 // Lightning scan-to-pay: a fake LND node (HTTPS, self-signed, like a real one)
 // and a mocked Lightning address. Run: npm test
+process.env.EMAIL_APPROVAL = "off"; // these tests check delivery; the approval gate has its own tests
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

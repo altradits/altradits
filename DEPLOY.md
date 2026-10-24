@@ -151,3 +151,9 @@ admin → **Emails** shows each mailbox on mail.altradits.com, read-only (openin
 `MAIL_STAN`, `MAIL_HELLO`, `MAIL_CARE`, `MAIL_ORDERS`, `MAIL_SOCIAL`, `MAIL_ADMIN`, `MAIL_ASSISTANT`, `MAIL_TECH`, `MAIL_FINANCE`, `MAIL_TRUST`, `MAIL_MARKETING`, `MAIL_CAREERS`, `MAIL_QUALITY`
 
 Passwords never leave the server (the dashboard only shows which ones are set). Optional: `IMAP_HOST` (default mail.altradits.com), `IMAP_PORT` (993).
+
+### You approve every email (admin → Stan)
+
+Nothing leaves any department without Stanley's approval. Every outgoing email (client replies, order and payment emails, kit emails, task notices, Stan's internal mail) waits in admin → **Stan → Awaiting your approval**, where you can edit, **Approve & send** (it goes out from the department address with stan@ copied) or **Reject**. You get one heads-up at altradits@gmail.com at most every 30 minutes while drafts wait. Only alerts to you, and actions you take yourself in the admin, skip the queue. `EMAIL_APPROVAL=off` turns the gate off.
+
+To get something done, write to Stan in **Instruct Stan** (or press **Ask Stan to draft a reply** on any message in the Emails tab). Stan routes it to the right department, its head drafts the email, Stan checks it, and it lands in your approval queue.

@@ -2,6 +2,7 @@
 // the 7-day scheduler (posts wait for accounts to be connected), the treasure
 // hunt and its one-time coupons. Fake Claude client, fake social network.
 // Run: npm test
+process.env.EMAIL_APPROVAL = "off"; // these tests check delivery; the approval gate has its own tests
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
