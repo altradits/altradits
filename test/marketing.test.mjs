@@ -382,3 +382,22 @@ test("warm-up kits: 15 minutes before a post, Stanley gets real posts to reply t
   assert.equal((await mk.marketingTick({ at: new Date("2026-11-06T06:50:00Z"), force: true })).warmups, null);
   for (const k of Object.keys(X_KEYS)) delete process.env[k];
 });
+
+test("a plan written ahead fills empty days once, through the same clues, links and checks", async () => {
+  const kit = { keywords: ["inbox"], hashtags: ["#productivity"], comments: [{ style: "question", text: "What's your inbox rule?" }] };
+  const posts = Object.fromEntries(CHANNELS.flatMap((c) => c.slots.map((t) => [`${c.id}/${t}`, { format: "Test", text: c.id === "fb_page" ? "Only $3 today" : `Planned post for ${c.id}`, warmup: kit }])));
+  const plan = { id: "test-plan", days: [
+    { date: "2026-11-02", master: { title: "Already filled", theme: "x", audience: "x", message: "x", points: [], hooks: [], cta: "x" }, posts },
+    { date: "2026-11-20", master: { title: "Planned", theme: "Inbox", audience: "Owners", message: "Inbox by lunch", points: ["a"], hooks: ["b"], cta: "c" }, posts },
+  ] };
+  const at = new Date("2026-11-10T08:00:00Z");
+  const done = await mk.importPlan(plan, at);
+  assert.deepEqual(done.map((d) => d.date), ["2026-11-20"]); // the 2nd already has posts
+  const rec = await getJSON("mkt:day:2026-11-20");
+  assert.equal(rec.posts.length, CHANNELS.reduce((n, c) => n + c.slots.length, 0));
+  assert.ok(rec.posts.every((p) => p.trace.startsWith("#AltraditsHunt") && p.warmup.comments.length === 1));
+  assert.equal(rec.posts.find((p) => p.channel === "fb_page").status, "rejected"); // hard checks still apply
+  assert.equal(rec.posts.find((p) => p.channel === "li_co").link, "https://altradits.test/?ref=mklico");
+  assert.equal((await getJSON(`mkt:master:${rec.posts[0].masterId}`)).by, "plan");
+  assert.equal(await mk.importPlan(plan, at), null); // once only
+});

@@ -818,7 +818,7 @@ function renderMarketing() {
   const day = M.days.find((d) => d.date === mkDay) || M.days[2];
   $("#mkDay").innerHTML = day.posts.length ? day.posts.map(preview).join("") : `<p class="muted">Nothing scheduled for this day yet. The team fills the week automatically, or create a master below and repurpose it.</p>`;
   const opts = M.days.slice(2).map((d) => `<option value="${d.date}">${d.date}</option>`).join("");
-  $("#mkMasters").innerHTML = M.masters.map((m) => `<div class="ap"><h3>${esc(m.title)} <span class="stage">${esc(m.status)}</span> <span class="muted sm">${m.by === "stanley" ? "your brief" : "team"} · ${ago(m.createdAt)}</span></h3>
+  $("#mkMasters").innerHTML = M.masters.map((m) => `<div class="ap"><h3>${esc(m.title)} <span class="stage">${esc(m.status)}</span> <span class="muted sm">${m.by === "stanley" ? "your brief" : m.by === "plan" ? "written ahead" : "team"} · ${ago(m.createdAt)}</span></h3>
     <p style="margin:.4rem 0"><b>${esc(m.message)}</b></p><p class="muted sm" style="margin:0">For: ${esc(m.audience)}</p>
     <details><summary class="sm">Points, hooks and call to action</summary><ul>${m.points.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><p class="sm"><b>Hooks:</b> ${m.hooks.map(esc).join(" · ")}</p><p class="sm"><b>Call to action:</b> ${esc(m.cta)}</p>${m.growthNote ? `<p class="sm muted">${esc(m.growthNote)}</p>` : ""}</details>
     ${m.scheduled?.length ? `<p class="sm muted" style="margin:.4rem 0 0">Scheduled: ${m.scheduled.join(", ")}</p>` : ""}
