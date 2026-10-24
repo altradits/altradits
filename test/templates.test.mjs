@@ -187,6 +187,7 @@ test("heads send external mail with stan@ copied; Stan sends internal mail and p
   assert.match(pdf, /\(hello@altradits\.com\) Tj/);
   // The letterhead is the real logo image, linked to the homepage, and no drawn wordmark.
   assert.match(pdf, /\/Logo Do/);
+  assert.match(pdf, /0\.961 0\.961 0\.961 rg [\d. ]+ re f/); // on its brand background (#F5F5F5)
   assert.match(pdf, /\/URI \(https:\/\/altradits\.com\)/);
   assert.doesNotMatch(pdf, /\(Altradits\) Tj/);
   assert.match(pdf, /\(Page 1 of \d\) Tj/);
