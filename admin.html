@@ -95,6 +95,7 @@ dd{margin:0;overflow-wrap:anywhere}
       <button role="tab" data-tab="tasks">Tasks <span class="badge" id="taskCount" hidden></span></button>
       <button role="tab" data-tab="team">Team <span class="badge" id="teamCount" hidden></span></button>
       <button role="tab" data-tab="growth">Growth</button>
+      <button role="tab" data-tab="marketing">Marketing</button>
       <button role="tab" data-tab="jobs">My job hunt <span class="badge" id="jobCount" hidden></span></button>
       <button role="tab" data-tab="emails">Email log</button>
       <button type="button" class="btn" id="refresh">↻ Refresh</button>
@@ -185,6 +186,17 @@ dd{margin:0;overflow-wrap:anywhere}
       <div id="jobList"></div></div>
   </div>
 
+  <div id="tab-marketing" hidden>
+    <div class="panel"><h2>Marketing team <span class="stage" id="mkState" style="font-size:.8rem"></span></h2>
+      <p class="muted" style="margin:0 0 .8rem">Plans today's posts at 05:00 UTC, checks every one, then posts each at its time. Anything that can't post by itself comes to your inbox, ready to paste.</p>
+      <div class="row" style="margin:0 0 1rem"><button class="btn primary" id="mkPlan">Plan today again</button><button class="btn" id="mkPause"></button><span class="muted" id="mkMsg" role="status"></span></div>
+      <div class="grid2"><div><h3 style="margin-bottom:.4rem">Accounts</h3><div id="mkChannels"></div></div>
+      <div><h3 style="margin-bottom:.4rem">The team</h3><ul id="mkTeam" style="margin:0;padding-left:1.1rem"></ul></div></div>
+    </div>
+    <div class="panel"><h2>Results, last 14 days</h2><div style="overflow-x:auto"><table><thead><tr><th>Account</th><th>Posts</th><th>Orders started</th><th>Paid</th><th>Revenue</th></tr></thead><tbody id="mkResults"></tbody></table></div></div>
+    <div class="panel"><h2>Posts</h2><div id="mkDays"></div></div>
+  </div>
+
   <div id="tab-emails" hidden><div class="panel"><h2>Emails sent by the agents</h2>
     <div style="overflow-x:auto"><table><thead><tr><th>When</th><th>To</th><th>Subject</th><th>Status</th></tr></thead><tbody id="emailRows"></tbody></table></div></div></div>
 </div>
@@ -222,7 +234,8 @@ function tab(name) {
   if (["tasks", "team"].includes(name)) loadOps();
   if (name === "growth") renderGrowth();
   if (name === "jobs") loadJobs();
-  ["overview", "approvals", "leads", "tasks", "team", "growth", "jobs", "emails"].forEach((t) => { $("#tab-" + t).hidden = t !== name; });
+  if (name === "marketing") loadMarketing();
+  ["overview", "approvals", "leads", "tasks", "team", "growth", "marketing", "jobs", "emails"].forEach((t) => { $("#tab-" + t).hidden = t !== name; });
 }
 document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => tab(b.dataset.tab)));
 $("#refresh").addEventListener("click", () => load());
@@ -670,6 +683,41 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+// ---- marketing team
+let M = null;
+const MK_STATUS = { planned: "scheduled", posting: "posting…", posted: "posted", failed: "failed", manual: "in your email", rejected: "blocked by review", cancelled: "cancelled" };
+async function loadMarketing() {
+  try { M = await api("?view=marketing"); renderMarketing(); } catch (err) { $("#mkMsg").textContent = err.message; }
+}
+function renderMarketing() {
+  $("#mkState").textContent = !M.live ? "off: set ANTHROPIC_API_KEY" : M.settings.paused ? "paused" : "running";
+  $("#mkPause").textContent = M.settings.paused ? "Resume posting" : "Pause posting";
+  $("#mkChannels").innerHTML = M.channels.map((c) => `<p style="margin:.3rem 0"><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.name)}</a> · ${esc(c.slots.join(", "))} UTC<br><span class="muted" style="font-size:.88rem">${c.connected ? "✓ posts automatically" : c.mode === "manual" ? "No posting API: drafts come to your email" : `Not connected: set ${esc(c.env.join(", "))} in the hosting panel`}</span></p>`).join("");
+  $("#mkTeam").innerHTML = M.team.map((m) => `<li><b>${esc(m.name)}</b>: ${esc(m.role)}</li>`).join("");
+  $("#mkResults").innerHTML = M.channels.map((c) => { const r = M.results[c.id]; return `<tr><td>${esc(c.name)}</td><td>${r.posts}</td><td>${r.leads}</td><td>${r.paid}</td><td>${money(r.revenue)}</td></tr>`; }).join("");
+  $("#mkDays").innerHTML = M.days.length ? M.days.map((d) => `<h3 style="margin:.8rem 0 .3rem">${esc(d.date)}${d.theme ? ` · ${esc(d.theme)}` : ""} <span class="stage">${esc(d.status)}</span></h3>
+    ${d.error ? `<p class="err">${esc(d.error)}</p>` : ""}${d.growthNote ? `<p class="muted" style="margin:0 0 .5rem">${esc(d.growthNote)}</p>` : ""}
+    ${d.posts.map((p) => { const c = M.channels.find((x) => x.id === p.channel); return `<div class="ap${p.status === "failed" ? " pending" : ""}"><div class="meta">${esc(c?.name || p.channel)} · ${esc(p.at.slice(11, 16))} UTC · <span class="stage">${esc(MK_STATUS[p.status] || p.status)}</span>${p.url ? ` · <a href="${esc(p.url)}" target="_blank" rel="noopener">view</a>` : ""}</div>
+      <pre>${esc(p.text)}</pre>${p.link ? `<div class="meta">Link: ${esc(p.link)}</div>` : ""}${p.error ? `<p class="err">${esc(p.error)}</p>` : ""}${p.issues?.length && p.status === "rejected" ? `<p class="err">${esc(p.issues.join(" · "))}</p>` : ""}
+      <div class="row">${["planned", "failed"].includes(p.status) && c?.connected ? `<button class="btn ok" data-mkpost="${p.id}">Post now</button>` : ""}${["planned", "manual", "failed"].includes(p.status) ? `<button class="btn" data-mkcancel="${p.id}">Cancel</button>` : ""}${p.status === "manual" ? `<button class="btn" data-mkcopy="${p.id}">Copy text</button>` : ""}</div></div>`; }).join("")}`).join("")
+    : `<p class="muted">No posts yet. The team plans at 05:00 UTC, or press "Plan today again".</p>`;
+}
+$("#mkPlan").addEventListener("click", async () => {
+  $("#mkMsg").textContent = "Planning… (about 2 minutes)";
+  try { await api("", { action: "mkt_plan" }); setTimeout(loadMarketing, 90000); } catch (err) { $("#mkMsg").textContent = err.message; }
+});
+$("#mkPause").addEventListener("click", async () => {
+  try { await api("", { action: "mkt_pause", paused: !M.settings.paused }); loadMarketing(); } catch (err) { $("#mkMsg").textContent = err.message; }
+});
+$("#mkDays").addEventListener("click", async (e) => {
+  const d = e.target.dataset;
+  const post = M.days.flatMap((x) => x.posts).find((p) => p.id === (d.mkpost || d.mkcancel || d.mkcopy));
+  if (!post) return;
+  if (d.mkcopy) { navigator.clipboard?.writeText(post.text + (post.link ? "\n\n" + post.link : "")).then(() => { e.target.textContent = "Copied ✓"; }); return; }
+  e.target.disabled = true;
+  try { await api("", { action: d.mkpost ? "mkt_post_now" : "mkt_cancel", id: post.id }); loadMarketing(); } catch (err) { e.target.disabled = false; e.target.textContent = err.message; }
+});
+
 async function load(navigate = true) {
   try {
     D = await api("?view=overview");
@@ -678,6 +726,7 @@ async function load(navigate = true) {
     if (!navigate) return;
     loadOps();
     if (location.hash === "#tasks") tab("tasks");
+    if (location.hash === "#marketing") tab("marketing");
     const h = location.hash.match(/^#(approval|lead)=(.+)$/);
     if (h?.[1] === "approval") { tab("approvals"); document.getElementById("ap-" + h[2])?.scrollIntoView(); }
     if (h?.[1] === "lead") openLead(h[2]);
