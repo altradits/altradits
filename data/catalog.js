@@ -294,6 +294,16 @@ export function orderable(id) {
   return null;
 }
 
+// Clean addresses: altradits.com/<slug> opens that item's order (quick jobs
+// drop their "q-": /inbox-cleanup, /try, /hourly, /core). Old ?buy= links still work.
+export const slugFor = (id) => String(id).replace(/^q-/, "");
+export function idForSlug(slug) {
+  const s = String(slug || "").toLowerCase();
+  if (!/^[a-z0-9-]{2,40}$/.test(s)) return null;
+  return orderable(s) ? s : orderable(`q-${s}`) ? `q-${s}` : null;
+}
+export const orderPath = (id) => `/${slugFor(id)}`;
+
 // Public payment details shown after a client accepts a proposal.
 // Leave a field empty to hide that method.
 export const PAYMENTS = {

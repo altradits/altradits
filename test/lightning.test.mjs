@@ -313,7 +313,7 @@ test("website order: price button -> QR for the full price -> payment confirms t
     assert.equal((await call(pay.GET, "GET", `/api/pay?id=${o.id}&t=${o.t}`)).body.status, "paid");
     const done = (await call(order.GET, "GET", `/api/order?id=${o.id}&t=${o.t}`)).body;
     assert.equal(done.status, "paid");
-    assert.match(done.portal, /portal\.html\?c=/);
+    assert.match(done.portal, /portal\?c=/);
     assert.equal(done.emailed, true);
 
     const p = await crm.getProposal(o.id);

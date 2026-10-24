@@ -35,7 +35,7 @@ export const MARKETING_TEAM = [
 // Where the team posts. mode "api" publishes automatically once its keys are
 // set; until then (and for channels with no posting API) the posts arrive in
 // Stanley's daily "ready to post" email. ref tags links so the Growth Hacker
-// can see which channel brought each order (?ref= is stored on the order).
+// can see which channel brought each order (/r/<ref>, stored on the order).
 export const CHANNELS = [
   { id: "x", name: "X · @altradits", url: "https://x.com/altradits", agent: "x", mode: "api",
     env: ["X_API_KEY", "X_API_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_SECRET"], slots: ["07:00", "12:30", "18:00"], max: 260, link: false, ref: "mkxpost" },

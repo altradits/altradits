@@ -62,8 +62,8 @@ input[type=text],select{width:100%;padding:.7rem .85rem;border:2px solid var(--l
   <div class="doc" id="doc" aria-live="polite"><p class="muted">Loading your proposal…</p></div>
 </div>
 <script type="module">
-import { PAYMENTS, GUARANTEES, BUSINESS, RULES } from "./data/catalog.js";
-import { mountPay } from "./assets/pay-widget.js";
+import { PAYMENTS, GUARANTEES, BUSINESS, RULES } from "/data/catalog.js";
+import { mountPay } from "/assets/pay-widget.js";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
