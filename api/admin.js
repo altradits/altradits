@@ -55,6 +55,17 @@ export async function GET(request) {
 
   if (u.searchParams.get("view") === "marketing") return json(await marketingView());
 
+  // Department inboxes (read-only IMAP); passwords stay in the environment.
+  if (u.searchParams.get("view") === "inboxes") {
+    const { listInboxes } = await import("../lib/inbox.js");
+    return json({ boxes: await listInboxes({ fresh: u.searchParams.get("fresh") === "1" }) });
+  }
+  if (u.searchParams.get("view") === "message") {
+    const { readMessage } = await import("../lib/inbox.js");
+    try { return json(await readMessage(clean(u.searchParams.get("box"), 30), Number(u.searchParams.get("uid")))); }
+    catch (err) { return json({ error: err.message }, 400); }
+  }
+
   // Stan's desk: everything Stan sent, was copied on and reviewed (read-only, for Stanley to monitor).
   if (u.searchParams.get("view") === "stan") {
     const STAN = "stan@altradits.com";

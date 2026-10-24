@@ -143,3 +143,11 @@ Set up in DirectAdmin → E-mail Manager (one time):
 3. In DNS management, check SPF and DKIM are enabled for altradits.com, so mail from these addresses isn't marked as spam.
 4. Keep `EMAIL_TRANSPORT=sendmail` (or SMTP_* for the stan@ mailbox) in Setup Node.js App.
 5. **Do steps 1–3 before merging this**, or replies to the department addresses will bounce. Until the forwarders exist you can set `EMAIL_REPLY_TO=altradits@gmail.com` so every reply lands in Gmail. If your mail host only lets the app send as one mailbox, set `EMAIL_FROM="Altradits <stan@altradits.com>"`: department names stay in the From name and Reply-To.
+
+### Department inboxes in the admin (Emails tab)
+
+admin → **Emails** shows each mailbox on mail.altradits.com, read-only (opening a message doesn't mark it read), with links and code flagged by the security screen. For each mailbox you've created in DirectAdmin → E-mail Accounts, add its password in **Setup Node.js App → Environment variables** as `MAIL_` + the part before the @, then restart the app:
+
+`MAIL_STAN`, `MAIL_HELLO`, `MAIL_CARE`, `MAIL_ORDERS`, `MAIL_SOCIAL`, `MAIL_ADMIN`, `MAIL_ASSISTANT`, `MAIL_TECH`, `MAIL_FINANCE`, `MAIL_TRUST`, `MAIL_MARKETING`, `MAIL_CAREERS`, `MAIL_QUALITY`
+
+Passwords never leave the server (the dashboard only shows which ones are set). Optional: `IMAP_HOST` (default mail.altradits.com), `IMAP_PORT` (993).

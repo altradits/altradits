@@ -114,6 +114,16 @@ dd{margin:0;overflow-wrap:anywhere}
 .warm p{margin:.3rem 0}
 .warm .tgt{border-left:3px solid var(--blue);padding:.2rem 0 .3rem .6rem;margin:.35rem 0;display:flex;flex-direction:column;gap:.2rem;align-items:flex-start}
 .warm .cm{margin:.3rem 0;font-size:.88rem}
+.mailgrid{display:grid;grid-template-columns:16rem 1fr;gap:1rem}
+.mailboxes{display:flex;flex-direction:column;gap:.35rem}
+.mbox{display:grid;grid-template-columns:1fr auto;gap:0 .5rem;text-align:left;border:2px solid var(--line);background:var(--paper);border-radius:.6rem;padding:.45rem .6rem;cursor:pointer;font:inherit}
+.mbox b{font-size:.88rem;overflow-wrap:anywhere}
+.mbox .sm{grid-column:1}
+.mbox .badge{grid-row:1 / span 2;grid-column:2;align-self:center}
+.mbox.on{border-color:var(--ink);background:var(--bg)}
+.mlist td{font-size:.9rem}
+.mlist tr.unread td{font-weight:700}
+@media (max-width:820px){.mailgrid{grid-template-columns:1fr}}
 .pvfoot{display:flex;flex-direction:column;gap:.25rem}
 .pvfoot .row{margin-top:.2rem}
 .pvfoot .btn{padding:.35rem .7rem;font-size:.85rem}
@@ -145,7 +155,7 @@ dd{margin:0;overflow-wrap:anywhere}
       <button role="tab" data-tab="marketing">Marketing</button>
       <button role="tab" data-tab="stan">Stan</button>
       <button role="tab" data-tab="jobs">My job hunt <span class="badge" id="jobCount" hidden></span></button>
-      <button role="tab" data-tab="emails">Email log</button>
+      <button role="tab" data-tab="emails">Emails <span class="badge" id="mailCount" hidden></span></button>
       <button type="button" class="btn" id="refresh">↻ Refresh</button>
     </div>
   </header>
@@ -305,8 +315,15 @@ dd{margin:0;overflow-wrap:anywhere}
     </div>
   </div>
 
-  <div id="tab-emails" hidden><div class="panel"><h2>Emails sent by the agents</h2>
-    <div style="overflow-x:auto"><table><thead><tr><th>When</th><th>To</th><th>Subject</th><th>Status</th></tr></thead><tbody id="emailRows"></tbody></table></div></div></div>
+  <div id="tab-emails" hidden>
+    <div class="panel"><h2>Department inboxes <span class="muted sm" id="mailMeta"></span></h2>
+      <p class="muted" style="margin-top:0">Read-only view of each mailbox on mail.altradits.com. Opening a message here doesn't mark it as read. Messages with links or code are flagged: don't open those links unless you trust the sender.</p>
+      <div class="row" style="margin:0 0 .8rem"><button class="btn" id="mailFresh">↻ Check mail now</button></div>
+      <div class="mailgrid"><div id="mailBoxes" class="mailboxes"></div><div><div id="mailList"></div><div id="mailRead"></div></div></div>
+    </div>
+    <div class="panel"><h2>Emails sent by the agents</h2>
+    <div style="overflow-x:auto"><table><thead><tr><th>When</th><th>To</th><th>Subject</th><th>Status</th></tr></thead><tbody id="emailRows"></tbody></table></div></div>
+  </div>
 </div>
 
 <script type="module">
@@ -344,6 +361,7 @@ function tab(name) {
   if (name === "jobs") loadJobs();
   if (name === "marketing") loadMarketing();
   if (name === "stan") loadStan();
+  if (name === "emails") loadInboxes();
   ["overview", "approvals", "leads", "tasks", "team", "growth", "marketing", "stan", "jobs", "emails"].forEach((t) => { $("#tab-" + t).hidden = t !== name; });
 }
 document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => tab(b.dataset.tab)));
@@ -836,6 +854,39 @@ document.addEventListener("click", async (e) => {
     w.document.write(`<!doctype html><meta charset="utf-8"><title>CV – ${esc(j.title)}</title><style>body{font:11pt/1.45 Georgia,serif;max-width:46rem;margin:2rem auto;padding:0 1rem;color:#111}h1{font-size:20pt;margin:0 0 .3rem}h2{font-size:13pt;border-bottom:1px solid #999;margin:1.2rem 0 .4rem}h3{font-size:11.5pt;margin:.8rem 0 .2rem}ul{margin:.2rem 0 .4rem 1.1rem;padding:0}@media print{body{margin:0}}</style>${mdToHtml(j.pack.cv)}`);
     w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
   }
+});
+
+// ---- department inboxes (read-only)
+let MB = null, mbSel = null;
+async function loadInboxes(fresh = false) {
+  $("#mailMeta").textContent = "checking…";
+  try { MB = (await api(`?view=inboxes${fresh ? "&fresh=1" : ""}`)).boxes; } catch (err) { $("#mailMeta").textContent = err.message; return; }
+  const unread = MB.reduce((n, b) => n + (b.unread || 0), 0);
+  $("#mailCount").hidden = !unread; $("#mailCount").textContent = unread;
+  $("#mailMeta").textContent = `${MB.filter((b) => b.connected).length} of ${MB.length} connected · ${unread} unread`;
+  if (!mbSel || !MB.some((b) => b.id === mbSel)) mbSel = (MB.find((b) => b.connected) || MB[0]).id;
+  renderInboxes();
+}
+function renderInboxes() {
+  $("#mailBoxes").innerHTML = MB.map((b) => `<button class="mbox${b.id === mbSel ? " on" : ""}" data-mbox="${esc(b.id)}"><b>${esc(b.address)}</b><span class="muted sm">${esc(b.name)}</span>${b.connected ? (b.unread ? `<span class="badge">${b.unread}</span>` : "") : '<span class="sm muted">not connected</span>'}</button>`).join("");
+  const b = MB.find((x) => x.id === mbSel);
+  $("#mailRead").innerHTML = "";
+  $("#mailList").innerHTML = !b.connected
+    ? `<div class="ap"><b>${esc(b.address)} isn't connected.</b><p class="sm muted" style="margin:.3rem 0 0">${b.error ? esc(b.error) + "<br>" : ""}To see it here, add its password in DirectAdmin → Setup Node.js App as an environment variable named <code>${esc(b.env)}</code>, then restart the app.</p></div>`
+    : b.messages.length ? `<table class="mlist"><tbody>${b.messages.map((m) => `<tr class="click${m.unread ? " unread" : ""}" data-muid="${m.uid}"><td>${esc(m.from)}</td><td>${esc(m.subject)}</td><td class="sm muted">${m.date ? ago(m.date) : ""}</td></tr>`).join("")}</tbody></table>` : `<p class="muted">No messages in ${esc(b.address)}.</p>`;
+}
+$("#mailFresh").addEventListener("click", () => loadInboxes(true));
+$("#mailBoxes").addEventListener("click", (e) => { const id = e.target.closest("[data-mbox]")?.dataset.mbox; if (id) { mbSel = id; renderInboxes(); } });
+$("#mailList").addEventListener("click", async (e) => {
+  const uid = e.target.closest("[data-muid]")?.dataset.muid; if (!uid) return;
+  $("#mailRead").innerHTML = '<p class="muted">Opening…</p>';
+  try {
+    const m = await api(`?view=message&box=${encodeURIComponent(mbSel)}&uid=${uid}`);
+    $("#mailRead").innerHTML = `<div class="ap" style="margin-top:.8rem">${m.security ? `<p style="border:2px solid var(--warn);border-radius:.6rem;padding:.5rem .7rem;margin:0 0 .6rem;background:color-mix(in srgb,var(--warn) 8%,white)"><b>⚠ Security:</b> ${esc(m.security)}</p>` : ""}
+      <h3>${esc(m.subject)}</h3><div class="meta">From ${esc(m.from)} · to ${esc(m.to)}${m.cc ? ` · cc ${esc(m.cc)}` : ""}${m.date ? ` · ${new Date(m.date).toLocaleString()}` : ""}</div>
+      <pre style="white-space:pre-wrap;max-height:30rem;overflow:auto;margin-top:.6rem">${esc(m.text)}</pre>
+      ${m.attachments.length ? `<p class="sm muted">Attachments (not opened here): ${m.attachments.map((a) => `${esc(a.name)} (${Math.ceil(a.size / 1024)} KB)`).join(", ")}</p>` : ""}</div>`;
+  } catch (err) { $("#mailRead").innerHTML = `<p class="err">${esc(err.message)}</p>`; }
 });
 
 // ---- Stan's desk (read-only monitoring)
