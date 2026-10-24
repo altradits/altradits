@@ -58,7 +58,15 @@ const server = http.createServer(async (req, res) => {
       res.end(Buffer.from(await response.arrayBuffer()));
       return;
     }
-    const rel = url.pathname === "/" ? "/index.html" : url.pathname;
+    // Clean addresses: /templates, /hunt, /cv… for pages; /<job> (e.g. /hourly,
+    // /inbox-cleanup), /r/<ref> and /h/<hunt code> open the homepage, which reads
+    // the path. Old *.html addresses redirect to the clean ones.
+    const old = url.pathname.match(/^\/(templates|hunt|cv|join|team|portal|proposal|admin)\.html$/);
+    if (old && req.method === "GET") { res.writeHead(301, { Location: `/${old[1]}${url.search}` }).end(); return; }
+    const page = url.pathname.match(/^\/(templates|hunt|cv|join|team|portal|proposal|admin)\/?$/);
+    const { idForSlug } = await import("./data/catalog.js");
+    const home = /^\/(?:r|h)\/[a-z0-9]{4,12}\/?$/.test(url.pathname) || idForSlug(url.pathname.slice(1).replace(/\/$/, ""));
+    const rel = page ? `/${page[1]}.html` : url.pathname === "/" || home ? "/index.html" : url.pathname;
     if (!PUBLIC.test(rel)) { res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found"); return; }
     const file = path.join(ROOT, rel);
     const headers = { ...SECURITY, "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" };
@@ -73,7 +81,7 @@ const server = http.createServer(async (req, res) => {
     if (!res.headersSent) res.writeHead(500).end("Server error");
   }
 });
-server.listen(PORT, () => console.log(`Altradits running on port ${PORT}${PROD ? "" : `: http://localhost:${PORT}  (admin: /admin.html)`}`));
+server.listen(PORT, () => console.log(`Altradits running on port ${PORT}${PROD ? "" : `: http://localhost:${PORT}  (admin: /admin)`}`));
 
 // The follow-up agent: once a day, after 06:00 UTC. The deploy cron pings
 // /healthz every 5 minutes, which keeps this process (and timer) alive.

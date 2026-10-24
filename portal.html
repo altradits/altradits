@@ -60,7 +60,7 @@ textarea{min-height:4.5rem}
   <div id="app"><p class="muted">Loading your portal…</p></div>
 </div>
 <script type="module">
-import { DEPARTMENTS } from "./data/playbooks.js";
+import { DEPARTMENTS } from "/data/playbooks.js";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const c = new URLSearchParams(location.search).get("c");

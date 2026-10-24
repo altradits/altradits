@@ -206,8 +206,8 @@ test("hunt: solve, share, a visit from someone else unlocks a one-time coupon", 
   assert.equal((await huntApi.POST(req("/api/hunt", { action: "solve", answer: "WRONG" }))).status, 400);
   const solved = await (await huntApi.POST(req("/api/hunt", { action: "solve", answer: h.word.toLowerCase() }, "2.2.2.2"))).json();
   const claim = solved.claim;
-  assert.match(claim.share, /^https:\/\/altradits\.com\/\?h=[a-z2-9]{8}$/);
-  const code = claim.share.split("=")[1];
+  assert.match(claim.share, /^https:\/\/altradits\.com\/h\/[a-z2-9]{8}$/);
+  const code = claim.share.split("/").pop();
 
   // The player opening their own link doesn't count.
   await huntApi.POST(req("/api/hunt", { action: "visit", code }, "2.2.2.2"));
@@ -259,7 +259,7 @@ test("winners who opt in get a shoutout in the next post out: tagged on X, by na
   assert.equal((await huntApi.POST(req("/api/hunt", { action: "shoutout", id: claim.id, t: "wrong", handle: "amina_k" }))).status, 404);
   assert.equal((await huntApi.POST(req("/api/hunt", { action: "shoutout", id: claim.id, t: claim.t, handle: "@amina_k", name: "Amina" }))).status, 200);
   assert.equal((await hunt.pendingShoutouts()).length, 0); // not a winner until the coupon unlocks
-  await huntApi.POST(req("/api/hunt", { action: "visit", code: claim.share.split("=")[1] }, "5.5.5.5"));
+  await huntApi.POST(req("/api/hunt", { action: "visit", code: claim.share.split("/").pop() }, "5.5.5.5"));
   assert.equal((await hunt.pendingShoutouts()).length, 1);
 
   // The next X post that goes out carries the tag, between the post and the clue.
@@ -405,7 +405,7 @@ test("a plan written ahead fills empty days once, through the same clues, links 
   assert.equal(rec.posts.length, CHANNELS.reduce((n, c) => n + c.slots.length, 0));
   assert.ok(rec.posts.every((p) => p.trace.startsWith("#AltraditsHunt") && p.warmup.comments.length === 1));
   assert.equal(rec.posts.find((p) => p.channel === "fb_page").status, "rejected"); // hard checks still apply
-  assert.equal(rec.posts.find((p) => p.channel === "li_co").link, "https://altradits.test/?ref=mklico");
+  assert.equal(rec.posts.find((p) => p.channel === "li_co").link, "https://altradits.test/r/mklico");
   assert.equal((await getJSON(`mkt:master:${rec.posts[0].masterId}`)).by, "plan");
   assert.equal(await mk.importPlan(plan, at), null); // once only
 });

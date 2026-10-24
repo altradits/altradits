@@ -77,7 +77,7 @@ textarea{min-height:6rem;resize:vertical}
   <div class="ok" id="done" hidden><h2 style="font-size:1.3rem">Application received ✓</h2><p>Thanks! We review applications weekly and reply either way. Approved team members get a private workspace link by email.</p></div>
 </div>
 <script type="module">
-import { DEPARTMENTS } from "./data/playbooks.js";
+import { DEPARTMENTS } from "/data/playbooks.js";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const SAMPLES = {

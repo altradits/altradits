@@ -191,13 +191,13 @@ dd{margin:0;overflow-wrap:anywhere}
         <div id="qaExperts" style="margin-top:.6rem"></div></div>
     </div>
     <div class="panel"><h2>Departments</h2><div class="kpis" id="deptKpis" style="margin:0"></div>
-      <p class="muted" style="font-size:.9rem">Tasks are routed to approved members of the matching department with spare weekly hours. If nobody has capacity, the task comes to you. Recruiting link: <a href="/join.html" target="_blank">/join.html</a></p></div>
+      <p class="muted" style="font-size:.9rem">Tasks are routed to approved members of the matching department with spare weekly hours. If nobody has capacity, the task comes to you. Recruiting link: <a href="/join" target="_blank">/join</a></p></div>
     <div class="panel"><h2>Team & applications</h2><div id="memberList"></div></div>
   </div>
 
   <div id="tab-growth" hidden>
     <div class="panel"><h2>Free-kit subscribers <span class="stage" id="subTotal" style="font-size:.8rem"></span></h2>
-      <p class="muted" style="margin-top:0">People who downloaded a free kit at <a href="/templates.html" target="_blank" rel="noopener">/templates.html</a>. Each one is also a lead and gets three follow-ups over ten days: do it together, then done for you.</p>
+      <p class="muted" style="margin-top:0">People who downloaded a free kit at <a href="/templates" target="_blank" rel="noopener">/templates</a>. Each one is also a lead and gets three follow-ups over ten days: do it together, then done for you.</p>
       <div class="kpis" id="subKits" style="margin:0 0 .8rem"></div>
       <div class="row" style="margin:0 0 .6rem"><button class="btn" id="subCsv">Download CSV</button></div>
       <div style="overflow-x:auto"><table><thead><tr><th>Joined</th><th>Email</th><th>Name</th><th>Kits</th><th></th></tr></thead><tbody id="subRows"></tbody></table></div>
@@ -310,7 +310,7 @@ dd{margin:0;overflow-wrap:anywhere}
 </div>
 
 <script type="module">
-import { SERVICES } from "./data/catalog.js";
+import { SERVICES } from "/data/catalog.js";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const money = (n) => "$" + Number(n || 0).toLocaleString("en-US");
@@ -536,7 +536,7 @@ function renderOps() {
     <div class="meta">${esc(m.email)} · ${esc(m.country)} ${esc(m.timezone)} · $${m.rate}/h · ${m.hoursPerWeek}h/week · ${esc(m.departments.join(", "))} · ${m.openHours}h open</div>
     <details><summary>Application</summary><p><b>Skills:</b> ${esc(m.skills)}</p><p><b>Tools:</b> ${esc(m.tools)}</p>${m.portfolio ? `<p><a href="${esc(m.portfolio)}" target="_blank" rel="noopener">Portfolio</a></p>` : ""}<p><b>${esc(m.sampleQuestion || "Sample")}</b></p><pre>${esc(m.sample)}</pre></details>
     <div class="row">${m.status !== "approved" ? `<button class="btn ok" data-mstatus="approved" data-mid="${m.id}">Approve</button>` : `<button class="btn" data-mstatus="paused" data-mid="${m.id}">Pause</button>`}
-    ${m.status === "applied" ? `<button class="btn" data-mstatus="rejected" data-mid="${m.id}">Decline</button>` : ""}</div></div>`).join("") || '<p class="muted">No applications yet. Share /join.html in VA communities and on LinkedIn.</p>';
+    ${m.status === "applied" ? `<button class="btn" data-mstatus="rejected" data-mid="${m.id}">Decline</button>` : ""}</div></div>`).join("") || '<p class="muted">No applications yet. Share /join in VA communities and on LinkedIn.</p>';
 }
 $("#taskFilter").addEventListener("change", renderOps);
 document.addEventListener("click", async (e) => {
@@ -719,7 +719,7 @@ function renderCareer(p) {
     ${m.missing.length ? `<p><b>Add these to make it stronger</b> (in My profile → notes):</p><ul>${m.missing.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
     <pre style="max-height:24rem;overflow:auto">${esc(m.cv)}</pre>
     <div class="row"><button class="btn" id="copyMaster">Copy CV</button><button class="btn" id="printMaster">Print / save as PDF</button>
-      <span class="muted">Public at <a href="/cv.html" target="_blank" rel="noopener">altradits.com/cv.html</a></span></div></details>` : "";
+      <span class="muted">Public at <a href="/cv" target="_blank" rel="noopener">altradits.com/cv</a></span></div></details>` : "";
 }
 function printCv(title, cvMd) {
   const w = window.open("", "_blank");

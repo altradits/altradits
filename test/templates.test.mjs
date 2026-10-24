@@ -92,13 +92,13 @@ test("follow-ups: one a day at most, from the newest kit, climbing the ladder, t
   assert.equal((await subs.runNurture(at(2))).sent, 1);
   assert.equal((await subs.runNurture(at(2.2))).sent, 0); // one a day
   let mail = (await emails()).find((e) => e.subject === "The fastest way to fill your calendar");
-  assert.equal(mail.cta.url, "https://altradits.test/?buy=hourly");
+  assert.equal(mail.cta.url, "https://altradits.test/hourly");
   assert.equal((await subs.runNurture(at(5))).sent, 1);
   mail = (await emails()).find((e) => e.subject === "10 captions, done today");
-  assert.equal(mail.cta.url, "https://altradits.test/?buy=q-captions");
+  assert.equal(mail.cta.url, "https://altradits.test/captions");
   assert.equal((await subs.runNurture(at(10))).sent, 1);
   mail = (await emails()).find((e) => e.subject === "Show up every week without thinking about it");
-  assert.equal(mail.cta.url, "https://altradits.test/?buy=social-management"); // day 10: the monthly service
+  assert.equal(mail.cta.url, "https://altradits.test/social-management"); // day 10: the monthly service
   // The social sequence is done; the inbox one (older) continues.
   assert.equal((await subs.runNurture(at(11))).sent, 1);
   assert.ok((await emails()).some((e) => e.subject === "The one inbox habit that sticks"));

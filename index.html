@@ -836,9 +836,9 @@ footer .logo img{height:2.5rem}
       <div class="fcol">
         <h2 id="fMore">More</h2>
         <ul aria-labelledby="fMore">
-          <li><a href="/templates.html">Free templates</a></li>
-          <li><a href="/join.html">Join the team <span class="ftagx">Hiring</span></a></li>
-          <li><a href="/hunt.html">Treasure hunt <span class="fsub">#AltraditsHunt</span></a></li>
+          <li><a href="/templates">Free templates</a></li>
+          <li><a href="/join">Join the team <span class="ftagx">Hiring</span></a></li>
+          <li><a href="/hunt">Treasure hunt <span class="fsub">#AltraditsHunt</span></a></li>
           <li><a href="https://github.com/altradits" target="_blank" rel="noopener">Source code</a></li>
         </ul>
       </div>
@@ -849,7 +849,7 @@ footer .logo img{height:2.5rem}
           <li><a class="si fb" href="https://www.facebook.com/profile.php?id=61579237182379" target="_blank" rel="noopener" aria-label="Stanley on Facebook"><svg aria-hidden="true" focusable="false"><use href="#i-fb"/></svg></a></li>
           <li><a class="si tt" href="https://www.tiktok.com/@5tan_lee" target="_blank" rel="noopener" aria-label="Stanley on TikTok"><svg aria-hidden="true" focusable="false"><use href="#i-tt"/></svg></a></li>
         </ul>
-        <ul><li><a href="/cv.html">Stanley's CV</a></li></ul>
+        <ul><li><a href="/cv">Stanley's CV</a></li></ul>
       </div>
     </div>
     <div class="fbar">
@@ -871,8 +871,8 @@ footer .logo img{height:2.5rem}
 </div>
 
 <script type="module">
-import { SERVICES, QUICK_JOBS, PILLARS, PACKAGES, PAYG, GUARANTEES, URGENCY, STANDBY_FREELANCERS, orderable } from "./data/catalog.js";
-import { mountPay } from "./assets/pay-widget.js";
+import { SERVICES, QUICK_JOBS, PILLARS, PACKAGES, PAYG, GUARANTEES, URGENCY, STANDBY_FREELANCERS, orderable, idForSlug, orderPath } from "/data/catalog.js";
+import { mountPay } from "/assets/pay-widget.js";
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -884,10 +884,16 @@ const session = {
 $("#yr").textContent = new Date().getFullYear();
 
 const params = new URLSearchParams(location.search);
-try { if (/^[a-z0-9]{4,12}$/.test(params.get("ref") || "")) localStorage.setItem("altra.ref", params.get("ref")); } catch {}
+// Clean addresses: /r/<ref>, /h/<hunt code> and /<job> (old ?ref=, ?h=, ?buy= still work).
+const seg = location.pathname.split("/").filter(Boolean);
+const pathRef = seg[0] === "r" ? seg[1] : null, pathHunt = seg[0] === "h" ? seg[1] : null;
+const pathBuy = seg.length === 1 ? idForSlug(seg[0]) : null;
+const refCode = pathRef || params.get("ref");
+try { if (/^[a-z0-9]{4,12}$/.test(refCode || "")) localStorage.setItem("altra.ref", refCode); } catch {}
+if (pathRef || pathHunt) history.replaceState(null, "", "/" + location.hash); // tidy the address once recorded
 // Opened from a treasure-hunt player's share link: that unlocks their coupon (once per browser).
 try {
-  const h = params.get("h");
+  const h = pathHunt || params.get("h");
   if (/^[a-z2-9]{8}$/.test(h || "") && !localStorage.getItem("altra.h." + h)) {
     localStorage.setItem("altra.h." + h, "1");
     fetch("/api/hunt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "visit", code: h }) }).catch(() => {});
@@ -1119,6 +1125,7 @@ let stopPay = null, lastFocus = null;
 function closeModal() {
   stopPay?.(); stopPay = null;
   modal.hidden = true;
+  if (location.pathname !== "/") history.replaceState(null, "", "/" + location.hash); // back to the homepage address
   document.body.classList.remove("modal-open");
   lastFocus?.focus();
 }
@@ -1128,6 +1135,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !modal.h
 async function openOrder(itemId) {
   const item = orderable(itemId);
   if (!item) return;
+  history.replaceState(null, "", orderPath(itemId)); // a clean, shareable address: /hourly, /inbox-cleanup
   lastFocus = document.activeElement;
   modal.hidden = false;
   document.body.classList.add("modal-open");
@@ -1251,12 +1259,12 @@ document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-buy]");
   if (b) openOrder(b.dataset.buy);
 });
-if (params.get("buy") && orderable(params.get("buy"))) openOrder(params.get("buy"));
+{ const buy = pathBuy || (orderable(params.get("buy")) ? params.get("buy") : null); if (buy) openOrder(buy); }
 </script>
 <script type="module">
 // Motion layer. Kept apart from the order flow above: if anything here fails,
 // the page simply stays static and fully visible.
-import { QUICK_JOBS, STANDBY_FREELANCERS } from "./data/catalog.js";
+import { QUICK_JOBS, STANDBY_FREELANCERS } from "/data/catalog.js";
 
 const root = document.documentElement;
 const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;

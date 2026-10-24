@@ -48,7 +48,7 @@ textarea{min-height:4.5rem}
   <div id="app"><p class="muted">Loading your workspace…</p></div>
 </div>
 <script type="module">
-import { findDepartment } from "./data/playbooks.js";
+import { findDepartment } from "/data/playbooks.js";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const m = new URLSearchParams(location.search).get("m");

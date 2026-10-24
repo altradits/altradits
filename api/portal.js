@@ -131,7 +131,7 @@ export async function POST(request) {
       await saveTask(t);
       await emailOwner(`Unhappy client: ${t.title} rated ${rating}/5`,
         `${t.client} approved "${t.title}" but rated it ${rating}/5.\n\n${comment || "(no comment)"}\n\nReach out personally, then close the follow-up in the dashboard.`,
-        { label: "Open tasks", url: `${base()}/admin.html#tasks` }, t.leadId);
+        { label: "Open tasks", url: `${base()}/admin#tasks` }, t.leadId);
     }
   } else if (body.action === "changes") {
     if (t.status !== "review") return json({ error: "This task isn't waiting for your review." }, 409);
@@ -145,7 +145,7 @@ export async function POST(request) {
       await saveTask(t);
       await sendEmail({ to: m.email, kind: "team", dept: "quality", subject: `Changes requested: ${t.title}`,
         text: `${t.client} asked for changes on "${t.title}":\n\n${note}`,
-        cta: { label: "Open task", url: `${base()}/team.html?m=${m.token}#${t.id}` } });
+        cta: { label: "Open task", url: `${base()}/team?m=${m.token}#${t.id}` } });
     } else if (workersLive()) {
       t.status = "queued";
       t.attempts = 0; // fresh revision cycle with the client's feedback
