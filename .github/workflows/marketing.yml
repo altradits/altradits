@@ -1,12 +1,16 @@
 name: Wake the marketing team
 
 # The host idles the app when nobody visits, so its timers stop. This wakes it
-# at planning time (05:00 UTC) and at each posting slot in data/marketing.js;
+# at planning time (05:00 UTC), ~15 minutes before each posting slot (warm-up
+# kits) and at each slot in data/marketing.js;
 # the app then plans or publishes whatever is due. Times are UTC.
 on:
   schedule:
-    - cron: "2 5,7,8,11,15,16,17,18 * * *"
+    - cron: "2 5,7,8,11,15,16,17,18,19 * * *"
     - cron: "32 12 * * *"
+    # ~15 minutes before each slot: warm-up kits and reminders
+    - cron: "45 6,7,10,14,15,16,17,18 * * *"
+    - cron: "15 12 * * *"
   workflow_dispatch:
 
 jobs:

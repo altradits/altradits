@@ -392,6 +392,12 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
 .sheet .what p{margin:0 0 .4rem;color:var(--muted)}
 .paybox{border:2px solid var(--btc);border-radius:1rem;padding:1rem 1.1rem;background:color-mix(in srgb,var(--btc) 6%,white)}
 .paybox h3{font-size:1.1rem;margin:0 0 .5rem}
+.code{margin:0 0 .7rem;font-size:.93rem}
+.code summary{cursor:pointer;color:var(--muted);font-weight:600;width:max-content}
+.coderow{display:flex;gap:.5rem;margin-top:.5rem}
+.coderow input{flex:1;min-width:0;padding:.55rem .75rem;border:2px solid var(--line);border-radius:.6rem;font:600 .95rem ui-monospace,Menlo,monospace;text-transform:uppercase;background:#fff}
+.code p{margin:.35rem 0 0;color:var(--muted)}
+.coderow .btn{padding:.55rem 1rem}
 .details{margin-top:1rem;display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
 .details label{font-weight:600;font-size:.9rem}
 .details .wide{grid-column:1/-1}
@@ -760,7 +766,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:.5rem 2rem;justify-content:space-be
   <div class="wrap">
     <div class="fbrand"><a class="logo" href="#top" aria-label="Altradits, back to top"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a></div>
     <span>© <span id="yr">2026</span> Altradits · Virtual assistance worldwide</span>
-    <span><a href="/cv.html">Stanley's CV</a> · <a href="/join.html">Join the team (we're hiring)</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://x.com/altradits">X</a></span>
+    <span><a href="/cv.html">Stanley's CV</a> · <a href="/join.html">Join the team (we're hiring)</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://x.com/altradits">X</a> · <a href="/hunt.html">Treasure hunt</a></span>
   </div>
 </footer>
 
@@ -774,7 +780,7 @@ import { mountPay } from "./assets/pay-widget.js";
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const money = (n) => "$" + Number(n).toLocaleString("en-US");
+const money = (n) => "$" + Number(n).toLocaleString("en-US", Number.isInteger(Number(n)) ? {} : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const session = {
   get(k) { try { return JSON.parse(sessionStorage.getItem(k)) || {}; } catch { return {}; } },
   set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch {} },
@@ -783,6 +789,14 @@ $("#yr").textContent = new Date().getFullYear();
 
 const params = new URLSearchParams(location.search);
 try { if (/^[a-z0-9]{4,12}$/.test(params.get("ref") || "")) localStorage.setItem("altra.ref", params.get("ref")); } catch {}
+// Opened from a treasure-hunt player's share link: that unlocks their coupon (once per browser).
+try {
+  const h = params.get("h");
+  if (/^[a-z2-9]{8}$/.test(h || "") && !localStorage.getItem("altra.h." + h)) {
+    localStorage.setItem("altra.h." + h, "1");
+    fetch("/api/hunt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "visit", code: h }) }).catch(() => {});
+  }
+} catch {}
 const REF = (() => { try { return localStorage.getItem("altra.ref") || ""; } catch { return ""; } })();
 
 // A payment button: the label is the price.
@@ -1032,7 +1046,9 @@ ${item.urgentOk ? `<fieldset class="urg" id="urg"><legend>When do you need it?</
         ${URGENCY.map((u, i) => `<label><input type="radio" form="details" name="urgency" value="${u.id}"${i ? "" : " checked"}> <b>${esc(u.label)}</b><small>${esc(u.note)}</small></label>`).join("")}
         <p>Nothing is impossible: ${STANDBY_FREELANCERS}+ freelancers are on standby for urgent jobs. Pay for an urgent order and you'll get Stanley's direct number to flag it straight away.</p>
       </fieldset>` : ""}
-    <div class="paybox"><h3>₿ Pay ${money(item.price)} with any Bitcoin wallet</h3><div id="pay"><p style="color:var(--muted)">Creating your payment QR…</p></div></div>
+    <div class="paybox"><h3>₿ Pay <span id="payAmt">${money(item.price)}</span> with any Bitcoin wallet</h3>
+      <details class="code" id="code"><summary>Have a hunt code?</summary><form id="codeForm" class="coderow"><input name="code" autocomplete="off" spellcheck="false" placeholder="HUNT-XXXXXX" aria-label="Hunt code"><button class="btn dark">Apply</button></form><p id="codeMsg" role="status"></p></details>
+      <div id="pay"><p style="color:var(--muted)">Creating your payment QR…</p></div></div>
     <form class="details" id="details" novalidate>
 
       <label>Email for your receipt and client portal<input type="email" name="email" autocomplete="email" placeholder="you@business.com"></label>
@@ -1080,11 +1096,31 @@ ${item.urgentOk ? `<fieldset class="urg" id="urg"><legend>When do you need it?</
   $("#details").addEventListener("change", () => { clearTimeout(saveTimer); save(); });
   $("#urg")?.addEventListener("change", () => { clearTimeout(saveTimer); save(); });
 
-  stopPay = mountPay($("#pay"), { id: order.id, t: order.t, claim: true, onPaid: () => paid(item, order, save) });
+  const pay = () => { stopPay?.(); stopPay = mountPay($("#pay"), { id: order.id, t: order.t, claim: true, onPaid: () => paid(item, order, save) }); };
+  // A one-time code from the treasure hunt: the price drops before you pay.
+  try { const won = localStorage.getItem("altra.coupon"); if (won) { $("#codeForm [name=code]").value = won; $("#code").open = true; } } catch {}
+  if (order.coupon) { $("#codeForm [name=code]").value = order.coupon.code; $("#code").open = true; $("#payAmt").textContent = money(order.coupon.usd); $("#codeMsg").textContent = `✓ ${order.coupon.pct}% off applied`; }
+  $("#codeForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const code = e.target.code.value.trim();
+    $("#codeMsg").textContent = "Checking…";
+    try {
+      const r = await fetch("/api/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: order.id, t: order.t, coupon: code }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "That code didn't work.");
+      $("#payAmt").textContent = money(d.usd);
+      $("#codeMsg").textContent = d.pct ? `✓ ${d.pct}% off applied. Your new QR is below.` : "";
+      order.coupon = d.pct ? { code: d.code, pct: d.pct, usd: d.usd } : null;
+      session.set("altra.orders", { ...session.get("altra.orders"), [itemId]: order });
+      pay();
+    } catch (err) { $("#codeMsg").textContent = err.message; }
+  });
+  pay();
 }
 
 async function paid(item, order, save) {
   order.paid = true;
+  if (order.coupon) try { localStorage.removeItem("altra.coupon"); } catch {}
   await save(); // also shows the confirmation
   const o = session.get("altra.orders"); delete o[item.id]; session.set("altra.orders", o);
 }

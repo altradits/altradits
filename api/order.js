@@ -1,6 +1,7 @@
 // Orders straight from the website: every price button opens a payment QR.
 // POST /api/order { item, ref? }                 -> { id, t, item }  (then POST /api/pay)
 // POST /api/order { id, t, email?, name?, task?, urgency? } -> save the client's details
+// POST /api/order { id, t, coupon }           -> apply a one-time hunt code -> { usd, pct }
 // GET  /api/order?id=&t=  -> { status, portal?, phone? }  (phone only once an
 //                            urgent order is paid, so the client can flag it)
 import { json, readBody, clean, clientIp, safeEqual, EMAIL_RE } from "../lib/http.js";
@@ -10,6 +11,7 @@ import { emailOwner } from "../lib/email.js";
 import { getTask, saveTask, ensurePortal } from "../lib/ops.js";
 import { orderable, URGENCY } from "../data/catalog.js";
 import { OWNER_PHONE } from "../lib/contact.js";
+import { reserveCoupon, releaseCoupon } from "../lib/hunt.js";
 
 const isUrgent = (o) => o.urgentOk && ["hours", "minutes"].includes(o.urgency);
 const urgencyNote = (o) => URGENCY.find((u) => u.id === o.urgency)?.note || "";
@@ -21,12 +23,34 @@ async function load(id, t) {
 
 export async function POST(request) {
   const body = await readBody(request);
+  if (body.id && body.coupon !== undefined) return applyCoupon(body);
   if (body.id) return update(body);
   const item = orderable(clean(body.item, 40));
   if (!item) return json({ error: "Unknown item." }, 400);
   if ((await hit(`rl:order:${clientIp(request)}`, 3600)) > 20) return json({ error: "Too many orders from this connection. Try again in an hour." }, 429);
   const { p } = await createOrder(item, { ref: clean(body.ref, 12).toLowerCase() });
   return json({ id: p.id, t: p.token, item: { id: item.id, name: item.name, usd: p.totals.dueNow } });
+}
+
+// One code per order; the price drops before the invoice is made, and the code
+// is spent only when the order is paid (lib/crm.js confirmPayment).
+async function applyCoupon(body) {
+  const p = await load(body.id, body.t);
+  if (!p) return json({ error: "Order not found." }, 404);
+  if (p.status !== "accepted") return json({ error: "This order can't take a code now." }, 409);
+  const code = clean(body.coupon, 20).toUpperCase();
+  const full = p.totals.monthly + p.totals.oneOff;
+  try {
+    if (p.coupon && p.coupon.code !== code) await releaseCoupon(p.coupon.code, p.id);
+    if (!code) { p.coupon = null; p.totals.dueNow = full; await saveProposal(p); return json({ usd: full, pct: 0 }); }
+    const c = await reserveCoupon(code, p.id);
+    p.coupon = { code: c.code, pct: c.pct };
+    p.totals.dueNow = Math.round(full * (100 - c.pct)) / 100;
+    await saveProposal(p);
+    return json({ usd: p.totals.dueNow, pct: c.pct, code: c.code });
+  } catch (err) {
+    return json({ error: err.message }, 400);
+  }
 }
 
 async function update(body) {

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Altradits Treasure Hunt</title>
+<meta name="description" content="Collect the hidden letters in our posts on X, LinkedIn, Facebook and TikTok, solve the word, and earn a one-time Altradits coupon.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2F5BEA;--btc:#F7931A;--ok:#12A37F;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.wrap{max-width:44rem;margin:0 auto;padding:1.5rem 1rem 4rem}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+.top img{height:2.6rem;width:auto;display:block}
+.card{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;box-shadow:8px 8px 0 var(--ink);padding:clamp(1.25rem,4vw,2.25rem)}
+h1{font:800 clamp(1.9rem,6vw,2.6rem)/1.05 'Bricolage Grotesque',sans-serif;margin:0 0 .5rem}
+h2{font:700 1.15rem 'Bricolage Grotesque',sans-serif;margin:0 0 .4rem}
+.lead{color:var(--muted);margin:0 0 1.4rem}
+ol.steps{list-style:none;padding:0;margin:0 0 1.6rem;display:grid;gap:.8rem;counter-reset:s}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:2rem 1fr;gap:.7rem;align-items:start}
+ol.steps li::before{content:counter(s);font:800 1.05rem 'Bricolage Grotesque',sans-serif;background:var(--ink);color:#fff;border-radius:.5rem;height:2rem;display:grid;place-items:center}
+ol.steps p{margin:0}
+.where{display:flex;flex-wrap:wrap;gap:.4rem;margin:.4rem 0 0}
+.where a{font-weight:600;font-size:.92rem;text-decoration:none;border:2px solid var(--line);border-radius:.6rem;padding:.2rem .65rem;color:var(--ink)}
+.where a:hover{border-color:var(--ink)}
+.slots{display:grid;grid-template-columns:repeat(var(--n,8),minmax(0,3rem));gap:.35rem;margin:.2rem 0 .9rem}
+.slots input{width:100%;min-width:0;padding:0;height:3rem;text-align:center;font:800 1.4rem 'Bricolage Grotesque',sans-serif;text-transform:uppercase;border:2px solid var(--line);border-radius:.6rem;background:var(--bg);color:var(--ink)}
+.slots input:focus{border-color:var(--ink);background:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:.8rem 1.3rem;border-radius:.7rem;font:700 1rem Figtree,sans-serif;border:2px solid var(--ink);cursor:pointer;background:var(--ink);color:#fff;text-decoration:none}
+.btn.light{background:transparent;color:var(--ink)}
+.row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+.msg{min-height:1.5rem;margin:.6rem 0 0;color:var(--muted)}
+.msg.err{color:#B42318}
+.box{border:2px solid var(--btc);border-radius:1rem;padding:1.1rem;background:color-mix(in srgb,var(--btc) 7%,white);margin-top:1.4rem}
+.box.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,white)}
+.link{font:600 .95rem ui-monospace,Menlo,monospace;overflow-wrap:anywhere;background:#fff;border:2px solid var(--line);border-radius:.6rem;padding:.6rem .75rem;margin:.6rem 0}
+.coupon{font:800 clamp(1.6rem,7vw,2.2rem) ui-monospace,Menlo,monospace;letter-spacing:.06em;margin:.4rem 0}
+#shoutForm input{flex:1 1 10rem;min-width:0;padding:.7rem .8rem;border:2px solid var(--line);border-radius:.6rem;font:inherit;background:#fff}
+.tag{color:var(--blue)}
+.fine{color:var(--muted);font-size:.88rem;margin:1.4rem 0 0}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:no-preference){.box{animation:in .4s ease}@keyframes in{from{opacity:0;transform:translateY(.4rem)}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><a href="/#quick">Find a job</a></div>
+  <main class="card">
+    <h1>Treasure hunt <span id="num"></span></h1>
+    <p class="lead">Every post we publish this week hides one letter of a secret word. Find them all, crack the word, earn a one-time <b><span class="pct">10</span>% off</b> any order.</p>
+
+    <ol class="steps">
+      <li><div><h2>Collect the letters</h2><p>Look for <b class="tag">#AltraditsHunt</b> at the end of our posts: it carries a letter and its place in the word. Each page carries different letters, so visit them all.</p>
+        <div class="where"><a href="https://x.com/altradits" target="_blank" rel="noopener">X</a><a href="https://www.linkedin.com/company/altradits" target="_blank" rel="noopener">LinkedIn</a><a href="https://www.linkedin.com/in/stanmobitech/" target="_blank" rel="noopener">Stanley on LinkedIn</a><a href="https://www.facebook.com/profile.php?id=61579168157529" target="_blank" rel="noopener">Facebook</a><a href="https://www.tiktok.com/@altradits" target="_blank" rel="noopener">TikTok</a><a href="https://www.tiktok.com/@5tan_lee" target="_blank" rel="noopener">Stanley on TikTok</a></div></div></li>
+      <li><div><h2>Crack the word</h2><p>Put each letter in its numbered box.</p></div></li>
+      <li><div><h2>Share your link</h2><p>You get a personal link. Send it to someone who'd find us useful, anywhere you like. When they open it, your code unlocks.</p></div></li>
+    </ol>
+
+    <form id="solve" novalidate>
+      <div class="slots" id="slots" role="group" aria-label="The secret word, one letter per box"></div>
+      <button class="btn">Check my word</button>
+      <p class="msg" id="msg" role="status"></p>
+    </form>
+
+    <section class="box" id="share" hidden>
+      <h2>Cracked it. Now share your link</h2>
+      <p style="margin:0">Send it to a friend, a colleague or your network. Your code appears here as soon as someone opens it.</p>
+      <div class="link" id="link"></div>
+      <div class="row"><button class="btn" id="shareBtn" type="button">Share</button><button class="btn light" id="copyBtn" type="button">Copy link</button></div>
+      <p class="msg" id="wait">Waiting for the first visit…</p>
+    </section>
+
+    <section class="box ok" id="won" hidden>
+      <h2>Your one-time code</h2>
+      <div class="coupon" id="code"></div>
+      <p style="margin:0 0 .8rem"><span class="pct">10</span>% off one order. It works once, and expires on <span id="exp"></span>.</p>
+      <div class="row"><a class="btn" href="/#quick">Use it on a job</a><button class="btn light" id="copyCode" type="button">Copy code</button></div>
+    </section>
+
+    <section class="box" id="shout" hidden>
+      <h2>Want a shoutout?</h2>
+      <p style="margin:0 0 .6rem">Winners are congratulated in our next post with <b class="tag">#AltraditsHunt</b>. Add your X handle and we'll tag you there, or just a first name. Leave both empty to stay anonymous.</p>
+      <form id="shoutForm" class="row" novalidate>
+        <input name="handle" placeholder="@yourhandle" autocomplete="off" spellcheck="false" aria-label="Your X handle">
+        <input name="name" placeholder="First name" autocomplete="given-name" aria-label="Your first name">
+        <button class="btn light">Save</button>
+      </form>
+      <p class="msg" id="shoutMsg" role="status"></p>
+    </section>
+
+    <p class="fine">One code per person per hunt. A new word starts every Monday (00:00 UTC). Codes are single-use, can't be exchanged for cash, and apply at checkout on altradits.com.</p>
+  </main>
+</div>
+<script type="module">
+const $ = (s) => document.querySelector(s);
+const store = { get: (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+let hunt = { n: "", len: 8, pct: 10 }, claim = null, timer = null;
+
+try { hunt = await (await fetch("/api/hunt")).json(); } catch {}
+$("#num").textContent = hunt.n ? `#${hunt.n}` : "";
+document.querySelectorAll(".pct").forEach((el) => { el.textContent = hunt.pct; });
+
+// One box per letter; typing moves to the next box.
+$("#slots").style.setProperty("--n", hunt.len);
+$("#slots").innerHTML = Array.from({ length: hunt.len }, (_, i) => `<input maxlength="1" inputmode="text" autocomplete="off" autocapitalize="characters" aria-label="Letter ${i + 1}" placeholder="${i + 1}">`).join("");
+const boxes = [...document.querySelectorAll("#slots input")];
+boxes.forEach((b, i) => {
+  b.addEventListener("input", () => { b.value = b.value.replace(/[^a-z]/gi, "").toUpperCase(); if (b.value && boxes[i + 1]) boxes[i + 1].focus(); });
+  b.addEventListener("keydown", (e) => { if (e.key === "Backspace" && !b.value && boxes[i - 1]) boxes[i - 1].focus(); });
+  b.addEventListener("paste", (e) => { const t = (e.clipboardData.getData("text") || "").replace(/[^a-z]/gi, "").toUpperCase(); if (!t) return; e.preventDefault(); [...t].slice(0, boxes.length - i).forEach((ch, j) => { boxes[i + j].value = ch; }); boxes[Math.min(i + t.length, boxes.length - 1)].focus(); });
+});
+
+$("#solve").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const answer = boxes.map((b) => b.value).join("");
+  if (answer.length < boxes.length) { $("#msg").className = "msg err"; $("#msg").textContent = "Fill in every box first."; return; }
+  $("#msg").className = "msg"; $("#msg").textContent = "Checking…";
+  try {
+    const r = await fetch("/api/hunt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "solve", answer }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    $("#msg").textContent = "";
+    claim = d.claim; store.set("altra.hunt", { id: claim.id, t: claim.t }); show();
+  } catch (err) { $("#msg").className = "msg err"; $("#msg").textContent = err.message || "Something went wrong."; }
+});
+
+function show() {
+  if (!claim) return;
+  $("#solve").hidden = true;
+  $("#shout").hidden = false;
+  if (claim.shoutout && !$("#shoutForm").dataset.filled) {
+    $("#shoutForm").dataset.filled = "1";
+    $("#shoutForm [name=handle]").value = claim.shoutout.handle ? "@" + claim.shoutout.handle : "";
+    $("#shoutForm [name=name]").value = claim.shoutout.name || "";
+  }
+  $("#shoutMsg").textContent = claim.shoutDone ? "✓ You've had your shoutout. Thanks for playing!" : claim.shoutout ? "✓ You're on the list for our next post." : "";
+  if (claim.coupon) {
+    clearInterval(timer);
+    $("#share").hidden = true; $("#won").hidden = false;
+    $("#code").textContent = claim.coupon.code;
+    $("#exp").textContent = new Date(claim.coupon.expiresAt).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+    if (claim.coupon.status !== "used") store.set("altra.coupon", claim.coupon.code); else localStorage.removeItem("altra.coupon");
+    if (claim.coupon.status === "used") $("#won p").textContent = "This code has been used. A new hunt starts every Monday.";
+    return;
+  }
+  $("#share").hidden = false; $("#link").textContent = claim.share;
+  clearInterval(timer); timer = setInterval(refresh, 15000);
+}
+async function refresh() {
+  const saved = store.get("altra.hunt");
+  if (!saved) return;
+  try { const r = await fetch(`/api/hunt?claim=${encodeURIComponent(saved.id)}&t=${encodeURIComponent(saved.t)}`); if (r.ok) { claim = (await r.json()).claim; show(); } } catch {}
+}
+$("#shoutForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  $("#shoutMsg").textContent = "Saving…";
+  try {
+    const r = await fetch("/api/hunt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "shoutout", id: claim.id, t: claim.t, handle: f.get("handle"), name: f.get("name") }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    claim.shoutout = f.get("handle") || f.get("name") ? { handle: f.get("handle").replace(/^@/, ""), name: f.get("name") } : null;
+    $("#shoutMsg").textContent = claim.shoutout ? (claim.status === "earned" ? "✓ Saved. You'll be in our next post." : "✓ Saved. Once your code unlocks, you'll be in our next post.") : "Saved: you'll stay anonymous.";
+  } catch (err) { $("#shoutMsg").textContent = err.message || "Couldn't save that."; }
+});
+const text = "Altradits: fixed-price jobs for busy founders, done the same day, paid in Bitcoin.";
+$("#shareBtn").addEventListener("click", async () => {
+  if (navigator.share) { try { await navigator.share({ title: "Altradits", text, url: claim.share }); } catch {} }
+  else { navigator.clipboard?.writeText(`${text} ${claim.share}`); $("#wait").textContent = "Link copied. Paste it anywhere to share."; }
+});
+$("#copyBtn").addEventListener("click", () => { navigator.clipboard?.writeText(claim.share); $("#copyBtn").textContent = "Copied ✓"; });
+$("#copyCode").addEventListener("click", () => { navigator.clipboard?.writeText(claim.coupon.code); $("#copyCode").textContent = "Copied ✓"; });
+await refresh();
+</script>
+</body>
+</html>

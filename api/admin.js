@@ -16,7 +16,7 @@ import { buildMasterCv, discoverJobs, updateSettings, careerLive } from "../lib/
 import { getApplicant, saveApplicant, suggestApplicant, queueApply, cancelApply, startApply, applyFile, agentUpdate, think } from "../lib/apply.js";
 import { sendEmail } from "../lib/email.js";
 import { agentLive } from "../lib/agent.js";
-import { marketingView, saveSettings as saveMarketing, replanToday, cancelPost, postNow, marketingLive } from "../lib/marketing.js";
+import { marketingView, saveSettings as saveMarketing, createMaster, repurpose, cancelPost, editPost, postNow, marketingLive } from "../lib/marketing.js";
 import { BUSINESS } from "../data/catalog.js";
 
 // The dashboard gets the uploaded CV's details, not its full text.
@@ -182,11 +182,19 @@ export async function POST(request) {
   if (body.action?.startsWith("mkt_")) {
     try {
       if (body.action === "mkt_pause") return json({ settings: await saveMarketing({ paused: Boolean(body.paused) }) });
+      if (body.action === "mkt_warmmail") return json({ settings: await saveMarketing({ warmupEmails: Boolean(body.on) }) });
+      if (body.action === "mkt_autoreply") return json({ settings: await saveMarketing({ autoReply: Boolean(body.on) }) });
       if (body.action === "mkt_cancel") return json({ post: await cancelPost(clean(body.id, 20)) });
       if (body.action === "mkt_post_now") return json({ post: await postNow(clean(body.id, 20)) });
-      if (body.action === "mkt_plan") {
+      if (body.action === "mkt_shout_remove") { const { removeShoutout } = await import("../lib/hunt.js"); await removeShoutout(clean(body.id, 20)); return json({ ok: true }); }
+      if (body.action === "mkt_edit") return json({ post: await editPost(clean(body.id, 20), body.text) });
+      // These take a minute or two: start them and let the dashboard refresh.
+      if (["mkt_master", "mkt_repurpose"].includes(body.action)) {
         if (!marketingLive()) return json({ error: "Set ANTHROPIC_API_KEY to switch the marketing team on." }, 400);
-        replanToday().catch((e) => console.error("marketing plan", e.message)); // takes a minute or two
+        const job = body.action === "mkt_master"
+          ? createMaster({ brief: clean(body.brief, 1500) })
+          : repurpose(clean(body.id, 20), { start: /^\d{4}-\d\d-\d\d$/.test(body.start || "") ? body.start : undefined, days: Number(body.days) || 1 });
+        job.catch(async (e) => { console.error("marketing", e.message); await setJSON("mkt:lastError", { at: new Date().toISOString(), error: e.message }); });
         return json({ started: true });
       }
     } catch (err) { return json({ error: err.message }, 400); }

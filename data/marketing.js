@@ -21,6 +21,9 @@ export const MARKETING_TEAM = [
   { id: "tiktok", name: "TikTok Strategist", role: "Short video scripts",
     source: "marketing/marketing-tiktok-strategist.md",
     rules: "A 20 to 40 second vertical video script: a 3-second hook, on-screen text, what to film (screen recording of the site, a hand on a phone paying, a desk timelapse), voiceover lines, caption and 3 to 5 hashtags. Mostly educational or entertaining; promotional at most 1 in 4." },
+  { id: "community", name: "Community Manager", role: "Replies as Altradits, never starts conversations",
+    source: "marketing/marketing-twitter-engager.md (engagement and crisis rules)",
+    rules: "Answers people who comment on Altradits' own posts or mention @altradits: short, warm, specific, helpful, in the commenter's language. Never comments elsewhere, likes, follows or starts threads (that's Stanley, from his personal accounts). Complaints, payment or refund issues, anything legal, abusive or uncertain go to Stanley instead of a public reply. Spam is ignored." },
   { id: "guardian", name: "Brand Guardian", role: "Checks every post before it goes out",
     source: "marketing (QA, as in the department agents' Quality Reviewer)",
     rules: "Blocks anything that invents clients, reviews, testimonials, results or statistics; quotes a price that is not in the catalog; promises what the site doesn't offer; reveals a phone number; is spammy, clickbait or off-brand; or breaks the platform's length rules." },
@@ -40,11 +43,13 @@ export const CHANNELS = [
   { id: "fb_page", name: "Facebook · Altradits page", url: "https://www.facebook.com/profile.php?id=61579168157529", agent: "writer", mode: "api",
     env: ["FB_PAGE_TOKEN"], slots: ["15:00"], max: 1500, link: "body", ref: "mkfbpage" },
   // Meta's API cannot post to personal profiles, and TikTok's needs a video
-  // file: these two always come as ready-to-post drafts.
+  // file: these always come as ready-to-post drafts.
   { id: "fb_stan", name: "Facebook · Stanley", url: "https://www.facebook.com/profile.php?id=61579237182379", agent: "writer", mode: "manual",
     env: [], slots: ["16:00"], max: 1200, link: "body", ref: "mkfbstan" },
   { id: "tiktok", name: "TikTok · @altradits", url: "https://www.tiktok.com/@altradits", agent: "tiktok", mode: "manual",
     env: [], slots: ["17:00"], max: 2200, link: false, ref: "mktiktok" },
+  { id: "tt_stan", name: "TikTok · Stanley (@5tan_lee)", url: "https://www.tiktok.com/@5tan_lee", agent: "tiktok", mode: "manual",
+    env: [], slots: ["19:00"], max: 2200, link: false, ref: "mkttstan" },
 ];
 
 // Profiles the posts may point people to (the GitHub link is for developer audiences).
@@ -60,5 +65,19 @@ export const THEMES = [
   "Pay with Bitcoin: one QR, any wallet, fees shown up front",
   "Community: freelancers from weVenture Hub (Addis Ababa) and Zone01 (Kisumu), 100+ on standby",
 ];
+
+// The weekly treasure hunt (lib/hunt.js): one word a week, a letter in every post.
+// The coupon is earned by sharing a personal link that someone else opens, and
+// works for one order.
+export const HUNT = {
+  site: "https://altradits.com",
+  hashtag: "#AltraditsHunt", // the same tag on every post, every week: it markets the brand and marks the clue
+  couponPct: 10,   // % off one order
+  couponDays: 30,  // unused codes expire after this
+  words: ["DELEGATE", "SAMEDAY", "FOUNDERS", "QUICKJOB", "SPEEDRUN", "SATOSHI", "HANDOVER", "FREEDOM", "BITCOIN", "FASTLANE"],
+};
+
+// How far ahead the scheduler keeps every slot filled.
+export const HORIZON_DAYS = 7;
 
 export const POSTS_PER_DAY = CHANNELS.reduce((n, c) => n + c.slots.length, 0);

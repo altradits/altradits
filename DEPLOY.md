@@ -101,6 +101,24 @@ The marketing team (admin → Marketing) plans posts daily at 05:00 UTC and publ
 | LinkedIn · Stanley | `LINKEDIN_TOKEN` (optional `LINKEDIN_PERSON_URN`) | linkedin.com/developers → create an app → add **Share on LinkedIn** and **Sign In with LinkedIn using OpenID Connect** → OAuth token generator with scopes `openid profile w_member_social`. Expires after about 60 days: the team emails you when a post fails so you can renew it. |
 | LinkedIn · Altradits page | `LINKEDIN_ORG_ID` (+ `LINKEDIN_ORG_TOKEN` if different) | The number in your company page admin URL. Needs the **Community Management API** product (LinkedIn reviews the request) and scope `w_organization_social`. |
 | Facebook · Altradits page | `FB_PAGE_TOKEN` (optional `FB_PAGE_ID`, default 61579168157529) | developers.facebook.com → app → Graph API Explorer → Page access token with `pages_manage_posts`, `pages_read_engagement`; exchange for a long-lived token. |
-| Facebook · Stanley, TikTok | none | Meta doesn't allow posting to personal profiles by API, and TikTok needs a video file: these always arrive as ready-to-paste drafts. |
+| Facebook · Stanley, TikTok (@altradits and Stanley's @5tan_lee) | none | Meta doesn't allow posting to personal profiles by API, and TikTok needs a video file: these always arrive as ready-to-paste drafts. |
 
 Optional: `LINKEDIN_VERSION` (default 202608), `FB_GRAPH_VERSION` (default v25.0), `MARKETING_MODEL`. The GitHub Action "Wake the marketing team" pings the site at each slot because the host idles the app.
+
+### Scheduler, repurposing and the treasure hunt
+
+- The team keeps the **next 7 days** scheduled: one master message a day, repurposed into a native post per account slot (admin → Marketing → Scheduler shows each post as it will look on its platform). Posts for unconnected accounts stay scheduled; once you add an account's keys, its queued posts go out on time with nothing else to do.
+- **Master content**: write a brief (or leave it empty), press *Create master*, then *Repurpose & schedule* onto any day (1–3 days). Slots already posted are kept; scheduled ones are replaced. Edit or cancel any post before it goes out; a day you change is left alone by the auto-planner.
+- **Treasure hunt** (altradits.com/hunt): every post ends with the fixed branded hashtag `#AltraditsHunt` and one letter of the week's word; winners who opt in (X handle or first name) are congratulated in the next post that goes out (tagged on X) (words and coupon % in `data/marketing.js` → `HUNT`). Solvers get a personal share link; the coupon (default 10% off one order, 30-day expiry) unlocks when someone else opens it, and is spent when the order is paid. Customers enter it under "Have a hunt code?" at checkout.
+
+### Replies: Altradits answers, you engage
+
+Altradits never comments elsewhere, likes, follows or starts conversations; that's you, from your personal accounts (the LinkedIn "link in first comment" is posted by your personal profile too). Every 30 minutes the Community Manager reads new comments on the brand's own posts and mentions of @altradits, then replies, sends sensitive ones to your inbox (complaints, payments, refunds, legal, anything unsure), or ignores spam. Turn it off in admin → Marketing → Replies. Extra permissions it needs:
+
+- **Facebook Page token:** also `pages_read_user_content` and `pages_manage_engagement`.
+- **LinkedIn company page:** also `r_organization_social` (part of the Community Management API).
+- **X:** no extra keys; reading mentions is billed per request under X's pay-per-use plan (a few cents a day at this volume).
+
+### Warm-up kits: you engage before each post drops
+
+Every scheduled post comes with a warm-up kit written by the team: search terms and hashtags for its topic, and 3–5 comments (entertaining, educational or a genuine question) you can leave on other people's posts. About 15 minutes before the post drops you get a "Warm up now" email and the kit appears under admin → Marketing → Engage now. On X it also finds real recent posts on the topic and drafts a reply to each, with a link that opens X with the reply filled in. Nothing is posted for you: X's automation rules ban automated replies to posts found by keyword search, and LinkedIn, Facebook and TikTok offer no API for it. Kit comments never pitch, link, quote prices or name Altradits. The reminder emails can be turned off in the admin.
