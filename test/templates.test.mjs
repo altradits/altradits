@@ -185,6 +185,10 @@ test("heads send external mail with stan@ copied; Stan sends internal mail and p
   // Kit PDFs carry the letterhead.
   const pdf = subs.renderFile(KITS[0], KITS[0].files[0]).body.toString("latin1");
   assert.match(pdf, /\(hello@altradits\.com\) Tj/);
+  // The letterhead is the real logo image, linked to the homepage, and no drawn wordmark.
+  assert.match(pdf, /\/Logo Do/);
+  assert.match(pdf, /\/URI \(https:\/\/altradits\.com\)/);
+  assert.doesNotMatch(pdf, /\(Altradits\) Tj/);
   assert.match(pdf, /\(Page 1 of \d\) Tj/);
 });
 
