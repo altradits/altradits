@@ -20,8 +20,11 @@ test("every department email waits for Stanley; only alerts to him and payment c
   assert.equal(q.status, "awaiting approval");
   assert.equal(q.from, "Altradits Customer Care <care@altradits.com>");
   assert.equal(q.cc, "stan@altradits.com");
-  // Kit emails wait too; payment confirmations go at once (Bitcoin settles instantly).
+  // Kit follow-ups wait too; the kit someone just requested and payment confirmations go at once.
   assert.equal((await email.sendEmail({ to: "jo@shop.co", kind: "kit", dept: "marketing", subject: "Your kit", text: "Here" })).status, "awaiting approval");
+  const kit = await email.sendEmail({ to: "jo@shop.co", kind: "delivery", dept: "marketing", subject: "Your free kit", text: "Here" });
+  assert.equal(kit.status, "logged");
+  assert.ok(!kit.bcc);
   const pay = await email.sendEmail({ to: "jo@shop.co", kind: "payment", subject: "Payment received", text: "Thanks" });
   assert.equal(pay.status, "logged");
   assert.equal(pay.bcc, "altradits@gmail.com");
@@ -131,4 +134,15 @@ test("payments: the confirmation is instant; Finance's receipt is QA-reconciled 
   const tally = await (await api.GET()).json();
   assert.equal(tally.raised, 20);
   assert.equal(tally.donors, 1);
+});
+
+test("a kit requested on /products reaches the inbox at once, with approvals on", async () => {
+  const subs = await import("../lib/subscribers.js");
+  const r = await subs.subscribe({ email: "kiwi@shop.co", name: "Kiwi", kit: "inbox", ip: "1.2.3.4" });
+  assert.ok(r.sub);
+  const mail = (await all()).find((e) => e.to === "kiwi@shop.co");
+  assert.equal(mail.status, "logged"); // sent, not waiting for approval
+  assert.match(mail.from, /<marketing@altradits\.com>$/);
+  assert.match(mail.cta.url, /\/api\/kits\?d=inbox&/);
+  assert.ok(!(await email.pendingApprovals()).some((e) => e.to === "kiwi@shop.co"));
 });
