@@ -1221,7 +1221,7 @@ ${item.urgentOk ? `<fieldset class="urg" id="urg"><legend>When do you need it?</
   const pay = () => { stopPay?.(); stopPay = mountPay($("#pay"), { id: order.id, t: order.t, claim: true, onPaid: () => paid(item, order, save) }); };
   // A one-time code from the treasure hunt: the price drops before you pay.
   try { const won = localStorage.getItem("altra.coupon"); if (won) { $("#codeForm [name=code]").value = won; $("#code").open = true; } } catch {}
-  if (order.coupon) { $("#codeForm [name=code]").value = order.coupon.code; $("#code").open = true; $("#payAmt").textContent = money(order.coupon.usd); $("#codeMsg").textContent = `✓ ${order.coupon.pct}% off applied`; }
+  if (order.coupon) { $("#codeForm [name=code]").value = order.coupon.code; $("#code").open = true; $("#payAmt").textContent = money(order.coupon.usd); $("#codeMsg").textContent = order.coupon.credit ? `✓ ${money(order.coupon.credit)} credit applied` : `✓ ${order.coupon.pct}% off applied`; }
   $("#codeForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const code = e.target.code.value.trim();
@@ -1231,8 +1231,8 @@ ${item.urgentOk ? `<fieldset class="urg" id="urg"><legend>When do you need it?</
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "That code didn't work.");
       $("#payAmt").textContent = money(d.usd);
-      $("#codeMsg").textContent = d.pct ? `✓ ${d.pct}% off applied. Your new QR is below.` : "";
-      order.coupon = d.pct ? { code: d.code, pct: d.pct, usd: d.usd } : null;
+      $("#codeMsg").textContent = d.credit ? `✓ ${money(d.credit)} credit applied${d.left > 0 ? ` (${money(d.left)} stays on your code)` : ""}. Your new QR is below.` : d.pct ? `✓ ${d.pct}% off applied. Your new QR is below.` : "";
+      order.coupon = d.credit ? { code: d.code, credit: d.credit, usd: d.usd } : d.pct ? { code: d.code, pct: d.pct, usd: d.usd } : null;
       session.set("altra.orders", { ...session.get("altra.orders"), [itemId]: order });
       pay();
     } catch (err) { $("#codeMsg").textContent = err.message; }

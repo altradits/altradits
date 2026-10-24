@@ -376,3 +376,75 @@ test("several payments waiting for the node: each order's invoice sends its own 
   assert.ok(!after.held.some((x) => [a.p.id, b.p.id].includes(x.id)));
   assert.ok(after.moved.some((m) => m.code === fin.orderCode(a.p) && m.to === "ann@shop.co"));
 });
+
+test("short payment: part-payment receipt and a balance QR; when the balance arrives, the full receipt. Extra: a credit code that works at checkout", async () => {
+  const crm = await import("../lib/crm.js");
+  const fin = await import("../lib/finance.js");
+  let n = 0;
+  fin.setInvoiceMaker(async ({ sats, nodeOnly }) => { assert.equal(nodeOnly, true); n++; return { bolt11: `lnbc${sats}n1test${n}`, paymentHash: String(n).repeat(64).slice(0, 64), provider: "lnd", sats, expiresAt: new Date(Date.now() + 7 * 864e5).toISOString() }; });
+  try {
+    const held = async (email, sats) => {
+      const o = await crm.createOrder(orderable("hourly"));
+      Object.assign(o.lead, { email, name: "Cy" }); await crm.saveLead(o.lead);
+      o.p.lightning = { provider: "address", bolt11: "lnbc1x", sats, rate: 80000 };
+      o.p.payment = { method: "Bitcoin (Lightning)", reference: "x" };
+      await crm.confirmPayment(o.lead, o.p, "", { approved: true });
+      return o;
+    };
+    // Short: the client sent 40,000 of 62,500; the admin moves exactly 40,000.
+    const s = await held("short@shop.co", 62500);
+    const sweep = await fin.moveToNode(s.p, 40000);
+    assert.equal(sweep.sats, 40000);
+    s.p = await crm.getProposal(s.p.id);
+    const part = await fin.confirmOnNode(s.lead, s.p, { sats: 40000, reference: sweep.paymentHash, at: new Date().toISOString() });
+    assert.equal(part.balance, 22500);
+    assert.equal(s.p.payment.held, true);
+    assert.equal(s.p.receipt, undefined); // no full receipt yet
+    const ask = (await all()).find((e) => e.to === "short@shop.co" && /^Part payment received/.test(e.subject));
+    assert.match(ask.text, /received 40,000 sats/);
+    assert.match(ask.text, /22,500 sats remain/);
+    assert.match(ask.cta.url, /^lightning:lnbc22500n1test/);
+    assert.deepEqual(ask.files.map((f) => f.replace(/R-\d{4}-\d{5}/, "R")), ["altradits-receipt-R-part-payment.pdf", `altradits-balance-${fin.orderCode(s.p)}.png`]);
+    const partPdf = fin.receiptPdf(s.lead, s.p, part.part, { part: true }).toString("latin1");
+    assert.ok(partPdf.includes("PART PAYMENT. Balance due: 22,500 sats"));
+    // The balance arrives on the node: the full receipt, listing both payments.
+    const bal = s.p.balances.at(-1);
+    await fin.confirmOnNode(s.lead, s.p, { sats: 22500, reference: bal.paymentHash, at: new Date().toISOString() });
+    assert.equal(s.p.payment.held, false);
+    assert.equal(s.p.payment.sats, 62500);
+    const full = (await all()).find((e) => e.to === "short@shop.co" && /^Your official receipt/.test(e.subject));
+    assert.match(full.text, /62,500 sats \(in 2 payments\)/);
+    const fullPdf = fin.receiptPdf(s.lead, s.p, s.p.receipt.no).toString("latin1");
+    assert.ok(fullPdf.includes("PAID IN FULL") && fullPdf.includes("in 2 payments"));
+    // The same node payment is never counted twice.
+    assert.equal(await fin.confirmOnNode(s.lead, s.p, { sats: 22500, reference: bal.paymentHash, at: new Date().toISOString() }), null);
+    // Extra: 70,000 sent for 62,500: a credit code for 7,500 sats (≈ $6 at 80,000 $/BTC).
+    const x = await held("extra@shop.co", 62500);
+    const sw = await fin.moveToNode(x.p, 70000);
+    x.p = await crm.getProposal(x.p.id);
+    await fin.confirmOnNode(x.lead, x.p, { sats: 70000, reference: sw.paymentHash, at: new Date().toISOString() });
+    assert.equal(x.p.payment.credit.sats, 7500);
+    assert.equal(x.p.payment.credit.usd, 6);
+    const got = (await all()).find((e) => e.to === "extra@shop.co" && /^Your official receipt/.test(e.subject));
+    assert.match(got.text, new RegExp(`use the code ${x.p.payment.credit.code} at checkout to take \\$6\\.00 off`));
+    // At checkout: $6 off, and the code is spent only by what the order used.
+    const order = await import("../api/order.js");
+    const next = await crm.createOrder(orderable("q-try"));
+    const r = await (await order.POST(new Request("http://x/api/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: next.p.id, t: next.p.token, coupon: x.p.payment.credit.code }) }))).json();
+    const price = orderable("q-try").price;
+    assert.equal(r.credit, Math.min(6, price - 1)); // always leaves at least $1 to pay
+    assert.equal(r.usd, Math.round((price - r.credit) * 100) / 100);
+  } finally { fin.setInvoiceMaker(null); }
+});
+
+test("a credit code is used up gradually: what an order doesn't use stays on it", async () => {
+  const hunt = await import("../lib/hunt.js");
+  const c = await hunt.createCredit({ sats: 12500, usd: 10 });
+  assert.match(c.code, /^CREDIT-[A-Z2-9]{6}$/);
+  let left = await hunt.useCoupon(c.code, "p1", 4);
+  assert.equal(left.usd, 6);
+  assert.equal(left.status, "active");
+  left = await hunt.useCoupon(c.code, "p2", 6);
+  assert.equal(left.status, "used");
+  await assert.rejects(hunt.reserveCoupon(c.code, "p3"), /already been used/);
+});

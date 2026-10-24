@@ -12,7 +12,7 @@ import { emailOwner } from "../lib/email.js";
 import { getTask, saveTask, ensurePortal } from "../lib/ops.js";
 import { orderable, URGENCY } from "../data/catalog.js";
 import { OWNER_PHONE } from "../lib/contact.js";
-import { reserveCoupon, releaseCoupon } from "../lib/hunt.js";
+import { reserveCoupon, releaseCoupon, MIN_TO_PAY } from "../lib/hunt.js";
 
 const isUrgent = (o) => o.urgentOk && ["hours", "minutes"].includes(o.urgency);
 const urgencyNote = (o) => URGENCY.find((u) => u.id === o.urgency)?.note || "";
@@ -45,6 +45,15 @@ async function applyCoupon(body) {
     if (p.coupon && p.coupon.code !== code) await releaseCoupon(p.coupon.code, p.id);
     if (!code) { p.coupon = null; p.totals.dueNow = full; await saveProposal(p); return json({ usd: full, pct: 0 }); }
     const c = await reserveCoupon(code, p.id);
+    if (c.kind === "credit") {
+      // Credit from an earlier overpayment: off the price, leaving at least MIN_TO_PAY to pay.
+      const credit = Math.round(Math.min(c.usd, full - MIN_TO_PAY) * 100) / 100;
+      if (credit <= 0) { await releaseCoupon(c.code, p.id); return json({ error: "This order is too small to use that credit. Keep it for a bigger one." }, 400); }
+      p.coupon = { code: c.code, credit };
+      p.totals.dueNow = Math.round((full - credit) * 100) / 100;
+      await saveProposal(p);
+      return json({ usd: p.totals.dueNow, credit, code: c.code, left: Math.round((c.usd - credit) * 100) / 100 });
+    }
     p.coupon = { code: c.code, pct: c.pct };
     p.totals.dueNow = Math.round(full * (100 - c.pct)) / 100;
     await saveProposal(p);

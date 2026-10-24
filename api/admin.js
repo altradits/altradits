@@ -281,7 +281,7 @@ export async function POST(request) {
     const { moveToNode } = await import("../lib/finance.js");
     const p = await getProposal(clean(body.id, 30));
     if (!p) return json({ error: "Payment not found." }, 404);
-    try { const s = await moveToNode(p); return json({ bolt11: s.bolt11 }); } catch (err) { return json({ error: /connected|LND|ECONN|timed out/i.test(err.message) ? "The node isn't reachable yet. Start it on the Mac, then try again." : err.message }, 400); }
+    try { const s = await moveToNode(p, body.sats); return json({ bolt11: s.bolt11, sats: s.sats }); } catch (err) { return json({ error: /connected|LND|ECONN|timed out/i.test(err.message) ? "The node isn't reachable yet. Start it on the Mac, then try again." : err.message }, 400); }
   }
   if (body.action === "archives") { const { listArchives } = await import("../lib/store.js"); return json({ archives: listArchives() }); }
   if (body.action === "archive_delete") {
