@@ -1,7 +1,7 @@
 // Free kits: complete, step-by-step templates for the jobs owners struggle
 // with most. They're the top of the funnel: a visitor leaves an email to
 // download one, joins the list tagged with that kit's topic, and the follow-up
-// emails (lib/subscribers.js) walk them up the ladder:
+// emails (lib/subscribers.js), one line and one button each, walk them up the ladder:
 //
 //   DIY  Do it yourself   the free kit
 //   DIT  Do it together   you start with the kit, we finish it with you (pay-as-you-go hours)
@@ -503,9 +503,9 @@ export const KITS = [
     files: [{ name: "inbox-zero-in-60-minutes.pdf", type: "pdf", md: INBOX }],
     done: ["q-inbox-cleanup", "inbox-calendar"],
     nurture: [
-      { day: 2, subject: "The one inbox habit that sticks", text: "Most people clear their inbox once and lose it again within a week. The fix is in step 5 of the kit: the five filters. Set them up and roughly half your new mail never reaches the inbox.\n\nStuck halfway? Do it together: add us as a delegate on your inbox (never share your password) and we'll finish the clean-up and filters with you." },
-      { day: 5, subject: "Want it done by tonight?", text: "If the 60 minutes hasn't happened yet, that's normal. Hand it over: we'll archive the backlog, unsubscribe the noise, set up the labels and filters, and flag what needs you, done the same day." },
-      { day: 10, subject: "Never sort email again", text: "Some people would rather not touch the inbox at all. Our inbox and calendar management handles it every day: sorting, drafting replies for your OK, and keeping your calendar clean." },
+      { day: 2, subject: "The one inbox habit that sticks", line: "Set up the five filters from step 5 and half your new mail never reaches your inbox. Stuck? We'll finish it with you." },
+      { day: 5, subject: "Want it done by tonight?", line: "Haven't found the 60 minutes yet? Hand it over and we'll clear your inbox today." },
+      { day: 10, subject: "Never sort email again", line: "Want your inbox handled every day, for good?" },
     ],
   },
   {
@@ -516,9 +516,9 @@ export const KITS = [
     files: [{ name: "30-day-social-media-kit.pdf", type: "pdf", md: SOCIAL }, { name: "30-day-content-calendar.csv", type: "csv", body: socialCalendar }],
     done: ["q-captions", "q-schedule", "social-management"],
     nurture: [
-      { day: 2, subject: "The fastest way to fill your calendar", text: "Don't write captions one day at a time. Fill the hook column in the calendar first (one line each), then batch-write all 30 captions in one sitting using the formulas. It takes about a third of the time.\n\nWant help? Do it together: you pick the pillars, we write and polish the month with you." },
-      { day: 5, subject: "10 captions, done today", text: "If writing is the part you dread, we'll write 10 captions in your voice, ready to post, the same day. Want them scheduled too? We'll schedule a week of your posts." },
-      { day: 10, subject: "Show up every week without thinking about it", text: "Social media management takes the whole thing off your plate: planning, writing, scheduling and replying, every week." },
+      { day: 2, subject: "The fastest way to fill your calendar", line: "Fill the hook column first, then batch-write all 30 captions in one sitting. Want us to do it with you?" },
+      { day: 5, subject: "10 captions, done today", line: "Rather skip the writing? We'll write 10 captions in your voice today." },
+      { day: 10, subject: "Show up every week without thinking about it", line: "Want your social media planned, written and posted every week?" },
     ],
   },
   {
@@ -529,9 +529,9 @@ export const KITS = [
     files: [{ name: "get-paid-on-time-kit.pdf", type: "pdf", md: INVOICES }, { name: "invoice-tracker.csv", type: "csv", body: invoiceTracker }],
     done: ["q-invoices", "q-receipts", "bookkeeping-prep"],
     nurture: [
-      { day: 2, subject: "The reminder schedule that gets you paid", text: "The four reminders work because they're predictable: 3 days before, on the due date, 7 days late, 14 days late. Put the dates in the tracker the day you send the invoice, and you'll never have to remember to chase.\n\nWant help setting it up? Do it together: we'll build your invoice template and tracker with you." },
-      { day: 5, subject: "10 invoices out by tonight", text: "Behind on invoicing? We'll make your invoice template and send your next 10 invoices the same day. Receipts piling up? We'll match 50 to your bank statement." },
-      { day: 10, subject: "Close your books without opening a spreadsheet", text: "Invoicing and bookkeeping prep handles it every month: invoices out on time, reminders sent, receipts matched, and a tidy summary for your accountant." },
+      { day: 2, subject: "The reminder schedule that gets you paid", line: "Put the four reminder dates in the tracker the day you invoice and you'll never forget to chase. Want help setting it up?" },
+      { day: 5, subject: "10 invoices out by tonight", line: "Behind on invoicing? We'll send your next 10 invoices today." },
+      { day: 10, subject: "Close your books without opening a spreadsheet", line: "Want invoicing and bookkeeping prep handled every month?" },
     ],
   },
   {
@@ -542,9 +542,9 @@ export const KITS = [
     files: [{ name: "customer-reply-playbook.pdf", type: "pdf", md: REPLIES }],
     done: ["q-reply-templates", "q-reviews", "customer-support"],
     nurture: [
-      { day: 2, subject: "Acknowledge first, answer second", text: "The single biggest win in the playbook: reply within 4 working hours even if you don't have the full answer yet. A quick \"got it, I'll come back by Thursday\" stops most complaints before they start.\n\nWant help? Do it together: we'll adapt the 20 replies to your business and set them up in your inbox and WhatsApp with you." },
-      { day: 5, subject: "Your own reply templates, written today", text: "We'll write 10 customer reply templates in your voice, specific to your business, the same day. Reviews waiting? We'll reply to 20 of them." },
-      { day: 10, subject: "Never miss a customer message", text: "A customer support desk answers your customers for you every day, by email, chat and social, in your voice, and flags anything that needs you." },
+      { day: 2, subject: "Acknowledge first, answer second", line: "Reply within 4 working hours, even a quick 'got it', and most complaints never start. Want the replies set up for your business?" },
+      { day: 5, subject: "Your own reply templates, written today", line: "We'll write 10 reply templates in your voice today." },
+      { day: 10, subject: "Never miss a customer message", line: "Want every customer message answered for you, every day?" },
     ],
   },
   {
@@ -555,9 +555,9 @@ export const KITS = [
     files: [{ name: "cold-outreach-starter-kit.pdf", type: "pdf", md: OUTREACH }, { name: "lead-research-sheet.csv", type: "csv", body: leadSheet }],
     done: ["q-leads", "q-cold-email", "lead-generation"],
     nurture: [
-      { day: 2, subject: "Why most cold emails get ignored", text: "Almost always, there's no real reason to contact that person. Step 3 of the kit fixes it: one specific observation per lead. It takes 2 minutes and roughly doubles replies.\n\nWant help? Do it together: you define the ideal customer, we research the list and write the emails with you." },
-      { day: 5, subject: "25 researched leads by tonight", text: "Skip the research: we'll find 25 leads that fit your ideal customer, each with a reason to contact them, the same day. Need the emails too? We'll write your 3-email outreach sequence." },
-      { day: 10, subject: "A full pipeline, done for you", text: "Our lead generation service delivers 100 researched leads with personalised outreach messages, ready to send." },
+      { day: 2, subject: "Why most cold emails get ignored", line: "One specific reason per lead roughly doubles replies. Want us to research and write them with you?" },
+      { day: 5, subject: "25 researched leads by tonight", line: "Skip the research: 25 leads that fit your business, delivered today." },
+      { day: 10, subject: "A full pipeline, done for you", line: "Want 100 researched leads with outreach messages ready to send?" },
     ],
   },
   {
@@ -568,9 +568,9 @@ export const KITS = [
     files: [{ name: "hire-your-first-assistant-kit.pdf", type: "pdf", md: HIRING }, { name: "candidate-scorecard.csv", type: "csv", body: scorecard }],
     done: ["q-job-post", "q-cv-screen", "hr-recruiting"],
     nurture: [
-      { day: 2, subject: "The keyword trick that saves hours", text: "Step 3 of the kit asks applicants to include a keyword. Anyone who doesn't, didn't read the ad, and you can skip them. It usually removes half the applications in seconds.\n\nWant help? Do it together: we'll write the ad and set up your scorecard with you." },
-      { day: 5, subject: "Your job ad, written and posted today", text: "We'll write and post your job ad the same day. Got applications? We'll screen 30 CVs and give you a shortlist of 5." },
-      { day: 10, subject: "Hire without the hassle", text: "Our hiring service runs the whole process for one role: ad, screening, interviews and a shortlist you can choose from." },
+      { day: 2, subject: "The keyword trick that saves hours", line: "The keyword in your job ad filters out half the applications in seconds. Want us to write the ad with you?" },
+      { day: 5, subject: "Your job ad, written and posted today", line: "We'll write and post your job ad today." },
+      { day: 10, subject: "Hire without the hassle", line: "Want the whole hire handled for you: ad, screening and a shortlist?" },
     ],
   },
 ];
