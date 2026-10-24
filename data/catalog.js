@@ -305,10 +305,15 @@ export const DONATIONS = {
 
 // Clean addresses: altradits.com/<slug> opens that item's order (quick jobs
 // drop their "q-": /inbox-cleanup, /try, /hourly, /core). Old ?buy= links still work.
-export const slugFor = (id) => String(id).replace(/^q-/, "");
+// Pages own these words, so the items that share them get another address.
+const SLUG_ALIAS = { bitcoin: "bitcoin-setup" };
+const PAGES = new Set(["va", "bitcoin", "products", "donate", "templates", "hunt", "cv", "join", "team", "portal", "proposal", "admin"]);
+export const slugFor = (id) => SLUG_ALIAS[id] || String(id).replace(/^q-/, "");
 export function idForSlug(slug) {
   const s = String(slug || "").toLowerCase();
-  if (!/^[a-z0-9-]{2,40}$/.test(s)) return null;
+  if (!/^[a-z0-9-]{2,40}$/.test(s) || PAGES.has(s)) return null;
+  const alias = Object.keys(SLUG_ALIAS).find((k) => SLUG_ALIAS[k] === s);
+  if (alias) return alias;
   return orderable(s) ? s : orderable(`q-${s}`) ? `q-${s}` : null;
 }
 export const orderPath = (id) => `/${slugFor(id)}`;

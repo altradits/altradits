@@ -25,7 +25,7 @@ if (!PROD) {
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|portal\.html|team\.html|join\.html|cv\.html|hunt\.html|templates\.html|donate\.html|robots\.txt|data\/(?:catalog|playbooks)\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|portal\.html|team\.html|join\.html|cv\.html|hunt\.html|templates\.html|donate\.html|va\.html|bitcoin\.html|products\.html|robots\.txt|data\/(?:catalog|playbooks|community)\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
 const SECURITY = { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "SAMEORIGIN" };
 
 function publicUrl(req) {
@@ -61,12 +61,16 @@ const server = http.createServer(async (req, res) => {
     // Clean addresses: /templates, /hunt, /cv… for pages; /<job> (e.g. /hourly,
     // /inbox-cleanup), /r/<ref> and /h/<hunt code> open the homepage, which reads
     // the path. Old *.html addresses redirect to the clean ones.
-    const old = url.pathname.match(/^\/(templates|hunt|cv|join|team|portal|proposal|admin|donate)\.html$/);
-    if (old && req.method === "GET") { res.writeHead(301, { Location: `/${old[1]}${url.search}` }).end(); return; }
-    const page = url.pathname.match(/^\/(templates|hunt|cv|join|team|portal|proposal|admin|donate)\/?$/);
+    const old = url.pathname.match(/^\/(templates|hunt|cv|join|team|portal|proposal|admin|donate|va|bitcoin|products)\.html$/);
+    if (old && req.method === "GET") { res.writeHead(301, { Location: `/${old[1] === "templates" ? "products" : old[1]}${url.search}` }).end(); return; }
+    // The free kits now live under Products.
+    if (/^\/templates\/?$/.test(url.pathname) && req.method === "GET") { res.writeHead(301, { Location: `/products${url.search}` }).end(); return; }
+    const page = url.pathname.match(/^\/(hunt|cv|join|team|portal|proposal|admin|donate|va|bitcoin|products)\/?$/);
     const { idForSlug } = await import("./data/catalog.js");
-    const home = /^\/(?:r|h)\/[a-z0-9]{4,12}\/?$/.test(url.pathname) || idForSlug(url.pathname.slice(1).replace(/\/$/, ""));
-    const rel = page ? `/${page[1]}.html` : url.pathname === "/" || home ? "/index.html" : url.pathname;
+    // /<job> opens that order on the VA page; /r/<ref> and /h/<code> land on the homepage.
+    const order = idForSlug(url.pathname.slice(1).replace(/\/$/, ""));
+    const home = /^\/(?:r|h)\/[a-z0-9]{4,12}\/?$/.test(url.pathname);
+    const rel = page ? `/${page[1]}.html` : order ? "/va.html" : url.pathname === "/" || home ? "/index.html" : url.pathname;
     if (!PUBLIC.test(rel)) { res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found"); return; }
     const file = path.join(ROOT, rel);
     const headers = { ...SECURITY, "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" };
