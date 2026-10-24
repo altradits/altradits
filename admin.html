@@ -1065,11 +1065,12 @@ async function loadFinance() {
   const n = (c, one) => `${c} ${one}${c === 1 ? "" : "s"}`;
   $("#finKpis").innerHTML = kpi("Total received", satsF(F.total.sats), n(F.total.count, "payment"))
     + kpi("Sales", satsF(F.sales.sats), n(F.sales.count, "order")) + kpi("Donations", satsF(F.donations.sats), n(F.donations.count, "donation"))
-    + kpi("Lightning", satsF(F.channels.lightning.sats), n(F.channels.lightning.count, "payment")) + kpi("On-chain", satsF(F.channels.onchain.sats), n(F.channels.onchain.count, "payment"));
+    + kpi("Lightning", satsF(F.channels.lightning.sats), n(F.channels.lightning.count, "payment")) + kpi("On-chain", satsF(F.channels.onchain.sats), n(F.channels.onchain.count, "payment"))
+    + (F.custodial.count ? kpi("Received while the node was down", satsF(F.custodial.sats), `${n(F.custodial.count, "payment")} in ${[...new Set(F.payments.filter((x) => x.wallet).map((x) => x.wallet))].join(", ")}`) : "");
   const table = (rows, head) => rows.length ? `<table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>` : '<p class="muted">Nothing received yet.</p>';
   $("#finMonths").innerHTML = table(F.months.map((m) => `<tr><td>${esc(m.key)}</td><td>${satsF(m.sales)}</td><td>${satsF(m.donations)}</td><td><b>${satsF(m.sats)}</b></td></tr>`), ["Month", "Sales", "Donations", "Total"]);
   $("#finServices").innerHTML = table(F.services.map((s) => `<tr><td>${esc(s.key)}</td><td>${s.count}</td><td>${satsF(s.sats)}</td></tr>`), ["Service", "Orders", "Received"]);
-  $("#finList").innerHTML = table(F.payments.map((x) => `<tr><td>${esc(new Date(x.at).toLocaleString())}</td><td>${esc(x.receipt || "")}</td><td>${esc(x.client)}</td><td>${esc(x.what)}${x.type === "donation" ? ' <span class="stage">donation</span>' : ""}</td><td>${satsF(x.sats)}</td><td>${x.channel === "onchain" ? "On-chain" : "Lightning"}</td><td><code title="${esc(x.reference)}">${esc(x.reference.slice(0, 12))}…</code></td></tr>`), ["Date", "Receipt", "Client", "What", "Sats", "Channel", "Reference"]);
+  $("#finList").innerHTML = table(F.payments.map((x) => `<tr><td>${esc(new Date(x.at).toLocaleString())}</td><td>${esc(x.receipt || "")}</td><td>${esc(x.client)}</td><td>${esc(x.what)}${x.type === "donation" ? ' <span class="stage">donation</span>' : ""}</td><td>${satsF(x.sats)}</td><td>${x.channel === "onchain" ? "On-chain" : "Lightning"}${x.wallet ? `<br><small class="muted">${esc(x.wallet)}</small>` : ""}</td><td><code title="${esc(x.reference)}">${esc(x.reference.slice(0, 12))}…</code></td></tr>`), ["Date", "Receipt", "Client", "What", "Sats", "Channel", "Reference"]);
 }
 async function loadChannels() {
   let L; try { L = await api("?view=channels"); } catch (err) { $("#lnAlerts").textContent = err.message; return; }

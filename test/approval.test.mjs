@@ -242,3 +242,32 @@ test("PDFs keep underscores inside ids and file names; only emphasis marks are r
   for (const x of ["R0hgf_nMSB0z", "get_paid.pdf", "emphasis and bold"]) assert.ok(s.includes(x), x);
   assert.ok(!s.includes("_emphasis_"));
 });
+
+test("node down: a payment confirmed by hand gets its sats and payment hash from the invoice, labelled with the wallet that holds it", async () => {
+  const crm = await import("../lib/crm.js");
+  const { bolt11PaymentHash } = await import("../lib/lightning.js");
+  // A real (1-sat, unpaid) Wallet of Satoshi invoice; its hash as decoded by LND.
+  const pr = "lnbc10n1p4d6gplpp53vyeujc0vhfx3x5s5guv22g3nfm74rhmpruta3fca4y8x5p8lazshp5ta737ug0ktfwaen9g9ymhynh2s55h6yaac5zpv764asxp4y79fwscqzzsxqyz5vqsp5tn5sjxqggnggrmev9mwq7z5xcq2mpzyd4jkx2sxktsh8wqd4t4ms9qxpqysgquxmqqpfuts8shm6qyj2r0c2dzmk2crx3c2yuwduer04dsda0rpcj8r4gxaymwfhc6mz7s6rgff5ta5nkz4krehkdpdnre5w6xwyapygq8hnjgf";
+  assert.equal(bolt11PaymentHash(pr), "8b099e4b0f65d2689a90a238c529119a77ea8efb08f8bec538ed48735027ff45");
+  assert.equal(bolt11PaymentHash("not an invoice"), null);
+  const o = await crm.createOrder(orderable("hourly"));
+  o.lead.email = "offline@shop.co";
+  o.p.lightning = { provider: "address", bolt11: pr, sats: 61000, rate: 82000 };
+  o.p.status = "paid_claimed";
+  o.p.payment = { method: "Bitcoin (Lightning)", reference: pr.slice(-24), claimedAt: new Date().toISOString() }; // what "I've paid" records
+  await crm.confirmPayment(o.lead, o.p, "", { approved: true }); // Stanley approves the payment check
+  assert.equal(o.p.payment.sats, 61000);
+  assert.equal(o.p.payment.wallet, "Wallet of Satoshi");
+  assert.equal(o.p.payment.reference, "8b099e4b0f65d2689a90a238c529119a77ea8efb08f8bec538ed48735027ff45");
+  const mail = (await all()).find((e) => e.to === "offline@shop.co");
+  assert.match(mail.text, /61,000 sats over Lightning/);
+  const { receiptPdf } = await import("../lib/finance.js");
+  const pdf = receiptPdf(o.lead, o.p, o.p.receipt.no).toString("latin1");
+  assert.ok(pdf.includes("Amount received: 61,000 sats"));
+  await crm.saveProposal(o.p);
+  const { statement, statementCsv } = await import("../lib/statement.js");
+  const s = await statement();
+  assert.ok(s.custodial.sats >= 61000);
+  assert.ok(s.payments.some((x) => x.wallet === "Wallet of Satoshi" && x.sats === 61000));
+  assert.match(await statementCsv(), /,61000,lightning,Wallet of Satoshi,8b099e4b0f65d2689a90a238c529119a77ea8efb08f8bec538ed48735027ff45,/);
+});

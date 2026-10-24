@@ -31,7 +31,7 @@ test("totals, sales vs donations, channels, months, services, and a safe CSV", a
   assert.deepEqual(s.services.map((x) => x.key), ["Pay as you go (2 hours)"]); // donations aren't a service
   assert.equal(s.payments[0].type, "donation"); // newest first
   const csv = await statementCsv();
-  assert.match(csv, /^date,receipt,type,client,email,what,sats,channel,reference,coupon\n/);
-  assert.match(csv, /2026-10-02T10:00:00Z,R-2026-00001,sale,Jo,jo@x\.co,Pay as you go \(2 hours\),62000,lightning,hash1,/);
+  assert.match(csv, /^date,receipt,type,client,email,what,sats,channel,held_in,reference,coupon\n/);
+  assert.match(csv, /2026-10-02T10:00:00Z,R-2026-00001,sale,Jo,jo@x\.co,Pay as you go \(2 hours\),62000,lightning,node,hash1,/);
   assert.match(csv, /,'=cmd\(\),/); // no spreadsheet formulas
 });
