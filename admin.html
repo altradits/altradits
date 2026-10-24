@@ -236,6 +236,12 @@ dd{margin:0;overflow-wrap:anywhere}
       <div id="mkMasters" style="margin-top:1rem"></div>
     </div>
 
+    <div class="panel"><h2>Replies from Altradits</h2>
+      <p class="muted" style="margin:0 0 .6rem">Altradits only answers people who comment on its own posts or mention @altradits. It never comments elsewhere, likes or starts conversations: that's you, from your personal accounts. Anything sensitive comes to your inbox instead of a public reply.</p>
+      <div class="row" style="margin:0 0 .8rem"><button class="btn" id="mkReply"></button></div>
+      <div id="mkResponses"></div>
+    </div>
+
     <div class="grid2">
       <div class="panel"><h2>Accounts</h2><div id="mkChannels"></div></div>
       <div class="panel"><h2>The team</h2><ul id="mkTeam" style="margin:0;padding-left:1.1rem"></ul></div>
@@ -795,6 +801,10 @@ function renderMarketing() {
     ${m.scheduled?.length ? `<p class="sm muted" style="margin:.4rem 0 0">Scheduled: ${m.scheduled.join(", ")}</p>` : ""}
     <div class="row"><label class="sm">Start <select data-mkstart="${m.id}" style="width:auto">${opts}</select></label><label class="sm">Days <select data-mkdays="${m.id}" style="width:auto"><option>1</option><option>2</option><option>3</option></select></label><button class="btn primary" data-mkrep="${m.id}">Repurpose &amp; schedule</button></div></div>`).join("") || `<p class="muted">No masters yet.</p>`;
   $("#mkChannels").innerHTML = M.channels.map((c) => `<p style="margin:.3rem 0"><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.name)}</a> · ${esc(c.slots.join(", "))} UTC<br><span class="muted sm">${c.connected ? "✓ posts automatically" : c.mode === "manual" ? "No posting API: drafts come to your email" : `Not connected: set ${esc(c.env.join(", "))} in the hosting panel. Scheduled posts start going out as soon as you do.`}</span></p>`).join("");
+  $("#mkReply").textContent = M.settings.autoReply === false ? "Turn replies on" : "Turn replies off";
+  const ACT = { reply: "replied", escalate: "sent to you", ignore: "ignored" };
+  $("#mkResponses").innerHTML = M.responses.length ? `<div style="overflow-x:auto"><table><thead><tr><th>When</th><th>Where</th><th>Comment</th><th>What Altradits did</th></tr></thead><tbody>${M.responses.map((r) => `<tr><td class="sm">${ago(r.at)}</td><td class="sm">${esc(mkCh(r.channel).name)}</td><td><b>${esc(r.author)}</b>: ${esc(r.comment)}${r.url ? ` <a href="${esc(r.url)}" target="_blank" rel="noopener">open</a>` : ""}</td><td><span class="stage ${r.action === "escalate" ? "failed" : r.action === "reply" ? "posted" : ""}">${ACT[r.action]}</span>${r.reply ? `<div class="sm">${esc(r.reply)}</div>` : ""}<div class="muted sm">${esc(r.reason || "")}</div>${r.draft ? `<div class="sm"><i>Suggested: ${esc(r.draft)}</i></div>` : ""}</td></tr>`).join("")}</tbody></table></div>`
+    : `<p class="muted">No comments yet. Replies start once X, the Facebook Page or the LinkedIn company page is connected.</p>`;
   $("#mkTeam").innerHTML = M.team.map((m) => `<li><b>${esc(m.name)}</b>: ${esc(m.role)}</li>`).join("");
   $("#mkResults").innerHTML = M.channels.map((c) => { const r = M.results[c.id]; return `<tr><td>${esc(c.name)}</td><td>${r.posts}</td><td>${r.leads}</td><td>${r.paid}</td><td>${money(r.revenue)}</td></tr>`; }).join("");
 }
@@ -802,6 +812,9 @@ $("#mkHunt").addEventListener("click", async (e) => {
   const id = e.target.dataset.mkshout; if (!id) return;
   e.target.disabled = true;
   try { await api("", { action: "mkt_shout_remove", id }); loadMarketing(); } catch (err) { e.target.textContent = err.message; }
+});
+$("#mkReply").addEventListener("click", async () => {
+  try { await api("", { action: "mkt_autoreply", on: M.settings.autoReply === false }); loadMarketing(); } catch (err) { $("#mkMsg").textContent = err.message; }
 });
 $("#mkPause").addEventListener("click", async () => {
   try { await api("", { action: "mkt_pause", paused: !M.settings.paused }); loadMarketing(); } catch (err) { $("#mkMsg").textContent = err.message; }

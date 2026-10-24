@@ -41,13 +41,24 @@ mk.setMarketingClient({ beta: { messages: { stream: (params) => ({ finalMessage:
     const fixing = /FIX THESE/.test(content);
     return out({ posts: ids.map((slot) => ({ slot, format: `format for ${slot}`, text: slot === breakSlot && !fixing ? "Everything for $3 only!" : `Your inbox, handled the same day. (${slot.split("/")[1]})` })) });
   }
+  if (tool === "respond") {
+    const ids = [...params.messages[0].content.matchAll(/^\[(\S+)\]/gm)].map((m) => m[1]);
+    return out({ decisions: ids.map((id) => id === "c1" ? { id, action: "reply", reply: "Yes! Same-day delivery on all quick jobs. Have a look at altradits.com.", reason: "Question" }
+      : id === "c2" ? { id, action: "escalate", reason: "Order complaint" }
+      : { id, action: "reply", reply: `The word is ${hunt.huntFor(new Date("2026-11-05T09:00:00Z")).word}`, reason: "Hunt question" }) });
+  }
   const n = params.messages[0].content.split(/\n\n#/).length;
   return out({ verdicts: Array.from({ length: n }, (_, index) => ({ index, pass: true, issues: [] })) });
 } }) } } });
 
 const sent = [];
-setSocialFetch(async (url, init) => {
+let fbComments = [];
+const tweets = () => sent.filter((r) => r.url === "https://api.x.com/2/tweets" && r.init?.method === "POST");
+setSocialFetch(async (url, init = {}) => {
   sent.push({ url, init });
+  if (url === "https://api.x.com/2/users/me") return new Response(JSON.stringify({ data: { id: "42", username: "altradits" } }));
+  if (url.includes("/mentions")) return new Response(JSON.stringify({ meta: {} }));
+  if (url.includes("/comments?fields=")) return new Response(JSON.stringify({ data: fbComments }));
   if (url.endsWith("/rest/posts")) return new Response("", { status: 201, headers: { "x-restli-id": "urn:li:share:9" } });
   if (url.includes("graph.facebook.com")) return new Response(JSON.stringify({ id: "123_456" }), { status: 200 });
   return new Response(JSON.stringify({ data: { id: String(1000 + sent.length) } }), { status: 201 });
@@ -115,14 +126,14 @@ test("posts wait for their account: emailed when not connected, posted by themse
   await mk.marketingTick({ at: new Date("2026-11-02T07:01:00Z"), force: true });
   let rec = await getJSON("mkt:day:2026-11-02");
   assert.equal(rec.posts.find((p) => p.channel === "x" && p.slot === "07:00").status, "manual");
-  assert.equal(sent.length, 0);
+  assert.equal(tweets().length, 0);
 
   // Stanley connects X: the 12:30 post goes out by itself, with its hunt line.
   Object.assign(process.env, X_KEYS);
   await mk.marketingTick({ at: new Date("2026-11-02T12:31:00Z"), force: true });
   await mk.marketingTick({ at: new Date("2026-11-02T12:32:00Z"), force: true });
-  assert.equal(sent.length, 1);
-  const text = JSON.parse(sent[0].init.body).text;
+  assert.equal(tweets().length, 1);
+  const text = JSON.parse(tweets()[0].init.body).text;
   assert.match(text, /Your inbox, handled the same day\. \(x\)\n\n#AltraditsHunt letter \d\/\d: [A-Z]$/);
   assert.ok(text.length <= 280);
   rec = await getJSON("mkt:day:2026-11-02");
@@ -162,6 +173,7 @@ test("LinkedIn posts with the link as first comment; the Facebook Page gets the 
   Object.assign(process.env, { LINKEDIN_TOKEN: "li", LINKEDIN_PERSON_URN: "urn:li:person:abc", FB_PAGE_TOKEN: "fb" });
   sent.length = 0;
   const li = await publish(ch("li_stan"), { text: "Hook line", link: "https://altradits.test/?ref=mklistan" });
+  assert.equal(JSON.parse(sent[1].init.body).actor, "urn:li:person:abc");
   assert.equal(li.url, "https://www.linkedin.com/feed/update/urn:li:share:9/");
   assert.equal(JSON.parse(sent[0].init.body).author, "urn:li:person:abc");
   assert.match(sent[1].url, /socialActions\/urn%3Ali%3Ashare%3A9\/comments$/);
@@ -238,13 +250,79 @@ test("winners who opt in get a shoutout in the next post out: tagged on X, by na
   Object.assign(process.env, X_KEYS);
   sent.length = 0;
   await mk.marketingTick({ at: new Date("2026-11-03T07:01:00Z"), force: true });
-  const text = JSON.parse(sent[0].init.body).text;
+  const text = JSON.parse(tweets()[0].init.body).text;
   assert.match(text, /\n\n🏆 Congrats to our latest #AltraditsHunt winners: @amina_k!\n\n#AltraditsHunt letter/);
   assert.ok(text.length <= 280);
   assert.equal((await hunt.pendingShoutouts()).length, 0); // once only
   await mk.marketingTick({ at: new Date("2026-11-03T12:31:00Z"), force: true });
-  assert.doesNotMatch(JSON.parse(sent[1].init.body).text, /🏆/);
+  assert.doesNotMatch(JSON.parse(tweets()[1].init.body).text, /🏆/);
   const status = await (await huntApi.GET(req(`/api/hunt?claim=${claim.id}&t=${claim.t}`))).json();
   assert.equal(status.claim.shoutDone, true);
   for (const k of Object.keys(X_KEYS)) delete process.env[k];
+});
+
+test("the company page's link comment comes from Stanley's personal account, not the brand", async () => {
+  Object.assign(process.env, { LINKEDIN_TOKEN: "li", LINKEDIN_ORG_TOKEN: "org", LINKEDIN_ORG_ID: "777", LINKEDIN_PERSON_URN: "urn:li:person:abc" });
+  sent.length = 0;
+  await publish(ch("li_co"), { text: "Company post", link: "https://altradits.test/?ref=mklico" });
+  assert.equal(JSON.parse(sent[0].init.body).author, "urn:li:organization:777");
+  assert.equal(sent[0].init.headers.Authorization, "Bearer org");
+  const comment = JSON.parse(sent[1].init.body);
+  assert.equal(comment.actor, "urn:li:person:abc");
+  assert.equal(sent[1].init.headers.Authorization, "Bearer li");
+  for (const k of ["LINKEDIN_TOKEN", "LINKEDIN_ORG_TOKEN", "LINKEDIN_ORG_ID", "LINKEDIN_PERSON_URN"]) delete process.env[k];
+});
+
+test("X GET requests sign their query parameters", () => {
+  Object.assign(process.env, X_KEYS);
+  const url = "https://api.x.com/2/users/42/mentions?max_results=50&since_id=9";
+  const h = oauthHeader("GET", url, { nonce: "n1", timestamp: 1700000000 });
+  const params = "max_results=50&oauth_consumer_key=ck&oauth_nonce=n1&oauth_signature_method=HMAC-SHA1&oauth_timestamp=1700000000&oauth_token=at&oauth_version=1.0&since_id=9";
+  const base = `GET&${encodeURIComponent("https://api.x.com/2/users/42/mentions")}&${encodeURIComponent(params)}`;
+  assert.ok(h.includes(`oauth_signature="${encodeURIComponent(crypto.createHmac("sha1", "cs&as").update(base).digest("base64"))}"`));
+  for (const k of Object.keys(X_KEYS)) delete process.env[k];
+});
+
+test("Altradits only answers comments on its own posts: replies, escalates the sensitive, never leaks the hunt word", async () => {
+  const { checkReply } = await import("../lib/responder.js");
+  assert.deepEqual(checkReply("fb_page", "Thanks! Same day, fixed price."), []);
+  assert.match(checkReply("fb_page", "We'll refund you").join(), /refunds/);
+  assert.match(checkReply("fb_page", "Get 50% off").join(), /discounts/);
+  assert.deepEqual(checkReply("fb_page", `Solve it for ${HUNT.couponPct}% off one order.`), []);
+  assert.match(checkReply("x", "Hi @someone").join(), /mention/);
+
+  Object.assign(process.env, { FB_PAGE_TOKEN: "fb" });
+  // A posted Page post with comments: a question, a complaint, the Page itself, a hunt-word fisher.
+  const rec = await getJSON("mkt:day:2026-11-04");
+  const post = rec.posts.find((p) => p.channel === "fb_page");
+  Object.assign(post, { status: "posted", platformId: "61579168157529_1", url: "https://www.facebook.com/61579168157529_1" });
+  await (await import("../lib/store.js")).setJSON("mkt:day:2026-11-04", rec);
+  fbComments = [
+    { id: "c1", message: "Do you deliver the same day?", from: { id: "u1", name: "Jo" } },
+    { id: "c2", message: "My order hasn't arrived and I paid yesterday", from: { id: "u2", name: "Sam" } },
+    { id: "c3", message: "What's this week's word?", from: { id: "u3", name: "Lee" } },
+    { id: "c4", message: "Thanks everyone", from: { id: "61579168157529", name: "Altradits" } },
+  ];
+  sent.length = 0;
+  const r = await mk.marketingTick({ at: new Date("2026-11-05T09:00:00Z"), force: true });
+  assert.deepEqual({ ...r.responses }, { handled: 3, replied: 1, escalated: 2 });
+  const replies = sent.filter((x) => /\/c\d\/comments$/.test(x.url));
+  assert.equal(replies.length, 1);
+  assert.match(replies[0].url, /\/c1\/comments$/);
+  assert.match(replies[0].init.body.get("message"), /Same-day delivery/);
+  // The complaint and the blocked hunt-word reply went to Stanley.
+  const emails = await getMany("email", await listIds("emails", 50));
+  const esc = emails.find((e) => /comments need you/.test(e.subject));
+  assert.match(esc.text, /My order hasn't arrived/);
+  assert.match(esc.text, /Never reveal the hunt word/);
+  // Each comment is handled once.
+  sent.length = 0;
+  const again = await mk.marketingTick({ at: new Date("2026-11-05T10:00:00Z"), force: true });
+  assert.equal(again.responses.handled, 0);
+  // Switched off: no reading, no replying.
+  await mk.saveSettings({ autoReply: false });
+  fbComments = [{ id: "c9", message: "Hello?", from: { id: "u9", name: "Ann" } }];
+  assert.equal((await mk.marketingTick({ at: new Date("2026-11-05T11:00:00Z"), force: true })).responses, null);
+  await mk.saveSettings({ autoReply: true });
+  delete process.env.FB_PAGE_TOKEN;
 });
