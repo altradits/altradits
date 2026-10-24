@@ -60,10 +60,13 @@ export async function GET(request) {
     const STAN = "stan@altradits.com";
     const mail = await getMany("email", await listIds("emails", 400));
     const tasks = await allTasks();
-    const reviews = tasks.flatMap((t) => t.history.filter((h) => /^QA: /.test(h.text)).map((h) => ({ at: h.at, task: t.title, client: t.client, department: t.department, pass: h.text.startsWith("QA: passed"), text: h.text })))
+    const reviews = tasks.flatMap((t) => t.history.filter((h) => /^QA: /.test(h.text)).map((h) => ({ at: h.at, task: t.title, client: t.client, department: t.department, pass: !/^QA: (changes required|Stan sent it back)/.test(h.text), text: h.text })))
       .sort((a, b) => b.at.localeCompare(a.at)).slice(0, 60);
     const pick = (e) => ({ at: e.at, to: e.to, from: e.from, subject: e.subject, kind: e.kind, status: e.status, bcc: e.bcc || null, text: (e.text || "").slice(0, 400) });
+    const records = tasks.filter((t) => t.qa?.panel).sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || "")).slice(0, 40)
+      .map((t) => ({ id: t.id, task: t.title, client: t.client, department: t.department, status: t.status, panel: t.qa.panel, rounds: t.qa.rounds, final: t.qa.final }));
     return json({
+      records,
       sent: mail.filter((e) => (e.from || "").includes(STAN)).slice(0, 60).map(pick),
       copied: mail.filter((e) => e.cc === STAN).slice(0, 60).map(pick),
       escalations: mail.filter((e) => e.kind === "owner").slice(0, 30).map(pick),
@@ -302,6 +305,7 @@ export async function POST(request) {
       const note = clean(body.note, 1000);
       t.status = "queued";
       t.attempts = 0;
+      (await import("../lib/qa.js")).reopen(t.qa, note);
       t.history.push({ at, by: "Stanley", text: note ? `Changes requested: ${note}` : "Re-run requested" });
       await saveTask(t);
       kickQueue();

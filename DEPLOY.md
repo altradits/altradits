@@ -133,6 +133,7 @@ Every department emails from its official address, signed by its AI head with th
 
 - **Department heads send all external email**, each from its official address, with **stan@altradits.com copied**.
 - **Stan (stan@altradits.com), Head of Quality and Internal Communications,** reviews every deliverable with a panel of expert reviewers picked for the task (data/qa-experts.js), sends all internal mail (task assignments, QA notes, escalations to you) and sends each client's **payment confirmation, blind-copied to altradits@gmail.com**. `EMAIL_BCC=none` turns that blind copy off.
+- **How work earns its way to a client** (lib/qa.js): Stan splits each brief by area and assigns a specialist QA to each (always the Reality Checker and Client Safety), who writes acceptance criteria the department works to. Each QA tests its area item by item and approves or requires changes; the department revises and only failed areas are re-tested (up to 3 rounds, then it comes to you). When every area is approved, Stan makes the final decision and drafts the client message, which the department head sends.
 - You monitor everything from stan@ and admin → **Stan** (reviews, mail he sent, mail he was copied on, escalations), with nothing to approve.
 - Departments: hello@ (Front Office), care@, orders@, social@, admin@, assistant@, tech@, finance@, trust@, marketing@, careers@, quality@ (internal QA notes).
 

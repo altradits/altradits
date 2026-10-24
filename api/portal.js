@@ -2,6 +2,7 @@
 // GET  /api/portal?c=<token>                         -> onboarding, tasks, hours, referral
 // GET  /api/portal?c=<token>&task=<id>&file=<n>      -> download a deliverable file
 // POST /api/portal { c, action: "onboarding"|"task"|"answer"|"approve"|"changes", ... }
+import { reopen } from "../lib/qa.js";
 import { json, readBody, clean, clientIp } from "../lib/http.js";
 import { hit } from "../lib/store.js";
 import { saveLead, logEvent } from "../lib/crm.js";
@@ -146,6 +147,7 @@ export async function POST(request) {
     } else if (workersLive()) {
       t.status = "queued";
       t.attempts = 0; // fresh revision cycle with the client's feedback
+      reopen(t.qa, note); // Stan's QA re-tests everything, including the change
       await saveTask(t);
       kickQueue();
     } else {

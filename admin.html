@@ -184,7 +184,7 @@ dd{margin:0;overflow-wrap:anywhere}
     <div class="grid2">
       <div class="panel"><h2>How the team communicates</h2><div id="internalProto"></div></div>
       <div class="panel"><h2>Stan's QA expert panel <span class="stage" id="qaCount" style="font-size:.8rem"></span></h2>
-        <p class="muted" style="margin-top:0;font-size:.9rem">Before any verdict, Stan picks the experts for the task (always the Reality Checker and Client Safety), reviews through each one's checklist, and passes the work only if every expert does.</p>
+        <p class="muted" style="margin-top:0;font-size:.9rem">Stan splits every brief by area and assigns a specialist QA to each (always the Reality Checker and Client Safety). Each writes acceptance criteria the department works to, tests its area item by item, and approves or requires changes. Only failed areas are re-tested. When every area is approved, Stan makes the final decision and drafts the client message for the department head to send.</p>
         <details><summary class="sm" style="cursor:pointer"><b>Stan's method</b></summary><ol id="stanMethod" class="sm"></ol></details>
         <div id="qaExperts" style="margin-top:.6rem"></div></div>
     </div>
@@ -290,11 +290,11 @@ dd{margin:0;overflow-wrap:anywhere}
 
   <div id="tab-stan" hidden>
     <div class="panel"><h2>Stan's desk</h2>
-      <p class="muted" style="margin-top:0">Stan (stan@altradits.com) is Head of Quality and Internal Communications. He reviews every deliverable with his expert panel, sends all internal mail and each payment confirmation (blind-copied to you), and is copied on every external email the heads send. This view is read-only: watch, no buttons to press.</p>
+      <p class="muted" style="margin-top:0">Stan (stan@altradits.com) is Head of Quality and Internal Communications. He splits every job across his specialist QA team, holds the department to their criteria, makes the final decision and drafts the client message the department head sends. He sends all internal mail and each payment confirmation (blind-copied to you), and is copied on every external email. This view is read-only: watch, no buttons to press.</p>
       <div class="kpis" id="stanKpis" style="margin:0"></div>
     </div>
     <div class="grid2">
-      <div class="panel"><h2>Quality reviews</h2><div id="stanReviews"></div></div>
+      <div class="panel"><h2>Decision records</h2><p class="muted sm" style="margin-top:0">Per job: Stan's QA team by area, every criterion with its evidence, the rounds of changes, and Stan's final decision with the message the department head sent.</p><div id="stanReviews"></div></div>
       <div class="panel"><h2>Sent by Stan</h2><div id="stanSent"></div></div>
     </div>
     <div class="grid2">
@@ -837,9 +837,9 @@ async function loadStan() {
   const day = (iso) => Date.now() - Date.parse(iso) < 864e5;
   const KIND = { team: "internal", payment: "payment confirmation", client: "client", kit: "free kit", owner: "to you" };
   $("#stanKpis").innerHTML = [
-    ["Reviews today", S.reviews.filter((r) => day(r.at)).length],
-    ["Passed today", S.reviews.filter((r) => day(r.at) && r.pass).length],
-    ["Sent back today", S.reviews.filter((r) => day(r.at) && !r.pass).length],
+    ["In QA now", S.records.filter((r) => !r.final).length],
+    ["Approved today", S.records.filter((r) => r.final?.approve && day(r.final.at)).length],
+    ["Changes required today", S.reviews.filter((r) => day(r.at) && !r.pass).length],
     ["Sent by Stan today", S.sent.filter((e) => day(e.at)).length],
     ["Copied today", S.copied.filter((e) => day(e.at)).length],
     ["Escalated to you today", S.escalations.filter((e) => day(e.at)).length],
@@ -848,7 +848,13 @@ async function loadStan() {
   $("#stanSent").innerHTML = mail(S.sent, "Nothing sent yet.");
   $("#stanCopied").innerHTML = mail(S.copied, "No external emails yet.");
   $("#stanEsc").innerHTML = mail(S.escalations, "Nothing escalated.");
-  $("#stanReviews").innerHTML = S.reviews.length ? S.reviews.map((r) => `<div class="ap" style="padding:.6rem .8rem"><b>${esc(r.task)}</b> <span class="stage ${r.pass ? "posted" : "failed"}">${r.pass ? "passed" : "sent back"}</span><div class="muted sm">${ago(r.at)} · ${esc(r.client || "")} · ${esc(r.department || "")}</div><div class="sm">${esc(r.text.replace(/^QA: /, ""))}</div></div>`).join("") : `<p class="muted">No reviews yet.</p>`;
+  $("#stanReviews").innerHTML = S.records.length ? S.records.map((r) => {
+    const latest = (id) => [...r.rounds].reverse().find((x) => x.results[id])?.results[id];
+    const state = r.final?.approve ? ["posted", "approved by Stan"] : r.final ? ["failed", "sent back by Stan"] : r.panel.every((p) => p.approved) ? ["", "awaiting Stan"] : ["", "in QA"];
+    return `<details class="ap" style="padding:.6rem .8rem"><summary style="cursor:pointer"><b>${esc(r.task)}</b> <span class="stage ${state[0]}">${state[1]}</span><div class="muted sm">${esc(r.client || "")} · ${esc(r.department || "")} · ${r.rounds.length} round(s) · ${r.panel.map((p) => `${p.approved ? "✓" : "✗"} ${esc(p.name)}`).join(" · ")}</div></summary>
+      ${r.panel.map((p) => { const l = latest(p.id); return `<div class="sm" style="margin:.5rem 0"><b>${esc(p.name)}</b> ${p.approved ? '<span class="stage posted">approved</span>' : '<span class="stage failed">changes required</span>'}<ul>${(l?.items || p.criteria.map((c) => ({ criterion: c, pass: false, evidence: "not reviewed yet" }))).map((i) => `<li>${i.pass ? "✓" : "✗"} ${esc(i.criterion)}<br><span class="muted">${esc(i.evidence || "")}${i.fix && !i.pass ? ` · Fix: ${esc(i.fix)}` : ""}</span></li>`).join("")}</ul></div>`; }).join("")}
+      ${r.final ? `<div class="sm" style="border-top:1px solid var(--line);padding-top:.5rem"><b>Stan's decision:</b> ${esc(r.final.reason || "")}${r.final.issues?.length ? `<br>Issues: ${esc(r.final.issues.join("; "))}` : ""}${r.final.approve && r.final.subject ? `<br><b>Draft sent by the department head:</b> ${esc(r.final.subject)}<pre class="sm" style="white-space:pre-wrap;margin:.3rem 0 0">${esc(r.final.body || "")}</pre>` : ""}</div>` : ""}
+    </details>`; }).join("") : `<p class="muted">No jobs reviewed yet.</p>`;
 }
 
 // ---- marketing team: scheduler with platform previews, masters, repurposing
