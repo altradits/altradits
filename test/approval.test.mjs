@@ -11,6 +11,7 @@ for (const k of ["ANTHROPIC_API_KEY", "RESEND_API_KEY", "SMTP_HOST", "EMAIL_TRAN
 process.env.SITE_URL = "https://altradits.test";
 
 const email = await import("../lib/email.js");
+const { orderable } = await import("../data/catalog.js");
 const stan = await import("../lib/stan.js");
 const { listIds, getMany } = await import("../lib/store.js");
 const all = async () => getMany("email", await listIds("emails", 200));
@@ -116,39 +117,47 @@ test("links in emails are embedded: worded links and buttons, never long raw add
   assert.match(html, />Unsubscribe<\/a>/);
 });
 
-test("payments: instant payment email, then Finance's QA-reconciled PDF receipt at once, then Finance's confirmation waits for Stanley", async () => {
+test("payments: one automatic email with the complete receipt attached; nothing waits for approval", async () => {
   const crm = await import("../lib/crm.js");
-  const pending = async () => (await email.pendingApprovals()).filter((e) => e.kind === "finance");
+  const before = (await email.pendingApprovals()).length;
   // A donation, paid over Lightning.
   const { lead, p } = await crm.createDonation({ usd: 20, name: "Amina", email: "amina@shop.co", message: "Teach more people!" });
   assert.equal(p.status, "accepted");
   assert.ok(p.donation);
-  p.lightning = { sats: 24000 };
+  p.lightning = { sats: 24000, rate: 83333 };
   p.payment = { method: "Bitcoin (Lightning)", reference: "abc123hash", sats: 24000 };
   await crm.confirmPayment(lead, p);
-  const thanks = (await all()).find((e) => e.subject === "Thank you for your donation");
+  const mine = (await all()).filter((e) => e.to === "amina@shop.co");
+  assert.equal(mine.length, 1); // one email, not two receipts
+  const [thanks] = mine;
+  assert.equal(thanks.subject, "Thank you for your donation");
   assert.equal(thanks.status, "logged"); // sent at once
   assert.equal(thanks.from, "Stan at Altradits <stan@altradits.com>");
-  assert.match(thanks.text, /\$20 donation to Bitcoin education.*\(24,000 sats\)/);
-  // The detailed receipt: sent automatically, PDF attached, from Finance.
-  const receipt = (await all()).find((e) => /^Receipt R-\d{4}-00001: Donation$/.test(e.subject));
-  assert.equal(receipt.status, "logged");
-  assert.equal(receipt.kind, "receipt");
-  assert.match(receipt.from, /<finance@altradits\.com>$/);
-  assert.deepEqual(receipt.files, [`altradits-receipt-${receipt.subject.match(/R-\d{4}-\d{5}/)[0]}.pdf`]);
-  assert.equal(receipt.cta, null);
-  assert.equal(receipt.qa.pass, true);
+  assert.equal(thanks.bcc, "altradits@gmail.com");
+  assert.match(thanks.text, /\$20 donation to Bitcoin education.*\(24,000 sats\)\. Your receipt R-\d{4}-00001 is attached\./);
+  assert.deepEqual(thanks.files, [`altradits-receipt-${p.receipt.no}.pdf`]);
+  assert.equal(p.receipt.qa, true);
+  assert.equal((await email.pendingApprovals()).length, before); // nothing for Stanley to approve
+  // The receipt has everything a receipt needs.
   const { receiptPdf } = await import("../lib/finance.js");
   const pdf = receiptPdf(lead, p, "R-2026-00001").toString("latin1");
   assert.ok(pdf.startsWith("%PDF"));
-  for (const s of ["Receipt R-2026-00001", "Donation to Bitcoin education", "24,000 sats", "Settled on the Lightning Network", "abc123hash"]) assert.ok(pdf.includes(s), s);
-  // Finance's personal confirmation waits for Stanley.
-  const [conf] = await pending();
-  assert.equal(conf.status, "awaiting approval");
-  assert.match(conf.from, /<finance@altradits\.com>$/);
-  assert.match(conf.text, /Donation to Bitcoin education: \$20\.00\nTotal: \$20\.00, received as 24,000 sats via Bitcoin \(Lightning\)/);
-  assert.match(conf.text, /Your receipt is R-\d{4}-00001/);
-  assert.ok(conf.qa.checks.every((c) => c.pass));
+  for (const s of ["Receipt R-2026-00001", "PAID IN FULL", "Issued by Altradits", "finance@altradits.com", `Order reference: ${p.id}`, "Amina", "amina@shop.co",
+    "Donation to Bitcoin education", "24,000 sats", "$20.00 at $83,333 per BTC", "Bitcoin Lightning Network", "abc123hash", "Settled on the Lightning Network",
+    "No goods or services were provided"]) assert.ok(pdf.includes(s), s);
+  // An order: same single email, items with quantity and price, and the portal button.
+  const o = await crm.createOrder(orderable("hourly"));
+  o.lead.email = "buyer@shop.co"; o.lead.name = "Kip";
+  o.p.lightning = { sats: 60000, rate: 83333 };
+  o.p.payment = { method: "Bitcoin (Lightning)", reference: "def456hash", sats: 60000 };
+  await crm.confirmPayment(o.lead, o.p);
+  const paid = (await all()).filter((e) => e.to === "buyer@shop.co");
+  assert.equal(paid.length, 1);
+  assert.match(paid[0].text, /Your receipt R-\d{4}-00002 is attached/);
+  assert.ok(paid[0].cta.url.includes("/portal"));
+  const opdf = receiptPdf(o.lead, o.p, o.p.receipt.no).toString("latin1");
+  assert.ok(opdf.includes("Pay-as-you-go hours: 2 x $25.00 = $50.00"));
+  assert.ok(opdf.includes("fixed free for 14 days"));
   // Short payment: Stan's QA flags it for Stanley.
   const { reconcile } = await import("../lib/finance.js");
   const short = reconcile({ ...p, payment: { ...p.payment, sats: 1000 } });
@@ -187,25 +196,25 @@ test("start fresh: communications and test clients are cleared; payments and the
   const cleanup = await import("../lib/cleanup.js");
   await store.setJSON("member:m1", { id: "m1" }); await store.pushId("members", "m1");
   const paid = (await getMany("proposal", await store.listIds("proposals"))).filter((p) => p.status === "paid");
-  assert.equal(paid.length, 1); // the donation from the payments test
-  const payMail = (await all()).filter((e) => ["payment", "receipt", "finance"].includes(e.kind) || e.leadId === paid[0].leadId).map((e) => e.id);
-  assert.ok(payMail.length >= 3); // thank-you, receipt, Finance's confirmation
+  assert.equal(paid.length, 2); // the donation and the order from the payments test
+  const payLeads = new Set(paid.map((p) => p.leadId));
+  const payMail = (await all()).filter((e) => ["payment", "receipt", "finance"].includes(e.kind) || payLeads.has(e.leadId)).map((e) => e.id);
+  assert.ok(payMail.length >= 2); // each payment's email, with its receipt
   const seq = await store.getJSON("finance:seq");
   await assert.rejects(cleanup.clearGroups(["nothing"]), /Choose/);
   const r = await cleanup.clearGroups(["communications", "clients"]);
   assert.ok(r.archived > 5);
-  assert.ok(r.keptPayments >= payMail.length + 2);
+  assert.ok(r.kept >= payMail.length + 2);
   // Only the payment's records remain, in their lists.
-  assert.deepEqual((await store.listIds("proposals")), [paid[0].id]);
-  assert.deepEqual((await store.listIds("leads")), [paid[0].leadId]);
+  assert.deepEqual(new Set(await store.listIds("proposals")), new Set(paid.map((p) => p.id)));
+  assert.deepEqual(new Set(await store.listIds("leads")), payLeads);
   const waiting = (await all()).filter((e) => e.status === "awaiting approval").map((e) => e.id);
   assert.deepEqual(new Set(await store.listIds("emails")), new Set([...payMail, ...waiting])); // payments, and drafts still waiting for Stanley
-  assert.ok((await email.pendingApprovals()).some((e) => e.leadId === paid[0].leadId && e.kind === "finance")); // Finance's confirmation still waits
   assert.equal(await store.getJSON("finance:seq"), seq); // receipt numbers never restart
   assert.deepEqual(await store.listIds("members"), ["m1"]);
   const saved = JSON.parse(fs.readFileSync(path.join(store.dataDir(), "archive", r.file), "utf8"));
   assert.ok(Object.keys(saved.kv).some((k) => k.startsWith("email:")));
-  assert.ok(!Object.keys(saved.kv).some((k) => k === `proposal:${paid[0].id}`));
+  assert.ok(!paid.some((p) => saved.kv[`proposal:${p.id}`]));
 });
 
 test("delete for good keeps no copy; archives can be listed and deleted", async () => {
@@ -225,4 +234,11 @@ test("delete for good keeps no copy; archives can be listed and deleted", async 
   store.deleteArchive(a.name);
   assert.equal(store.listArchives().length, before - 1);
   assert.throws(() => store.deleteArchive(a.name), /already gone/);
+});
+
+test("PDFs keep underscores inside ids and file names; only emphasis marks are removed", async () => {
+  const { markdownToPdf } = await import("../lib/pdf.js");
+  const s = markdownToPdf("Order reference: R0hgf_nMSB0z, file get_paid.pdf, _emphasis_ and **bold**").toString("latin1");
+  for (const x of ["R0hgf_nMSB0z", "get_paid.pdf", "emphasis and bold"]) assert.ok(s.includes(x), x);
+  assert.ok(!s.includes("_emphasis_"));
 });

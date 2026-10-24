@@ -74,7 +74,7 @@ async function update(body) {
   await saveLead(lead);
 
   if (p.status === "paid") {
-    if (email && !hadEmail) await sendKickoff(lead, p);
+    if (email && !hadEmail) { await sendKickoff(lead, p); await saveProposal(p); } // first address: their payment email and receipt
     if (isUrgent(p.order) && !wasUrgent) {
       const t = p.order.taskId && (await getTask(p.order.taskId));
       if (t) { t.urgency = p.order.urgency; t.history.push({ at: new Date().toISOString(), by: "client", text: `Marked urgent: ${urgencyNote(p.order)}` }); await saveTask(t); }
