@@ -141,6 +141,7 @@ dd{margin:0;overflow-wrap:anywhere}
       <button role="tab" data-tab="team">Team <span class="badge" id="teamCount" hidden></span></button>
       <button role="tab" data-tab="growth">Growth</button>
       <button role="tab" data-tab="marketing">Marketing</button>
+      <button role="tab" data-tab="stan">Stan</button>
       <button role="tab" data-tab="jobs">My job hunt <span class="badge" id="jobCount" hidden></span></button>
       <button role="tab" data-tab="emails">Email log</button>
       <button type="button" class="btn" id="refresh">↻ Refresh</button>
@@ -177,7 +178,7 @@ dd{margin:0;overflow-wrap:anywhere}
 
   <div id="tab-team" hidden>
     <div class="panel"><h2>Department directory</h2>
-      <p class="muted" style="margin-top:0">Every department emails from its official address, signed by its AI head. stan@altradits.com (Stan, your AI stand-in and Head of Quality) never sends: he's copied on every email. Emails about paying clients are blind-copied to altradits@gmail.com.</p>
+      <p class="muted" style="margin-top:0">Department heads send external email from their official addresses, with stan@altradits.com copied. Stan, Head of Quality and Internal Communications, sends all internal mail and each payment confirmation, blind-copied to altradits@gmail.com. Watch him work in the Stan tab.</p>
       <div id="commsList"></div>
     </div>
     <div class="grid2">
@@ -287,6 +288,21 @@ dd{margin:0;overflow-wrap:anywhere}
     <div class="panel"><h2>Results, last 14 days</h2><div style="overflow-x:auto"><table><thead><tr><th>Account</th><th>Posts</th><th>Orders started</th><th>Paid</th><th>Revenue</th></tr></thead><tbody id="mkResults"></tbody></table></div></div>
   </div>
 
+  <div id="tab-stan" hidden>
+    <div class="panel"><h2>Stan's desk</h2>
+      <p class="muted" style="margin-top:0">Stan (stan@altradits.com) is Head of Quality and Internal Communications. He reviews every deliverable with his expert panel, sends all internal mail and each payment confirmation (blind-copied to you), and is copied on every external email the heads send. This view is read-only: watch, no buttons to press.</p>
+      <div class="kpis" id="stanKpis" style="margin:0"></div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h2>Quality reviews</h2><div id="stanReviews"></div></div>
+      <div class="panel"><h2>Sent by Stan</h2><div id="stanSent"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h2>Copied to Stan (external, from the heads)</h2><div id="stanCopied"></div></div>
+      <div class="panel"><h2>Escalated to you</h2><div id="stanEsc"></div></div>
+    </div>
+  </div>
+
   <div id="tab-emails" hidden><div class="panel"><h2>Emails sent by the agents</h2>
     <div style="overflow-x:auto"><table><thead><tr><th>When</th><th>To</th><th>Subject</th><th>Status</th></tr></thead><tbody id="emailRows"></tbody></table></div></div></div>
 </div>
@@ -325,7 +341,8 @@ function tab(name) {
   if (name === "growth") renderGrowth();
   if (name === "jobs") loadJobs();
   if (name === "marketing") loadMarketing();
-  ["overview", "approvals", "leads", "tasks", "team", "growth", "marketing", "jobs", "emails"].forEach((t) => { $("#tab-" + t).hidden = t !== name; });
+  if (name === "stan") loadStan();
+  ["overview", "approvals", "leads", "tasks", "team", "growth", "marketing", "stan", "jobs", "emails"].forEach((t) => { $("#tab-" + t).hidden = t !== name; });
 }
 document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => tab(b.dataset.tab)));
 $("#refresh").addEventListener("click", () => load());
@@ -447,7 +464,7 @@ async function loadOps() {
 }
 function renderComms() {
   if (!O?.comms) return;
-  $("#commsList").innerHTML = O.comms.map((c) => `<details class="ap"><summary style="cursor:pointer"><b>${esc(c.address)}</b> · ${esc(c.name)} <span class="stage">${c.head.kind === "ai" ? "AI head" : "Human"}: ${esc(c.head.name)}${c.head.title || c.head.role ? ` · ${esc(c.head.title || c.head.role)}` : ""}</span>${c.sendsAs === false ? ' <span class="stage">copied only, never sends</span>' : ""}${c.internal ? ' <span class="stage">internal</span>' : ""} <span class="muted sm">${(c.staff || []).length} AI staff · reports to ${esc(c.reportsTo === "founder" ? "Stan" : c.reportsTo || "")}</span><div class="muted sm" style="margin-top:.2rem">${esc(c.purpose)}</div></summary>
+  $("#commsList").innerHTML = O.comms.map((c) => `<details class="ap"><summary style="cursor:pointer"><b>${esc(c.address)}</b> · ${esc(c.name)} <span class="stage">${c.head.kind === "ai" ? "AI head" : "Human"}: ${esc(c.head.name)}${c.head.title || c.head.role ? ` · ${esc(c.head.title || c.head.role)}` : ""}</span>${c.sendsAs === false ? ' <span class="stage">inbox only</span>' : ""}${c.sends ? ` <span class="stage">sends ${esc(c.sends.join(" and "))} mail</span>` : ""}${c.internal ? ' <span class="stage">internal</span>' : ""} <span class="muted sm">${(c.staff || []).length} AI staff · reports to ${esc(c.reportsTo === "founder" ? "Stan" : c.reportsTo || "")}</span><div class="muted sm" style="margin-top:.2rem">${esc(c.purpose)}</div></summary>
     ${(c.staff || []).length ? `<div style="margin-top:.6rem"><b class="sm">Team</b><ul class="sm">${c.staff.map((s) => `<li><b>${esc(s.name)}</b>, ${esc(s.title)}: ${esc(s.jurisdiction.join("; "))}</li>`).join("")}</ul></div>` : ""}
     ${c.channels ? `<div class="grid2 sm"><div><b>External</b><ul>${c.channels.external.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div><div><b>Internal</b><ul>${c.channels.internal.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div></div>` : ""}
     <div class="grid2" style="margin-top:.6rem;font-size:.92rem">
@@ -813,6 +830,26 @@ document.addEventListener("click", async (e) => {
     w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
   }
 });
+
+// ---- Stan's desk (read-only monitoring)
+async function loadStan() {
+  let S; try { S = await api("?view=stan"); } catch { return; }
+  const day = (iso) => Date.now() - Date.parse(iso) < 864e5;
+  const KIND = { team: "internal", payment: "payment confirmation", client: "client", kit: "free kit", owner: "to you" };
+  $("#stanKpis").innerHTML = [
+    ["Reviews today", S.reviews.filter((r) => day(r.at)).length],
+    ["Passed today", S.reviews.filter((r) => day(r.at) && r.pass).length],
+    ["Sent back today", S.reviews.filter((r) => day(r.at) && !r.pass).length],
+    ["Sent by Stan today", S.sent.filter((e) => day(e.at)).length],
+    ["Copied today", S.copied.filter((e) => day(e.at)).length],
+    ["Escalated to you today", S.escalations.filter((e) => day(e.at)).length],
+  ].map(([k, v]) => `<div class="kpi"><small>${k}</small><div>${v}</div></div>`).join("");
+  const mail = (list, none) => list.length ? list.map((e) => `<details class="ap" style="padding:.6rem .8rem"><summary style="cursor:pointer"><b>${esc(e.subject)}</b> <span class="stage">${esc(KIND[e.kind] || e.kind)}</span><div class="muted sm">${ago(e.at)} · ${esc(e.from || "")} → ${esc(e.to)}${e.bcc ? ` · bcc ${esc(e.bcc)}` : ""} · ${esc(e.status)}</div></summary><pre class="sm" style="white-space:pre-wrap;margin:.4rem 0 0">${esc(e.text)}</pre></details>`).join("") : `<p class="muted">${none}</p>`;
+  $("#stanSent").innerHTML = mail(S.sent, "Nothing sent yet.");
+  $("#stanCopied").innerHTML = mail(S.copied, "No external emails yet.");
+  $("#stanEsc").innerHTML = mail(S.escalations, "Nothing escalated.");
+  $("#stanReviews").innerHTML = S.reviews.length ? S.reviews.map((r) => `<div class="ap" style="padding:.6rem .8rem"><b>${esc(r.task)}</b> <span class="stage ${r.pass ? "posted" : "failed"}">${r.pass ? "passed" : "sent back"}</span><div class="muted sm">${ago(r.at)} · ${esc(r.client || "")} · ${esc(r.department || "")}</div><div class="sm">${esc(r.text.replace(/^QA: /, ""))}</div></div>`).join("") : `<p class="muted">No reviews yet.</p>`;
+}
 
 // ---- marketing team: scheduler with platform previews, masters, repurposing
 let M = null, mkDay = new Date().toISOString().slice(0, 10), mkEditing = null, mkPicked = false;

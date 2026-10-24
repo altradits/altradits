@@ -54,6 +54,22 @@ export async function GET(request) {
   }
 
   if (u.searchParams.get("view") === "marketing") return json(await marketingView());
+
+  // Stan's desk: everything Stan sent, was copied on and reviewed (read-only, for Stanley to monitor).
+  if (u.searchParams.get("view") === "stan") {
+    const STAN = "stan@altradits.com";
+    const mail = await getMany("email", await listIds("emails", 400));
+    const tasks = await allTasks();
+    const reviews = tasks.flatMap((t) => t.history.filter((h) => /^QA: /.test(h.text)).map((h) => ({ at: h.at, task: t.title, client: t.client, department: t.department, pass: h.text.startsWith("QA: passed"), text: h.text })))
+      .sort((a, b) => b.at.localeCompare(a.at)).slice(0, 60);
+    const pick = (e) => ({ at: e.at, to: e.to, from: e.from, subject: e.subject, kind: e.kind, status: e.status, bcc: e.bcc || null, text: (e.text || "").slice(0, 400) });
+    return json({
+      sent: mail.filter((e) => (e.from || "").includes(STAN)).slice(0, 60).map(pick),
+      copied: mail.filter((e) => e.cc === STAN).slice(0, 60).map(pick),
+      escalations: mail.filter((e) => e.kind === "owner").slice(0, 30).map(pick),
+      reviews,
+    });
+  }
   if (u.searchParams.get("view") === "subscribers") {
     const { subscribersView, subscribersCsv } = await import("../lib/subscribers.js");
     if (u.searchParams.get("format") === "csv") return new Response(await subscribersCsv(), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="altradits-subscribers.csv"', "Cache-Control": "no-store" } });

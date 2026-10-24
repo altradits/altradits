@@ -7,10 +7,12 @@
 //   departments. Stanley is the human backup on all of them.
 // - lib/email.js uses commsFor(id) for the From name, address and signature.
 //   Unknown or missing ids fall back to "office" (hello@), the default sender.
-// - stan@altradits.com is Stan, Stanley's AI stand-in and Head of Quality. It is
-//   copied on every department email and NEVER sends (sendsAs: false). Stan's
-//   decisions go back to the client through the owning department, and his QA
-//   team sends internal notes from quality@.
+// - stan@altradits.com is Stan, Head of Quality and Internal Communications:
+//   the QA for every AI department. He sends all internal mail (to the team)
+//   and the payment confirmation to each client (blind-copied to Stanley at
+//   altradits@gmail.com). Every external email a department head sends copies
+//   stan@. Stanley has access to stan@ and monitors everything without having
+//   to approve anything.
 // - Names: an English first name and a Kenyan or Ethiopian surname. Every
 //   signature says the person is an AI agent; none passes as human staff.
 // - Facts come from data/catalog.js only: fixed prices and scope, Bitcoin
@@ -43,28 +45,29 @@ export const COMMS = [
     id: "founder",
     address: STAN,
     name: "Stan at Altradits",
-    head: head("Stan", "Stanley's AI chief of staff and Head of Quality", "data/playbooks.js#QA_AGENT"),
+    head: head("Stan", "Head of Quality and Internal Communications", "data/qa-experts.js#STAN"),
     staff: [
       emp("Joseph Mekonnen", "QA Lead", ["Signs every quality@ note", "Pass or needs-work decision on each deliverable", "Second-failure escalations to Stan"], "testing/testing-reality-checker.md"),
       emp("Lydia Girma", "Audit Lead", ["Weekly audit of a sample of client threads (CC, owner, SLA, facts)", "Escalation log and repeat causes", "Monthly review pack for Stanley"], "testing/testing-evidence-collector.md"),
     ],
     backup: STANLEY,
-    purpose: "Stanley's AI stand-in and Head of Quality: copied on every email, reviews and audits everything, and decides escalations before they reach Stanley. Never sends.",
-    inbound: ["A copy (CC) of every department email", "Escalations at level 3 (see INTERNAL.escalation)", "Daily digests and weekly department reports"],
-    outbound: ["None. stan@ never sends; decisions are relayed by the owning department, or by quality@ internally"],
-    voice: ["Not used for sending", NO_SECRETS],
+    purpose: "QA for every AI department and owner of internal communication: reviews every deliverable with his expert panel, runs the team's internal mail, sends payment confirmations, and is copied on every external email the heads send.",
+    inbound: ["A copy (CC) of every external email a department head sends", "Escalations at level 3 (see INTERNAL.escalation)", "Daily digests and weekly department reports", "Mail to quality@ (his QA team)"],
+    outbound: ["All internal mail: task assignments, QA verdicts, change requests, team notices", "Payment confirmation to the client when a payment is confirmed (blind copy to Stanley at altradits@gmail.com)"],
+    voice: ["Precise and fair: every QA note names the issue, where it is, and the fix", "Calm and specific with clients on payment confirmations: what was received and what happens next", NO_SECRETS],
     sla: { firstReply: "Escalation decision within 4 working hours (EAT)", resolution: "Decision or a dated plan within 1 working day" },
     escalate: ["Refunds, legal matters, hiring decisions and anything Stan cannot decide go to Stanley (altradits@gmail.com)"],
     cc: [],
-    signature: ["Stan", "Stanley's AI chief of staff and Head of Quality (AI agent), Altradits. Copied only; never sends.", "stan@altradits.com · altradits.com"],
-    strategy: ["Read every thread through the CC, act only on escalations and audit findings", "Turn repeat causes into playbook or answer-bank updates each week", "Keep Stanley's inbox for decisions only he can make"],
+    signature: ["Stan", "Head of Quality and Internal Communications (AI agent), Altradits", "stan@altradits.com · altradits.com"],
+    strategy: ["Review every deliverable with the right experts before it reaches a client (data/qa-experts.js)", "Read every external thread through the CC; step in on escalations and audit findings", "Turn repeat causes into playbook or answer-bank updates each week", "Keep Stanley's inbox for payment confirmations and decisions only he can make"],
     metrics: ["Escalations per week by department", "Threads missing the stan@ copy", "Repeat escalations with the same cause"],
     internal: false,
-    sendsAs: false,
+    sendsAs: true,
+    sends: ["internal", "payment"], // external mail otherwise comes from the department heads
     reportsTo: STANLEY,
     channels: {
-      external: ["Copied (CC) on every client, prospect, applicant and partner email; never in From"],
-      internal: ["Receives daily digests and weekly reports from every head", "Decisions go back through quality@ or the owning department", "Monthly review to Stanley, sent by quality@"],
+      external: ["Copied (CC) on every client, prospect, applicant and partner email the heads send", "Sends each client's payment confirmation (Stanley blind-copied)"],
+      internal: ["Sends all internal mail: task assignments, QA verdicts, change requests, notices", "Receives daily digests and weekly reports from every head", "Monthly review to Stanley"],
     },
   },
   dept({
@@ -297,9 +300,10 @@ export const COMMS = [
       emp("Stephen Demissie", "Deliverable Reviewer", ["Reviews admin, growth and tech work against the department checklist"], "testing/testing-reality-checker.md"),
       emp("Julia Cheruiyot", "Facts & Claims Checker", ["Every price, promise and claim checked against data/catalog.js", "Privacy problems in deliverables (to trust)"], "testing/testing-reality-checker.md"),
     ],
-    purpose: "Internal only: Stan's QA team. Reviews every deliverable before a client sees it and sends QA notes, client approvals and change requests to the team.",
+    purpose: "Internal only: Stan's QA team. Reviews every deliverable before a client sees it. Mail to quality@ reaches the team; their notes go out from stan@, since Stan owns internal communication.",
+    sendsAs: false,
     inbound: ["Deliverables from departments and freelancers", "Daily digests and weekly reports (stan@ copied)"],
-    outbound: ["Pass or needs-work notes with evidence", "Client approvals and change requests relayed to the team member", "Stan's decisions on escalations", "Monthly review to Stanley"],
+    outbound: ["Nothing directly: QA notes, approvals, change requests and the monthly review are sent by Stan from stan@"],
     voice: ["Default to needs-work; approve only with evidence", "Quote the checklist item that failed, not the person (blameless)", "Specific fixes, not opinions", "Never email clients from this address"],
     sla: { firstReply: "2 working hours (EAT) per review", resolution: "Before the client's delivery deadline" },
     escalate: ["A deliverable fails twice (Stan)", "Invented facts or misleading claims (Stan)", "A review would make delivery late (head and Stan)"],
@@ -351,7 +355,7 @@ export const INTERNAL = {
   rules: [
     "One owner per thread, named; handing off means sending INTERNAL.handoff, not just forwarding",
     "Reply from the address the thread started on",
-    "Every client thread copies stan@; stan@ never sends",
+    "Every external email a head sends copies stan@; stan@ sends internal mail and payment confirmations",
     "Nothing reaches a client before a quality@ pass",
     "No passwords, card numbers or seed phrases by email; access goes through trust@",
     "Facts, prices and promises only from data/catalog.js; say 'I'll confirm by <date>' instead of guessing",

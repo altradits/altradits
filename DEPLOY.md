@@ -131,8 +131,9 @@ altradits.com/templates.html offers six free, complete kits (data/templates.js):
 
 Every department emails from its official address, signed by its AI head with the Altradits logo in the brand colours (data/team-comms.js; admin → Team shows each department's AI staff, the internal protocol and Stan's QA panel). The Front Office (hello@) sends anything without a more specific department.
 
-- **stan@altradits.com never sends.** Stan (Stanley's AI stand-in and Head of Quality) is copied on every email that leaves, and reviews every deliverable with a panel of expert reviewers picked for the task (data/qa-experts.js) before it reaches a client.
-- Emails about a **paying client** (after a deposit) are **blind-copied to altradits@gmail.com**. `EMAIL_BCC=none` turns that off.
+- **Department heads send all external email**, each from its official address, with **stan@altradits.com copied**.
+- **Stan (stan@altradits.com), Head of Quality and Internal Communications,** reviews every deliverable with a panel of expert reviewers picked for the task (data/qa-experts.js), sends all internal mail (task assignments, QA notes, escalations to you) and sends each client's **payment confirmation, blind-copied to altradits@gmail.com**. `EMAIL_BCC=none` turns that blind copy off.
+- You monitor everything from stan@ and admin → **Stan** (reviews, mail he sent, mail he was copied on, escalations), with nothing to approve.
 - Departments: hello@ (Front Office), care@, orders@, social@, admin@, assistant@, tech@, finance@, trust@, marketing@, careers@, quality@ (internal QA notes).
 
 Set up in DirectAdmin → E-mail Manager (one time):
