@@ -295,6 +295,25 @@ test("node down: a payment confirmed by hand gets its sats and payment hash from
   assert.equal(o.p.payment.sweptFrom, "Wallet of Satoshi");
   const official = (await all()).find((e) => e.to === "offline@shop.co" && /^Your official receipt R-/.test(e.subject));
   assert.deepEqual(official.files, [`altradits-receipt-${r.no}.pdf`]);
+  // To the client who paid; Stanley, who moved the sats, only gets the blind copy.
+  const receipts = (await all()).filter((e) => /^Your official receipt R-/.test(e.subject));
+  assert.deepEqual(receipts.map((e) => e.to), ["offline@shop.co"]);
+  assert.equal(official.bcc, "altradits@gmail.com");
+  assert.equal(o.p.payment.receiptOwed, false);
+  // A client with no email yet: the receipt waits, and goes the moment they give one; never to an Altradits address.
+  const q = await crm.createOrder(orderable("hourly"));
+  q.p.lightning = { provider: "address", bolt11: pr, sats: 5000 };
+  q.p.payment = { method: "Bitcoin (Lightning)", reference: pr.slice(-24) };
+  await crm.confirmPayment(q.lead, q.p, "", { approved: true });
+  q.p.sweep = { paymentHash: "cd".repeat(32), provider: "lnd" };
+  assert.equal(await fin.confirmOnNode(q.lead, q.p, { sats: 5000, reference: "cd".repeat(32), at: new Date().toISOString() }), null);
+  assert.equal(q.p.payment.receiptOwed, true);
+  q.lead.email = "stan@altradits.com";
+  assert.equal(await fin.sendOfficialReceipt(q.lead, q.p), null); // never to us
+  q.lead.email = "late@shop.co";
+  const late = await fin.sendOfficialReceipt(q.lead, q.p);
+  assert.ok(late.no);
+  assert.ok((await all()).some((e) => e.to === "late@shop.co" && e.subject.startsWith(`Your official receipt ${late.no}`)));
   const pdf = fin.receiptPdf(o.lead, o.p, r.no).toString("latin1");
   assert.ok(pdf.includes("Amount received: 61,000 sats"));
   assert.ok(pdf.includes("Received through our backup Lightning address while our node was offline") && pdf.includes("Altradits node on")); // wraps across two lines

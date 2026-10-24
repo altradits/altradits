@@ -234,7 +234,7 @@ dd{margin:0;overflow-wrap:anywhere}
       <h3 style="font-size:1rem;margin:1.2rem 0 .5rem">Every payment</h3><div id="finList" style="overflow-x:auto"></div>
     </div>
     <div class="panel" id="heldPanel" hidden><h2>Waiting to move to the node</h2>
-      <p class="muted" style="margin-top:0">Paid while the node was down, so the money sits in the backup wallet. No receipt has gone out yet. For each one, make a node invoice for the exact sats and pay it from that wallet's app. When the node shows it settled (checked hourly, or now with Check), the client gets their official receipt automatically.</p>
+      <p class="muted" style="margin-top:0">Paid while the node was down, so the money sits in the backup wallet. No receipt has gone out yet. For each one, make a node invoice for the exact sats and pay it from that wallet's app. When the node shows it settled (checked hourly, or now with Check), the official receipt goes automatically to the client who paid, not to you (you only get your usual blind copy).</p>
       <div class="row" style="margin:0 0 .6rem"><button class="btn" id="heldCheck">Check now</button></div>
       <div id="heldList"></div>
     </div>
