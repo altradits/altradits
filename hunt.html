@@ -46,11 +46,14 @@ ol.steps p{margin:0}
 .fine{color:var(--muted);font-size:.88rem;margin:1.4rem 0 0}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:no-preference){.box{animation:in .4s ease}@keyframes in{from{opacity:0;transform:translateY(.4rem)}}}
+.topnav{display:flex;gap:1.1rem}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted)}
+.topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><a href="/#quick">Find a job</a></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">VA</a><a href="/bitcoin">Bitcoin</a><a href="/products">Products</a></nav></div>
   <main class="card">
     <h1>Treasure hunt <span id="num"></span></h1>
     <p class="lead">Every post we publish this week hides one letter of a secret word. Find them all, crack the word, earn a one-time <b><span class="pct">10</span>% off</b> any order.</p>
@@ -80,7 +83,7 @@ ol.steps p{margin:0}
       <h2>Your one-time code</h2>
       <div class="coupon" id="code"></div>
       <p style="margin:0 0 .8rem"><span class="pct">10</span>% off one order. It works once, and expires on <span id="exp"></span>.</p>
-      <div class="row"><a class="btn" href="/#quick">Use it on a job</a><button class="btn light" id="copyCode" type="button">Copy code</button></div>
+      <div class="row"><a class="btn" href="/va">Use it on a job</a><button class="btn light" id="copyCode" type="button">Copy code</button></div>
     </section>
 
     <section class="box" id="shout" hidden>

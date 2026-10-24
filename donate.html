@@ -40,11 +40,14 @@ textarea{min-height:4.5rem;resize:vertical}
 .thanks h2{font:800 1.6rem 'Bricolage Grotesque',sans-serif;margin:.2rem 0}
 .note{color:var(--muted);font-size:.9rem;margin:1.2rem 0 0}
 @media (max-width:420px){.amounts{grid-template-columns:repeat(2,1fr)}.row2{grid-template-columns:1fr}}
+.topnav{display:flex;gap:1.1rem}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted)}
+.topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><a class="jobs" href="/#quick">Find a job</a></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">VA</a><a href="/bitcoin">Bitcoin</a><a href="/products">Products</a></nav></div>
   <h1>Fund Bitcoin <em>education.</em></h1>
   <p class="lead" id="purpose">Help people and businesses in our community learn to earn, save and pay in Bitcoin instead of fiat currency.</p>
   <p class="raised" id="raised" hidden></p>

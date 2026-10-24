@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="/assets/favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Free Templates · Altradits</title>
-<meta name="description" content="Free, complete step-by-step kits for the jobs owners struggle with most: inbox, social media, invoicing, customer replies, outreach and hiring.">
+<title>Products · Altradits</title>
+<meta name="description" content="Digital products a VA makes that you can reuse: templates, guides, tutorials and art. Start with free, complete kits.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -19,7 +19,9 @@ a{color:var(--blue)}
 .wrap{max-width:72rem;margin:0 auto;padding:1.25rem 1rem 4rem}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
 .top img{height:2.5rem;width:auto;display:block}
-.top a.jobs{font-weight:600;text-decoration:none;color:var(--muted)}
+.topnav{display:flex;gap:1.1rem}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted)}
+.topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
 .top a.jobs:hover{color:var(--ink)}
 h1{font:800 clamp(2rem,6vw,3.3rem)/1.04 'Bricolage Grotesque',sans-serif;margin:0 0 .7rem;max-width:44rem;letter-spacing:-.01em}
 h1 em{font-style:normal;color:var(--blue)}
@@ -65,9 +67,9 @@ h1 em{font-style:normal;color:var(--blue)}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><a class="jobs" href="/#quick">Find a job</a></div>
-  <h1>Free templates for the jobs you <em>keep putting off.</em></h1>
-  <p class="lead">Complete, step-by-step kits with every template you need. Free for your email.</p>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">VA</a><a href="/bitcoin">Bitcoin</a><a href="/products" aria-current="page">Products</a></nav></div>
+  <h1>Tools a VA makes, <em>yours to reuse.</em></h1>
+  <p class="lead">Templates, guides, tutorials and art from real VA work. Start with these complete kits, free for your email.</p>
 
   <ol class="ladder" id="ladder" aria-label="Three ways to get it done"></ol>
   <div class="kits" id="kits"><p class="msg">Loading the kits…</p></div>
