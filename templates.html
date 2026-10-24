@@ -127,8 +127,9 @@ if (data) {
       form.hidden = true;
       const got = $(".got", form.closest(".kit"));
       got.hidden = false;
-      got.innerHTML = `<b>It's yours. We've also emailed it to ${esc(email)}.</b>
-        <div class="row">${d.files.map((f) => `<a class="btn" href="${esc(f.url)}" download>Download ${esc(TYPES[f.type] || f.type)}</a>`).join("")}</div>
+      // Already on our list: the kit goes to that inbox only, never to this page.
+      got.innerHTML = `${d.files ? `<b>It's yours. We've also emailed it to ${esc(email)}.</b>
+        <div class="row">${d.files.map((f) => `<a class="btn" href="${esc(f.url)}" download>Download ${esc(TYPES[f.type] || f.type)}</a>`).join("")}</div>` : `<b>Check your inbox: we've sent the kit to ${esc(email)}.</b>`}
         <div class="next"><b>Rather not do it alone?</b>
           <a href="/?buy=${esc(kit.offers.together.id)}"><span>Do it together: we finish it with you (2 hours)</span><span>${money(kit.offers.together.price)}</span></a>
           ${kit.offers.done.map((o) => `<a href="/?buy=${esc(o.id)}"><span>Done for you: ${esc(o.name)}</span><span>${money(o.price)}${o.monthly ? "/mo" : ""}</span></a>`).join("")}

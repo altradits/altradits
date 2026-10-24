@@ -164,8 +164,9 @@ const qa = (p, pass = true, issues = [], fail = () => !pass) => {
     return tool("qa_plan", { areas: ids.map((id) => ({ id, criteria: [`${id} criterion`] })) });
   }
   if (name === "area_verdict") {
-    const crits = [...p.messages[0].content.matchAll(/^- (.+ criterion)$/gm)].map((m) => m[1]);
-    return tool("area_verdict", { items: crits.map((c) => ({ criterion: c, pass: !fail(c.split(" ")[0]), evidence: "line 1", fix: issues[0] || "fix it" })) });
+    const crits = [...p.messages[0].content.matchAll(/^\d+\. (.+ criterion)$/gm)].map((m) => m[1]);
+    // Reworded on purpose: verdicts are matched by number, not by exact text.
+    return tool("area_verdict", { items: crits.map((c, i) => ({ index: i + 1, criterion: `Re: ${c}`, pass: !fail(c.split(" ")[0]), evidence: "line 1", fix: issues[0] || "fix it" })) });
   }
   return tool("stan_decision", { approve: true, reason: "All areas approved", issues: [], subject: "Your captions are ready", body: "Three captions in your voice, ready to post." });
 };

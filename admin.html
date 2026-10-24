@@ -507,7 +507,7 @@ function renderOps() {
     <div class="meta">${esc(t.client)} · ${esc(t.department)} · ~${t.estimateHours}h${t.due ? ` · due ${esc(t.due)}` : ""} · ${t.assignee ? esc(t.assignee) : t.agent ? esc(t.agent) : t.status === "in_progress" ? "you" : "nobody yet"}${t.attempts ? ` · attempt ${t.attempts}` : ""}${t.satisfaction ? ` · rated ${t.satisfaction.rating}/5` : ""}</div>
     <pre>${esc(t.details)}</pre>
     ${t.question ? `<p><b>Agent asked the client:</b> ${esc(t.question)}</p>` : ""}
-    ${t.qa ? `<p class="muted">QA: ${t.qa.pass ? "passed" : esc(t.qa.issues.join("; "))}</p>` : ""}
+    ${t.qa ? `<p class="muted">QA: ${t.qa.panel ? (t.qa.final?.approve ? "approved by Stan" : t.qa.final ? `sent back by Stan: ${esc((t.qa.final.issues || []).join("; "))}` : `${t.qa.panel.filter((p) => p.approved).length}/${t.qa.panel.length} areas approved`) : t.qa.pass ? "passed" : esc((t.qa.issues || []).join("; "))}</p>` : ""}
     ${t.deliverable ? `<details><summary>Deliverable: ${esc(t.deliverable.title || "")} (${t.hoursLogged}h)</summary>
       <p>${esc(t.deliverable.summary || t.deliverable.note || "")}</p>
       ${t.deliverable.url ? `<p><a href="${esc(t.deliverable.url)}" target="_blank" rel="noopener">Open link</a></p>` : ""}

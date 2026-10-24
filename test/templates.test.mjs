@@ -79,7 +79,13 @@ test("downloads: a real PDF with the next steps, and the spreadsheet; wrong toke
 });
 
 test("follow-ups: one a day at most, from the newest kit, climbing the ladder, then stop", async () => {
+  // Nothing until the address is confirmed by downloading from the emailed link.
+  assert.equal((await subs.runNurture(new Date(Date.now() + 30 * 864e5))).sent, 0);
+  const mailed = (await emails()).find((e) => /Your free kit: Inbox Zero/.test(e.subject));
+  const c = mailed.text.match(/&c=([\w-]+)/)[1];
+  await get(`?d=inbox&f=inbox-zero-in-60-minutes.pdf&s=${sub.id}&t=${sub.t}&c=${c}`);
   const s = await getJSON(`sub:${sub.id}`);
+  assert.equal(s.confirmed, true);
   const start = Date.parse(s.kits[1].at);
   const at = (days) => new Date(start + days * 864e5 + 60e3);
   assert.equal((await subs.runNurture(at(1))).sent, 0);
@@ -91,6 +97,8 @@ test("follow-ups: one a day at most, from the newest kit, climbing the ladder, t
   mail = (await emails()).find((e) => e.subject === "10 captions, done today");
   assert.equal(mail.cta.url, "https://altradits.test/?buy=q-captions");
   assert.equal((await subs.runNurture(at(10))).sent, 1);
+  mail = (await emails()).find((e) => e.subject === "Show up every week without thinking about it");
+  assert.equal(mail.cta.url, "https://altradits.test/?buy=social-management"); // day 10: the monthly service
   // The social sequence is done; the inbox one (older) continues.
   assert.equal((await subs.runNurture(at(11))).sent, 1);
   assert.ok((await emails()).some((e) => e.subject === "The one inbox habit that sticks"));
@@ -178,4 +186,41 @@ test("heads send external mail with stan@ copied; Stan sends internal mail and p
   const pdf = subs.renderFile(KITS[0], KITS[0].files[0]).body.toString("latin1");
   assert.match(pdf, /\(hello@altradits\.com\) Tj/);
   assert.match(pdf, /\(Page 1 of \d\) Tj/);
+});
+
+test("security: someone else typing a subscriber's address gets nothing of theirs, and can't undo an unsubscribe or flood them", async () => {
+  const { clientIp, EMAIL_RE } = await import("../lib/http.js");
+  const { ownLinksOnly } = await import("../lib/qa.js");
+  // Rate limits use the proxy's address (right-most), not a forged first hop.
+  assert.equal(clientIp(new Request("https://x/", { headers: { "x-forwarded-for": "6.6.6.6, 9.9.9.9" } })), "9.9.9.9");
+  assert.equal(EMAIL_RE.test("x,victim@y.com"), false);
+  const first = await (await post({ kit: "replies", email: "victim@corp.co", name: "Vee" }, "7.7.7.1")).json();
+  assert.ok(first.sub && first.files.length); // the new subscriber's own page gets the download
+  assert.doesNotMatch(first.files[0].url, /&c=/); // page links can't confirm the address
+  // A stranger re-submits the address with a phishing "name": no token, no rename.
+  const r = await (await post({ kit: "replies", email: "victim@corp.co", name: "there. Verify at evil.example" }, "7.7.7.2")).json();
+  assert.deepEqual(r, { sent: true });
+  const id = first.sub.id;
+  assert.equal((await getJSON(`sub:${id}`)).name, "Vee");
+  // Names that aren't plain first names are dropped on sign-up.
+  const odd = await (await post({ kit: "replies", email: "odd@corp.co", name: "Visit evil.example now" }, "7.7.7.3")).json();
+  assert.equal((await getJSON(`sub:${odd.sub.id}`)).name, "");
+  // At most two kit emails a day to one address, however many requests.
+  const before = (await emails()).filter((e) => e.to === "victim@corp.co").length;
+  for (let i = 0; i < 6; i++) await post({ kit: "replies", email: "victim@corp.co" }, `7.7.8.${i}`);
+  assert.ok((await emails()).filter((e) => e.to === "victim@corp.co").length - before <= 1);
+  // After unsubscribing, a sign-up by someone else only sends a confirmation link.
+  const s = await getJSON(`sub:${id}`);
+  await get(`?unsub=${id}&t=${s.t}`);
+  assert.equal((await getJSON(`sub:${id}`)).unsubscribed, true);
+  const { getLead } = await import("../lib/crm.js");
+  assert.equal((await getLead(s.leadId)).marketingOptOut, true);
+  // Mail apps can unsubscribe in one click with a POST (RFC 8058).
+  const postUnsub = await api.POST(new Request(`https://altradits.test/api/kits?unsub=${odd.sub.id}&t=${odd.sub.t}`, { method: "POST", body: "List-Unsubscribe=One-Click" }));
+  assert.deepEqual(await postUnsub.json(), { ok: true });
+  // CSV export can't carry spreadsheet formulas.
+  const csv = await subs.subscribersCsv();
+  assert.doesNotMatch(csv, /(^|,)=/m);
+  // Stan's drafted client message may only link to our own site.
+  assert.equal(ownLinksOnly("Pay at https://evil.example/pay or see https://altradits.com/portal"), "Pay at [link removed] or see https://altradits.com/portal");
 });
