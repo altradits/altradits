@@ -29,8 +29,8 @@ export const RULES = {
 
 export const PILLARS = [
   { id: "social", name: "Social media & content", color: "#E11D74" },
-  { id: "admin", name: "Office administration", color: "#2F5BEA" },
-  { id: "personal", name: "Personal assistance", color: "#12A37F" },
+  { id: "admin", name: "Office administration", color: "#2A5A8F" },
+  { id: "personal", name: "Personal assistance", color: "#0B7A5F" },
   { id: "growth", name: "Sales & customer care", color: "#E4572E" },
   { id: "tech", name: "Web, automation & Bitcoin", color: "#8B5CF6" },
 ];
