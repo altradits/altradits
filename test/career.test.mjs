@@ -216,3 +216,16 @@ Founder and engineer who designed, built and runs **Altradits**, a global virtua
   assert.match(text, /## Professional Summary\nSoftware engineer and founder of Altradits/);
   assert.match(text, /- kept as is/);
 });
+
+test("Stanley's CV: one A4 page, contacts are only the website and stan@altradits.com, and its numbers come from the live catalog", async () => {
+  const { curatedCv } = await import("../lib/career.js");
+  const { markdownToPdf } = await import("../lib/pdf.js");
+  const { QUICK_JOBS, SERVICES } = await import("../data/catalog.js");
+  const cv = curatedCv();
+  const pages = (markdownToPdf(cv, "CV").toString("latin1").match(/\/Type \/Page\b/g) || []).length;
+  assert.equal(pages, 1, "the CV must fit on one page");
+  assert.equal(cv.split("\n")[2], "Nairobi, Kenya | stan@altradits.com | altradits.com");
+  assert.doesNotMatch(cv, /gmail|linkedin|\+?\d{3}[\s-]?\d{3}[\s-]?\d{3}/i); // no other email, no LinkedIn, no phone
+  assert.doesNotMatch(cv, /\{\{\w+\}\}/); // every website number filled in
+  assert.ok(cv.includes(`${QUICK_JOBS.length} same-day quick jobs`) && cv.includes(`${SERVICES.length} larger services`));
+});
