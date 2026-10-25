@@ -90,7 +90,8 @@ function show(d) {
     <h2 style="font:800 1.4rem 'Bricolage Grotesque',sans-serif;margin:.4rem 0">${esc(d.title)}</h2>
     <span class="pill ${cls}">${esc(label)}</span>
     <dl>${d.delivery ? `<dt>Delivery</dt><dd>${esc(d.delivery)}</dd>` : ""}${d.due ? `<dt>Due</dt><dd>${esc(new Date(d.due).toLocaleDateString())}</dd>` : ""}${work ? `<dt>Work</dt><dd>${esc(work)}</dd>` : ""}</dl>
-    ${d.work?.question ? `<p><b>Our question:</b> ${esc(d.work.question)}</p>` : ""}
+    ${d.work?.question ? `<p><b>Our question:</b> ${esc(d.work.question)} <span class="note">Answer it in your workspace.</span></p>` : ""}
+    ${d.work?.message && !d.work.question ? `<div style="border-left:3px solid var(--btc);padding:.2rem 0 .2rem .8rem;margin:.6rem 0"><b>${esc(d.work.message.subject)}</b><p style="white-space:pre-wrap;margin:.2rem 0">${esc(d.work.message.text)}</p></div>` : ""}
     ${d.balance ? `<p><b>Balance due: ${fmt(d.balance.sats)}.</b> Scan with any Lightning wallet:</p><div class="qr">${d.balance.qr}</div><p class="actions"><a class="btn btc" href="lightning:${esc(d.balance.bolt11)}">Open in my wallet</a></p>` : ""}
     ${d.status === "being confirmed" ? `<p class="note">Your payment is recorded and being confirmed by hand. Your receipt appears here once it's confirmed on the Altradits node.</p>` : ""}
     <div class="actions">${d.portal ? `<a class="btn" href="${esc(d.portal)}">${d.work?.ready || d.work?.question ? "Open my workspace" : "Open my workspace (send files, follow the work)"}</a>` : ""}${d.receipt ? `<button type="button" class="btn line" id="rcpt">Download my receipt</button>` : ""}</div>`;

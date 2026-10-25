@@ -1,7 +1,7 @@
 // Admin API for Stanley's dashboard. Every request needs
 // Authorization: Bearer <ADMIN_TOKEN>.
-import { json, readBody, clean, siteUrl, safeEqual } from "../lib/http.js";
-import { listIds, getMany, getJSON, setJSON, usingRedis } from "../lib/store.js";
+import { json, readBody, clean, siteUrl, safeEqual, clientIp } from "../lib/http.js";
+import { listIds, getMany, getJSON, setJSON, usingRedis, hit, peek } from "../lib/store.js";
 import {
   STAGES, getLead, saveLead, logEvent, getProposal, saveProposal, publishProposal,
   recomputeTotals, proposalUrl, publicLead, confirmPayment,
@@ -34,8 +34,17 @@ function authorized(request) {
 
 const deny = () => json({ error: process.env.ADMIN_TOKEN ? "Wrong admin token." : "Set ADMIN_TOKEN in your environment first." }, 401);
 
+// Wrong tokens are throttled: 20 per connection per 15 minutes, then a pause.
+async function gate(request) {
+  const key = `rl:admin:fail:${clientIp(request)}`;
+  if ((await peek(key)) >= 20) return json({ error: "Too many wrong tokens. Wait 15 minutes and try again." }, 429);
+  if (authorized(request)) return null;
+  await hit(key, 900);
+  return deny();
+}
+
 export async function GET(request) {
-  if (!authorized(request)) return deny();
+  { const g = await gate(request); if (g) return g; }
   const u = new URL(request.url);
 
   if (u.searchParams.get("view") === "jobs") {
@@ -218,17 +227,46 @@ async function resolveApproval(request, body) {
     }
   } else if (a.type === "payment_check") {
     const p = await getProposal(a.payload.proposalId);
+    // Already confirmed by the node meanwhile: resolve the approval, change nothing else
+    // (and don't save the copies loaded above over fresher data).
+    if (p?.status === "paid") {
+      Object.assign(a, { status: "approved", resolvedAt: new Date().toISOString(), note: `${note ? `${note} · ` : ""}already confirmed by the node` });
+      await setJSON(`approval:${a.id}`, a);
+      return json({ ok: true, approval: a });
+    }
     if (p && lead) {
       if (approve) {
-        await confirmPayment(lead, p, note, { approved: true });
+        const { acquireLock } = await import("../lib/store.js");
+        const release = await acquireLock(`confirm:${p.id}`, 300);
+        if (!release) return json({ error: "This payment is being confirmed right now. Refresh in a moment." }, 409);
+        try {
+          const latest = await getProposal(p.id);
+          if (latest?.status !== "paid") await confirmPayment(lead, latest || p, note, { approved: true });
+        } finally { await release(); }
+        // Return here: the copies loaded above are stale now and must not be saved over the confirmed order.
+        Object.assign(a, { status: "approved", resolvedAt: new Date().toISOString(), note });
+        await setJSON(`approval:${a.id}`, a);
+        return json({ ok: true, approval: a });
       } else {
-        p.status = "accepted";
+        // Decline under the same lock, on the latest record: never undo a confirmation that just landed.
+        const { acquireLock } = await import("../lib/store.js");
+        const release = await acquireLock(`confirm:${p.id}`, 300);
+        if (!release) return json({ error: "This payment is being confirmed right now. Refresh in a moment." }, 409);
+        try {
+          const latest = await getProposal(p.id);
+          if (latest?.status === "paid") {
+            Object.assign(a, { status: "approved", resolvedAt: new Date().toISOString(), note: "already confirmed by the node" });
+            await setJSON(`approval:${a.id}`, a);
+            return json({ ok: true, approval: a });
+          }
+          latest.status = "accepted";
+          await saveProposal(latest);
+        } finally { await release(); }
         logEvent(lead, "Payment not found yet.");
         await sendEmail({ to: lead.email, leadId: lead.id, dept: "orders", approved: true, subject: "We couldn't find your payment yet",
           text: note || `Hi ${lead.name || "there"}, we haven't received the payment yet. Could you reply with the transaction reference or a screenshot? Sometimes it just takes a little longer.` });
       }
-      await saveProposal(p);
-      await saveLead(lead);
+      await saveLead(lead); // the order itself was saved under the lock above
     }
   } else if (lead && note) {
     // trial_task, call_request, escalation: the note goes to the client.
@@ -244,7 +282,7 @@ async function resolveApproval(request, body) {
 }
 
 export async function POST(request) {
-  if (!authorized(request)) return deny();
+  { const g = await gate(request); if (g) return g; }
   const body = await readBody(request);
 
   if (body.action === "approval") return resolveApproval(request, body);

@@ -85,7 +85,7 @@ function onboardingForm() {
     <label>How you'll grant access <small>(e.g. "delegate Gmail to the address we send", "Bitwarden share")</small><input name="access" value="${esc(o.access)}"></label>
     <label>Your voice <small>(3 words, or examples of messages you like)</small><input name="voice" value="${esc(o.voice)}"></label>
     <label>Your working hours and time zone<input name="hours" value="${esc(o.hours)}"></label>
-    <label>Best way to reach you<select name="channel">${["Email", "WhatsApp", "Portal only"].map((x) => `<option ${o.channel === x ? "selected" : ""}>${x}</option>`).join("")}</select></label>
+    <label>Best way to reach you<select name="channel">${["Email", "WhatsApp", "Portal only"].map((x) => `<option ${(o.channel || (D.client.email ? "Email" : "Portal only")) === x ? "selected" : ""}>${x}</option>`).join("")}</select></label>
     <label>Anything else<textarea name="notes">${esc(o.notes)}</textarea></label>
     <div class="row"><button class="btn primary">${D.onboarding ? "Update" : "Save and continue"}</button><span class="err" id="onbErr"></span></div></form>`;
 }
@@ -93,11 +93,12 @@ function onboardingForm() {
 function taskCard(t) {
   return `<div class="task ${t.status}"><h3>${esc(t.title)} <span class="st ${t.status}">${LABEL[t.status] || t.status}</span></h3>
     <div class="meta">${esc(DEPARTMENTS.find((d) => d.id === t.department)?.name || "")} · requested ${esc(t.createdAt.slice(0, 10))}${t.due ? ` · due ${esc(t.due)}` : ""}${t.hoursLogged ? ` · ${t.hoursLogged}h` : ""}</div>
+    ${(t.messages || []).length ? `<details class="note" style="margin:.4rem 0"${t.status === "review" ? " open" : ""}><summary style="cursor:pointer"><b>Messages from us (${t.messages.length})</b></summary>${t.messages.slice().reverse().map((m) => `<div style="margin:.5rem 0"><b>${esc(m.subject)}</b> <span class="note">${new Date(m.at).toLocaleString()}</span><p style="white-space:pre-wrap;margin:.2rem 0">${esc(m.text)}</p></div>`).join("")}</details>` : ""}
     ${t.question ? `<div class="row" style="display:block"><p><b>Question for you:</b> ${esc(t.question)}</p>
       <input placeholder="Your answer" data-ans="${t.id}"><div class="row"><button class="btn primary" data-answer="${t.id}">Send answer</button></div></div>` : ""}
     ${t.deliverable ? `<p>${esc(t.deliverable.summary)}${t.deliverable.url ? `<br><a href="${esc(t.deliverable.url)}" target="_blank" rel="noopener">Open deliverable →</a>` : ""}</p>
       ${t.deliverable.files.length ? `<div class="files">${t.deliverable.files.map((f) => `<a class="btn" href="/api/portal?c=${encodeURIComponent(c)}&task=${t.id}&file=${f.i}">⬇ ${esc(f.name)}</a>`).join("")}</div>` : ""}
-      ${t.deliverable.sources.length ? `<p class="note">Sources: ${t.deliverable.sources.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(new URL(u).hostname)}</a>`).join(", ")}</p>` : ""}` : ""}
+      ${t.deliverable.sources.length ? `<p class="note">Sources: ${t.deliverable.sources.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc((() => { try { return new URL(u).hostname; } catch { return "source"; } })())}</a>`).join(", ")}</p>` : ""}` : ""}
     ${t.satisfaction ? `<p class="note">You rated this ${"★".repeat(t.satisfaction.rating)}${"☆".repeat(5 - t.satisfaction.rating)}</p>` : ""}
     ${t.status === "review" ? `<div class="row"><span>Rate it:</span><span class="stars" data-stars="${t.id}">${[1, 2, 3, 4, 5].map((n) => `<button type="button" data-star="${n}" data-for="${t.id}" aria-label="${n} star${n > 1 ? "s" : ""}">★</button>`).join("")}</span>
       <input placeholder="Comment (optional)" data-cm="${t.id}" style="flex:1;min-width:10rem"><button class="btn ok" data-approve="${t.id}">Approve</button></div>
@@ -109,7 +110,7 @@ function render() {
   const open = D.tasks.filter((t) => !["done", "cancelled"].includes(t.status));
   const done = D.tasks.filter((t) => t.status === "done");
   const pct = D.hours.plan ? Math.min(100, Math.round((D.hours.used / D.hours.plan) * 100)) : 0;
-  $("#app").innerHTML = `<h1 style="font-size:1.7rem;margin-bottom:1.1rem">Hi ${esc(D.client.name || "there")} 👋</h1>
+  $("#app").innerHTML = `<h1 style="font-size:1.7rem;margin-bottom:1.1rem">${D.client.orderName && !D.client.email ? `Your order <code>${esc(D.client.orderName)}</code>` : `Hi ${esc(D.client.name || "there")} 👋`}</h1>
     ${D.onboarding ? "" : onboardingForm()}
     <div class="grid"><div>
       <form class="card" id="newTask"><h2>Request a task</h2>

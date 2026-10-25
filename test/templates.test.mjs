@@ -199,7 +199,11 @@ test("security: someone else typing a subscriber's address gets nothing of their
   const { clientIp, EMAIL_RE } = await import("../lib/http.js");
   const { ownLinksOnly } = await import("../lib/qa.js");
   // Rate limits use the proxy's address (right-most), not a forged first hop.
-  assert.equal(clientIp(new Request("https://x/", { headers: { "x-forwarded-for": "6.6.6.6, 9.9.9.9" } })), "9.9.9.9");
+  const ipOf = (xff) => clientIp(new Request("https://x/", { headers: { "x-forwarded-for": xff } }));
+  assert.equal(ipOf("6.6.6.6, 9.9.9.9"), ipOf("9.9.9.9"));
+  assert.notEqual(ipOf("6.6.6.6, 9.9.9.9"), ipOf("6.6.6.6"));
+  assert.doesNotMatch(ipOf("9.9.9.9"), /9\.9/); // stored hashed, never the address
+  assert.equal(ipOf("2001:db8:1:2:aaaa::1"), ipOf("2001:db8:1:2:bbbb::9")); // IPv6 bucketed by /64
   assert.equal(EMAIL_RE.test("x,victim@y.com"), false);
   const first = await (await post({ kit: "replies", email: "victim@corp.co", name: "Vee" }, "7.7.7.1")).json();
   assert.ok(first.sub && first.files.length); // the new subscriber's own page gets the download

@@ -2,7 +2,7 @@
 // GET  /api/portal?c=<token>                         -> onboarding, tasks, hours, referral
 // GET  /api/portal?c=<token>&task=<id>&file=<n>      -> download a deliverable file
 // POST /api/portal { c, action: "onboarding"|"task"|"answer"|"approve"|"changes", ... }
-import { holdIfUnsafe } from "../lib/screen.js";
+import { holdIfUnsafe, screen, describe, defang } from "../lib/screen.js";
 import { reopen } from "../lib/qa.js";
 import { json, readBody, clean, clientIp } from "../lib/http.js";
 import { hit } from "../lib/store.js";
@@ -27,13 +27,14 @@ const forClient = (t) => ({
     sources: t.deliverable.sources || [], by: t.deliverable.by || null,
   } : null,
   satisfaction: t.satisfaction || null, hoursLogged: t.hoursLogged, createdAt: t.createdAt,
+  messages: (t.messages || []).slice(-5),
   history: t.history.filter((h) => h.by !== "ops").slice(-8),
 });
 
 async function view(lead) {
   const tasks = (await allTasks()).filter((t) => t.leadId === lead.id);
   return {
-    client: { name: lead.name, company: lead.company, email: lead.email },
+    client: { name: lead.name || lead.pickup || "", company: lead.company, email: lead.email, orderName: lead.pickup || null },
     onboarding: lead.onboarding || null,
     tasks: tasks.map(forClient),
     hours: { used: hoursThisMonth(tasks), plan: await planHours(lead) },
@@ -44,7 +45,7 @@ async function view(lead) {
 export async function GET(request) {
   const u = new URL(request.url);
   const lead = await leadByPortal(u.searchParams.get("c"));
-  if (!lead) return json({ error: "Portal link not found. Use the link from your kick-off email." }, 404);
+  if (!lead) return json({ error: "Portal link not found. Use the link from your kick-off email, or open your order with its order name at altradits.com/collect." }, 404);
   kickQueue();
 
   if (u.searchParams.get("task")) {
@@ -83,6 +84,9 @@ export async function POST(request) {
     if (/password\s*[:=]|pwd\s*[:=]|\bpin\s*[:=]/i.test(JSON.stringify(lead.onboarding))) {
       return json({ error: "Please don't share passwords here. Describe how you'll grant access (e.g. delegate access or a password-manager share) instead." }, 400);
     }
+    // Onboarding goes into every task brief, so it gets the same security screen as task requests.
+    const s = screen(Object.values(lead.onboarding).join("\n"));
+    if (s.flagged) return json({ error: `Please remove ${describe(s.reasons)} from your onboarding answers. Send anything like that as a task request instead, so our security check can review it first.` }, 400);
     logEvent(lead, "Completed onboarding.");
     await saveLead(lead);
     return json(await view(lead));
@@ -130,7 +134,7 @@ export async function POST(request) {
       t.status = "follow_up";
       await saveTask(t);
       await emailOwner(`Unhappy client: ${t.title} rated ${rating}/5`,
-        `${t.client} approved "${t.title}" but rated it ${rating}/5.\n\n${comment || "(no comment)"}\n\nReach out personally, then close the follow-up in the dashboard.`,
+        `${t.client} approved "${t.title}" but rated it ${rating}/5.\n\n${comment ? defang(comment) : "(no comment)"}\n\nReach out personally, then close the follow-up in the dashboard.`,
         { label: "Open tasks", url: `${base()}/admin#tasks` }, t.leadId);
     }
   } else if (body.action === "changes") {

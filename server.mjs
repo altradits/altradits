@@ -1,6 +1,7 @@
 // The whole site in one Node process: static pages + api/*.js handlers.
 // Production: HostAfrica "Setup Node.js App" (Passenger) starts it via app.cjs.
 // Local:      npm run dev, then open http://localhost:3000
+import { safeEqual } from "./lib/http.js";
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -46,8 +47,10 @@ const server = http.createServer(async (req, res) => {
       if (!handler) { res.writeHead(405).end("Method not allowed"); return; }
       const chunks = [];
       let size = 0;
-      // CV uploads (admin only) need room; everything else stays small.
-      const limit = api[1] === "admin" ? 8_000_000 : 100_000;
+      // CV uploads (admin only) need room, so only a request carrying the right
+      // admin token may send 8 MB; everything else stays small.
+      const isAdmin = api[1] === "admin" && Boolean(process.env.ADMIN_TOKEN) && safeEqual(process.env.ADMIN_TOKEN, String(req.headers.authorization || "").replace(/^Bearer\s+/i, ""));
+      const limit = isAdmin ? 8_000_000 : 100_000;
       for await (const c of req) { size += c.length; if (size > limit) { res.writeHead(413, { "Content-Type": "application/json" }).end('{"error":"That file is too large."}'); return; } chunks.push(c); }
       const request = new Request(url, {
         method: req.method, headers: req.headers,

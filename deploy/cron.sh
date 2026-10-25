@@ -36,6 +36,9 @@ if [ -n "$VENV" ]; then
   fi
 fi
 
+# Dependencies are code too: Apache must never serve them as files.
+[ -d node_modules ] && ! cmp -s deploy/deny.htaccess node_modules/.htaccess && cp deploy/deny.htaccess node_modules/.htaccess || true
+
 # Restart Passenger only when something changed.
 if [ -n "$CHANGED" ]; then
   mkdir -p tmp && touch tmp/restart.txt
