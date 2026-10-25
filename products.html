@@ -28,7 +28,16 @@ a{color:var(--blue)}
 h1{font:800 clamp(2rem,6vw,3.3rem)/1.04 'Bricolage Grotesque',sans-serif;margin:0 0 .7rem;max-width:44rem;letter-spacing:-.01em}
 h1 em{font-style:normal;color:var(--blue)}
 .lead{color:var(--muted);font-size:1.15rem;margin:0 0 2rem;max-width:36rem}
-.ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin:0 0 2.5rem;padding:0;list-style:none}
+.ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin:0 0 .6rem;padding:0;list-style:none}
+.ladderNote{color:var(--muted);font-size:.93rem;margin:0 0 2.2rem}
+.kitsHead{font:800 1.35rem 'Bricolage Grotesque',sans-serif;margin:0 0 1rem}
+.tag{display:inline-block;font:700 .72rem Figtree,sans-serif;letter-spacing:.06em;text-transform:uppercase;background:var(--ink);color:#fff;border-radius:.35rem;padding:.25rem .5rem;align-self:flex-start}
+.path{border-top:1px solid var(--line);margin-top:.3rem;padding-top:.7rem;display:grid;gap:.35rem;font-size:.92rem}
+.path b{font-size:.78rem;letter-spacing:.06em;color:var(--muted)}
+.path a{display:flex;justify-content:space-between;gap:.6rem;color:var(--ink);text-decoration:none;padding:.35rem 0;min-height:2.75rem;align-items:center}
+.path a:hover span{text-decoration:underline}
+.path a em{font-style:normal;font-weight:700;white-space:nowrap}
+.path small{color:var(--blue);font-weight:700;margin-right:.35rem}
 .ladder li{background:var(--paper);border:2px solid var(--line);border-radius:1rem;padding:.9rem 1rem}
 .ladder li:first-child{border-color:var(--ink)}
 .ladder b{display:block;font:800 1.05rem 'Bricolage Grotesque',sans-serif}
@@ -37,7 +46,7 @@ h1 em{font-style:normal;color:var(--blue)}
 .kits{display:grid;grid-template-columns:repeat(auto-fill,minmax(20rem,1fr));gap:1.25rem}
 .kit{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;box-shadow:6px 6px 0 var(--ink);padding:1.4rem;display:flex;flex-direction:column;gap:.7rem}
 .kit .eyebrow{font:700 .75rem Figtree,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--btc)}
-.kit h2{font:800 1.45rem/1.15 'Bricolage Grotesque',sans-serif;margin:0}
+.kit h3{font:800 1.45rem/1.15 'Bricolage Grotesque',sans-serif;margin:0}
 .kit p{margin:0;color:var(--muted)}
 .kit ul{margin:.1rem 0 0;padding-left:0;list-style:none;display:grid;gap:.3rem;font-size:.95rem}
 .kit ul li{position:relative;padding-left:1.4rem}
@@ -62,7 +71,9 @@ h1 em{font-style:normal;color:var(--blue)}
 .next a:first-of-type{border-top:0}
 .next a span:last-child{color:var(--blue);white-space:nowrap}
 .note{color:var(--muted);font-size:.9rem;margin:2.5rem 0 0}
-@media (max-width:760px){.ladder{grid-template-columns:1fr}}
+/* Phones: the three ways stay side by side as compact tiles, so the kits below
+   never look as if they belong to the last one (DFY). */
+@media (max-width:760px){.ladder{gap:.45rem}.ladder li{padding:.6rem .55rem;text-align:center}.ladder b{font-size:.88rem;line-height:1.2}.ladder span{display:none}}
 @media (max-width:420px){.kits{grid-template-columns:1fr}.kit{box-shadow:4px 4px 0 var(--ink);padding:1.15rem}}
 @media (prefers-reduced-motion:no-preference){.got{animation:in .35s ease}@keyframes in{from{opacity:0;transform:translateY(.3rem)}}}
 </style>
@@ -74,6 +85,8 @@ h1 em{font-style:normal;color:var(--blue)}
   <p class="lead">Templates, guides, tutorials and art from real VA work. Start with these complete kits, free for your email.</p>
 
   <ol class="ladder" id="ladder" aria-label="Three ways to get it done"></ol>
+  <p class="ladderNote">Every kit starts free (DIY). Want help? Each kit shows how to do it together (DIT) or have it done for you (DFY).</p>
+  <h2 class="kitsHead">Start free: do-it-yourself kits</h2>
   <div class="kits" id="kits"><p class="msg">Loading the kits…</p></div>
 
   <p class="note">Download your kit right away. We email it too once you confirm your address, then follow up a few times with tips and offers about that topic. Unsubscribe in one click from any email.</p>
@@ -90,8 +103,9 @@ try { data = await (await fetch("/api/kits")).json(); } catch { $("#kits").inner
 if (data) {
   $("#ladder").innerHTML = data.ladder.map((l) => `<li><small>${esc(l.code)}</small><b>${esc(l.name)}</b><span>${esc(l.line)}</span></li>`).join("");
   $("#kits").innerHTML = data.kits.map((k) => `<article class="kit" id="${esc(k.id)}">
+    <span class="tag">DIY · Free</span>
     <div class="eyebrow">${esc(k.struggle)}</div>
-    <h2>${esc(k.title)}</h2>
+    <h3>${esc(k.title)}</h3>
     <p>${esc(k.promise)}</p>
     <ul>${k.inside.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
     <div class="files">${k.files.map((f) => `<span>${esc(TYPES[f.type] || f.type)}</span>`).join("")}</div>
@@ -105,6 +119,10 @@ if (data) {
       <p class="msg" role="status"></p>
     </form>
     <div class="got" hidden></div>
+    ${k.offers ? `<div class="path"><b>WANT HELP WITH THIS?</b>
+      ${k.offers.together ? `<a href="${esc(new URL(k.offers.together.url).pathname)}"><span><small>DIT</small>Do it together</span><em>$${esc(k.offers.together.price)}</em></a>` : ""}
+      ${(k.offers.done || []).slice(0, 1).map((o) => `<a href="${esc(new URL(o.url).pathname)}"><span><small>DFY</small>${esc(o.name)}</span><em>$${esc(o.price)}${o.monthly ? "/mo" : ""}</em></a>`).join("")}
+    </div>` : ""}
   </article>`).join("");
 
   // Seen this visitor before? Skip straight to the form with their details.
