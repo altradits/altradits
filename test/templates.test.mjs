@@ -227,7 +227,7 @@ test("security: someone else typing a subscriber's address gets nothing of their
   // Names that aren't plain first names are dropped on sign-up.
   const odd = await (await post({ kit: "replies", email: "odd@corp.co", name: "Visit evil.example now" }, "7.7.7.3")).json();
   assert.equal((await getJSON(`sub:${odd.sub.id}`)).name, "");
-  // At most two kit emails a day to one address, however many requests.
+  // The same kit at most once a day to one address, however many requests.
   const before = (await emails()).filter((e) => e.to === "victim@corp.co").length;
   for (let i = 0; i < 6; i++) await post({ kit: "replies", email: "victim@corp.co" }, `7.7.8.${i}`);
   assert.ok((await emails()).filter((e) => e.to === "victim@corp.co").length - before <= 1);
@@ -264,4 +264,16 @@ test("a kit with several files arrives with every file attached (PDF and spreads
     assert.match(raw[1], /Content-Disposition: attachment; filename=invoice-tracker\.csv/);
     assert.doesNotMatch(raw[1], /api\/kits\?d=/); // no download link in the email
   } finally { setMailer(undefined); }
+});
+
+test("a subscriber gets every different kit they ask for (each once a day, up to 6)", async () => {
+  const r = await (await post({ kit: "inbox", email: "many@shop.co", name: "Mo" }, "9.1.1.1")).json();
+  const s = await getJSON(`sub:${r.sub.id}`);
+  await get(`?confirm=${s.id}&c=${s.c}&k=inbox`);
+  for (const kit of ["social", "invoices", "replies", "outreach", "hiring"]) await post({ kit, email: "many@shop.co" }, "9.1.1.2");
+  const got = (await emails()).filter((e) => e.to === "many@shop.co" && /^Your free kit/.test(e.subject)).map((e) => e.subject);
+  assert.equal(got.length, 6); // all six kits arrived
+  const again = await (await post({ kit: "social", email: "many@shop.co" }, "9.1.1.3")).json();
+  assert.deepEqual(again, { sent: true }); // same kit twice today: not re-sent, and the answer reveals nothing
+  assert.equal((await emails()).filter((e) => e.to === "many@shop.co" && /^Your free kit/.test(e.subject)).length, 6);
 });
