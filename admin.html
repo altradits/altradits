@@ -1305,7 +1305,7 @@ function renderMarketing() {
   $("#mkErr").textContent = M.lastError ? `Last problem (${ago(M.lastError.at)}): ${M.lastError.error}` : "";
   const h = M.hunt;
   $("#mkHunt").innerHTML = `<div class="kpi"><small>${esc(h.hashtag)} word this week</small><div style="font-size:1.3rem">${esc(h.word)}</div></div><div class="kpi"><small>Solved</small><div>${h.stats.solved}</div></div><div class="kpi"><small>Codes earned</small><div>${h.stats.earned}</div></div><div class="kpi"><small>Codes used</small><div>${h.stats.used}</div></div>
-    <div class="kpi" style="grid-column:1/-1"><small>Waiting for a shoutout in the next post</small><div style="font:500 .95rem Figtree,sans-serif">${h.shoutouts.length ? h.shoutouts.map((w) => `${esc(w.handle ? "@" + w.handle : "")}${w.handle && w.name ? " · " : ""}${esc(w.name || "")} <button class="btn" style="padding:.1rem .5rem;font-size:.8rem" data-mkshout="${esc(w.claimId)}">Remove</button>`).join(" &nbsp; ") : `<span class="muted">Nobody yet. Winners who opt in appear here, then in the next post with ${esc(h.hashtag)}.</span>`}</div></div>`;
+    <div class="kpi" style="grid-column:1/-1"><small>Shoutouts (approve before they're posted)</small><div style="font:500 .95rem Figtree,sans-serif">${h.shoutouts.length ? h.shoutouts.map((w) => `${esc(w.handle ? "@" + w.handle : "")}${w.handle && w.name ? " · " : ""}${esc(w.name || "")} ${w.approved ? '<span class="stage">approved: in the next post</span>' : `<button class="btn ok" style="padding:.1rem .5rem;font-size:.8rem" data-mkshoutok="${esc(w.claimId)}">Approve</button>`} <button class="btn" style="padding:.1rem .5rem;font-size:.8rem" data-mkshout="${esc(w.claimId)}">Remove</button>`).join(" &nbsp; ") : `<span class="muted">Nobody yet. Winners who opt in appear here, then in the next post with ${esc(h.hashtag)}.</span>`}</div></div>`;
   // First view: open the first day with posts still to go out.
   if (!mkPicked) mkDay = (M.days.slice(2).find((d) => d.posts.some((p) => ["scheduled", "planned"].includes(p.status))) || M.days[2]).date;
   $("#mkDayTabs").innerHTML = M.days.map((d) => { const n = d.posts.filter((p) => p.status !== "cancelled").length; const lbl = new Date(d.date + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }); return `<button role="tab" data-mkday="${d.date}" aria-selected="${d.date === mkDay}">${lbl} <span class="muted">${n}</span></button>`; }).join("");
@@ -1330,6 +1330,8 @@ function renderMarketing() {
   $("#mkResults").innerHTML = M.channels.map((c) => { const r = M.results[c.id]; return `<tr><td>${esc(c.name)}</td><td>${r.posts}</td><td>${r.leads}</td><td>${r.paid}</td><td>${money(r.revenue)}</td></tr>`; }).join("");
 }
 $("#mkHunt").addEventListener("click", async (e) => {
+  const ok = e.target.dataset.mkshoutok;
+  if (ok) { try { await api("", { action: "mkt_shout_approve", id: ok }); loadMarketing(); } catch {} return; }
   const id = e.target.dataset.mkshout; if (!id) return;
   e.target.disabled = true;
   try { await api("", { action: "mkt_shout_remove", id }); loadMarketing(); } catch (err) { e.target.textContent = err.message; }

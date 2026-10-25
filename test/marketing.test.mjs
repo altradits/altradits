@@ -262,6 +262,9 @@ test("winners who opt in get a shoutout in the next post out: tagged on X, by na
   assert.equal((await hunt.pendingShoutouts()).length, 0); // not a winner until the coupon unlocks
   await huntApi.POST(req("/api/hunt", { action: "visit", code: claim.share.split("/").pop() }, "5.5.5.5"));
   assert.equal((await hunt.pendingShoutouts()).length, 1);
+  // Nothing is published until Stanley approves the shoutout.
+  assert.equal(await hunt.takeShoutouts("x"), "");
+  await hunt.approveShoutout((await hunt.pendingShoutouts())[0].claimId);
 
   // The next X post that goes out carries the tag, between the post and the clue.
   Object.assign(process.env, X_KEYS);

@@ -14,10 +14,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, pinned by commit
 
       - name: Generate Snake SVGs
-        uses: Platane/snk@v3
+        uses: Platane/snk@d8f6715049803e982ee5ff501b6b9b7d5deeb09b # v3, pinned by commit
         with:
           github_user_name: ${{ github.repository_owner }}
           outputs: |

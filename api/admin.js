@@ -358,6 +358,7 @@ export async function POST(request) {
       if (body.action === "mkt_autoreply") return json({ settings: await saveMarketing({ autoReply: Boolean(body.on) }) });
       if (body.action === "mkt_cancel") return json({ post: await cancelPost(clean(body.id, 20)) });
       if (body.action === "mkt_post_now") return json({ post: await postNow(clean(body.id, 20)) });
+      if (body.action === "mkt_shout_approve") { const { approveShoutout } = await import("../lib/hunt.js"); await approveShoutout(clean(body.id, 20)); return json({ ok: true }); }
       if (body.action === "mkt_shout_remove") { const { removeShoutout } = await import("../lib/hunt.js"); await removeShoutout(clean(body.id, 20)); return json({ ok: true }); }
       if (body.action === "mkt_edit") return json({ post: await editPost(clean(body.id, 20), body.text) });
       // These take a minute or two: start them and let the dashboard refresh.
