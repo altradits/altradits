@@ -38,8 +38,14 @@ async function view(lead) {
     client: { name: lead.name || lead.pickup || "", company: lead.company, email: lead.email, orderName: lead.pickup || null },
     onboarding: lead.onboarding || null,
     tasks: tasks.map(forClient),
-    hours: { used: hoursThisMonth(tasks), plan: await planHours(lead) },
-    referral: { url: ensureReferral(lead), creditUsd: lead.referralCredit || 0, pct: RULES.referralCreditPct },
+    hours: {
+      used: hoursThisMonth(tasks, lead),
+      plan: await planHours(lead),
+      base: lead.retainer?.baseHours || 0,
+      rollover: lead.retainer?.rolloverHours || 0,
+    },
+    retainer: lead.retainer || null,
+    referral: { url: ensureReferral(lead), creditUsd: lead.referralCredit || 0, codes: lead.referralCodes || [], pct: RULES.referralCreditPct },
   };
 }
 
@@ -154,7 +160,12 @@ export async function POST(request) {
         { label: "Open tasks", url: `${base()}/admin#tasks` }, t.leadId);
     }
   } else if (body.action === "changes") {
-    if (t.status !== "review") return json({ error: "This task isn't waiting for your review." }, 409);
+    if (!["review", "done"].includes(t.status)) return json({ error: "This task isn't waiting for your review." }, 409);
+    const windowDays = t.service === "automation-ai" ? 30 : 14;
+    const refStamp = t.closedAt || t.reviewAt || t.deliverable?.at || t.updatedAt || t.createdAt;
+    if (refStamp && Date.now() - Date.parse(refStamp) > windowDays * 864e5) {
+      return json({ error: `The ${windowDays}-day free fix window for this deliverable has closed. Please request a new task or place a new order.` }, 409);
+    }
     const note = clean(body.note, 2000);
     if (!note) return json({ error: "Tell us what to change." }, 400);
     t.history.push({ at, by: "client", text: `Changes requested: ${note}` });
@@ -170,6 +181,17 @@ export async function POST(request) {
       note,
     }).catch((e) => console.error("learn changes", e));
     if (await distillClientPreference(lead, note)) await saveLead(lead);
+    if (t.revisions > 2) {
+      t.status = "owner";
+      await saveTask(t);
+      await emailOwner(
+        `Revision #${t.revisions} requested: ${t.title}`,
+        `${t.client} requested revision #${t.revisions} on "${t.title}":\n\n${defang(note)}\n\nReview scope in the dashboard and either re-run or reply to the client.`,
+        { label: "Open tasks", url: `${base()}/admin#tasks` },
+        t.leadId,
+      );
+      return json(await view(lead));
+    }
     const m = t.assigneeId && (await getMember(t.assigneeId));
     if (m && m.status === "approved") {
       t.status = "changes";

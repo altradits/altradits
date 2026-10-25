@@ -19,6 +19,7 @@ export const RULES = {
   depositPctProjects: 50,      // one-off projects: 50% to start
   freeTrialMaxHours: 1,        // the free sample task
   referralCreditPct: 10,       // referrer earns this % of the new client's first month as credit
+  rolloverMonths: 1,           // unused retainer hours roll over once (capped at 1 month's base hours)
   // Altra misuse guard: chats that look abusive, automated or off-purpose are
   // paused until this many sats are paid over Lightning (proves a real person).
   humanCheckSats: 100,
