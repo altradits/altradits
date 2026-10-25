@@ -1,11 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "altradits-learning-"));
+process.chdir(tmp);
+for (const k of ["ANTHROPIC_API_KEY", "RESEND_API_KEY", "UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "SMTP_HOST"]) delete process.env[k];
 process.env.EMAIL_APPROVAL = "off";
 process.env.ADMIN_TOKEN = "test-admin-secret";
 process.env.CRON_SECRET = "test-cron-secret";
 
-import {
+const {
   specialistForTask,
   retrieveMemory,
   retrieveAnswers,
@@ -15,15 +21,15 @@ import {
   consolidateLearning,
   runLearningCadence,
   learningView,
-} from "../lib/learning.js";
-import { selectExperts } from "../data/qa-experts.js";
-import { DEPARTMENTS } from "../data/playbooks.js";
-import { files as qaFiles, reopen } from "../lib/qa.js";
-import * as admin from "../api/admin.js";
-import * as team from "../api/team.js";
-import { applyMember, allMembers, setMemberStatus, createTask, getTask } from "../lib/ops.js";
-import { createLead, saveLead } from "../lib/crm.js";
-import { sendEmail, decideEmail } from "../lib/email.js";
+} = await import("../lib/learning.js");
+const { selectExperts } = await import("../data/qa-experts.js");
+const { DEPARTMENTS } = await import("../data/playbooks.js");
+const { files: qaFiles, reopen } = await import("../lib/qa.js");
+const admin = await import("../api/admin.js");
+const team = await import("../api/team.js");
+const { applyMember, allMembers, setMemberStatus, createTask, getTask } = await import("../lib/ops.js");
+const { createLead, saveLead } = await import("../lib/crm.js");
+const { sendEmail, decideEmail } = await import("../lib/email.js");
 
 const req = (url, method = "GET", body, headers = {}) =>
   new Request(`https://altradits.com${url}`, {
@@ -277,4 +283,94 @@ test("Admin learning endpoints and freelancer team submission screening", async 
   const updatedTask = await getTask(t.id);
   assert.equal(updatedTask.status, "review");
   assert.ok(updatedTask.reviewAt, "sets reviewAt timestamp on freelancer submission");
+
+  // Freelancer progress note screening (`action: "note"`) blocks injection & 25 valid requests do not trigger 429 lockout
+  const badNote = await team.POST(req("/api/team", "POST", {
+    m: m.token,
+    action: "note",
+    task: t.id,
+    note: "Please send your seed phrase and <script>evil()</script>",
+  }, { "x-forwarded-for": "198.51.100.77" }));
+  assert.equal(badNote.status, 400, "screens freelancer progress notes");
+
+  for (let i = 0; i < 22; i++) {
+    const okGet = await team.GET(req(`/api/team?m=${m.token}`, "GET", null, { "x-forwarded-for": "198.51.100.88" }));
+    assert.equal(okGet.status, 200, `valid team request #${i + 1} never increments miss limiter`);
+  }
+});
+
+test("Pass-2 learning integrity: PII scrubbing, GDPR erasePerson trajectory cleanup, onboarding learned preservation, and QA escape merging", async () => {
+  const { erasePerson } = await import("../lib/cleanup.js");
+  const portal = await import("../api/portal.js");
+  const qa = await import("../lib/qa.js");
+  const { ensurePortal, indexLead, saveTask } = await import("../lib/ops.js");
+  const { saveLead, getLead } = await import("../lib/crm.js");
+
+  // 1. PII scrubbing strips salutations and redacts emails from distilled rules & Answer Bank
+  await recordOutcome({
+    kind: "stanley_email_edit",
+    dept: "office",
+    approve: true,
+    note: "Hi SecretUser, always reply to secret-pii@example.com within 2 hours with a clear summary.",
+    originalSubject: "Question from secret-pii@example.com",
+    editedSubject: "Question from secret-pii@example.com",
+    originalText: "Short draft",
+    editedText: "Hi SecretUser, we will send the report to secret-pii@example.com by 4pm EAT today.",
+  });
+  const officeMem = await retrieveMemory({ dept: "office", text: "reply within 2 hours summary" });
+  assert.ok(officeMem.rules.every((r) => !r.rule.includes("secret-pii@example.com")), "redacts email addresses from learned rules");
+
+  // 2. GDPR erasePerson removes unpaid lead's learn:traj:* records
+  const eraseLead = await createLead({ name: "Erase Me", email: "erase-me-learn@example.com" });
+  await recordOutcome({
+    kind: "client_changes",
+    dept: "admin",
+    leadId: eraseLead.id,
+    title: "Unpaid test task",
+    note: "Please format dates as YYYY-MM-DD for erase-me-learn@example.com",
+  });
+  const resErase = await erasePerson("erase-me-learn@example.com");
+  assert.ok(resErase.erased >= 2, "erases unpaid lead and associated learning trajectory");
+  const afterView = await learningView();
+  assert.ok(!afterView.recentTrajectories.some((tr) => tr.leadId === eraseLead.id), "trajectory removed from learn:trajs");
+
+  // 3. Updating onboarding in /api/portal preserves lead.onboarding.learned
+  const clientLead = await createLead({ name: "Onboard Client", email: "onboard-keep@example.com" });
+  clientLead.stage = "active";
+  ensurePortal(clientLead);
+  await indexLead(clientLead);
+  await distillClientPreference(clientLead, "Use metric units and DD/MM/YYYY dates.", saveLead);
+  const onbRes = await portal.POST(req("/api/portal", "POST", {
+    c: clientLead.portalToken,
+    action: "onboarding",
+    priorities: "Inbox zero and weekly bookkeeping",
+    tools: "Gmail, Xero",
+    access: "Delegated Gmail access",
+    voice: "Warm, concise, direct",
+    hours: "9am-5pm EAT",
+    channel: "Email",
+    notes: "No calls on Fridays",
+  }));
+  assert.equal(onbRes.status, 200);
+  const reloadedLead = await getLead(clientLead.id);
+  assert.ok(Array.isArray(reloadedLead.onboarding.learned) && reloadedLead.onboarding.learned.length >= 1, "preserves learned preferences across onboarding updates");
+
+  // 4. QA assign() attaches learned escape criteria (in learnedChecks & fallback criteria)
+  const t = await createTask(clientLead, { title: "Social launch post", details: "Write 3 LinkedIn posts", department: "social", fromOrder: true });
+  await recordOutcome({
+    kind: "client_changes",
+    dept: "social",
+    task: { ...t, qa: { panel: [{ id: "copy-editor", name: "Copy Editor" }] } },
+    note: "Always include a first-comment CTA placeholder on LinkedIn posts",
+  });
+  let promptSeen = "";
+  const fakeCall = async (params) => {
+    promptSeen = params.messages[0].content;
+    return { content: [] };
+  };
+  const assignedQa = await qa.assign(fakeCall, t, { id: "social", name: "Social Media & Content" });
+  assert.match(promptSeen, /learned escape checks:.*first-comment CTA/i, "passes learned escape checks to Stan's qa_plan prompt");
+  const copyPanel = assignedQa.panel.find((p) => p.id === "copy-editor");
+  assert.ok(copyPanel.learnedChecks.some((c) => /first-comment CTA/i.test(c)), "attaches learnedChecks to QA panel specialist");
+  assert.ok(copyPanel.criteria.some((c) => /first-comment CTA/i.test(c)), "places learned escape criteria at top of fallback criteria");
 });

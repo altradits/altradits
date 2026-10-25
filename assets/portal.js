@@ -42,8 +42,8 @@ function taskCard(t) {
       ${t.deliverable.sources.length ? `<p class="note">Sources: ${t.deliverable.sources.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc((() => { try { return new URL(u).hostname; } catch { return "source"; } })())}</a>`).join(", ")}</p>` : ""}` : ""}
     ${t.satisfaction ? `<p class="note">You rated this ${"★".repeat(t.satisfaction.rating)}${"☆".repeat(5 - t.satisfaction.rating)}</p>` : ""}
     ${t.status === "review" ? `<div class="row"><span>Rate it:</span><span class="stars" data-stars="${t.id}">${[1, 2, 3, 4, 5].map((n) => `<button type="button" data-star="${n}" data-for="${t.id}" aria-label="${n} star${n > 1 ? "s" : ""}">★</button>`).join("")}</span>
-      <input placeholder="Comment (optional)" data-cm="${t.id}" style="flex:1;min-width:10rem"><button class="btn ok" data-approve="${t.id}">Approve</button></div>
-      <div class="row"><input placeholder="What should change?" data-cn="${t.id}" style="flex:1;min-width:12rem"><button class="btn" data-changes="${t.id}">Request changes</button></div>` : ""}
+      <input placeholder="Comment (optional)" data-cm="${t.id}" style="flex:1;min-width:10rem"><button class="btn ok" data-approve="${t.id}">Approve</button></div>` : ""}
+    ${t.canRequestChanges || t.status === "review" ? `<div class="row"><input placeholder="${t.status === "done" ? `Need a fix within your ${t.fixWindowDays || 14}-day guarantee?` : "What should change?"}" data-cn="${t.id}" style="flex:1;min-width:12rem"><button class="btn" data-changes="${t.id}">${t.status === "done" ? "Request fix" : "Request changes"}</button></div>` : ""}
     <p class="err" data-err="${t.id}"></p></div>`;
 }
 
@@ -64,14 +64,16 @@ function render() {
         ${done.length ? `<details><summary>Done (${done.length})</summary>${done.map(taskCard).join("")}</details>` : ""}</div>
     </div><div>
       <div class="card soft"><h2>Hours this month</h2>
-        ${D.hours.plan ? `<div class="meter"><i style="width:${pct}%"></i></div><p><b>${D.hours.used}h</b> of ${D.hours.plan}h used</p>` : `<p><b>${D.hours.used}h</b> logged this month</p>`}
-        <p class="note">Hours are logged when you approve a task.</p></div>
+        ${D.hours.plan ? `<div class="meter"><i style="width:${pct}%"></i></div><p><b>${D.hours.used}h</b> of ${D.hours.plan}h used${D.hours.rollover ? ` <small class="muted">(${D.hours.base}h plan + ${D.hours.rollover}h rollover)</small>` : ""}</p>` : `<p><b>${D.hours.used}h</b> logged this month</p>`}
+        ${D.retainer ? `<p class="note">Retainer: <b>${esc(D.retainer.status)}</b>${D.retainer.periodEnd ? ` · cycle ends ${esc(D.retainer.periodEnd.slice(0, 10))}` : ""}</p>` : ""}
+        <p class="note">Hours count delivered and approved tasks in your current cycle.</p></div>
       <div class="card ref"><h2>Refer a business, earn ${D.referral.pct}%</h2>
         <p>Share your link. When they become a client, you get ${D.referral.pct}% of their first month as credit.</p>
         <code id="refUrl">${esc(D.referral.url)}</code>
         <div class="row"><button class="btn" id="copyRef">Copy link</button>
         <a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent("I use Altradits for my admin and social media. They're great: " + D.referral.url)}">Share on WhatsApp</a></div>
-        ${D.referral.creditUsd ? `<p>Your credit: <b>$${D.referral.creditUsd}</b></p>` : ""}</div>
+        ${D.referral.creditUsd ? `<p>Your credit: <b>$${D.referral.creditUsd}</b></p>` : ""}
+        ${D.referral.codes?.length ? `<p class="note">Checkout code(s): ${D.referral.codes.map((cd) => `<code>${esc(cd)}</code>`).join(", ")}</p>` : ""}</div>
       ${D.onboarding ? `<details class="card soft"><summary>Onboarding details</summary>${onboardingForm().replace('class="card"', 'class=""')}</details>` : ""}
     </div></div>`;
 }

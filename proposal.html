@@ -64,6 +64,7 @@ input[type=text],select{width:100%;padding:.7rem .85rem;border:2px solid var(--l
   <div class="doc" id="doc" aria-live="polite"><p class="muted">Loading your proposal…</p></div>
 </div>
 <script type="module">
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); }
 import { PAYMENTS, GUARANTEES, BUSINESS, RULES } from "/data/catalog.js";
 import { mountPay } from "/assets/pay-widget.js";
 
@@ -152,9 +153,11 @@ function render() {
     <table><thead><tr><th>Item</th><th class="n">Price</th></tr></thead><tbody>${rows}</tbody></table>
     <table class="totals"><tbody>
       ${p.discountPct ? `<tr><td>Discount</td><td class="n">${p.discountPct}% applied</td></tr>` : ""}
+      ${p.creditAppliedUsd ? `<tr><td>Referral credit applied</td><td class="n">-${money(p.creditAppliedUsd)}</td></tr>` : ""}
       ${t.monthly ? `<tr><td>Monthly</td><td class="n">${money(t.monthly)}/month</td></tr>` : ""}
       ${t.oneOff ? `<tr><td>One-off projects</td><td class="n">${money(t.oneOff)}</td></tr>` : ""}
       <tr class="due"><td>Due to start</td><td class="n">${money(t.dueNow)}</td></tr>
+      ${t.balanceOnDelivery ? `<tr><td>Balance due on delivery</td><td class="n">${money(t.balanceOnDelivery)}</td></tr>` : ""}
     </tbody></table>
     <h2>Timeline</h2><p>${esc(p.timeline)}</p>
     <h2>Our promises</h2><ul class="themes">${GUARANTEES.map((g) => `<li><b>${esc(g.name)}.</b> ${esc(g.text)}</li>`).join("")}</ul>

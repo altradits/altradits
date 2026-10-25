@@ -9,7 +9,7 @@ import { holdIfUnsafe, screen, defang } from "../lib/screen.js";
 import { hit, listIds, getMany } from "../lib/store.js";
 import { createOrder, getProposal, saveProposal, getLead, saveLead, logEvent, sendKickoff } from "../lib/crm.js";
 import { emailOwner } from "../lib/email.js";
-import { getTask, saveTask, ensurePortal, ensureReferral, indexLead, assignTask } from "../lib/ops.js";
+import { getTask, saveTask, allTasks, ensurePortal, ensureReferral, indexLead, assignTask } from "../lib/ops.js";
 import { workersLive, kickQueue } from "../lib/workers.js";
 import { orderable, URGENCY } from "../data/catalog.js";
 import { OWNER_PHONE } from "../lib/contact.js";
@@ -99,10 +99,20 @@ async function update(body) {
       if (prior) {
         if (prior.onboarding && !lead.onboarding) lead.onboarding = prior.onboarding;
         if (prior.refCode && !lead.refCode) lead.refCode = prior.refCode;
+        if (prior.portalToken && !lead.portalToken) lead.portalToken = prior.portalToken;
         if (prior.retainer && !lead.retainer) lead.retainer = prior.retainer;
         if (prior.referralCredit && !lead.referralCredit) lead.referralCredit = prior.referralCredit;
         if (prior.referralCodes && !lead.referralCodes) lead.referralCodes = prior.referralCodes;
         lead.priorLeadId = prior.id;
+        // Migrate prior tasks and deactivate the duplicate retainer on prior so renewals and portal hours stay unified.
+        for (const pt of (await allTasks()).filter((x) => x.leadId === prior.id)) {
+          pt.leadId = lead.id;
+          await saveTask(pt);
+        }
+        prior.retainer = null;
+        prior.mergedInto = lead.id;
+        await saveLead(prior);
+        await indexLead(lead);
       }
     }
   }
@@ -141,6 +151,7 @@ async function update(body) {
       if (t) {
         t.details = p.order.task;
         t.question = null;
+        t.qa = null;
         t.history.push({ at: new Date().toISOString(), by: "client", text: "Added order details" });
         const held = await holdIfUnsafe(t, p.order.task, "order details", saveTask);
         if (!held) {

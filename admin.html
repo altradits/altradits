@@ -381,6 +381,19 @@ dd{margin:0;overflow-wrap:anywhere}
       <div class="panel"><h2>Copied to Stan (external, from the heads)</h2><div id="stanCopied"></div></div>
       <div class="panel"><h2>Escalated to you</h2><div id="stanEsc"></div></div>
     </div>
+    <div class="panel"><h2>Continual learning &amp; collective intelligence <span class="stage" id="learnBadge" style="font-size:.8rem"></span></h2>
+      <p class="muted" style="margin-top:0">Rules, QA escape checks, 5★ exemplars and verified answers distilled automatically from QA reviews, client feedback and your edits. Core rules are protected with EWC++ consolidation.</p>
+      <div class="kpis" id="learnKpis" style="margin:0 0 .8rem"></div>
+      <div class="row" style="margin:0 0 .6rem">
+        <select id="learnDept" style="max-width:13rem"><option value="admin">Admin &amp; Ops</option><option value="social">Social &amp; Content</option><option value="personal">Executive &amp; Personal</option><option value="growth">Support &amp; Growth</option><option value="tech">Tech, Web &amp; AI</option><option value="marketing">Marketing</option><option value="office">Front Office</option><option value="careers">Careers</option></select>
+        <input id="learnRule" placeholder="Pin a permanent rule or lesson for this department…" style="flex:1;min-width:14rem">
+        <button class="btn primary" id="learnAdd">Pin rule</button>
+        <button class="btn" id="learnCons">Consolidate memory</button>
+      </div>
+      <p class="sm muted" id="learnMsg" role="status"></p>
+      <div id="learnDigests" class="sm" style="margin-bottom:.6rem"></div>
+      <div id="learnDepts"></div>
+    </div>
     <div class="panel fresh"><h2>Start fresh</h2>
       <p class="muted" style="margin-top:0">Clear old records so the dashboard only shows real work from now on. Never touched: payments and every email about them (receipts, confirmations, anything sent to a paying client), live work (drafts waiting for you, pending approvals, open tasks, unused coupons), your team, careers, marketing content and settings.</p>
       <label class="sm"><input type="checkbox" class="freshG" value="communications" checked> <span>Communications: every recorded email, the approval queue and Stan's instructions</span></label>

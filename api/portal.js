@@ -6,7 +6,7 @@ import { holdIfUnsafe, screen, describe, defang } from "../lib/screen.js";
 import { reopen } from "../lib/qa.js";
 import { json, readBody, clean, clientIp } from "../lib/http.js";
 import { hit } from "../lib/store.js";
-import { saveLead, logEvent } from "../lib/crm.js";
+import { saveLead, logEvent, getProposal, issueBalanceInvoice } from "../lib/crm.js";
 import {
   leadByPortal, ensureReferral, indexLead, planHours, hoursThisMonth, allTasks,
   createTask, getTask, saveTask, getMember, assignTask, base,
@@ -18,19 +18,26 @@ import { recordOutcome, distillClientPreference } from "../lib/learning.js";
 
 const TYPES = { md: "text/markdown", csv: "text/csv", txt: "text/plain", html: "text/html" };
 
-const forClient = (t) => ({
-  id: t.id, title: t.title, details: t.details, department: t.department, due: t.due, status: t.status,
-  question: t.status === "waiting_client" ? t.question : null,
-  // Clients only ever see work that has passed QA and been sent to them.
-  deliverable: t.deliverable && ["review", "done", "follow_up"].includes(t.status) ? {
-    title: t.deliverable.title, summary: t.deliverable.summary || t.deliverable.note || "", url: t.deliverable.url || "",
-    files: (t.deliverable.files || []).map((f, i) => ({ i, name: f.name, format: f.format, size: f.content.length })),
-    sources: t.deliverable.sources || [], by: t.deliverable.by || null,
-  } : null,
-  satisfaction: t.satisfaction || null, hoursLogged: t.hoursLogged, createdAt: t.createdAt,
-  messages: (t.messages || []).slice(-5),
-  history: t.history.filter((h) => h.by !== "ops").slice(-8),
-});
+const forClient = (t) => {
+  const windowDays = t.service === "automation-ai" ? 30 : 14;
+  const refStamp = t.closedAt || t.reviewAt || t.deliverable?.at || t.updatedAt || t.createdAt;
+  const inFixWindow = Boolean(refStamp && Date.now() - Date.parse(refStamp) <= windowDays * 864e5);
+  return {
+    id: t.id, title: t.title, details: t.details, department: t.department, due: t.due, status: t.status,
+    question: t.status === "waiting_client" ? t.question : null,
+    canRequestChanges: t.status === "review" || (t.status === "done" && inFixWindow),
+    fixWindowDays: windowDays,
+    // Clients only ever see work that has passed QA and been sent to them.
+    deliverable: t.deliverable && ["review", "done", "follow_up"].includes(t.status) ? {
+      title: t.deliverable.title, summary: t.deliverable.summary || t.deliverable.note || "", url: t.deliverable.url || "",
+      files: (t.deliverable.files || []).map((f, i) => ({ i, name: f.name, format: f.format, size: f.content.length })),
+      sources: t.deliverable.sources || [], by: t.deliverable.by || null,
+    } : null,
+    satisfaction: t.satisfaction || null, hoursLogged: t.hoursLogged, createdAt: t.createdAt,
+    messages: (t.messages || []).slice(-5),
+    history: t.history.filter((h) => h.by !== "ops").slice(-8),
+  };
+};
 
 async function view(lead) {
   const tasks = (await allTasks()).filter((t) => t.leadId === lead.id);
@@ -82,18 +89,19 @@ export async function POST(request) {
 
   if (body.action === "onboarding") {
     const f = (k, n = 1500) => clean(body[k], n);
-    lead.onboarding = {
+    const prevLearned = Array.isArray(lead.onboarding?.learned) ? lead.onboarding.learned : undefined;
+    const fields = {
       priorities: f("priorities"), tools: f("tools", 800), access: f("access", 400),
       voice: f("voice", 800), hours: f("hours", 200), channel: f("channel", 60), notes: f("notes"),
-      at: new Date().toISOString(),
     };
     // Guard: passwords must never be stored here.
-    if (/password\s*[:=]|pwd\s*[:=]|\bpin\s*[:=]/i.test(JSON.stringify(lead.onboarding))) {
+    if (/password\s*[:=]|pwd\s*[:=]|\bpin\s*[:=]/i.test(JSON.stringify(fields))) {
       return json({ error: "Please don't share passwords here. Describe how you'll grant access (e.g. delegate access or a password-manager share) instead." }, 400);
     }
     // Onboarding goes into every task brief, so it gets the same security screen as task requests.
-    const s = screen(Object.values(lead.onboarding).join("\n"));
+    const s = screen(Object.values(fields).join("\n"));
     if (s.flagged) return json({ error: `Please remove ${describe(s.reasons)} from your onboarding answers. Send anything like that as a task request instead, so our security check can review it first.` }, 400);
+    lead.onboarding = { ...fields, ...(prevLearned ? { learned: prevLearned } : {}), at: new Date().toISOString() };
     logEvent(lead, "Completed onboarding.");
     await saveLead(lead);
     return json(await view(lead));
@@ -136,6 +144,7 @@ export async function POST(request) {
       kind: "client_approve",
       dept: t.department,
       service: t.service,
+      task: t,
       taskId: t.id,
       leadId: lead.id,
       title: t.title,
@@ -149,6 +158,10 @@ export async function POST(request) {
     if (rating >= 4) {
       t.status = "done";
       await saveTask(t);
+      if (lead.proposalId) {
+        const parentProp = await getProposal(lead.proposalId);
+        if (parentProp?.balanceStatus === "due_on_delivery") await issueBalanceInvoice(lead, parentProp, base());
+      }
       const m = t.assigneeId && (await getMember(t.assigneeId));
       if (m) await sendEmail({ to: m.email, kind: "team", dept: "quality", subject: `Approved: ${t.title}`, text: `${t.client} approved "${t.title}" (${rating}/5). Nice work, thank you!` });
     } else {
@@ -174,6 +187,7 @@ export async function POST(request) {
       kind: "client_changes",
       dept: t.department,
       service: t.service,
+      task: t,
       taskId: t.id,
       leadId: lead.id,
       title: t.title,

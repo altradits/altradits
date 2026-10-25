@@ -6,7 +6,7 @@
 import { json, clientIp, readBody } from "../lib/http.js";
 import { hit, peek } from "../lib/store.js";
 import { getLead, getProposal, saveProposal, saveLead } from "../lib/crm.js";
-import { ensurePortal, getTask } from "../lib/ops.js";
+import { ensurePortal, indexLead, getTask } from "../lib/ops.js";
 import { leadIdForPickup, normalize } from "../lib/pickup.js";
 
 const NOT_FOUND = () => json({ error: "No paid order has that name. Check the spelling: it looks like AMBER-FALCON-RIVER-MAPLE-7342." }, 404);
@@ -51,12 +51,12 @@ export async function POST(request) {
     balance = { sats: pay.balanceDue, bolt11: bal.bolt11, qr: await qrSvg(`lightning:${bal.bolt11}`), expiresAt: bal.expiresAt };
   }
   const portal = paid && !p.donation && anonymous ? ensurePortal(lead) : null;
-  if (portal) await saveLead(lead);
+  if (portal) { await indexLead(lead); await saveLead(lead); }
   return json({
     name: lead.pickup, type: p.donation ? "donation" : "order", title: p.donation ? "Donation to Bitcoin education" : p.title,
     status: !paid ? "being confirmed" : pay.held ? (pay.balanceDue ? "part paid" : "being confirmed") : "paid",
     delivery: p.donation ? null : p.timeline || null, due: task?.due || null,
-    work: task ? { status: task.status, ready: Boolean(task.deliverable) && ["review", "done"].includes(task.status), question: task.status === "waiting_client" ? task.question : null,
+    work: task ? { status: task.status, ready: Boolean(task.deliverable) && ["review", "done", "follow_up"].includes(task.status), question: task.status === "waiting_client" ? task.question : null,
       message: anonymous ? (task.messages || []).at(-1) || null : null } : null, // email clients get their messages by email
     portal, receipt: onNode && anonymous, emailed: !anonymous, balance,
   });
