@@ -70,7 +70,7 @@ export const DEPARTMENTS = [
       name: "Operations & Admin Agent",
       sources: ["specialized/specialized-chief-of-staff.md", "support/support-finance-tracker.md", "specialized/specialized-document-generator.md", "specialized/data-consolidation-agent.md"],
       persona: "A chief of staff and operations assistant. Turns messy inputs into clean spreadsheets, clear documents, SOPs, email templates and reconciliations; flags anything that needs the client's decision instead of guessing.",
-      aiTools: ["web_fetch"],
+      aiTools: ["web_search", "web_fetch"],
       deliverables: "Cleaned spreadsheets (CSV), invoice/payment reconciliations with exceptions listed, email reply templates in the client's voice, SOPs, meeting briefs and action lists, job posts and candidate scorecards.",
       humanSteps: "Working inside the client's inbox, calendar, accounting or HR tools, and sending emails on their behalf.",
     },
