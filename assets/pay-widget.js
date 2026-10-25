@@ -8,7 +8,7 @@ const money = (n) => "$" + Number(n).toLocaleString("en-US", Number.isInteger(Nu
 const CSS = `
 .pw{--pw-ink:#0F1B2D;--pw-muted:#4B5A70;--pw-btc:#F7931A}
 .pw .tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin:.2rem 0 .8rem}
-.pw .tab{font:600 .85rem Figtree,system-ui,sans-serif;border:2px solid var(--pw-ink);background:transparent;color:var(--pw-ink);border-radius:2rem;padding:.3rem .8rem;cursor:pointer}
+.pw .tab{font:600 .85rem Figtree,system-ui,sans-serif;border:2px solid var(--pw-ink);background:transparent;color:var(--pw-ink);border-radius:2rem;padding:.3rem .7rem;min-height:2.75rem;cursor:pointer}
 .pw .tab[aria-selected=true]{background:var(--pw-ink);color:#fff}
 .pw .grid{display:grid;grid-template-columns:auto 1fr;gap:1.1rem;align-items:center}
 .pw .qr{display:block;width:clamp(15rem,32vw,18rem);height:auto;max-width:100%;aspect-ratio:1;box-sizing:border-box;background:#fff;border:2px solid var(--pw-ink);border-radius:.8rem;padding:.4rem}

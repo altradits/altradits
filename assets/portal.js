@@ -57,8 +57,8 @@ function render() {
       <form class="card" id="newTask"><h2>Request a task</h2>
         <label>What do you need?<input name="title" maxlength="140" placeholder="e.g. Schedule next week's Instagram posts" required></label>
         <label>Details <small>(links, examples, who to contact)</small><textarea name="details"></textarea></label>
-        <div class="row" style="margin:0"><label style="flex:1">Department <small>(optional)</small><select name="department"><option value="">Let us route it</option>${DEPARTMENTS.map((d) => `<option value="${d.id}">${esc(d.name)}</option>`).join("")}</select></label>
-        <label style="flex:1">Due date <small>(optional)</small><input type="date" name="due"></label></div>
+        <div class="fieldpair"><label>Department <small>(optional)</small><select name="department"><option value="">Let us route it</option>${DEPARTMENTS.map((d) => `<option value="${d.id}">${esc(d.name)}</option>`).join("")}</select></label>
+        <label>Due date <small>(optional)</small><input type="date" name="due"></label></div>
         <div class="row"><button class="btn primary">Send request</button><span class="err" id="taskErr"></span></div></form>
       <div class="card soft"><h2>Your tasks</h2>${open.map(taskCard).join("") || '<p class="muted">No open tasks. Request one above.</p>'}
         ${done.length ? `<details><summary>Done (${done.length})</summary>${done.map(taskCard).join("")}</details>` : ""}</div>

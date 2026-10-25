@@ -21,7 +21,7 @@
 <style>
 :root{
   --bg:#EEF2F6; --ink:#0F1B2D; --muted:#4B5A70; --line:#C9D3DF;
-  --blue:#2F5BEA; --btc:#F7931A; --night:#0F1B2D; --paper:#FFFFFF; --ok:#12A37F;
+  --blue:#2F5BEA; --btc:#F7931A;--btc-text:#B45309; --night:#0F1B2D; --paper:#FFFFFF; --ok:#12A37F;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -157,7 +157,7 @@ main section[id],section[id]{scroll-margin-top:4.5rem}
 .stats div{display:flex;flex-direction:column;gap:.15rem}
 .stats b{font:800 clamp(1.9rem,4.5vw,2.8rem)/1 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .stats div:nth-child(2) b{color:var(--blue)}
-.stats div:nth-child(4) b{color:var(--btc)}
+.stats div:nth-child(4) b{color:var(--btc-text)}
 .stats span{color:var(--muted);font-size:.93rem;font-weight:600}
 
 /* departments: 3D cover-flow carousel */
@@ -176,11 +176,11 @@ main section[id],section[id]{scroll-margin-top:4.5rem}
 .dcard .art{width:4.2rem;height:4.2rem;border-radius:1.1rem;display:grid;place-items:center;font-size:2.2rem;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
 .dcard h3{font-size:1.55rem;line-height:1.1}
 .dcard .sum{margin:0;color:#C9D5EA;font-size:.92rem}
-.dcard .sum em{font-style:normal;color:var(--btc);font-weight:700}
+.dcard .sum em{font-style:normal;color:var(--btc-text);font-weight:700}
 .dcard .jobs{display:flex;flex-direction:column;gap:.45rem;margin-top:auto}
 .dcard .jb{display:flex;justify-content:space-between;align-items:center;gap:.6rem;width:100%;text-align:left;padding:.55rem .75rem;border-radius:.65rem;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font:600 .88rem Figtree,sans-serif;cursor:pointer;transition:background .15s}
 .dcard .jb:hover{background:rgba(255,255,255,.18)}
-.dcard .jb b{flex:none;font:800 1rem 'Bricolage Grotesque',sans-serif;color:var(--btc)}
+.dcard .jb b{flex:none;font:800 1rem 'Bricolage Grotesque',sans-serif;color:var(--btc-text)}
 .dcard .all{color:#fff;font-weight:700;font-size:.9rem;text-align:center;text-decoration:none;padding:.3rem;opacity:.9}
 .dcard .all:hover{text-decoration:underline}
 .cnav{position:absolute;top:50%;z-index:30;width:3.4rem;height:3.4rem;margin-top:-1.7rem;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font-size:1.4rem;cursor:pointer;display:grid;place-items:center;transition:background .15s}
@@ -254,7 +254,7 @@ section{padding:3.5rem 0}
 .rd li::before{content:"✓";position:absolute;left:0;color:var(--ok);font-weight:800}
 .rd p{margin:.45rem 0 0;color:var(--muted)}
 .rd p b{color:var(--ink)}
-.pb{display:inline-flex;align-items:baseline;justify-content:center;gap:.1rem;min-width:4.4rem;padding:.5rem .8rem;border:0;border-radius:.65rem;background:var(--ink);color:#fff;font:800 1.02rem/1.2 'Bricolage Grotesque',sans-serif;font-variant-numeric:tabular-nums;cursor:pointer;transition:background .15s,transform .15s}
+.pb{min-height:2.75rem;align-items:center!important;display:inline-flex;align-items:baseline;justify-content:center;gap:.1rem;min-width:4.4rem;padding:.5rem .8rem;border:0;border-radius:.65rem;background:var(--ink);color:#fff;font:800 1.02rem/1.2 'Bricolage Grotesque',sans-serif;font-variant-numeric:tabular-nums;cursor:pointer;transition:background .15s,transform .15s}
 .pb small{font:600 .74rem Figtree,sans-serif;opacity:.85}
 .pb:hover{background:color-mix(in srgb,var(--c,var(--blue)) 82%,black)}
 .pb:active{transform:scale(.97)}
@@ -371,7 +371,7 @@ html.js .step:not(.lit) h3{color:var(--muted)}
 
 /* faq */
 .faq details{border-bottom:1px solid var(--line);padding:1rem 0}
-.faq summary{cursor:pointer;font:700 1.12rem 'Bricolage Grotesque',sans-serif;list-style:none;display:flex;justify-content:space-between;gap:1rem}
+.faq summary{min-height:2.75rem;align-items:center;cursor:pointer;font:700 1.12rem 'Bricolage Grotesque',sans-serif;list-style:none;display:flex;justify-content:space-between;gap:1rem}
 .faq summary::after{content:"+";color:var(--blue);font-size:1.4rem;line-height:1}
 .faq details[open] summary::after{content:"–"}
 .faq details p{margin:.6rem 0 0;color:var(--muted);max-width:46rem}
@@ -434,7 +434,7 @@ footer .logo img{height:2.5rem;width:auto;display:block}
 /* order pop-up */
 .modal{position:fixed;inset:0;z-index:100;background:rgba(15,27,45,.55);display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
 .sheet{position:relative;width:min(44rem,100%);background:var(--paper);border:2px solid var(--ink);border-radius:1.25rem;box-shadow:8px 8px 0 var(--ink);padding:1.5rem}
-.sheet .x{position:absolute;top:.6rem;right:.7rem;background:transparent;border:0;font-size:1.7rem;line-height:1;cursor:pointer;color:var(--muted);padding:.3rem .5rem}
+.sheet .x{position:sticky;top:0;float:right;z-index:2;min-width:2.75rem;min-height:2.75rem;margin:-.6rem -.7rem 0 0;border-radius:50%;background:var(--paper)!important;background:transparent;border:0;font-size:1.7rem;line-height:1;cursor:pointer;color:var(--muted);padding:.3rem .5rem}
 .sheet h2{font-size:1.6rem;padding-right:2rem}
 .sheet .price{font:800 2rem/1.1 'Bricolage Grotesque',sans-serif;margin:.3rem 0 .2rem}
 .sheet .price small{font:500 .95rem Figtree,sans-serif;color:var(--muted)}
@@ -445,7 +445,7 @@ footer .logo img{height:2.5rem;width:auto;display:block}
 .paybox h3{font-size:1.1rem;margin:0 0 .5rem}
 .code{margin:0 0 .7rem;font-size:.93rem}
 .kw{display:flex;flex-wrap:wrap;gap:.4rem;margin:.6rem 0 0}
-.chipkw{font:600 .9rem Figtree,sans-serif;border:2px solid var(--line);background:var(--paper);border-radius:.6rem;padding:.3rem .7rem;cursor:pointer;color:var(--ink)}
+.chipkw{min-height:2.75rem;font:600 .9rem Figtree,sans-serif;border:2px solid var(--line);background:var(--paper);border-radius:.6rem;padding:.3rem .7rem;cursor:pointer;color:var(--ink)}
 .chipkw:hover{border-color:var(--ink)}
 .code summary{cursor:pointer;color:var(--muted);font-weight:600;width:max-content}
 .coderow{display:flex;gap:.5rem;margin-top:.5rem}
@@ -460,7 +460,9 @@ footer .logo img{height:2.5rem;width:auto;display:block}
 .urg{border:2px solid var(--line);border-radius:.8rem;padding:.7rem .9rem;margin:0 0 1rem}
 .urg input{width:auto;margin:0;accent-color:var(--blue)}
 .urg legend{font-weight:700;padding:0 .3rem}
-.urg label{display:flex;gap:.5rem;align-items:baseline;flex-wrap:wrap;font-weight:400;padding:.15rem 0}
+.urg label{display:grid;grid-template-columns:auto 1fr;column-gap:.6rem;align-items:center;font-weight:400;padding:.35rem 0;min-height:2.75rem}
+.urg label small{grid-column:2}
+.urg input,.anon input{width:1.25rem;height:1.25rem}
 .urg small{color:var(--muted)}
 .urg p{margin:.4rem 0 0;font-size:.85rem;color:var(--muted)}
 .urgent{border:2px solid var(--btc);background:color-mix(in srgb,var(--btc) 10%,white);border-radius:1rem;padding:1rem;margin:1rem 0}
@@ -501,8 +503,11 @@ footer .logo img{height:2.5rem;width:auto;display:block}
 }
 .ordername{margin-top:1rem;padding:.8rem 1rem;border:2px dashed var(--line);border-radius:.8rem;background:var(--paper)}
 .ordername p,.ordername-inner p{margin:.2rem 0}.ordername .on code,.ordername-inner .on code{font:700 1.05rem ui-monospace,Menlo,monospace;letter-spacing:.03em}
-.ordername.big{border-color:var(--btc);text-align:left;margin:1rem 0}
-.ordername .btn,.ordername-inner .btn{padding:.25rem .7rem;font-size:.85rem;margin-left:.4rem}
+.ordername.big{border-color:var(--btc);text-align:left;margin:1rem 0;font:400 1rem/1.5 Figtree,sans-serif}
+.ordername .on code,.ordername-inner .on code{white-space:nowrap;font-size:clamp(.82rem,4vw,1.05rem)}
+.ostep{margin:1.1rem 0 .5rem;font:700 1rem Figtree,sans-serif}.ostep span{font-weight:400;color:var(--muted)}
+.ordername .btn,.ordername-inner .btn{display:flex;margin:.4rem 0 0;min-height:2.75rem;padding:.4rem .9rem;font-size:.9rem}
+#heroBuy{display:flex;flex-wrap:wrap;gap:.5rem}
 </style>
 </head>
 <body>
@@ -1132,7 +1137,7 @@ $("#payg").innerHTML = `<div><h3>Pay as you go: ${money(payg.price)} for ${PAYG.
 $("#guarantees").innerHTML = GUARANTEES.map((g) => `<div><h4>${esc(g.name)}</h4><p>${esc(g.text)}</p></div>`).join("");
 // Hero and final call to action: the cheapest way to test us, never a big amount.
 const test = orderable("q-try"), next = QUICK.find((j) => j.id !== test.id);
-$("#heroBuy").innerHTML = `<button type="button" class="btn primary test" data-buy="hourly">Hire 2 hours · <b>${money(payg.price)}</b> · any tasks</button><button type="button" class="btn" data-buy="${test.id}" style="margin-left:.4rem">Test me · ${money(test.price)}</button>`;
+$("#heroBuy").innerHTML = `<button type="button" class="btn primary test" data-buy="hourly">Hire 2 hours · <b>${money(payg.price)}</b> · any tasks</button><button type="button" class="btn" data-buy="${test.id}">Test me · ${money(test.price)}</button>`;
 $("#finalBuy").innerHTML = buyBtn(test.id, `Test us · ${money(test.price)} · one 15-minute task`) + buyBtn(next.id, `${money(next.price)} · ${next.name}`, "btn");
 $("#tryBuy").innerHTML = buyBtn(QUICK[0].id, `Try it: ${money(QUICK[0].price)} · ${QUICK[0].name}`);
 
@@ -1147,10 +1152,14 @@ if (params.get("q")) { $("#find").value = $("#heroFind").value = params.get("q")
 const modal = $("#modal"), sheet = $("#sheet");
 let stopPay = null, lastFocus = null;
 
-function closeModal() {
+// Phones: the Back button closes the order (the order's address was pushed onto history).
+window.addEventListener("popstate", () => { if (!modal.hidden) closeModal(true); });
+function closeModal(fromBack = false) {
+  if (!fromBack && history.state?.order) { history.back(); return; } // closes via popstate
   stopPay?.(); stopPay = null;
   modal.hidden = true;
-  if (location.pathname !== "/") history.replaceState(null, "", "/" + location.hash); // back to the homepage address
+  // Back the page to its own address (an order opened straight from a link has no /va entry behind it).
+  if (location.pathname !== "/va") history.replaceState(null, "", "/va" + location.hash);
   document.body.classList.remove("modal-open");
   lastFocus?.focus();
 }
@@ -1160,7 +1169,8 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !modal.h
 async function openOrder(itemId) {
   const item = orderable(itemId);
   if (!item) return;
-  history.replaceState(null, "", orderPath(itemId)); // a clean, shareable address: /hourly, /inbox-cleanup
+  // A clean, shareable address (/hourly, /inbox-cleanup), pushed so Back closes the order.
+  if (history.state?.order) history.replaceState({ order: itemId }, "", orderPath(itemId)); else history.pushState({ order: itemId }, "", orderPath(itemId));
   lastFocus = document.activeElement;
   modal.hidden = false;
   document.body.classList.add("modal-open");
@@ -1173,20 +1183,23 @@ async function openOrder(itemId) {
     </div>
 ${item.urgentOk ? `<fieldset class="urg" id="urg"><legend>When do you need it?</legend>
         ${URGENCY.map((u, i) => `<label><input type="radio" form="details" name="urgency" value="${u.id}"${i ? "" : " checked"}> <b>${esc(u.label)}</b><small>${esc(u.note)}</small></label>`).join("")}
-        <p>Nothing is impossible: ${STANDBY_FREELANCERS}+ freelancers are on standby for urgent jobs. Pay for an urgent order and you'll get Stanley's direct number to flag it straight away.</p>
+        <p>Nothing is impossible: ${STANDBY_FREELANCERS}+ freelancers are on standby for urgent jobs. Same price at any speed: choose urgent and you'll get Stanley's direct number to flag it straight away.</p>
       </fieldset>` : ""}
-    <div class="paybox"><h3>₿ Pay <span id="payAmt">${money(item.price)}</span> with any Bitcoin wallet</h3>
-      <details class="code" id="code"><summary>Have a hunt or credit code?</summary><form id="codeForm" class="coderow"><input name="code" autocomplete="off" spellcheck="false" placeholder="HUNT-XXXXXX or CREDIT-XXXXXX" aria-label="Hunt or credit code"><button class="btn dark">Apply</button></form><p id="codeMsg" role="status"></p></details>
-      <div id="pay"><p style="color:var(--muted)">Creating your payment QR…</p></div>
-      <div class="ordername" id="orderName" hidden></div></div>
+    <p class="ostep"><b>1.</b> Tell us the task <span>(you can also add it after paying)</span></p>
     <form class="details" id="details" novalidate>
 
       <label>Email for your receipt and client portal (optional: without it, keep your order name)<input type="email" name="email" autocomplete="email" placeholder="you@business.com"></label>
       <label>Your name<input type="text" name="name" autocomplete="name"></label>
       <label class="wide">What exactly do you need? (deadlines, preferences; any links are security-checked before we open them)<textarea name="task" placeholder="${item.kind === "package" ? "Your first priorities for the month" : "Describe the task"}"></textarea></label>
       <p class="saved wide" id="saved" role="status"></p>
-    </form>`;
-  $(".x", sheet).onclick = closeModal;
+    </form>
+    <p class="ostep"><b>2.</b> Pay</p>
+    <div class="paybox"><h3>₿ Pay <span id="payAmt">${money(item.price)}</span> with any Bitcoin wallet</h3>
+      <details class="code" id="code"><summary>Have a hunt or credit code?</summary><form id="codeForm" class="coderow"><input name="code" autocomplete="off" spellcheck="false" placeholder="HUNT-XXXXXX or CREDIT-XXXXXX" aria-label="Hunt or credit code"><button class="btn dark">Apply</button></form><p id="codeMsg" role="status"></p></details>
+      <div id="pay"><p style="color:var(--muted)">Creating your payment QR…</p></div>
+      <div class="ordername" id="orderName" hidden></div></div>
+`;
+  $(".x", sheet).onclick = () => closeModal();
   $(".x", sheet).focus();
 
   // One order per item per visit: reopening shows the same QR.
@@ -1283,7 +1296,7 @@ async function showDone(item, order) {
   if (urg) { $("legend", urg).textContent = "Need it faster? Change it here"; sheet.appendChild(urg); }
   sheet.appendChild(form);
   form.hidden = Boolean(info.emailed && form.task.value && !item.urgentOk);
-  $(".x", sheet).onclick = closeModal;
+  $(".x", sheet).onclick = () => closeModal();
 }
 
 document.addEventListener("click", (e) => {
