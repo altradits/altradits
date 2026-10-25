@@ -1,8 +1,9 @@
 // GET  /api/proposal?id=&t=          -> proposal for the client page
 // POST /api/proposal { id, t, action } -> accept | paid | decline
-import { json, readBody, clean, siteUrl, safeEqual } from "../lib/http.js";
+import { json, readBody, clean, clientIp, siteUrl, safeEqual } from "../lib/http.js";
 import { getProposal, saveProposal, publicProposal, getLead, saveLead, logEvent, advanceStage, createApproval, proposalUrl } from "../lib/crm.js";
 import { sendEmail } from "../lib/email.js";
+import { hit } from "../lib/store.js";
 import { BUSINESS } from "../data/catalog.js";
 import { lightningMode } from "../lib/lightning.js";
 
@@ -12,17 +13,21 @@ async function load(id, t) {
 }
 
 export async function GET(request) {
+  const ip = clientIp(request);
+  if ((await hit(`rl:prop:miss:${ip}`, 900)) > 30) return json({ error: "Too many attempts. Try again later." }, 429);
   const u = new URL(request.url);
   const p = await load(u.searchParams.get("id"), u.searchParams.get("t"));
-  if (!p) return json({ error: "Proposal not found. Check the link in your email." }, 404);
+  if (!p) { await hit(`rl:prop:miss:${ip}`, 900); return json({ error: "Proposal not found. Check the link in your email." }, 404); }
   if (p.status === "pending_approval") return json({ pending: true });
   return json({ proposal: publicProposal(p), lightning: lightningMode() });
 }
 
 export async function POST(request) {
+  const ip = clientIp(request);
+  if ((await hit(`rl:prop:miss:${ip}`, 900)) > 30) return json({ error: "Too many attempts. Try again later." }, 429);
   const body = await readBody(request);
   const p = await load(body.id, body.t);
-  if (!p) return json({ error: "Proposal not found." }, 404);
+  if (!p) { await hit(`rl:prop:miss:${ip}`, 900); return json({ error: "Proposal not found." }, 404); }
   const lead = await getLead(p.leadId);
   const base = siteUrl(request);
 

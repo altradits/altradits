@@ -1,5 +1,6 @@
 // The collect page's script (moved out of the HTML so the page's Content
 // Security Policy can allow only our own script files).
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); }
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const fmt = (n) => `${Number(n || 0).toLocaleString("en-US")} sats`;

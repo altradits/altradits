@@ -150,3 +150,52 @@ test("scripted Altra handles the quick replies and real-world answers", async ()
   const o = (await call(admin.GET, "GET", "/api/admin", null, ADMIN)).body;
   assert.ok(o.approvals.some((a) => a.type === "trial_task" && /supplier spreadsheet/.test(a.summary)));
 });
+
+test("hero graphics, accessibility contrast, CSP & security hardening (#96 & #101)", async () => {
+  const read = (f) => fs.readFileSync(new URL(f, root), "utf8");
+  for (const [page, cls] of [
+    ["index.html", "hero-art"],
+    ["va.html", "va-art"],
+    ["bitcoin.html", "btc-art"],
+    ["products.html", "prod-art"],
+    ["donate.html", "don-art"],
+    ["hunt.html", "hunt-art"],
+    ["collect.html", "col-art"],
+  ]) {
+    const html = read(page);
+    assert.match(html, new RegExp(`<svg[^>]+class="[^"]*\\b${cls}\\b[^"]*"[^>]+aria-hidden="true"`), `${page} has accessible inline hero SVG (${cls})`);
+    assert.match(html, /--btc-text:#A84D08/, `${page} uses accessible amber text token`);
+  }
+  assert.match(read("va.html"), /el\.inert\s*=\s*true/, "va.html modal sets background inert");
+  assert.match(read("assets/collect.js"), /window\.top !== window\.self/, "collect.js refuses to run inside a frame");
+  assert.doesNotMatch(read("proposal.html"), /\/#services/, "proposal.html links to /va#quick instead of broken /#services");
+  assert.doesNotMatch(read("assets/admin.js"), /\/#quick/, "admin.js links to /va#quick instead of broken /#quick");
+  const srv = read("server.mjs");
+  assert.match(srv, /products\|collect\)\\\.html/, "server.mjs 301-redirects /collect.html to /collect");
+  assert.match(srv, /admin\|portal\|collect\|proposal\|team\)\\\.html\$\/\.test\(rel\)\) headers\["Content-Security-Policy"\]/, "server.mjs attaches CSP to proposal and team pages too");
+
+  // IPv6 SSRF guard & applicant secret check across all fields
+  const { privateIp, safeUrl } = await import(new URL("lib/jobs.js", root));
+  for (const ip of ["::1", "::", "0:0:0:0:0:0:0:1", "FE80::1", "FC00::1", "fd12::1", "::ffff:127.0.0.1", "::ffff:7f00:1", "::ffff:a9fe:a9fe"]) {
+    assert.equal(privateIp(ip), true, `${ip} blocked as private`);
+  }
+  assert.equal(privateIp("2606:4700:4700::1111"), false);
+  await assert.rejects(safeUrl("http://[::ffff:7f00:1]:8080/"), /isn't a public website/);
+
+  const { saveApplicant } = await import(new URL("lib/apply.js", root));
+  await assert.rejects(saveApplicant({ fullName: "Stan", salaryExpectation: "passport 123456" }), /Don't store passwords/);
+
+  // Team & proposal token miss rate limits
+  const team = await import(new URL("api/team.js", root));
+  let lastTeam;
+  for (let i = 0; i < 22; i++) {
+    lastTeam = await team.GET(new Request("https://altradits.test/api/team?m=wrong", { headers: { "x-forwarded-for": "10.20.30.40" } }));
+  }
+  assert.equal(lastTeam.status, 429, "repeated unknown team tokens are rate-limited");
+
+  let lastProp;
+  for (let i = 0; i < 32; i++) {
+    lastProp = await proposal.GET(new Request("https://altradits.test/api/proposal?id=nope&t=wrong", { headers: { "x-forwarded-for": "10.20.30.41" } }));
+  }
+  assert.equal(lastProp.status, 429, "repeated unknown proposal tokens are rate-limited");
+});
