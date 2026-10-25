@@ -140,5 +140,5 @@ export async function GET(request) {
   const lead = await getLead(p.leadId);
   const urgent = isUrgent(p.order);
   return json({ status: "paid", item: p.order.name, delivery: urgent ? urgencyNote(p.order) : p.timeline, portal: lead ? ensurePortal(lead) : null, emailed: Boolean(lead?.email), name: lead?.pickup || null,
-    ...(urgent ? { phone: `+${OWNER_PHONE}`, ref: p.id.slice(0, 6).toUpperCase() } : {}) });
+    ...(urgent && OWNER_PHONE ? { phone: `+${OWNER_PHONE}`, ref: p.id.slice(0, 6).toUpperCase() } : {}) });
 }

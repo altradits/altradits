@@ -30,7 +30,10 @@ VENV=$(ls -d "$HOME/nodevenv/${APP_DIR#$HOME/}"/*/bin 2>/dev/null | sort -V | ta
 if [ -n "$VENV" ]; then
   if [ ! -e node_modules/@anthropic-ai/sdk ] || echo "$CHANGED" | grep -qE '^package(-lock)?\.json$'; then
     . "$VENV/activate"
-    npm install --omit=dev --no-audit --no-fund --loglevel=error
+    # No package install scripts run on the server (versions are pinned in package.json
+    # and package-lock.json). Not "npm ci": it deletes node_modules, which on this host
+    # is a link into the Node.js App's environment.
+    npm install --omit=dev --ignore-scripts --no-audit --no-fund --loglevel=error
     CHANGED="${CHANGED} deps"
     deactivate 2>/dev/null || true
   fi

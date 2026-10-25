@@ -171,6 +171,7 @@ dd{margin:0;overflow-wrap:anywhere}
       <button role="tab" data-tab="jobs">My job hunt <span class="badge" id="jobCount" hidden></span></button>
       <button role="tab" data-tab="emails">Emails <span class="badge" id="mailCount" hidden></span></button>
       <button type="button" class="btn" id="refresh">↻ Refresh</button>
+      <button type="button" class="btn" id="logout" title="Sign out on this device">Log out</button>
     </div>
   </header>
 
@@ -389,6 +390,10 @@ dd{margin:0;overflow-wrap:anywhere}
       <p class="sm muted" style="margin:0 0 .4rem">Runs every morning and deletes for good what's past these periods, always with the same protection: payments, live work and internal records are never touched.</p>
       <ul class="sm" id="autoRules" style="padding-left:1.1rem;margin:.2rem 0"></ul>
       <p class="sm" id="autoLast"></p>
+      <h3 style="margin:1.2rem 0 .4rem;font-size:1rem">Erase a person (privacy request)</h3>
+      <p class="sm muted" style="margin:0 0 .4rem">Deletes for good everything about one email address: unpaid leads and orders, the free-kit subscription, emails to them, a turned-down application. Payments, receipts and payment emails are kept for the books; the team isn't touched.</p>
+      <div class="row"><input id="eraseEmail" type="email" placeholder="their@email.com" style="max-width:16rem"><input id="eraseConfirm" placeholder="Type ERASE" style="max-width:9rem"><button class="btn" id="eraseGo">Erase</button></div>
+      <p class="sm muted" id="eraseMsg" role="status"></p>
       <h3 style="margin:1.2rem 0 .4rem;font-size:1rem">Archives</h3>
       <p class="sm muted" style="margin:0 0 .5rem">Deleting an archive frees its space for good. Type DELETE in the box, then click Delete on the file.</p>
       <input id="archConfirm" placeholder="Type DELETE" style="max-width:14rem">
@@ -481,6 +486,15 @@ function tab(name) {
 }
 document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => tab(b.dataset.tab)));
 document.addEventListener("input", (e) => { if (e.target.matches("[data-price]")) { const s = e.target.parentElement.querySelector("[data-satsfor]"); if (s) s.textContent = money(e.target.value); } });
+$("#eraseGo").addEventListener("click", async () => {
+  try { const r = await api("", { action: "erase_person", email: $("#eraseEmail").value.trim(), confirm: $("#eraseConfirm").value.trim() }); $("#eraseMsg").textContent = `Erased ${r.erased} record${r.erased === 1 ? "" : "s"}${r.kept ? `; ${r.kept} payment record${r.kept === 1 ? "" : "s"} kept for the books` : ""}.`; $("#eraseConfirm").value = ""; }
+  catch (err) { $("#eraseMsg").textContent = err.message; }
+});
+$("#logout").addEventListener("click", () => {
+  try { sessionStorage.removeItem("altra.admin"); } catch {}
+  token = ""; D = null;
+  showLogin("Signed out on this device.");
+});
 $("#refresh").addEventListener("click", async (e) => {
   const b = e.currentTarget; lastBtn = null;
   b.classList.add("busy"); toast("Refreshing…", false, 0);
@@ -1305,7 +1319,7 @@ function renderMarketing() {
   $("#mkErr").textContent = M.lastError ? `Last problem (${ago(M.lastError.at)}): ${M.lastError.error}` : "";
   const h = M.hunt;
   $("#mkHunt").innerHTML = `<div class="kpi"><small>${esc(h.hashtag)} word this week</small><div style="font-size:1.3rem">${esc(h.word)}</div></div><div class="kpi"><small>Solved</small><div>${h.stats.solved}</div></div><div class="kpi"><small>Codes earned</small><div>${h.stats.earned}</div></div><div class="kpi"><small>Codes used</small><div>${h.stats.used}</div></div>
-    <div class="kpi" style="grid-column:1/-1"><small>Waiting for a shoutout in the next post</small><div style="font:500 .95rem Figtree,sans-serif">${h.shoutouts.length ? h.shoutouts.map((w) => `${esc(w.handle ? "@" + w.handle : "")}${w.handle && w.name ? " · " : ""}${esc(w.name || "")} <button class="btn" style="padding:.1rem .5rem;font-size:.8rem" data-mkshout="${esc(w.claimId)}">Remove</button>`).join(" &nbsp; ") : `<span class="muted">Nobody yet. Winners who opt in appear here, then in the next post with ${esc(h.hashtag)}.</span>`}</div></div>`;
+    <div class="kpi" style="grid-column:1/-1"><small>Shoutouts (approve before they're posted)</small><div style="font:500 .95rem Figtree,sans-serif">${h.shoutouts.length ? h.shoutouts.map((w) => `${esc(w.handle ? "@" + w.handle : "")}${w.handle && w.name ? " · " : ""}${esc(w.name || "")} ${w.approved ? '<span class="stage">approved: in the next post</span>' : `<button class="btn ok" style="padding:.1rem .5rem;font-size:.8rem" data-mkshoutok="${esc(w.claimId)}">Approve</button>`} <button class="btn" style="padding:.1rem .5rem;font-size:.8rem" data-mkshout="${esc(w.claimId)}">Remove</button>`).join(" &nbsp; ") : `<span class="muted">Nobody yet. Winners who opt in appear here, then in the next post with ${esc(h.hashtag)}.</span>`}</div></div>`;
   // First view: open the first day with posts still to go out.
   if (!mkPicked) mkDay = (M.days.slice(2).find((d) => d.posts.some((p) => ["scheduled", "planned"].includes(p.status))) || M.days[2]).date;
   $("#mkDayTabs").innerHTML = M.days.map((d) => { const n = d.posts.filter((p) => p.status !== "cancelled").length; const lbl = new Date(d.date + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }); return `<button role="tab" data-mkday="${d.date}" aria-selected="${d.date === mkDay}">${lbl} <span class="muted">${n}</span></button>`; }).join("");
@@ -1330,6 +1344,8 @@ function renderMarketing() {
   $("#mkResults").innerHTML = M.channels.map((c) => { const r = M.results[c.id]; return `<tr><td>${esc(c.name)}</td><td>${r.posts}</td><td>${r.leads}</td><td>${r.paid}</td><td>${money(r.revenue)}</td></tr>`; }).join("");
 }
 $("#mkHunt").addEventListener("click", async (e) => {
+  const ok = e.target.dataset.mkshoutok;
+  if (ok) { try { await api("", { action: "mkt_shout_approve", id: ok }); loadMarketing(); } catch {} return; }
   const id = e.target.dataset.mkshout; if (!id) return;
   e.target.disabled = true;
   try { await api("", { action: "mkt_shout_remove", id }); loadMarketing(); } catch (err) { e.target.textContent = err.message; }

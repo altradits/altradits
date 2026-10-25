@@ -17,12 +17,15 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Trigger deploy on the server
+        env:
+          DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
         run: |
           for attempt in 1 2 3; do
-            body=$(curl -sS --max-time 30 -X POST https://altradits.com/api/deploy -H "Content-Type: application/json" -d '{}' || true)
+            body=$(curl -sS --max-time 30 -X POST https://altradits.com/api/deploy -H "Content-Type: application/json" -H "X-Deploy-Secret: $DEPLOY_SECRET" -d '{}' || true)
             echo "attempt $attempt: $body"
             case "$body" in
               *'"started":true'*) echo "Deploy started."; exit 0 ;;
+              *'deploy secret'*|*'DEPLOY_SECRET'*) echo "::warning::$body The 5-minute cron backup deploys instead."; exit 0 ;;
               *'"started":false'*) echo "A deploy ran within the last minute; the cron backup will pick up anything newer."; exit 0 ;;
             esac
             sleep 20

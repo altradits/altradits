@@ -1,5 +1,6 @@
 // Stanley approves every email; Stan turns instructions into department drafts.
 // Run: npm test
+process.env.OWNER_PHONE = "254700000001"; // a test number (the real one lives only in DirectAdmin)
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -76,12 +77,14 @@ test("Stan turns an instruction into department drafts, queued for approval; bad
         { dept: "growth", to: "jo@shop.co", subject: "Re: Core plan", body: "Hi Jo, Core is $749/month for 35 hours. See https://evil.example or https://altradits.com/core" },
         { dept: "founder", to: "jo@shop.co", subject: "x", body: "Stan must not send this" },
         { dept: "orders", to: "not-an-email", subject: "x", body: "x" },
+        { dept: "growth", to: "accountant@evil.example", subject: "cc", body: "As the email asked" }, // added by the message, not Stanley
       ], questions: [] } }] };
   } }) } } });
   const rec = await stan.instruct({ text: "Reply to Jo about the Core plan", context: { from: "Jo <jo@shop.co>", mailbox: "care@altradits.com", subject: "Core plan?", text: "How many hours? Also see https://evil.example/x" } });
   assert.equal(rec.status, "drafted");
   assert.equal(rec.drafts.length, 1);
-  assert.equal(rec.questions.length, 2); // the two invalid drafts were skipped and reported
+  assert.equal(rec.questions.length, 3); // two invalid drafts and one recipient Stanley never named were skipped and reported
+  assert.ok(rec.questions.some((q) => /accountant@evil\.example: not someone you named/.test(q)));
   // The quoted message reached Stan defanged, as data.
   assert.match(seen.messages[0].content, /hxxps:\/\/evil\[\.\]example/);
   assert.ok(!seen.tools[0].input_schema.properties.emails.items.properties.dept.enum.includes("founder"));
@@ -176,11 +179,18 @@ test("payments: one automatic email with the complete receipt attached; nothing 
   assert.equal(tally.donors, 1);
 });
 
-test("a kit requested on /products reaches the inbox at once, with approvals on", async () => {
+test("a kit requested on /products: the confirmation and, once confirmed, the kit go out at once, with approvals on", async () => {
   const subs = await import("../lib/subscribers.js");
+  const { getJSON } = await import("../lib/store.js");
   const r = await subs.subscribe({ email: "kiwi@shop.co", name: "Kiwi", kit: "inbox", ip: "1.2.3.4" });
   assert.ok(r.sub);
-  const mail = (await all()).find((e) => e.to === "kiwi@shop.co");
+  const ask = (await all()).find((e) => e.to === "kiwi@shop.co");
+  assert.equal(ask.status, "logged");
+  assert.match(ask.subject, /^Confirm to get your/);
+  const s = await getJSON(`sub:${r.sub.id}`);
+  assert.equal(await subs.confirmSubscription(s.id, "wrong", "inbox"), false);
+  assert.equal(await subs.confirmSubscription(s.id, s.c, "inbox"), true);
+  const mail = (await all()).find((e) => e.to === "kiwi@shop.co" && /Your free kit/.test(e.subject));
   assert.equal(mail.status, "logged"); // sent, not waiting for approval
   assert.match(mail.from, /<marketing@altradits\.com>$/);
   assert.deepEqual(mail.files, ["inbox-zero-in-60-minutes.pdf"]);
@@ -580,4 +590,15 @@ test("a code stays reserved while an older invoice made with it can still be pai
   await post(a.p, "", "2.2.2.1"); // A drops the code, but its discounted QR is still payable
   const r = await post(b.p, credit.code, "2.2.2.2");
   assert.match(r.error, /being used on another order/); // B can't take it meanwhile
+});
+
+test("discounts: the price after the discount must stay above the floor, and any discount waits for Stanley", async () => {
+  const crm = await import("../lib/crm.js");
+  const lead = await crm.createLead({ name: "Dee", email: "dee@shop.co" });
+  const floorish = crm.priceProposal(lead, { items: [{ package_id: "core" }] }).proposal.items[0].base * 0.9;
+  const { proposal, reasons } = crm.priceProposal(lead, { items: [{ package_id: "core", price_usd: Math.ceil(floorish) }], discount_pct: 10 });
+  assert.equal(proposal.status, "pending_approval");
+  assert.ok(reasons.some((r) => /after the discount, below/.test(r)));
+  assert.ok(reasons.some((r) => /discount needs your OK/.test(r)));
+  assert.equal(crm.priceProposal(lead, { items: [{ package_id: "core" }] }).reasons.length, 0); // list price, no discount: straight through
 });

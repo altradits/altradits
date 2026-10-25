@@ -6,6 +6,7 @@ import { handleTurn, agentLive } from "../lib/agent.js";
 import { hit } from "../lib/store.js";
 import { isGated, checkGate } from "../lib/guard.js";
 import { saveLead } from "../lib/crm.js";
+import { SERVICES } from "../data/catalog.js";
 
 const MAX_TURNS_PER_LEAD = 60;
 
@@ -28,11 +29,17 @@ export async function POST(request) {
     lead = await getLead(clean(body.leadId, 40));
     if (!lead || !safeEqual(lead.token, body.token)) lead = null;
   }
+  // Per connection: new conversations and AI turns a day (a new conversation would
+  // otherwise reset every per-visitor limit).
+  if ((await hit(`rl:chatai:${clientIp(request)}`, 86400)) > 80) {
+    return json({ error: "That's a lot of chat for one day. Email altradits@gmail.com and Stanley will reply personally." }, 429);
+  }
   if (!lead) {
+    if ((await hit(`rl:chatnew:${clientIp(request)}`, 3600)) > 12) return json({ error: "Please continue your earlier conversation, or email altradits@gmail.com." }, 429);
     const ctx = body.context && typeof body.context === "object" ? body.context : {};
     lead = await createLead({
       source: clean(ctx.source || "chat", 40),
-      needs: Array.isArray(ctx.needs) ? ctx.needs : [],
+      needs: (Array.isArray(ctx.needs) ? ctx.needs : []).filter((n) => SERVICES.some((s) => s.id === n)),
       context: { page: clean(ctx.page, 200), service: clean(ctx.service, 80), quiz: cleanQuiz(ctx.quiz) },
       referredBy: clean(ctx.ref, 12).toLowerCase(),
     });
@@ -40,7 +47,7 @@ export async function POST(request) {
   }
 
   if (!isNew && Array.isArray(body.context?.needs)) {
-    lead.needs = [...new Set([...lead.needs, ...body.context.needs.map((n) => clean(n, 80))])].slice(0, 20);
+    lead.needs = [...new Set([...lead.needs, ...body.context.needs.map((n) => clean(n, 80)).filter((n) => SERVICES.some((s) => s.id === n))])].slice(0, 20);
   }
 
   if (lead.transcript.filter((m) => m.role === "user").length >= MAX_TURNS_PER_LEAD) {

@@ -196,7 +196,7 @@ test("the top of the CV is always simple: short headline, one contact line, 2-se
   const old = `# STANLEY CHEGE THUITA
 **Founder & Full-Stack Engineer | AI Agent Systems · Bitcoin & Lightning Payments · Go / Node.js**
 
-Nairobi & Kisumu, Kenya · altradits@gmail.com · +254 707 172 370
+Nairobi & Kisumu, Kenya · altradits@gmail.com · +254 700 000 001
 
 altradits.com · github.com/altradits · linkedin.com/in/stanmobitech · altradits-portfolio.vercel.app · x.com/altradits
 
@@ -210,7 +210,7 @@ Founder and engineer who designed, built and runs **Altradits**, a global virtua
   const out = career.simplifyTop(old).split("\n");
   assert.equal(out[0], "# Stanley Chege Thuita");
   assert.equal(out[1], "Founder & Full-Stack Engineer");
-  assert.equal(out[2], "Nairobi & Kisumu, Kenya | altradits@gmail.com | +254 707 172 370 | altradits.com | linkedin.com/in/stanmobitech");
+  assert.equal(out[2], "Nairobi & Kisumu, Kenya | altradits@gmail.com | +254 700 000 001 | altradits.com | linkedin.com/in/stanmobitech");
   const text = out.join("\n");
   assert.doesNotMatch(text, /one person|sales chat|vercel|x\.com/);
   assert.match(text, /## Professional Summary\nSoftware engineer and founder of Altradits/);

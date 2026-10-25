@@ -87,7 +87,7 @@ test("hard checks block invented prices, URLs, phones, testimonials, coupons and
   assert.match(mk.checkPost(ch("x"), "Only $7 today!").join(), /not a catalog price/);
   assert.match(mk.checkPost(ch("fb_page"), "See https://altradits.com").join(), /No URLs/);
   assert.match(mk.checkPost(ch("x"), "Visit altradits.com").join(), /No domain names/);
-  assert.match(mk.checkPost(ch("li_co"), "Call +254 707 172 370").join(), /phone/);
+  assert.match(mk.checkPost(ch("li_co"), "Call +254 700 000 001").join(), /phone/);
   assert.match(mk.checkPost(ch("li_co"), "Our clients say we're the best").join(), /testimonials/);
   assert.match(mk.checkPost(ch("li_co"), "Grab a coupon today").join(), /coupons/);
   assert.match(mk.checkPost(ch("li_co"), "🔎 letter 2 of 8 is A").join(), /hunt or winners line/);
@@ -262,6 +262,9 @@ test("winners who opt in get a shoutout in the next post out: tagged on X, by na
   assert.equal((await hunt.pendingShoutouts()).length, 0); // not a winner until the coupon unlocks
   await huntApi.POST(req("/api/hunt", { action: "visit", code: claim.share.split("/").pop() }, "5.5.5.5"));
   assert.equal((await hunt.pendingShoutouts()).length, 1);
+  // Nothing is published until Stanley approves the shoutout.
+  assert.equal(await hunt.takeShoutouts("x"), "");
+  await hunt.approveShoutout((await hunt.pendingShoutouts())[0].claimId);
 
   // The next X post that goes out carries the tag, between the post and the clue.
   Object.assign(process.env, X_KEYS);

@@ -40,6 +40,14 @@ async function gate(request) {
   if ((await peek(key)) >= 20) return json({ error: "Too many wrong tokens. Wait 15 minutes and try again." }, 429);
   if (authorized(request)) return null;
   await hit(key, 900);
+  // Many wrong tokens across the whole site (someone guessing from many
+  // connections): Stanley is told, at most once an hour. Never a site-wide
+  // lockout, which would let a stranger lock him out of his own admin.
+  const hour = new Date().toISOString().slice(0, 13);
+  if ((await hit(`rl:admin:fail:all:${hour}`, 3600)) === 100) {
+    const { emailOwner } = await import("../lib/email.js");
+    await emailOwner("Many wrong admin tokens", "More than 100 wrong admin tokens were tried in the last hour, from several connections. If that wasn't you, rotate ADMIN_TOKEN in DirectAdmin (openssl rand -hex 32), then Save and Restart the app.").catch(() => {});
+  }
   return deny();
 }
 
@@ -321,6 +329,11 @@ export async function POST(request) {
     if (!p) return json({ error: "Payment not found." }, 404);
     try { const s = await moveToNode(p, body.sats); return json({ bolt11: s.bolt11, sats: s.sats }); } catch (err) { return json({ error: /connected|LND|ECONN|timed out/i.test(err.message) ? "The node isn't reachable yet. Start it on the Mac, then try again." : err.message }, 400); }
   }
+  if (body.action === "erase_person") {
+    if (body.confirm !== "ERASE") return json({ error: "Type ERASE to confirm." }, 400);
+    const { erasePerson } = await import("../lib/cleanup.js");
+    try { return json(await erasePerson(clean(body.email, 200))); } catch (err) { return json({ error: err.message }, 400); }
+  }
   if (body.action === "archives") { const { listArchives } = await import("../lib/store.js"); return json({ archives: listArchives() }); }
   if (body.action === "archive_delete") {
     if (body.confirm !== "DELETE") return json({ error: "Type DELETE to confirm." }, 400);
@@ -358,6 +371,7 @@ export async function POST(request) {
       if (body.action === "mkt_autoreply") return json({ settings: await saveMarketing({ autoReply: Boolean(body.on) }) });
       if (body.action === "mkt_cancel") return json({ post: await cancelPost(clean(body.id, 20)) });
       if (body.action === "mkt_post_now") return json({ post: await postNow(clean(body.id, 20)) });
+      if (body.action === "mkt_shout_approve") { const { approveShoutout } = await import("../lib/hunt.js"); await approveShoutout(clean(body.id, 20)); return json({ ok: true }); }
       if (body.action === "mkt_shout_remove") { const { removeShoutout } = await import("../lib/hunt.js"); await removeShoutout(clean(body.id, 20)); return json({ ok: true }); }
       if (body.action === "mkt_edit") return json({ post: await editPost(clean(body.id, 20), body.text) });
       // These take a minute or two: start them and let the dashboard refresh.

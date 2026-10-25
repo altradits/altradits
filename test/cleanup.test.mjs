@@ -57,3 +57,38 @@ test("a dashboard's clear button: only its own records, minus anything protected
   assert.equal(t.kept, 1);
   await assert.rejects(clearGroups(["members"]), /Choose/); // the team can't be cleared
 });
+
+test("daily backup: compressed, encrypted with BACKUP_KEY, owner-only, rotated, and restores exactly", async () => {
+  const fs = await import("node:fs"), path = await import("node:path");
+  const backup = await import("../lib/backup.js");
+  process.env.BACKUP_DIR = path.join(process.cwd(), "bk");
+  process.env.BACKUP_KEY = "correct horse battery staple";
+  await store.setJSON("proposal:keepme", { id: "keepme", status: "paid" });
+  const r = await backup.backupNow(new Date("2026-10-20T03:00:00Z"));
+  assert.equal(r.encrypted, true);
+  const file = path.join(process.env.BACKUP_DIR, r.file);
+  assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+  assert.ok(!fs.readFileSync(file).includes("keepme")); // not readable without the key
+  assert.equal(backup.readBackup(file).kv["proposal:keepme"].status, "paid");
+  assert.throws(() => backup.readBackup(file, "wrong key"));
+  for (let d = 0; d < 20; d++) await backup.backupNow(new Date(Date.UTC(2026, 8, 1 + d, 3)));
+  const left = fs.readdirSync(process.env.BACKUP_DIR);
+  assert.ok(left.filter((f) => !f.includes("weekly")).length <= 14 && left.filter((f) => f.includes("weekly")).length <= 8);
+  delete process.env.BACKUP_KEY;
+});
+
+test("erase a person: their unpaid records and emails go; payments stay; the team is never touched", async () => {
+  const { erasePerson } = await import("../lib/cleanup.js");
+  await put("lead", "leads", { id: "e1", email: "gone@x.co", token: "t", stage: "new", createdAt: new Date().toISOString() });
+  await put("lead", "leads", { id: "e2", email: "gone@x.co", token: "t", stage: "active", createdAt: new Date().toISOString() });
+  await put("proposal", "proposals", { id: "ep", leadId: "e2", status: "paid", payment: { confirmedAt: new Date().toISOString() } });
+  await put("email", "emails", { id: "em1", to: "gone@x.co", kind: "client", status: "sent", at: new Date().toISOString() });
+  await put("email", "emails", { id: "em2", to: "gone@x.co", kind: "payment", status: "sent", at: new Date().toISOString(), leadId: "e2" });
+  await put("member", "members", { id: "mm", email: "gone@x.co", status: "rejected", token: "mt" });
+  await put("member", "members", { id: "team", email: "team@x.co", status: "approved", token: "tt" });
+  await assert.rejects(erasePerson("nope"), /email address/);
+  const r = await erasePerson("Gone@X.co");
+  assert.ok(r.erased >= 3 && r.kept >= 2);
+  for (const k of ["lead:e1", "email:em1", "member:mm"]) assert.equal(await has(k), false, k);
+  for (const k of ["proposal:ep", "lead:e2", "email:em2", "member:team"]) assert.equal(await has(k), true, k);
+});

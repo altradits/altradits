@@ -79,6 +79,7 @@ export const HUNT = {
   hashtag: "#AltraditsHunt", // the same tag on every post, every week: it markets the brand and marks the clue
   couponPct: 10,   // % off one order
   couponDays: 30,  // unused codes expire after this
+  maxCouponsPerHunt: 50, // a ceiling on what bots could farm in one week
   words: ["DELEGATE", "SAMEDAY", "FOUNDERS", "QUICKJOB", "SPEEDRUN", "SATOSHI", "HANDOVER", "FREEDOM", "BITCOIN", "FASTLANE"],
 };
 

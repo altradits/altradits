@@ -1,6 +1,7 @@
 // End-to-end funnel test against the real handlers, in scripted-agent mode with
 // the local file store. Run: npm test
 process.env.EMAIL_APPROVAL = "off"; // these tests check delivery; the approval gate has its own tests
+process.env.OWNER_PHONE = "254700000001"; // a test number (the real one lives only in DirectAdmin)
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
