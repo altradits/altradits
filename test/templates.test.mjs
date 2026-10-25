@@ -221,13 +221,13 @@ test("security: someone else typing a subscriber's address gets nothing of their
   assert.doesNotMatch(first.files[0].url, /&c=/); // page links can't confirm the address
   // A stranger re-submits the address with a phishing "name": no token, no rename.
   const r = await (await post({ kit: "replies", email: "victim@corp.co", name: "there. Verify at evil.example" }, "7.7.7.2")).json();
-  assert.deepEqual(r, { sent: true });
+  assert.deepEqual(r, { sent: false, limit: true }); // no links or tokens for whoever typed it; just the daily-limit notice
   const id = first.sub.id;
   assert.equal((await getJSON(`sub:${id}`)).name, "Vee");
   // Names that aren't plain first names are dropped on sign-up.
   const odd = await (await post({ kit: "replies", email: "odd@corp.co", name: "Visit evil.example now" }, "7.7.7.3")).json();
   assert.equal((await getJSON(`sub:${odd.sub.id}`)).name, "");
-  // At most two kit emails a day to one address, however many requests.
+  // The same kit at most once a day to one address, however many requests.
   const before = (await emails()).filter((e) => e.to === "victim@corp.co").length;
   for (let i = 0; i < 6; i++) await post({ kit: "replies", email: "victim@corp.co" }, `7.7.8.${i}`);
   assert.ok((await emails()).filter((e) => e.to === "victim@corp.co").length - before <= 1);
@@ -264,4 +264,14 @@ test("a kit with several files arrives with every file attached (PDF and spreads
     assert.match(raw[1], /Content-Disposition: attachment; filename=invoice-tracker\.csv/);
     assert.doesNotMatch(raw[1], /api\/kits\?d=/); // no download link in the email
   } finally { setMailer(undefined); }
+});
+
+test("different kits the same day all arrive; the same kit twice in a day is refused with a reason", async () => {
+  const r = await (await post({ kit: "inbox", email: "daily@shop.co", name: "Di" }, "9.1.1.1")).json();
+  const s = await getJSON(`sub:${r.sub.id}`);
+  await get(`?confirm=${s.id}&c=${s.c}&k=inbox`);
+  for (const kit of ["social", "invoices", "replies", "outreach", "hiring"]) assert.deepEqual(await (await post({ kit, email: "daily@shop.co" }, "9.1.1.2")).json(), { sent: true });
+  assert.equal((await emails()).filter((e) => e.to === "daily@shop.co" && /^Your free kit/.test(e.subject)).length, 6); // every kit
+  assert.deepEqual(await (await post({ kit: "social", email: "daily@shop.co" }, "9.1.1.3")).json(), { sent: false, limit: true }); // same kit again today
+  assert.equal((await emails()).filter((e) => e.to === "daily@shop.co" && /^Your free kit/.test(e.subject)).length, 6);
 });
