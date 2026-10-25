@@ -39,14 +39,19 @@ a{color:var(--blue)}
 .err{color:#B42318}
 @media (max-width:560px){.doc{padding:1.25rem;box-shadow:4px 4px 0 var(--ink)}.doc h1{font-size:1.6rem}}
 @media print{body{background:#fff}.top,.meta{display:none}.doc{border:0;box-shadow:none;padding:0}.wrap{padding:0}}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:2rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.6rem 0}
+.topnav{display:flex;gap:1.1rem;margin-left:auto;margin-right:1rem}.topnav a{font-weight:600;text-decoration:none;color:var(--muted,#4B5A70)}.topnav a:hover{color:inherit}
+@media print{.topnav,.sitefoot{display:none}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a class="logo" href="/"><img src="/assets/logo.png" alt="Altradits" width="325" height="119" style="height:2.4rem;width:auto;display:block"></a><span id="tools" hidden><a class="btn" id="pdf" href="#" download>Download PDF</a> <button class="btn" onclick="print()">Print</button></span></div>
+  <div class="top"><a class="logo" href="/"><img src="/assets/logo.png" alt="Altradits" width="325" height="119" style="height:2.4rem;width:auto;display:block"></a><nav class="topnav" aria-label="Main"><a href="/va">VA</a><a href="/bitcoin">Bitcoin</a><a href="/products">Products</a></nav><span id="tools" hidden><a class="btn" id="pdf" href="#" download>Download PDF</a> <button class="btn" onclick="print()">Print</button></span></div>
   <article class="doc" id="doc"><p>Loading…</p></article>
   <p class="meta" id="meta"></p>
 </div>
+<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Hire a VA</a> · <a href="/products">Products</a> · <a href="/bitcoin">Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/hunt">Treasure hunt</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script>
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 function md(src) {

@@ -261,7 +261,7 @@ export const PACKAGES = [
 ];
 
 export const PAYG = { hourly: 25, minimumHours: 2,
-  deliverables: ["2 hours of any task from the list above", "Done the same day", "A note of what was done and the time used"] };
+  deliverables: ["2 hours of any tasks listed on altradits.com/va", "Done the same day", "A note of what was done and the time used"] };
 
 // How fast a small order is needed. Urgent orders get Stanley's direct number
 // after payment (never before) so the client can flag it straight away.

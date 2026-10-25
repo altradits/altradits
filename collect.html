@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2F5BEA;--btc:#F7931A;--ok:#12A37F;--paper:#fff}
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2F5BEA;--btc:#F7931A;--btc-text:#B45309;--ok:#12A37F;--paper:#fff}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
 a{color:var(--blue)}
@@ -27,7 +27,7 @@ a{color:var(--blue)}
 .topnav a{font-weight:600;text-decoration:none;color:var(--muted)}
 .topnav a:hover{color:var(--ink)}
 h1{font:800 clamp(2rem,6vw,2.8rem)/1.05 'Bricolage Grotesque',sans-serif;margin:0 0 .6rem}
-h1 em{font-style:normal;color:var(--btc)}
+h1 em{font-style:normal;color:var(--btc-text)}
 .lead{color:var(--muted);font-size:1.1rem;margin:0 0 1.4rem}
 .card{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;box-shadow:6px 6px 0 var(--ink);padding:1.4rem;margin-bottom:1.4rem}
 label{display:block;font-weight:600;font-size:.92rem;margin:0 0 .3rem}
@@ -46,6 +46,10 @@ dt{color:var(--muted)}dd{margin:0;font-weight:600}
 .qr{width:13rem;background:#fff;padding:.4rem;border-radius:.6rem;border:1px solid var(--line)}
 .note{color:var(--muted);font-size:.92rem}
 .actions{display:flex;flex-wrap:wrap;gap:.6rem}
+input::placeholder{color:#8A97A8;font-weight:400}
+.note a{display:inline-block;padding:.6rem 0}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:2rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.6rem 0}
 </style>
 </head>
 <body>
@@ -56,7 +60,7 @@ dt{color:var(--muted)}dd{margin:0;font-weight:600}
 
   <form class="card" id="find" novalidate>
     <label for="name">Order name</label>
-    <input id="name" name="name" autocomplete="off" spellcheck="false" placeholder="AMBER-FALCON-RIVER-7342" required>
+    <input id="name" name="name" autocomplete="off" spellcheck="false" placeholder="AMBER-FALCON-RIVER-MAPLE-7342" required>
     <button class="btn" id="go">Open my order</button>
     <p class="msg" id="msg" role="status"></p>
   </form>
@@ -64,6 +68,7 @@ dt{color:var(--muted)}dd{margin:0;font-weight:600}
   <div class="card" id="out" hidden></div>
   <p class="note">Your order name works like a key: anyone who has it can open the order, so keep it private. Lost it? Write to <a href="mailto:hello@altradits.com">hello@altradits.com</a> with when you paid and the amount.</p>
 </div>
+<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Hire a VA</a> · <a href="/products">Products</a> · <a href="/bitcoin">Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/hunt">Treasure hunt</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script src="/assets/collect.js"></script>
 </body>
 </html>

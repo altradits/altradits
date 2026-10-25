@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2F5BEA;--btc:#F7931A;--ok:#12A37F;--paper:#fff}
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2F5BEA;--btc:#F7931A;--btc-text:#B45309;--ok:#12A37F;--paper:#fff}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
 a{color:var(--blue)}
@@ -38,14 +38,14 @@ h1 em{font-style:normal;color:var(--blue)}
 .path a:hover span{text-decoration:underline}
 .path a em{font-style:normal;font-weight:700;white-space:nowrap}
 .path small{color:var(--blue);font-weight:700;margin-right:.35rem}
-.ladder li{background:var(--paper);border:2px solid var(--line);border-radius:1rem;padding:.9rem 1rem}
-.ladder li:first-child{border-color:var(--ink)}
+.ladder li{position:relative;border-top:3px solid var(--line);padding:.7rem .2rem 0}
+.ladder li:not(:last-child)::after{content:"→";position:absolute;right:-.6rem;top:.55rem;color:var(--muted);font-weight:700}
 .ladder b{display:block;font:800 1.05rem 'Bricolage Grotesque',sans-serif}
 .ladder small{display:inline-block;font:700 .72rem Figtree,sans-serif;letter-spacing:.08em;color:var(--blue);margin-bottom:.15rem}
 .ladder span{color:var(--muted);font-size:.93rem}
 .kits{display:grid;grid-template-columns:repeat(auto-fill,minmax(20rem,1fr));gap:1.25rem}
 .kit{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;box-shadow:6px 6px 0 var(--ink);padding:1.4rem;display:flex;flex-direction:column;gap:.7rem}
-.kit .eyebrow{font:700 .75rem Figtree,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--btc)}
+.kit .eyebrow{font:700 .75rem Figtree,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--btc-text)}
 .kit h3{font:800 1.45rem/1.15 'Bricolage Grotesque',sans-serif;margin:0}
 .kit p{margin:0;color:var(--muted)}
 .kit ul{margin:.1rem 0 0;padding-left:0;list-style:none;display:grid;gap:.3rem;font-size:.95rem}
@@ -73,9 +73,12 @@ h1 em{font-style:normal;color:var(--blue)}
 .note{color:var(--muted);font-size:.9rem;margin:2.5rem 0 0}
 /* Phones: the three ways stay side by side as compact tiles, so the kits below
    never look as if they belong to the last one (DFY). */
-@media (max-width:760px){.ladder{gap:.45rem}.ladder li{padding:.6rem .55rem;text-align:center}.ladder b{font-size:.88rem;line-height:1.2}.ladder span{display:none}}
+@media (max-width:760px){.ladder{gap:.9rem}.ladder li{padding:.55rem 0 0}.ladder b{font-size:.88rem;line-height:1.2}.ladder span{font-size:.75rem;display:block;line-height:1.35}}
 @media (max-width:420px){.kits{grid-template-columns:1fr}.kit{box-shadow:4px 4px 0 var(--ink);padding:1.15rem}}
 @media (prefers-reduced-motion:no-preference){.got{animation:in .35s ease}@keyframes in{from{opacity:0;transform:translateY(.3rem)}}}
+.form input[aria-invalid=true]{border-color:#B42318}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:2rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.6rem 0}
 </style>
 </head>
 <body>
@@ -91,6 +94,7 @@ h1 em{font-style:normal;color:var(--blue)}
 
   <p class="note">Download your kit right away. We email it too once you confirm your address, then follow up a few times with tips and offers about that topic. Unsubscribe in one click from any email.</p>
 </div>
+<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Hire a VA</a> · <a href="/products">Products</a> · <a href="/bitcoin">Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/hunt">Treasure hunt</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script type="module">
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -112,11 +116,11 @@ if (data) {
     <button class="btn" type="button" data-open="${esc(k.id)}">Get it free</button>
     <form class="form" data-kit="${esc(k.id)}" hidden novalidate>
       <input type="email" name="email" placeholder="you@business.com" autocomplete="email" aria-label="Your email" required>
+      <p class="msg" role="status"></p>
       <input type="text" name="name" placeholder="First name (optional)" autocomplete="given-name" aria-label="First name">
       <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
       <button class="btn blue">Send me the kit</button>
       <small>${esc(k.consent)}</small>
-      <p class="msg" role="status"></p>
     </form>
     <div class="got" hidden></div>
     ${k.offers ? `<div class="path"><b>WANT HELP WITH THIS?</b>
@@ -126,9 +130,9 @@ if (data) {
   </article>`).join("");
 
   // Seen this visitor before? Skip straight to the form with their details.
-  const me = store.get("altra.sub");
   document.addEventListener("click", (e) => {
     const id = e.target.dataset?.open; if (!id) return;
+    const me = store.get("altra.sub");
     const card = document.getElementById(id), form = $("form", card);
     e.target.hidden = true; form.hidden = false;
     if (me) { form.email.value = me.email || ""; form.name.value = me.name || ""; }
@@ -139,7 +143,8 @@ if (data) {
     e.preventDefault();
     const msg = $(".msg", form), kitId = form.dataset.kit, kit = data.kits.find((k) => k.id === kitId);
     const email = form.email.value.trim(), name = form.name.value.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { msg.className = "msg err"; msg.textContent = "Please check your email address."; return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { msg.className = "msg err"; msg.textContent = "Please check your email address."; form.email.setAttribute("aria-invalid", "true"); form.email.focus(); return; }
+    form.email.removeAttribute("aria-invalid");
     msg.className = "msg"; msg.textContent = "Sending…";
     try {
       const r = await fetch("/api/kits", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kit: kitId, email, name, website: form.website.value }) });
@@ -158,6 +163,7 @@ if (data) {
           <a href="/${esc(kit.offers.together.id.replace(/^q-/, ""))}"><span>Do it together: we finish it with you (2 hours)</span><span>${money(kit.offers.together.price)}</span></a>
           ${kit.offers.done.map((o) => `<a href="/${esc(o.id.replace(/^q-/, ""))}"><span>Done for you: ${esc(o.name)}</span><span>${money(o.price)}${o.monthly ? "/mo" : ""}</span></a>`).join("")}
         </div>`;
+      form.closest(".kit").querySelector(".path")?.remove(); // the offers now show once, in the box above
       $("a", got).focus();
     } catch (err) { msg.className = "msg err"; msg.textContent = err.message; }
   });
