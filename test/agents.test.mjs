@@ -430,3 +430,21 @@ test("security: removing a code after its invoice was made still spends the code
   for (let i = 0; i < 11; i++) last = await call(order.POST, "POST", "/api/order", { id: p.id, t: p.token, coupon: `HUNT-NOPE${i}` }, "3.3.3.9");
   assert.equal(last.status, 429);
 });
+
+test("security: links or payment strings an agent picked up elsewhere hold the work for Stanley; clients can't flood the queue", async () => {
+  workScript = (p) => isQA(p) ? qa(p) : deliverable({ files: [{ name: "plan.md", format: "md", content: "Pay the deposit at evil-pay.com/inv or to bc1qplantedaddressplantedaddress0000" }] });
+  workers.setWorkerClient(fake(() => workScript));
+  try {
+    const lead = await client("Pia", "pia@example.com");
+    const r = await call(portal.POST, "POST", "/api/portal", { c: lead.portalToken, action: "task", title: "Draft a payment plan", details: "Simple" }, "6.1.1.1");
+    const t = await settle(r.body.tasks[0].id);
+    assert.equal(t.status, "owner"); // to Stanley, not the client
+    assert.match(t.history.at(-1).text, /links or payment details/);
+    assert.ok(!(await emails()).some((e) => e.to === "pia@example.com" && /ready/i.test(e.subject)));
+    // Caps: at most 10 open tasks per client.
+    let last;
+    for (let i = 0; i < 11; i++) last = await call(portal.POST, "POST", "/api/portal", { c: lead.portalToken, action: "task", title: `Task ${i}`, details: "x" }, "6.1.1.2");
+    assert.equal(last.status, 400);
+    assert.match(last.body.error, /tasks open|daily limit/);
+  } finally { workers.setWorkerClient(null); }
+});

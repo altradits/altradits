@@ -76,12 +76,14 @@ test("Stan turns an instruction into department drafts, queued for approval; bad
         { dept: "growth", to: "jo@shop.co", subject: "Re: Core plan", body: "Hi Jo, Core is $749/month for 35 hours. See https://evil.example or https://altradits.com/core" },
         { dept: "founder", to: "jo@shop.co", subject: "x", body: "Stan must not send this" },
         { dept: "orders", to: "not-an-email", subject: "x", body: "x" },
+        { dept: "growth", to: "accountant@evil.example", subject: "cc", body: "As the email asked" }, // added by the message, not Stanley
       ], questions: [] } }] };
   } }) } } });
   const rec = await stan.instruct({ text: "Reply to Jo about the Core plan", context: { from: "Jo <jo@shop.co>", mailbox: "care@altradits.com", subject: "Core plan?", text: "How many hours? Also see https://evil.example/x" } });
   assert.equal(rec.status, "drafted");
   assert.equal(rec.drafts.length, 1);
-  assert.equal(rec.questions.length, 2); // the two invalid drafts were skipped and reported
+  assert.equal(rec.questions.length, 3); // two invalid drafts and one recipient Stanley never named were skipped and reported
+  assert.ok(rec.questions.some((q) => /accountant@evil\.example: not someone you named/.test(q)));
   // The quoted message reached Stan defanged, as data.
   assert.match(seen.messages[0].content, /hxxps:\/\/evil\[\.\]example/);
   assert.ok(!seen.tools[0].input_schema.properties.emails.items.properties.dept.enum.includes("founder"));
