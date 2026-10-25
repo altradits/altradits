@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2F5BEA;--btc:#F7931A;--btc-text:#B45309;--ok:#12A37F;--paper:#fff}
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#B45309;--ok:#0B7A5F;--paper:#fff}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
 a{color:var(--blue)}
@@ -54,12 +54,13 @@ textarea{min-height:4.5rem;resize:vertical}
 .anon{min-height:2.75rem}.anon input{width:1.25rem;height:1.25rem}
 .sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:2rem}
 .sitefoot a{color:var(--muted);display:inline-block;padding:.6rem 0}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">VA</a><a href="/bitcoin">Bitcoin</a><a href="/products">Products</a></nav></div>
-  <h1>Fund Bitcoin <em>education.</em></h1>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">VA</a><a href="/bitcoin"><span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/products">Products</a></nav></div>
+  <h1>Fund <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span> <em>education.</em></h1>
   <p class="lead" id="purpose">Help people and businesses in our community learn to earn, save and pay in Bitcoin instead of fiat currency.</p>
   <p class="raised" id="raised" hidden></p>
 
@@ -74,7 +75,7 @@ textarea{min-height:4.5rem;resize:vertical}
     </div>
     <label for="message">Message (optional)</label>
     <textarea id="message" maxlength="600" placeholder="What made you give?"></textarea>
-    <button class="btn" id="go">Donate with Bitcoin</button>
+    <button class="btn" id="go"><span class="lbl">Donate with <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></span></button>
     <p class="msg" id="msg" role="status"></p>
   </div>
 

@@ -26,7 +26,7 @@ export const MARKETING_TEAM = [
     rules: "Answers people who comment on Altradits' own posts or mention @altradits: short, warm, specific, helpful, in the commenter's language. Never comments elsewhere, likes, follows or starts threads (that's Stanley, from his personal accounts). Complaints, payment or refund issues, anything legal, abusive or uncertain go to Stanley instead of a public reply. Spam is ignored." },
   { id: "instagram", name: "Instagram Curator", role: "Instagram posts",
     source: "marketing/marketing-instagram-curator.md",
-    rules: "Visual first: every post is an image idea (what to show, plus a short line of text on the image) and a caption whose first line hooks before the 'more' cut. Clean, consistent look in Altradits' navy, blue and orange. 3 to 5 specific hashtags, no links in the caption (they aren't clickable: say 'link in bio')." },
+    rules: "Visual first: every post is an image idea (what to show, plus a short line of text on the image) and a caption whose first line hooks before the 'more' cut. Clean, consistent look in Altradits' navy, red and orange. 3 to 5 specific hashtags, no links in the caption (they aren't clickable: say 'link in bio')." },
   { id: "guardian", name: "Brand Guardian", role: "Checks every post before it goes out",
     source: "marketing (QA, as in the department agents' Quality Reviewer)",
     rules: "Blocks anything that invents clients, reviews, testimonials, results or statistics; quotes a price that is not in the catalog; promises what the site doesn't offer; reveals a phone number; is spammy, clickbait or off-brand; or breaks the platform's length rules." },

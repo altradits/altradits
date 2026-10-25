@@ -7,7 +7,7 @@
 import { json, readBody, clientIp } from "../lib/http.js";
 import { subscribe, download, unsubscribe, resubscribe, confirmSubscription, publicKits } from "../lib/subscribers.js";
 
-const page = (title, text) => new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><body style="font:17px/1.6 system-ui,sans-serif;color:#0F1B2D;background:#EEF2F6;margin:0;display:grid;place-items:center;min-height:100vh"><main style="background:#fff;border:2px solid #0F1B2D;border-radius:1rem;padding:2rem;max-width:28rem;margin:1rem"><h1 style="margin:0 0 .5rem;font-size:1.5rem">${title}</h1><p style="margin:0 0 1rem">${text}</p><a href="/" style="color:#2F5BEA">Back to Altradits</a></main>`, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
+const page = (title, text) => new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><body style="font:17px/1.6 system-ui,sans-serif;color:#0F1B2D;background:#EEF2F6;margin:0;display:grid;place-items:center;min-height:100vh"><main style="background:#fff;border:2px solid #0F1B2D;border-radius:1rem;padding:2rem;max-width:28rem;margin:1rem"><h1 style="margin:0 0 .5rem;font-size:1.5rem">${title}</h1><p style="margin:0 0 1rem">${text}</p><a href="/" style="color:#2A5A8F">Back to Altradits</a></main>`, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
 
 export async function POST(request) {
   // One-click unsubscribe from the mail app (RFC 8058: POST to the List-Unsubscribe URL).
