@@ -88,7 +88,7 @@ const server = http.createServer(async (req, res) => {
     // Clean addresses: /templates, /hunt, /cv… for pages; /<job> (e.g. /hourly,
     // /inbox-cleanup), /r/<ref> and /h/<hunt code> open the homepage, which reads
     // the path. Old *.html addresses redirect to the clean ones.
-    const old = url.pathname.match(/^\/(templates|hunt|cv|join|team|portal|proposal|admin|donate|va|bitcoin|products)\.html$/);
+    const old = url.pathname.match(/^\/(templates|hunt|cv|join|team|portal|proposal|admin|donate|va|bitcoin|products|collect)\.html$/);
     if (old && req.method === "GET") { res.writeHead(301, { Location: `/${old[1] === "templates" ? "products" : old[1]}${url.search}` }).end(); return; }
     // The free kits now live under Products.
     if (/^\/templates\/?$/.test(url.pathname) && req.method === "GET") { res.writeHead(301, { Location: `/products${url.search}` }).end(); return; }
@@ -101,8 +101,8 @@ const server = http.createServer(async (req, res) => {
     if (!PUBLIC.test(rel)) { res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found"); return; }
     const file = path.join(ROOT, rel);
     const headers = { ...SECURITY, "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" };
-    if (/^\/(admin|proposal|portal|team)\.html$/.test(rel)) headers["X-Robots-Tag"] = "noindex";
-    if (/^\/(admin|portal|collect)\.html$/.test(rel)) headers["Content-Security-Policy"] = cspFor(file);
+    if (/^\/(admin|proposal|portal|team|collect)\.html$/.test(rel)) headers["X-Robots-Tag"] = "noindex";
+    if (/^\/(admin|portal|collect|proposal|team)\.html$/.test(rel)) headers["Content-Security-Policy"] = cspFor(file);
     headers["Cache-Control"] = rel.startsWith("/assets/") ? "public, max-age=86400" : "no-cache";
     fs.createReadStream(file)
       .on("open", () => res.writeHead(200, headers))

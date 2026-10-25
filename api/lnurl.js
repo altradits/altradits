@@ -36,8 +36,14 @@ export async function GET(request) {
   }
   const msats = Number(amount);
   if (!Number.isInteger(msats) || msats < min || msats > max || msats % 1000) return error(`Please pay ${sats.toLocaleString("en-US")} sats.`);
-  const inv = await createInvoice({ sats: msats / 1000, memo: "", descriptionHash: crypto.createHash("sha256").update(metadata).digest("hex"), expiry: 3600 });
-  p.lnurlInvoices = [...(p.lnurlInvoices || []).slice(-9), { ...inv, viaLnurl: true, usd: p.totals.dueNow, coupon: p.coupon ? { ...p.coupon } : null }];
+  const reqSats = msats / 1000;
+  const descHash = crypto.createHash("sha256").update(metadata).digest("hex");
+  const now = Date.now();
+  const active = (p.lnurlInvoices || []).filter((i) => !i.expiresAt || Date.parse(i.expiresAt) > now);
+  const existing = active.find((i) => i.sats === reqSats && i.descriptionHash === descHash && (!i.expiresAt || Date.parse(i.expiresAt) - now > 300e3));
+  if (existing) return reply({ pr: existing.bolt11, routes: [] });
+  const inv = await createInvoice({ sats: reqSats, memo: "", descriptionHash: descHash, expiry: 3600 });
+  p.lnurlInvoices = [...active.slice(-19), { ...inv, descriptionHash: descHash, viaLnurl: true, usd: p.totals.dueNow, coupon: p.coupon ? { ...p.coupon } : null }];
   await saveProposal(p);
   return reply({ pr: inv.bolt11, routes: [] });
 }

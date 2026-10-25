@@ -140,7 +140,7 @@ function render() {
   } else if (p.status === "paid") {
     action = `<div class="box done"><h3>✓ Paid. We're working on it.</h3><p>Kick-off details are in your inbox. Questions? Just reply to any of our emails.</p></div>`;
   } else if (p.status === "declined") {
-    action = `<div class="box"><h3>This proposal is closed</h3><p>If anything changes, <a href="/#services">pick a service and order it on the site</a>.</p></div>`;
+    action = `<div class="box"><h3>This proposal is closed</h3><p>If anything changes, <a href="/va#quick">pick a service and order it on the site</a>.</p></div>`;
   }
 
   $("#doc").innerHTML = `
@@ -189,7 +189,7 @@ function render() {
     if (data.pending) { $("#doc").innerHTML = `<h1>Almost ready</h1><p>${esc(BUSINESS.owner)} is reviewing your proposal personally and will email you as soon as it's approved, usually within 12 hours.</p>`; return; }
     P = data.proposal; LN = Boolean(data.lightning); render();
   } catch (err) {
-    $("#doc").innerHTML = `<h1>We couldn't open this proposal</h1><p>${esc(err.message || "Check the link in your email.")}</p><p><a href="/#services">Order on the site instead</a>.</p>`;
+    $("#doc").innerHTML = `<h1>We couldn't open this proposal</h1><p>${esc(err.message || "Check the link in your email.")}</p><p><a href="/va#quick">Order on the site instead</a>.</p>`;
   }
 })();
 </script>

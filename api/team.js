@@ -25,8 +25,10 @@ const forMember = (t) => ({
 });
 
 export async function GET(request) {
+  const ip = clientIp(request);
+  if ((await hit(`rl:team:miss:${ip}`, 900)) > 20) return json({ error: "Too many attempts. Try again in 15 minutes." }, 429);
   const m = await memberByToken(new URL(request.url).searchParams.get("m"));
-  if (!m || m.status !== "approved") return json({ error: "Workspace not found or not active yet." }, 404);
+  if (!m || m.status !== "approved") { await hit(`rl:team:miss:${ip}`, 900); return json({ error: "Workspace not found or not active yet." }, 404); }
   const tasks = (await allTasks()).filter((t) => t.assigneeId === m.id).map(forMember);
   const playbooks = DEPARTMENTS.filter((d) => m.departments.includes(d.id));
   return json({ member: publicMember(m), tasks, playbooks });
@@ -34,10 +36,11 @@ export async function GET(request) {
 
 export async function POST(request) {
   const body = await readBody(request);
+  const ip = clientIp(request);
 
   if (body.action === "apply") {
     if (body.website) return json({ ok: true }); // honeypot
-    if ((await hit(`rl:apply:${clientIp(request)}`, 3600)) > 5) return json({ error: "Too many applications from this connection." }, 429);
+    if ((await hit(`rl:apply:${ip}`, 3600)) > 5) return json({ error: "Too many applications from this connection." }, 429);
     try {
       await applyMember(body);
       return json({ ok: true });
@@ -46,8 +49,9 @@ export async function POST(request) {
     }
   }
 
+  if ((await hit(`rl:team:miss:${ip}`, 900)) > 20) return json({ error: "Too many attempts. Try again in 15 minutes." }, 429);
   const m = await memberByToken(body.m);
-  if (!m || m.status !== "approved") return json({ error: "Workspace not found." }, 404);
+  if (!m || m.status !== "approved") { await hit(`rl:team:miss:${ip}`, 900); return json({ error: "Workspace not found." }, 404); }
   const t = await getTask(clean(body.task, 40));
   if (!t || t.assigneeId !== m.id) return json({ error: "Task not found." }, 404);
   const at = new Date().toISOString();

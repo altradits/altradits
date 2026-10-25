@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#B45309;--ok:#0B7A5F;--paper:#fff;--navy:#274C77}
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff;--navy:#274C77}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
@@ -71,6 +71,7 @@ section{padding:4.5rem 0;border-top:1px solid var(--line)}
 .btcsec .btn{border-color:#fff;color:#fff}
 .btcsec .btn.btc{border-color:var(--btc);color:var(--ink)}
 .btcsec .btn:hover{box-shadow:4px 4px 0 var(--btc)}
+.btcsec :focus-visible{outline-color:#fff}
 .raised{color:#fff;font-weight:600;margin:1rem 0 0}
 .kits{display:grid;gap:1rem;grid-template-columns:repeat(3,1fr);margin:2rem 0 1.4rem}
 .kits a{display:flex;flex-direction:column;gap:.35rem;background:var(--paper);border:2px solid var(--line);border-radius:1rem;padding:1.2rem;text-decoration:none;color:var(--ink);transition:border-color .2s,transform .2s}

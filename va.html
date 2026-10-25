@@ -21,7 +21,7 @@
 <style>
 :root{
   --bg:#EEF2F6; --ink:#0F1B2D; --muted:#4B5A70; --line:#C9D3DF;
-  --blue:#2A5A8F; --btc:#F7931A;--btc-text:#B45309; --night:#0F1B2D; --paper:#FFFFFF; --ok:#0B7A5F;
+  --blue:#2A5A8F; --btc:#F7931A;--btc-text:#A84D08; --night:#0F1B2D; --paper:#FFFFFF; --ok:#0B7A5F;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -1177,6 +1177,7 @@ function closeModal(fromBack = false) {
   // Back the page to its own address (an order opened straight from a link has no /va entry behind it).
   if (location.pathname !== "/va") history.replaceState(null, "", "/va" + location.hash);
   document.body.classList.remove("modal-open");
+  for (const el of document.querySelectorAll("body > :not(#modal)")) el.inert = false;
   lastFocus?.focus();
 }
 modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
@@ -1190,6 +1191,7 @@ async function openOrder(itemId) {
   lastFocus = document.activeElement;
   modal.hidden = false;
   document.body.classList.add("modal-open");
+  for (const el of document.querySelectorAll("body > :not(#modal)")) el.inert = true;
   sheet.innerHTML = `<button type="button" class="x" aria-label="Close">×</button>
     <h2 id="mTitle">${esc(item.name)}</h2>
     <div class="price">${money(item.price)}<small>${unitOf(itemId) ? " per month, cancel any month" : " one-off, paid in full"}</small></div>
