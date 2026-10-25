@@ -6,10 +6,11 @@
 //                            urgent order is paid, so the client can flag it)
 import { json, readBody, clean, oneLine, clientIp, safeEqual, EMAIL_RE } from "../lib/http.js";
 import { holdIfUnsafe, screen, defang } from "../lib/screen.js";
-import { hit } from "../lib/store.js";
+import { hit, listIds, getMany } from "../lib/store.js";
 import { createOrder, getProposal, saveProposal, getLead, saveLead, logEvent, sendKickoff } from "../lib/crm.js";
 import { emailOwner } from "../lib/email.js";
-import { getTask, saveTask, ensurePortal } from "../lib/ops.js";
+import { getTask, saveTask, ensurePortal, ensureReferral, indexLead, assignTask } from "../lib/ops.js";
+import { workersLive, kickQueue } from "../lib/workers.js";
 import { orderable, URGENCY } from "../data/catalog.js";
 import { OWNER_PHONE } from "../lib/contact.js";
 import { reserveCoupon, releaseCoupon, holdCoupon, MIN_TO_PAY } from "../lib/hunt.js";
@@ -87,7 +88,24 @@ async function update(body) {
   const hadEmail = Boolean(lead.email);
   const before = p.order.task, wasUrgent = isUrgent(p.order);
   if (p.order.urgentOk && URGENCY.some((u) => u.id === body.urgency)) p.order.urgency = body.urgency;
-  if (email) lead.email = email;
+  if (email) {
+    lead.email = email;
+    // Unify repeat orders from the same paying client so their onboarding notes,
+    // referral code, and retainer context carry across orders.
+    if (!hadEmail) {
+      const prior = (await getMany("lead", await listIds("leads", 500))).find(
+        (l) => l.id !== lead.id && l.email === email && l.stage === "active",
+      );
+      if (prior) {
+        if (prior.onboarding && !lead.onboarding) lead.onboarding = prior.onboarding;
+        if (prior.refCode && !lead.refCode) lead.refCode = prior.refCode;
+        if (prior.retainer && !lead.retainer) lead.retainer = prior.retainer;
+        if (prior.referralCredit && !lead.referralCredit) lead.referralCredit = prior.referralCredit;
+        if (prior.referralCodes && !lead.referralCodes) lead.referralCodes = prior.referralCodes;
+        lead.priorLeadId = prior.id;
+      }
+    }
+  }
   if (body.name !== undefined) {
     const name = oneLine(body.name, 120);
     if (screen(name).flagged) return json({ error: "Please enter just your name (no links or code)." }, 400);
@@ -122,8 +140,18 @@ async function update(body) {
       const t = p.order.taskId && (await getTask(p.order.taskId));
       if (t) {
         t.details = p.order.task;
+        t.question = null;
         t.history.push({ at: new Date().toISOString(), by: "client", text: "Added order details" });
-        if (!(await holdIfUnsafe(t, p.order.task, "order details", saveTask))) await saveTask(t);
+        const held = await holdIfUnsafe(t, p.order.task, "order details", saveTask);
+        if (!held) {
+          if (["waiting_client", "owner", "new"].includes(t.status)) {
+            t.status = workersLive() ? "queued" : "new";
+            t.attempts = 0;
+          }
+          await saveTask(t);
+          if (t.status === "queued" && workersLive()) kickQueue();
+          else if (t.status === "new" && !workersLive()) await assignTask(t);
+        }
       }
       // Held by the security screen: Stanley gets the defanged copy from the hold, not the raw text.
       if (!(t && t.status === "held")) await emailOwner(`Order details: ${p.order.name}`, `${lead.name || lead.email || "A client"} added details to their paid order:\n\n${defang(p.order.task)}`, null, lead.id);

@@ -182,7 +182,20 @@ export async function GET(request) {
     pipelineUsd: open.reduce((t, p) => t + p.totals.monthly + p.totals.oneOff, 0),
     wonMonthUsd: paid.filter((p) => Date.parse(p.payment?.confirmedAt || p.updatedAt) >= monthStart).reduce((t, p) => t + p.totals.dueNow, 0),
     wonMonthSats: paid.filter((p) => Date.parse(p.payment?.confirmedAt || p.updatedAt) >= monthStart).reduce((t, p) => t + (Number(p.payment?.sats) || 0), 0),
-    mrrUsd: paid.reduce((t, p) => t + p.totals.monthly, 0),
+    mrrUsd: (() => {
+      const cutoff = Date.now() - 35 * 864e5;
+      const byLead = new Map();
+      for (const p of paid) {
+        if (!(p.totals?.monthly > 0)) continue;
+        const confirmedMs = Date.parse(p.payment?.confirmedAt || p.updatedAt || p.createdAt);
+        if (confirmedMs < cutoff) continue;
+        const l = leads.find((x) => x.id === p.leadId);
+        if (l?.retainer?.status === "paused") continue;
+        const prev = byLead.get(p.leadId);
+        if (!prev || confirmedMs >= prev.confirmedMs) byLead.set(p.leadId, { monthly: p.totals.monthly, confirmedMs });
+      }
+      return [...byLead.values()].reduce((t, v) => t + v.monthly, 0);
+    })(),
     activeClients: leads.filter((l) => l.stage === "active").length,
     pendingApprovals: approvals.filter((a) => a.status === "pending").length,
     byStage: Object.fromEntries(STAGES.map((s) => [s, leads.filter((l) => l.stage === s).length])),
@@ -532,10 +545,12 @@ export async function POST(request) {
     if (!t || !["new", "in_progress", "changes", "assigned", "owner"].includes(t.status)) return json({ error: "Task is not open" }, 409);
     const url = clean(body.url, 500), note = clean(body.note, 2000);
     if (!/^https?:\/\//.test(url) && note.length < 10) return json({ error: "Add a deliverable link or a note." }, 400);
-    t.deliverable = { url: /^https?:\/\//.test(url) ? url : "", note, at: new Date().toISOString() };
+    const at = new Date().toISOString();
+    t.deliverable = { url: /^https?:\/\//.test(url) ? url : "", note, at };
     t.hoursLogged = Math.max(0, Math.min(40, Number(body.hours) || 0));
     t.status = "review";
-    t.history.push({ at: new Date().toISOString(), by: "Stanley", text: `Submitted for review (${t.hoursLogged}h)` });
+    t.reviewAt = at;
+    t.history.push({ at, by: "Stanley", text: `Submitted for review (${t.hoursLogged}h)` });
     await saveTask(t);
     await notifyClient(t, `Ready for your review: ${t.title}`, `Your task "${t.title}" is done.\n\n${note}${t.deliverable.url ? `\n\nDeliverable: ${t.deliverable.url}` : ""}\n\nApprove it or ask for changes in your portal.`, { approved: true });
     return json({ ok: true });
