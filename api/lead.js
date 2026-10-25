@@ -42,7 +42,7 @@ export async function POST(request) {
     to: email, leadId: lead.id, kind: "client", dept: "growth",
     subject: "Your free delegation plan",
     text: `Hi ${lead.name || "there"},\n\nHere is your delegation plan.\n\nWhat to hand off first:\n${tasks || "- Tell us your top task and we'll map it."}\n\nYou listed about ${quiz.hours} hours a week of this work. Handing it off could give you back around ${r.hoursBack} hours a month${r.valueBack ? `, worth about $${r.valueBack} of your time` : ""}.\n\nThe plan that fits: ${r.pkg.name} at $${r.pkg.price}/month (${r.pkg.hours} hours).\n\n${GUARANTEES[0].text} Pick the plan or the exact task on the site and pay with any Bitcoin wallet: your payment places the order.`,
-    cta: { label: "Choose and order", url: `${siteUrl(request)}/#services` },
+    cta: { label: "Choose and order", url: `${siteUrl(request)}/va` },
   });
 
   return json({ ok: true, leadId: lead.id, token: isNew ? lead.token : undefined, plan: { hoursBack: r.hoursBack, valueBack: r.valueBack, package: r.pkg.id } });

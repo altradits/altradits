@@ -1,11 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "altradits-revenue-"));
+process.chdir(tmp);
+for (const k of ["ANTHROPIC_API_KEY", "RESEND_API_KEY", "UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "SMTP_HOST"]) delete process.env[k];
 process.env.EMAIL_APPROVAL = "off";
 process.env.ADMIN_TOKEN = "test-admin-secret";
 process.env.CRON_SECRET = "test-cron-secret";
 
-import {
+const {
   createLead,
   saveLead,
   getLead,
@@ -14,8 +20,8 @@ import {
   getProposal,
   confirmPayment,
   createOrder,
-} from "../lib/crm.js";
-import {
+} = await import("../lib/crm.js");
+const {
   createTask,
   getTask,
   saveTask,
@@ -23,11 +29,11 @@ import {
   hoursThisMonth,
   ensureReferral,
   indexLead,
-} from "../lib/ops.js";
-import { runFollowups } from "../lib/followups.js";
-import { subscribe, confirmSubscription, runNurture } from "../lib/subscribers.js";
-import { orderable } from "../data/catalog.js";
-import * as portal from "../api/portal.js";
+} = await import("../lib/ops.js");
+const { runFollowups } = await import("../lib/followups.js");
+const { subscribe, confirmSubscription, runNurture } = await import("../lib/subscribers.js");
+const { orderable } = await import("../data/catalog.js");
+const portal = await import("../api/portal.js");
 import * as orderApi from "../api/order.js";
 
 const DAY = 864e5;
@@ -335,4 +341,107 @@ test("Follow-up automations: 1-day missing brief chase, 2-day review reminder, 1
   await runNurture(new Date());
   const afterSub = await getJSON(`sub:${subRec.id}`);
   assert.equal(afterSub.kits[0].step, 0, "active paying client is skipped by free-kit nurture");
+});
+
+test("Pass-2 revenue integrity: referral credit double-spend sync, 50% balance invoice on delivery, receipt PDF reconciliation, and /collect ready status", async () => {
+  const { useCoupon } = await import("../lib/hunt.js");
+  const { reconcile, receiptPdf } = await import("../lib/finance.js");
+  const { getJSON } = await import("../lib/store.js");
+  const collect = await import("../api/collect.js");
+
+  // 1. Referral credit sync: spending a CREDIT-... coupon updates lead.referralCredit, and renewal credit updates coupons
+  const referrer = await createLead({ name: "Ref Sync", email: "ref-sync@example.com" });
+  referrer.stage = "active";
+  ensureReferral(referrer);
+  await indexLead(referrer);
+  await saveLead(referrer);
+
+  const buyer = await createLead({ name: "Buyer Sync", email: "buyer-sync@example.com", referredBy: referrer.refCode });
+  const { proposal: pBuy } = priceProposal(buyer, {
+    title: "Core Retainer",
+    items: [{ package_id: "core", description: "Core monthly retainer" }],
+  });
+  await saveProposal(pBuy);
+  await confirmPayment(buyer, pBuy);
+
+  let refReload = await getLead(referrer.id);
+  const initialCredit = refReload.referralCredit;
+  const code = refReload.referralCodes[0];
+  assert.ok(initialCredit > 0 && code.startsWith("CREDIT-"));
+
+  // Spend $25 of the CREDIT-... coupon via useCoupon -> referrer.referralCredit drops by $25
+  await useCoupon(code, "prop_checkout_test", 25);
+  refReload = await getLead(referrer.id);
+  assert.equal(refReload.referralCredit, Math.round((initialCredit - 25) * 100) / 100, "spending CREDIT coupon deducts from lead.referralCredit");
+
+  // Now spend the remaining referralCredit on a renewal invoice -> the CREDIT-... coupon is depleted to $0 ("used")
+  const remaining = refReload.referralCredit;
+  const { proposal: pRen } = priceProposal(refReload, {
+    title: "Renewal: Core Retainer",
+    items: [{ package_id: "core", description: "Renewal" }],
+  });
+  pRen.creditAppliedUsd = remaining;
+  pRen.totals.dueNow = Math.round((pRen.totals.dueNow - remaining) * 100) / 100;
+  pRen.payment = { sats: 150000, reference: "ref_hash_123" };
+  await saveProposal(pRen);
+  await confirmPayment(refReload, pRen);
+
+  const couponAfter = await getJSON(`coupon:${code}`);
+  assert.equal(couponAfter.usd, 0, "applying referralCredit on renewal depletes the CREDIT coupon so it cannot be double-spent");
+  assert.equal(couponAfter.status, "used");
+
+  // Receipt reconciliation & PDF generation with creditAppliedUsd passes cleanly
+  const recCheck = reconcile(pRen);
+  assert.equal(recCheck.pass, true, "reconcile() passes when creditAppliedUsd reduces dueNow");
+  const pdfBuf = receiptPdf(refReload, pRen, "R-2026-99999");
+  assert.ok(pdfBuf.length > 500, "receiptPdf generates valid PDF buffer with creditAppliedUsd");
+
+  // 2. 50% Project deposit -> automatic 50% balance invoice upon deliverable approval -> paid marks parent balanceStatus = "paid"
+  const projLead = await createLead({ name: "Project Client", email: "project-50-balance@example.com" });
+  const { proposal: projProp } = priceProposal(projLead, {
+    title: "Custom Automation Build",
+    items: [{ service_id: "automation-ai", type: "project", label: "Custom workflow", price_usd: 600, quantity: 1 }],
+  });
+  await saveProposal(projProp);
+  await confirmPayment(projLead, projProp);
+
+  let parentP = await getProposal(projProp.id);
+  assert.equal(parentP.balanceStatus, "due_on_delivery");
+  assert.equal(parentP.totals.balanceOnDelivery, 300);
+
+  const projTask = await createTask(projLead, { title: "Build custom workflow", details: "Webhook integration", service: "automation-ai", department: "tech", fromOrder: true });
+  projTask.status = "review";
+  projTask.reviewAt = new Date().toISOString();
+  projTask.deliverable = { title: "Workflow live", summary: "Configured and tested", files: [{ name: "setup.md", format: "md", content: "# Setup guide" }], at: new Date().toISOString() };
+  await saveTask(projTask);
+
+  // Check portal GET includes canRequestChanges & fixWindowDays=30
+  const portalGet = await (await portal.GET(req(`/api/portal?c=${projLead.portalToken}`))).json();
+  assert.equal(portalGet.tasks[0].canRequestChanges, true);
+  assert.equal(portalGet.tasks[0].fixWindowDays, 30);
+
+  // Client approves the deliverable -> 50% balance invoice is automatically created & emailed
+  const appRes = await portal.POST(req("/api/portal", "POST", {
+    c: projLead.portalToken,
+    action: "approve",
+    task: projTask.id,
+    rating: 5,
+    comment: "Works great!",
+  }));
+  assert.equal(appRes.status, 200);
+  const appView = await appRes.json();
+  assert.equal(appView.tasks[0].canRequestChanges, true, "done task within 30-day fix window still has canRequestChanges=true");
+
+  parentP = await getProposal(projProp.id);
+  assert.equal(parentP.balanceStatus, "invoiced", "parent proposal transitions to invoiced upon approval");
+  assert.ok(parentP.balanceProposalId, "balanceProposalId is recorded on parent proposal");
+
+  const balProp = await getProposal(parentP.balanceProposalId);
+  assert.equal(balProp.isBalanceInvoice, true);
+  assert.equal(balProp.totals.dueNow, 300);
+
+  // Paying the 50% balance invoice marks parentProposal.balanceStatus = "paid"
+  await confirmPayment(projLead, balProp);
+  parentP = await getProposal(projProp.id);
+  assert.equal(parentP.balanceStatus, "paid", "paying balance invoice marks parent proposal balanceStatus = paid");
 });

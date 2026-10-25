@@ -3,7 +3,7 @@
 import { json, readBody, clean, clientIp, siteUrl, safeEqual } from "../lib/http.js";
 import { getProposal, saveProposal, publicProposal, getLead, saveLead, logEvent, advanceStage, createApproval, proposalUrl } from "../lib/crm.js";
 import { sendEmail } from "../lib/email.js";
-import { hit } from "../lib/store.js";
+import { hit, peek } from "../lib/store.js";
 import { BUSINESS } from "../data/catalog.js";
 import { lightningMode } from "../lib/lightning.js";
 
@@ -14,7 +14,7 @@ async function load(id, t) {
 
 export async function GET(request) {
   const ip = clientIp(request);
-  if ((await hit(`rl:prop:miss:${ip}`, 900)) > 30) return json({ error: "Too many attempts. Try again later." }, 429);
+  if ((await peek(`rl:prop:miss:${ip}`)) >= 30) return json({ error: "Too many attempts. Try again later." }, 429);
   const u = new URL(request.url);
   const p = await load(u.searchParams.get("id"), u.searchParams.get("t"));
   if (!p) { await hit(`rl:prop:miss:${ip}`, 900); return json({ error: "Proposal not found. Check the link in your email." }, 404); }
@@ -24,7 +24,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   const ip = clientIp(request);
-  if ((await hit(`rl:prop:miss:${ip}`, 900)) > 30) return json({ error: "Too many attempts. Try again later." }, 429);
+  if ((await peek(`rl:prop:miss:${ip}`)) >= 30) return json({ error: "Too many attempts. Try again later." }, 429);
   const body = await readBody(request);
   const p = await load(body.id, body.t);
   if (!p) { await hit(`rl:prop:miss:${ip}`, 900); return json({ error: "Proposal not found." }, 404); }

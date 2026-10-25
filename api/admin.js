@@ -533,9 +533,23 @@ export async function POST(request) {
       }
       kickQueue();
     } else {
+      const note = clean(body.note, 500);
       t.status = "done";
-      t.history.push({ at, by: "Stanley", text: `Follow-up closed${body.note ? `: ${clean(body.note, 500)}` : ""}` });
+      t.history.push({ at, by: "Stanley", text: `Follow-up closed${note ? `: ${note}` : ""}` });
       await saveTask(t);
+      if (note) {
+        const { recordOutcome } = await import("../lib/learning.js");
+        await recordOutcome({
+          kind: "stanley_override",
+          dept: t.department,
+          service: t.service,
+          task: t,
+          leadId: t.leadId,
+          title: t.title,
+          specialist: t.specialist,
+          note: `Follow-up resolution on "${t.title}": ${note}`,
+        }).catch(() => {});
+      }
     }
     return json({ ok: true });
   }
@@ -543,6 +557,7 @@ export async function POST(request) {
   if (body.action === "task_submit") {
     const t = await getTask(clean(body.id, 40));
     if (!t || !["new", "in_progress", "changes", "assigned", "owner"].includes(t.status)) return json({ error: "Task is not open" }, 409);
+    const wasOwner = t.status === "owner";
     const url = clean(body.url, 500), note = clean(body.note, 2000);
     if (!/^https?:\/\//.test(url) && note.length < 10) return json({ error: "Add a deliverable link or a note." }, 400);
     const at = new Date().toISOString();
@@ -552,6 +567,19 @@ export async function POST(request) {
     t.reviewAt = at;
     t.history.push({ at, by: "Stanley", text: `Submitted for review (${t.hoursLogged}h)` });
     await saveTask(t);
+    if (wasOwner && note) {
+      const { recordOutcome } = await import("../lib/learning.js");
+      await recordOutcome({
+        kind: "stanley_override",
+        dept: t.department,
+        service: t.service,
+        task: t,
+        leadId: t.leadId,
+        title: t.title,
+        specialist: t.specialist,
+        note: `Stanley resolved escalated task "${t.title}": ${clean(note, 400)}`,
+      }).catch(() => {});
+    }
     await notifyClient(t, `Ready for your review: ${t.title}`, `Your task "${t.title}" is done.\n\n${note}${t.deliverable.url ? `\n\nDeliverable: ${t.deliverable.url}` : ""}\n\nApprove it or ask for changes in your portal.`, { approved: true });
     return json({ ok: true });
   }

@@ -3,7 +3,7 @@
 // GET  /api/team?m=<token>                                -> workspace: tasks + playbooks
 // POST /api/team { m, action: "accept"|"submit"|"note", task, ... }
 import { json, readBody, clean, clientIp, safeEqual } from "../lib/http.js";
-import { hit, listIds, getMany, getJSON, setJSON } from "../lib/store.js";
+import { hit, peek, listIds, getMany, getJSON, setJSON } from "../lib/store.js";
 import { applyMember, getMember, publicMember, getTask, saveTask, allTasks, notifyClient, OPEN } from "../lib/ops.js";
 import { DEPARTMENTS } from "../data/playbooks.js";
 import { screen, describe } from "../lib/screen.js";
@@ -35,7 +35,7 @@ const forMember = (t, memMap = {}) => {
 
 export async function GET(request) {
   const ip = clientIp(request);
-  if ((await hit(`rl:team:miss:${ip}`, 900)) > 20) return json({ error: "Too many attempts. Try again in 15 minutes." }, 429);
+  if ((await peek(`rl:team:miss:${ip}`)) >= 20) return json({ error: "Too many attempts. Try again in 15 minutes." }, 429);
   const m = await memberByToken(new URL(request.url).searchParams.get("m"));
   if (!m || m.status !== "approved") { await hit(`rl:team:miss:${ip}`, 900); return json({ error: "Workspace not found or not active yet." }, 404); }
   const memMap = Object.fromEntries(await Promise.all(m.departments.map(async (d) => [d, (await retrieveMemory({ dept: d })).rules.map((r) => r.rule)])));
@@ -59,7 +59,7 @@ export async function POST(request) {
     }
   }
 
-  if ((await hit(`rl:team:miss:${ip}`, 900)) > 20) return json({ error: "Too many attempts. Try again in 15 minutes." }, 429);
+  if ((await peek(`rl:team:miss:${ip}`)) >= 20) return json({ error: "Too many attempts. Try again in 15 minutes." }, 429);
   const m = await memberByToken(body.m);
   if (!m || m.status !== "approved") { await hit(`rl:team:miss:${ip}`, 900); return json({ error: "Workspace not found." }, 404); }
   const t = await getTask(clean(body.task, 40));
@@ -88,6 +88,9 @@ export async function POST(request) {
   } else if (body.action === "note") {
     const note = clean(body.note, 1000);
     if (!note) return json({ error: "Empty note." }, 400);
+    const s = screen(note);
+    const unsafe = s.reasons.filter((r) => r !== "link");
+    if (unsafe.length) return json({ error: `Please remove ${describe(unsafe)} from your note.` }, 400);
     t.history.push({ at, by: m.name, text: note });
   } else {
     return json({ error: "Unknown action" }, 400);

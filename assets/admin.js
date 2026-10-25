@@ -836,7 +836,37 @@ async function loadStan() {
       ${r.panel.map((p) => { const l = latest(p.id); return `<div class="sm" style="margin:.5rem 0"><b>${esc(p.name)}</b> ${p.approved ? '<span class="stage posted">approved</span>' : '<span class="stage failed">changes required</span>'}<ul>${(l?.items || p.criteria.map((c) => ({ criterion: c, pass: false, evidence: "not reviewed yet" }))).map((i) => `<li>${i.pass ? "✓" : "✗"} ${esc(i.criterion)}<br><span class="muted">${esc(i.evidence || "")}${i.fix && !i.pass ? ` · Fix: ${esc(i.fix)}` : ""}</span></li>`).join("")}</ul></div>`; }).join("")}
       ${r.final ? `<div class="sm" style="border-top:1px solid var(--line);padding-top:.5rem"><b>Stan's decision:</b> ${esc(r.final.reason || "")}${r.final.issues?.length ? `<br>Issues: ${esc(r.final.issues.join("; "))}` : ""}${r.final.approve && r.final.subject ? `<br><b>Draft sent by the department head:</b> ${esc(r.final.subject)}<pre class="sm" style="white-space:pre-wrap;margin:.3rem 0 0">${esc(r.final.body || "")}</pre>` : ""}</div>` : ""}
     </details>`; }).join("") : `<p class="muted">No jobs reviewed yet.</p>`;
+  const L = S.learning;
+  if (L) {
+    $("#learnBadge").textContent = `${L.totalRules || 0} rules · ${L.answerBankCount || 0} answers`;
+    $("#learnKpis").innerHTML = [
+      ["Learned rules", L.totalRules || 0],
+      ["5★ exemplars", L.totalExemplars || 0],
+      ["Answer bank", L.answerBankCount || 0],
+      ["Recent events", (L.recentTrajectories || []).length],
+    ].map(([k, v]) => `<div class="kpi"><small>${k}</small><div>${v}</div></div>`).join("");
+    const dg = L.digests || {};
+    $("#learnDigests").innerHTML = `${dg.daily ? `<details style="margin:.3rem 0"><summary style="cursor:pointer"><b>Daily digest (${esc(dg.daily.day)})</b></summary><ul>${(dg.daily.lines || []).map((l) => `<li>${esc(l)}</li>`).join("")}</ul></details>` : ""}${dg.weekly ? `<details style="margin:.3rem 0"><summary style="cursor:pointer"><b>Weekly consolidation (${esc(dg.weekly.week)})</b></summary><p class="muted" style="margin:.2rem 0">Answer bank: ${dg.weekly.answerBankCount || 0} verified answers</p></details>` : ""}`;
+    $("#learnDepts").innerHTML = (L.departments || []).filter((d) => (d.rules || []).length || (d.exemplars || []).length).map((d) => `<details class="ap" style="padding:.5rem .7rem"><summary style="cursor:pointer"><b>${esc(d.dept)}</b>${d.head?.name ? ` · ${esc(d.head.name)}` : ""} <span class="stage">${(d.rules || []).length} rule(s)</span></summary><ul class="sm">${(d.rules || []).map((r) => `<li>${r.pinned ? "📌 " : ""}${esc(r.rule)} <span class="muted">(${esc(r.source || "learned")})</span></li>`).join("")}</ul></details>`).join("") || `<p class="muted sm">No distilled rules yet. Rules appear automatically as agents complete reviews or you pin them above.</p>`;
+  }
 }
+$("#learnAdd")?.addEventListener("click", async () => {
+  const note = $("#learnRule").value.trim();
+  if (!note) { $("#learnMsg").textContent = "Write a rule to pin first."; return; }
+  try {
+    await api("", { action: "learning_rule", dept: $("#learnDept").value, note });
+    $("#learnRule").value = "";
+    $("#learnMsg").textContent = "Rule pinned to department playbook ✓";
+    loadStan();
+  } catch (err) { $("#learnMsg").textContent = err.message; }
+});
+$("#learnCons")?.addEventListener("click", async () => {
+  try {
+    const r = await api("", { action: "learning_consolidate" });
+    $("#learnMsg").textContent = `Consolidated ${r.summary?.rules ?? 0} rules across departments ✓`;
+    loadStan();
+  } catch (err) { $("#learnMsg").textContent = err.message; }
+});
 
 // ---- marketing team: scheduler with platform previews, masters, repurposing
 let M = null, mkDay = new Date().toISOString().slice(0, 10), mkEditing = null, mkPicked = false;
