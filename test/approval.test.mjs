@@ -588,3 +588,14 @@ test("a code stays reserved while an older invoice made with it can still be pai
   const r = await post(b.p, credit.code, "2.2.2.2");
   assert.match(r.error, /being used on another order/); // B can't take it meanwhile
 });
+
+test("discounts: the price after the discount must stay above the floor, and any discount waits for Stanley", async () => {
+  const crm = await import("../lib/crm.js");
+  const lead = await crm.createLead({ name: "Dee", email: "dee@shop.co" });
+  const floorish = crm.priceProposal(lead, { items: [{ package_id: "core" }] }).proposal.items[0].base * 0.9;
+  const { proposal, reasons } = crm.priceProposal(lead, { items: [{ package_id: "core", price_usd: Math.ceil(floorish) }], discount_pct: 10 });
+  assert.equal(proposal.status, "pending_approval");
+  assert.ok(reasons.some((r) => /after the discount, below/.test(r)));
+  assert.ok(reasons.some((r) => /discount needs your OK/.test(r)));
+  assert.equal(crm.priceProposal(lead, { items: [{ package_id: "core" }] }).reasons.length, 0); // list price, no discount: straight through
+});
