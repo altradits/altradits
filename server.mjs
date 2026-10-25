@@ -136,6 +136,8 @@ async function maybeRunDaily() {
   const { dailyDiscovery, syncCv } = await import("./lib/career.js");
   console.log("daily CV sync", await syncCv().catch((e) => `failed: ${e.message}`));
   console.log("daily job discovery", await dailyDiscovery().catch((e) => `failed: ${e.message}`));
+  const { runLearningCadence } = await import("./lib/learning.js");
+  console.log("daily learning cadence", await runLearningCadence().catch((e) => `failed: ${e.message}`));
 }
 // After each deploy, bring the CV in line with what the site now offers.
 setTimeout(() => import("./lib/career.js").then((c) => c.syncCv()).then((r) => console.log("CV sync", r)).catch((e) => console.error("CV sync", e.message)), 60 * 1000).unref();

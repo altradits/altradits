@@ -88,8 +88,8 @@ export const QA_EXPERTS = [
     redFlags: ["Invented source, statistic or quote", "Recommendation unsupported by the sources", "Dead or fabricated links"] }),
   X({ id: "copy-editor", name: "Copy Editor", source: "marketing-content-creator",
     domains: ["copywriting", "editing", "client voice", "blogs", "newsletters", "product descriptions"],
-    triggers: { departments: ["social"], services: ["content-writing", "q-blog", "q-newsletter", "q-product-copy", "q-bio", "q-captions", "q-faq", "q-reply-templates"],
-      keywords: ["write", "copy", "caption", "blog", "article", "newsletter", "bio", "description", "post", "faq", "headline", "tagline"] },
+    triggers: { departments: ["social"], services: ["content-writing", "translation", "q-translate", "q-blog", "q-newsletter", "q-product-copy", "q-bio", "q-captions", "q-faq", "q-reply-templates"],
+      keywords: ["write", "copy", "caption", "blog", "article", "newsletter", "bio", "description", "post", "faq", "headline", "tagline", "translate", "translation"] },
     checklist: [
       "Sounds like the client's voice notes and past posts; reads naturally aloud",
       "No spelling, grammar or punctuation errors",
@@ -219,8 +219,8 @@ export const QA_EXPERTS = [
     redFlags: ["States a tax rate or deduction as fact without a source", "Advises filing or avoiding tax", "Tax ID or rate invented"] }),
   X({ id: "pricing", name: "Pricing Analyst", source: "specialized-pricing-analyst",
     domains: ["prices", "quotes", "discounts", "price comparisons", "short-let pricing"],
-    triggers: { departments: [], services: ["q-competitors", "host-assist", "q-subscriptions", "travel-life", "q-trip"],
-      keywords: ["price", "pricing", "quote", "discount", "cost", "budget", "rate", "fee", "cheaper", "saving"] },
+    triggers: { departments: [], services: ["q-competitors", "host-assist", "q-subscriptions", "travel-life", "q-trip", "events", "q-venues"],
+      keywords: ["price", "pricing", "quote", "discount", "cost", "budget", "rate", "fee", "cheaper", "saving", "venue"] },
     checklist: [
       "Every price states its currency and date checked",
       "Comparisons are like for like (same dates, nights, specs)",
@@ -463,7 +463,7 @@ function score(e, task, text) {
   return s;
 }
 
-export function selectExperts(task = {}, max = 4) {
+export function selectExperts(task = {}, max = 5) {
   const text = `${task.title || ""} ${task.details || ""}`.toLowerCase();
   const ranked = QA_EXPERTS
     .map((e, i) => ({ e, i, s: score(e, task, text) }))

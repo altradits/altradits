@@ -126,6 +126,7 @@ export async function GET(request) {
       copied: mail.filter((e) => e.cc === STAN).slice(0, 60).map(pick),
       escalations: mail.filter((e) => e.kind === "owner").slice(0, 30).map(pick),
       reviews,
+      learning: await import("../lib/learning.js").then((m) => m.learningView()),
     });
   }
   if (u.searchParams.get("view") === "subscribers") {
@@ -148,6 +149,7 @@ export async function GET(request) {
       comms: (await import("../data/team-comms.js")).COMMS,
       internal: (await import("../data/team-comms.js")).INTERNAL,
       qa: await import("../data/qa-experts.js").then((m) => ({ stan: m.STAN, experts: m.QA_EXPERTS.map(({ id, name, source, domains, always, checklist }) => ({ id, name, source, domains, always, checklist })) })),
+      learning: await import("../lib/learning.js").then((m) => m.learningView()),
     });
   }
 
@@ -227,9 +229,22 @@ async function resolveApproval(request, body) {
       }
       recomputeTotals(p);
       await publishProposal(base, lead, p, { approved: true }); // Stanley just approved it
+      if (body.edits?.summary || Array.isArray(body.edits?.prices) || note) {
+        const { recordOutcome } = await import("../lib/learning.js");
+        await recordOutcome({
+          kind: "stanley_override",
+          dept: "growth",
+          leadId: lead.id,
+          note: note || (body.edits?.summary ? `Proposal summary edited by Stanley: ${clean(body.edits.summary, 200)}` : "Proposal pricing adjusted by Stanley."),
+        }).catch(() => {});
+      }
     } else if (p && lead) {
       p.status = "declined";
       await saveProposal(p);
+      if (note) {
+        const { recordOutcome } = await import("../lib/learning.js");
+        await recordOutcome({ kind: "stanley_override", dept: "growth", leadId: lead.id, note: `Proposal declined by Stanley: ${note}` }).catch(() => {});
+      }
       await sendEmail({ to: lead.email, leadId: lead.id, dept: "growth", approved: true, subject: "About your proposal",
         text: note || `Hi ${lead.name || "there"}, thanks for your patience. ${BUSINESS.owner} would like to talk this through before sending a proposal. Just reply with a good time.` });
     }
@@ -279,6 +294,17 @@ async function resolveApproval(request, body) {
   } else if (lead && note) {
     // trial_task, call_request, escalation: the note goes to the client.
     await sendEmail({ to: lead.email, leadId: lead.id, approved: true, subject: a.type === "trial_task" ? "Your free task is done" : "A note from Stanley", text: note });
+    if (a.type === "escalation") {
+      const { recordOutcome } = await import("../lib/learning.js");
+      await recordOutcome({
+        kind: "escalation_resolved",
+        dept: "growth",
+        leadId: lead.id,
+        question: a.summary || "Escalated client question",
+        answer: note,
+        note,
+      }).catch(() => {});
+    }
   }
 
   if (lead) { logEvent(lead, `${a.type} ${approve ? "approved" : "declined"} by Stanley.`); await saveLead(lead); }
@@ -322,6 +348,18 @@ export async function POST(request) {
   if (body.action === "ln_lesson") {
     const { addLesson } = await import("../lib/channels.js");
     try { return json({ lesson: await addLesson(clean(body.text, 600)) }); } catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "learning_consolidate") {
+    const { consolidateLearning, learningView } = await import("../lib/learning.js");
+    const summary = await consolidateLearning();
+    return json({ ok: true, summary, learning: await learningView() });
+  }
+  if (body.action === "learning_rule") {
+    const { recordOutcome, learningView } = await import("../lib/learning.js");
+    const note = clean(body.text || body.note, 500);
+    if (!note) return json({ error: "Write a rule or lesson to pin." }, 400);
+    await recordOutcome({ kind: "stanley_override", dept: clean(body.dept, 30) || "admin", service: clean(body.service, 40) || null, note });
+    return json({ ok: true, learning: await learningView() });
   }
   if (body.action === "move_to_node") {
     const { moveToNode } = await import("../lib/finance.js");
@@ -467,6 +505,19 @@ export async function POST(request) {
       (await import("../lib/qa.js")).reopen(t.qa, note);
       t.history.push({ at, by: "Stanley", text: note ? `Changes requested: ${note}` : "Re-run requested" });
       await saveTask(t);
+      if (note) {
+        const { recordOutcome } = await import("../lib/learning.js");
+        await recordOutcome({
+          kind: "stanley_override",
+          dept: t.department,
+          service: t.service,
+          taskId: t.id,
+          leadId: t.leadId,
+          title: t.title,
+          specialist: t.specialist,
+          note,
+        }).catch(() => {});
+      }
       kickQueue();
     } else {
       t.status = "done";

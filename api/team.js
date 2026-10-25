@@ -6,6 +6,8 @@ import { json, readBody, clean, clientIp, safeEqual } from "../lib/http.js";
 import { hit, listIds, getMany, getJSON, setJSON } from "../lib/store.js";
 import { applyMember, getMember, publicMember, getTask, saveTask, allTasks, notifyClient, OPEN } from "../lib/ops.js";
 import { DEPARTMENTS } from "../data/playbooks.js";
+import { screen, describe } from "../lib/screen.js";
+import { specialistForTask, retrieveMemory } from "../lib/learning.js";
 
 async function memberByToken(token) {
   if (!token || typeof token !== "string") return null;
@@ -18,18 +20,26 @@ async function memberByToken(token) {
   return old || null;
 }
 
-const forMember = (t) => ({
-  id: t.id, client: t.client, title: t.title, details: t.details, department: t.department, due: t.due,
-  estimateHours: t.estimateHours, status: t.status, deliverable: t.deliverable, hoursLogged: t.hoursLogged,
-  history: t.history.slice(-8), createdAt: t.createdAt,
-});
+const forMember = (t, memMap = {}) => {
+  const spec = specialistForTask(t);
+  return {
+    id: t.id, client: t.client, title: t.title, details: t.details, department: t.department, due: t.due,
+    estimateHours: t.estimateHours, status: t.status, deliverable: t.deliverable, hoursLogged: t.hoursLogged,
+    head: t.head || spec.head.name,
+    specialist: t.specialist || spec.specialist?.name || spec.head.name,
+    qaCriteria: t.qa?.panel?.flatMap((p) => p.criteria) || [],
+    learnedRules: (memMap[t.department] || []).slice(0, 4),
+    history: t.history.slice(-8), createdAt: t.createdAt,
+  };
+};
 
 export async function GET(request) {
   const ip = clientIp(request);
   if ((await hit(`rl:team:miss:${ip}`, 900)) > 20) return json({ error: "Too many attempts. Try again in 15 minutes." }, 429);
   const m = await memberByToken(new URL(request.url).searchParams.get("m"));
   if (!m || m.status !== "approved") { await hit(`rl:team:miss:${ip}`, 900); return json({ error: "Workspace not found or not active yet." }, 404); }
-  const tasks = (await allTasks()).filter((t) => t.assigneeId === m.id).map(forMember);
+  const memMap = Object.fromEntries(await Promise.all(m.departments.map(async (d) => [d, (await retrieveMemory({ dept: d })).rules.map((r) => r.rule)])));
+  const tasks = (await allTasks()).filter((t) => t.assigneeId === m.id).map((t) => forMember(t, memMap));
   const playbooks = DEPARTMENTS.filter((d) => m.departments.includes(d.id));
   return json({ member: publicMember(m), tasks, playbooks });
 }
@@ -65,9 +75,13 @@ export async function POST(request) {
     const url = clean(body.url, 500);
     const note = clean(body.note, 2000);
     if (!/^https?:\/\//.test(url) && note.length < 20) return json({ error: "Add a link to the deliverable or a note describing what was done." }, 400);
-    t.deliverable = { url: /^https?:\/\//.test(url) ? url : "", note, at };
+    const s = screen(note);
+    const unsafe = s.reasons.filter((r) => r !== "link");
+    if (unsafe.length) return json({ error: `Please remove ${describe(unsafe)} from your note before submitting.` }, 400);
+    t.deliverable = { url: /^https?:\/\//.test(url) ? url : "", note, at, by: m.name };
     t.hoursLogged = Math.max(0, Math.min(40, Number(body.hours) || 0));
     t.status = "review";
+    t.reviewAt = at;
     t.history.push({ at, by: m.name, text: `Submitted for review (${t.hoursLogged}h)` });
     await notifyClient(t, `Ready for your review: ${t.title}`,
       `Your task "${t.title}" is done and ready for you.\n\n${note}${t.deliverable.url ? `\n\nDeliverable: ${t.deliverable.url}` : ""}\n\nApprove it or ask for changes in your portal.`);

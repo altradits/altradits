@@ -74,10 +74,15 @@ function playbook(d) {
 function card(t) {
   const d = findDepartment(t.department);
   const open = ["assigned", "in_progress", "changes"].includes(t.status);
+  const rules = Array.isArray(t.learnedRules) && t.learnedRules.length
+    ? `<p><b>Learned department rules</b></p><ul>${t.learnedRules.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>` : "";
+  const qaList = Array.isArray(t.qaCriteria) && t.qaCriteria.length
+    ? `<p><b>QA acceptance criteria</b></p><ul>${t.qaCriteria.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : "";
   return `<div class="task ${location.hash === "#" + t.id ? "hot" : ""}" id="${t.id}">
     <h3>${esc(t.title)} <span class="st ${t.status}">${LABEL[t.status] || t.status}</span></h3>
-    <div class="meta">${esc(t.client)} · ${esc(d.name)} · ~${t.estimateHours}h · ${t.due ? `due ${esc(t.due)}` : `turnaround ${d.turnaroundHours}h`}</div>
+    <div class="meta">${esc(t.client)} · ${esc(d.name)}${t.head ? ` (${esc(t.head)}${t.specialist && t.specialist !== t.head ? ` / ${esc(t.specialist)}` : ""})` : ""} · ~${t.estimateHours}h · ${t.due ? `due ${esc(t.due)}` : `turnaround ${d.turnaroundHours}h`}</div>
     <div class="details">${esc(t.details || "(no extra details)")}</div>
+    ${qaList}${rules}
     ${playbook(d)}
     ${["assigned", "changes"].includes(t.status) ? `<div class="row"><button class="btn primary" data-accept="${t.id}">Start task</button></div>` : ""}
     ${t.status === "in_progress" ? `<form data-submit="${t.id}">

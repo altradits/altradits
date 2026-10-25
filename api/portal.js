@@ -14,6 +14,7 @@ import {
 import { sendEmail, emailOwner } from "../lib/email.js";
 import { workersLive, kickQueue } from "../lib/workers.js";
 import { RULES } from "../data/catalog.js";
+import { recordOutcome, distillClientPreference } from "../lib/learning.js";
 
 const TYPES = { md: "text/markdown", csv: "text/csv", txt: "text/plain", html: "text/html" };
 
@@ -113,6 +114,7 @@ export async function POST(request) {
     t.history.push({ at, by: "client", text: `Client answered: ${answer}` });
     t.question = null;
     t.status = "queued";
+    if (await distillClientPreference(lead, answer)) await saveLead(lead);
     if (await holdIfUnsafe(t, answer, "client answer", saveTask)) return json({ ok: true, held: true });
     await saveTask(t);
     kickQueue();
@@ -124,6 +126,20 @@ export async function POST(request) {
     t.satisfaction = { rating, comment, at };
     t.closedAt = at;
     t.history.push({ at, by: "client", text: `Approved, rated ${rating}/5${comment ? `: ${comment}` : ""}` });
+    await recordOutcome({
+      kind: "client_approve",
+      dept: t.department,
+      service: t.service,
+      taskId: t.id,
+      leadId: lead.id,
+      title: t.title,
+      specialist: t.specialist,
+      rating,
+      comment,
+      summary: t.deliverable?.summary,
+      files: t.deliverable?.files,
+    }).catch((e) => console.error("learn approve", e));
+    if (comment && (await distillClientPreference(lead, comment))) await saveLead(lead);
     if (rating >= 4) {
       t.status = "done";
       await saveTask(t);
@@ -143,6 +159,17 @@ export async function POST(request) {
     if (!note) return json({ error: "Tell us what to change." }, 400);
     t.history.push({ at, by: "client", text: `Changes requested: ${note}` });
     t.revisions = (t.revisions || 0) + 1;
+    await recordOutcome({
+      kind: "client_changes",
+      dept: t.department,
+      service: t.service,
+      taskId: t.id,
+      leadId: lead.id,
+      title: t.title,
+      specialist: t.specialist,
+      note,
+    }).catch((e) => console.error("learn changes", e));
+    if (await distillClientPreference(lead, note)) await saveLead(lead);
     const m = t.assigneeId && (await getMember(t.assigneeId));
     if (m && m.status === "approved") {
       t.status = "changes";
