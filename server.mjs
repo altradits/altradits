@@ -18,10 +18,17 @@ try {
     if (m && m[2] && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
   }
 } catch { /* no .env */ }
-if (!PROD) {
+// "dev" stand-ins only on a developer's own machine. Anywhere Passenger runs the
+// app (the live server), or NODE_ENV is production, a missing secret stays
+// missing: the admin then refuses everyone instead of accepting "dev".
+const SERVER = PROD || Boolean(process.env.PASSENGER_APP_ENV) || typeof globalThis.PhusionPassenger !== "undefined";
+if (!SERVER) {
   for (const k of ["ADMIN_TOKEN", "CRON_SECRET"]) {
     if (!process.env[k]) { process.env[k] = "dev"; console.log(`${k} not set: using "dev" locally`); }
   }
+} else {
+  for (const k of ["ADMIN_TOKEN", "SITE_URL"]) if (!process.env[k]) console.error(`${k} is not set: ${k === "ADMIN_TOKEN" ? "the admin stays locked" : "links use https://altradits.com"}. Set it in DirectAdmin → Setup Node.js App.`);
+  if (process.env.ADMIN_TOKEN && process.env.ADMIN_TOKEN.length < 24) console.error("ADMIN_TOKEN is short: use a long random one (openssl rand -hex 32).");
 }
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain" };
@@ -101,6 +108,8 @@ async function maybeRunDaily() {
   await setJSON("daily:last", today);
   const { runFollowups } = await import("./lib/followups.js");
   console.log("daily follow-ups", today, await runFollowups(siteUrl.replace(/\/$/, "")));
+  const { backupNow } = await import("./lib/backup.js");
+  console.log("daily backup", await backupNow().catch((e) => `failed: ${e.message}`));
   const { autoClean } = await import("./lib/cleanup.js");
   console.log("daily clean-up", await autoClean().catch((e) => `failed: ${e.message}`));
   const { runNurture } = await import("./lib/subscribers.js");

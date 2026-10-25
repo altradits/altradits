@@ -176,11 +176,18 @@ test("payments: one automatic email with the complete receipt attached; nothing 
   assert.equal(tally.donors, 1);
 });
 
-test("a kit requested on /products reaches the inbox at once, with approvals on", async () => {
+test("a kit requested on /products: the confirmation and, once confirmed, the kit go out at once, with approvals on", async () => {
   const subs = await import("../lib/subscribers.js");
+  const { getJSON } = await import("../lib/store.js");
   const r = await subs.subscribe({ email: "kiwi@shop.co", name: "Kiwi", kit: "inbox", ip: "1.2.3.4" });
   assert.ok(r.sub);
-  const mail = (await all()).find((e) => e.to === "kiwi@shop.co");
+  const ask = (await all()).find((e) => e.to === "kiwi@shop.co");
+  assert.equal(ask.status, "logged");
+  assert.match(ask.subject, /^Confirm to get your/);
+  const s = await getJSON(`sub:${r.sub.id}`);
+  assert.equal(await subs.confirmSubscription(s.id, "wrong", "inbox"), false);
+  assert.equal(await subs.confirmSubscription(s.id, s.c, "inbox"), true);
+  const mail = (await all()).find((e) => e.to === "kiwi@shop.co" && /Your free kit/.test(e.subject));
   assert.equal(mail.status, "logged"); // sent, not waiting for approval
   assert.match(mail.from, /<marketing@altradits\.com>$/);
   assert.deepEqual(mail.files, ["inbox-zero-in-60-minutes.pdf"]);

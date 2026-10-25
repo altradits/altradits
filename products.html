@@ -74,7 +74,7 @@ h1 em{font-style:normal;color:var(--blue)}
   <ol class="ladder" id="ladder" aria-label="Three ways to get it done"></ol>
   <div class="kits" id="kits"><p class="msg">Loading the kits…</p></div>
 
-  <p class="note">We send each kit to your email and follow up a few times with tips and offers about that topic. Unsubscribe in one click from any email.</p>
+  <p class="note">Download your kit right away. We email it too once you confirm your address, then follow up a few times with tips and offers about that topic. Unsubscribe in one click from any email.</p>
 </div>
 <script type="module">
 const $ = (s, el = document) => el.querySelector(s);
@@ -130,7 +130,7 @@ if (data) {
       const got = $(".got", form.closest(".kit"));
       got.hidden = false;
       // Already on our list: the kit goes to that inbox only, never to this page.
-      got.innerHTML = `${d.files ? `<b>It's yours. We've also emailed it to ${esc(email)}.</b>
+      got.innerHTML = `${d.files ? `<b>It's yours: download it below.</b> To get it by email too, tap the confirmation link we've sent to ${esc(email)}.
         <div class="row">${d.files.map((f) => `<a class="btn" href="${esc(f.url)}" download>Download ${esc(TYPES[f.type] || f.type)}</a>`).join("")}</div>` : `<b>Check your inbox: we've sent the kit to ${esc(email)}.</b>`}
         <div class="next"><b>Rather not do it alone?</b>
           <a href="/${esc(kit.offers.together.id.replace(/^q-/, ""))}"><span>Do it together: we finish it with you (2 hours)</span><span>${money(kit.offers.together.price)}</span></a>
