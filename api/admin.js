@@ -40,6 +40,14 @@ async function gate(request) {
   if ((await peek(key)) >= 20) return json({ error: "Too many wrong tokens. Wait 15 minutes and try again." }, 429);
   if (authorized(request)) return null;
   await hit(key, 900);
+  // Many wrong tokens across the whole site (someone guessing from many
+  // connections): Stanley is told, at most once an hour. Never a site-wide
+  // lockout, which would let a stranger lock him out of his own admin.
+  const hour = new Date().toISOString().slice(0, 13);
+  if ((await hit(`rl:admin:fail:all:${hour}`, 3600)) === 100) {
+    const { emailOwner } = await import("../lib/email.js");
+    await emailOwner("Many wrong admin tokens", "More than 100 wrong admin tokens were tried in the last hour, from several connections. If that wasn't you, rotate ADMIN_TOKEN in DirectAdmin (openssl rand -hex 32), then Save and Restart the app.").catch(() => {});
+  }
   return deny();
 }
 
@@ -320,6 +328,11 @@ export async function POST(request) {
     const p = await getProposal(clean(body.id, 30));
     if (!p) return json({ error: "Payment not found." }, 404);
     try { const s = await moveToNode(p, body.sats); return json({ bolt11: s.bolt11, sats: s.sats }); } catch (err) { return json({ error: /connected|LND|ECONN|timed out/i.test(err.message) ? "The node isn't reachable yet. Start it on the Mac, then try again." : err.message }, 400); }
+  }
+  if (body.action === "erase_person") {
+    if (body.confirm !== "ERASE") return json({ error: "Type ERASE to confirm." }, 400);
+    const { erasePerson } = await import("../lib/cleanup.js");
+    try { return json(await erasePerson(clean(body.email, 200))); } catch (err) { return json({ error: err.message }, 400); }
   }
   if (body.action === "archives") { const { listArchives } = await import("../lib/store.js"); return json({ archives: listArchives() }); }
   if (body.action === "archive_delete") {

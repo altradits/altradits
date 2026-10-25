@@ -4,6 +4,7 @@
 import { safeEqual } from "./lib/http.js";
 import http from "node:http";
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
@@ -35,6 +36,22 @@ const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; ch
 // Only these paths are ever served: never .git, .env, lib/, data files.
 const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|portal\.html|team\.html|join\.html|cv\.html|hunt\.html|templates\.html|donate\.html|va\.html|bitcoin\.html|products\.html|collect\.html|robots\.txt|data\/(?:catalog|playbooks|community)\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
 const SECURITY = { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "SAMEORIGIN" };
+
+// Pages that show client or admin data get a Content Security Policy: only our
+// own scripts (and each page's inline script, by hash) can run, so even if some
+// text slipped through unescaped it couldn't run or send the admin token away.
+const cspCache = new Map();
+function cspFor(file) {
+  const mtime = fs.statSync(file).mtimeMs;
+  const hit = cspCache.get(file);
+  if (hit?.mtime === mtime) return hit.csp;
+  const html = fs.readFileSync(file, "utf8");
+  const hashes = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => `'sha256-${crypto.createHash("sha256").update(m[1]).digest("base64")}'`);
+  const csp = [`default-src 'self'`, `script-src 'self' ${hashes.join(" ")}`, `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`, `font-src https://fonts.gstatic.com`,
+    `img-src 'self' data: https:`, `connect-src 'self'`, `object-src 'none'`, `base-uri 'none'`, `form-action 'self'`, `frame-ancestors 'none'`].join("; ");
+  cspCache.set(file, { mtime, csp });
+  return csp;
+}
 
 function publicUrl(req) {
   const proto = (req.headers["x-forwarded-proto"] || (req.socket.encrypted ? "https" : "http")).split(",")[0].trim();
@@ -85,6 +102,7 @@ const server = http.createServer(async (req, res) => {
     const file = path.join(ROOT, rel);
     const headers = { ...SECURITY, "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" };
     if (/^\/(admin|proposal|portal|team)\.html$/.test(rel)) headers["X-Robots-Tag"] = "noindex";
+    if (/^\/(admin|portal|collect)\.html$/.test(rel)) headers["Content-Security-Policy"] = cspFor(file);
     headers["Cache-Control"] = rel.startsWith("/assets/") ? "public, max-age=86400" : "no-cache";
     fs.createReadStream(file)
       .on("open", () => res.writeHead(200, headers))
@@ -100,7 +118,8 @@ server.listen(PORT, () => console.log(`Altradits running on port ${PORT}${PROD ?
 // The follow-up agent: once a day, after 06:00 UTC. The deploy cron pings
 // /healthz every 5 minutes, which keeps this process (and timer) alive.
 async function maybeRunDaily() {
-  const siteUrl = process.env.SITE_URL;
+  // On the server the daily jobs (backup, clean-up, follow-ups) always run.
+  const siteUrl = process.env.SITE_URL || (SERVER ? "https://altradits.com" : null);
   if (!siteUrl || new Date().getUTCHours() < 6) return;
   const { getJSON, setJSON } = await import("./lib/store.js");
   const today = new Date().toISOString().slice(0, 10);

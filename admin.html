@@ -171,6 +171,7 @@ dd{margin:0;overflow-wrap:anywhere}
       <button role="tab" data-tab="jobs">My job hunt <span class="badge" id="jobCount" hidden></span></button>
       <button role="tab" data-tab="emails">Emails <span class="badge" id="mailCount" hidden></span></button>
       <button type="button" class="btn" id="refresh">↻ Refresh</button>
+      <button type="button" class="btn" id="logout" title="Sign out on this device">Log out</button>
     </div>
   </header>
 
@@ -389,6 +390,10 @@ dd{margin:0;overflow-wrap:anywhere}
       <p class="sm muted" style="margin:0 0 .4rem">Runs every morning and deletes for good what's past these periods, always with the same protection: payments, live work and internal records are never touched.</p>
       <ul class="sm" id="autoRules" style="padding-left:1.1rem;margin:.2rem 0"></ul>
       <p class="sm" id="autoLast"></p>
+      <h3 style="margin:1.2rem 0 .4rem;font-size:1rem">Erase a person (privacy request)</h3>
+      <p class="sm muted" style="margin:0 0 .4rem">Deletes for good everything about one email address: unpaid leads and orders, the free-kit subscription, emails to them, a turned-down application. Payments, receipts and payment emails are kept for the books; the team isn't touched.</p>
+      <div class="row"><input id="eraseEmail" type="email" placeholder="their@email.com" style="max-width:16rem"><input id="eraseConfirm" placeholder="Type ERASE" style="max-width:9rem"><button class="btn" id="eraseGo">Erase</button></div>
+      <p class="sm muted" id="eraseMsg" role="status"></p>
       <h3 style="margin:1.2rem 0 .4rem;font-size:1rem">Archives</h3>
       <p class="sm muted" style="margin:0 0 .5rem">Deleting an archive frees its space for good. Type DELETE in the box, then click Delete on the file.</p>
       <input id="archConfirm" placeholder="Type DELETE" style="max-width:14rem">
@@ -481,6 +486,15 @@ function tab(name) {
 }
 document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => tab(b.dataset.tab)));
 document.addEventListener("input", (e) => { if (e.target.matches("[data-price]")) { const s = e.target.parentElement.querySelector("[data-satsfor]"); if (s) s.textContent = money(e.target.value); } });
+$("#eraseGo").addEventListener("click", async () => {
+  try { const r = await api("", { action: "erase_person", email: $("#eraseEmail").value.trim(), confirm: $("#eraseConfirm").value.trim() }); $("#eraseMsg").textContent = `Erased ${r.erased} record${r.erased === 1 ? "" : "s"}${r.kept ? `; ${r.kept} payment record${r.kept === 1 ? "" : "s"} kept for the books` : ""}.`; $("#eraseConfirm").value = ""; }
+  catch (err) { $("#eraseMsg").textContent = err.message; }
+});
+$("#logout").addEventListener("click", () => {
+  try { sessionStorage.removeItem("altra.admin"); } catch {}
+  token = ""; D = null;
+  showLogin("Signed out on this device.");
+});
 $("#refresh").addEventListener("click", async (e) => {
   const b = e.currentTarget; lastBtn = null;
   b.classList.add("busy"); toast("Refreshing…", false, 0);

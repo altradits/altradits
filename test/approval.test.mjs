@@ -1,5 +1,6 @@
 // Stanley approves every email; Stan turns instructions into department drafts.
 // Run: npm test
+process.env.OWNER_PHONE = "254700000001"; // a test number (the real one lives only in DirectAdmin)
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

@@ -1,6 +1,7 @@
 // Lightning scan-to-pay: a fake LND node (HTTPS, self-signed, like a real one)
 // and a mocked Lightning address. Run: npm test
 process.env.EMAIL_APPROVAL = "off"; // these tests check delivery; the approval gate has its own tests
+process.env.OWNER_PHONE = "254700000001"; // a test number (the real one lives only in DirectAdmin)
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -374,7 +375,7 @@ test("urgent quick job: phone shown only after payment, task jumps the queue, ow
   const ops = await import(new URL("lib/ops.js", root));
   const store = await import(new URL("lib/store.js", root));
   const catalogSrc = fs.readFileSync(new URL("data/catalog.js", root), "utf8");
-  assert.doesNotMatch(catalogSrc, /707172370/, "the phone number is never in the public catalog");
+  assert.doesNotMatch(catalogSrc, new RegExp(process.env.OWNER_PHONE.slice(3)), "the phone number is never in the public catalog");
   process.env.LND_REST_URL = `https://localhost:${lnd.address().port}`;
   process.env.LND_INVOICE_MACAROON = MACAROON;
   process.env.LND_TLS_CERT = fs.readFileSync("cert.pem").toString("base64");
@@ -389,7 +390,7 @@ test("urgent quick job: phone shown only after payment, task jumps the queue, ow
     [...invoices.values()].at(-1).state = "SETTLED";
     await call(pay.GET, "GET", `/api/pay?id=${o.id}&t=${o.t}`);
     const after = (await call(order.GET, "GET", `/api/order?id=${o.id}&t=${o.t}`)).body;
-    assert.equal(after.phone, "+254707172370");
+    assert.equal(after.phone, "+254700000001");
     assert.equal(after.delivery, "Started within minutes of payment");
     const p = await crm.getProposal(o.id);
     assert.equal((await ops.getTask(p.order.taskId)).urgency, "minutes");
@@ -403,7 +404,7 @@ test("urgent quick job: phone shown only after payment, task jumps the queue, ow
     await call(pay.GET, "GET", `/api/pay?id=${s.id}&t=${s.t}`);
     assert.equal((await call(order.GET, "GET", `/api/order?id=${s.id}&t=${s.t}`)).body.phone, undefined, "same-day orders don't get the number");
     await call(order.POST, "POST", "/api/order", { id: s.id, t: s.t, urgency: "hours" });
-    assert.equal((await call(order.GET, "GET", `/api/order?id=${s.id}&t=${s.t}`)).body.phone, "+254707172370");
+    assert.equal((await call(order.GET, "GET", `/api/order?id=${s.id}&t=${s.t}`)).body.phone, "+254700000001");
 
     // Monthly plans have no urgency option.
     const plan = (await call(order.POST, "POST", "/api/order", { item: "lite" })).body;

@@ -1,6 +1,7 @@
 // Stanley's job hunt: careers-page parsing, SSRF guard, Career Agent packs,
 // application tracking. Fake web + fake Claude. Run: npm test
 process.env.EMAIL_APPROVAL = "off"; // these tests check delivery; the approval gate has its own tests
+process.env.OWNER_PHONE = "254700000001"; // a test number (the real one lives only in DirectAdmin)
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -169,7 +170,7 @@ test("Apply with AI via the extension: CV-filled details, start, AI steps, PDFs,
   apply.setApplyClient({ beta: { messages: { create: async (p) => {
     assert.equal(p.tools[0].name, "submit_applicant_details");
     return { stop_reason: "tool_use", content: [{ type: "tool_use", id: "s", name: "submit_applicant_details", input: {
-      fullName: "Stanley Chege Thuita", email: "altradits@gmail.com", phone: "+254 707 172370", city: "Kisumu", country: "Kenya",
+      fullName: "Stanley Chege Thuita", email: "altradits@gmail.com", phone: "+254 700 000001", city: "Kisumu", country: "Kenya",
       linkedin: "https://www.linkedin.com/in/stanmobitech/", github: "https://github.com/altradits", website: "https://altradits.com",
       workAuthorization: "", noticePeriod: "", salaryExpectation: "", relocate: "", startDate: "" } }] };
   } } } });
@@ -181,7 +182,7 @@ test("Apply with AI via the extension: CV-filled details, start, AI steps, PDFs,
 
   r = await call(admin.POST, "POST", "/api/admin", { action: "job_applicant", ...r.body.applicant, extra: "my password: hunter2" });
   assert.equal(r.status, 400, "no passwords in applicant details");
-  r = await call(admin.POST, "POST", "/api/admin", { action: "job_applicant", fullName: "Stanley Chege Thuita", email: "altradits@gmail.com", phone: "+254707172370" });
+  r = await call(admin.POST, "POST", "/api/admin", { action: "job_applicant", fullName: "Stanley Chege Thuita", email: "altradits@gmail.com", phone: "+254700000001" });
   assert.equal(r.status, 200);
 
   r = await call(admin.POST, "POST", "/api/admin", { action: "job_agent_think", id: job.id, messages: [{ role: "user", content: "x" }] });

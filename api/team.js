@@ -3,14 +3,19 @@
 // GET  /api/team?m=<token>                                -> workspace: tasks + playbooks
 // POST /api/team { m, action: "accept"|"submit"|"note", task, ... }
 import { json, readBody, clean, clientIp, safeEqual } from "../lib/http.js";
-import { hit, listIds, getMany } from "../lib/store.js";
+import { hit, listIds, getMany, getJSON, setJSON } from "../lib/store.js";
 import { applyMember, getMember, publicMember, getTask, saveTask, allTasks, notifyClient, OPEN } from "../lib/ops.js";
 import { DEPARTMENTS } from "../data/playbooks.js";
 
 async function memberByToken(token) {
-  if (!token) return null;
-  const members = await getMany("member", await listIds("members", 500));
-  return members.find((m) => safeEqual(m.token, token)) || null;
+  if (!token || typeof token !== "string") return null;
+  const id = await getJSON(`membertok:${token.slice(0, 40)}`);
+  const m = id && (await getJSON(`member:${id}`));
+  if (m && safeEqual(m.token, token)) return m;
+  // Members who joined before the index: a full scan, then indexed for next time.
+  const old = (await getMany("member", await listIds("members", 100000))).find((x) => safeEqual(x.token, token));
+  if (old) await setJSON(`membertok:${old.token}`, old.id);
+  return old || null;
 }
 
 const forMember = (t) => ({

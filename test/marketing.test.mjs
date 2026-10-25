@@ -87,7 +87,7 @@ test("hard checks block invented prices, URLs, phones, testimonials, coupons and
   assert.match(mk.checkPost(ch("x"), "Only $7 today!").join(), /not a catalog price/);
   assert.match(mk.checkPost(ch("fb_page"), "See https://altradits.com").join(), /No URLs/);
   assert.match(mk.checkPost(ch("x"), "Visit altradits.com").join(), /No domain names/);
-  assert.match(mk.checkPost(ch("li_co"), "Call +254 707 172 370").join(), /phone/);
+  assert.match(mk.checkPost(ch("li_co"), "Call +254 700 000 001").join(), /phone/);
   assert.match(mk.checkPost(ch("li_co"), "Our clients say we're the best").join(), /testimonials/);
   assert.match(mk.checkPost(ch("li_co"), "Grab a coupon today").join(), /coupons/);
   assert.match(mk.checkPost(ch("li_co"), "🔎 letter 2 of 8 is A").join(), /hunt or winners line/);

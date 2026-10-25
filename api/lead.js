@@ -1,7 +1,9 @@
 // POST /api/lead  { name, email, quiz, leadId?, token?, website }
 // The lead magnet: emails the visitor their free delegation plan and starts
 // the nurture. Not critical, so Stanley is not emailed.
-import { json, readBody, clean, clientIp, siteUrl, safeEqual, EMAIL_RE } from "../lib/http.js";
+import crypto from "node:crypto";
+import { json, readBody, clean, oneLine, clientIp, siteUrl, safeEqual, EMAIL_RE } from "../lib/http.js";
+import { screen } from "../lib/screen.js";
 import { createLead, getLead, saveLead, logEvent, advanceStage, cleanQuiz } from "../lib/crm.js";
 import { sendEmail } from "../lib/email.js";
 import { hit } from "../lib/store.js";
@@ -13,15 +15,19 @@ export async function POST(request) {
   const email = clean(body.email, 200).toLowerCase();
   if (!EMAIL_RE.test(email)) return json({ error: "Please enter a valid email." }, 400);
   if ((await hit(`rl:lead:${clientIp(request)}`, 3600)) > 10) return json({ error: "Too many requests, try again later." }, 429);
+  // One plan per address a day: the form can't be used to mail someone repeatedly.
+  if ((await hit(`rl:lead:to:${crypto.createHash("sha256").update(email).digest("hex").slice(0, 16)}`, 86400)) > 1) return json({ ok: true, sent: true });
+  const name = oneLine(body.name, 60);
+  if (name && screen(name).flagged) return json({ error: "Please enter just your name." }, 400);
 
   const quiz = cleanQuiz(body.quiz) || { tasks: [], hours: 0, role: "", hourValue: 0 };
   let lead = body.leadId ? await getLead(clean(body.leadId, 40)) : null;
   if (lead && !safeEqual(lead.token, body.token)) lead = null;
   const isNew = !lead;
-  if (!lead) lead = await createLead({ source: "delegation-quiz", email, name: body.name, referredBy: clean(body.ref, 12).toLowerCase() });
+  if (!lead) lead = await createLead({ source: "delegation-quiz", email, name, referredBy: /^[a-z0-9]{4,12}$/.test(String(body.ref || "")) ? body.ref : "" });
 
   lead.email = email;
-  if (body.name) lead.name = clean(body.name, 120);
+  if (name) lead.name = name;
   lead.needs = [...new Set([...lead.needs, ...quiz.tasks.filter((t) => findService(t))])];
   if (quiz.hours) lead.hoursPerWeek = quiz.hours;
   if (quiz.role) lead.role = quiz.role;

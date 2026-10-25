@@ -76,3 +76,19 @@ test("daily backup: compressed, encrypted with BACKUP_KEY, owner-only, rotated, 
   assert.ok(left.filter((f) => !f.includes("weekly")).length <= 14 && left.filter((f) => f.includes("weekly")).length <= 8);
   delete process.env.BACKUP_KEY;
 });
+
+test("erase a person: their unpaid records and emails go; payments stay; the team is never touched", async () => {
+  const { erasePerson } = await import("../lib/cleanup.js");
+  await put("lead", "leads", { id: "e1", email: "gone@x.co", token: "t", stage: "new", createdAt: new Date().toISOString() });
+  await put("lead", "leads", { id: "e2", email: "gone@x.co", token: "t", stage: "active", createdAt: new Date().toISOString() });
+  await put("proposal", "proposals", { id: "ep", leadId: "e2", status: "paid", payment: { confirmedAt: new Date().toISOString() } });
+  await put("email", "emails", { id: "em1", to: "gone@x.co", kind: "client", status: "sent", at: new Date().toISOString() });
+  await put("email", "emails", { id: "em2", to: "gone@x.co", kind: "payment", status: "sent", at: new Date().toISOString(), leadId: "e2" });
+  await put("member", "members", { id: "mm", email: "gone@x.co", status: "rejected", token: "mt" });
+  await put("member", "members", { id: "team", email: "team@x.co", status: "approved", token: "tt" });
+  await assert.rejects(erasePerson("nope"), /email address/);
+  const r = await erasePerson("Gone@X.co");
+  assert.ok(r.erased >= 3 && r.kept >= 2);
+  for (const k of ["lead:e1", "email:em1", "member:mm"]) assert.equal(await has(k), false, k);
+  for (const k of ["proposal:ep", "lead:e2", "email:em2", "member:team"]) assert.equal(await has(k), true, k);
+});
