@@ -82,6 +82,19 @@ $("#logout").addEventListener("click", () => {
   token = ""; D = null;
   showLogin("Signed out on this device.");
 });
+function renderAi(ai) {
+  const box = $("#aiPaused");
+  if (!box) return;
+  box.hidden = !ai?.paused;
+  if (ai?.paused) $("#aiPausedWhy").textContent = ai.reason === "key"
+    ? "— the Anthropic API key was rejected. Fix ANTHROPIC_API_KEY, then re-check."
+    : `— the Anthropic credit ran out${ai.since ? ` (${ago(ai.since)})` : ""}. Top up at console.anthropic.com, then re-check.`;
+}
+$("#aiRecheck")?.addEventListener("click", async () => {
+  try { const r = await api("", { action: "ai_recheck" }); renderAi(r.ai); toast("AI un-paused: the next AI step will try again."); }
+  catch (err) { toast(err.message, true, 6000); }
+});
+
 $("#refresh").addEventListener("click", async (e) => {
   const b = e.currentTarget; lastBtn = null;
   b.classList.add("busy"); toast("Refreshing…", false, 0);
@@ -119,6 +132,7 @@ function render() {
   const max = Math.max(1, ...Object.values(s.byStage));
   $("#funnel").innerHTML = STAGES.map((st) => `<div class="r"><span>${st.replace("_", " ")}</span><span class="bar"><i style="width:${(s.byStage[st] / max) * 100}%"></i></span><b>${s.byStage[st]}</b></div>`).join("");
   $("#sys").innerHTML = Object.entries(D.system).map(([k, v]) => `<li><b>${esc(k)}:</b> ${esc(v)}</li>`).join("");
+  renderAi(D.ai);
   $("#overviewApprovals").innerHTML = pending.length ? pending.map(approvalHtml).join("") : `<p class="muted">Nothing needs you right now. The agents have it. ☕</p>`;
   $("#approvals").innerHTML = D.approvals.length ? D.approvals.map(approvalHtml).join("") : `<p class="muted">No approvals yet.</p>`;
   renderLeads();
