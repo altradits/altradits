@@ -183,6 +183,11 @@ dd{margin:0;overflow-wrap:anywhere}
     <div class="grid2">
       <div class="panel"><h2>Funnel</h2><div class="funnel" id="funnel"></div></div>
       <div class="panel"><h2>System</h2><ul class="sys" id="sys"></ul>
+        <div id="aiPaused" hidden style="border:1px solid #d9a400;background:rgba(217,164,0,.1);border-radius:8px;padding:.6rem .8rem;margin:.6rem 0">
+          <b>AI paused</b> <span id="aiPausedWhy"></span>
+          <p class="muted" style="font-size:.9rem;margin:.3rem 0">Everything else keeps working: pages, orders, payments, portal and this admin. The chat answers in scripted mode, client tasks wait in the queue, and the daily CV sync, job discovery and marketing drafts are skipped. It re-checks by itself every 30 minutes.</p>
+          <button id="aiRecheck" type="button">Re-check AI now</button>
+        </div>
         <p class="muted" style="font-size:.9rem">The agents handle chat, proposals, client emails and follow-ups. You're only emailed for approvals, payments to confirm, free tasks to do, call requests and unhappy clients.</p></div>
     </div>
     <div class="panel"><h2>Waiting for you</h2><div id="overviewApprovals"></div></div>

@@ -16,6 +16,7 @@ import { buildMasterCv, discoverJobs, updateSettings, careerLive } from "../lib/
 import { getApplicant, saveApplicant, suggestApplicant, queueApply, cancelApply, startApply, applyFile, agentUpdate, think } from "../lib/apply.js";
 import { sendEmail } from "../lib/email.js";
 import { agentLive } from "../lib/agent.js";
+import { aiStatus, resumeAi } from "../lib/ai.js";
 import { marketingView, saveSettings as saveMarketing, createMaster, repurpose, cancelPost, editPost, postNow, marketingLive } from "../lib/marketing.js";
 import { BUSINESS } from "../data/catalog.js";
 
@@ -205,6 +206,7 @@ export async function GET(request) {
   const btcUsd = await import("../lib/lightning.js").then((m) => m.btcUsd()).catch(() => null);
   return json({
     btcUsd,
+    ai: { configured: Boolean(process.env.ANTHROPIC_API_KEY), ...aiStatus() },
     stats,
     approvals: approvals.filter((a) => a.status === "pending").concat(approvals.filter((a) => a.status !== "pending").slice(0, 20)),
     leads: leads.map((l) => ({
@@ -215,7 +217,7 @@ export async function GET(request) {
     })),
     emails,
     system: {
-      agents: agentLive ? "live (Claude)" : "scripted fallback: set ANTHROPIC_API_KEY",
+      agents: !agentLive ? "scripted fallback: set ANTHROPIC_API_KEY" : aiStatus().paused ? "paused (no AI credit): chat scripted, tasks queued" : "live (Claude)",
       email: process.env.SMTP_HOST ? `SMTP (${process.env.SMTP_HOST})` : process.env.EMAIL_TRANSPORT === "sendmail" ? "server mail (sendmail)" : process.env.RESEND_API_KEY ? "Resend" : "log only: set EMAIL_TRANSPORT=sendmail",
       storage: usingRedis ? "Redis" : `file store (${process.env.DATA_DIR || ".data"})`,
       ownerEmail: process.env.OWNER_EMAIL || BUSINESS.email,
@@ -333,6 +335,13 @@ export async function POST(request) {
   const body = await readBody(request);
 
   if (body.action === "approval") return resolveApproval(request, body);
+
+  // After topping up the Anthropic credit: lift the AI pause and restart the queue.
+  if (body.action === "ai_recheck") {
+    const ai = resumeAi();
+    kickQueue();
+    return json({ ai });
+  }
 
   // Stanley → Stan: an instruction, optionally about a message in one of the inboxes.
   if (body.action === "stan_instruct") {
