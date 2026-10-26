@@ -1,3 +1,13 @@
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/altradit/domains/altradits.com/public_html"
+PassengerBaseURI "/"
+PassengerNodejs "/home/altradit/nodevenv/domains/altradits.com/public_html/24/bin/node"
+PassengerAppType node
+PassengerStartupFile app.cjs
+PassengerAppLogFile "/home/altradit/logs/passenger.log"
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+# (Kept in the repo: deploy/cron.sh runs `git reset --hard`, which would
+# otherwise delete this block and every request would 404 at Apache.)
 # On production Apache serves existing .html files directly, so clean page
 # URLs need explicit aliases instead of relying on the local Node router.
 <IfModule mod_rewrite.c>
