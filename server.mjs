@@ -33,6 +33,12 @@ if (!SERVER) {
 }
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain" };
+// The landing page imports Three.js lazily; expose only its two browser modules
+// from node_modules through the same static asset route as the rest of the site.
+const PUBLIC_MODULES = new Map([
+  ["/assets/three.module.js", path.join(ROOT, "node_modules/three/build/three.module.js")],
+  ["/assets/three.core.js", path.join(ROOT, "node_modules/three/build/three.core.js")],
+]);
 // Only these paths are ever served: never .git, .env, lib/, data files.
 const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|portal\.html|team\.html|join\.html|cv\.html|hunt\.html|templates\.html|donate\.html|va\.html|bitcoin\.html|products\.html|collect\.html|robots\.txt|data\/(?:catalog|playbooks|community)\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
 const SECURITY = { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "SAMEORIGIN" };
@@ -99,7 +105,7 @@ const server = http.createServer(async (req, res) => {
     const home = /^\/(?:r|h)\/[a-z0-9]{4,12}\/?$/.test(url.pathname);
     const rel = page ? `/${page[1]}.html` : order ? "/va.html" : url.pathname === "/" || home ? "/index.html" : url.pathname;
     if (!PUBLIC.test(rel)) { res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found"); return; }
-    const file = path.join(ROOT, rel);
+    const file = PUBLIC_MODULES.get(rel) || path.join(ROOT, rel);
     const headers = { ...SECURITY, "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" };
     if (/^\/(admin|proposal|portal|team|collect)\.html$/.test(rel)) headers["X-Robots-Tag"] = "noindex";
     if (/^\/(admin|portal|collect|proposal|team)\.html$/.test(rel)) headers["Content-Security-Policy"] = cspFor(file);
