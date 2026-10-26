@@ -1,0 +1,15 @@
+# On production Apache serves existing .html files directly, so clean page
+# URLs need explicit aliases instead of relying on the local Node router.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  RewriteRule ^templates/?$ /products [R=301,L]
+  RewriteRule ^(admin|bitcoin|collect|cv|donate|hunt|join|portal|products|proposal|team|va)/?$ $1.html [L]
+
+  # Referral and hunt links open the homepage, which reads the original path.
+  RewriteRule ^(r|h)/[a-z0-9]{4,12}/?$ index.html [L]
+
+  # Order slugs are rendered by the VA page; keep the health check out of this fallback.
+  RewriteCond %{REQUEST_URI} !^/healthz/?$
+  RewriteRule ^[a-z0-9-]+/?$ va.html [L]
+</IfModule>
