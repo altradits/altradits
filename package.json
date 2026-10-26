@@ -15,7 +15,8 @@
     "imapflow": "1.7.8",
     "mailparser": "3.9.36",
     "nodemailer": "10.2.1",
-    "qrcode": "1.5.4"
+    "qrcode": "1.5.4",
+    "three": "0.186.1"
   },
   "main": "app.cjs",
   "overrides": {
