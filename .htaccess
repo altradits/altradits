@@ -1,0 +1,15 @@
+# The Node router serves the site. Apache must not expose runtime secrets or
+# the Node entry points directly when it handles a request for an existing file.
+<FilesMatch "^(\.env(\..*)?|server\.mjs|app\.cjs|README\.md|DEPLOY\.md|LICENSE|package(-lock)?\.json|vercel\.json)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Git metadata and local runtime state are never web content.
+RedirectMatch 404 ^/\.git(?:/|$)
+RedirectMatch 404 ^/\.data(?:/|$)
