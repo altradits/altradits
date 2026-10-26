@@ -40,15 +40,7 @@ h2{font:800 clamp(1.7rem,4.5vw,2.5rem)/1.08 'Bricolage Grotesque',sans-serif;mar
 .btn.btc{background:var(--btc);border-color:var(--btc);color:var(--ink)}
 .ctas{display:flex;flex-wrap:wrap;gap:.6rem}
 .fine{color:var(--muted);font-size:.92rem;margin:.9rem 0 0}
-.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(18rem,.95fr);align-items:center;gap:clamp(2rem,6vw,5rem);min-height:min(76vh,700px);padding:clamp(4rem,9vw,7.5rem) 0}
-.hero-copy{max-width:39rem}
-.hero h1{font-size:clamp(3rem,7.5vw,6rem);line-height:.98;letter-spacing:-.045em;margin:0 0 2rem}
-.hero h1 em{display:block;margin-top:.12em}
-.hero-cta{min-height:3.25rem;min-width:7.5rem}
-.hero-scene{width:min(100%,31rem);aspect-ratio:1;justify-self:center;position:relative}
-.hero-scene canvas,.hero-scene-fallback{display:block;width:100%;height:100%}
-.hero-scene canvas{position:absolute;inset:0}
-.hero-scene-fallback{position:absolute;inset:0}
+.hero{padding:3.5rem 0 4rem}
 .roles{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:3rem}
 .roles a{display:block;background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.3rem 1.4rem;text-decoration:none;color:var(--ink);transition:box-shadow .2s,transform .2s}
 .roles a:hover{box-shadow:6px 6px 0 var(--ink);transform:translateY(-2px)}
@@ -96,9 +88,8 @@ section{padding:4.5rem 0;border-top:1px solid var(--line)}
 .reveal{opacity:0;transform:translateY(.9rem);transition:opacity .7s ease,transform .7s ease}
 .reveal.in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}.btn:hover,.roles a:hover,.kits a:hover,.join a:hover{transform:none}}
-@media (max-width:760px){.hero{grid-template-columns:1fr;min-height:0;text-align:center;gap:.5rem;padding:clamp(3.5rem,12vw,6rem) 0 3rem}.hero-copy{margin:auto}.hero h1{font-size:clamp(2.9rem,11vw,4.8rem)}.hero-cta{margin:auto}.hero-scene{width:min(78vw,23rem);grid-row:2}}
 @media (max-width:900px){.split{grid-template-columns:1fr;gap:2rem}.moments,.kits{grid-template-columns:1fr}.join{grid-template-columns:1fr 1fr}}
-@media (max-width:560px){.roles,.join{grid-template-columns:1fr}.topnav{gap:.8rem}.top img{height:2.1rem}section{padding:3.2rem 0}.find{flex-direction:column}}
+@media (max-width:560px){.roles,.join{grid-template-columns:1fr}.topnav{gap:.8rem}.top img{height:2.1rem}.hero{padding:2rem 0 3rem}section{padding:3.2rem 0}.find{flex-direction:column}}
 footer{background:var(--paper);border-top:1px solid var(--line);color:var(--muted);font-size:.95rem;padding:3rem 0 1.75rem}
 footer ul{list-style:none;margin:0;padding:0}
 footer a{text-decoration:none;transition:color .2s}
@@ -140,6 +131,16 @@ footer .logo img{height:2.5rem;width:auto;display:block}
   .si:hover,.ftop:hover svg{transform:none}
 }
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* Hero art: finished task cards ride the logo's swoosh to a ₿ tile (wide screens only) */
+.hero{position:relative}
+.hero-art{display:none}
+@media (min-width:1100px){
+ .hero-art{display:block;position:absolute;right:0;top:12.5rem;width:280px;height:auto;pointer-events:none}
+ .ha-cards,.ha-btc{animation:ha-up .7s ease-out both}.ha-btc{animation-delay:.25s}
+ .ha-swoosh{animation:ha-in .9s .1s ease-out both}}
+@keyframes ha-up{from{opacity:0;transform:translateY(10px)}}
+@keyframes ha-in{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.hero-art *{animation:none!important}}
 </style>
 </head>
 <body id="top">
@@ -147,19 +148,33 @@ footer .logo img{height:2.5rem;width:auto;display:block}
   <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">VA</a><a href="/bitcoin"><span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/products">Products</a></nav></div>
 
   <header class="hero">
-    <div class="hero-copy">
-      <h1>Virtual Assistant.<em>Bitcoin Educator.</em></h1>
-      <a class="btn dark hero-cta" href="/hourly">Hire me</a>
-    </div>
-    <div class="hero-scene" data-hero-scene aria-hidden="true">
-      <svg class="hero-scene-fallback" viewBox="0 0 400 400" focusable="false">
-        <ellipse cx="200" cy="206" rx="150" ry="74" fill="none" stroke="#EA5158" stroke-width="8" transform="rotate(-28 200 200)"/>
-        <ellipse cx="200" cy="206" rx="132" ry="94" fill="none" stroke="#274C77" stroke-width="5" opacity=".65" transform="rotate(35 200 200)"/>
-        <circle cx="200" cy="200" r="91" fill="#0F1B2D"/>
-        <circle cx="200" cy="190" r="83" fill="#F7931A" stroke="#0F1B2D" stroke-width="3"/>
-        <text x="200" y="226" text-anchor="middle" font-family="'Bricolage Grotesque',sans-serif" font-weight="800" font-size="100" fill="#0F1B2D">₿</text>
-        <circle cx="316" cy="126" r="12" fill="#F7931A"/>
-      </svg>
+    <div class="eyebrow">Stanley Chege Thuita · Altradits</div>
+    <svg class="hero-art" viewBox="0 0 300 250" aria-hidden="true" focusable="false">
+     <g class="ha-cards">
+      <rect x="45" y="35" width="150" height="54" rx="10" fill="#0F1B2D"/>
+      <rect x="40" y="30" width="150" height="54" rx="10" fill="#fff" stroke="#0F1B2D" stroke-width="2"/>
+      <path d="M55 57l6 6 12-12" fill="none" stroke="#274C77" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="84" y="48" width="88" height="7" rx="3.5" fill="#274C77"/><rect x="84" y="61" width="56" height="7" rx="3.5" fill="#C9D3DF"/>
+      <rect x="25" y="105" width="150" height="54" rx="10" fill="#0F1B2D"/>
+      <rect x="20" y="100" width="150" height="54" rx="10" fill="#fff" stroke="#0F1B2D" stroke-width="2"/>
+      <path d="M35 127l6 6 12-12" fill="none" stroke="#274C77" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="64" y="118" width="70" height="7" rx="3.5" fill="#274C77"/><rect x="64" y="131" width="84" height="7" rx="3.5" fill="#C9D3DF"/>
+     </g>
+     <path class="ha-swoosh" fill="#EA5158" transform="translate(-30 -82) scale(5.4)" d="M9 50.2c9.6 4.6 22.4 5.6 36.2-.4 3.6-1.6 6.9-3.5 9.8-5.6-2.1 3.6-5.6 6.9-10.3 9.3-12.4 6.2-26.4 4.6-35.7-3.3z"/>
+     <g class="ha-btc">
+      <rect x="223" y="105" width="64" height="64" rx="14" fill="#0F1B2D"/>
+      <rect x="218" y="100" width="64" height="64" rx="14" fill="#F7931A" stroke="#0F1B2D" stroke-width="2"/>
+      <text x="250" y="146" text-anchor="middle" font-family="'Bricolage Grotesque',sans-serif" font-weight="800" font-size="38" fill="#0F1B2D">₿</text>
+      <path d="M262 40l-16 26h12l-6 22 18-30h-12z" fill="#274C77"/>
+     </g>
+    </svg>
+    <h1>I take work off your hands, <em>and I teach people to pay in <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span>.</em></h1>
+    <p class="lead">I'm a virtual assistant for owners in any time zone, and a Bitcoin educator in my community. Hire me by the hour for whatever is on your list, or help more people own their money.</p>
+    <div class="ctas"><a class="btn dark" href="/hourly">Hire me · 2 hours for $50</a><a class="btn btc" href="/donate"><span class="lbl">Fund <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span> education</span></a></div>
+    <p class="fine">Pay with any Bitcoin wallet. No sales calls.</p>
+    <div class="roles">
+      <a href="/va" class="reveal"><b>The VA</b><span>Inbox, social media, admin, research, bookings and customer care, done the same day.</span><span class="go">See what I can do →</span></a>
+      <a href="/bitcoin" class="reveal"><b>The Bitcoin educator</b><span>Developer meetups, bootcamps and a Lightning node in daily use, so Bitcoin works where people live.</span><span class="go">Meet the community →</span></a>
     </div>
   </header>
 </div>
@@ -276,7 +291,6 @@ footer .logo img{height:2.5rem;width:auto;display:block}
   </div>
 </footer>
 
-<script type="module" src="/assets/hero-scene.js"></script>
 <script type="module">
 import { MOMENTS } from "/data/community.js";
 import { PAYG, orderable, orderPath } from "/data/catalog.js";
@@ -303,7 +317,7 @@ try {
 // Prices come from the catalog, so they never drift from the order page.
 const hours = PAYG.minimumHours, total = PAYG.hourly * hours, test = orderable("q-try");
 $("#rate").innerHTML = `$${PAYG.hourly} <small>an hour</small>`;
-document.querySelectorAll('a[href="/hourly"].btn:not(.hero-cta)').forEach((a) => (a.textContent = `Hire me · ${hours} hours for $${total}`));
+document.querySelectorAll('a[href="/hourly"].btn').forEach((a) => (a.textContent = `Hire me · ${hours} hours for $${total}`));
 $("#hire").textContent = `Hire ${hours} hours · $${total}`;
 if (test) { $("#try").href = orderPath(test.id); $("#try").textContent = `Test me · $${test.price}`; }
 
