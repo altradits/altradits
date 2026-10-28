@@ -136,7 +136,7 @@ function render() {
   $("#overviewApprovals").innerHTML = pending.length ? pending.map(approvalHtml).join("") : `<p class="muted">Nothing needs you right now. The agents have it. ☕</p>`;
   $("#approvals").innerHTML = D.approvals.length ? D.approvals.map(approvalHtml).join("") : `<p class="muted">No approvals yet.</p>`;
   renderLeads();
-  $("#emailRows").innerHTML = D.emails.map((e) => `<tr><td>${ago(e.at)}</td><td>${esc(e.to)}</td><td>${esc(e.subject)}</td><td>${esc(e.status)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">No emails yet.</td></tr>`;
+  $("#emailRows").innerHTML = D.emails.map((e) => `<tr><td>${ago(e.at)}</td><td>${esc(e.to)}</td><td>${esc(e.subject)}</td><td${/^(bounced|failed)/.test(e.status) ? ' class="err"' : ""}>${esc(e.status)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">No emails yet.</td></tr>`;
 }
 
 $("#stageFilter").innerHTML += STAGES.map((s) => `<option>${s}</option>`).join("");
