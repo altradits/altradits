@@ -76,6 +76,8 @@ textarea{min-height:4.5rem;resize:vertical}
     <div class="amounts" role="group" aria-label="Amount in US dollars" id="amounts"></div>
     <label for="custom">Or another amount (USD)</label>
     <input id="custom" type="number" min="1" step="1" inputmode="decimal" placeholder="e.g. 35">
+    <label for="customSats">Or an amount in sats (from 10 sats)</label>
+    <input id="customSats" type="number" min="10" step="1" inputmode="numeric" placeholder="e.g. 2100">
     <label class="anon"><input type="checkbox" id="anon"> <span><b>Give anonymously.</b> No name or email is kept. You get a donation name instead, to collect your receipt.</span></label>
     <div class="row2" id="who">
       <div><label for="name">Name (optional)</label><input id="name" autocomplete="name"></div>
@@ -96,7 +98,7 @@ textarea{min-height:4.5rem;resize:vertical}
 <script type="module">
 import { mountPay } from "/assets/pay-widget.js";
 const $ = (s) => document.querySelector(s);
-let info = { suggested: [5, 20, 50, 100], min: 1, max: 5000 }, amount = null;
+let info = { suggested: [5, 20, 50, 100], min: 1, max: 5000, minSats: 10, maxSats: 5000000 }, amount = null, satsAmount = null;
 try {
   info = await (await fetch("/api/donate")).json();
   if (info.raised > 0) { $("#raised").hidden = false; $("#raised").textContent = `$${info.raised.toLocaleString("en-US")} raised from ${info.donors} donor${info.donors === 1 ? "" : "s"} so far.`; }
@@ -104,24 +106,27 @@ try {
 $("#amounts").innerHTML = info.suggested.map((a) => `<button type="button" aria-pressed="false" data-a="${a}">$${a}</button>`).join("");
 $("#amounts").addEventListener("click", (e) => {
   const a = e.target.dataset.a; if (!a) return;
-  amount = Number(a); $("#custom").value = "";
+  amount = Number(a); satsAmount = null; $("#custom").value = ""; $("#customSats").value = "";
   document.querySelectorAll("#amounts button").forEach((b) => b.setAttribute("aria-pressed", b === e.target));
 });
 $("#anon").addEventListener("change", (e) => { $("#who").hidden = e.target.checked; if (e.target.checked) { $("#name").value = ""; $("#email").value = ""; } });
 const nameBox = (n) => `<p><b>Your donation name</b></p><p><code>${n.replace(/[^A-Z0-9-]/g, "")}</code><button type="button" data-copy="${n.replace(/[^A-Z0-9-]/g, "")}">Copy</button></p><p class="note" style="margin:.3rem 0 0">Save it: enter it at <a href="/collect">altradits.com/collect</a> to download your receipt once the payment is confirmed.</p>`;
 document.addEventListener("click", async (e) => { const n = e.target.dataset?.copy; if (!n) return; try { await navigator.clipboard.writeText(n); e.target.textContent = "Copied ✓"; } catch { e.target.textContent = "Select and copy it"; } });
 $("#change").addEventListener("click", () => { $("#payCard").hidden = true; $("#give").hidden = false; $("#go").disabled = false; $("#msg").textContent = ""; });
-$("#custom").addEventListener("input", () => { amount = Number($("#custom").value) || null; document.querySelectorAll("#amounts button").forEach((b) => b.setAttribute("aria-pressed", "false")); });
+$("#customSats").addEventListener("input", () => { satsAmount = Number($("#customSats").value) || null; amount = null; $("#custom").value = ""; document.querySelectorAll("#amounts button").forEach((b) => b.setAttribute("aria-pressed", "false")); });
+$("#custom").addEventListener("input", () => { amount = Number($("#custom").value) || null; satsAmount = null; $("#customSats").value = ""; document.querySelectorAll("#amounts button").forEach((b) => b.setAttribute("aria-pressed", "false")); });
 $("#go").addEventListener("click", async () => {
   const msg = $("#msg");
-  if (!(amount >= info.min && amount <= info.max)) { msg.className = "msg err"; msg.textContent = `Choose an amount between $${info.min} and $${info.max}.`; return; }
+  if (satsAmount !== null ? !(Number.isInteger(satsAmount) && satsAmount >= info.minSats && satsAmount <= info.maxSats) : !(amount >= info.min && amount <= info.max)) {
+    msg.className = "msg err"; msg.textContent = satsAmount !== null ? `Choose a whole number of sats, from ${info.minSats} to ${info.maxSats.toLocaleString("en-US")}.` : `Choose an amount between $${info.min} and $${info.max}, or from ${info.minSats} sats.`; return;
+  }
   msg.className = "msg"; msg.textContent = "Creating your payment QR…"; $("#go").disabled = true;
   try {
-    const r = await fetch("/api/donate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ usd: amount, anonymous: $("#anon").checked, name: $("#name").value, email: $("#email").value, message: $("#message").value }) });
+    const r = await fetch("/api/donate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...(satsAmount !== null ? { sats: satsAmount } : { usd: amount }), anonymous: $("#anon").checked, name: $("#name").value, email: $("#email").value, message: $("#message").value }) });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || "Something went wrong.");
     $("#give").hidden = true; $("#payCard").hidden = false;
-    $("#payTitle").textContent = `Donate $${amount}`;
+    $("#payTitle").textContent = satsAmount !== null ? `Donate ${satsAmount.toLocaleString("en-US")} sats` : `Donate $${amount}`;
     const showName = !$("#email").value.trim() && d.name;
     if (showName) for (const id of ["#dname", "#dname2"]) { $(id).innerHTML = nameBox(d.name); $(id).hidden = false; }
     mountPay($("#pay"), { id: d.id, t: d.t, claim: true, onPaid: () => { $("#payCard").hidden = true; $("#thanks").hidden = false; } });

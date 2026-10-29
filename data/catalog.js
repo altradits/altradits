@@ -302,7 +302,10 @@ export const DONATIONS = {
   purpose: "Bitcoin education in our community: helping people and businesses learn to earn, save and pay in Bitcoin instead of fiat currency.",
   suggested: [5, 20, 50, 100], // USD
   min: 1, max: 5000,
+  minSats: 10, maxSats: 5_000_000, // or an exact amount in sats
 };
+// Below this an on-chain payment can't be relayed: smaller donations are Lightning only.
+export const DUST_SATS = 546;
 
 // Clean addresses: altradits.com/<slug> opens that item's order (quick jobs
 // drop their "q-": /inbox-cleanup, /try, /hourly, /core). Old ?buy= links still work.
