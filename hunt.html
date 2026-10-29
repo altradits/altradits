@@ -23,10 +23,11 @@
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
 a{color:var(--blue)}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
-.wrap{max-width:44rem;margin:0 auto;padding:1.5rem 1rem 4rem}
+.wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
+.wrap > :not(.top):not(.hero){max-width:44rem}
 .top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.5rem}
 .top img{height:2.6rem;width:auto;display:block}
-.card{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;box-shadow:8px 8px 0 var(--ink);padding:clamp(1.25rem,4vw,2.25rem)}
+.card{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:clamp(1.25rem,4vw,2.25rem)}
 h1{font:800 clamp(1.9rem,6vw,2.6rem)/1.05 'Bricolage Grotesque',sans-serif;margin:0 0 .5rem}
 h2{font:700 1.15rem 'Bricolage Grotesque',sans-serif;margin:0 0 .4rem}
 .lead{color:var(--muted);margin:0 0 1.4rem}
@@ -67,6 +68,8 @@ ol.steps p{margin:0}
 .hero .swoosh{display:block;width:min(13rem,50%);height:auto;margin:.55rem 0 .9rem}
 .hero .lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:0;max-width:36rem}
 .hero .ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
+.top{margin:0!important;padding:1.1rem 0!important}
+.sitefoot .wrap{padding-top:0;padding-bottom:0}
 *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 a:hover,.btn:hover,button:hover{transform:none!important}
 </style>
