@@ -1,8 +1,14 @@
-# Ye₿ente source: never web content. Only the built app (yebente/app) is served.
-<IfModule mod_authz_core.c>
-  Require all denied
-</IfModule>
-<IfModule !mod_authz_core.c>
-  Order allow,deny
-  Deny from all
-</IfModule>
+# Ye₿ente source is never web content; only the built app (yebente/app) is served.
+# Apache checks access for the requested path before the root .htaccess rewrites
+# /yebente to yebente/app, so this folder may not deny everything: it denies the
+# source by type and by folder instead (the built app is .html, .js, .css, .ttf).
+<FilesMatch "\.(tsx?|json|md|ya?ml|lock|map)$|^(LICENSE|\.gitignore|\.env.*)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+RedirectMatch 404 ^/yebente/(src|public|node_modules)(/|$)

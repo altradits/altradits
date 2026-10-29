@@ -18,6 +18,7 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
 
   # Ye₿ente: the built app lives in yebente/app.
   RewriteRule ^yebente/?$ yebente/app/index.html [L]
+  RewriteRule ^yebente/index\.html$ yebente/app/index.html [L]
   RewriteRule ^yebente/((assets|fonts)/[A-Za-z0-9._-]+)$ yebente/app/$1 [L]
 
   # Referral and hunt links open the homepage, which reads the original path.
