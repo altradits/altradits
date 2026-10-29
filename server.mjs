@@ -205,7 +205,7 @@ async function maybeRunHourly() {
 }
 setInterval(() => maybeRunHourly().catch((e) => console.error("hourly", e)), 10 * 60 * 1000).unref();
 // Ye₿ente wallets: credit invoices paid while the app was closed (every 2 minutes).
-setInterval(() => { if (process.env.YEBENTE_WALLETS === "on" && process.env.LND_REST_URL) import("./lib/ywallet.js").then((y) => Promise.all([y.settleOpen(), y.reconcilePayments()])).catch((e) => console.error("yebente settle", e.message)); }, 2 * 60 * 1000).unref();
+setInterval(() => { if (["on", "true", "yes", "1"].includes(String(process.env.YEBENTE_WALLETS || "").trim().replace(/^["']|["']$/g, "").toLowerCase()) && process.env.LND_REST_URL) import("./lib/ywallet.js").then((y) => Promise.all([y.settleOpen(), y.reconcilePayments()])).catch((e) => console.error("yebente settle", e.message)); }, 2 * 60 * 1000).unref();
 
 // The host stops an idle app, so the 10-minute timers alone can miss a day.
 // Every /healthz ping (the deploy cron, every 5 minutes) also runs what's due.
