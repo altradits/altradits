@@ -348,6 +348,38 @@ test("WhatsApp alerts to Stanley: off without a CallMeBot key; with one, his num
   } finally { globalThis.fetch = real; delete process.env.CALLMEBOT_APIKEY; }
 });
 
+test("node back online: Stanley is emailed the move QR once per payment held in the backup wallet; nothing while the node is down", async () => {
+  const crm = await import("../lib/crm.js");
+  const fin = await import("../lib/finance.js");
+  const o = await crm.createOrder(orderable("hourly"));
+  o.p.lightning = { provider: "address", bolt11: "lnbc1x", sats: 1229 };
+  o.p.payment = { method: "Bitcoin (Lightning)", reference: "x" };
+  await crm.confirmPayment(o.lead, o.p, "", { approved: true });
+  await crm.saveProposal(o.p);
+  const code = fin.orderCode(o.p), mine = async () => (await all()).filter((e) => e.subject.includes(`for order ${code}`));
+  // Node down: no invoice can be made, so no email; it waits for the next check.
+  await fin.alertMoves();
+  assert.equal((await mine()).length, 0);
+  let n = 0;
+  fin.setInvoiceMaker(async ({ sats, nodeOnly }) => { assert.equal(nodeOnly, true); n++; return { bolt11: `lnbc${sats}n1move${n}`, paymentHash: "e".repeat(64), provider: "lnd", sats, expiresAt: new Date(Date.now() + 864e5).toISOString() }; });
+  try {
+    await fin.alertMoves();
+    const [m] = await mine();
+    assert.equal(m.to, "altradits@gmail.com");
+    assert.equal(m.kind, "owner");
+    assert.match(m.subject, /^\[Action needed\] Node back: move 1,229 sats for order /);
+    assert.deepEqual(m.files, [`altradits-move-${code}.png`]);
+    assert.match(m.text, /pay exactly 1,229 sats; the wallet shows the note "Altradits /);
+    assert.equal(m.cta.url, "lightning:lnbc1229n1move1");
+    const p = await crm.getProposal(o.p.id);
+    assert.ok(p.payment.moveAlertedAt && p.payment.held); // still held: the receipt waits for the node
+    assert.equal((await fin.heldView()).held.find((x) => x.id === p.id).sweep.bolt11, "lnbc1229n1move1"); // the same QR in Finance
+    // Once per payment.
+    await fin.alertMoves();
+    assert.equal((await mine()).length, 1);
+  } finally { fin.setInvoiceMaker(null); }
+});
+
 test("several payments waiting for the node: each order's invoice sends its own client's receipt, with an apology; no mix-ups", async () => {
   const crm = await import("../lib/crm.js");
   const fin = await import("../lib/finance.js");
