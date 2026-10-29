@@ -44,7 +44,7 @@ test("every kit is complete and its offers are real catalog items", () => {
 });
 
 let sub, files;
-test("sign-up: email checked, bots blocked, joins the list as a lead; the address is confirmed first, then the kit is emailed as attachments", async () => {
+test("sign-up: email checked, bots blocked, joins the list as a lead; the address is confirmed first, then the kit is emailed as a download link", async () => {
   assert.equal((await post({ kit: "inbox", email: "nope" })).status, 400);
   assert.equal((await post({ kit: "inbox", email: "a@b.co", website: "spam" })).status, 400);
   assert.equal((await post({ kit: "nothing", email: "a@b.co" })).status, 400);
@@ -66,11 +66,11 @@ test("sign-up: email checked, bots blocked, joins the list as a lead; the addres
   assert.match(ask.cta.url, /\/api\/kits\?confirm=\w+&c=[\w-]+&k=inbox$/);
   assert.match(await (await get(ask.cta.url.replace("https://altradits.test/api/kits", ""))).text(), /Confirmed/);
   assert.equal((await getJSON(`sub:${sub.id}`)).confirmed, true);
-  // Confirmed: only what they asked for, one line with the kit attached, no link or button.
+  // Confirmed: only what they asked for, one line and one download button, no attachments.
   const mail = (await emails()).find((e) => /Your free kit: Inbox Zero/.test(e.subject));
-  assert.equal(mail.text, "Hi Amina, your Inbox Zero in 60 Minutes is attached.");
-  assert.equal(mail.cta, null);
-  assert.deepEqual(mail.files, ["inbox-zero-in-60-minutes.pdf"]);
+  assert.equal(mail.text, "Hi Amina, your Inbox Zero in 60 Minutes is ready to download.");
+  assert.match(mail.cta.url, new RegExp(`^https://altradits\\.test/api/kits\\?d=inbox&f=inbox-zero-in-60-minutes\\.pdf&s=${sub.id}&t=`));
+  assert.deepEqual(mail.files, []);
   assert.match(mail.unsubscribe, /^https:\/\/altradits\.test\/api\/kits\?unsub=/);
   // A second kit adds an interest, not a second subscriber or lead.
   await post({ kit: "social", email: "owner@shop.co" });
@@ -257,12 +257,12 @@ test("a kit with several files arrives with every file attached (PDF and spreads
     const s = await getJSON(`sub:${r.sub.id}`);
     await get(`?confirm=${s.id}&c=${s.c}&k=invoices`); // the address is confirmed: now the kit goes out
     const mail = (await emails()).find((e) => e.to === "zip@shop.co" && /Your free kit/.test(e.subject));
-    assert.equal(mail.text, "Hi Zed, your Get Paid on Time Kit is attached.");
-    assert.deepEqual(mail.files, ["get-paid-on-time-kit.pdf", "invoice-tracker.csv"]);
+    assert.equal(mail.text, "Hi Zed, your Get Paid on Time Kit is ready to download.");
+    assert.match(mail.cta.url, /\?d=invoices&f=invoices-kit\.zip&s=/); // two files: one .zip
+    assert.deepEqual(mail.files, []);
     assert.doesNotMatch(raw[0], /Content-Disposition: attachment/); // the confirmation carries nothing
-    assert.match(raw[1], /Content-Type: application\/pdf; name=get-paid-on-time-kit\.pdf/);
-    assert.match(raw[1], /Content-Disposition: attachment; filename=invoice-tracker\.csv/);
-    assert.doesNotMatch(raw[1], /api\/kits\?d=/); // no download link in the email
+    assert.doesNotMatch(raw[1], /Content-Disposition: attachment/); // a link, never attachments (#119)
+    assert.match(raw[1], /api\/kits\?d=3Dinvoices|api\/kits\?d=invoices/);
   } finally { setMailer(undefined); }
 });
 
