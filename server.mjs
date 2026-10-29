@@ -62,7 +62,7 @@ function publicUrl(req) {
 const server = http.createServer(async (req, res) => {
   const url = publicUrl(req);
   try {
-    if (url.pathname === "/healthz") { res.writeHead(200, { "Content-Type": "text/plain" }).end("ok"); import("./lib/workers.js").then((w) => w.kickQueue()).catch(() => {}); marketing(); return; }
+    if (url.pathname === "/healthz") { res.writeHead(200, { "Content-Type": "text/plain" }).end("ok"); import("./lib/workers.js").then((w) => w.kickQueue()).catch(() => {}); marketing(); dueJobs(); return; }
     const api = url.pathname.match(/^\/api\/([a-z]+)$/);
     if (api) {
       const file = path.join(ROOT, "api", `${api[1]}.js`);
@@ -142,14 +142,30 @@ async function maybeRunDaily() {
 // After each deploy, bring the CV in line with what the site now offers.
 setTimeout(() => import("./lib/career.js").then((c) => c.syncCv()).then((r) => console.log("CV sync", r)).catch((e) => console.error("CV sync", e.message)), 60 * 1000).unref();
 setInterval(() => maybeRunDaily().catch((e) => console.error("daily", e)), 10 * 60 * 1000).unref();
-// Hourly, once the node is connected: Lightning channel alerts to Stanley.
-let channelsAt = 0;
-setInterval(() => {
-  if (!process.env.LND_REST_URL || Date.now() - channelsAt < 3600e3) return;
-  channelsAt = Date.now();
-  import("./lib/channels.js").then((c) => c.watchChannels()).catch((e) => console.error("channels", e.message));
-  import("./lib/finance.js").then((f) => f.checkHeld()).then((r) => r.confirmed && console.log("moved to node", r)).catch((e) => console.error("held", e.message));
-}, 10 * 60 * 1000).unref();
+// Hourly: Lightning channel alerts and held payments (once the node is
+// connected), and bounced emails marked in the admin log. The last run is kept
+// in the store, so a restarted app neither skips nor repeats it.
+async function maybeRunHourly() {
+  const { getJSON, setJSON } = await import("./lib/store.js");
+  const last = await getJSON("hourly:last");
+  if (last && Date.now() - Date.parse(last) < 3600e3) return;
+  await setJSON("hourly:last", new Date().toISOString());
+  if (process.env.LND_REST_URL) {
+    import("./lib/channels.js").then((c) => c.watchChannels()).catch((e) => console.error("channels", e.message));
+    import("./lib/finance.js").then((f) => f.checkHeld()).then((r) => r.confirmed && console.log("moved to node", r)).catch((e) => console.error("held", e.message));
+  }
+  import("./lib/bounces.js").then((b) => b.checkBounces()).then((r) => r.bounced && console.log("bounces", r)).catch((e) => console.error("bounces", e.message));
+}
+setInterval(() => maybeRunHourly().catch((e) => console.error("hourly", e)), 10 * 60 * 1000).unref();
+
+// The host stops an idle app, so the 10-minute timers alone can miss a day.
+// Every /healthz ping (the deploy cron, every 5 minutes) also runs what's due.
+let checking = false;
+function dueJobs() {
+  if (checking) return;
+  checking = true;
+  Promise.allSettled([maybeRunDaily(), maybeRunHourly()]).then((r) => r.forEach((x) => x.status === "rejected" && console.error("due jobs", x.reason))).finally(() => { checking = false; });
+}
 
 // The marketing team: plans the day's posts and publishes each at its slot.
 // Also nudged by /healthz (a scheduled GitHub Action wakes the app at slot times).

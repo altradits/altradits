@@ -2,7 +2,7 @@
 // The lead magnet: emails the visitor their free delegation plan and starts
 // the nurture. Not critical, so Stanley is not emailed.
 import crypto from "node:crypto";
-import { json, readBody, clean, oneLine, clientIp, siteUrl, safeEqual, EMAIL_RE } from "../lib/http.js";
+import { json, readBody, clean, oneLine, clientIp, siteUrl, safeEqual, EMAIL_RE, emailTypo, typoMessage } from "../lib/http.js";
 import { screen } from "../lib/screen.js";
 import { createLead, getLead, saveLead, logEvent, advanceStage, cleanQuiz } from "../lib/crm.js";
 import { sendEmail } from "../lib/email.js";
@@ -14,6 +14,7 @@ export async function POST(request) {
   if (body.website) return json({ ok: true }); // honeypot field: bots fill it
   const email = clean(body.email, 200).toLowerCase();
   if (!EMAIL_RE.test(email)) return json({ error: "Please enter a valid email." }, 400);
+  if (emailTypo(email)) return json({ error: typoMessage(emailTypo(email)) }, 400);
   if ((await hit(`rl:lead:${clientIp(request)}`, 3600)) > 10) return json({ error: "Too many requests, try again later." }, 429);
   // One plan per address a day: the form can't be used to mail someone repeatedly.
   if ((await hit(`rl:lead:to:${crypto.createHash("sha256").update(email).digest("hex").slice(0, 16)}`, 86400)) > 1) return json({ ok: true, sent: true });
