@@ -104,6 +104,7 @@ const server = http.createServer(async (req, res) => {
     if (/^\/(admin|proposal|portal|team|collect)\.html$/.test(rel)) headers["X-Robots-Tag"] = "noindex";
     if (/^\/(admin|portal|collect|proposal|team)\.html$/.test(rel)) headers["Content-Security-Policy"] = cspFor(file);
     headers["Cache-Control"] = rel.startsWith("/assets/") ? "public, max-age=86400" : "no-cache";
+    if (rel.endsWith(".html")) import("./lib/visits.js").then((v) => v.recordVisit(req, url, rel)).catch(() => {});
     fs.createReadStream(file)
       .on("open", () => res.writeHead(200, headers))
       .on("error", () => { if (!res.headersSent) res.writeHead(404).end("Not found"); else res.end(); })
