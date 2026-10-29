@@ -1,3 +1,4 @@
+import { getWalletToken } from './altraditsWallet';
 export interface LightningAddressDetails {
   success: boolean;
   address: string;
@@ -379,16 +380,24 @@ export async function createDepositInvoice(
   memo?: string
 ): Promise<DepositInvoiceResponse> {
   try {
-    const res = await fetch('/api/yebente/lightning/create-invoice', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        satsAmount,
-        memo: memo || 'Ye₿ente Sats Deposit',
-      }),
-    });
+    // The Altradits wallet: an invoice on the node for this wallet.
+    const token = getWalletToken();
+    const res = token
+      ? await fetch('/api/yebente/wallet/invoice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ sats: satsAmount }),
+        })
+      : await fetch('/api/yebente/lightning/create-invoice', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            satsAmount,
+            memo: memo || 'Ye₿ente Sats Deposit',
+          }),
+        });
 
     const data = await res.json();
     if (!res.ok || !data.success) {
@@ -422,7 +431,10 @@ export async function checkInvoiceStatus(
   paymentHash: string
 ): Promise<InvoiceStatusResponse> {
   try {
-    const res = await fetch(`/api/yebente/lightning/invoice-status/${encodeURIComponent(paymentHash)}`);
+    const token = getWalletToken();
+    const res = token
+      ? await fetch(`/api/yebente/wallet/invoice/${encodeURIComponent(paymentHash)}`, { headers: { Authorization: `Bearer ${token}` } })
+      : await fetch(`/api/yebente/lightning/invoice-status/${encodeURIComponent(paymentHash)}`);
     const data = await res.json();
     if (!res.ok) {
       return {
