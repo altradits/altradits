@@ -48,7 +48,7 @@ before(async () => {
       res.writeHead(404).end(JSON.stringify({ message: "not found" }));
     });
   });
-  await new Promise((r) => lnd.listen(0, "localhost", r));
+  await new Promise((r) => lnd.listen(0, "127.0.0.1", r));
 });
 after(() => lnd.close());
 
