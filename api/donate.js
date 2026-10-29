@@ -2,7 +2,7 @@
 // POST /api/donate { usd, name?, email?, message?, anonymous? } -> { id, t, usd, name }  (then POST /api/pay)
 //   anonymous: no name or email is kept; the donation name collects the receipt (/collect).
 // GET  /api/donate                                  -> purpose, suggested amounts, total raised
-import { json, readBody, clean, clientIp, EMAIL_RE } from "../lib/http.js";
+import { json, readBody, clean, clientIp, EMAIL_RE, emailTypo, typoMessage } from "../lib/http.js";
 import { hit, listIds, getMany } from "../lib/store.js";
 import { createDonation } from "../lib/crm.js";
 import { DONATIONS } from "../data/catalog.js";
@@ -13,6 +13,7 @@ export async function POST(request) {
   if (!(usd >= DONATIONS.min && usd <= DONATIONS.max)) return json({ error: `Choose an amount between $${DONATIONS.min} and $${DONATIONS.max}.` }, 400);
   const email = clean(body.email, 200).toLowerCase();
   if (email && !EMAIL_RE.test(email)) return json({ error: "Please check your email address." }, 400);
+  if (emailTypo(email)) return json({ error: typoMessage(emailTypo(email)) }, 400);
   if ((await hit(`rl:donate:${clientIp(request)}`, 3600)) > 20) return json({ error: "Too many attempts. Try again in an hour." }, 429);
   if ((await hit(`rl:donate:all:${new Date().toISOString().slice(0, 13)}`, 3600)) > 200) return json({ error: "We're very busy right now. Please try again in a few minutes." }, 429);
   const anon = Boolean(body.anonymous);

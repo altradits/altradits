@@ -4,7 +4,7 @@
 // POST /api/order { id, t, coupon }           -> apply a one-time hunt code -> { usd, pct }
 // GET  /api/order?id=&t=  -> { status, portal?, phone? }  (phone only once an
 //                            urgent order is paid, so the client can flag it)
-import { json, readBody, clean, oneLine, clientIp, safeEqual, EMAIL_RE } from "../lib/http.js";
+import { json, readBody, clean, oneLine, clientIp, safeEqual, EMAIL_RE, emailTypo, typoMessage } from "../lib/http.js";
 import { holdIfUnsafe, screen, defang } from "../lib/screen.js";
 import { hit, listIds, getMany } from "../lib/store.js";
 import { createOrder, getProposal, saveProposal, getLead, saveLead, logEvent, sendKickoff } from "../lib/crm.js";
@@ -85,6 +85,7 @@ async function update(body) {
   if (!lead) return json({ error: "Order not found." }, 404);
   const email = clean(body.email, 200).toLowerCase();
   if (email && !EMAIL_RE.test(email)) return json({ error: "Please check your email address." }, 400);
+  if (emailTypo(email)) return json({ error: typoMessage(emailTypo(email)) }, 400);
   const hadEmail = Boolean(lead.email);
   const before = p.order.task, wasUrgent = isUrgent(p.order);
   if (p.order.urgentOk && URGENCY.some((u) => u.id === body.urgency)) p.order.urgency = body.urgency;

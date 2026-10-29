@@ -23,3 +23,21 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
   RewriteCond %{REQUEST_URI} !^/healthz/?$
   RewriteRule ^[a-z0-9-]+/?$ va.html [L]
 </IfModule>
+
+# Server code and project files are never web content. The Node router only
+# serves whitelisted paths, but Apache answers directly for existing files.
+<FilesMatch "^(\.env(\..*)?|server\.mjs|app\.cjs|README\.md|CLAUDE\.md|DEPLOY\.md|LICENSE|package(-lock)?\.json|vercel\.json|\.gitignore|\.deploy\.lock)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Git metadata, local runtime state and the browser extension are never web content.
+RedirectMatch 404 ^/\.git(?:/|$)
+RedirectMatch 404 ^/\.data(?:/|$)
+RedirectMatch 404 ^/\.github(?:/|$)
+RedirectMatch 404 ^/apply-extension(?:/|$)

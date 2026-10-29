@@ -15,9 +15,17 @@ find . -maxdepth 1 -name .deploy.lock -mmin +10 -exec rmdir {} \; 2>/dev/null ||
 mkdir .deploy.lock 2>/dev/null || exit 0
 trap 'rmdir .deploy.lock 2>/dev/null' EXIT
 
-git fetch -q origin main
+# A failed fetch (GitHub down, or the deploy key missing) must not stop the
+# rest: the keep-warm ping below runs the daily backup and follow-ups. It is
+# logged once an hour, not every 5 minutes. Never prompt for a password.
+export GIT_TERMINAL_PROMPT=0
 OLD=$(git rev-parse HEAD)
-NEW=$(git rev-parse origin/main)
+if git fetch -q origin main 2>/dev/null; then
+  NEW=$(git rev-parse origin/main)
+else
+  NEW=$OLD
+  [ "$(date +%M | sed 's/^0//')" -lt 5 ] && echo "$(date -u +%FT%TZ) git fetch failed: the site keeps running $(git log -1 --format=%h). Check the server's deploy key." || true
+fi
 CHANGED=""
 if [ "$OLD" != "$NEW" ]; then
   CHANGED=$(git diff --name-only "$OLD" "$NEW")
@@ -47,5 +55,6 @@ if [ -n "$CHANGED" ]; then
   mkdir -p tmp && touch tmp/restart.txt
 fi
 
-# Keep the app warm (fast first chat reply, daily follow-up timer alive).
+# Keep the app warm. Each ping also runs any daily or hourly job that is due
+# (backup, follow-ups, held payments), even if the app was just restarted.
 curl -fsS -o /dev/null --max-time 20 "${SITE_URL:-https://altradits.com}/healthz" || true

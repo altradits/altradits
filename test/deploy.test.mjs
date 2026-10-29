@@ -36,3 +36,20 @@ test("deploy runs once, then is rate limited for a minute", async () => {
   assert.equal(second.status, 429);
   assert.equal((await second.json()).started, false);
 });
+
+test("Apache never serves server code, internal data or the extension (a revert removed this once)", () => {
+  const root = new URL("..", import.meta.url).pathname;
+  const ht = fs.readFileSync(path.join(root, ".htaccess"), "utf8");
+  assert.match(ht, /CLOUDLINUX PASSENGER CONFIGURATION BEGIN/); // the app still starts
+  for (const f of ["server\\.mjs", "app\\.cjs", "package(-lock)?\\.json", "README\\.md", "RedirectMatch 404 ^/\\.git", "RedirectMatch 404 ^/apply-extension"]) assert.ok(ht.includes(f), f);
+  const data = fs.readFileSync(path.join(root, "data/.htaccess"), "utf8");
+  assert.ok(data.includes("(?!catalog\\.js$|playbooks\\.js$|community\\.js$)")); // only the three public data files
+  for (const d of ["lib", "api", "deploy", "test", "apply-extension"]) assert.match(fs.readFileSync(path.join(root, d, ".htaccess"), "utf8"), /Require all denied/, d);
+});
+
+test("a failed git fetch doesn't stop the deploy script before its keep-warm ping", () => {
+  const sh = fs.readFileSync(new URL("../deploy/cron.sh", import.meta.url), "utf8");
+  assert.match(sh, /GIT_TERMINAL_PROMPT=0/);
+  assert.match(sh, /if git fetch -q origin main/);
+  assert.doesNotMatch(sh, /^git fetch -q origin main$/m);
+});
