@@ -21,7 +21,8 @@ import {
   getBlinkSovereignUsername,
   saveBlinkSovereignUsername,
 } from '../services/blinkService';
-import { hasServerWallet, createServerWallet, restoreServerWallet } from '../services/altraditsWallet';
+import { hasServerWallet, createServerWallet, restoreServerWallet, setRecoveryEmail, requestEmailRecovery, finishEmailRecovery } from '../services/altraditsWallet';
+import { downloadRecoveryCard, shareRecoveryCard, canShareCard } from '../services/recoveryCard';
 import {
   getOfflineOutbox,
   syncOfflineOutbox,
@@ -33,6 +34,8 @@ import {
   Check,
   AlertCircle,
   RefreshCw,
+  Download,
+  Share2,
 } from 'lucide-react';
 
 interface WalletSettingsModalProps {
@@ -41,6 +44,8 @@ interface WalletSettingsModalProps {
   wallet: UserWallet;
   onUpdateWallet: (updated: UserWallet) => void;
   onServerWalletChange?: () => void;
+  recoveryToken?: string;
+  onRecoveryDone?: () => void;
   onEjectWallet: () => void;
   onWipeWallet: () => void;
 }
@@ -51,6 +56,8 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   wallet,
   onUpdateWallet,
   onServerWalletChange,
+  recoveryToken,
+  onRecoveryDone,
   onEjectWallet,
   onWipeWallet,
 }) => {
@@ -100,6 +107,12 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   const [walletBusy, setWalletBusy] = useState(false);
   // A new wallet's handle starts empty (the server picks a free one when left empty).
   const [newHandle, setNewHandle] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [recoverEmail, setRecoverEmail] = useState('');
+  const [walletMsg, setWalletMsg] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [emailPin, setEmailPin] = useState('');
+  const [shareDone, setShareDone] = useState(false);
 
   if (!isOpen) return null;
 
@@ -307,16 +320,19 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
       setValidationError('Master PIN must be 6 digits.');
       return;
     }
-    if (!restoreMode && walletPin !== walletPinConfirm) {
+    if ((!restoreMode || recoveryToken) && walletPin !== walletPinConfirm) {
       setValidationError('PIN confirmation does not match.');
       return;
     }
     setWalletBusy(true);
     try {
-      if (restoreMode) {
+      if (recoveryToken) {
+        await finishEmailRecovery(recoveryToken, walletPin);
+        onRecoveryDone?.();
+      } else if (restoreMode) {
         await restoreServerWallet(restorePhrase, walletPin);
       } else {
-        const r = await createServerWallet(walletPin, newHandle.trim());
+        const r = await createServerWallet(walletPin, newHandle.trim(), newEmail.trim());
         setRecoveryShown(r.recovery);
       }
       setServer(true);
@@ -334,6 +350,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
     }
   };
 
+  const serverEmail = wallet.recoveryEmail || '';
   const walletDomain = typeof window !== 'undefined' ? window.location.hostname : 'altradits.com';
   const sovereignBlinkAddress = server ? (wallet.blinkAddress || '') : `${blinkUsername || getBlinkSovereignUsername()}@blink.sv`;
 
@@ -410,9 +427,9 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                 <span className="font-mono text-emerald-400 font-semibold">100% Off-Chain Lightning (0 On-Chain Fees)</span>
               </div>
 
-              {!server && (
+              {(!server || recoveryToken) && (
                 <div className="space-y-3">
-                  {!restoreMode && (
+                  {!restoreMode && !recoveryToken && (
                     <div>
                       <label className="block text-xs font-semibold text-[var(--yb-secondary)] mb-1.5">
                         Custom Lightning Handle
@@ -437,7 +454,24 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                     </div>
                   )}
 
-                  {restoreMode && (
+                  {!restoreMode && !recoveryToken && (
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--yb-secondary)] mb-1.5">Email (optional)</label>
+                      <input
+                        type="email"
+                        name="yb-email"
+                        autoComplete="off"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value.slice(0, 200))}
+                        placeholder="you@email.com"
+                        className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
+                      />
+                    </div>
+                  )}
+
+                  {restoreMode && !recoveryToken && (
                     <div>
                       <label className="block text-xs font-semibold text-[var(--yb-secondary)] mb-1.5">Recovery phrase</label>
                       <textarea
@@ -446,6 +480,36 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                         onChange={(e) => setRestorePhrase(e.target.value)}
                         className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] resize-none"
                       />
+                    </div>
+                  )}
+
+                  {restoreMode && !recoveryToken && (
+                    <div className="space-y-2 pt-1">
+                      <label className="block text-xs font-semibold text-[var(--yb-secondary)] mb-1.5">Email</label>
+                      <input
+                        type="email"
+                        name="yb-recover-email"
+                        autoComplete="off"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                        value={recoverEmail}
+                        onChange={(e) => setRecoverEmail(e.target.value.slice(0, 200))}
+                        placeholder="you@email.com"
+                        className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
+                      />
+                      <button
+                        type="button"
+                        disabled={walletBusy || !recoverEmail.includes('@')}
+                        onClick={async () => {
+                          setWalletBusy(true); setValidationError(''); setWalletMsg('');
+                          try { const r = await requestEmailRecovery(recoverEmail.trim()); setWalletMsg(r.message); }
+                          catch (err: unknown) { setValidationError(err instanceof Error ? err.message : 'Wallet service unavailable.'); }
+                          finally { setWalletBusy(false); }
+                        }}
+                        className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center gap-2 hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50"
+                      >
+                        Send recovery link
+                      </button>
                     </div>
                   )}
 
@@ -465,7 +529,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                         className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.4em]"
                       />
                     </div>
-                    {!restoreMode && (
+                    {(!restoreMode || recoveryToken) && (
                       <div>
                         <label className="block text-[11px] text-[var(--yb-on-surface-variant)] mb-1">Confirm Master PIN</label>
                         <input
@@ -490,15 +554,16 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                     disabled={walletBusy}
                     className="w-full h-11 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-xs flex items-center justify-center disabled:opacity-50"
                   >
-                    {restoreMode ? 'Restore' : 'Generate In-App Lightning Wallet'}
+                    {restoreMode || recoveryToken ? 'Restore' : 'Generate In-App Lightning Wallet'}
                   </button>
-                  <button
+                  {!recoveryToken && <button
                     type="button"
-                    onClick={() => { setRestoreMode(!restoreMode); setValidationError(''); }}
+                    onClick={() => { setRestoreMode(!restoreMode); setValidationError(''); setWalletMsg(''); }}
                     className="w-full text-center text-[11px] font-semibold text-[var(--yb-primary)] hover:underline"
                   >
                     {restoreMode ? 'Generate In-App Lightning Wallet' : 'Restore'}
-                  </button>
+                  </button>}
+                  {walletMsg && <p className="text-xs text-emerald-300 px-1">{walletMsg}</p>}
                 </div>
               )}
 
@@ -515,6 +580,16 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                     </button>
                   </div>
                   <p className="font-mono text-sm leading-relaxed text-[var(--yb-on-surface)] select-all">{recoveryShown}</p>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button type="button" onClick={() => downloadRecoveryCard({ address: wallet.blinkAddress || '', phrase: recoveryShown })} className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center gap-2 hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50">
+                      <Download className="w-3.5 h-3.5" /> Download
+                    </button>
+                    {canShareCard() && (
+                      <button type="button" onClick={async () => setShareDone(await shareRecoveryCard({ address: wallet.blinkAddress || '', phrase: recoveryShown }))} className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center gap-2 hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50">
+                        {shareDone ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />} Share to WhatsApp
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -550,6 +625,55 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                       {copiedBlink ? <Check className="w-3.5 h-3.5 text-[var(--yb-secondary)]" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                   </div>
+                </div>
+              )}
+
+              {server && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs text-[var(--yb-secondary)]">
+                    <span className="font-semibold">Recovery email</span>
+                    <span className="font-mono text-[10px] text-[var(--yb-on-surface-variant)]">{serverEmail}</span>
+                  </div>
+                  <div className="grid grid-cols-[1fr_7rem] gap-2">
+                    <input
+                      type="email"
+                      name="yb-settings-email"
+                      autoComplete="off"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value.slice(0, 200))}
+                      placeholder="you@email.com"
+                      className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
+                    />
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      name="yb-settings-email-pin"
+                      autoComplete="new-password"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      maxLength={6}
+                      value={emailPin}
+                      onChange={(e) => setEmailPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="PIN"
+                      className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.3em]"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={walletBusy || !emailInput.includes('@') || !/^\d{6}$/.test(emailPin)}
+                    onClick={async () => {
+                      setWalletBusy(true); setValidationError(''); setWalletMsg('');
+                      try { const r = await setRecoveryEmail(emailInput.trim(), emailPin); setWalletMsg(`Check ${r.emailPending} to confirm.`); setEmailInput(''); setEmailPin(''); onServerWalletChange?.(); }
+                      catch (err: unknown) { setValidationError(err instanceof Error ? err.message : 'Wallet service unavailable.'); }
+                      finally { setWalletBusy(false); }
+                    }}
+                    className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center gap-2 hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50"
+                  >
+                    Send confirmation
+                  </button>
+                  {walletMsg && <p className="text-xs text-emerald-300 px-1">{walletMsg}</p>}
                 </div>
               )}
             </div>
