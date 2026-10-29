@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hire a VA · Altradits</title>
-<meta name="description" content="A global virtual assistant with fixed prices: social media, inbox, admin, personal errands, customer support, websites, automations and Bitcoin. Find your task, pay with any Bitcoin wallet, and your order starts.">
+<title>Tasks · Altradits</title>
+<meta name="description" content="Small business tasks at fixed prices, delivered the same day: inbox, social posts, invoices, spreadsheets, website fixes, research and more, from $5. Pick a task and pay with any Bitcoin wallet.">
 <meta name="theme-color" content="#EEF2F6">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="Altradits – Pick a task. Pay. It's done.">
-<meta property="og:description" content="Fixed-price virtual assistance for owners in any time zone. Every deliverable listed up front. Your payment places the order.">
+<meta property="og:description" content="Small business tasks at fixed prices, delivered the same day. Every deliverable listed up front. From $5.">
 <meta property="og:type" content="website">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"ProfessionalService","name":"Altradits","url":"https://altradits.com","description":"Global virtual assistant with fixed prices: social media management, office administration, personal assistance, customer support, bookkeeping prep, websites, automations and Bitcoin setup.","areaServed":"Worldwide","priceRange":"$$","knowsAbout":["Virtual assistance","Social media management","Office administration","Personal assistance","Customer support","Bookkeeping","Web development","Business automation","Bitcoin","Lightning Network"],"sameAs":["https://github.com/altradits","https://x.com/altradits"]}
@@ -525,9 +525,9 @@ footer .logo img{height:2.5rem;width:auto;display:block}
   <div class="wrap">
     <a class="logo" href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a>
     <nav aria-label="Main">
-      <a href="/va" class="here" aria-current="page">VA</a>
-      <a href="/bitcoin"><span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a>
-      <a href="/products">Products</a>
+      <a href="/va" class="here" aria-current="page">Tasks</a>
+      <a href="/products">Free kits</a>
+      <a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a>
     </nav>
   </div>
 </header>
@@ -536,8 +536,8 @@ footer .logo img{height:2.5rem;width:auto;display:block}
   <div class="wrap">
     <div class="hero">
       <div>
-        <h1>Hire a VA by the hour. <em>Any task.</em></h1>
-        <p class="lead">Buy hours, tell me the tasks, and the work starts the moment your Bitcoin payment lands. Or search everything I do below.</p>
+        <h1>Pick a task. Pay the price. <em>Done today.</em></h1>
+        <p class="lead">Every task has a fixed price and is delivered the same day. Search for what you need, or browse by area below.</p>
         <div class="search">
           <label class="sr" for="heroFind">What do you want to hand off?</label>
           <input type="search" id="heroFind" placeholder="Search any task: inbox, invoices, Instagram, a website…" autocomplete="off">
@@ -708,10 +708,10 @@ footer .logo img{height:2.5rem;width:auto;display:block}
       </div>
     </div>
     <div class="stats" aria-label="At a glance">
-      <div><b data-count="39">39</b><span>quick jobs</span></div>
-      <div><b data-count="9" data-pre="$">$9</b><span>starting price</span></div>
-      <div><b>Same day</b><span>quick-job delivery</span></div>
-      <div><b data-count="100" data-post="+">100+</b><span>freelancers on standby</span></div>
+      <div><b id="nTasks">39</b><span>tasks</span></div>
+      <div><b id="nFrom">$5</b><span>starting price</span></div>
+      <div><b>Same day</b><span>delivery</span></div>
+      <div><b>Fixed</b><span>price, no hourly meter</span></div>
     </div>
   </div>
 
@@ -728,7 +728,7 @@ footer .logo img{height:2.5rem;width:auto;display:block}
   <section id="quick" class="catalog" aria-labelledby="quickTitle">
     <span id="services" class="anchor"></span>
     <div class="wrap">
-      <h2 class="h2" id="quickTitle">Find your job</h2>
+      <h2 class="h2" id="quickTitle">Find your task</h2>
       <p class="intro" id="quickIntro">Quick jobs delivered the same day, bigger projects and monthly help. Open a row to see exactly what you get. The button is the price.</p>
       <div class="filterbar" id="filterbar">
         <div class="search">
@@ -741,7 +741,7 @@ footer .logo img{height:2.5rem;width:auto;display:block}
         </fieldset>
       </div>
       <div class="resbar">
-        <fieldset class="seg" role="radiogroup" aria-label="Type of job">
+        <fieldset class="seg" role="radiogroup" aria-label="Type of job" hidden>
           <legend class="sr">Type of job</legend>
           <div class="segrow" id="typeChips"></div>
         </fieldset>
@@ -761,7 +761,7 @@ footer .logo img{height:2.5rem;width:auto;display:block}
           <li class="step"><h3>Click the price</h3><p>The button is the price. No cart, no sign-up.</p></li>
           <li class="step"><h3>Scan the QR</h3><p>A QR for that exact amount appears at once. Any Bitcoin wallet, Lightning or on-chain. Altradits adds no fee; your wallet shows its network fee before you pay.</p></li>
           <li class="step"><h3>Paid = ordered</h3><p>Add your email and what you need in the same window. Your payment confirms the order.</p></li>
-          <li class="step"><h3>Delivered</h3><p>Work starts within 48 hours (quick jobs the same day) and arrives by the date on the card. Approve it in your client portal.</p><div class="try" id="tryBuy"></div></li>
+          <li class="step"><h3>Delivered</h3><p>The work arrives the same day, by the time on the card. Approve it in your client portal.</p><div class="try" id="tryBuy"></div></li>
         </ol>
         <div class="viz" id="viz" data-s="1" aria-hidden="true">
           <div class="bar"><span>altradits.com</span></div>
@@ -776,7 +776,8 @@ footer .logo img{height:2.5rem;width:auto;display:block}
     </div>
   </section>
 
-  <section id="plans">
+  <!-- Monthly plans and pay-as-you-go are off this page (#130); /hourly and plan links still open them. -->
+  <section id="plans" hidden>
     <div class="wrap">
       <h2 class="h2">Want an assistant every month?</h2>
       <p class="intro">Blended hours across any service here. Cancel any month; unused hours roll over once.</p>
@@ -788,7 +789,8 @@ footer .logo img{height:2.5rem;width:auto;display:block}
 </main>
 
 <div class="wrap">
-  <section id="team">
+  <!-- Off this page (#130): one thing per page. -->
+  <section id="team" hidden>
     <h2 class="h2">A team, not a one-person shop</h2>
     <div class="about">
       <div>
@@ -823,18 +825,18 @@ footer .logo img{height:2.5rem;width:auto;display:block}
     <details><summary>What exactly do I get?</summary><p>Exactly the ticked list on the card you paid for, delivered by the time shown. Nothing is open-ended: if a card says 12 posts, you get 12 posts.</p></details>
     <details><summary>How do I pay, and are there fees?</summary><p>Click any price and a QR appears for that exact amount. Scan it with any Bitcoin wallet: Lightning pays in seconds, any other wallet or exchange pays on-chain. Altradits adds no fee; your wallet's small network fee is shown before you pay.</p></details>
     <details><summary>How do you know what I need?</summary><p>The payment window has a box for your email and what you need, before or after paying. You also get a client portal to add files, request changes and approve the work.</p></details>
-    <details><summary>Why are quick jobs so affordable?</summary><p>Each is small and fixed, and AI agents do the first pass in minutes with a person checking it. You pay for a result, not hours.</p></details>
-    <details><summary>My task isn't listed. Can I still order?</summary><p>Yes: buy the 2-hour pay-as-you-go block and describe the task. For ongoing work, a monthly plan covers any mix of the services listed here.</p></details>
+    <details><summary>Why are the tasks so affordable?</summary><p>Each task is small with a fixed scope, so you pay for the result, not the hours.</p></details>
+    <details><summary>My task isn't listed. Can I still order?</summary><p>Yes. If it takes up to 15 minutes, order the <span data-price>$5</span> test task and describe it. For anything bigger, email <a href="mailto:hello@altradits.com">hello@altradits.com</a> and you'll get a fixed price before you pay.</p></details>
     <details><summary>Is the work done by AI or by a person?</summary><p>Both, deliberately. An AI agent works fast from a written playbook, a quality reviewer checks every deliverable, and our freelancer team, led by Stanley, takes the real-world steps and handles anything sensitive.</p></details>
     <details><summary>Can you do it urgently, within minutes or hours?</summary><p>Yes: 100+ freelancers are on standby. Choose "Within a few hours" or "Right now" when you order. Once you've paid, you'll see Stanley's direct number to flag it, and your job jumps the queue.</p></details>
     <details><summary>How do you keep my accounts and data safe?</summary><p>Access through delegated logins or a password manager share, never passwords in email. Least access needed, removed when we finish. Your data is never used to train AI models.</p></details>
-    <details><summary>What if the result doesn't match the card?</summary><p>It's fixed free for 14 days after delivery. Monthly plans can be cancelled any month from your portal.</p></details>
+    <details><summary>What if the result doesn't match the card?</summary><p>It's fixed free for 14 days after delivery.</p></details>
     <details><summary>What don't you do?</summary><p>Anything that needs a licensed professional (legal, medical, regulated financial advice), anything unlawful, and holding anyone's crypto keys.</p></details>
   </section>
 
   <div class="final">
-    <h2 class="h2">Your hours back start with one payment.</h2>
-    <p class="intro">Start with a <span data-price>$5</span> test task, or pick the plan that fits.</p>
+    <h2 class="h2">Start with one small task.</h2>
+    <p class="intro">Test me with a <span data-price>$5</span> 15-minute task, or pick any task above.</p>
     <div class="actions" id="finalBuy"></div>
   </div>
 </div>
@@ -852,7 +854,7 @@ footer .logo img{height:2.5rem;width:auto;display:block}
     <div class="fgrid">
       <div class="fbrand">
         <a class="logo" href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a>
-        <p class="ftag">Virtual assistance worldwide.</p>
+        <p class="ftag">Small business tasks, done today.</p>
         <ul class="fsoc" aria-label="Altradits on social media">
           <li><a class="si x" href="https://x.com/altradits" target="_blank" rel="noopener" aria-label="Altradits on X"><svg aria-hidden="true" focusable="false"><use href="#i-x"/></svg></a></li>
           <li><a class="si li" href="https://www.linkedin.com/company/altradits" target="_blank" rel="noopener" aria-label="Altradits on LinkedIn"><svg aria-hidden="true" focusable="false"><use href="#i-li"/></svg></a></li>
@@ -865,10 +867,11 @@ footer .logo img{height:2.5rem;width:auto;display:block}
       <div class="fcol">
         <h2 id="fMore">More</h2>
         <ul aria-labelledby="fMore">
-          <li><a href="/products">Products</a></li>
+          <li><a href="/products">Free kits</a></li>
+          <li><a href="/bitcoin">Accept Bitcoin in your business</a></li>
           <li><a href="/donate">Donate to Bitcoin education</a></li>
           <li><a href="/collect">Collect an order</a></li>
-          <li><a href="/join">Join the team <span class="ftagx">Hiring</span></a></li>
+          <li><a href="/join">Join the team</a></li>
           <li><a href="/hunt">Treasure hunt <span class="fsub">#AltraditsHunt</span></a></li>
           <li><a href="https://github.com/altradits" target="_blank" rel="noopener">Source code</a></li>
         </ul>
@@ -1003,7 +1006,8 @@ $("#stage").addEventListener("pointerup", (e) => {
 const pillarName = (id) => PILLARS.find((p) => p.id === id).name;
 const hay = (s) => `${s.name} ${s.outcome || ""} ${s.deliverables.join(" ")} ${s.keywords} ${pillarName(s.pillar)}`.toLowerCase();
 const QUICK = [...QUICK_JOBS].sort((a, b) => a.price - b.price);
-const BIG = [...SERVICES].sort((a, b) => (a.type === b.type ? a.price - b.price : a.type === "project" ? -1 : 1));
+// Bigger projects and monthly help are off this page (#130): only fixed-price tasks are listed.
+const BIG = [];
 const TYPES = [
   { id: "all", label: "Everything" },
   { id: "quick", label: "Quick jobs", note: "same day" },
@@ -1018,7 +1022,8 @@ const shortWhen = (s) => {
   const d = /(\d+) business days?/.exec(s.delivery);
   return d ? `${d[1]} days` : s.delivery;
 };
-$("#quickIntro").textContent = `${QUICK_JOBS.length} quick jobs from ${money(QUICK[0].price)} delivered the same day, plus ${SERVICES.length} bigger projects and monthly services. Open a row for the full list; the button is the price.`;
+$("#quickIntro").textContent = `${QUICK_JOBS.length} tasks from ${money(QUICK[0].price)}, each delivered the same day. Open a row to see exactly what you get; the button is the price. Need something bigger? Email hello@altradits.com for a fixed price.`;
+$("#nTasks").textContent = QUICK_JOBS.length; $("#nFrom").textContent = money(QUICK[0].price);
 // Short chip labels so all departments fit on one line; headings keep the full name.
 const SHORT = { social: "Social & content", admin: "Office admin", personal: "Personal", growth: "Sales & care", tech: "Web & Bitcoin" };
 const radio = (name, value, inner, cls, checked, style = "") =>
@@ -1075,9 +1080,9 @@ function renderServices(q = $("#find").value) {
   if (browsing) {
     $("#count").textContent = "Search, or pick an area above";
     $("#quickList").innerHTML = `<div class="none"><div><b>What do you need done?</b>
-      <p>Type any task above and every package that matches appears with its full details and price. Not sure? Buy hours and describe the tasks when you pay.</p>
+      <p>Type any task above, or pick an area, and every task that matches appears with its full details and price. Not sure? Test me with a 15-minute task.</p>
       <p class="kw">${["inbox", "invoices", "Instagram", "captions", "website", "bookkeeping", "leads", "travel", "spreadsheet", "Bitcoin"].map((k) => `<button type="button" class="chipkw" data-kw="${k}">${k}</button>`).join("")}</p></div>
-      ${buyBtn("hourly", `Hire 2 hours · ${money(PAYG.hourly * PAYG.minimumHours)}`, "btn btc")}</div>`;
+      ${buyBtn("q-try", `Test me · ${money(orderable("q-try").price)}`, "btn btc")}</div>`;
     return;
   }
   const html = PILLARS.filter((p) => dept === "all" || p.id === dept).map((p) => {
@@ -1085,20 +1090,20 @@ function renderServices(q = $("#find").value) {
     if (!qs.length && !bs.length) return "";
     const both = qs.length && bs.length;
     const lanes = [
-      qs.length ? lane("Quick jobs · same day", qs, browsing ? (both ? 5 : 8) : Infinity, p, "quick job") : "",
+      qs.length ? lane("Same day", qs, browsing ? (both ? 5 : 8) : Infinity, p, "quick job") : "",
       bs.length ? lane(type === "monthly" ? "Monthly help" : type === "project" ? "Projects" : "Projects & monthly help", bs, browsing ? (both ? 3 : 8) : Infinity, p, "service") : "",
     ].join("");
     const all = QUICK_JOBS.filter((j) => j.pillar === p.id);
     const from = Math.min(...all.map((j) => j.price));
     return `<div class="dgroup" id="dept-${p.id}" style="--c:${p.color}">
-      <div class="dhead"><h3>${esc(p.name)}</h3><p>${plural(all.length, "quick job")} from ${money(from)} · ${plural(SERVICES.filter((s) => s.pillar === p.id).length, "bigger service")}</p></div>
+      <div class="dhead"><h3>${esc(p.name)}</h3><p>${plural(all.length, "task")} from ${money(from)}</p></div>
       <div class="lanes${both ? "" : " one"}">${lanes}</div>
     </div>`;
   }).join("");
   const elsewhere = dept !== "all" && quick.length + big.length;
   $("#quickList").innerHTML = html || `<div class="none"><div><b>${words.length ? `No exact match for "${esc(q.trim())}"${esc(where)}.` : `Nothing of this type${esc(where)}.`}</b>
-      <p>${elsewhere ? `<a href="#dept-all">See ${plural(elsewhere, "match")} in all departments</a>, or buy` : "Buy"} 2 hours of help and describe your task when you pay.</p></div>
-      ${buyBtn("hourly", `Pay ${money(PAYG.hourly * PAYG.minimumHours)} · 2 hours`, "btn btc")}</div>`;
+      <p>${elsewhere ? `<a href="#dept-all">See ${plural(elsewhere, "match")} in all departments</a>. ` : ""}If it takes up to 15 minutes, order the test task and describe it. For anything bigger, email <a href="mailto:hello@altradits.com">hello@altradits.com</a> for a fixed price.</p></div>
+      ${buyBtn("q-try", `Test me · ${money(orderable("q-try").price)}`, "btn btc")}</div>`;
 }
 
 // Keep the top of the list in view when a filter changes the page under you.
@@ -1153,9 +1158,9 @@ $("#payg").innerHTML = `<div><h3>Pay as you go: ${money(payg.price)} for ${PAYG.
 $("#guarantees").innerHTML = GUARANTEES.map((g) => `<div><h4>${esc(g.name)}</h4><p>${esc(g.text)}</p></div>`).join("");
 // Hero and final call to action: the cheapest way to test us, never a big amount.
 const test = orderable("q-try"), next = QUICK.find((j) => j.id !== test.id);
-$("#heroBuy").innerHTML = `<button type="button" class="btn primary test" data-buy="hourly">Hire 2 hours · <b>${money(payg.price)}</b> · any tasks</button><button type="button" class="btn" data-buy="${test.id}">Test me · ${money(test.price)}</button>`;
+$("#heroBuy").innerHTML = `<button type="button" class="btn primary test" data-buy="${test.id}">Test me · <b>${money(test.price)}</b> · one 15-minute task</button>`;
 $("#finalBuy").innerHTML = buyBtn(test.id, `Test us · ${money(test.price)} · one 15-minute task`) + buyBtn(next.id, `${money(next.price)} · ${next.name}`, "btn");
-$("#tryBuy").innerHTML = buyBtn(QUICK[0].id, `Try it: ${money(QUICK[0].price)} · ${QUICK[0].name}`);
+$("#tryBuy").innerHTML = buyBtn(next.id, `Try it: ${money(next.price)} · ${next.name}`);
 
 document.addEventListener("click", (e) => {
   const kw = e.target.dataset?.kw; if (!kw) return;
