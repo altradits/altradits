@@ -33,9 +33,9 @@ if (!SERVER) {
   if (process.env.ADMIN_TOKEN && process.env.ADMIN_TOKEN.length < 24) console.error("ADMIN_TOKEN is short: use a long random one (openssl rand -hex 32).");
 }
 
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|portal\.html|team\.html|join\.html|cv\.html|hunt\.html|templates\.html|donate\.html|va\.html|bitcoin\.html|products\.html|collect\.html|robots\.txt|sitemap\.xml|data\/(?:catalog|playbooks|community)\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|portal\.html|team\.html|join\.html|cv\.html|hunt\.html|templates\.html|donate\.html|va\.html|bitcoin\.html|products\.html|collect\.html|robots\.txt|sitemap\.xml|yebente\/app\/(?:index\.html|assets\/[\w.-]+|fonts\/[\w.-]+)|data\/(?:catalog|playbooks|community)\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
 const SECURITY = { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "SAMEORIGIN" };
 
 // Pages that show client or admin data get a Content Security Policy: only our
@@ -95,7 +95,9 @@ const server = http.createServer(async (req, res) => {
   const url = publicUrl(req);
   try {
     if (url.pathname === "/healthz") { res.writeHead(200, { "Content-Type": "text/plain" }).end("ok"); import("./lib/workers.js").then((w) => w.kickQueue()).catch(() => {}); marketing(); dueJobs(); return; }
-    const api = url.pathname.match(/^\/api\/([a-z]+)$/);
+    // /api/<name>; only Ye₿ente's API takes a sub-path (/api/yebente/mpesa/stkpush…).
+    const api = url.pathname.match(/^\/api\/([a-z]+)(\/[\w.\/-]+)?$/);
+    if (api && api[2] && api[1] !== "yebente") { res.writeHead(404).end("Not found"); return; }
     if (api) {
       const file = path.join(ROOT, "api", `${api[1]}.js`);
       if (!fs.existsSync(file)) { res.writeHead(404).end("Not found"); return; }
@@ -129,14 +131,16 @@ const server = http.createServer(async (req, res) => {
     // /<job> opens that order on the VA page; /r/<ref> and /h/<code> land on the homepage.
     const order = idForSlug(url.pathname.slice(1).replace(/\/$/, ""));
     const home = /^\/(?:r|h)\/[a-z0-9]{4,12}\/?$/.test(url.pathname);
-    const rel = page ? `/${page[1]}.html` : order ? "/va.html" : url.pathname === "/" || home ? "/index.html" : url.pathname;
+    // Ye₿ente: the built app in yebente/app, served at /yebente.
+    const yb = url.pathname.match(/^\/yebente(?:\/(?:index\.html)?)?$/) ? "/yebente/app/index.html" : url.pathname.match(/^\/yebente\/((?:assets|fonts)\/[\w.-]+)$/)?.[1];
+    const rel = yb ? (yb.startsWith("/") ? yb : `/yebente/app/${yb}`) : page ? `/${page[1]}.html` : order ? "/va.html" : url.pathname === "/" || home ? "/index.html" : url.pathname;
     if (!PUBLIC.test(rel)) { res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found"); return; }
     const file = path.join(ROOT, rel);
     const headers = { ...SECURITY, "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" };
     if (/^\/(admin|proposal|portal|team|collect)\.html$/.test(rel)) headers["X-Robots-Tag"] = "noindex";
     if (/^\/(admin|portal|collect|proposal|team)\.html$/.test(rel)) headers["Content-Security-Policy"] = cspFor(file);
     // Font files never change under the same name: keep them a year.
-    headers["Cache-Control"] = rel.endsWith(".woff2") ? "public, max-age=31536000, immutable" : rel.startsWith("/assets/") ? "public, max-age=86400" : "no-cache";
+    headers["Cache-Control"] = rel.endsWith(".woff2") || rel.startsWith("/yebente/app/assets/") ? "public, max-age=31536000, immutable" : rel.startsWith("/assets/") || rel.startsWith("/yebente/app/fonts/") ? "public, max-age=86400" : "no-cache";
     if (rel.endsWith(".html")) import("./lib/visits.js").then((v) => v.recordVisit(req, url, rel)).catch(() => {});
     sendStatic(req, res, file, headers);
   } catch (err) {

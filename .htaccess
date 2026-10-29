@@ -16,6 +16,10 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
   RewriteRule ^templates/?$ /products [R=301,L]
   RewriteRule ^(admin|bitcoin|collect|cv|donate|hunt|join|portal|products|proposal|team|va)/?$ $1.html [L]
 
+  # Ye₿ente: the built app lives in yebente/app.
+  RewriteRule ^yebente/?$ yebente/app/index.html [L]
+  RewriteRule ^yebente/((assets|fonts)/[A-Za-z0-9._-]+)$ yebente/app/$1 [L]
+
   # Referral and hunt links open the homepage, which reads the original path.
   RewriteRule ^(r|h)/[a-z0-9]{4,12}/?$ index.html [L]
 
