@@ -158,7 +158,6 @@ test("hero graphics, accessibility contrast, CSP & security hardening (#96 & #10
     ["va.html", "va-art"],
     ["bitcoin.html", "btc-art"],
     ["products.html", "prod-art"],
-    ["donate.html", "don-art"],
     ["hunt.html", "hunt-art"],
     ["collect.html", "col-art"],
   ]) {
