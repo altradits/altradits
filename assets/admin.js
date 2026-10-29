@@ -147,6 +147,7 @@ function render() {
     ["Waiting for you", s.pendingApprovals], ["New leads (7d)", s.leads7d], ["Qualified", s.qualified],
     ["Open proposals", s.proposalsOpen], ["Pipeline", money(s.pipelineUsd)], ["Won this month", sats(s.wonMonthSats)],
     ["Monthly recurring", money(s.mrrUsd)], ["Active clients", s.activeClients],
+    ...(s.yebente ? [["Ye₿ente wallets", s.yebente.wallets], ["Owed to wallets", sats(s.yebente.owedSats)], ["Node can send", s.yebente.outboundSats === null ? "unknown" : sats(s.yebente.outboundSats)]] : []),
   ].map(([k, v]) => `<div class="kpi"><small>${k}</small><div>${v}</div></div>`).join("");
   const max = Math.max(1, ...Object.values(s.byStage));
   $("#funnel").innerHTML = STAGES.map((st) => `<div class="r"><span>${st.replace("_", " ")}</span><span class="bar"><i style="width:${(s.byStage[st] / max) * 100}%"></i></span><b>${s.byStage[st]}</b></div>`).join("");

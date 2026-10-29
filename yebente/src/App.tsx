@@ -25,6 +25,7 @@ import { SendBtcModal } from './components/SendBtcModal';
 import { SendMpesaModal } from './components/SendMpesaModal';
 import { TransactionDetailModal } from './components/TransactionDetailModal';
 import { WalletSettingsModal } from './components/WalletSettingsModal';
+import { hasServerWallet, fetchServerWallet, fetchServerHistory, forgetServerWallet } from './services/altraditsWallet';
 
 export default function App() {
   const [wallet, setWallet] = useState<UserWallet>(getStoredWallet);
@@ -73,6 +74,35 @@ export default function App() {
     return () => clearInterval(interval);
   }, [loadRates]);
 
+  // The Altradits wallet: balance, address and history come from the server.
+  const syncServerWallet = useCallback(async () => {
+    if (!hasServerWallet()) return;
+    try {
+      const [w, txs] = await Promise.all([fetchServerWallet(), fetchServerHistory()]);
+      setWallet((cur) => ({
+        ...cur,
+        isConnected: true,
+        type: 'custodial',
+        satsBalance: w.balance,
+        btcBalance: w.balance / 100_000_000,
+        nonCustodialAddress: w.address,
+        nonCustodialLabel: 'In-App Lightning Sovereign Vault',
+        blinkUsername: w.handle,
+        blinkAddress: w.address,
+        lastSyncedAt: Date.now(),
+      }));
+      setTransactions(txs);
+    } catch {
+      // Signed out (token revoked) or offline: keep what is on screen.
+    }
+  }, []);
+
+  useEffect(() => {
+    syncServerWallet();
+    const interval = setInterval(syncServerWallet, 20000);
+    return () => clearInterval(interval);
+  }, [syncServerWallet]);
+
   // Set up automatic offline listeners and sync reconciliation
   useEffect(() => {
     const cleanup = setupOfflineSyncListeners((onlineStatus, count) => {
@@ -95,6 +125,7 @@ export default function App() {
   };
 
   const handleWipeWallet = () => {
+    forgetServerWallet();
     const wiped = wipeWallet();
     setWallet(wiped);
     setTransactions([]);
@@ -110,6 +141,10 @@ export default function App() {
   };
 
   const handleTransactionSuccess = (txData: Omit<Transaction, 'id' | 'timestamp'>) => {
+    if (hasServerWallet()) {
+      syncServerWallet();
+      return;
+    }
     const { updatedWallet, updatedTransactions } = addTransaction(txData, wallet);
     setWallet(updatedWallet);
     setTransactions(updatedTransactions);
@@ -165,7 +200,7 @@ export default function App() {
 
           {/* Core wallet and payment actions */}
           <ActionGrid
-            onBuyBtc={() => handleRequireWalletAction(() => setActiveModal('buy_btc'))}
+            onBuyBtc={() => setActiveModal(hasServerWallet() ? 'buy_btc' : 'wallet_settings')}
             onSendMpesa={() => handleRequireWalletAction(() => setActiveModal('send_mpesa'))}
             onReceiveBtc={() => handleRequireWalletAction(() => setActiveModal('receive_btc'))}
             onSendBtc={() => handleRequireWalletAction(() => setActiveModal('send_btc'))}
@@ -222,6 +257,7 @@ export default function App() {
         onClose={() => setActiveModal('none')}
         wallet={wallet}
         onUpdateWallet={handleUpdateWallet}
+        onServerWalletChange={syncServerWallet}
         onEjectWallet={handleEjectWallet}
         onWipeWallet={handleWipeWallet}
       />

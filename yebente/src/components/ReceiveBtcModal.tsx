@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { UserWallet, Transaction } from '../types';
 import { ArrowLeft, CheckCircle2, AlertCircle, Loader2, Copy, Check } from 'lucide-react';
+import { hasServerWallet } from '../services/altraditsWallet';
 import QRCode from 'qrcode';
 import {
   createDepositInvoice,
@@ -121,20 +122,14 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
           invoice: externalInvoice.invoice,
           error: externalInvoice.error,
         };
+      } else if (hasServerWallet()) {
+        // The Altradits wallet: an invoice on the Altradits node, credited to this wallet.
+        res = await createDepositInvoice(numericSats, 'YeBente Lightning Deposit');
       } else {
-        // Primary: Generate BOLT-11 invoice via Blink API for the in-app sovereign address
-        const blinkRes = await createBlinkDepositInvoice(numericSats, 'YeBente Sovereign Sats Deposit');
-        if (blinkRes.success && blinkRes.invoice) {
-          res = {
-            success: true,
-            invoice: blinkRes.invoice,
-            paymentHash: blinkRes.paymentHash,
-          };
-          setIsBlinkInvoice(true);
-        } else {
-          // Secondary fallback: local node endpoint
-          res = await createDepositInvoice(numericSats, 'YeBente Lightning Deposit');
-        }
+        // No wallet yet: an in-app invoice would pay someone else's Blink account.
+        setIsGenerating(false);
+        onOpenWalletSettings();
+        return;
       }
 
       if (!res.success || !res.invoice) {

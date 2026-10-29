@@ -8,6 +8,10 @@ import { payInvoiceWithWebLN,
 } from '../services/lightningService';
 import { calculateRealTransactionCost, RealTransactionCost } from '../services/blinkService';
 import { isNetworkOnline, queueOfflineTransaction } from '../services/offlineService';
+import { hasServerWallet, sendFromServerWallet } from '../services/altraditsWallet';
+
+// A Ye₿ente wallet handle (another Altradits wallet): sent through the ledger, free.
+const isYebenteHandle = (s: string) => /^[a-z0-9][a-z0-9._-]{1,18}[a-z0-9]$/i.test(s.trim());
 
 interface SendBtcModalProps {
   isOpen: boolean;
@@ -56,13 +60,16 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     source: 'blink',
   });
   const [wasOfflineDispatched, setWasOfflineDispatched] = useState<boolean>(false);
+  const [pin, setPin] = useState<string>('');
+  const server = hasServerWallet();
+  const toYebente = server && isYebenteHandle(sanitizeLightningInput(recipient));
 
   const numericSats = parseInt(satsAmountStr, 10) || 0;
   const availableSats = wallet.satsBalance ?? Math.round((wallet.btcBalance || 0) * 100_000_000);
   const btcRate = rates?.btcKes || 11100000;
 
   // Real fee dynamically tracked via Blink
-  const satsFee = realCost.feeSats;
+  const satsFee = toYebente ? 0 : realCost.feeSats;
   const totalDeducted = numericSats + satsFee;
   const isInsufficientSats = totalDeducted > availableSats;
   const currentlyOnline = isNetworkOnline();
@@ -84,6 +91,14 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     if (!clean) {
       setRecipientType('unknown');
       setResolvedProvider('');
+      setResolvedCallback('');
+      setErrorMessage('');
+      return;
+    }
+
+    if (hasServerWallet() && isYebenteHandle(clean)) {
+      setRecipientType('lightning_address');
+      setResolvedProvider('Ye₿ente');
       setResolvedCallback('');
       setErrorMessage('');
       return;
@@ -213,6 +228,21 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     setErrorMessage('');
     setIsNetworkFailure(false);
 
+    // The Altradits wallet: the server pays from the ledger, with the PIN.
+    if (server) {
+      try {
+        const res = await sendFromServerWallet(cleanRecipient, numericSats, pin);
+        setTxReference(res.ref);
+        setPin('');
+        completeTransaction(res.ref, cleanRecipient);
+      } catch (err: unknown) {
+        setErrorMessage(err instanceof Error ? err.message : 'Error dispatching payment');
+        setIsNetworkFailure(false);
+        setStep('error');
+      }
+      return;
+    }
+
     try {
       let finalInvoice = cleanRecipient;
 
@@ -310,7 +340,8 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
   const isFormValid =
     (recipientType === 'lightning_address' || recipientType === 'lightning_invoice') &&
     numericSats > 0 &&
-    !isInsufficientSats;
+    !isInsufficientSats &&
+    (!server || /^\d{6}$/.test(pin));
 
   return (
     <div
@@ -427,6 +458,22 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                   </button>
                 ))}
               </div>
+
+              {/* PIN for the Altradits wallet */}
+              {server && (
+                <div>
+                  <div className="text-xs text-[var(--yb-secondary)] mb-1.5 font-semibold">PIN</div>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    maxLength={6}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-3 text-lg font-mono tracking-[0.5em] text-[var(--yb-on-surface)] focus:outline-none"
+                  />
+                </div>
+              )}
 
               {/* Real Transaction Cost Readouts (borderless typographic rows) */}
               <div className="space-y-1.5 px-1 pt-1 text-xs">
