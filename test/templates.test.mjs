@@ -197,7 +197,8 @@ test("heads send external mail with stan@ copied; Stan sends internal mail and p
   assert.equal(kit.bcc, null);
   // Kit PDFs carry the letterhead.
   const pdf = subs.renderFile(KITS[0], KITS[0].files[0]).body.toString("latin1");
-  assert.match(pdf, /\(hello@altradits\.com\) Tj/);
+  assert.match(pdf, /\(Hannah Alemu\) Tj/); // the sender: the head of Marketing, by name only
+  assert.doesNotMatch(pdf, /\((?:hello@altradits\.com|Nairobi, Kenya)\) Tj/);
   // The letterhead is the real logo image, linked to the homepage, and no drawn wordmark.
   assert.match(pdf, /\/Logo Do/);
   assert.match(pdf, /0\.961 0\.961 0\.961 rg [\d. ]+ re f/); // on its brand background (#F5F5F5)
