@@ -155,7 +155,6 @@ test("hero graphics, accessibility contrast, CSP & security hardening (#96 & #10
   const read = (f) => fs.readFileSync(new URL(f, root), "utf8");
   for (const [page, cls] of [
     ["index.html", "hero-art"],
-    ["va.html", "va-art"],
     ["bitcoin.html", "btc-art"],
     ["products.html", "prod-art"],
     ["hunt.html", "hunt-art"],

@@ -21,10 +21,11 @@ a{color:var(--blue)}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 [hidden]{display:none!important}
 .wrap{max-width:40rem;margin:0 auto;padding:1.25rem 1rem 4rem}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.75rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.75rem}
 .top img{height:2.5rem;width:auto;display:block}
 .topnav{display:flex;gap:1.1rem}
-.topnav a{font-weight:600;text-decoration:none;color:var(--muted)}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap}
+@media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
 .topnav a:hover{color:var(--ink)}
 h1{font:800 clamp(2rem,6vw,2.8rem)/1.05 'Bricolage Grotesque',sans-serif;margin:0 0 .6rem}
 h1 em{font-style:normal;color:var(--btc-text)}
@@ -78,7 +79,7 @@ input::placeholder{color:#8A97A8;font-weight:400}
   <div class="card" id="out" hidden></div>
   <p class="note">Your order name works like a key: anyone who has it can open the order, so keep it private. Lost it? Write to <a href="mailto:hello@altradits.com">hello@altradits.com</a> with when you paid and the amount.</p>
 </div>
-<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/hunt">Treasure hunt</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script src="/assets/collect.js"></script>
 </body>
 </html>
