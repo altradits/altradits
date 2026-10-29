@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Banana Yeti';
+  src: url('/yebente/fonts/BananaYeti-Extrabold.ttf') format('truetype');
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-banana {
+  font-family: 'Banana Yeti', 'Arial Black', Impact, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+@layer base {
+  :root {
+    --etail-purple: #763698;
+    --etail-eggplant: #554653;
+    --etail-mauve: #946069;
+    --etail-lilac: #9B97A2;
+    --etail-blush: #D1B9B3;
+    --etail-ivory: #F8F0E7;
+    --etail-bg-dark: #120E16;
+    --etail-card-dark: #1F1826;
+    --etail-border-dark: #372B40;
+
+    /* Material 3 dark scheme, seeded from the brand plum #763698 */
+    --yb-primary: #DDB8FF;
+    --yb-on-primary: #44116A;
+    --yb-primary-container: #763698;
+    --yb-primary-container-hover: #8446A6;
+    --yb-on-primary-container: #F7E8FF;
+    --yb-secondary: #E5CFC8;
+    --yb-surface: #141117;
+    --yb-surface-container-low: #1C1820;
+    --yb-surface-container: #221E27;
+    --yb-surface-container-high: #2C2731;
+    --yb-surface-container-highest: #37313C;
+    --yb-outline-variant: #3F3846;
+    --yb-on-surface: #F3ECF2;
+    --yb-on-surface-variant: #CBC2CF;
+  }
+
+  body {
+    background-color: var(--yb-surface);
+    color: var(--yb-on-surface);
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Disable spin buttons, steppers, and scroll in all number, digit inputs & textareas */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
+
+  input[type=number] {
+    -moz-appearance: textfield !important;
+    appearance: textfield !important;
+  }
+
+  input, textarea {
+    overflow: hidden !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  input::-webkit-scrollbar,
+  textarea::-webkit-scrollbar {
+    display: none !important;
+  }
+}
+
+/* Material 3: bottom-sheet drag handle on phones */
+.yb-sheet::before {
+  content: "";
+  display: block;
+  flex: none;
+  width: 32px;
+  height: 4px;
+  border-radius: 2px;
+  margin: 10px auto 2px;
+  background: var(--yb-on-surface-variant);
+  opacity: 0.4;
+}
+@media (min-width: 640px) {
+  .yb-sheet::before { display: none; }
+}
+
+/* Material 3 focus: a clear primary outline on every control */
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--yb-primary);
+  outline-offset: 2px;
+}
+input:focus, textarea:focus { border-color: var(--yb-primary) !important; }

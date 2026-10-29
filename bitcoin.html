@@ -60,6 +60,13 @@ h2{font:800 clamp(1.6rem,4vw,2.2rem)/1.1 'Bricolage Grotesque',sans-serif;margin
 @media (max-width:640px){.give{grid-template-columns:1fr}.topnav{gap:.8rem}}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .wrap:has(> .hero){position:relative}
+/* Friends using Bitcoin: one card per project, each in its own brand */
+.friends{list-style:none;margin:1rem 0 0;padding:0;display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(19rem,1fr))}
+.friend{display:flex;flex-direction:column;justify-content:flex-end;gap:.5rem;min-height:9.5rem;padding:1.4rem;border-radius:1rem;text-decoration:none;border:2px solid var(--ink)}
+.friend:hover{box-shadow:5px 5px 0 var(--ink)}
+.friend.yb{background:linear-gradient(145deg,#763698,#4A1E63);color:#F7E8FF}
+.friend.yb .yb-mark{display:block;width:152px;height:auto}
+.friend.yb span:last-child{color:#EBD9F5;font-weight:600}
 /* Hero: the same on every page — headline, one line, at most one button. No motion anywhere. */
 .hero{position:static;display:block;max-width:none;margin:0;padding:2.25rem 0 2rem}
 .hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:44rem;color:var(--ink)}
@@ -87,6 +94,13 @@ a:hover,.btn:hover,button:hover{transform:none!important}
 <section><div class="wrap">
   <h2>Two ways to start</h2>
   <div class="help" id="help"></div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Friends using <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></h2>
+  <ul class="friends">
+    <li><a class="friend yb" href="/yebente"><img class="yb-mark" src="/assets/yebente-wordmark.png" alt="Ye₿ente" width="152" height="58"><span>Hard Money for the African Household.</span></a></li>
+  </ul>
 </div></section>
 
 <section><div class="wrap"><div class="faq">
