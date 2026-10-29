@@ -98,6 +98,8 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   const [restoreMode, setRestoreMode] = useState(false);
   const [restorePhrase, setRestorePhrase] = useState('');
   const [walletBusy, setWalletBusy] = useState(false);
+  // A new wallet's handle starts empty (the server picks a free one when left empty).
+  const [newHandle, setNewHandle] = useState('');
 
   if (!isOpen) return null;
 
@@ -314,7 +316,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
       if (restoreMode) {
         await restoreServerWallet(restorePhrase, walletPin);
       } else {
-        const r = await createServerWallet(walletPin, blinkUsername.trim());
+        const r = await createServerWallet(walletPin, newHandle.trim());
         setRecoveryShown(r.recovery);
       }
       setServer(true);
@@ -418,8 +420,9 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                       <div className="relative">
                         <input
                           type="text"
-                          value={blinkUsername}
-                          onChange={(e) => setBlinkUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 20))}
+                          value={newHandle}
+                          autoComplete="off"
+                          onChange={(e) => setNewHandle(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 20))}
                           placeholder="username"
                           className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] pr-28"
                         />
