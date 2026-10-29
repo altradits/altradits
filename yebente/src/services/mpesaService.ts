@@ -1,3 +1,4 @@
+import { getWalletToken } from './altraditsWallet';
 export interface StkPushParams {
   phone: string;
   amount: number;
@@ -129,17 +130,15 @@ export async function initiateStkPush(params: StkPushParams): Promise<StkPushRes
   const formattedPhone = formatKenyanPhone(params.phone);
 
   try {
-    const response = await fetch('/api/yebente/mpesa/stkpush', {
+    // Sats are bought into the Altradits wallet: the server sends the prompt and credits it.
+    const token = getWalletToken();
+    const response = await fetch('/api/yebente/wallet/buy', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({
-        phone: formattedPhone,
-        amount: params.amount,
-        accountReference: params.accountReference || 'yebente',
-        transactionDesc: params.transactionDesc || 'Bitcoin Settlement',
-      }),
+      body: JSON.stringify({ phone: formattedPhone, kes: Math.round(Number(params.amount)) }),
     });
 
     const { ok, data } = await parseSafeJson<any>(response);
@@ -173,12 +172,9 @@ export async function initiateStkPush(params: StkPushParams): Promise<StkPushRes
  */
 export async function queryStkStatus(checkoutRequestId: string): Promise<StkQueryResponse> {
   try {
-    const response = await fetch('/api/yebente/mpesa/query', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ checkoutRequestId }),
+    const token = getWalletToken();
+    const response = await fetch(`/api/yebente/wallet/buy/${encodeURIComponent(checkoutRequestId)}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
 
     const { ok, data } = await parseSafeJson<any>(response);

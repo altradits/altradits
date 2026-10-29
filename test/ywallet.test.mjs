@@ -108,6 +108,7 @@ const MAC = "0201036c6e64";
 const lndInvoices = new Map();
 const payments = new Map(), payCalls = [];
 let payMode = "ok";
+let localBalance = 1_000_000;
 let lnd;
 async function fakeLnd() {
   if (lnd) return;
@@ -139,7 +140,7 @@ async function fakeLnd() {
         res.end(JSON.stringify({ payments: [...payments].map(([h, st]) => ({ payment_hash: h, status: st, fee_sat: "4" })) }));
         return;
       }
-      if (req.url === "/v1/balance/channels") { res.end(JSON.stringify({ remote_balance: { sat: "10000000" } })); return; }
+      if (req.url === "/v1/balance/channels") { res.end(JSON.stringify({ remote_balance: { sat: "10000000" }, local_balance: { sat: String(localBalance) } })); return; }
       const m = req.url.match(/^\/v1\/invoice\/([0-9a-f]+)$/);
       if (m && lndInvoices.has(m[1])) { res.end(JSON.stringify(lndInvoices.get(m[1]))); return; }
       res.writeHead(404).end("{}");
@@ -297,5 +298,66 @@ test("without the pay macaroon, sending out is off (handles still work)", async 
   await yw.credit({ walletId: (await yw.walletByHandle("nopay")).id, sats: 500, kind: "receive", ref: "fund-nopay" });
   assert.equal((await call("POST", "wallet/send", { to: invoice(100).pr, pin: "151515" }, token)).status, 501);
   assert.equal((await call("POST", "wallet/send", { to: "payer", sats: 100, pin: "151515" }, token)).status, 200);
-  lnd.close();
+  process.env.YEBENTE_LND_PAY_MACAROON = MAC;
+});
+
+// ---- step 4: buying sats with M-Pesa (STK Push), Safaricom and the price feeds mocked
+test("buy with M-Pesa: the prompt goes out, the sats are credited once when Safaricom confirms", async () => {
+  Object.assign(process.env, { YEBENTE_MPESA_BUY: "on", MPESA_CONSUMER_KEY: "k", MPESA_CONSUMER_SECRET: "s", MPESA_SHORTCODE: "174379", MPESA_PASSKEY: "p", YEBENTE_CALLBACK_SECRET: "c".repeat(32), YEBENTE_DAILY_BUY_KES: "3000", YEBENTE_MAX_BALANCE_SATS: "50000" });
+  const realFetch = globalThis.fetch;
+  const stk = [];
+  let queryResult = { ResultCode: "1032", ResultDesc: "Cancelled" };
+  globalThis.fetch = async (url, opts) => {
+    const u = String(url);
+    if (u.includes("api.coinbase.com")) return new Response(JSON.stringify({ data: { amount: "100000" } }));
+    if (u.includes("open.er-api.com")) return new Response(JSON.stringify({ rates: { KES: 130 } }));
+    if (u.includes("/oauth/v1/generate")) return new Response(JSON.stringify({ access_token: "t", expires_in: "3599" }));
+    if (u.includes("/mpesa/stkpush/v1/processrequest")) { const b = JSON.parse(opts.body); stk.push(b); return new Response(JSON.stringify({ ResponseCode: "0", CheckoutRequestID: `ws_CO_${stk.length}`, MerchantRequestID: "m", CustomerMessage: "ok" })); }
+    if (u.includes("/mpesa/stkpushquery/v1/query")) return new Response(JSON.stringify(queryResult));
+    return realFetch(url, opts);
+  };
+  try {
+    const w = await (await call("POST", "wallet/create", { pin: "161616", handle: "buyer" })).json();
+    // 1 BTC = 100,000 USD x 130 = 13,000,000 KES: 1,000 KES = 7,692 sats (no spread by default).
+    let r = await (await call("POST", "wallet/buy", { kes: 1000, phone: "0712345678" }, w.token)).json();
+    assert.equal(r.success, true, JSON.stringify(r));
+    assert.equal(r.satsAmount, 7692);
+    assert.equal(stk.at(-1).Amount, 1000);
+    assert.equal(stk.at(-1).PhoneNumber, "254712345678");
+    assert.match(stk.at(-1).CallBackURL, /\/api\/yebente\/mpesa\/callback\/c{32}$/);
+    const id = r.checkoutRequestId;
+    // Not paid yet: nothing credited.
+    assert.equal((await yw.walletByHandle("buyer")).balance, 0);
+    // Safaricom's callback (with the secret): credited once, even if it comes twice.
+    const cb = { Body: { stkCallback: { CheckoutRequestID: id, ResultCode: 0, ResultDesc: "ok", CallbackMetadata: { Item: [{ Name: "MpesaReceiptNumber", Value: "QAB1234567" }, { Name: "PhoneNumber", Value: 254712345678 }] } } } };
+    assert.equal((await call("POST", `mpesa/callback/${"c".repeat(32)}`, cb)).status, 200);
+    assert.equal((await call("POST", `mpesa/callback/${"c".repeat(32)}`, cb)).status, 200);
+    assert.equal((await yw.walletByHandle("buyer")).balance, 7692);
+    const st = await (await call("GET", `wallet/buy/${id}`, null, w.token)).json();
+    assert.equal(st.state, "paid"); assert.equal(st.resultCode, 0); assert.equal(st.mpesaReceiptNumber, "QAB1234567");
+    const e = (await (await call("GET", "wallet/history", null, w.token)).json()).entries[0];
+    assert.equal(e.kind, "buy"); assert.equal(e.ref, "MPESA-QAB1234567"); assert.equal(e.kes, 1000);
+    // No callback: the status check asks Daraja. Cancelled -> nothing; paid -> credited.
+    r = await (await call("POST", "wallet/buy", { kes: 500, phone: "0712345678" }, w.token)).json();
+    assert.equal(r.success, true, JSON.stringify(r));
+    const cancelled = await (await call("GET", `wallet/buy/${r.checkoutRequestId}`, null, w.token)).json();
+    assert.equal(cancelled.state, "failed", JSON.stringify(cancelled));
+    assert.equal((await yw.walletByHandle("buyer")).balance, 7692);
+    r = await (await call("POST", "wallet/buy", { kes: 500, phone: "0712345678" }, w.token)).json();
+    queryResult = { ResultCode: "0", ResultDesc: "ok", MpesaReceiptNumber: "QAB7654321" };
+    assert.equal((await (await call("GET", `wallet/buy/${r.checkoutRequestId}`, null, w.token)).json()).state, "paid");
+    assert.equal((await yw.walletByHandle("buyer")).balance, 7692 + 3846);
+    // Another wallet can't see this purchase.
+    assert.equal((await call("GET", `wallet/buy/${r.checkoutRequestId}`, null, juma.token)).status, 404);
+    // Daily cap 3,000 KES: 1,500 bought (the cancelled one doesn't count), 1,600 more is refused.
+    assert.equal((await call("POST", "wallet/buy", { kes: 1600, phone: "0712345678" }, w.token)).status, 400);
+    // Below the minimum, or not whole shillings.
+    assert.equal((await call("POST", "wallet/buy", { kes: 5, phone: "0712345678" }, w.token)).status, 400);
+    // Solvency: when the node couldn't pay out what wallets would hold, buying pauses.
+    localBalance = 1000;
+    assert.equal((await call("POST", "wallet/buy", { kes: 100, phone: "0712345678" }, w.token)).status, 503);
+    localBalance = 1_000_000;
+    // The old anonymous STK (sats credited only in a browser) stays off.
+    assert.equal((await call("POST", "mpesa/stkpush", { phone: "0712345678", amount: 100 })).status, 501);
+  } finally { globalThis.fetch = realFetch; delete process.env.YEBENTE_MPESA_BUY; lnd.close(); }
 });
