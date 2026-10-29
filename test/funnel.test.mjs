@@ -153,16 +153,11 @@ test("scripted Altra handles the quick replies and real-world answers", async ()
 
 test("hero graphics, accessibility contrast, CSP & security hardening (#96 & #101)", async () => {
   const read = (f) => fs.readFileSync(new URL(f, root), "utf8");
-  for (const [page, cls] of [
-    ["index.html", "hero-art"],
-    ["bitcoin.html", "btc-art"],
-    ["va.html", "va-art"],
-    ["products.html", "prod-art"],
-    ["hunt.html", "hunt-art"],
-    ["collect.html", "col-art"],
-  ]) {
+  // Heroes carry no art (#146); the logo's swoosh is kept as an asset for reuse.
+  assert.match(read("assets/swoosh.svg"), /<path fill="#EA5158" d="M[\d.]/, "swoosh asset kept");
+  for (const page of ["index.html", "va.html", "bitcoin.html", "products.html", "donate.html", "hunt.html", "collect.html"]) {
     const html = read(page);
-    assert.match(html, new RegExp(`<svg[^>]+class="[^"]*\\b${cls}\\b[^"]*"[^>]+aria-hidden="true"`), `${page} has accessible inline hero SVG (${cls})`);
+    assert.doesNotMatch(html, /class="swoosh/, `${page} hero has no swoosh`);
     assert.match(html, /--btc-text:#A84D08/, `${page} uses accessible amber text token`);
   }
   assert.match(read("va.html"), /el\.inert\s*=\s*true/, "va.html modal sets background inert");
