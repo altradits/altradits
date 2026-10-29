@@ -151,11 +151,11 @@ test("payments: one automatic email with the complete receipt attached; nothing 
   const { receiptPdf } = await import("../lib/finance.js");
   const pdf = receiptPdf(lead, p, "R-2026-00001").toString("latin1");
   assert.ok(pdf.startsWith("%PDF"));
-  for (const s of ["Receipt R-2026-00001", "PAID IN FULL", "Issued by Peter Rotich", "(Peter Rotich) Tj", "finance@altradits.com", `Order reference: ${p.id}`, "Amina", "amina@shop.co",
+  for (const s of ["Receipt R-2026-00001", "PAID IN FULL", "Issued by Peter Rotich", "finance@altradits.com", "(Nairobi, Kenya) Tj", `Order reference: ${p.id}`, "Amina", "amina@shop.co",
     "Donation to Bitcoin education", "24,000 sats", "$20.00 at $83,333 per BTC", "Bitcoin Lightning Network", "abc123hash", "Settled on the Lightning Network",
     "No goods or services were provided"]) assert.ok(pdf.includes(s), s);
-  // The sender is the Finance head by name only: no company address block.
-  for (const s of ["Issued by Altradits", "Nairobi, Kenya", "Contact: finance@"]) assert.ok(!pdf.includes(s), s);
+  // Issued by the Finance head by name only (the letterhead keeps the company details).
+  for (const s of ["Issued by Altradits", "Contact: finance@"]) assert.ok(!pdf.includes(s), s);
   // An order: same single email, items with quantity and price, and the portal button.
   const o = await crm.createOrder(orderable("hourly"));
   o.lead.email = "buyer@shop.co"; o.lead.name = "Kip";
