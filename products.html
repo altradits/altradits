@@ -6,8 +6,8 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Products · Altradits</title>
-<meta name="description" content="Digital products a VA makes that you can reuse: templates, guides, tutorials and art. Start with free, complete kits.">
+<title>Free kits · Altradits</title>
+<meta name="description" content="Free step-by-step kits for the small business jobs owners put off: inbox, social posts, invoices, customer replies, outreach and hiring. Or have it done today at a fixed price.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -28,8 +28,6 @@ a{color:var(--blue)}
 h1{font:800 clamp(2rem,6vw,3.3rem)/1.04 'Bricolage Grotesque',sans-serif;margin:0 0 .7rem;max-width:44rem;letter-spacing:-.01em}
 h1 em{font-style:normal;color:var(--blue)}
 .lead{color:var(--muted);font-size:1.15rem;margin:0 0 2rem;max-width:36rem}
-.ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin:0 0 .6rem;padding:0;list-style:none}
-.ladderNote{color:var(--muted);font-size:.93rem;margin:0 0 2.2rem}
 .kitsHead{font:800 1.35rem 'Bricolage Grotesque',sans-serif;margin:0 0 1rem}
 .tag{display:inline-block;font:700 .72rem Figtree,sans-serif;letter-spacing:.06em;text-transform:uppercase;background:var(--ink);color:#fff;border-radius:.35rem;padding:.25rem .5rem;align-self:flex-start}
 .path{border-top:1px solid var(--line);margin-top:.3rem;padding-top:.7rem;display:grid;gap:.35rem;font-size:.92rem}
@@ -38,11 +36,6 @@ h1 em{font-style:normal;color:var(--blue)}
 .path a:hover span{text-decoration:underline}
 .path a em{font-style:normal;font-weight:700;white-space:nowrap}
 .path small{color:var(--blue);font-weight:700;margin-right:.35rem}
-.ladder li{position:relative;border-top:3px solid var(--line);padding:.7rem .2rem 0}
-.ladder li:not(:last-child)::after{content:"→";position:absolute;right:-.6rem;top:.55rem;color:var(--muted);font-weight:700}
-.ladder b{display:block;font:800 1.05rem 'Bricolage Grotesque',sans-serif}
-.ladder small{display:inline-block;font:700 .72rem Figtree,sans-serif;letter-spacing:.08em;color:var(--blue);margin-bottom:.15rem}
-.ladder span{color:var(--muted);font-size:.93rem}
 .kits{display:grid;grid-template-columns:repeat(auto-fill,minmax(20rem,1fr));gap:1.25rem}
 .kit{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;box-shadow:6px 6px 0 var(--ink);padding:1.4rem;display:flex;flex-direction:column;gap:.7rem}
 .kit .eyebrow{font:700 .75rem Figtree,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--btc-text)}
@@ -71,9 +64,6 @@ h1 em{font-style:normal;color:var(--blue)}
 .next a:first-of-type{border-top:0}
 .next a span:last-child{color:var(--blue);white-space:nowrap}
 .note{color:var(--muted);font-size:.9rem;margin:2.5rem 0 0}
-/* Phones: the three ways stay side by side as compact tiles, so the kits below
-   never look as if they belong to the last one (DFY). */
-@media (max-width:760px){.ladder{gap:.9rem}.ladder li{padding:.55rem 0 0}.ladder b{font-size:.88rem;line-height:1.2}.ladder span{font-size:.75rem;display:block;line-height:1.35}}
 @media (max-width:420px){.kits{grid-template-columns:1fr}.kit{box-shadow:4px 4px 0 var(--ink);padding:1.15rem}}
 @media (prefers-reduced-motion:no-preference){.got{animation:in .35s ease}@keyframes in{from{opacity:0;transform:translateY(.3rem)}}}
 .form input[aria-invalid=true]{border-color:#B42318}
@@ -92,25 +82,23 @@ h1 em{font-style:normal;color:var(--blue)}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">VA</a><a href="/bitcoin"><span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/products" aria-current="page">Products</a></nav></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products" aria-current="page">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a></nav></div>
   <svg class="prod-art" viewBox="0 0 300 220" aria-hidden="true" focusable="false">
     <path fill="#EA5158" transform="translate(-30 -100) scale(5.4)" d="M9 50.2c9.6 4.6 22.4 5.6 36.2-.4 3.6-1.6 6.9-3.5 9.8-5.6-2.1 3.6-5.6 6.9-10.3 9.3-12.4 6.2-26.4 4.6-35.7-3.3z"/>
-    <g class="pa-step"><rect x="25" y="117" width="74" height="62" rx="10" fill="#0F1B2D"/><rect x="20" y="112" width="74" height="62" rx="10" fill="#fff" stroke="#0F1B2D" stroke-width="2"/><path d="M57 122v16m-7-7l7 7 7-7m-14 11h14" fill="none" stroke="#274C77" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><text x="57" y="164" text-anchor="middle" font-family="'Bricolage Grotesque',sans-serif" font-weight="800" font-size="18" fill="#0F1B2D">DIY</text></g>
-    <g class="pa-step"><rect x="117" y="81" width="74" height="62" rx="10" fill="#0F1B2D"/><rect x="112" y="76" width="74" height="62" rx="10" fill="#274C77" stroke="#0F1B2D" stroke-width="2"/><text x="149" y="114" text-anchor="middle" font-family="'Bricolage Grotesque',sans-serif" font-weight="800" font-size="18" fill="#fff">DIT</text></g>
-    <g class="pa-step"><rect x="209" y="45" width="74" height="62" rx="10" fill="#0F1B2D"/><rect x="204" y="40" width="74" height="62" rx="10" fill="#F7931A" stroke="#0F1B2D" stroke-width="2"/><text x="241" y="78" text-anchor="middle" font-family="'Bricolage Grotesque',sans-serif" font-weight="800" font-size="18" fill="#0F1B2D">DFY</text></g>
+    <g class="pa-step"><rect x="25" y="117" width="74" height="62" rx="10" fill="#0F1B2D"/><rect x="20" y="112" width="74" height="62" rx="10" fill="#fff" stroke="#0F1B2D" stroke-width="2"/><path d="M57 122v16m-7-7l7 7 7-7m-14 11h14" fill="none" stroke="#274C77" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><text x="57" y="164" text-anchor="middle" font-family="'Bricolage Grotesque',sans-serif" font-weight="800" font-size="18" fill="#0F1B2D">Free</text></g>
+    <g class="pa-step"><rect x="117" y="81" width="74" height="62" rx="10" fill="#0F1B2D"/><rect x="112" y="76" width="74" height="62" rx="10" fill="#274C77" stroke="#0F1B2D" stroke-width="2"/><text x="149" y="114" text-anchor="middle" font-family="'Bricolage Grotesque',sans-serif" font-weight="800" font-size="18" fill="#fff">Do it</text></g>
+    <g class="pa-step"><rect x="209" y="45" width="74" height="62" rx="10" fill="#0F1B2D"/><rect x="204" y="40" width="74" height="62" rx="10" fill="#F7931A" stroke="#0F1B2D" stroke-width="2"/><text x="241" y="78" text-anchor="middle" font-family="'Bricolage Grotesque',sans-serif" font-weight="800" font-size="18" fill="#0F1B2D">Done</text></g>
     <path d="M94 128h12m86-36h6" stroke="#0F1B2D" stroke-width="2" stroke-dasharray="3 4"/>
   </svg>
-  <h1>Tools a VA makes, <em>yours to reuse.</em></h1>
-  <p class="lead">Templates, guides, tutorials and art from real VA work. Start with these complete kits, free for your email.</p>
+  <h1>Do it yourself for free, <em>or have it done today.</em></h1>
+  <p class="lead">Step-by-step kits for the small jobs owners put off, free for your email. Rather not do it yourself? Each kit links to the task that does it for you, at a fixed price.</p>
 
-  <ol class="ladder" id="ladder" aria-label="Three ways to get it done"></ol>
-  <p class="ladderNote">Every kit starts free (DIY). Want help? Each kit shows how to do it together (DIT) or have it done for you (DFY).</p>
-  <h2 class="kitsHead">Start free: do-it-yourself kits</h2>
+  <h2 class="kitsHead">Free kits</h2>
   <div class="kits" id="kits"><p class="msg">Loading the kits…</p></div>
 
   <p class="note">Download your kit right away. We email it too once you confirm your address, then follow up a few times with tips and offers about that topic. Unsubscribe in one click from any email.</p>
 </div>
-<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Hire a VA</a> · <a href="/products">Products</a> · <a href="/bitcoin">Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/hunt">Treasure hunt</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/hunt">Treasure hunt</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script type="module">
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -121,9 +109,10 @@ const TYPES = { pdf: "PDF guide", csv: "Spreadsheet" };
 let data;
 try { data = await (await fetch("/api/kits")).json(); } catch { $("#kits").innerHTML = `<p class="msg err">Couldn't load the kits. Please refresh.</p>`; }
 if (data) {
-  $("#ladder").innerHTML = data.ladder.map((l) => `<li><small>${esc(l.code)}</small><b>${esc(l.name)}</b><span>${esc(l.line)}</span></li>`).join("");
+  // The fixed-price task that does each kit's job for you (monthly services stay off this page).
+  const task = (k) => (k.offers?.done || []).find((o) => !o.monthly);
   $("#kits").innerHTML = data.kits.map((k) => `<article class="kit" id="${esc(k.id)}">
-    <span class="tag">DIY · Free</span>
+    <span class="tag">Free</span>
     <div class="eyebrow">${esc(k.struggle)}</div>
     <h3>${esc(k.title)}</h3>
     <p>${esc(k.promise)}</p>
@@ -139,9 +128,8 @@ if (data) {
       <small>${esc(k.consent)}</small>
     </form>
     <div class="got" hidden></div>
-    ${k.offers ? `<div class="path"><b>WANT HELP WITH THIS?</b>
-      ${k.offers.together ? `<a href="${esc(new URL(k.offers.together.url).pathname)}"><span><small>DIT</small>Do it together</span><em>$${esc(k.offers.together.price)}</em></a>` : ""}
-      ${(k.offers.done || []).slice(0, 1).map((o) => `<a href="${esc(new URL(o.url).pathname)}"><span><small>DFY</small>${esc(o.name)}</span><em>$${esc(o.price)}${o.monthly ? "/mo" : ""}</em></a>`).join("")}
+    ${task(k) ? `<div class="path"><b>OR I DO IT FOR YOU TODAY</b>
+      <a href="${esc(new URL(task(k).url).pathname)}"><span>${esc(task(k).name)}</span><em>${money(task(k).price)}</em></a>
     </div>` : ""}
   </article>`).join("");
 
@@ -175,10 +163,9 @@ if (data) {
         <div class="row">${d.files.map((f) => `<a class="btn" href="${esc(f.url)}" download>Download ${esc(TYPES[f.type] || f.type)}</a>`).join("")}</div>` : d.limit ? `<b>This kit was already emailed to this address today.</b> To keep inboxes safe, each kit is sent at most once a day. Check your inbox (and Promotions and Spam), or pick a different kit.`
           : d.confirm ? `<b>Check your inbox: tap the confirmation link we've sent to ${esc(email)}</b> and the kit follows straight away. Not there? Look in Promotions and Spam.`
           : `<b>Sent! Check your inbox at ${esc(email)}.</b> Not there in a few minutes? Look in Promotions and Spam.`}
-        <div class="next"><b>Rather not do it alone?</b>
-          <a href="/${esc(kit.offers.together.id.replace(/^q-/, ""))}"><span>Do it together: we finish it with you (2 hours)</span><span>${money(kit.offers.together.price)}</span></a>
-          ${kit.offers.done.map((o) => `<a href="/${esc(o.id.replace(/^q-/, ""))}"><span>Done for you: ${esc(o.name)}</span><span>${money(o.price)}${o.monthly ? "/mo" : ""}</span></a>`).join("")}
-        </div>`;
+        ${task(kit) ? `<div class="next"><b>Rather have it done today?</b>
+          <a href="${esc(new URL(task(kit).url).pathname)}"><span>${esc(task(kit).name)}</span><span>${money(task(kit).price)}</span></a>
+        </div>` : ""}`;
       form.closest(".kit").querySelector(".path")?.remove(); // the offers now show once, in the box above
       $("a", got).focus();
     } catch (err) { msg.className = "msg err"; msg.textContent = err.message; }
