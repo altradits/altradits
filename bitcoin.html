@@ -6,8 +6,8 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bitcoin Community · Altradits</title>
-<meta name="description" content="Stanley Chege Thuita's Bitcoin community education: moments, networks and friends using Bitcoin at work and in daily life, shaping the future of money.">
+<title>Accept Bitcoin in your business · Altradits</title>
+<meta name="description" content="Accept Bitcoin in your business: a Lightning address and QR set up the same day for $15, or a full setup with checkout, invoices and clean books. Your keys always stay with you.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -37,17 +37,6 @@ h1 em{font-style:normal;color:var(--btc-text)}
 section{padding:3rem 0;border-top:1px solid var(--line)}
 h2{font:800 clamp(1.6rem,4vw,2.2rem)/1.1 'Bricolage Grotesque',sans-serif;margin:0 0 .5rem}
 .intro{color:var(--muted);margin:0 0 1.6rem;max-width:40rem}
-.moments{list-style:none;margin:0;padding:0;display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(19rem,1fr))}
-.moments li{background:var(--paper);border:2px solid var(--line);border-radius:1rem;padding:1.2rem}
-.moments h3{font:800 1.15rem 'Bricolage Grotesque',sans-serif;margin:0 0 .35rem}
-.moments p{margin:0;color:var(--muted)}
-.moments li::before{content:"";display:block;width:2.4rem;height:.3rem;border-radius:.2rem;background:var(--btc);margin-bottom:.8rem}
-.stories{display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(19rem,1fr))}
-.story{background:var(--paper);border-radius:1rem;padding:1.2rem;border:2px solid var(--line)}
-.story img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:.7rem;margin-bottom:.8rem}
-.story blockquote{margin:0 0 .6rem;font-size:1.05rem}
-.story .who{color:var(--muted);font-size:.92rem}
-.empty{background:var(--paper);border:2px dashed var(--line);border-radius:1rem;padding:1.4rem;max-width:40rem}
 .steps{counter-reset:s;display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(18rem,1fr));list-style:none;margin:0;padding:0}
 .steps li{counter-increment:s;background:var(--paper);border-radius:1rem;padding:1.2rem;border:2px solid var(--line)}
 .steps li::before{content:counter(s);font:800 1.6rem 'Bricolage Grotesque',sans-serif;color:var(--btc)}
@@ -60,10 +49,12 @@ h2{font:800 clamp(1.6rem,4vw,2.2rem)/1.1 'Bricolage Grotesque',sans-serif;margin
 .help b{font:800 1.15rem 'Bricolage Grotesque',sans-serif}
 .help span{color:var(--muted)}
 .help em{font-style:normal;font-weight:800;color:var(--btc-text)}
-.give{background:var(--ink);color:#fff;border-radius:1.2rem;padding:2rem;margin:3rem 0;display:grid;gap:1rem;grid-template-columns:1fr auto;align-items:center}
-.give h2{color:#fff}
-.give :focus-visible{outline-color:#fff}
-.give p{margin:0;color:#C9D5EA}
+.help ul{margin:.3rem 0 .4rem;padding-left:1.2rem;color:var(--muted);font-size:.96rem}
+.help .when{font-size:.92rem}
+.faq{max-width:46rem}
+.faq details{border-bottom:1px solid var(--line);padding:.9rem 0}
+.faq summary{font-weight:700;cursor:pointer}
+.faq p{margin:.5rem 0 0;color:var(--muted)}
 footer{padding:2rem 0 3rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line)}
 footer a{color:var(--muted);display:inline-block;padding:.6rem 0}
 .reveal{opacity:0;transform:translateY(.8rem);transition:opacity .6s ease,transform .6s ease}
@@ -82,13 +73,13 @@ footer a{color:var(--muted);display:inline-block;padding:.6rem 0}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">VA</a><a href="/bitcoin" aria-current="page"><span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/products">Products</a></nav></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin" aria-current="page">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a></nav></div>
 
   <div class="hero">
-    <div class="eyebrow">Bitcoin community education</div>
-    <h1>Shaping the future of money, <em>one conversation at a time.</em></h1>
-    <p class="lead">I teach people and businesses in my community to earn, save and pay in Bitcoin instead of fiat currency. These are the moments, the people and the networks doing that work.</p>
-    <div class="ctas"><a class="btn btc" href="/donate"><span class="lbl">Donate to <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span> education</span></a><a class="btn" href="/lightning"><span class="lbl">Start accepting <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></span></a></div>
+    <div class="eyebrow">Bitcoin for your business</div>
+    <h1>Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span> in your business, <em>starting today.</em></h1>
+    <p class="lead">A Lightning address and a QR your customers can scan, set up the same day. Or a full setup with checkout, invoices and books in your own currency. Your keys always stay with you.</p>
+    <div class="ctas"><a class="btn dark" href="/lightning" id="start">Get a Lightning address</a></div>
     <svg class="btc-art" viewBox="0 0 320 260" aria-hidden="true" focusable="false">
      <path d="M40 60L130 30L250 50M40 60L70 170L150 230L280 175L250 50M130 30L190 140M70 170L190 140L280 175M150 230L190 140L250 50" fill="none" stroke="#274C77" stroke-width="2" stroke-opacity=".45"/>
      <path class="btc-route" d="M70 170C110 205 160 175 190 140S235 70 250 50" fill="none" stroke="#EA5158" stroke-width="5" stroke-linecap="round"/>
@@ -107,52 +98,40 @@ footer a{color:var(--muted);display:inline-block;padding:.6rem 0}
 </div>
 
 <section><div class="wrap">
-  <h2 class="reveal">Moments</h2>
-  <p class="intro reveal">Communities, bootcamps and the infrastructure that makes Bitcoin practical where I live and work.</p>
-  <ol class="moments" id="moments"></ol>
-</div></section>
-
-<section><div class="wrap">
-  <h2 class="reveal">Friends using <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></h2>
-  <p class="intro reveal">How people I know use Bitcoin at work and in daily life.</p>
-  <div id="stories"></div>
-</div></section>
-
-<section><div class="wrap">
-  <h2 class="reveal">Start here: three steps</h2>
-  <p class="intro reveal">Free, practical and in the right order. Everything else builds on these.</p>
-  <ol class="steps" id="steps"></ol>
-</div></section>
-
-<section><div class="wrap">
-  <h2 class="reveal">Want help doing it?</h2>
+  <h2 class="reveal">Two ways to start</h2>
   <p class="intro reveal">Fixed prices, paid in Bitcoin, set up with you so you understand every step.</p>
   <div class="help" id="help"></div>
 </div></section>
 
-<div class="wrap">
-  <div class="give reveal">
-    <div><h2>Help more people own their money</h2><p id="raised">Every donation funds Bitcoin education in the community.</p></div>
-    <a class="btn btc" href="/donate">Donate in sats</a>
-  </div>
-</div>
+<section><div class="wrap">
+  <h2 class="reveal">How it works</h2>
+  <ol class="steps">
+    <li class="reveal"><h3>Pick a setup and pay</h3><p>The price is fixed and shown up front. Pay with any Bitcoin wallet.</p></li>
+    <li class="reveal"><h3>We set it up with you</h3><p>On your phone, and where you sell, step by step, so you can run it yourself.</p></li>
+    <li class="reveal"><h3>Your customers pay you</h3><p>Show the QR or send an invoice. The money goes straight to your own wallet.</p></li>
+  </ol>
+</div></section>
 
-<footer><div class="wrap">© <span id="yr">2026</span> Altradits · <a href="/va">Hire a VA</a> · <a href="/products">Products</a> · <a href="/donate">Donate</a> · <a href="/hunt">Treasure hunt</a></div></footer>
+<section><div class="wrap"><div class="faq">
+  <h2 class="reveal">Before you pay</h2>
+  <details class="reveal"><summary>Do you ever hold my Bitcoin or my keys?</summary><p>No, never. The wallet is yours, the backup is yours, and payments go straight to you. We never ask for your recovery words.</p></details>
+  <details class="reveal"><summary>What do I need?</summary><p>For a Lightning address: your phone. For the full setup: access to where you sell, such as your website, shop or invoices.</p></details>
+  <details class="reveal"><summary>How do I keep my books in my own currency?</summary><p>The full setup includes an accounting sheet that records each payment in your local currency.</p></details>
+  <details class="reveal"><summary>What if it doesn't work as promised?</summary><p>It's fixed free for 14 days after delivery.</p></details>
+</div></div></section>
+
+<footer><div class="wrap">© <span id="yr">2026</span> Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/donate">Donate to Bitcoin education</a> · <a href="/hunt">Treasure hunt</a></div></footer>
 
 <script type="module">
-import { MOMENTS, STORIES, FIRST_STEPS } from "/data/community.js";
-import { orderable, slugFor } from "/data/catalog.js";
+import { orderable, orderPath } from "/data/catalog.js";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 $("#yr").textContent = new Date().getFullYear();
-$("#moments").innerHTML = MOMENTS.map((m) => `<li class="reveal"><h3>${esc(m.title)}</h3><p>${esc(m.text)}</p></li>`).join("");
-$("#stories").innerHTML = STORIES.length
-  ? `<div class="stories">${STORIES.map((s) => `<figure class="story reveal">${s.photo ? `<img src="${esc(s.photo)}" alt="${esc(s.name)}" loading="lazy">` : ""}<blockquote>${esc(s.story)}</blockquote><figcaption class="who"><b>${esc(s.name)}</b>, ${esc(s.role)} · ${esc(s.place)}</figcaption></figure>`).join("")}</div>`
-  : `<div class="empty reveal"><b>The first stories are being collected.</b><p style="margin:.4rem 0 0;color:var(--muted)">Do you use Bitcoin at work or in daily life? Send your story to <a href="mailto:hello@altradits.com?subject=My%20Bitcoin%20story">hello@altradits.com</a> and it may appear here, with your permission.</p></div>`;
-$("#steps").innerHTML = FIRST_STEPS.map((s) => `<li class="reveal"><h3>${esc(s.title)}</h3><p>${esc(s.text)}</p></li>`).join("");
-const offer = (id, line) => { const o = orderable(id); return o ? `<a class="reveal" href="/${slugFor(id)}"><b>${esc(o.name)}</b><span>${esc(line)}</span><em>$${o.price}${o.type === "monthly" ? "/month" : ""}</em><span class="go">Book it →</span></a>` : ""; };
-$("#help").innerHTML = offer("q-lightning", "A Lightning address so customers can pay you, set up and tested the same day.") + offer("bitcoin", "Wallets, Lightning and payments set up for your business, with your team trained.");
-try { const d = await (await fetch("/api/donate")).json(); if (d.raised > 0) $("#raised").textContent = `$${d.raised.toLocaleString("en-US")} raised from ${d.donors} donor${d.donors === 1 ? "" : "s"} so far for Bitcoin education in the community.`; } catch {}
+// Offers, prices and deliverables come from the catalog, so they match the order page.
+const offer = (id, line) => { const o = orderable(id); return o ? `<a class="reveal" href="${orderPath(id)}"><b>${esc(o.name)}</b><span>${esc(line)}</span><ul>${o.deliverables.map((d) => `<li>${esc(d)}</li>`).join("")}</ul><span class="when">${esc(o.delivery)}</span><em>$${o.price}</em><span class="go">Order it →</span></a>` : ""; };
+$("#help").innerHTML = offer("q-lightning", "Start taking Bitcoin payments today.") + offer("bitcoin", "Checkout, invoices and clean books, with your team shown how.");
+const ln = orderable("q-lightning");
+if (ln) { $("#start").href = orderPath(ln.id); $("#start").textContent = `Get a Lightning address · $${ln.price}`; }
 const io = "IntersectionObserver" in window ? new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .15 }) : null;
 document.querySelectorAll(".reveal").forEach((el) => (io ? io.observe(el) : el.classList.add("in")));
 </script>
