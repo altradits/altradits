@@ -421,7 +421,11 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                         <input
                           type="text"
                           value={newHandle}
+                          name="yb-handle"
                           autoComplete="off"
+                          data-lpignore="true"
+                          data-1p-ignore="true"
+                          spellCheck={false}
                           onChange={(e) => setNewHandle(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 20))}
                           placeholder="username"
                           className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] pr-28"
@@ -452,6 +456,10 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                         type="password"
                         inputMode="numeric"
                         maxLength={6}
+                        name="yb-walletpin"
+                        autoComplete="new-password"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
                         value={walletPin}
                         onChange={(e) => setWalletPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.4em]"
@@ -464,7 +472,11 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                           type="password"
                           inputMode="numeric"
                           maxLength={6}
-                          value={walletPinConfirm}
+                          name="yb-walletpinconfirm"
+                        autoComplete="new-password"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                        value={walletPinConfirm}
                           onChange={(e) => setWalletPinConfirm(e.target.value.replace(/\D/g, '').slice(0, 6))}
                           className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.4em]"
                         />
