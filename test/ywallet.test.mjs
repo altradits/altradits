@@ -362,3 +362,12 @@ test("buy with M-Pesa: the prompt goes out, the sats are credited once when Safa
     assert.equal((await call("POST", "mpesa/stkpush", { phone: "0712345678", amount: 100 })).status, 501);
   } finally { globalThis.fetch = realFetch; delete process.env.YEBENTE_MPESA_BUY; lnd.close(); }
 });
+
+test("switches accept on / true / yes / 1 in any case, with stray spaces or quotes", async () => {
+  for (const v of ["on", "On", "ON ", " true", '"yes"', "1"]) { process.env.YEBENTE_WALLETS = v; assert.equal(yw.walletsOn(), true, v); }
+  for (const v of ["", "off", "no", "0", "onn"]) { process.env.YEBENTE_WALLETS = v; assert.equal(yw.walletsOn(), false, v); }
+  process.env.YEBENTE_WALLETS = "On ";
+  const h = await (await call("GET", "health")).json();
+  assert.equal(h.wallets, true);
+  process.env.YEBENTE_WALLETS = "on";
+});

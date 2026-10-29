@@ -223,8 +223,8 @@ export async function GET(request) {
     orders30d: proposals.filter((p) => !p.donation && Date.now() - Date.parse(p.createdAt) < 30 * 864e5).length,
     // Ye₿ente wallets: what Altradits owes its wallet holders vs what the node can pay out.
     yebente: await (async () => {
-      if (process.env.YEBENTE_WALLETS !== "on") return null;
-      const [{ liabilities }, { outboundSats }] = await Promise.all([import("../lib/ywallet.js"), import("../lib/lightning.js")]);
+      const [{ liabilities, walletsOn }, { outboundSats }] = await Promise.all([import("../lib/ywallet.js"), import("../lib/lightning.js")]);
+      if (!walletsOn()) return null;
       const owed = await liabilities();
       return { wallets: owed.wallets, owedSats: owed.sats, outboundSats: await outboundSats() };
     })().catch(() => null),

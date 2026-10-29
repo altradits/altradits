@@ -33,8 +33,9 @@ import crypto from "node:crypto";
 const env = (k) => String(process.env[k] || "").trim();
 const DARAJA = () => (env("MPESA_ENVIRONMENT") === "production" ? "https://api.safaricom.co.ke" : "https://sandbox.safaricom.co.ke");
 const darajaReady = () => Boolean(env("MPESA_CONSUMER_KEY") && env("MPESA_CONSUMER_SECRET"));
-const buyOn = () => env("YEBENTE_MPESA_BUY") === "on" && darajaReady() && Boolean(env("MPESA_SHORTCODE") && env("MPESA_PASSKEY") && env("YEBENTE_CALLBACK_SECRET"));
-const depositsOn = () => env("YEBENTE_NODE_DEPOSITS") === "on" && Boolean(env("LND_REST_URL") && env("LND_INVOICE_MACAROON"));
+const switchOn = (k) => ["on", "true", "yes", "1"].includes(env(k).replace(/^["']|["']$/g, "").toLowerCase());
+const buyOn = () => switchOn("YEBENTE_MPESA_BUY") && darajaReady() && Boolean(env("MPESA_SHORTCODE") && env("MPESA_PASSKEY") && env("YEBENTE_CALLBACK_SECRET"));
+const depositsOn = () => switchOn("YEBENTE_NODE_DEPOSITS") && Boolean(env("LND_REST_URL") && env("LND_INVOICE_MACAROON"));
 const site = () => (env("SITE_URL") || "https://altradits.com").replace(/\/$/, "");
 
 const NOT_CONFIGURED = "M-Pesa credentials not configured. Set MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET.";
@@ -271,7 +272,7 @@ const sub = (request) => decodeURIComponent(new URL(request.url).pathname.replac
 
 export async function GET(request) {
   const path = sub(request);
-  if (path === "health") return json({ status: "ok", service: "yebente", environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), deposits: depositsOn(), timestamp: Date.now() });
+  if (path === "health") return json({ status: "ok", service: "yebente", wallets: switchOn("YEBENTE_WALLETS"), environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), deposits: depositsOn(), timestamp: Date.now() });
   const inv = path.match(/^lightning\/invoice-status\/([\w-]+)$/);
   if (inv) return invoiceStatus(inv[1]);
   const lp = path.match(/^lnurlp\/([a-z0-9._-]{3,20})$/) || path.match(/^lnurl\/([a-z0-9._-]{3,20})$/);
