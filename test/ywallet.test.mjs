@@ -147,7 +147,7 @@ async function fakeLnd() {
       res.writeHead(404).end("{}");
     });
   });
-  await new Promise((r) => lnd.listen(0, "localhost", r));
+  await new Promise((r) => lnd.listen(0, "127.0.0.1", r));
   Object.assign(process.env, { LND_REST_URL: `https://localhost:${lnd.address().port}`, LND_INVOICE_MACAROON: MAC, LND_TLS_CERT: fs.readFileSync("cert.pem").toString("base64") });
 }
 
