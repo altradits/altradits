@@ -63,6 +63,20 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   // Tando live bounds state
   const [tandoBounds, setTandoBounds] = useState<TandoBoundsResult | null>(null);
 
+  // Fetch live Tando bounds when phone changes. Hooks run before the early
+  // return below, in the same order on every render (React error #310).
+  useEffect(() => {
+    if (isOpen && rail === 'mpesa' && isValidKenyanPhone(phone) && isNetworkOnline()) {
+      fetchTandoBounds(phone).then((bounds) => {
+        if (bounds.success) {
+          setTandoBounds(bounds);
+        }
+      });
+    } else {
+      setTandoBounds(null);
+    }
+  }, [isOpen, phone, rail]);
+
   if (!isOpen) return null;
 
   const currentRate = rail === 'mpesa' ? rates.btcKes : rates.btcEtb;
@@ -117,19 +131,6 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   const totalSatsDeducted = satsRequired + satsFee;
   const isInsufficientSats = totalSatsDeducted > availableSats;
   const currentlyOnline = isNetworkOnline();
-
-  // Fetch live Tando bounds when phone changes
-  useEffect(() => {
-    if (rail === 'mpesa' && isValidKenyanPhone(phone) && currentlyOnline) {
-      fetchTandoBounds(phone).then((bounds) => {
-        if (bounds.success) {
-          setTandoBounds(bounds);
-        }
-      });
-    } else {
-      setTandoBounds(null);
-    }
-  }, [phone, rail, currentlyOnline]);
 
   const getRecipientDisplay = () =>
     rail === 'mpesa' ? formatKenyanDisplayPhone(phone) : formatEthiopianDisplayPhone(phone);
