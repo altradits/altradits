@@ -371,3 +371,43 @@ test("switches accept on / true / yes / 1 in any case, with stray spaces or quot
   assert.equal(h.wallets, true);
   process.env.YEBENTE_WALLETS = "on";
 });
+
+// ---- recovery by email (option 2)
+test("email recovery: a confirmed email gets a one-time link; the old devices are signed out and large payments wait 24 h", async () => {
+  const store = await import("../lib/store.js");
+  const sent = async () => store.getMany("email", await store.listIds("emails", 50));
+  const w = await (await call("POST", "wallet/create", { pin: "171717", handle: "zawadi", email: "Zawadi@Example.org" })).json();
+  assert.equal(w.wallet.emailPending, "zawadi@example.org");
+  assert.equal(w.wallet.email, null);
+  const confirm = (await sent()).find((e) => e.subject === "Confirm your Ye₿ente recovery email");
+  assert.equal(confirm.status, "logged"); // sent straight away, not held for approval
+  // Before confirming, recovery sends nothing.
+  await call("POST", "wallet/recover-email", { email: "zawadi@example.org" });
+  assert.ok(!(await sent()).some((e) => /^Recover your Ye₿ente wallet/.test(e.subject)));
+  const t = new URL(confirm.cta.url).searchParams.get("t");
+  assert.equal((await call("GET", `wallet/email-confirm?t=${t}`)).status, 200);
+  assert.equal((await call("GET", `wallet/email-confirm?t=${t}`)).status, 410); // once
+  assert.equal((await (await call("GET", "wallet/me", null, w.token)).json()).wallet.email, "zawadi@example.org");
+  await yw.credit({ walletId: w.wallet.id, sats: 5000, kind: "receive", ref: "fund-zawadi" });
+
+  // Same answer for an unknown email.
+  const unknown = await (await call("POST", "wallet/recover-email", { email: "nobody@example.org" })).json();
+  const known = await (await call("POST", "wallet/recover-email", { email: "ZAWADI@example.org" })).json();
+  assert.deepEqual(unknown, known);
+  const link = (await sent()).find((e) => e.subject === "Recover your Ye₿ente wallet zawadi");
+  assert.match(link.cta.url, /\/yebente\?recover=/);
+  const token = new URL(link.cta.url).searchParams.get("recover");
+
+  const done = await (await call("POST", "wallet/recover-email/finish", { token, pin: "181818" })).json();
+  assert.equal(done.success, true);
+  assert.ok(done.wallet.holdUntil);
+  assert.equal((await call("POST", "wallet/recover-email/finish", { token, pin: "181818" })).status, 410); // one use
+  assert.equal((await call("GET", "wallet/me", null, w.token)).status, 401); // the old phone is signed out
+  // The 24-hour hold: small payments go, larger ones wait.
+  assert.equal((await call("POST", "wallet/send", { to: "juma", sats: 500, pin: "181818" }, done.token)).status, 200);
+  assert.equal((await call("POST", "wallet/send", { to: "juma", sats: 2000, pin: "181818" }, done.token)).status, 423);
+  assert.ok((await sent()).some((e) => e.subject === "Your Ye₿ente wallet zawadi was recovered" && e.to === "zawadi@example.org"));
+  // Changing the email needs the PIN.
+  assert.equal((await call("POST", "wallet/email", { email: "new@example.org", pin: "000000" }, done.token)).status, 403);
+  assert.equal((await call("POST", "wallet/email", { email: "new@example.org", pin: "181818" }, done.token)).status, 200);
+});

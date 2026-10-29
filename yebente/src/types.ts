@@ -36,6 +36,7 @@ export interface UserWallet {
   insertedAt?: number;
   lastSyncedAt?: number;
   onChainVerified?: boolean;
+  recoveryEmail?: string;
 }
 
 export interface Transaction {
