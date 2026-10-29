@@ -199,6 +199,12 @@ export async function GET(request) {
     })(),
     activeClients: leads.filter((l) => l.stage === "active").length,
     pendingApprovals: approvals.filter((a) => a.status === "pending").length,
+    // Paid to the backup wallet while the node was down, not yet moved to the node.
+    toMove: (() => {
+      const w = proposals.filter((p) => p.status === "paid" && p.payment?.held && p.payment.wallet);
+      const live = (p) => [...(p.sweeps || []), p.sweep].some((s) => s && Date.parse(s.expiresAt) > Date.now());
+      return { count: w.length, sats: w.reduce((t, p) => t + (Number(p.payment.expectedSats || p.payment.sats) || 0), 0), ready: w.filter(live).length };
+    })(),
     byStage: Object.fromEntries(STAGES.map((s) => [s, leads.filter((l) => l.stage === s).length])),
   };
 
