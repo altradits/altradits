@@ -121,6 +121,9 @@ async function hakikisha(request) {
   const { shortCode, accountNumber, phone } = await readBody(request);
   const code = String(shortCode || "").trim();
   if (!/^\d{5,7}$/.test(code)) return json({ success: false, verified: false, error: "ShortCode is required." }, 400);
+  // Each lookup uses the Daraja quota: at most 30 an hour from one connection.
+  const ipKey = crypto.createHash("sha256").update(clientIp(request) || "").digest("hex").slice(0, 16);
+  if ((await hit(`rl:yb:hak:${ipKey}`, 3600)) > 30) return json({ success: false, verified: false, error: `Safaricom C2B Hakikisha lookup failed for ShortCode ${code}.` }, 429);
   const url = env("MPESA_ENVIRONMENT") === "production" ? "https://api.safaricom.co.ke/c2b_hakikisha/v1/notify" : "https://sandbox.safaricom.co.ke/c2b_hakikisha/v1/notify";
   const { ok, data } = await daraja(url.replace(DARAJA(), ""), { ShortCode: code, AccountNumber: accountNumber ? String(accountNumber).trim() : "", PhoneNumber: phone ? formatKenyanPhone(phone) : "" });
   const name = data?.OrgName || data?.BusinessName || data?.name;

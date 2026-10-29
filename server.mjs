@@ -85,6 +85,8 @@ function sendStatic(req, res, file, headers) {
   res.writeHead(200, headers).end(req.method === "HEAD" ? undefined : body);
 }
 
+const YEBENTE_CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+
 function publicUrl(req) {
   const proto = (req.headers["x-forwarded-proto"] || (req.socket.encrypted ? "https" : "http")).split(",")[0].trim();
   const host = (req.headers["x-forwarded-host"] || req.headers.host || `localhost:${PORT}`).split(",")[0].trim();
@@ -139,6 +141,8 @@ const server = http.createServer(async (req, res) => {
     const headers = { ...SECURITY, "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" };
     if (/^\/(admin|proposal|portal|team|collect)\.html$/.test(rel)) headers["X-Robots-Tag"] = "noindex";
     if (/^\/(admin|portal|collect|proposal|team)\.html$/.test(rel)) headers["Content-Security-Policy"] = cspFor(file);
+    // Ye₿ente: the same policy as yebente/public/.htaccess (Apache serves it in production).
+    if (rel === "/yebente/app/index.html") Object.assign(headers, { "Content-Security-Policy": YEBENTE_CSP, "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer" });
     // Font files never change under the same name: keep them a year.
     headers["Cache-Control"] = rel.endsWith(".woff2") || rel.startsWith("/yebente/app/assets/") ? "public, max-age=31536000, immutable" : rel.startsWith("/assets/") || rel.startsWith("/yebente/app/fonts/") ? "public, max-age=86400" : "no-cache";
     if (rel.endsWith(".html")) import("./lib/visits.js").then((v) => v.recordVisit(req, url, rel)).catch(() => {});
