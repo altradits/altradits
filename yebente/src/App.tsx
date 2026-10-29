@@ -200,7 +200,7 @@ export default function App() {
 
           {/* Core wallet and payment actions */}
           <ActionGrid
-            onBuyBtc={() => handleRequireWalletAction(() => setActiveModal('buy_btc'))}
+            onBuyBtc={() => setActiveModal(hasServerWallet() ? 'buy_btc' : 'wallet_settings')}
             onSendMpesa={() => handleRequireWalletAction(() => setActiveModal('send_mpesa'))}
             onReceiveBtc={() => handleRequireWalletAction(() => setActiveModal('receive_btc'))}
             onSendBtc={() => handleRequireWalletAction(() => setActiveModal('send_btc'))}

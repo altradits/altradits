@@ -5,7 +5,8 @@
 // switches it on:
 //   GET  health                      always
 //   POST mpesa/hakikisha/c2b         with Daraja credentials (a read-only name lookup)
-//   POST mpesa/stkpush, mpesa/query  with Daraja credentials and YEBENTE_MPESA_BUY=on
+//   POST mpesa/stkpush               off: it took shillings and delivered nothing (buy into a wallet instead)
+//   POST mpesa/query                  with Daraja credentials and YEBENTE_MPESA_BUY=on
 //   POST mpesa/callback/<secret>     Safaricom's STK result (secret: YEBENTE_CALLBACK_SECRET)
 //   POST lightning/create-invoice    with YEBENTE_NODE_DEPOSITS=on (invoices on the Altradits node)
 //   GET  lightning/invoice-status/x  same
@@ -17,6 +18,8 @@
 //                                          (incl. phone@bitcoin.co.ke = M-Pesa) or an invoice
 //   POST wallet/invoice {sats}            an invoice on the node for this wallet
 //   GET  wallet/invoice/<hash>            credited once paid
+//   POST wallet/buy {kes, phone}          M-Pesa STK Push for sats into this wallet (YEBENTE_MPESA_BUY=on)
+//   GET  wallet/buy/<checkoutRequestId>   credited once Safaricom confirms
 //   GET  lnurlp/<handle> (= /.well-known/lnurlp/<handle>) and lnurl/<handle>?amount=
 //                                          handle@altradits.com as a Lightning address
 // Every payout path (Lightning or on-chain disbursement, M-Pesa B2C/B2B,
@@ -77,9 +80,10 @@ async function daraja(path, payload) {
 const stkPassword = (ts) => Buffer.from(`${env("MPESA_SHORTCODE")}${env("MPESA_PASSKEY")}${ts}`).toString("base64");
 const safeId = (s) => String(s || "").replace(/[^\w-]/g, "").slice(0, 80);
 
-async function stkPush(request) {
+// Sends the STK prompt. Only for a wallet purchase (walletBuy below).
+async function stkPush(request, body) {
   if (!buyOn()) return off(NOT_CONFIGURED);
-  const { phone, amount, accountReference, transactionDesc } = await readBody(request);
+  const { phone, amount, accountReference, transactionDesc } = body;
   if (!phone || !amount || Number(amount) <= 0) return json({ success: false, error: "Valid phone and amount are required." }, 400);
   const formatted = formatKenyanPhone(phone);
   if (!/^254[71]\d{8}$/.test(formatted)) return json({ success: false, error: "Valid phone and amount are required." }, 400);
@@ -122,6 +126,8 @@ async function callback(request, secret) {
   if (id) {
     const receipt = (stk.CallbackMetadata?.Item || []).find((i) => i?.Name === "MpesaReceiptNumber")?.Value;
     await setJSON(`yb:cb:${id}`, { resultCode: stk.ResultCode, resultDesc: String(stk.ResultDesc || "").slice(0, 200), mpesaReceiptNumber: receipt ? String(receipt) : null, at: new Date().toISOString() });
+    const { finishBuy } = await import("../lib/ywallet.js");
+    await finishBuy(id, { resultCode: stk.ResultCode, receipt: receipt ? String(receipt) : null });
   }
   return json({ ResultCode: 0, ResultDesc: "Accepted" });
 }
@@ -206,6 +212,16 @@ async function walletPost(request, action) {
     if ((await hit(`rl:yb:restore:${ipKey(request)}`, 3600)) > 10) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
     return json({ success: true, ...(await yw.restoreWallet({ recovery: body.recovery, pin: body.pin })) });
   }
+  if (action === "buy") {
+    const w = await me(request);
+    if (!buyOn()) return off(NOT_CONFIGURED);
+    const quote = await yw.quoteBuy(w, body.kes);
+    const r = await stkPush(request, { phone: body.phone, amount: quote.kes, accountReference: "YEBENTE", transactionDesc: "Buy Sats" });
+    const d = await r.json();
+    if (!d.success) return json(d, r.status);
+    await yw.startBuy(w, quote, d.checkoutRequestId);
+    return json({ ...d, satsAmount: quote.sats, kes: quote.kes, rate: quote.rate });
+  }
   if (action === "invoice") {
     const w = await me(request);
     if ((await hit(`rl:yb:inv:${w.id}`, 3600)) > 60) return json({ success: false, error: "Too many invoices. Try again later." }, 429);
@@ -226,6 +242,18 @@ async function walletGet(request, action) {
     // Credit anything paid while the app was closed before showing the balance.
     for (const h of await listIds("ywinvopen", 200)) { const inv = await getJSON(`ywinv:${h}`); if (inv?.walletId === w.id) await yw.settleInvoice(h).catch(() => {}); }
     return json({ success: true, wallet: yw.publicWallet((await yw.walletForToken(bearer(request))) || w) });
+  }
+  const buy = action.match(/^buy\/([\w-]{6,80})$/);
+  if (buy) {
+    const rec = await getJSON(`ywbuy:${buy[1]}`);
+    if (!rec || rec.walletId !== w.id) return json({ success: false, error: "Not found" }, 404);
+    if (rec.state === "pending" && buyOn()) {
+      // Safaricom's callback may not have arrived: ask Daraja directly.
+      const q = await (await stkQuery(new Request(request.url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ checkoutRequestId: buy[1] }) }))).json();
+      if (q.success && q.resultCode !== undefined) await yw.finishBuy(buy[1], { resultCode: q.resultCode, receipt: q.mpesaReceiptNumber });
+    }
+    const now = await getJSON(`ywbuy:${buy[1]}`);
+    return json({ success: true, state: now.state, resultCode: now.state === "paid" ? 0 : now.state === "failed" ? 1 : 49, mpesaReceiptNumber: now.receipt || null, satsAmount: now.sats, inProgress: now.state === "pending" });
   }
   const inv = action.match(/^invoice\/([0-9a-f]{64})$/);
   if (inv) {
@@ -248,7 +276,7 @@ export async function GET(request) {
   if (inv) return invoiceStatus(inv[1]);
   const lp = path.match(/^lnurlp\/([a-z0-9._-]{3,20})$/) || path.match(/^lnurl\/([a-z0-9._-]{3,20})$/);
   if (lp) return lnurlPay(request, lp[1], path.startsWith("lnurl/"));
-  const wg = path.match(/^wallet\/(me|history|invoice\/[0-9a-f]{64})$/);
+  const wg = path.match(/^wallet\/(me|history|invoice\/[0-9a-f]{64}|buy\/[\w-]{6,80})$/);
   if (wg) { try { return await walletGet(request, wg[1]); } catch (e) { return json({ success: false, error: e.message }, e.status || 500); } }
   if (PAYOUTS.test(path)) return off(NO_NODE);
   return json({ success: false, error: "Not found" }, 404);
@@ -257,11 +285,11 @@ export async function GET(request) {
 export async function POST(request) {
   const path = sub(request);
   try {
-    if (path === "mpesa/stkpush") return await stkPush(request);
+    if (path === "mpesa/stkpush") return off("Create a Ye₿ente wallet first.");
     if (path === "mpesa/query") return await stkQuery(request);
     if (path === "mpesa/hakikisha/c2b") return await hakikisha(request);
     if (path === "lightning/create-invoice") return await createDepositInvoice(request);
-    const wp = path.match(/^wallet\/(create|restore|send|invoice)$/);
+    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy)$/);
     if (wp) return await walletPost(request, wp[1]);
     const cb = path.match(/^mpesa\/callback\/([\w-]{16,128})$/);
     if (cb) return await callback(request, cb[1]);
