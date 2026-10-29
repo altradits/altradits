@@ -48,7 +48,7 @@ function cspFor(file) {
   const html = fs.readFileSync(file, "utf8");
   const hashes = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => `'sha256-${crypto.createHash("sha256").update(m[1]).digest("base64")}'`);
   const csp = [`default-src 'self'`, `script-src 'self' ${hashes.join(" ")}`, `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`, `font-src https://fonts.gstatic.com`,
-    `img-src 'self' data: https:`, `connect-src 'self'`, `object-src 'none'`, `base-uri 'none'`, `form-action 'self'`, `frame-ancestors 'none'`].join("; ");
+    `img-src 'self' data: https:`, `frame-src 'self' blob:`, `connect-src 'self'`, `object-src 'none'`, `base-uri 'none'`, `form-action 'self'`, `frame-ancestors 'none'`].join("; ");
   cspCache.set(file, { mtime, csp });
   return csp;
 }
