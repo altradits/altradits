@@ -63,6 +63,18 @@ export async function GET(request) {
     return json({ profile: publicProfile(await getProfile()), jobs, aiReady: jobsLive(), applicant: await getApplicant() });
   }
 
+  // A receipt already issued, by its number: the same PDF the client got, rebuilt
+  // from its record (never a new number), to view, download or share.
+  if (u.searchParams.get("view") === "receipt") {
+    const no = clean(u.searchParams.get("no"), 20);
+    const p = no && (await getMany("proposal", await listIds("proposals", 100000))).find((x) => x.receipt?.no === no);
+    const lead = p && (await getLead(p.leadId));
+    if (!lead) return json({ error: "No receipt with that number." }, 404);
+    const { receiptPdf } = await import("../lib/finance.js");
+    return new Response(receiptPdf(lead, p, no), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="altradits-receipt-${no}.pdf"`,
+      "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
+  }
+
   if (u.searchParams.get("view") === "cvfile") {
     const p = await getProfile();
     const buf = readCvFile(p);

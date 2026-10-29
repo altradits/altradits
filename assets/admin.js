@@ -7,6 +7,8 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 // The admin is in sats only. Amounts priced in dollars (what clients see) are
 // converted at the current BTC rate and marked ≈; payments use the sats received.
 const sats = (n) => `${Math.round(Number(n) || 0).toLocaleString("en-US")} sats`;
+// A receipt number opens that receipt (the pop-up at the end of this file).
+const rcpt = (no) => no ? `<button type="button" class="rcpt" data-receipt="${esc(no)}" title="Open receipt ${esc(no)}">${esc(no)}</button>` : "";
 // Dollar amounts inside agent-written summaries, shown in sats.
 const satsText = (s) => String(s ?? "").replace(/\$(\d[\d,]*(?:\.\d+)?)/g, (m, n) => money(n.replace(/,/g, "")));
 const money = (usd) => (D?.btcUsd ? `≈ ${sats(((Number(usd) || 0) / D.btcUsd) * 1e8)}` : "– sats");
@@ -352,7 +354,7 @@ async function loadDonations() {
   try {
     const d = await api("?view=donations");
     $("#donTotal").textContent = `${(d.sats || 0).toLocaleString("en-US")} sats from ${d.count} donor${d.count === 1 ? "" : "s"}`;
-    $("#donList").innerHTML = d.recent.length ? `<table><thead><tr><th>When</th><th>Donor</th><th>Amount</th><th>Message</th><th>Receipt</th></tr></thead><tbody>${d.recent.map((x) => `<tr><td class="sm">${ago(x.at)}</td><td>${esc(x.name || x.email || "Anonymous")}</td><td>${(x.sats || 0).toLocaleString("en-US")} sats</td><td class="sm">${esc(x.message || "")}</td><td class="sm">${x.receipt ? esc(x.receipt) : x.email ? "pending" : "no email"}</td></tr>`).join("")}</tbody></table>` : `<p class="muted">No donations yet.</p>`;
+    $("#donList").innerHTML = d.recent.length ? `<table><thead><tr><th>When</th><th>Donor</th><th>Amount</th><th>Message</th><th>Receipt</th></tr></thead><tbody>${d.recent.map((x) => `<tr><td class="sm">${ago(x.at)}</td><td>${esc(x.name || x.email || "Anonymous")}</td><td>${(x.sats || 0).toLocaleString("en-US")} sats</td><td class="sm">${esc(x.message || "")}</td><td class="sm">${x.receipt ? rcpt(x.receipt) : x.email ? "pending" : "no email"}</td></tr>`).join("")}</tbody></table>` : `<p class="muted">No donations yet.</p>`;
   } catch {}
 }
 function renderGrowth() {
@@ -694,7 +696,7 @@ async function loadFinance() {
   const table = (rows, head) => rows.length ? `<table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>` : '<p class="muted">Nothing received yet.</p>';
   $("#finMonths").innerHTML = table(F.months.map((m) => `<tr><td>${esc(m.key)}</td><td>${satsF(m.sales)}</td><td>${satsF(m.donations)}</td><td><b>${satsF(m.sats)}</b></td></tr>`), ["Month", "Sales", "Donations", "Total"]);
   $("#finServices").innerHTML = table(F.services.map((s) => `<tr><td>${esc(s.key)}</td><td>${s.count}</td><td>${satsF(s.sats)}</td></tr>`), ["Service", "Orders", "Received"]);
-  $("#finList").innerHTML = table(F.payments.map((x) => `<tr><td>${esc(new Date(x.at).toLocaleString())}</td><td>${esc(x.receipt || "")}</td><td>${esc(x.client)}</td><td>${esc(x.what)}${x.type === "donation" ? ' <span class="stage">donation</span>' : ""}</td><td>${satsF(x.sats)}</td><td>${x.channel === "onchain" ? "On-chain" : "Lightning"}${x.wallet ? `<br><small class="muted">${esc(x.wallet)}</small>` : ""}</td><td><code title="${esc(x.reference)}">${esc(x.reference.slice(0, 12))}…</code></td></tr>`), ["Date", "Receipt", "Client", "What", "Sats", "Channel", "Reference"]);
+  $("#finList").innerHTML = table(F.payments.map((x) => `<tr><td>${esc(new Date(x.at).toLocaleString())}</td><td>${rcpt(x.receipt)}</td><td>${esc(x.client)}</td><td>${esc(x.what)}${x.type === "donation" ? ' <span class="stage">donation</span>' : ""}</td><td>${satsF(x.sats)}</td><td>${x.channel === "onchain" ? "On-chain" : "Lightning"}${x.wallet ? `<br><small class="muted">${esc(x.wallet)}</small>` : ""}</td><td><code title="${esc(x.reference)}">${esc(x.reference.slice(0, 12))}…</code></td></tr>`), ["Date", "Receipt", "Client", "What", "Sats", "Channel", "Reference"]);
 }
 async function loadHeld() {
   let H; try { H = await api("?view=held"); } catch { return; }
@@ -703,7 +705,7 @@ async function loadHeld() {
     ${x.sweep ? `<div class="row" style="align-items:flex-start;margin-top:.6rem"><div style="width:11rem;background:#fff;padding:.4rem;border-radius:.5rem">${x.sweep.qr}</div><div style="flex:1;min-width:14rem"><p class="sm" style="margin:0 0 .4rem">Order <b>${esc(x.code)}</b> only. Scan with ${esc(x.wallet || "the backup wallet")} and pay exactly ${satsF(x.sweep.sats)}; the wallet shows the note "Altradits ${esc(x.code)}". Valid until ${new Date(x.sweep.expiresAt).toLocaleString()}.</p><textarea readonly style="min-height:4rem;font-size:.75rem">${esc(x.sweep.bolt11)}</textarea></div></div>`
       : x.balanceDue ? `<p class="sm muted" style="margin:.4rem 0 0">The client has a QR for the balance; their official receipt goes out when it's paid.</p>`
       : `<div class="row" style="margin-top:.5rem;align-items:center"><label class="sm">The client sent <input type="number" min="1" step="1" value="${x.expected}" data-movesats="${esc(x.id)}" style="width:9rem"> sats</label><button class="btn primary" data-move="${esc(x.id)}">Make node invoice</button></div><p class="sm muted" style="margin:.3rem 0 0">Enter what ${esc(x.wallet || "the backup wallet")} shows they sent. Less than the order: they're asked for the balance. More: they get a credit code for the difference.</p>`}</div>`).join("") || '<p class="muted">Nothing waiting.</p>';
-  $("#heldList").insertAdjacentHTML("beforeend", H.moved.length ? `<h3 style="font-size:1rem;margin:1rem 0 .4rem">Recently moved to the node</h3><table><thead><tr><th>Order</th><th>What</th><th>Sats</th><th>Confirmed</th><th>Receipt sent to</th></tr></thead><tbody>${H.moved.map((m) => `<tr><td><span class="stage">${esc(m.code)}</span></td><td>${esc(m.title)}</td><td>${satsF(m.sats)}</td><td class="sm">${ago(m.at)}</td><td>${m.to ? `${esc(m.receipt)} → ${esc(m.to)}` : '<span class="muted">waiting for the client\'s email</span>'}</td></tr>`).join("")}</tbody></table>` : "");
+  $("#heldList").insertAdjacentHTML("beforeend", H.moved.length ? `<h3 style="font-size:1rem;margin:1rem 0 .4rem">Recently moved to the node</h3><table><thead><tr><th>Order</th><th>What</th><th>Sats</th><th>Confirmed</th><th>Receipt sent to</th></tr></thead><tbody>${H.moved.map((m) => `<tr><td><span class="stage">${esc(m.code)}</span></td><td>${esc(m.title)}</td><td>${satsF(m.sats)}</td><td class="sm">${ago(m.at)}</td><td>${m.to ? `${rcpt(m.receipt)} → ${esc(m.to)}` : '<span class="muted">waiting for the client\'s email</span>'}</td></tr>`).join("")}</tbody></table>` : "");
 }
 $("#heldList").addEventListener("click", async (e) => {
   const id = e.target.dataset.move; if (!id) return;
@@ -1048,3 +1050,24 @@ async function load(navigate = true) {
   } catch (err) { if (!navigate) throw err; }
 }
 token ? load() : showLogin();
+
+// A receipt number anywhere in the admin opens that receipt: view, download, or
+// share the PDF (WhatsApp, email or any app the device offers).
+let rcptUrl = null;
+document.addEventListener("click", async (e) => {
+  const no = e.target.closest?.("[data-receipt]")?.dataset.receipt; if (!no) return;
+  const res = await fetch(`/api/admin?view=receipt&no=${encodeURIComponent(no)}`, { headers: { Authorization: "Bearer " + token } });
+  if (!res.ok) { toast("Couldn't open that receipt.", true); return; }
+  const file = new File([await res.blob()], `altradits-receipt-${no}.pdf`, { type: "application/pdf" });
+  if (rcptUrl) URL.revokeObjectURL(rcptUrl);
+  rcptUrl = URL.createObjectURL(file);
+  $("#rcptTitle").textContent = `Receipt ${no}`;
+  $("#rcptView").src = rcptUrl;
+  Object.assign($("#rcptDl"), { href: rcptUrl, download: file.name });
+  const canShare = Boolean(navigator.canShare?.({ files: [file] }));
+  $("#rcptShare").hidden = !canShare;
+  $("#rcptShare").onclick = () => navigator.share({ files: [file], title: `Receipt ${no}` }).catch(() => {});
+  $("#rcptNote").textContent = canShare ? "Share sends the PDF to WhatsApp, email or any app on this device." : "To send it on WhatsApp, download it, then attach it in the chat.";
+  $("#rcptBox").showModal();
+});
+$("#rcptClose").addEventListener("click", () => $("#rcptBox").close());
