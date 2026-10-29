@@ -25,7 +25,8 @@ h1,h2,h3{font-family:'Bricolage Grotesque',Figtree,sans-serif;line-height:1.1;ma
 a{color:inherit}
 [hidden]{display:none!important}
 :focus-visible{outline:3px solid var(--blue);outline-offset:3px}
-.wrap{max-width:52rem;margin:0 auto;padding:1.5rem 1rem 4rem}
+.wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
+.wrap > :not(.top):not(.hero){max-width:52rem}
 .logo{font:800 1.25rem 'Bricolage Grotesque',sans-serif;text-decoration:none;display:inline-block;margin-bottom:2rem}
 h1{font-size:clamp(2rem,6vw,3.2rem);letter-spacing:-.02em}
 .lead{color:var(--muted);font-size:1.15rem;max-width:38rem;margin:1rem 0 2rem}
@@ -35,7 +36,7 @@ h1{font-size:clamp(2rem,6vw,3.2rem);letter-spacing:-.02em}
 .dept:has(input:checked){border-color:var(--blue);box-shadow:4px 4px 0 var(--blue)}
 .dept h3{font-size:1.05rem;margin:0 1.6rem .35rem 0}
 .dept p{margin:0;color:var(--muted);font-size:.9rem}
-form.card{background:var(--paper);border:2px solid var(--ink);border-radius:1.25rem;box-shadow:8px 8px 0 var(--ink);padding:1.75rem}
+form.card{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.75rem}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 1rem}
 label{display:block;margin:0 0 1rem;font-weight:600;font-size:.95rem}
 label small{font-weight:400;color:var(--muted)}
@@ -48,7 +49,7 @@ textarea{min-height:6rem;resize:vertical}
 .ok{border:2px solid var(--ok);background:color-mix(in srgb,var(--ok) 10%,white);border-radius:1rem;padding:1.25rem}
 .rules{color:var(--muted);font-size:.93rem;margin-top:1.5rem}
 .sr{position:absolute;left:-9999px}
-@media (max-width:620px){.grid{grid-template-columns:1fr}form.card{padding:1.25rem;box-shadow:4px 4px 0 var(--ink)}}
+@media (max-width:620px){.grid{grid-template-columns:1fr}form.card{padding:1.25rem}}
 .top{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.2rem 0}
 .top img{height:2.5rem;width:auto;display:block}
 .topnav{display:flex;gap:1.1rem}
@@ -63,8 +64,12 @@ textarea{min-height:6rem;resize:vertical}
 .hero .swoosh{display:block;width:min(13rem,50%);height:auto;margin:.55rem 0 .9rem}
 .hero .lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:0;max-width:36rem}
 .hero .ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
+.top{margin:0!important;padding:1.1rem 0!important}
+.sitefoot .wrap{padding-top:0;padding-bottom:0}
 *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 a:hover,.btn:hover,button:hover{transform:none!important}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:2rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.6rem 0}
 </style>
 </head>
 <body>
@@ -103,6 +108,7 @@ a:hover,.btn:hover,button:hover{transform:none!important}
   </form>
   <div class="ok" id="done" hidden><h2 style="font-size:1.3rem">Application received ✓</h2><p>Thanks! We review applications weekly and reply either way. Approved team members get a private workspace link by email.</p></div>
 </div>
+<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script type="module">
 import { DEPARTMENTS } from "/data/playbooks.js";
 const $ = (s) => document.querySelector(s);

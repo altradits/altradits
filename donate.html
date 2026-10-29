@@ -24,7 +24,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtr
 a{color:var(--blue)}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 [hidden]{display:none!important}
-.wrap{max-width:40rem;margin:0 auto;padding:1.25rem 1rem 4rem}
+.wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
+.wrap > :not(.top):not(.hero){max-width:40rem}
 .top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.75rem}
 .top img{height:2.5rem;width:auto;display:block}
 .top a.jobs{font-weight:600;text-decoration:none;color:var(--muted)}
@@ -32,7 +33,7 @@ h1{font:800 clamp(2rem,6vw,2.8rem)/1.05 'Bricolage Grotesque',sans-serif;margin:
 h1 em{font-style:normal;color:var(--btc-text)}
 .lead{color:var(--muted);font-size:1.1rem;margin:0 0 1.2rem}
 .raised{font-weight:600;margin:0 0 1.4rem}
-.card{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;box-shadow:6px 6px 0 var(--ink);padding:1.4rem}
+.card{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.4rem}
 .amounts{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin:0 0 .7rem}
 .amounts button{font:800 1.2rem 'Bricolage Grotesque',sans-serif;padding:.75rem 0;border:2px solid var(--line);border-radius:.7rem;background:var(--paper);cursor:pointer;color:var(--ink)}
 .amounts button[aria-pressed=true]{border-color:var(--btc);background:color-mix(in srgb,var(--btc) 12%,white)}
@@ -69,6 +70,8 @@ textarea{min-height:4.5rem;resize:vertical}
 .hero .swoosh{display:block;width:min(13rem,50%);height:auto;margin:.55rem 0 .9rem}
 .hero .lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:0;max-width:36rem}
 .hero .ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
+.top{margin:0!important;padding:1.1rem 0!important}
+.sitefoot .wrap{padding-top:0;padding-bottom:0}
 *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 a:hover,.btn:hover,button:hover{transform:none!important}
 </style>
