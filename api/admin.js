@@ -218,6 +218,10 @@ export async function GET(request) {
       return { count: w.length, sats: w.reduce((t, p) => t + (Number(p.payment.expectedSats || p.payment.sats) || 0), 0), ready: w.filter(live).length };
     })(),
     byStage: Object.fromEntries(STAGES.map((s) => [s, leads.filter((l) => l.stage === s).length])),
+    // Page views next to the orders they led to, over the same 30 days.
+    visits: await import("../lib/visits.js").then((v) => v.visitSummary()).catch(() => null),
+    orders30d: proposals.filter((p) => !p.donation && Date.now() - Date.parse(p.createdAt) < 30 * 864e5).length,
+    paid30d: paid.filter((p) => Date.now() - Date.parse(p.payment?.confirmedAt || p.updatedAt) < 30 * 864e5).length,
   };
 
   // The admin shows sats only: prices not yet paid are converted at this rate.
