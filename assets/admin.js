@@ -122,6 +122,20 @@ function approvalHtml(a) {
   </div>`;
 }
 
+// Page views (counted on our own server) next to the orders over the same 30 days.
+function renderVisits(s) {
+  const v = s.visits;
+  if (!v) { $("#visits").innerHTML = `<p class="muted">No visit counts yet.</p>`; return; }
+  const pages = Object.entries(v.byPage).sort((a, b) => b[1].d30 - a[1].d30);
+  const max = Math.max(1, ...v.daily.map((d) => d.views));
+  $("#visits").innerHTML = `<div class="kpis"><div class="kpi"><small>Views (7d)</small><div>${v.d7}</div></div><div class="kpi"><small>Views (30d)</small><div>${v.d30}</div></div>
+    <div class="kpi"><small>Orders (30d)</small><div>${s.orders30d}</div></div><div class="kpi"><small>Paid (30d)</small><div>${s.paid30d}</div></div></div>
+    <div class="funnel">${v.daily.map((d) => `<div class="r"><span>${esc(d.day.slice(5))}</span><span class="bar"><i style="width:${(d.views / max) * 100}%"></i></span><b>${d.views}</b></div>`).join("")}</div>
+    <div class="grid2"><table><tr><th>Page</th><th>7d</th><th>30d</th></tr>${pages.map(([p, n]) => `<tr><td>/${p === "home" ? "" : esc(p)}</td><td>${n.d7}</td><td>${n.d30}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">No views yet.</td></tr>`}</table>
+    <table><tr><th>Came from</th><th>30d</th></tr>${v.sources.map((x) => `<tr><td>${esc(x.source)}</td><td>${x.views}</td></tr>`).join("") || `<tr><td colspan="2" class="muted">No views yet.</td></tr>`}</table></div>
+    <p class="muted" style="font-size:.9rem">Counted on our own server: page, day and the site a visitor came from. No IP addresses, cookies or outside trackers. Bots are skipped.</p>`;
+}
+
 function render() {
   const s = D.stats;
   const pending = D.approvals.filter((a) => a.status === "pending");
@@ -136,6 +150,7 @@ function render() {
   ].map(([k, v]) => `<div class="kpi"><small>${k}</small><div>${v}</div></div>`).join("");
   const max = Math.max(1, ...Object.values(s.byStage));
   $("#funnel").innerHTML = STAGES.map((st) => `<div class="r"><span>${st.replace("_", " ")}</span><span class="bar"><i style="width:${(s.byStage[st] / max) * 100}%"></i></span><b>${s.byStage[st]}</b></div>`).join("");
+  renderVisits(s);
   $("#sys").innerHTML = Object.entries(D.system).map(([k, v]) => `<li><b>${esc(k)}:</b> ${esc(v)}</li>`).join("");
   renderAi(D.ai);
   $("#overviewApprovals").innerHTML = pending.length ? pending.map(approvalHtml).join("") : `<p class="muted">Nothing needs you right now. The agents have it. ☕</p>`;
