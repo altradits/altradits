@@ -38,7 +38,7 @@ before(async () => {
       res.writeHead(404).end("{}");
     });
   });
-  await new Promise((r) => lnd.listen(0, "localhost", r));
+  await new Promise((r) => lnd.listen(0, "127.0.0.1", r));
   process.env.LND_REST_URL = `https://localhost:${lnd.address().port}`;
   process.env.LND_INVOICE_MACAROON = "00";
   process.env.LND_TLS_CERT = fs.readFileSync("cert.pem").toString("base64");
