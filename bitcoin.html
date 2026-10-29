@@ -21,10 +21,11 @@ a{color:var(--blue)}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 [hidden]{display:none!important}
 .wrap{max-width:68rem;margin:0 auto;padding:0 1rem}
-.top{display:flex;justify-content:space-between;align-items:center;padding:1.1rem 0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:1.1rem 0}
 .top img{height:2.5rem;width:auto;display:block}
 .topnav{display:flex;gap:1.1rem}
-.topnav a{font-weight:600;text-decoration:none;color:var(--muted)}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap}
+@media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
 .topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
 .hero{padding:3rem 0 2.5rem;max-width:46rem}
 .eyebrow{font:700 .8rem Figtree,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--btc-text)}
@@ -32,17 +33,10 @@ h1{font:800 clamp(2.2rem,6.5vw,3.6rem)/1.03 'Bricolage Grotesque',sans-serif;mar
 h1 em{font-style:normal;color:var(--btc-text)}
 .lead{font-size:1.15rem;color:var(--muted);margin:0 0 1.6rem}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.85rem 1.3rem;border-radius:.75rem;font:700 1rem Figtree,sans-serif;text-decoration:none;border:2px solid var(--ink);color:var(--ink);background:transparent}
-.btn.btc{background:var(--btc);border-color:var(--btc)}
 .btn.dark{background:var(--ink);color:#fff}
 .ctas{display:flex;flex-wrap:wrap;gap:.6rem}
 section{padding:3rem 0;border-top:1px solid var(--line)}
 h2{font:800 clamp(1.6rem,4vw,2.2rem)/1.1 'Bricolage Grotesque',sans-serif;margin:0 0 .5rem}
-.intro{color:var(--muted);margin:0 0 1.6rem;max-width:40rem}
-.steps{counter-reset:s;display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(18rem,1fr));list-style:none;margin:0;padding:0}
-.steps li{counter-increment:s;background:var(--paper);border-radius:1rem;padding:1.2rem;border:2px solid var(--line)}
-.steps li::before{content:counter(s);font:800 1.6rem 'Bricolage Grotesque',sans-serif;color:var(--btc)}
-.steps h3{font:800 1.1rem 'Bricolage Grotesque',sans-serif;margin:.2rem 0 .3rem}
-.steps p{margin:0;color:var(--muted)}
 .help{display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(19rem,1fr))}
 .help a{display:flex;flex-direction:column;gap:.3rem;background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.2rem;text-decoration:none;color:var(--ink);box-shadow:5px 5px 0 var(--ink)}
 .help .go{font-weight:700;color:var(--blue)}
@@ -56,8 +50,8 @@ h2{font:800 clamp(1.6rem,4vw,2.2rem)/1.1 'Bricolage Grotesque',sans-serif;margin
 .faq details{border-bottom:1px solid var(--line);padding:.9rem 0}
 .faq summary{font-weight:700;cursor:pointer}
 .faq p{margin:.5rem 0 0;color:var(--muted)}
-footer{padding:2rem 0 3rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line)}
-footer a{color:var(--muted);display:inline-block;padding:.6rem 0}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:2rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.6rem 0}
 .reveal{opacity:0;transform:translateY(.8rem);transition:opacity .6s ease,transform .6s ease}
 .reveal.in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
@@ -65,8 +59,8 @@ footer a{color:var(--muted);display:inline-block;padding:.6rem 0}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 /* Hero art: a payment route across a node network to a ₿ tile */
 .wrap:has(> .hero){position:relative}
-.btc-art{display:block;width:min(100%,300px);height:auto;margin:1.75rem auto 0}
-@media (min-width:1100px){.btc-art{position:absolute;right:0;top:7.5rem;width:320px;margin:0}}
+.btc-art{display:none}
+@media (min-width:1100px){.btc-art{display:block;height:auto;position:absolute;right:0;top:7.5rem;width:320px;margin:0}}
 .btc-route{stroke-dasharray:14 10;animation:btc-flow 6s linear infinite}
 @keyframes btc-flow{to{stroke-dashoffset:-240}}
 @media (prefers-reduced-motion:reduce){.btc-route{animation:none;stroke-dasharray:none}}
@@ -79,7 +73,7 @@ footer a{color:var(--muted);display:inline-block;padding:.6rem 0}
   <div class="hero">
     <div class="eyebrow">Bitcoin for your business</div>
     <h1>Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span> in your business, <em>starting today.</em></h1>
-    <p class="lead">A Lightning address and a QR your customers can scan, set up the same day. Or a full setup with checkout, invoices and books in your own currency. Your keys always stay with you.</p>
+    <p class="lead">Let customers pay you in Bitcoin, set up with you. Your keys always stay with you.</p>
     <div class="ctas"><a class="btn dark" href="/lightning" id="start">Get a Lightning address</a></div>
     <svg class="btc-art" viewBox="0 0 320 260" aria-hidden="true" focusable="false">
      <path d="M40 60L130 30L250 50M40 60L70 170L150 230L280 175L250 50M130 30L190 140M70 170L190 140L280 175M150 230L190 140L250 50" fill="none" stroke="#274C77" stroke-width="2" stroke-opacity=".45"/>
@@ -100,36 +94,23 @@ footer a{color:var(--muted);display:inline-block;padding:.6rem 0}
 
 <section><div class="wrap">
   <h2 class="reveal">Two ways to start</h2>
-  <p class="intro reveal">Fixed prices, paid in Bitcoin, set up with you so you understand every step.</p>
   <div class="help" id="help"></div>
-</div></section>
-
-<section><div class="wrap">
-  <h2 class="reveal">How it works</h2>
-  <ol class="steps">
-    <li class="reveal"><h3>Pick a setup and pay</h3><p>The price is fixed and shown up front. Pay with any Bitcoin wallet.</p></li>
-    <li class="reveal"><h3>We set it up with you</h3><p>On your phone, and where you sell, step by step, so you can run it yourself.</p></li>
-    <li class="reveal"><h3>Your customers pay you</h3><p>Show the QR or send an invoice. The money goes straight to your own wallet.</p></li>
-  </ol>
 </div></section>
 
 <section><div class="wrap"><div class="faq">
   <h2 class="reveal">Before you pay</h2>
   <details class="reveal"><summary>Do you ever hold my Bitcoin or my keys?</summary><p>No, never. The wallet is yours, the backup is yours, and payments go straight to you. We never ask for your recovery words.</p></details>
   <details class="reveal"><summary>What do I need?</summary><p>For a Lightning address: your phone. For the full setup: access to where you sell, such as your website, shop or invoices.</p></details>
-  <details class="reveal"><summary>How do I keep my books in my own currency?</summary><p>The full setup includes an accounting sheet that records each payment in your local currency.</p></details>
-  <details class="reveal"><summary>What if it doesn't work as promised?</summary><p>It's fixed free for 14 days after delivery.</p></details>
 </div></div></section>
 
-<footer><div class="wrap">© <span id="yr">2026</span> Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/donate">Donate to Bitcoin education</a> · <a href="/hunt">Treasure hunt</a></div></footer>
+<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 
 <script type="module">
 import { orderable, orderPath } from "/data/catalog.js";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-$("#yr").textContent = new Date().getFullYear();
 // Offers, prices and deliverables come from the catalog, so they match the order page.
-const offer = (id, line) => { const o = orderable(id); return o ? `<a class="reveal" href="${orderPath(id)}"><b>${esc(o.name)}</b><span>${esc(line)}</span><ul>${o.deliverables.map((d) => `<li>${esc(d)}</li>`).join("")}</ul><span class="when">${esc(o.delivery)}</span><em>$${o.price}</em><span class="go">Order it →</span></a>` : ""; };
+const offer = (id, line) => { const o = orderable(id); return o ? `<a class="reveal" href="${orderPath(id)}"><b>${esc(o.name)}</b><span>${esc(line)}</span><span class="when">${esc(o.delivery)}</span><em>$${o.price}</em><span class="go">Order it →</span></a>` : ""; };
 $("#help").innerHTML = offer("q-lightning", "Start taking Bitcoin payments today.") + offer("bitcoin", "Checkout, invoices and clean books, with your team shown how.");
 const ln = orderable("q-lightning");
 if (ln) { $("#start").href = orderPath(ln.id); $("#start").textContent = `Get a Lightning address · $${ln.price}`; }

@@ -19,7 +19,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtr
 a{color:var(--blue)}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .wrap{max-width:44rem;margin:0 auto;padding:1.5rem 1rem 4rem}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.5rem}
 .top img{height:2.6rem;width:auto;display:block}
 .card{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;box-shadow:8px 8px 0 var(--ink);padding:clamp(1.25rem,4vw,2.25rem)}
 h1{font:800 clamp(1.9rem,6vw,2.6rem)/1.05 'Bricolage Grotesque',sans-serif;margin:0 0 .5rem}
@@ -50,7 +50,8 @@ ol.steps p{margin:0}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:no-preference){.box{animation:in .4s ease}@keyframes in{from{opacity:0;transform:translateY(.4rem)}}}
 .topnav{display:flex;gap:1.1rem}
-.topnav a{font-weight:600;text-decoration:none;color:var(--muted)}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap}
+@media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
 .topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
 .sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:2rem}
 .sitefoot a{color:var(--muted);display:inline-block;padding:.6rem 0}
@@ -121,7 +122,7 @@ ol.steps p{margin:0}
     <p class="fine">One code per person per hunt. A new word starts every Monday (00:00 UTC). Codes are single-use, can't be exchanged for cash, and apply at checkout on altradits.com.</p>
   </main>
 </div>
-<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/hunt">Treasure hunt</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script type="module">
 const $ = (s) => document.querySelector(s);
 const store = { get: (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };

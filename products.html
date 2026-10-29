@@ -20,17 +20,16 @@ a{color:var(--blue)}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 [hidden]{display:none!important}
 .wrap{max-width:72rem;margin:0 auto;padding:1.25rem 1rem 4rem}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:2rem}
 .top img{height:2.5rem;width:auto;display:block}
 .topnav{display:flex;gap:1.1rem}
-.topnav a{font-weight:600;text-decoration:none;color:var(--muted)}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap}
+@media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
 .topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
 .top a.jobs:hover{color:var(--ink)}
 h1{font:800 clamp(2rem,6vw,3.3rem)/1.04 'Bricolage Grotesque',sans-serif;margin:0 0 .7rem;max-width:44rem;letter-spacing:-.01em}
 h1 em{font-style:normal;color:var(--blue)}
 .lead{color:var(--muted);font-size:1.15rem;margin:0 0 2rem;max-width:36rem}
-.kitsHead{font:800 1.35rem 'Bricolage Grotesque',sans-serif;margin:0 0 1rem}
-.tag{display:inline-block;font:700 .72rem Figtree,sans-serif;letter-spacing:.06em;text-transform:uppercase;background:var(--ink);color:#fff;border-radius:.35rem;padding:.25rem .5rem;align-self:flex-start}
 .path{border-top:1px solid var(--line);margin-top:.3rem;padding-top:.7rem;display:grid;gap:.35rem;font-size:.92rem}
 .path b{font-size:.78rem;letter-spacing:.06em;color:var(--muted)}
 .path a{display:flex;justify-content:space-between;gap:.6rem;color:var(--ink);text-decoration:none;padding:.35rem 0;min-height:2.75rem;align-items:center}
@@ -39,7 +38,6 @@ h1 em{font-style:normal;color:var(--blue)}
 .path small{color:var(--blue);font-weight:700;margin-right:.35rem}
 .kits{display:grid;grid-template-columns:repeat(auto-fill,minmax(20rem,1fr));gap:1.25rem}
 .kit{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;box-shadow:6px 6px 0 var(--ink);padding:1.4rem;display:flex;flex-direction:column;gap:.7rem}
-.kit .eyebrow{font:700 .75rem Figtree,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--btc-text)}
 .kit h3{font:800 1.45rem/1.15 'Bricolage Grotesque',sans-serif;margin:0}
 .kit p{margin:0;color:var(--muted)}
 .kit ul{margin:.1rem 0 0;padding-left:0;list-style:none;display:grid;gap:.3rem;font-size:.95rem}
@@ -48,7 +46,6 @@ h1 em{font-style:normal;color:var(--blue)}
 .files{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:auto;padding-top:.3rem}
 .files span{font:600 .8rem Figtree,sans-serif;background:var(--bg);border-radius:.45rem;padding:.2rem .55rem;color:var(--muted)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.8rem 1.2rem;border-radius:.7rem;font:700 1rem Figtree,sans-serif;border:2px solid var(--ink);cursor:pointer;background:var(--ink);color:#fff;text-decoration:none}
-.btn.light{background:transparent;color:var(--ink)}
 .btn.blue{background:var(--blue);border-color:var(--blue)}
 .form{display:grid;gap:.5rem;border-top:1px solid var(--line);padding-top:.9rem}
 .form input{width:100%;padding:.7rem .8rem;border:2px solid var(--line);border-radius:.6rem;font:inherit;background:var(--bg)}
@@ -64,7 +61,6 @@ h1 em{font-style:normal;color:var(--blue)}
 .next a{display:flex;justify-content:space-between;gap:.8rem;text-decoration:none;color:var(--ink);font-weight:600;padding:.35rem 0;border-top:1px solid var(--line)}
 .next a:first-of-type{border-top:0}
 .next a span:last-child{color:var(--blue);white-space:nowrap}
-.note{color:var(--muted);font-size:.9rem;margin:2.5rem 0 0}
 @media (max-width:420px){.kits{grid-template-columns:1fr}.kit{box-shadow:4px 4px 0 var(--ink);padding:1.15rem}}
 @media (prefers-reduced-motion:no-preference){.got{animation:in .35s ease}@keyframes in{from{opacity:0;transform:translateY(.3rem)}}}
 .form input[aria-invalid=true]{border-color:#B42318}
@@ -92,14 +88,12 @@ h1 em{font-style:normal;color:var(--blue)}
     <path d="M94 128h12m86-36h6" stroke="#0F1B2D" stroke-width="2" stroke-dasharray="3 4"/>
   </svg>
   <h1>Do it yourself for free, <em>or have it done today.</em></h1>
-  <p class="lead">Step-by-step kits for the small jobs owners put off, free for your email. Rather not do it yourself? Each kit links to the task that does it for you, at a fixed price.</p>
+  <p class="lead">Free step-by-step kits. Or have it done for you today, at a fixed price.</p>
 
-  <h2 class="kitsHead">Free kits</h2>
   <div class="kits" id="kits"><p class="msg">Loading the kits…</p></div>
 
-  <p class="note">Download your kit right away. We email it too once you confirm your address, then follow up a few times with tips and offers about that topic. Unsubscribe in one click from any email.</p>
 </div>
-<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/hunt">Treasure hunt</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script type="module">
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -113,12 +107,8 @@ if (data) {
   // The fixed-price task that does each kit's job for you (monthly services stay off this page).
   const task = (k) => (k.offers?.done || []).find((o) => !o.monthly);
   $("#kits").innerHTML = data.kits.map((k) => `<article class="kit" id="${esc(k.id)}">
-    <span class="tag">Free</span>
-    <div class="eyebrow">${esc(k.struggle)}</div>
     <h3>${esc(k.title)}</h3>
     <p>${esc(k.promise)}</p>
-    <ul>${k.inside.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
-    <div class="files">${k.files.map((f) => `<span>${esc(TYPES[f.type] || f.type)}</span>`).join("")}</div>
     <button class="btn" type="button" data-open="${esc(k.id)}">Get it free</button>
     <form class="form" data-kit="${esc(k.id)}" hidden novalidate>
       <input type="email" name="email" placeholder="you@business.com" autocomplete="email" aria-label="Your email" required>
