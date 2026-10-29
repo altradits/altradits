@@ -28,7 +28,7 @@ test("every kit is complete and its offers are real catalog items", () => {
   for (const k of KITS) {
     assert.ok(k.files.length >= 1 && k.files[0].type === "pdf", k.id);
     assert.ok(k.files[0].md.length > 2500, `${k.id} guide is substantial`);
-    assert.equal(k.nurture.length, 3);
+    assert.equal(k.nurture.length, 2);
     for (const id of k.done) assert.ok(orderable(id), `${k.id}: ${id} is orderable`);
     // Kit text never hard-codes prices: they come from the catalog.
     for (const n of k.nurture) {
@@ -38,9 +38,9 @@ test("every kit is complete and its offers are real catalog items", () => {
   }
   const pub = subs.publicKits();
   const inbox = pub.kits.find((k) => k.id === "inbox");
-  assert.equal(inbox.offers.together.price, orderable("hourly").price);
-  assert.deepEqual(inbox.offers.done.map((o) => [o.id, o.price]), [["q-inbox-cleanup", orderable("q-inbox-cleanup").price], ["inbox-calendar", orderable("inbox-calendar").price]]);
-  assert.equal(pub.ladder.map((l) => l.code).join(" "), "DIY DIT DFY");
+  // Only fixed-price tasks: no hourly or monthly offers on the kits (#136).
+  assert.deepEqual(inbox.offers, { done: [{ id: "q-inbox-cleanup", name: orderable("q-inbox-cleanup").name, price: orderable("q-inbox-cleanup").price, delivery: "Same day", url: "https://altradits.test/inbox-cleanup" }] });
+  assert.equal(pub.ladder, undefined);
 });
 
 let sub, files;
@@ -93,7 +93,7 @@ test("downloads: a real PDF with the next steps, and the spreadsheet; wrong toke
   assert.match(await (await get(`?d=outreach&f=lead-research-sheet.csv&s=${sub.id}&t=${sub.t}`)).text(), /not recognised/); // not signed up for it
 });
 
-test("follow-ups: one a day at most, from the newest kit, climbing the ladder, then stop", async () => {
+test("follow-ups: one a day at most, from the newest kit, each offering the kit's fixed-price task, then stop", async () => {
   // Confirmed at sign-up (consent ticked; follow-ups wait for Stanley's approval in production).
   const s = await getJSON(`sub:${sub.id}`);
   assert.equal(s.confirmed, true);
@@ -103,15 +103,12 @@ test("follow-ups: one a day at most, from the newest kit, climbing the ladder, t
   assert.equal((await subs.runNurture(at(2))).sent, 1);
   assert.equal((await subs.runNurture(at(2.2))).sent, 0); // one a day
   let mail = (await emails()).find((e) => e.subject === "The fastest way to fill your calendar");
-  assert.equal(mail.cta.url, "https://altradits.test/hourly");
+  assert.equal(mail.cta.url, "https://altradits.test/captions");
   assert.equal((await subs.runNurture(at(5))).sent, 1);
   mail = (await emails()).find((e) => e.subject === "10 captions, done today");
   assert.equal(mail.cta.url, "https://altradits.test/captions");
-  assert.equal((await subs.runNurture(at(10))).sent, 1);
-  mail = (await emails()).find((e) => e.subject === "Show up every week without thinking about it");
-  assert.equal(mail.cta.url, "https://altradits.test/social-management"); // day 10: the monthly service
   // The social sequence is done; the inbox one (older) continues.
-  assert.equal((await subs.runNurture(at(11))).sent, 1);
+  assert.equal((await subs.runNurture(at(6))).sent, 1);
   assert.ok((await emails()).some((e) => e.subject === "The one inbox habit that sticks"));
 });
 
