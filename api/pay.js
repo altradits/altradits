@@ -8,7 +8,7 @@ import { defang } from "../lib/screen.js";
 import { getProposal, saveProposal, getLead, logEvent, saveLead, confirmPayment } from "../lib/crm.js";
 import { emailOwner } from "../lib/email.js";
 import { createInvoice, invoicePaid, qrSvg, lightningMode, newOnchainAddress, onchainFeeRates, addressReceived, nodeSettlement } from "../lib/lightning.js";
-import { PAYMENTS } from "../data/catalog.js";
+import { PAYMENTS, DUST_SATS } from "../data/catalog.js";
 import { encodeLnurl } from "../lib/lnurl.js";
 import { siteUrl } from "../lib/http.js";
 
@@ -47,7 +47,7 @@ export async function POST(request) {
       // Older invoices stay watched (a client may still pay one); each records the
       // price and code it was made with, so whichever settles is accounted exactly.
       if (p.lightning) p.retiredInvoices = [...(p.retiredInvoices || []), p.lightning].slice(-10);
-      p.lightning = { ...(await createInvoice({ usd, memo: `Altradits: ${p.title} (proposal ${p.id})` })), coupon: p.coupon ? { ...p.coupon } : null };
+      p.lightning = { ...(await createInvoice({ usd, sats: p.donation?.sats, memo: `Altradits: ${p.title} (proposal ${p.id})` })), coupon: p.coupon ? { ...p.coupon } : null };
     } catch (err) {
       console.error("lightning invoice", err);
       return json({ error: "Couldn't create a Lightning invoice right now. Please use another payment method or try again shortly." }, 502);
@@ -63,7 +63,7 @@ export async function POST(request) {
   // On-chain: one address per proposal from the node, for wallets and exchanges
   // without Lightning (and amounts above channel capacity).
   let onchain = null;
-  if (lightningMode() === "lnd") {
+  if (lightningMode() === "lnd" && sats >= DUST_SATS) {
     try {
       if (!p.onchain?.address) p.onchain = { address: await newOnchainAddress(), createdAt: new Date().toISOString() };
       p.onchain.sats = sats;
