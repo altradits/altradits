@@ -5,10 +5,13 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import https from "node:https";
+import crypto from "node:crypto";
+import { execFileSync } from "node:child_process";
 
 process.chdir(fs.mkdtempSync(path.join(os.tmpdir(), "altradits-ywallet-")));
 for (const k of ["UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "DATA_DIR"]) delete process.env[k];
-Object.assign(process.env, { SITE_URL: "https://altradits.test", YEBENTE_MAX_BALANCE_SATS: "10000", YEBENTE_MAX_PAYMENT_SATS: "5000", YEBENTE_DAILY_SEND_SATS: "6000" });
+Object.assign(process.env, { YEBENTE_WALLETS: "on", SITE_URL: "https://altradits.test", YEBENTE_MAX_BALANCE_SATS: "10000", YEBENTE_MAX_PAYMENT_SATS: "5000", YEBENTE_DAILY_SEND_SATS: "6000" });
 
 const yw = await import("../lib/ywallet.js");
 const api = await import("../api/yebente.js");
@@ -98,4 +101,83 @@ test("ten sends at once can never spend the same sats twice", async () => {
   const sum = (await Promise.all([amina, juma, w].map(async (x) => (await (await call("GET", "wallet/me", null, x.token)).json()).wallet.balance))).reduce((a, b) => a + b, 0);
   assert.ok(owed.wallets >= 4);
   assert.equal(owed.sats, sum); // the auto-handle wallet holds 0
+});
+
+// ---- step 2: receiving from any Lightning wallet (a fake LND node, HTTPS like a real one)
+const MAC = "0201036c6e64";
+const lndInvoices = new Map();
+let lnd;
+async function fakeLnd() {
+  execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-subj", "/CN=localhost",
+    "-addext", "subjectAltName=DNS:localhost", "-keyout", "key.pem", "-out", "cert.pem"], { stdio: "ignore" });
+  lnd = https.createServer({ key: fs.readFileSync("key.pem"), cert: fs.readFileSync("cert.pem") }, (req, res) => {
+    if (req.headers["grpc-metadata-macaroon"] !== MAC) { res.writeHead(401).end("{}"); return; }
+    let body = ""; req.on("data", (c) => { body += c; });
+    req.on("end", () => {
+      if (req.method === "POST" && req.url === "/v1/invoices") {
+        const { value, description_hash } = JSON.parse(body);
+        const hash = crypto.randomBytes(32);
+        lndInvoices.set(hash.toString("hex"), { state: "OPEN", value, description_hash });
+        res.end(JSON.stringify({ r_hash: hash.toString("base64"), payment_request: `lnbc${value}0n1fake` }));
+        return;
+      }
+      if (req.url === "/v1/balance/channels") { res.end(JSON.stringify({ remote_balance: { sat: "10000000" } })); return; }
+      const m = req.url.match(/^\/v1\/invoice\/([0-9a-f]+)$/);
+      if (m && lndInvoices.has(m[1])) { res.end(JSON.stringify(lndInvoices.get(m[1]))); return; }
+      res.writeHead(404).end("{}");
+    });
+  });
+  await new Promise((r) => lnd.listen(0, "localhost", r));
+  Object.assign(process.env, { LND_REST_URL: `https://localhost:${lnd.address().port}`, LND_INVOICE_MACAROON: MAC, LND_TLS_CERT: fs.readFileSync("cert.pem").toString("base64") });
+}
+
+test("receive: an invoice for the wallet is credited once, when the node says it is paid", async () => {
+  await fakeLnd();
+  const w = await (await call("POST", "wallet/create", { pin: "444444", handle: "wanjiru" })).json();
+  const inv = await (await call("POST", "wallet/invoice", { sats: 2500 }, w.token)).json();
+  assert.equal(inv.success, true);
+  assert.match(inv.invoice, /^lnbc/);
+  let st = await (await call("GET", `wallet/invoice/${inv.paymentHash}`, null, w.token)).json();
+  assert.equal(st.settled, false);
+  // Someone else's wallet can't look at (or claim) this invoice.
+  assert.equal((await call("GET", `wallet/invoice/${inv.paymentHash}`, null, juma.token)).status, 404);
+  lndInvoices.get(inv.paymentHash).state = "SETTLED";
+  st = await (await call("GET", `wallet/invoice/${inv.paymentHash}`, null, w.token)).json();
+  assert.equal(st.settled, true);
+  await call("GET", `wallet/invoice/${inv.paymentHash}`, null, w.token); // polled again: no second credit
+  assert.equal((await (await call("GET", "wallet/me", null, w.token)).json()).wallet.balance, 2500);
+  // Over the per-payment cap or the wallet limit: no invoice.
+  assert.equal((await call("POST", "wallet/invoice", { sats: 5001 }, w.token)).status, 400);
+});
+
+test("handle@altradits.com is a Lightning address; a payment made while the app is closed is credited by the sweep", async () => {
+  const pr = await (await call("GET", "lnurlp/wanjiru")).json();
+  assert.equal(pr.tag, "payRequest");
+  assert.equal(pr.callback, "https://altradits.test/api/yebente/lnurl/wanjiru");
+  assert.equal(pr.minSendable, 1000);
+  assert.equal(pr.maxSendable, 5000 * 1000); // per-payment cap (balance 2,500 of 10,000)
+  assert.deepEqual(JSON.parse(pr.metadata), [["text/plain", "Pay wanjiru@altradits.test"], ["text/identifier", "wanjiru@altradits.test"]]);
+  assert.equal((await (await call("GET", "lnurlp/nobody")).json()).status, "ERROR");
+  const bad = await (await api.GET(new Request("https://altradits.test/api/yebente/lnurl/wanjiru?amount=1500"))).json();
+  assert.equal(bad.status, "ERROR"); // not whole sats
+  const ok = await (await api.GET(new Request("https://altradits.test/api/yebente/lnurl/wanjiru?amount=1000000"))).json();
+  assert.match(ok.pr, /^lnbc/);
+  // The invoice commits to the metadata (LUD-06): description_hash = sha256(metadata).
+  const [hash, rec] = [...lndInvoices.entries()].at(-1);
+  assert.equal(Buffer.from(rec.description_hash, "base64").toString("hex"), crypto.createHash("sha256").update(pr.metadata).digest("hex"));
+  rec.state = "SETTLED";
+  const sweep = await yw.settleOpen();
+  assert.ok(sweep.closed >= 1);
+  const w = await yw.walletByHandle("wanjiru");
+  assert.equal(w.balance, 3500);
+  assert.equal(await yw.settleInvoice(hash), "settled");
+  assert.equal((await yw.walletByHandle("wanjiru")).balance, 3500); // settled once
+  lnd.close();
+});
+
+test("wallets stay off until YEBENTE_WALLETS=on", async () => {
+  delete process.env.YEBENTE_WALLETS;
+  assert.equal((await call("POST", "wallet/create", { pin: "555555" })).status, 501);
+  assert.equal((await call("GET", "lnurlp/wanjiru")).status, 404);
+  process.env.YEBENTE_WALLETS = "on";
 });

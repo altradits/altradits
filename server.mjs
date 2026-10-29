@@ -121,6 +121,14 @@ const server = http.createServer(async (req, res) => {
       res.end(Buffer.from(await response.arrayBuffer()));
       return;
     }
+    // handle@altradits.com: Lightning address lookups go to Ye₿ente's wallets.
+    const lnaddr = url.pathname.match(/^\/\.well-known\/lnurlp\/([a-z0-9._-]{3,20})$/i);
+    if (lnaddr && req.method === "GET") {
+      const { GET } = await import("./api/yebente.js");
+      const r = await GET(new Request(new URL(`/api/yebente/lnurlp/${lnaddr[1].toLowerCase()}`, url), { headers: req.headers }));
+      res.writeHead(r.status, { ...SECURITY, ...Object.fromEntries(r.headers) }).end(Buffer.from(await r.arrayBuffer()));
+      return;
+    }
     // Clean addresses: /templates, /hunt, /cv… for pages; /<job> (e.g. /hourly,
     // /inbox-cleanup), /r/<ref> and /h/<hunt code> open the homepage, which reads
     // the path. Old *.html addresses redirect to the clean ones.
@@ -196,6 +204,8 @@ async function maybeRunHourly() {
   import("./lib/bounces.js").then((b) => b.checkBounces()).then((r) => r.bounced && console.log("bounces", r)).catch((e) => console.error("bounces", e.message));
 }
 setInterval(() => maybeRunHourly().catch((e) => console.error("hourly", e)), 10 * 60 * 1000).unref();
+// Ye₿ente wallets: credit invoices paid while the app was closed (every 2 minutes).
+setInterval(() => { if (process.env.YEBENTE_WALLETS === "on" && process.env.LND_REST_URL) import("./lib/ywallet.js").then((y) => y.settleOpen()).catch((e) => console.error("yebente settle", e.message)); }, 2 * 60 * 1000).unref();
 
 // The host stops an idle app, so the 10-minute timers alone can miss a day.
 // Every /healthz ping (the deploy cron, every 5 minutes) also runs what's due.
