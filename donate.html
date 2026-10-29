@@ -20,7 +20,7 @@ a{color:var(--blue)}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 [hidden]{display:none!important}
 .wrap{max-width:40rem;margin:0 auto;padding:1.25rem 1rem 4rem}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.75rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.75rem}
 .top img{height:2.5rem;width:auto;display:block}
 .top a.jobs{font-weight:600;text-decoration:none;color:var(--muted)}
 h1{font:800 clamp(2rem,6vw,2.8rem)/1.05 'Bricolage Grotesque',sans-serif;margin:0 0 .6rem}
@@ -47,7 +47,8 @@ textarea{min-height:4.5rem;resize:vertical}
 .dname{margin-top:1rem;padding:.8rem 1rem;border:2px dashed var(--line);border-radius:.8rem;text-align:left}
 .dname code{font:700 1.05rem ui-monospace,Menlo,monospace}.dname p{margin:.2rem 0}.dname button{font:600 .85rem Figtree,sans-serif;padding:.25rem .7rem;border:2px solid var(--ink);border-radius:.5rem;background:#fff;cursor:pointer;margin-left:.4rem}
 .topnav{display:flex;gap:1.1rem}
-.topnav a{font-weight:600;text-decoration:none;color:var(--muted)}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap}
+@media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
 .topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
 .payhead{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0 0 .6rem}.payhead h2{font:800 1.4rem 'Bricolage Grotesque',sans-serif;margin:0}
 .link{background:none;border:0;color:var(--blue);font:600 .95rem Figtree,sans-serif;cursor:pointer;min-height:2.75rem;padding:0}
@@ -87,7 +88,7 @@ textarea{min-height:4.5rem;resize:vertical}
 
   <p class="note">Pay with any Bitcoin wallet: Lightning settles in seconds, on-chain once confirmed. Altradits adds no fee. With an email, your receipt arrives by email; without one, collect it with your donation name.</p>
 </div>
-<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/hunt">Treasure hunt</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script type="module">
 import { mountPay } from "/assets/pay-widget.js";
 const $ = (s) => document.querySelector(s);
