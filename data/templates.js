@@ -1,19 +1,11 @@
 // Free kits: complete, step-by-step templates for the jobs owners struggle
 // with most. They're the top of the funnel: a visitor leaves an email to
-// download one, joins the list tagged with that kit's topic, and the follow-up
-// emails (lib/subscribers.js), one line and one button each, walk them up the ladder:
+// download one, joins the list tagged with that kit's topic, and two follow-up
+// emails (lib/subscribers.js), one line and one button each: a tip on day 2,
+// then the fixed-price task that does the job for them on day 5.
 //
-//   DIY  Do it yourself   the free kit
-//   DIT  Do it together   you start with the kit, we finish it with you (pay-as-you-go hours)
-//   DFY  Done for you     the quick job or service that does it all
-//
-// Offers are catalog ids, so prices always match the shop.
-
-export const LADDER = [
-  { id: "diy", code: "DIY", name: "Do it yourself", line: "The free kit: every step and template you need." },
-  { id: "dit", code: "DIT", name: "Do it together", line: "Start with the kit; we finish and polish it with you." },
-  { id: "dfy", code: "DFY", name: "Done for you", line: "Hand it over. Fixed price, done the same day." },
-];
+// Offers are catalog ids, so prices always match the shop (monthly services
+// stay off the kits: #136).
 
 const INBOX = `# Inbox Zero in 60 Minutes
 A step-by-step kit to clear your inbox in one hour and keep it under control in 15 minutes a day. Works with Gmail and Outlook.
@@ -503,9 +495,8 @@ export const KITS = [
     files: [{ name: "inbox-zero-in-60-minutes.pdf", type: "pdf", md: INBOX }],
     done: ["q-inbox-cleanup", "inbox-calendar"],
     nurture: [
-      { day: 2, subject: "The one inbox habit that sticks", line: "Set up the five filters from step 5 and half your new mail never reaches your inbox. Stuck? We'll finish it with you." },
+      { day: 2, subject: "The one inbox habit that sticks", line: "Set up the five filters from step 5 and half your new mail never reaches your inbox. Rather have it done? We'll clear it today." },
       { day: 5, subject: "Want it done by tonight?", line: "Haven't found the 60 minutes yet? Hand it over and we'll clear your inbox today." },
-      { day: 10, subject: "Never sort email again", line: "Want your inbox handled every day, for good?" },
     ],
   },
   {
@@ -516,9 +507,8 @@ export const KITS = [
     files: [{ name: "30-day-social-media-kit.pdf", type: "pdf", md: SOCIAL }, { name: "30-day-content-calendar.csv", type: "csv", body: socialCalendar }],
     done: ["q-captions", "q-schedule", "social-management"],
     nurture: [
-      { day: 2, subject: "The fastest way to fill your calendar", line: "Fill the hook column first, then batch-write all 30 captions in one sitting. Want us to do it with you?" },
+      { day: 2, subject: "The fastest way to fill your calendar", line: "Fill the hook column first, then batch-write all 30 captions in one sitting. Rather skip it? We'll write them today." },
       { day: 5, subject: "10 captions, done today", line: "Rather skip the writing? We'll write 10 captions in your voice today." },
-      { day: 10, subject: "Show up every week without thinking about it", line: "Want your social media planned, written and posted every week?" },
     ],
   },
   {
@@ -529,9 +519,8 @@ export const KITS = [
     files: [{ name: "get-paid-on-time-kit.pdf", type: "pdf", md: INVOICES }, { name: "invoice-tracker.csv", type: "csv", body: invoiceTracker }],
     done: ["q-invoices", "q-receipts", "bookkeeping-prep"],
     nurture: [
-      { day: 2, subject: "The reminder schedule that gets you paid", line: "Put the four reminder dates in the tracker the day you invoice and you'll never forget to chase. Want help setting it up?" },
+      { day: 2, subject: "The reminder schedule that gets you paid", line: "Put the four reminder dates in the tracker the day you invoice and you'll never forget to chase. Behind already? We'll send them today." },
       { day: 5, subject: "10 invoices out by tonight", line: "Behind on invoicing? We'll send your next 10 invoices today." },
-      { day: 10, subject: "Close your books without opening a spreadsheet", line: "Want invoicing and bookkeeping prep handled every month?" },
     ],
   },
   {
@@ -542,9 +531,8 @@ export const KITS = [
     files: [{ name: "customer-reply-playbook.pdf", type: "pdf", md: REPLIES }],
     done: ["q-reply-templates", "q-reviews", "customer-support"],
     nurture: [
-      { day: 2, subject: "Acknowledge first, answer second", line: "Reply within 4 working hours, even a quick 'got it', and most complaints never start. Want the replies set up for your business?" },
+      { day: 2, subject: "Acknowledge first, answer second", line: "Reply within 4 working hours, even a quick 'got it', and most complaints never start. Want yours written for you? We'll do it today." },
       { day: 5, subject: "Your own reply templates, written today", line: "We'll write 10 reply templates in your voice today." },
-      { day: 10, subject: "Never miss a customer message", line: "Want every customer message answered for you, every day?" },
     ],
   },
   {
@@ -555,9 +543,8 @@ export const KITS = [
     files: [{ name: "cold-outreach-starter-kit.pdf", type: "pdf", md: OUTREACH }, { name: "lead-research-sheet.csv", type: "csv", body: leadSheet }],
     done: ["q-leads", "q-cold-email", "lead-generation"],
     nurture: [
-      { day: 2, subject: "Why most cold emails get ignored", line: "One specific reason per lead roughly doubles replies. Want us to research and write them with you?" },
+      { day: 2, subject: "Why most cold emails get ignored", line: "One specific reason per lead roughly doubles replies. Rather skip the research? We'll do it today." },
       { day: 5, subject: "25 researched leads by tonight", line: "Skip the research: 25 leads that fit your business, delivered today." },
-      { day: 10, subject: "A full pipeline, done for you", line: "Want 100 researched leads with outreach messages ready to send?" },
     ],
   },
   {
@@ -568,9 +555,8 @@ export const KITS = [
     files: [{ name: "hire-your-first-assistant-kit.pdf", type: "pdf", md: HIRING }, { name: "candidate-scorecard.csv", type: "csv", body: scorecard }],
     done: ["q-job-post", "q-cv-screen", "hr-recruiting"],
     nurture: [
-      { day: 2, subject: "The keyword trick that saves hours", line: "The keyword in your job ad filters out half the applications in seconds. Want us to write the ad with you?" },
+      { day: 2, subject: "The keyword trick that saves hours", line: "The keyword in your job ad filters out half the applications in seconds. Rather hand it over? We'll write it today." },
       { day: 5, subject: "Your job ad, written and posted today", line: "We'll write and post your job ad today." },
-      { day: 10, subject: "Hire without the hassle", line: "Want the whole hire handled for you: ad, screening and a shortlist?" },
     ],
   },
 ];
