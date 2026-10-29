@@ -9,6 +9,11 @@
 //   POST mpesa/callback/<secret>     Safaricom's STK result (secret: YEBENTE_CALLBACK_SECRET)
 //   POST lightning/create-invoice    with YEBENTE_NODE_DEPOSITS=on (invoices on the Altradits node)
 //   GET  lightning/invoice-status/x  same
+// Ye₿ente wallets (custodial, on the Altradits node; lib/ywallet.js):
+//   POST wallet/create {pin, handle?}     -> {wallet, token, recovery} (shown once)
+//   POST wallet/restore {recovery, pin}   -> {wallet, token}
+//   GET  wallet/me, wallet/history        (Authorization: Bearer <token>)
+//   POST wallet/send {to, sats, pin}      to another Ye₿ente wallet (handle or handle@domain)
 // Every payout path (Lightning or on-chain disbursement, M-Pesa B2C/B2B,
 // reversals, standing orders, Telebirr) answers 501: the app keeps its balance in
 // the visitor's browser, so a server that paid on request could be emptied by
@@ -153,6 +158,43 @@ async function invoiceStatus(hash) {
   return json({ success: true, settled: paid === true, paid: paid === true, satsAmount: known.sats });
 }
 
+// ---- wallets
+const bearer = (request) => String(request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+async function me(request) {
+  const { walletForToken } = await import("../lib/ywallet.js");
+  const w = await walletForToken(bearer(request));
+  if (!w) throw Object.assign(new Error("Sign in to your wallet again."), { status: 401 });
+  return w;
+}
+const ipKey = (request) => crypto.createHash("sha256").update(clientIp(request) || "").digest("hex").slice(0, 16);
+async function walletPost(request, action) {
+  const yw = await import("../lib/ywallet.js");
+  const body = await readBody(request);
+  if (action === "create") {
+    if ((await hit(`rl:yb:create:${ipKey(request)}`, 3600)) > 5) return json({ success: false, error: "Too many new wallets from this connection. Try again in an hour." }, 429);
+    return json({ success: true, ...(await yw.createWallet({ pin: body.pin, handle: body.handle })) });
+  }
+  if (action === "restore") {
+    if ((await hit(`rl:yb:restore:${ipKey(request)}`, 3600)) > 10) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
+    return json({ success: true, ...(await yw.restoreWallet({ recovery: body.recovery, pin: body.pin })) });
+  }
+  if (action === "send") {
+    const w = await me(request);
+    const to = String(body.to || "").trim().toLowerCase();
+    const local = to.match(new RegExp(`^([a-z0-9._-]+)(?:@${yw.DOMAIN().replace(/\./g, "\\.")})?$`));
+    if (!local) return json({ success: false, error: "Only Ye₿ente wallets for now: enter a handle." }, 400);
+    return json({ success: true, ...(await yw.transfer({ from: w, toHandle: local[1], sats: body.sats, pin: body.pin, note: body.note })) });
+  }
+  return json({ success: false, error: "Not found" }, 404);
+}
+async function walletGet(request, action) {
+  const yw = await import("../lib/ywallet.js");
+  const w = await me(request);
+  if (action === "me") return json({ success: true, wallet: yw.publicWallet(w) });
+  if (action === "history") return json({ success: true, entries: await yw.history(w.id) });
+  return json({ success: false, error: "Not found" }, 404);
+}
+
 const PAYOUTS = /^(lightning\/disburse|bitcoin\/disburse|mpesa\/(payout|b2b|reversal|ratiba|balance|transaction-status|kyc|c2b\/register|hakikisha\/b2b)|telebirr\/(deposit|payout|query\/[\w-]+))$/;
 const sub = (request) => decodeURIComponent(new URL(request.url).pathname.replace(/^\/api\/yebente\//, ""));
 
@@ -161,6 +203,8 @@ export async function GET(request) {
   if (path === "health") return json({ status: "ok", service: "yebente", environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), deposits: depositsOn(), timestamp: Date.now() });
   const inv = path.match(/^lightning\/invoice-status\/([\w-]+)$/);
   if (inv) return invoiceStatus(inv[1]);
+  const wg = path.match(/^wallet\/(me|history)$/);
+  if (wg) { try { return await walletGet(request, wg[1]); } catch (e) { return json({ success: false, error: e.message }, e.status || 500); } }
   if (PAYOUTS.test(path)) return off(NO_NODE);
   return json({ success: false, error: "Not found" }, 404);
 }
@@ -172,13 +216,16 @@ export async function POST(request) {
     if (path === "mpesa/query") return await stkQuery(request);
     if (path === "mpesa/hakikisha/c2b") return await hakikisha(request);
     if (path === "lightning/create-invoice") return await createDepositInvoice(request);
+    const wp = path.match(/^wallet\/(create|restore|send)$/);
+    if (wp) return await walletPost(request, wp[1]);
     const cb = path.match(/^mpesa\/callback\/([\w-]{16,128})$/);
     if (cb) return await callback(request, cb[1]);
     if (path.startsWith("lightning/") || path.startsWith("bitcoin/")) return off(NO_NODE);
     if (PAYOUTS.test(path)) return off(NOT_CONFIGURED);
     return json({ success: false, error: "Not found" }, 404);
   } catch (err) {
+    if (err.status) return json({ success: false, error: err.message }, err.status);
     console.error("yebente", path, err.message);
-    return json({ success: false, error: err.message || "Internal server error." }, 500);
+    return json({ success: false, error: "Internal server error." }, 500);
   }
 }

@@ -21,6 +21,7 @@ import {
   getBlinkSovereignUsername,
   saveBlinkSovereignUsername,
 } from '../services/blinkService';
+import { hasServerWallet, createServerWallet, restoreServerWallet } from '../services/altraditsWallet';
 import {
   getOfflineOutbox,
   syncOfflineOutbox,
@@ -39,6 +40,7 @@ interface WalletSettingsModalProps {
   onClose: () => void;
   wallet: UserWallet;
   onUpdateWallet: (updated: UserWallet) => void;
+  onServerWalletChange?: () => void;
   onEjectWallet: () => void;
   onWipeWallet: () => void;
 }
@@ -48,6 +50,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   onClose,
   wallet,
   onUpdateWallet,
+  onServerWalletChange,
   onEjectWallet,
   onWipeWallet,
 }) => {
@@ -85,6 +88,16 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   const [confirmPinInput, setConfirmPinInput] = useState('');
   const [pinSuccessMessage, setPinSuccessMessage] = useState('');
   const [showPinSetup, setShowPinSetup] = useState(false);
+
+  // The Altradits wallet (custodial, on the Altradits node)
+  const [server, setServer] = useState<boolean>(hasServerWallet());
+  const [walletPin, setWalletPin] = useState('');
+  const [walletPinConfirm, setWalletPinConfirm] = useState('');
+  const [recoveryShown, setRecoveryShown] = useState('');
+  const [copiedRecovery, setCopiedRecovery] = useState(false);
+  const [restoreMode, setRestoreMode] = useState(false);
+  const [restorePhrase, setRestorePhrase] = useState('');
+  const [walletBusy, setWalletBusy] = useState(false);
 
   if (!isOpen) return null;
 
@@ -167,6 +180,12 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
 
   const handleInsertOrUpdate = () => {
     setValidationError('');
+    // The Altradits wallet lives on the server: nothing to save here.
+    if (selectedType === 'custodial' && server) {
+      onServerWalletChange?.();
+      onClose();
+      return;
+    }
     const rawAddress = address.trim();
 
     if (selectedType === 'non-custodial') {
@@ -280,16 +299,41 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
     }
   };
 
-  const handleGenerateInAppLightningWallet = () => {
-    const updated = createInAppLightningWallet();
-    setBlinkUsername(updated.blinkUsername || '');
-    setSelectedType('custodial');
-    onUpdateWallet(updated);
-    setGeneratedMessage('In-App Lightning Wallet Active: 100% off-chain with 0 on-chain fees.');
-    setTimeout(() => setGeneratedMessage(''), 5000);
+  const handleGenerateInAppLightningWallet = async () => {
+    setValidationError('');
+    if (!/^\d{6}$/.test(walletPin)) {
+      setValidationError('Master PIN must be 6 digits.');
+      return;
+    }
+    if (!restoreMode && walletPin !== walletPinConfirm) {
+      setValidationError('PIN confirmation does not match.');
+      return;
+    }
+    setWalletBusy(true);
+    try {
+      if (restoreMode) {
+        await restoreServerWallet(restorePhrase, walletPin);
+      } else {
+        const r = await createServerWallet(walletPin, blinkUsername.trim());
+        setRecoveryShown(r.recovery);
+      }
+      setServer(true);
+      setSelectedType('custodial');
+      setWalletPin('');
+      setWalletPinConfirm('');
+      setRestorePhrase('');
+      setGeneratedMessage('In-App Lightning Wallet Active: 100% off-chain with 0 on-chain fees.');
+      setTimeout(() => setGeneratedMessage(''), 5000);
+      onServerWalletChange?.();
+    } catch (err: unknown) {
+      setValidationError(err instanceof Error ? err.message : 'Wallet service unavailable.');
+    } finally {
+      setWalletBusy(false);
+    }
   };
 
-  const sovereignBlinkAddress = `${blinkUsername || getBlinkSovereignUsername()}@blink.sv`;
+  const walletDomain = typeof window !== 'undefined' ? window.location.hostname : 'altradits.com';
+  const sovereignBlinkAddress = server ? (wallet.blinkAddress || '') : `${blinkUsername || getBlinkSovereignUsername()}@blink.sv`;
 
   return (
     <div
@@ -364,14 +408,100 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                 <span className="font-mono text-emerald-400 font-semibold">100% Off-Chain Lightning (0 On-Chain Fees)</span>
               </div>
 
-              {/* Generate In-App Lightning Wallet Action */}
-              <button
-                type="button"
-                onClick={handleGenerateInAppLightningWallet}
-                className="w-full h-11 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-xs flex items-center justify-center"
-              >
-                Generate In-App Lightning Wallet
-              </button>
+              {!server && (
+                <div className="space-y-3">
+                  {!restoreMode && (
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--yb-secondary)] mb-1.5">
+                        Custom Lightning Handle
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={blinkUsername}
+                          onChange={(e) => setBlinkUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 20))}
+                          placeholder="username"
+                          className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] pr-28"
+                        />
+                        <span className="absolute right-3 top-3 font-mono text-xs text-[var(--yb-on-surface-variant)]">
+                          @{walletDomain}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {restoreMode && (
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--yb-secondary)] mb-1.5">Recovery phrase</label>
+                      <textarea
+                        rows={3}
+                        value={restorePhrase}
+                        onChange={(e) => setRestorePhrase(e.target.value)}
+                        className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] resize-none"
+                      />
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] text-[var(--yb-on-surface-variant)] mb-1">Enter Master PIN</label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={walletPin}
+                        onChange={(e) => setWalletPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.4em]"
+                      />
+                    </div>
+                    {!restoreMode && (
+                      <div>
+                        <label className="block text-[11px] text-[var(--yb-on-surface-variant)] mb-1">Confirm Master PIN</label>
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={walletPinConfirm}
+                          onChange={(e) => setWalletPinConfirm(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.4em]"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleGenerateInAppLightningWallet}
+                    disabled={walletBusy}
+                    className="w-full h-11 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-xs flex items-center justify-center disabled:opacity-50"
+                  >
+                    {restoreMode ? 'Restore' : 'Generate In-App Lightning Wallet'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setRestoreMode(!restoreMode); setValidationError(''); }}
+                    className="w-full text-center text-[11px] font-semibold text-[var(--yb-primary)] hover:underline"
+                  >
+                    {restoreMode ? 'Generate In-App Lightning Wallet' : 'Restore'}
+                  </button>
+                </div>
+              )}
+
+              {recoveryShown && (
+                <div className="p-3 rounded-2xl bg-[var(--yb-surface-container-high)] border border-[var(--yb-primary)]/50 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-semibold text-[var(--yb-secondary)]">Recovery phrase</span>
+                    <button
+                      type="button"
+                      onClick={() => { navigator.clipboard.writeText(recoveryShown); setCopiedRecovery(true); setTimeout(() => setCopiedRecovery(false), 2000); }}
+                      className="text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
+                    >
+                      {copiedRecovery ? <Check className="w-3.5 h-3.5 text-[var(--yb-secondary)]" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <p className="font-mono text-sm leading-relaxed text-[var(--yb-on-surface)] select-all">{recoveryShown}</p>
+                </div>
+              )}
 
               {generatedMessage && (
                 <div className="p-3 rounded-2xl bg-emerald-950/30 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
@@ -380,51 +510,33 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                 </div>
               )}
 
-              {/* Blink Sovereign Lightning Address */}
-              <div>
-                <div className="flex justify-between items-center text-xs text-[var(--yb-secondary)] mb-1.5">
-                  <span className="font-semibold">Sovereign Lightning Address</span>
-                  <span className="font-mono text-[10px] text-emerald-400">Zero On-Chain Fees</span>
+              {server && (
+                <div>
+                  <div className="flex justify-between items-center text-xs text-[var(--yb-secondary)] mb-1.5">
+                    <span className="font-semibold">Sovereign Lightning Address</span>
+                    <span className="font-mono text-[10px] text-emerald-400">Zero On-Chain Fees</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      readOnly
+                      value={sovereignBlinkAddress}
+                      className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none pr-10 select-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(sovereignBlinkAddress);
+                        setCopiedBlink(true);
+                        setTimeout(() => setCopiedBlink(false), 2000);
+                      }}
+                      className="absolute right-3 top-3 text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
+                    >
+                      {copiedBlink ? <Check className="w-3.5 h-3.5 text-[var(--yb-secondary)]" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
                 </div>
-                <div className="relative">
-                  <input
-                    type="text"
-                    readOnly
-                    value={sovereignBlinkAddress}
-                    className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none pr-10 select-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(sovereignBlinkAddress);
-                      setCopiedBlink(true);
-                      setTimeout(() => setCopiedBlink(false), 2000);
-                    }}
-                    className="absolute right-3 top-3 text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
-                  >
-                    {copiedBlink ? <Check className="w-3.5 h-3.5 text-[var(--yb-secondary)]" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Blink Username Handle */}
-              <div>
-                <label className="block text-xs font-semibold text-[var(--yb-secondary)] mb-1.5">
-                  Custom Lightning Handle
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={blinkUsername}
-                    onChange={(e) => setBlinkUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                    placeholder="username"
-                    className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
-                  />
-                  <span className="absolute right-3 top-3 font-mono text-xs text-[var(--yb-on-surface-variant)]">
-                    @blink.sv
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
