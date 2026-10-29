@@ -33,7 +33,7 @@ if (!SERVER) {
   if (process.env.ADMIN_TOKEN && process.env.ADMIN_TOKEN.length < 24) console.error("ADMIN_TOKEN is short: use a long random one (openssl rand -hex 32).");
 }
 
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
 const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|portal\.html|team\.html|join\.html|cv\.html|hunt\.html|templates\.html|donate\.html|va\.html|bitcoin\.html|products\.html|collect\.html|robots\.txt|sitemap\.xml|data\/(?:catalog|playbooks|community)\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
 const SECURITY = { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "SAMEORIGIN" };
@@ -48,7 +48,7 @@ function cspFor(file) {
   if (hit?.mtime === mtime) return hit.csp;
   const html = fs.readFileSync(file, "utf8");
   const hashes = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => `'sha256-${crypto.createHash("sha256").update(m[1]).digest("base64")}'`);
-  const csp = [`default-src 'self'`, `script-src 'self' ${hashes.join(" ")}`, `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`, `font-src https://fonts.gstatic.com`,
+  const csp = [`default-src 'self'`, `script-src 'self' ${hashes.join(" ")}`, `style-src 'self' 'unsafe-inline'`, `font-src 'self'`,
     `img-src 'self' data: https:`, `frame-src 'self' blob:`, `connect-src 'self'`, `object-src 'none'`, `base-uri 'none'`, `form-action 'self'`, `frame-ancestors 'none'`].join("; ");
   cspCache.set(file, { mtime, csp });
   return csp;
@@ -135,7 +135,8 @@ const server = http.createServer(async (req, res) => {
     const headers = { ...SECURITY, "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" };
     if (/^\/(admin|proposal|portal|team|collect)\.html$/.test(rel)) headers["X-Robots-Tag"] = "noindex";
     if (/^\/(admin|portal|collect|proposal|team)\.html$/.test(rel)) headers["Content-Security-Policy"] = cspFor(file);
-    headers["Cache-Control"] = rel.startsWith("/assets/") ? "public, max-age=86400" : "no-cache";
+    // Font files never change under the same name: keep them a year.
+    headers["Cache-Control"] = rel.endsWith(".woff2") ? "public, max-age=31536000, immutable" : rel.startsWith("/assets/") ? "public, max-age=86400" : "no-cache";
     if (rel.endsWith(".html")) import("./lib/visits.js").then((v) => v.recordVisit(req, url, rel)).catch(() => {});
     sendStatic(req, res, file, headers);
   } catch (err) {
