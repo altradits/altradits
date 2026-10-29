@@ -3,6 +3,7 @@ import { UserWallet, Transaction } from '../types';
 import { ArrowLeft, CheckCircle2, AlertCircle, Loader2, Copy, Check } from 'lucide-react';
 import { hasServerWallet } from '../services/altraditsWallet';
 import QRCode from 'qrcode';
+import { addressQrText } from '../services/paymentQr';
 import {
   createDepositInvoice,
   checkInvoiceStatus,
@@ -52,6 +53,17 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
     : '';
 
   const sovereignBlinkAddress = wallet.blinkAddress || getBlinkSovereignAddress();
+  // Only this wallet's own address gets a QR code (not the shared fallback address).
+  const ownAddress = hasServerWallet() ? wallet.blinkAddress || '' : configuredLightningAddress;
+  const [addressQrUrl, setAddressQrUrl] = useState<string>('');
+
+  useEffect(() => {
+    const text = isOpen && ownAddress ? addressQrText(ownAddress) : null;
+    if (!text) { setAddressQrUrl(''); return; }
+    QRCode.toDataURL(text, { margin: 2, width: 280, color: { dark: '#000000', light: '#FFFFFF' } })
+      .then(setAddressQrUrl)
+      .catch(() => setAddressQrUrl(''));
+  }, [isOpen, ownAddress]);
 
   // Stop polling when modal closes or unmounts
   useEffect(() => {
@@ -302,6 +314,17 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
                     {copiedAddress ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
+                {addressQrUrl && (
+                  <div className="flex justify-center pt-1">
+                    <div className="p-2.5 bg-white rounded-2xl">
+                      <img
+                        src={addressQrUrl}
+                        alt="Lightning Address QR Code"
+                        className="w-44 h-44 rounded-lg object-contain block"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Sats to Receive */}

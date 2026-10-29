@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UserWallet, Transaction, ExchangeRates } from '../types';
-import { ArrowLeft, CheckCircle2, AlertCircle, Loader2, WifiOff } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertCircle, Loader2, WifiOff, ScanLine, ClipboardPaste } from 'lucide-react';
 import { payInvoiceWithWebLN,
   isLightningAddress,
   resolveLightningAddress,
@@ -9,6 +9,8 @@ import { payInvoiceWithWebLN,
 import { calculateRealTransactionCost, RealTransactionCost } from '../services/blinkService';
 import { isNetworkOnline, queueOfflineTransaction } from '../services/offlineService';
 import { hasServerWallet, sendFromServerWallet } from '../services/altraditsWallet';
+import { parsePaymentText, bolt11Sats } from '../services/paymentQr';
+import { QrScanner } from './QrScanner';
 
 // A Ye₿ente wallet handle (another Altradits wallet): sent through the ledger, free.
 const isYebenteHandle = (s: string) => /^[a-z0-9][a-z0-9._-]{1,18}[a-z0-9]$/i.test(s.trim());
@@ -61,8 +63,27 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
   });
   const [wasOfflineDispatched, setWasOfflineDispatched] = useState<boolean>(false);
   const [pin, setPin] = useState<string>('');
+  const [scanning, setScanning] = useState(false);
   const server = hasServerWallet();
   const toYebente = server && isYebenteHandle(sanitizeLightningInput(recipient));
+  // An invoice carries its own amount: it fills the amount and can't be changed.
+  const invoiceSats = recipientType === 'lightning_invoice' ? bolt11Sats(sanitizeLightningInput(recipient)) : null;
+  const amountlessInvoice = server && recipientType === 'lightning_invoice' && !invoiceSats;
+
+  // A scanned or pasted QR code: invoice, Lightning address, LNURL or bitcoin: link.
+  const applyPaymentText = useCallback((text: string) => {
+    setScanning(false);
+    const p = parsePaymentText(text);
+    if (p) setRecipient(p.to);
+  }, []);
+
+  const pasteDestination = async () => {
+    try {
+      applyPaymentText(await navigator.clipboard.readText());
+    } catch {
+      setErrorMessage('Paste is blocked here. Long-press the field and paste instead.');
+    }
+  };
 
   const numericSats = parseInt(satsAmountStr, 10) || 0;
   const availableSats = wallet.satsBalance ?? Math.round((wallet.btcBalance || 0) * 100_000_000);
@@ -115,11 +136,13 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     if (clean.toLowerCase().startsWith('lnbc')) {
       setRecipientType('lightning_invoice');
       setResolvedProvider('Lightning Invoice (BOLT-11)');
-      setErrorMessage('');
+      const sats = bolt11Sats(clean);
+      if (sats) setSatsAmountStr(String(sats));
+      setErrorMessage(sats || !hasServerWallet() ? '' : 'This invoice has no amount. Ask for an invoice with an amount, or their Lightning address.');
       return;
     }
 
-    if (isLightningAddress(clean)) {
+    if (isLightningAddress(clean) || /^lnurlp:\/\//i.test(clean)) {
       setRecipientType('lightning_address');
       setErrorMessage('');
       if (currentlyOnline) {
@@ -341,7 +364,10 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     (recipientType === 'lightning_address' || recipientType === 'lightning_invoice') &&
     numericSats > 0 &&
     !isInsufficientSats &&
+    !amountlessInvoice &&
     (!server || /^\d{6}$/.test(pin));
+
+  if (scanning) return <QrScanner onResult={applyPaymentText} onClose={() => setScanning(false)} />;
 
   return (
     <div
@@ -389,13 +415,29 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                     value={recipient}
                     onChange={(e) => setRecipient(e.target.value)}
                     placeholder="user@blink.sv, user@walletofsatoshi.com, or lnbc..."
-                    className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
+                    className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl pl-4 pr-24 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
                   />
-                  {isResolving && (
-                    <div className="absolute right-3 top-2.5">
-                      <Loader2 className="w-4 h-4 animate-spin text-[var(--yb-primary)]" />
-                    </div>
-                  )}
+                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    {isResolving && <Loader2 className="w-4 h-4 animate-spin text-[var(--yb-primary)]" />}
+                    <button
+                      type="button"
+                      onClick={pasteDestination}
+                      className="p-1.5 rounded-lg text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
+                      aria-label="Paste"
+                      title="Paste"
+                    >
+                      <ClipboardPaste className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setScanning(true)}
+                      className="p-1.5 rounded-lg bg-[var(--yb-primary-container)] text-[var(--yb-on-surface)]"
+                      aria-label="Scan QR Code"
+                      title="Scan QR Code"
+                    >
+                      <ScanLine className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Auto-detected Recipient Badge */}
@@ -413,16 +455,18 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
               <div>
                 <div className="flex justify-between items-center text-xs text-[var(--yb-secondary)] mb-1.5">
                   <span className="font-semibold">Sats to Send</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const maxSend = Math.max(0, availableSats - satsFee);
-                      setSatsAmountStr(maxSend.toString());
-                    }}
-                    className="text-[var(--yb-secondary)] hover:underline font-mono text-[11px]"
-                  >
-                    MAX
-                  </button>
+                  {!invoiceSats && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const maxSend = Math.max(0, availableSats - satsFee);
+                        setSatsAmountStr(maxSend.toString());
+                      }}
+                      className="text-[var(--yb-secondary)] hover:underline font-mono text-[11px]"
+                    >
+                      MAX
+                    </button>
+                  )}
                 </div>
                 <div className="relative">
                   <input
@@ -430,10 +474,11 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                     step="500"
                     min="1"
                     value={satsAmountStr}
+                    readOnly={Boolean(invoiceSats)}
                     onChange={(e) => setSatsAmountStr(e.target.value)}
                     onWheel={(e) => e.currentTarget.blur()}
                     placeholder="1000"
-                    className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-3 text-lg font-mono font-bold text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
+                    className="w-full read-only:opacity-70 bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-3 text-lg font-mono font-bold text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
                   />
                   <span className="absolute right-4 top-3.5 font-mono text-sm font-semibold text-[var(--yb-secondary)]">
                     Sats
@@ -442,7 +487,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
               </div>
 
               {/* Presets */}
-              <div className="grid grid-cols-4 gap-2">
+              {!invoiceSats && <div className="grid grid-cols-4 gap-2">
                 {[500, 1000, 5000, 10000].map((preset) => (
                   <button
                     key={preset}
@@ -457,7 +502,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                     {preset.toLocaleString()}
                   </button>
                 ))}
-              </div>
+              </div>}
 
               {/* PIN for the Altradits wallet */}
               {server && (
