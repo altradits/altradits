@@ -585,7 +585,9 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                   <input
                     type="password"
                     inputMode="numeric"
-                    autoComplete="off"
+                    autoComplete="new-password"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
                     maxLength={6}
                     value={pin}
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
