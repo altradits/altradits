@@ -168,6 +168,14 @@ test("receive: an invoice for the wallet is credited once, when the node says it
   assert.equal((await (await call("GET", "wallet/me", null, w.token)).json()).wallet.balance, 2500);
   // Over the per-payment cap or the wallet limit: no invoice.
   assert.equal((await call("POST", "wallet/invoice", { sats: 5001 }, w.token)).status, 400);
+  // The node not answering (tunnel down): a clear 503 after one retry, never a bare 500.
+  const url = process.env.LND_REST_URL;
+  process.env.LND_REST_URL = "https://127.0.0.1:9";
+  try {
+    const r = await call("POST", "wallet/invoice", { sats: 100 }, w.token);
+    assert.equal(r.status, 503);
+    assert.match((await r.json()).error, /isn't answering/);
+  } finally { process.env.LND_REST_URL = url; }
 });
 
 test("handle@altradits.com is a Lightning address; a payment made while the app is closed is credited by the sweep", async () => {
