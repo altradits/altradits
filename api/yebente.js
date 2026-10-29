@@ -174,6 +174,12 @@ async function invoiceStatus(hash) {
   return json({ success: true, settled: paid === true, paid: paid === true, satsAmount: known.sats });
 }
 
+// Whether the server reaches the node (cached a minute): null when no node is set.
+async function nodeUp() {
+  const { lightningMode, inboundSats } = await import("../lib/lightning.js");
+  return lightningMode() === "lnd" ? (await inboundSats()) !== null : null;
+}
+
 // ---- handle@altradits.com: LNURL-pay (LUD-06/16), invoices from the node for that wallet
 const lnurlReply = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" } });
 async function lnurlPay(request, handle, callback) {
@@ -293,7 +299,7 @@ const sub = (request) => decodeURIComponent(new URL(request.url).pathname.replac
 
 export async function GET(request) {
   const path = sub(request);
-  if (path === "health") return json({ status: "ok", service: "yebente", wallets: switchOn("YEBENTE_WALLETS"), environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), deposits: depositsOn(), timestamp: Date.now() });
+  if (path === "health") return json({ status: "ok", service: "yebente", wallets: switchOn("YEBENTE_WALLETS"), environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), deposits: depositsOn(), node: await nodeUp(), timestamp: Date.now() });
   const inv = path.match(/^lightning\/invoice-status\/([\w-]+)$/);
   if (inv) return invoiceStatus(inv[1]);
   if (path === "wallet/email-confirm") {
