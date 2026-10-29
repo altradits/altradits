@@ -18,6 +18,10 @@
 //                                          (incl. phone@bitcoin.co.ke = M-Pesa) or an invoice
 //   POST wallet/invoice {sats}            an invoice on the node for this wallet
 //   GET  wallet/invoice/<hash>            credited once paid
+//   POST wallet/email {email, pin}       a recovery email (confirmed by a link)
+//   GET  wallet/email-confirm?t=          the link in that email
+//   POST wallet/recover-email {email}     a one-time recovery link to each wallet confirmed with it
+//   POST wallet/recover-email/finish {token, pin}  new PIN, other devices signed out, 24 h hold
 //   POST wallet/buy {kes, phone}          M-Pesa STK Push for sats into this wallet (YEBENTE_MPESA_BUY=on)
 //   GET  wallet/buy/<checkoutRequestId>   credited once Safaricom confirms
 //   GET  lnurlp/<handle> (= /.well-known/lnurlp/<handle>) and lnurl/<handle>?amount=
@@ -207,11 +211,28 @@ async function walletPost(request, action) {
   const body = await readBody(request);
   if (action === "create") {
     if ((await hit(`rl:yb:create:${ipKey(request)}`, 3600)) > 5) return json({ success: false, error: "Too many new wallets from this connection. Try again in an hour." }, 429);
-    return json({ success: true, ...(await yw.createWallet({ pin: body.pin, handle: body.handle })) });
+    return json({ success: true, ...(await yw.createWallet({ pin: body.pin, handle: body.handle, email: body.email, site: site() })) });
   }
   if (action === "restore") {
     if ((await hit(`rl:yb:restore:${ipKey(request)}`, 3600)) > 10) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
     return json({ success: true, ...(await yw.restoreWallet({ recovery: body.recovery, pin: body.pin })) });
+  }
+  if (action === "email") {
+    const w = await me(request);
+    await yw._internal.withLedger(() => yw._internal.checkPin(w, body.pin));
+    if ((await hit(`rl:yb:email:${w.id}`, 3600)) > 5) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
+    return json({ success: true, ...(await yw.setEmail(w, body.email, site())) });
+  }
+  if (action === "recover-email") {
+    const email = String(body.email || "").trim().toLowerCase();
+    if ((await hit(`rl:yb:rec:${ipKey(request)}`, 3600)) > 5 || (await hit(`rl:yb:rece:${crypto.createHash("sha256").update(email).digest("hex").slice(0, 16)}`, 3600)) > 3)
+      return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
+    await yw.requestEmailRecovery(email, site());
+    return json({ success: true, message: "If that email is confirmed for a Ye₿ente wallet, a recovery link is on its way." });
+  }
+  if (action === "recover-email/finish") {
+    if ((await hit(`rl:yb:recf:${ipKey(request)}`, 3600)) > 10) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
+    return json({ success: true, ...(await yw.finishEmailRecovery({ token: String(body.token || ""), pin: body.pin })) });
   }
   if (action === "buy") {
     const w = await me(request);
@@ -275,6 +296,12 @@ export async function GET(request) {
   if (path === "health") return json({ status: "ok", service: "yebente", wallets: switchOn("YEBENTE_WALLETS"), environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), deposits: depositsOn(), timestamp: Date.now() });
   const inv = path.match(/^lightning\/invoice-status\/([\w-]+)$/);
   if (inv) return invoiceStatus(inv[1]);
+  if (path === "wallet/email-confirm") {
+    const { confirmEmail } = await import("../lib/ywallet.js");
+    const ok = await confirmEmail(String(new URL(request.url).searchParams.get("t") || ""));
+    return new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ye₿ente</title><body style="font:17px/1.6 system-ui,sans-serif;background:#141117;color:#F3ECF2;margin:0;display:grid;place-items:center;min-height:100vh"><main style="background:#221E27;border:1px solid #3F3846;border-radius:24px;padding:2rem;max-width:26rem;margin:1rem"><h1 style="margin:0 0 .5rem;font-size:1.4rem">${ok ? "Email confirmed" : "Link not recognised"}</h1><p style="margin:0 0 1rem;color:#CBC2CF">${ok ? "You can now recover your wallet with this email." : "This link has expired or was already used. Add the email again in Settings."}</p><a href="/yebente" style="color:#DDB8FF">Open Ye₿ente</a></main>`,
+      { status: ok ? 200 : 410, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
+  }
   const lp = path.match(/^lnurlp\/([a-z0-9._-]{3,20})$/) || path.match(/^lnurl\/([a-z0-9._-]{3,20})$/);
   if (lp) return lnurlPay(request, lp[1], path.startsWith("lnurl/"));
   const wg = path.match(/^wallet\/(me|history|invoice\/[0-9a-f]{64}|buy\/[\w-]{6,80})$/);
@@ -290,7 +317,7 @@ export async function POST(request) {
     if (path === "mpesa/query") return await stkQuery(request);
     if (path === "mpesa/hakikisha/c2b") return await hakikisha(request);
     if (path === "lightning/create-invoice") return await createDepositInvoice(request);
-    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy)$/);
+    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy|email|recover-email|recover-email\/finish)$/);
     if (wp) return await walletPost(request, wp[1]);
     const cb = path.match(/^mpesa\/callback\/([\w-]{16,128})$/);
     if (cb) return await callback(request, cb[1]);

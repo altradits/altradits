@@ -11,6 +11,9 @@ export interface ServerWallet {
   balance: number;
   createdAt: string;
   limits: { maxBalance: number; maxPayment: number; dailySend: number };
+  email?: string | null;
+  emailPending?: string | null;
+  holdUntil?: string | null;
 }
 
 export interface ServerEntry {
@@ -48,8 +51,8 @@ async function api<T>(method: 'GET' | 'POST', path: string, body?: unknown): Pro
   return data as T;
 }
 
-export async function createServerWallet(pin: string, handle: string) {
-  const r = await api<{ wallet: ServerWallet; token: string; recovery: string }>('POST', 'create', { pin, handle });
+export async function createServerWallet(pin: string, handle: string, email = '') {
+  const r = await api<{ wallet: ServerWallet; token: string; recovery: string }>('POST', 'create', { pin, handle, email: email || undefined });
   setWalletToken(r.token);
   return r;
 }
@@ -92,4 +95,17 @@ function entryToTransaction(e: ServerEntry): Transaction {
     note: e.note,
     receiptUrl: e.receiptUrl,
   };
+}
+
+// ---- recovery by email
+export const setRecoveryEmail = (email: string, pin: string) =>
+  api<{ emailPending: string }>('POST', 'email', { email, pin });
+
+export const requestEmailRecovery = (email: string) =>
+  api<{ message: string }>('POST', 'recover-email', { email });
+
+export async function finishEmailRecovery(token: string, pin: string) {
+  const r = await api<{ wallet: ServerWallet; token: string }>('POST', 'recover-email/finish', { token, pin });
+  setWalletToken(r.token);
+  return r;
 }

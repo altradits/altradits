@@ -57,6 +57,17 @@ export default function App() {
   >('none');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
+  // Opened from a recovery email (/yebente?recover=...): Settings asks for a new PIN.
+  const [recoveryToken, setRecoveryToken] = useState<string>(() => {
+    try { return new URLSearchParams(window.location.search).get('recover') || ''; } catch { return ''; }
+  });
+  useEffect(() => {
+    if (!recoveryToken) return;
+    // The link's token stays out of the address bar and history from here on.
+    window.history.replaceState(null, '', window.location.pathname);
+    setActiveModal('wallet_settings');
+  }, [recoveryToken]);
+
   // Load live rates with Blink as primary engine
   const loadRates = useCallback(async () => {
     try {
@@ -89,6 +100,7 @@ export default function App() {
         nonCustodialLabel: 'In-App Lightning Sovereign Vault',
         blinkUsername: w.handle,
         blinkAddress: w.address,
+        recoveryEmail: w.email || (w.emailPending ? `${w.emailPending} (unconfirmed)` : ''),
         lastSyncedAt: Date.now(),
       }));
       setTransactions(txs);
@@ -258,6 +270,8 @@ export default function App() {
         wallet={wallet}
         onUpdateWallet={handleUpdateWallet}
         onServerWalletChange={syncServerWallet}
+        recoveryToken={recoveryToken}
+        onRecoveryDone={() => { setRecoveryToken(''); syncServerWallet(); }}
         onEjectWallet={handleEjectWallet}
         onWipeWallet={handleWipeWallet}
       />
