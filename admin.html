@@ -7,12 +7,15 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; frame-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <title>Altradits Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+#rcptBox{width:min(46rem,calc(100vw - 2rem));padding:1rem;border:1px solid var(--line);border-radius:12px}#rcptBox::backdrop{background:rgba(0,0,0,.45)}
+#rcptView{width:100%;height:min(70vh,52rem);border:1px solid var(--line);border-radius:8px;background:#fff}
+button.rcpt{background:none;border:0;padding:0;font:inherit;color:var(--blue,#1d4ed8);text-decoration:underline;cursor:pointer}
 :root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--paper:#fff;--ok:#0B7A5F;--warn:#E4572E}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.55 Figtree,system-ui,sans-serif}
@@ -435,6 +438,12 @@ dd{margin:0;overflow-wrap:anywhere}
   </div>
 </div>
 
+<dialog id="rcptBox" aria-labelledby="rcptTitle">
+  <div class="row" style="justify-content:space-between;align-items:center;margin:0 0 .6rem"><h2 id="rcptTitle" style="margin:0">Receipt</h2><button type="button" class="btn" id="rcptClose" aria-label="Close">✕</button></div>
+  <iframe id="rcptView" title="Receipt PDF"></iframe>
+  <div class="row" style="margin-top:.6rem"><a class="btn primary" id="rcptDl" download>Download</a><button type="button" class="btn" id="rcptShare">Share</button></div>
+  <p class="sm muted" id="rcptNote" style="margin:.4rem 0 0"></p>
+</dialog>
 <script type="module" src="/assets/admin.js"></script>
 </body>
 </html>

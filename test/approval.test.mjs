@@ -666,3 +666,24 @@ test("donations from 10 sats: invoiced as exactly that many sats, Lightning only
     assert.equal((await give({ usd: 0.5 })).status, 400);
   } finally { globalThis.fetch = real; }
 });
+
+test("admin: a receipt number opens the same receipt PDF; never a new number; admin only", async () => {
+  process.env.ADMIN_TOKEN = "t0ken";
+  const crm = await import("../lib/crm.js");
+  const admin = await import("../api/admin.js");
+  const { lead, p } = await crm.createDonation({ usd: 5, name: "Achieng", email: "achieng@shop.co" });
+  p.lightning = { sats: 6000, rate: 83333 };
+  p.payment = { method: "Bitcoin (Lightning)", reference: "rcpthash", sats: 6000 };
+  await crm.confirmPayment(lead, p, "", { settlement: { sats: 6000, reference: "rcpthash", at: new Date().toISOString() } });
+  const no = p.receipt.no;
+  const open = (n, tok = "t0ken") => admin.GET(new Request(`http://x/api/admin?view=receipt&no=${encodeURIComponent(n)}`, { headers: { Authorization: `Bearer ${tok}`, "x-forwarded-for": "6.6.6.6" } }));
+  const r = await open(no);
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get("Content-Type"), "application/pdf");
+  assert.match(r.headers.get("Content-Disposition"), new RegExp(`altradits-receipt-${no}\\.pdf`));
+  const pdf = Buffer.from(await r.arrayBuffer()).toString("latin1");
+  assert.ok(pdf.startsWith("%PDF") && pdf.includes(`Receipt ${no}`) && pdf.includes("Achieng") && pdf.includes("6,000 sats"));
+  assert.equal((await crm.getProposal(p.id)).receipt.no, no); // the same number, nothing re-issued
+  assert.equal((await open("R-1999-99999")).status, 404);
+  assert.equal((await open(no, "wrong")).status, 401);
+});
