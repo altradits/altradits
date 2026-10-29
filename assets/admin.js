@@ -124,6 +124,9 @@ function render() {
   const s = D.stats;
   const pending = D.approvals.filter((a) => a.status === "pending");
   $("#apCount").hidden = !pending.length; $("#apCount").textContent = pending.length;
+  const m = s.toMove || { count: 0 };
+  $("#finCount").hidden = $("#moveNote").hidden = !m.count; $("#finCount").textContent = m.count;
+  if (m.count) $("#moveNote").innerHTML = `<b>⚡ ${m.count} payment${m.count > 1 ? "s" : ""} waiting to move to the node</b> (${sats(m.sats)}, in the backup wallet). ${m.ready === m.count ? "The node is back: the QR is in your email and in Finance." : "When the node is back online, you're emailed the QR within the hour, or make it now in Finance."} <button type="button" class="btn" id="moveOpen">Open Finance</button>`;
   $("#kpis").innerHTML = [
     ["Waiting for you", s.pendingApprovals], ["New leads (7d)", s.leads7d], ["Qualified", s.qualified],
     ["Open proposals", s.proposalsOpen], ["Pipeline", money(s.pipelineUsd)], ["Won this month", sats(s.wonMonthSats)],
@@ -150,6 +153,7 @@ function renderLeads() {
     <td class="hide-sm">${l.score || "–"}</td>
     <td>${ago(l.updatedAt)}<br><span class="muted">${esc(l.lastMessage.slice(0, 70))}</span></td></tr>`).join("") || `<tr><td colspan="5" class="muted">No leads yet. Share the site!</td></tr>`;
 }
+$("#moveNote").addEventListener("click", (e) => { if (e.target.id === "moveOpen") tab("finance"); });
 $("#search").addEventListener("input", renderLeads);
 $("#stageFilter").addEventListener("change", renderLeads);
 

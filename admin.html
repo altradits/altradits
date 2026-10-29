@@ -167,7 +167,7 @@ dd{margin:0;overflow-wrap:anywhere}
       <button role="tab" data-tab="leads">Leads & clients</button>
       <button role="tab" data-tab="tasks">Tasks <span class="badge" id="taskCount" hidden></span></button>
       <button role="tab" data-tab="team">Team <span class="badge" id="teamCount" hidden></span></button>
-      <button role="tab" data-tab="finance">Finance</button>
+      <button role="tab" data-tab="finance">Finance <span class="badge" id="finCount" hidden></span></button>
       <button role="tab" data-tab="growth">Growth</button>
       <button role="tab" data-tab="marketing">Marketing</button>
       <button role="tab" data-tab="stan">Stan <span class="badge" id="approvalCount" hidden></span></button>
@@ -179,6 +179,7 @@ dd{margin:0;overflow-wrap:anywhere}
   </header>
 
   <div id="tab-overview">
+    <div id="moveNote" hidden style="border:1px solid #d9a400;background:rgba(217,164,0,.1);border-radius:8px;padding:.6rem .8rem;margin:0 0 1rem"></div>
     <div class="kpis" id="kpis"></div>
     <div class="grid2">
       <div class="panel"><h2>Funnel</h2><div class="funnel" id="funnel"></div></div>
