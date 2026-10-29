@@ -1,0 +1,8 @@
+# The built Ye₿ente app is public (the folder above is not).
+<IfModule mod_authz_core.c>
+  Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Allow from all
+</IfModule>
