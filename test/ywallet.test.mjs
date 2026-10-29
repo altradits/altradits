@@ -274,6 +274,47 @@ test("send to a Lightning address (phone@bitcoin.co.ke pays M-Pesa); another Yeâ
   } finally { globalThis.fetch = realFetch; }
 });
 
+// bech32 "lnurl1..." the way wallets print it under a QR code (LUD-01).
+function lnurlEncode(url) {
+  const A = "qpzry9x8gf2tvdw0s3jn54khce6mua7l", GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
+  const poly = (vs) => { let c = 1; for (const v of vs) { const t = c >>> 25; c = ((c & 0x1ffffff) << 5) ^ v; for (let i = 0; i < 5; i++) if ((t >>> i) & 1) c ^= GEN[i]; } return c >>> 0; };
+  const words = []; let acc = 0, bits = 0;
+  for (const b of Buffer.from(url)) { acc = ((acc << 8) | b) & 0xfff; bits += 8; while (bits >= 5) { bits -= 5; words.push((acc >> bits) & 31); } }
+  if (bits) words.push((acc << (5 - bits)) & 31);
+  const hrp = [..."lnurl"].map((c) => c.charCodeAt(0));
+  const p = poly([...hrp.map((c) => c >> 5), 0, ...hrp.map((c) => c & 31), ...words, 0, 0, 0, 0, 0, 0]) ^ 1;
+  const chk = Array.from({ length: 6 }, (_, i) => (p >>> (5 * (5 - i))) & 31);
+  return "lnurl1" + [...words, ...chk].map((v) => A[v]).join("");
+}
+
+test("send to an LNURL from a QR code; a Yeâ‚¿ente wallet's own QR is a free transfer", async () => {
+  assert.equal(yw.lnurlToUrl(lnurlEncode("https://bitcoin.co.ke/.well-known/lnurlp/0712345678").toUpperCase()), "https://bitcoin.co.ke/.well-known/lnurlp/0712345678");
+  assert.equal(yw.lnurlToUrl("lnurlp://bitcoin.co.ke/lnurlp/Ab"), "https://bitcoin.co.ke/lnurlp/Ab");
+  assert.equal(yw.lnurlToUrl(lnurlEncode("https://bitcoin.co.ke/x").slice(0, -1) + "q"), null); // bad checksum
+  assert.equal(yw.lnurlToUrl(lnurlEncode("http://bitcoin.co.ke/x")), null); // not https
+  const realFetch = globalThis.fetch;
+  let lastAmount = null;
+  globalThis.fetch = async (url, opts) => {
+    const u = new URL(String(url));
+    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/.well-known/lnurlp/0712345678") return new Response(JSON.stringify({ tag: "payRequest", callback: "https://bitcoin.co.ke/lnurlp/cb/0712345678", minSendable: 15000, maxSendable: 50000000, metadata: "[]" }));
+    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/lnurlp/cb/0712345678") { lastAmount = Number(u.searchParams.get("amount")); return new Response(JSON.stringify({ pr: invoice(lastAmount / 1000).pr })); }
+    return realFetch(url, opts);
+  };
+  try {
+    const token = (await (await call("POST", "wallet/create", { pin: "141414", handle: "qr-user" })).json()).token;
+    await yw.credit({ walletId: (await yw.walletByHandle("qr-user")).id, sats: 2000, kind: "receive", ref: "fund-qr" });
+    const r = await (await call("POST", "wallet/send", { to: `lightning:${lnurlEncode("https://bitcoin.co.ke/.well-known/lnurlp/0712345678").toUpperCase()}`, sats: 500, pin: "141414" }, token)).json();
+    assert.equal(r.status, "completed");
+    assert.equal(lastAmount, 500_000);
+    const before = (await yw.walletByHandle("payer")).balance;
+    const calls = payCalls.length;
+    const t = await (await call("POST", "wallet/send", { to: lnurlEncode("https://altradits.test/.well-known/lnurlp/payer"), sats: 100, pin: "141414" }, token)).json();
+    assert.ok(t.ref);
+    assert.equal(payCalls.length, calls);
+    assert.equal((await yw.walletByHandle("payer")).balance, before + 100);
+  } finally { globalThis.fetch = realFetch; }
+});
+
 test("a payment whose result isn't known in time stays pending until the node answers", async () => {
   const w = await yw.walletByHandle("payer");
   const token = (await (await call("POST", "wallet/restore", { recovery: (await (await call("POST", "wallet/create", { pin: "141414", handle: "slow" })).json()).recovery, pin: "141414" })).json()).token;
