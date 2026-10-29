@@ -634,3 +634,35 @@ test("discounts: the price after the discount must stay above the floor, and any
   assert.ok(reasons.some((r) => /discount needs your OK/.test(r)));
   assert.equal(crm.priceProposal(lead, { items: [{ package_id: "core" }] }).reasons.length, 0); // list price, no discount: straight through
 });
+
+test("donations from 10 sats: invoiced as exactly that many sats, Lightning only below the dust limit, thanked and receipted in sats", async () => {
+  const crm = await import("../lib/crm.js");
+  const donate = await import("../api/donate.js");
+  const { DUST_SATS } = await import("../data/catalog.js");
+  const real = globalThis.fetch;
+  globalThis.fetch = async () => ({ json: async () => ({ data: { amount: "100000" } }) }); // BTC at $100,000
+  const give = async (body) => donate.POST(new Request("http://x/api/donate", { method: "POST", headers: { "Content-Type": "application/json", "x-forwarded-for": "7.7.7.7" }, body: JSON.stringify(body) }));
+  try {
+    for (const sats of [9, 10.5, -10, "ten"]) assert.equal((await give({ sats })).status, 400, String(sats));
+    const r = await give({ sats: 10, name: "Wanjiru", email: "wanjiru@shop.co" });
+    assert.equal(r.status, 200);
+    const d = await r.json();
+    assert.equal(d.sats, 10);
+    assert.equal(d.usd, 0.01); // its dollar value, for the totals only
+    const p = await crm.getProposal(d.id);
+    assert.equal(p.donation.sats, 10);
+    assert.ok(10 < DUST_SATS); // so the payment page offers Lightning only (api/pay.js)
+    const lead = await crm.getLead(p.leadId);
+    p.lightning = { sats: 10, provider: "lnd" };
+    p.payment = { method: "Bitcoin (Lightning)", reference: "tensats", sats: 10 };
+    await crm.confirmPayment(lead, p, "", { settlement: { sats: 10, reference: "tensats", at: new Date().toISOString() } });
+    const thanks = (await all()).find((e) => e.to === "wanjiru@shop.co");
+    assert.match(thanks.text, /your 10 sats donation to Bitcoin education in our community has arrived\. Your receipt R-/);
+    const { receiptPdf } = await import("../lib/finance.js");
+    const pdf = receiptPdf(lead, p, p.receipt.no).toString("latin1");
+    assert.ok(pdf.includes("Donation to Bitcoin education in the community: 10 sats"));
+    assert.ok(pdf.includes("Total paid: 10 sats \\(about $0.01\\)")); // PDF text escapes brackets
+    // Dollar donations are unchanged.
+    assert.equal((await give({ usd: 0.5 })).status, 400);
+  } finally { globalThis.fetch = real; }
+});
