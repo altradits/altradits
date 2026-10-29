@@ -22,6 +22,7 @@ export interface ServerEntry {
   status: 'completed' | 'pending' | 'failed';
   ref: string;
   note?: string;
+  receiptUrl?: string;
   at: string;
 }
 
@@ -89,5 +90,6 @@ function entryToTransaction(e: ServerEntry): Transaction {
     referenceNumber: e.ref,
     walletType: 'custodial',
     note: e.note,
+    receiptUrl: e.receiptUrl,
   };
 }

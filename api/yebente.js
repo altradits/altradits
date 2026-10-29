@@ -13,7 +13,8 @@
 //   POST wallet/create {pin, handle?}     -> {wallet, token, recovery} (shown once)
 //   POST wallet/restore {recovery, pin}   -> {wallet, token}
 //   GET  wallet/me, wallet/history        (Authorization: Bearer <token>)
-//   POST wallet/send {to, sats, pin}      to another Ye₿ente wallet (handle or handle@domain)
+//   POST wallet/send {to, sats, pin}      a Ye₿ente handle (free), a Lightning address
+//                                          (incl. phone@bitcoin.co.ke = M-Pesa) or an invoice
 //   POST wallet/invoice {sats}            an invoice on the node for this wallet
 //   GET  wallet/invoice/<hash>            credited once paid
 //   GET  lnurlp/<handle> (= /.well-known/lnurlp/<handle>) and lnurl/<handle>?amount=
@@ -212,10 +213,9 @@ async function walletPost(request, action) {
   }
   if (action === "send") {
     const w = await me(request);
-    const to = String(body.to || "").trim().toLowerCase();
-    const local = to.match(new RegExp(`^([a-z0-9._-]+)(?:@${yw.DOMAIN().replace(/\./g, "\\.")})?$`));
-    if (!local) return json({ success: false, error: "Only Ye₿ente wallets for now: enter a handle." }, 400);
-    return json({ success: true, ...(await yw.transfer({ from: w, toHandle: local[1], sats: body.sats, pin: body.pin, note: body.note })) });
+    if ((await hit(`rl:yb:send:${w.id}`, 3600)) > 60) return json({ success: false, error: "Too many payments. Try again later." }, 429);
+    // A handle (free, in the ledger), a Lightning address or an invoice (paid by the node).
+    return json({ success: true, ...(await yw.payOut({ from: w, to: body.to, sats: body.sats, pin: body.pin })) });
   }
   return json({ success: false, error: "Not found" }, 404);
 }
