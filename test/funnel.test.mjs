@@ -156,6 +156,7 @@ test("hero graphics, accessibility contrast, CSP & security hardening (#96 & #10
   for (const [page, cls] of [
     ["index.html", "hero-art"],
     ["bitcoin.html", "btc-art"],
+    ["va.html", "va-art"],
     ["products.html", "prod-art"],
     ["hunt.html", "hunt-art"],
     ["collect.html", "col-art"],
