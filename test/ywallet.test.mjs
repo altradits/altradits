@@ -14,6 +14,7 @@ for (const k of ["UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "DATA_DIR"]) delet
 Object.assign(process.env, { YEBENTE_WALLETS: "on", SITE_URL: "https://altradits.test", YEBENTE_MAX_BALANCE_SATS: "10000", YEBENTE_MAX_PAYMENT_SATS: "5000", YEBENTE_DAILY_SEND_SATS: "6000" });
 
 const yw = await import("../lib/ywallet.js");
+const { bolt11PaymentHash } = await import("../lib/lightning.js");
 const api = await import("../api/yebente.js");
 let n = 0;
 const call = (method, p, body, token) => api[method](new Request(`https://altradits.test/api/yebente/${p}`, {
@@ -71,7 +72,6 @@ test("transfers between wallets: free and instant, with the PIN; wrong PINs lock
   // Unknown handle, self, external addresses (not yet).
   assert.equal((await call("POST", "wallet/send", { to: "nobody", sats: 10, pin: "222222" }, amina.token)).status, 404);
   assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 10, pin: "222222" }, amina.token)).status, 400);
-  assert.equal((await call("POST", "wallet/send", { to: "x@walletofsatoshi.com", sats: 10, pin: "222222" }, amina.token)).status, 400);
   // Five wrong PINs lock spending, even with the right PIN after.
   for (let i = 0; i < 5; i++) assert.equal((await call("POST", "wallet/send", { to: "juma", sats: 10, pin: "999999" }, amina.token)).status, 403);
   assert.equal((await call("POST", "wallet/send", { to: "juma", sats: 10, pin: "222222" }, amina.token)).status, 429);
@@ -106,8 +106,11 @@ test("ten sends at once can never spend the same sats twice", async () => {
 // ---- step 2: receiving from any Lightning wallet (a fake LND node, HTTPS like a real one)
 const MAC = "0201036c6e64";
 const lndInvoices = new Map();
+const payments = new Map(), payCalls = [];
+let payMode = "ok";
 let lnd;
 async function fakeLnd() {
+  if (lnd) return;
   execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-subj", "/CN=localhost",
     "-addext", "subjectAltName=DNS:localhost", "-keyout", "key.pem", "-out", "cert.pem"], { stdio: "ignore" });
   lnd = https.createServer({ key: fs.readFileSync("key.pem"), cert: fs.readFileSync("cert.pem") }, (req, res) => {
@@ -118,7 +121,22 @@ async function fakeLnd() {
         const { value, description_hash } = JSON.parse(body);
         const hash = crypto.randomBytes(32);
         lndInvoices.set(hash.toString("hex"), { state: "OPEN", value, description_hash });
-        res.end(JSON.stringify({ r_hash: hash.toString("base64"), payment_request: `lnbc${value}0n1fake` }));
+        res.end(JSON.stringify({ r_hash: hash.toString("base64"), payment_request: invoice(Number(value), hash.toString("hex")).pr }));
+        return;
+      }
+      if (req.method === "POST" && req.url === "/v1/channels/transactions") {
+        if (req.headers["grpc-metadata-macaroon"] !== MAC) { res.writeHead(401).end("{}"); return; }
+        const { payment_request, fee_limit } = JSON.parse(body);
+        payCalls.push({ pr: payment_request, feeLimit: Number(fee_limit.fixed) });
+        const hash = bolt11PaymentHash(payment_request);
+        if (payMode === "fail") { payments.set(hash, "FAILED"); res.end(JSON.stringify({ payment_error: "no route" })); return; }
+        if (payMode === "hang") { payments.set(hash, "IN_FLIGHT"); return; } // never answers: the client times out
+        payments.set(hash, "SUCCEEDED");
+        res.end(JSON.stringify({ payment_preimage: Buffer.from("aa".repeat(32), "hex").toString("base64"), payment_route: { total_fees: "3" } }));
+        return;
+      }
+      if (req.method === "GET" && req.url.startsWith("/v1/payments")) {
+        res.end(JSON.stringify({ payments: [...payments].map(([h, st]) => ({ payment_hash: h, status: st, fee_sat: "4" })) }));
         return;
       }
       if (req.url === "/v1/balance/channels") { res.end(JSON.stringify({ remote_balance: { sat: "10000000" } })); return; }
@@ -172,7 +190,6 @@ test("handle@altradits.com is a Lightning address; a payment made while the app 
   assert.equal(w.balance, 3500);
   assert.equal(await yw.settleInvoice(hash), "settled");
   assert.equal((await yw.walletByHandle("wanjiru")).balance, 3500); // settled once
-  lnd.close();
 });
 
 test("wallets stay off until YEBENTE_WALLETS=on", async () => {
@@ -180,4 +197,105 @@ test("wallets stay off until YEBENTE_WALLETS=on", async () => {
   assert.equal((await call("POST", "wallet/create", { pin: "555555" })).status, 501);
   assert.equal((await call("GET", "lnurlp/wanjiru")).status, 404);
   process.env.YEBENTE_WALLETS = "on";
+});
+
+// ---- step 3: sending out of the node (pay macaroon), to invoices and Lightning addresses
+
+// A BOLT11-shaped invoice for `sats` with payment hash `hash` (the reader takes the
+// amount and the "p" field; signature and checksum are not checked here).
+const BECH = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+function invoice(sats, hash = crypto.randomBytes(32).toString("hex")) {
+  const bits = [...Buffer.from(hash, "hex")].map((b) => b.toString(2).padStart(8, "0")).join("").padEnd(260, "0");
+  const words = [...Array(7).fill(0), 1, 1, 20, ...bits.match(/.{5}/g).map((b) => parseInt(b, 2)), ...Array(104).fill(0)];
+  return { pr: `lnbc${sats * 10}n1` + words.map((w) => BECH[w]).join("") + "qqqqqq", hash };
+}
+
+test("send to an invoice: paid by the node, unused fee reserve refunded; failures refund everything", async () => {
+  process.env.YEBENTE_LND_PAY_MACAROON = MAC;
+  process.env.JOBS_ALLOW_LOCAL = "1";
+  await fakeLnd();
+  const w = await (await call("POST", "wallet/create", { pin: "121212", handle: "payer" })).json();
+  await yw.credit({ walletId: w.wallet.id, sats: 4000, kind: "receive", ref: "fund-payer" });
+  const { pr, hash } = invoice(1000);
+  let r = await call("POST", "wallet/send", { to: pr, pin: "121212" }, w.token);
+  let d = await r.json();
+  assert.equal(r.status, 200, JSON.stringify(d));
+  assert.equal(d.status, "completed");
+  assert.equal(payCalls.at(-1).feeLimit, 10); // max(10, 1% of 1,000)
+  // 4,000 - 1,000 - actual fee 3 (the rest of the 10-sat reserve came back).
+  assert.equal(d.wallet.balance, 2997);
+  const e = (await (await call("GET", "wallet/history", null, w.token)).json()).entries[0];
+  assert.equal(e.status, "completed"); assert.equal(e.fee, 3); assert.equal(e.ref, hash);
+  // The same invoice can't be paid twice from Ye₿ente.
+  assert.equal((await call("POST", "wallet/send", { to: pr, pin: "121212" }, w.token)).status, 409);
+  // A failed route takes nothing.
+  payMode = "fail";
+  r = await call("POST", "wallet/send", { to: invoice(500).pr, pin: "121212" }, w.token);
+  assert.equal(r.status, 502);
+  assert.equal((await yw.walletByHandle("payer")).balance, 2997);
+  assert.equal((await (await call("GET", "wallet/history", null, w.token)).json()).entries[0].status, "failed");
+  payMode = "ok";
+  // An amountless invoice, or the wrong amount, is refused before anything is taken.
+  assert.equal((await call("POST", "wallet/send", { to: "lnbc1qqqqqq", pin: "121212" }, w.token)).status, 400);
+  assert.equal((await call("POST", "wallet/send", { to: invoice(700).pr, sats: 600, pin: "121212" }, w.token)).status, 400);
+});
+
+test("send to a Lightning address (phone@bitcoin.co.ke pays M-Pesa); another Ye₿ente wallet's invoice stays in the ledger", async () => {
+  const realFetch = globalThis.fetch;
+  let lastAmount = null;
+  globalThis.fetch = async (url, opts) => {
+    const u = new URL(String(url));
+    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/.well-known/lnurlp/0712345678") return new Response(JSON.stringify({ tag: "payRequest", callback: "https://bitcoin.co.ke/lnurlp/cb/0712345678", minSendable: 15000, maxSendable: 50000000, metadata: "[]" }));
+    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/lnurlp/cb/0712345678") { lastAmount = Number(u.searchParams.get("amount")); return new Response(JSON.stringify({ pr: invoice(lastAmount / 1000).pr, successAction: { tag: "url", url: "https://bitcoin.co.ke/receipt/abc" } })); }
+    if (u.hostname === "evil.example") return new Response(JSON.stringify({ tag: "payRequest", callback: "https://evil.example/cb", minSendable: 1000, maxSendable: 1e9, metadata: "[]" }));
+    if (u.pathname === "/cb") return new Response(JSON.stringify({ pr: invoice(999).pr })); // a different amount
+    return realFetch(url, opts);
+  };
+  try {
+    const w = await yw.walletByHandle("payer");
+    const token = (await (await call("POST", "wallet/create", { pin: "131313", handle: "mpesa-user" })).json()).token;
+    await yw.credit({ walletId: (await yw.walletByHandle("mpesa-user")).id, sats: 3000, kind: "receive", ref: "fund-mpesa" });
+    const r = await (await call("POST", "wallet/send", { to: "0712345678@bitcoin.co.ke", sats: 2000, pin: "131313" }, token)).json();
+    assert.equal(r.status, "completed");
+    assert.equal(lastAmount, 2_000_000);
+    assert.equal(r.receiptUrl, "https://bitcoin.co.ke/receipt/abc");
+    assert.equal((await yw.walletByHandle("mpesa-user")).balance, 3000 - 2000 - 3);
+    // An address that returns an invoice for another amount is refused, nothing taken.
+    assert.equal((await call("POST", "wallet/send", { to: "x@evil.example", sats: 500, pin: "131313" }, token)).status, 400);
+    // Paying another Ye₿ente wallet's invoice: a free transfer, no Lightning payment.
+    const calls = payCalls.length;
+    const inv = await yw.invoiceFor(w, 400);
+    const t = await (await call("POST", "wallet/send", { to: inv.invoice, pin: "131313" }, token)).json();
+    assert.ok(t.ref);
+    assert.equal(payCalls.length, calls);
+    assert.equal((await yw.walletByHandle("payer")).balance, 2997 + 400);
+  } finally { globalThis.fetch = realFetch; }
+});
+
+test("a payment whose result isn't known in time stays pending until the node answers", async () => {
+  const w = await yw.walletByHandle("payer");
+  const token = (await (await call("POST", "wallet/restore", { recovery: (await (await call("POST", "wallet/create", { pin: "141414", handle: "slow" })).json()).recovery, pin: "141414" })).json()).token;
+  await yw.credit({ walletId: (await yw.walletByHandle("slow")).id, sats: 2000, kind: "receive", ref: "fund-slow" });
+  payMode = "hang";
+  const { pr, hash } = invoice(1000);
+  const lightning = await import("../lib/lightning.js");
+  // Instead of waiting 65 s for the timeout, settle the in-flight state the way the app would see it.
+  const p = call("POST", "wallet/send", { to: pr, pin: "141414" }, token);
+  await new Promise((r) => setTimeout(r, 300));
+  assert.equal((await yw.walletByHandle("slow")).balance, 2000 - 1000 - 10); // reserved while in flight
+  payments.set(hash, "SUCCEEDED");
+  assert.deepEqual(await lightning.paymentStatus(hash), { status: "succeeded", feeSats: 4 });
+  await yw.reconcilePayments();
+  assert.equal((await yw.walletByHandle("slow")).balance, 2000 - 1000 - 4);
+  payMode = "ok";
+  void p; void w;
+});
+
+test("without the pay macaroon, sending out is off (handles still work)", async () => {
+  delete process.env.YEBENTE_LND_PAY_MACAROON;
+  const token = (await (await call("POST", "wallet/create", { pin: "151515", handle: "nopay" })).json()).token;
+  await yw.credit({ walletId: (await yw.walletByHandle("nopay")).id, sats: 500, kind: "receive", ref: "fund-nopay" });
+  assert.equal((await call("POST", "wallet/send", { to: invoice(100).pr, pin: "151515" }, token)).status, 501);
+  assert.equal((await call("POST", "wallet/send", { to: "payer", sats: 100, pin: "151515" }, token)).status, 200);
+  lnd.close();
 });

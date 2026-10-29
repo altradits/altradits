@@ -1,4 +1,5 @@
 import { payInvoiceWithWebLN } from '../services/lightningService';
+import { hasServerWallet, sendFromServerWallet } from '../services/altraditsWallet';
 import React, { useState, useEffect } from 'react';
 import { UserWallet, ExchangeRates, Transaction } from '../types';
 import {
@@ -59,6 +60,8 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   const [isNetworkFailure, setIsNetworkFailure] = useState<boolean>(false);
   const [wasOfflineQueued, setWasOfflineQueued] = useState<boolean>(false);
   const [copiedRef, setCopiedRef] = useState<boolean>(false);
+  const [pin, setPin] = useState<string>('');
+  const server = hasServerWallet();
 
   // Tando live bounds state
   const [tandoBounds, setTandoBounds] = useState<TandoBoundsResult | null>(null);
@@ -227,8 +230,23 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
         const receiptUrl = invoiceRes.successAction?.url || (paymentHash ? `https://bitcoin.co.ke/receipt/${paymentHash}` : '');
         setTandoReceiptUrl(receiptUrl);
 
-        // Step 2: Settle payment off-chain, from the user's own wallet (WebLN)
-        const paid = await payInvoiceWithWebLN(invoiceRes.pr);
+        // Step 2: Settle payment off-chain: from the Altradits wallet (with the PIN),
+        // or from the user's own wallet (WebLN)
+        let paid: { paid: boolean; error?: string };
+        if (server) {
+          try {
+            await sendFromServerWallet(invoiceRes.pr, 0, pin);
+            setPin('');
+            paid = { paid: true };
+          } catch (err: unknown) {
+            setErrorMessage(err instanceof Error ? err.message : 'Lightning payment route unavailable.');
+            setStep('error');
+            setIsNetworkFailure(false);
+            return;
+          }
+        } else {
+          paid = await payInvoiceWithWebLN(invoiceRes.pr);
+        }
         if (!paid.paid) {
           setErrorMessage('Lightning payment route unavailable. You can queue this transaction offline to broadcast upon reconnect.');
           setStep('error');
@@ -560,6 +578,22 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                 </div>
               </div>
 
+              {/* PIN for the Altradits wallet */}
+              {server && rail === 'mpesa' && (
+                <div>
+                  <div className="text-xs text-[var(--yb-secondary)] mb-1.5 font-semibold">PIN</div>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    maxLength={6}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-3 text-lg font-mono tracking-[0.5em] text-[var(--yb-on-surface)] focus:outline-none"
+                  />
+                </div>
+              )}
+
               {/* Submit CTA */}
               <button
                 type="button"
@@ -567,7 +601,8 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                 disabled={
                   amountValue <= 0 ||
                   !isPhoneValid ||
-                  isInsufficientSats
+                  isInsufficientSats ||
+                  (server && rail === 'mpesa' && !/^\d{6}$/.test(pin))
                 }
                 className="w-full h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center disabled:opacity-50 mt-2"
               >
