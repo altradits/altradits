@@ -195,7 +195,8 @@ test("a kit requested on /products: the confirmation and, once confirmed, the ki
   const mail = (await all()).find((e) => e.to === "kiwi@shop.co" && /Your free kit/.test(e.subject));
   assert.equal(mail.status, "logged"); // sent, not waiting for approval
   assert.match(mail.from, /<marketing@altradits\.com>$/);
-  assert.deepEqual(mail.files, ["inbox-zero-in-60-minutes.pdf"]);
+  assert.deepEqual(mail.files, []); // a download link, not attachments
+  assert.match(mail.cta.url, /api\/kits\?d=inbox&f=inbox-zero-in-60-minutes\.pdf/);
   assert.ok(!(await email.pendingApprovals()).some((e) => e.to === "kiwi@shop.co"));
 });
 
