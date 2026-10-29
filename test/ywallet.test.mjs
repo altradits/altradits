@@ -125,15 +125,16 @@ async function fakeLnd() {
         res.end(JSON.stringify({ r_hash: hash.toString("base64"), payment_request: invoice(Number(value), hash.toString("hex")).pr }));
         return;
       }
-      if (req.method === "POST" && req.url === "/v1/channels/transactions") {
+      if (req.method === "POST" && req.url === "/v2/router/send") {
         if (req.headers["grpc-metadata-macaroon"] !== MAC) { res.writeHead(401).end("{}"); return; }
-        const { payment_request, fee_limit } = JSON.parse(body);
-        payCalls.push({ pr: payment_request, feeLimit: Number(fee_limit.fixed) });
+        const { payment_request, fee_limit_sat, no_inflight_updates } = JSON.parse(body);
+        payCalls.push({ pr: payment_request, feeLimit: Number(fee_limit_sat), quiet: no_inflight_updates });
         const hash = bolt11PaymentHash(payment_request);
-        if (payMode === "fail") { payments.set(hash, "FAILED"); res.end(JSON.stringify({ payment_error: "no route" })); return; }
+        // Streams one JSON object per line, like LND's routerrpc REST gateway.
+        if (payMode === "fail") { payments.set(hash, "FAILED"); res.end(JSON.stringify({ result: { payment_hash: hash, status: "FAILED", failure_reason: "FAILURE_REASON_NO_ROUTE" } }) + "\n"); return; }
         if (payMode === "hang") { payments.set(hash, "IN_FLIGHT"); return; } // never answers: the client times out
         payments.set(hash, "SUCCEEDED");
-        res.end(JSON.stringify({ payment_preimage: Buffer.from("aa".repeat(32), "hex").toString("base64"), payment_route: { total_fees: "3" } }));
+        res.end(JSON.stringify({ result: { payment_hash: hash, status: "SUCCEEDED", fee_sat: "3", payment_preimage: "aa".repeat(32) } }) + "\n");
         return;
       }
       if (req.method === "GET" && req.url.startsWith("/v1/payments")) {
