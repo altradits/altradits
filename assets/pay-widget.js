@@ -86,7 +86,7 @@ export function mountPay(el, { id, t, onPaid, onReady, claim = false }) {
         <a class="qr" data-qr></a>
         <div>
           <div class="sats">${sats} sats</div>
-          <div class="muted">${money(inv.usd)} at ${money(inv.rate)}/BTC${onchain ? ` · ${onchain.btc} BTC` : ""}</div>
+          <div class="muted">${inv.rate ? `${money(inv.usd)} at ${money(inv.rate)}/BTC` : inv.usd > 0 ? `about ${money(inv.usd)}` : ""}${onchain ? ` · ${onchain.btc} BTC` : ""}</div>
           <div class="hint muted" data-hint></div>
           <div class="inv" data-text></div>
           <div class="row">
@@ -98,7 +98,7 @@ export function mountPay(el, { id, t, onPaid, onReady, claim = false }) {
         </div>
       </div>
       <details class="fees" open><summary>Fees</summary><ul>
-        <li><b>Altradits adds no fee.</b> You pay exactly ${sats} sats (${money(inv.usd)}).</li>
+        <li><b>Altradits adds no fee.</b> You pay exactly ${sats} sats${inv.usd > 0 ? ` (${money(inv.usd)})` : ""}.</li>
         <li><b>Lightning:</b> your wallet may add a small network fee, usually a few sats and well under 1%.</li>
         ${fees?.onchain ? `<li><b>On-chain:</b> your wallet adds a miner fee on top, right now about ${feeLine(fees.onchain.normal)} for ~30 min or ${feeLine(fees.onchain.fast)} for ~10 min. Send the full ${sats} sats.</li>` : ""}
         <li>Exchanges (Binance, Coinbase…) may charge their own withdrawal fee. Make sure the full amount arrives.</li>

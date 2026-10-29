@@ -20,14 +20,15 @@ export async function GET(request) {
   if ((await hit(`rl:lnurl:${p.id}`, 600)) > 60) return error("Too many requests.");
 
   const usd = p.totals.dueNow;
-  const sats = await usdToSats(usd);
+  const fixed = p.donation?.sats; // a donation in sats: exactly that many
+  const sats = fixed || (await usdToSats(usd));
   // A payment bigger than the channels can receive would just fail in the
   // wallet; point the client at the on-chain option instead.
   const inbound = await inboundSats();
   if (inbound !== null && sats > inbound * 0.9) return error("This amount is too large for Lightning right now. Please use the On-chain tab on the payment page.");
   // Allow ~2% for BTC price movement between the two wallet requests.
-  const min = Math.floor(sats * 0.98) * 1000, max = Math.ceil(sats * 1.02) * 1000;
-  const metadata = JSON.stringify([["text/plain", `Altradits: ${p.title} ($${usd})`]]);
+  const min = (fixed ? sats : Math.floor(sats * 0.98)) * 1000, max = (fixed ? sats : Math.ceil(sats * 1.02)) * 1000;
+  const metadata = JSON.stringify([["text/plain", `Altradits: ${p.title} (${fixed ? `${sats} sats` : `$${usd}`})`]]);
   const amount = u.searchParams.get("amount");
 
   if (!amount) {
