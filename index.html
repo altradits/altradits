@@ -257,8 +257,8 @@ try {
 const PICKS = ["q-inbox-cleanup", "q-captions", "q-invoices", "q-pdf-sheet", "q-site-fix", "q-trip"];
 $("#picks").innerHTML = PICKS.map((id) => QUICK_JOBS.find((q) => q.id === id)).filter(Boolean).map((q) =>
   `<li class="reveal"><a href="${orderPath(q.id)}"><b>${esc(q.name)}</b><span>${esc(q.deliverables[0])}</span><span class="pr"><strong>$${q.price}</strong><em>${esc(q.delivery)}</em></span></a></li>`).join("");
-const tasks = QUICK_JOBS.filter((q) => q.id !== "q-try"), test = orderable("q-try");
-$("#all").textContent = `See all ${tasks.length} tasks →`;
+const test = orderable("q-try");
+$("#all").textContent = `See all ${QUICK_JOBS.length} tasks →`;
 if (test) { $("#try").href = orderPath(test.id); $("#try").textContent = `Test me · $${test.price}`; $("#from").textContent = `From $${test.price} · Pay with any Bitcoin wallet`; }
 
 const io = "IntersectionObserver" in window ? new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .12 }) : null;
