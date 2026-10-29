@@ -6,6 +6,7 @@ import http from "node:http";
 import fs from "node:fs";
 import crypto from "node:crypto";
 import path from "node:path";
+import zlib from "node:zlib";
 
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
 const PORT = Number(process.env.PORT) || 3000;
@@ -51,6 +52,37 @@ function cspFor(file) {
     `img-src 'self' data: https:`, `frame-src 'self' blob:`, `connect-src 'self'`, `object-src 'none'`, `base-uri 'none'`, `form-action 'self'`, `frame-ancestors 'none'`].join("; ");
   cspCache.set(file, { mtime, csp });
   return csp;
+}
+
+// Static files: compressed once per version (brotli, else gzip) and kept in
+// memory, with an ETag so a repeat visit gets "304 Not Modified" instead of
+// the whole file again.
+const COMPRESSIBLE = /\.(html|js|css|svg|json|xml|txt)$/;
+const packed = new Map();
+function sendStatic(req, res, file, headers) {
+  let st;
+  try { st = fs.statSync(file); } catch { res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found"); return; }
+  const etag = `W/"${st.size.toString(36)}-${Math.floor(st.mtimeMs).toString(36)}"`;
+  headers.ETag = etag;
+  headers["Last-Modified"] = st.mtime.toUTCString();
+  const compressible = COMPRESSIBLE.test(file) && st.size > 1024;
+  if (compressible) headers.Vary = "Accept-Encoding";
+  if (String(req.headers["if-none-match"] || "").split(/\s*,\s*/).includes(etag)) { res.writeHead(304, headers).end(); return; }
+  const accept = String(req.headers["accept-encoding"] || "");
+  const enc = compressible ? (/\bbr\b/.test(accept) ? "br" : /\bgzip\b/.test(accept) ? "gzip" : null) : null;
+  let body;
+  if (enc) {
+    let hit = packed.get(`${file}|${enc}`);
+    if (hit?.etag !== etag) {
+      const raw = fs.readFileSync(file);
+      hit = { etag, body: enc === "br" ? zlib.brotliCompressSync(raw, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: raw.length } }) : zlib.gzipSync(raw, { level: 9 }) };
+      packed.set(`${file}|${enc}`, hit);
+    }
+    body = hit.body;
+    headers["Content-Encoding"] = enc;
+  } else body = fs.readFileSync(file);
+  headers["Content-Length"] = body.length;
+  res.writeHead(200, headers).end(req.method === "HEAD" ? undefined : body);
 }
 
 function publicUrl(req) {
@@ -105,10 +137,7 @@ const server = http.createServer(async (req, res) => {
     if (/^\/(admin|portal|collect|proposal|team)\.html$/.test(rel)) headers["Content-Security-Policy"] = cspFor(file);
     headers["Cache-Control"] = rel.startsWith("/assets/") ? "public, max-age=86400" : "no-cache";
     if (rel.endsWith(".html")) import("./lib/visits.js").then((v) => v.recordVisit(req, url, rel)).catch(() => {});
-    fs.createReadStream(file)
-      .on("open", () => res.writeHead(200, headers))
-      .on("error", () => { if (!res.headersSent) res.writeHead(404).end("Not found"); else res.end(); })
-      .pipe(res);
+    sendStatic(req, res, file, headers);
   } catch (err) {
     console.error(err);
     if (!res.headersSent) res.writeHead(500).end("Server error");
