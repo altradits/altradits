@@ -132,6 +132,7 @@ const lndInvoices = new Map();
 const payments = new Map(), payCalls = [];
 let payMode = "ok";
 let localBalance = 1_000_000;
+let channelReserve = 0; // our side's reserve: never spendable
 let lnd;
 async function fakeLnd() {
   if (lnd) return;
@@ -171,6 +172,12 @@ async function fakeLnd() {
         const h = Buffer.from(track[1], "base64url").toString("hex");
         if (!payments.has(h)) { res.writeHead(500).end(JSON.stringify({ code: 5, message: "payment isn't initiated" })); return; }
         res.end(JSON.stringify({ result: { payment_hash: h, status: payments.get(h), fee_sat: "4" } }) + "\n");
+        return;
+      }
+      if (req.url.startsWith("/v1/channels/pending")) { res.end("{}"); return; }
+      if (req.url.startsWith("/v1/channels")) {
+        res.end(JSON.stringify({ channels: [{ chan_id: "1", active: true, capacity: "2943434", local_balance: String(localBalance), remote_balance: "2900000",
+          local_constraints: { chan_reserve_sat: String(channelReserve) }, remote_constraints: { chan_reserve_sat: "29434" } }] }));
         return;
       }
       if (req.url === "/v1/balance/channels") { res.end(JSON.stringify({ remote_balance: { sat: "10000000" }, local_balance: { sat: String(localBalance) } })); return; }
@@ -446,6 +453,51 @@ test("several open invoices can't take a wallet past its balance limit together"
     await assert.rejects(yw.invoiceFor(w, 3000), /over its limit/);
     assert.ok(await yw.invoiceFor(w, 2000));
   } finally { if (was === undefined) delete process.env.YEBENTE_MAX_BALANCE_SATS; else process.env.YEBENTE_MAX_BALANCE_SATS = was; }
+});
+
+test("sending power: the channel reserve is never counted, and a send the node can't make is refused before anything is taken", async () => {
+  const lightning = await import("../lib/lightning.js");
+  // The live node on 30 Oct 2026: 20,143 sats on our side, 29,434 locked as reserve.
+  localBalance = 20_143; channelReserve = 29_434;
+  try {
+    assert.equal(await lightning.outboundSats(), 0);
+    const token = (await (await call("POST", "wallet/create", { pin: "730184", handle: "no-power" })).json()).token;
+    await yw.credit({ walletId: (await yw.walletByHandle("no-power")).id, sats: 5000, kind: "receive", ref: "fund-no-power" });
+    const calls = payCalls.length;
+    const r = await call("POST", "wallet/send", { to: invoice(500).pr, pin: "730184" }, token);
+    assert.equal(r.status, 503);
+    assert.match((await r.json()).error, /paused: the node needs more Lightning balance/);
+    assert.equal(payCalls.length, calls, "the node was never asked to pay");
+    assert.equal((await yw.walletByHandle("no-power")).balance, 5000, "nothing taken");
+    // Some power, but less than asked: the message says how much is possible.
+    localBalance = 29_434 + 3_000;
+    const r2 = await (await call("POST", "wallet/send", { to: invoice(5000).pr, pin: "730184" }, token)).json();
+    assert.match(r2.error, /can send up to 2,970 sats/);
+    // Handles still work: they never leave the ledger.
+    assert.equal((await call("POST", "wallet/send", { to: "payer", sats: 100, pin: "730184" }, token)).status, 200);
+  } finally { localBalance = 1_000_000; channelReserve = 0; }
+});
+
+test("admin top-up: shows sending power after reserves, makes a node invoice, confirms it from the node", async () => {
+  process.env.ADMIN_TOKEN = "topup-admin-token-0123456789abcdef";
+  const admin = await import("../api/admin.js");
+  const req = (q, body, token = process.env.ADMIN_TOKEN) => (body ? admin.POST : admin.GET)(new Request(`https://altradits.test/api/admin${q}`, { method: body ? "POST" : "GET",
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json", "x-forwarded-for": "198.51.100.9" }, body: body ? JSON.stringify(body) : undefined }));
+  localBalance = 20_143; channelReserve = 29_434;
+  try {
+    assert.equal((await req("?view=liquidity", null, "wrong-token-wrong-token-wrong-tok")).status, 401);
+    const v = await (await req("?view=liquidity")).json();
+    assert.equal(v.spendable, 0); assert.equal(v.reserve, 29_434); assert.equal(v.local, 20_143);
+    assert.ok(v.suggested >= 20_000, "suggests enough to cover the wallets plus a buffer");
+    assert.equal((await req("", { action: "node_topup", sats: 10 })).status, 400, "below the minimum");
+    assert.equal((await req("", { action: "node_topup", sats: 1.5e15 })).status, 400, "above what the channels can take");
+    const t = await (await req("", { action: "node_topup", sats: 60_000 })).json();
+    assert.match(t.bolt11, /^lnbc/); assert.match(t.qr, /<svg/);
+    assert.equal((await (await req(`?view=topup&hash=${t.hash}`)).json()).state, "open");
+    lndInvoices.get(t.hash).state = "SETTLED"; // paid from a wallet
+    assert.equal((await (await req(`?view=topup&hash=${t.hash}`)).json()).state, "paid");
+    assert.equal((await req("?view=topup&hash=../../etc")).status, 404);
+  } finally { localBalance = 1_000_000; channelReserve = 0; }
 });
 
 test("without the pay macaroon, sending out is off (handles still work)", async () => {
