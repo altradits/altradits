@@ -54,7 +54,7 @@ The maintainer merges when:
 Merges are made with sh deploy/merge-pr.sh <number>: it fetches exactly the reviewed commit, makes a signed merge commit with a one-line message, runs the tests on the merged result, verifies every signature, and only then pushes. Never squash, never force-push, never merge through the GitHub button.
 
 ## Signing and trust
-> Current mode: signatures optional. Stanley's Mac signs every commit and merge with its key; work from a machine without a trusted key (the school laptop) is allowed, and the push check, the merge script and the deploy only warn. To make it strict: add each machine's signing key to .github/allowed_signers, restore the refusals in .githooks/pre-push and deploy/merge-pr.sh, remove continue-on-error from the deploy workflow, and create ~/.altradits-allowed-signers on the server.
+> Current mode: signatures optional and silent. Stanley's Mac signs its commits and merges; other machines (the school laptop) work unsigned, and nothing checks or warns. sh deploy/verify-commits.sh shows which commits are signed, by hand. To make it strict later: add each machine's key to .github/allowed_signers, add the check back to .githooks/pre-push, deploy/merge-pr.sh and the deploy workflow, and create ~/.altradits-allowed-signers on the server.
 
 - Every commit on main after the trust root (deploy/verify-commits.sh) is signed by a key in .github/allowed_signers, like Bitcoin Core's verify-commits.
 - The live server checks signatures with its own copy of the trusted keys and refuses to deploy anything else.
