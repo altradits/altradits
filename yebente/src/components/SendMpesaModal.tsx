@@ -1,16 +1,17 @@
 import { payInvoiceWithWebLN } from '../services/lightningService';
 import { hasServerWallet, sendFromServerWallet } from '../services/altraditsWallet';
+import { biometricOn, approveWithBiometric } from '../services/biometric';
+import { SatsMotion, CountUp } from './SatsMotion';
 import React, { useState, useEffect } from 'react';
 import { UserWallet, ExchangeRates, Transaction } from '../types';
 import {
   ArrowLeft,
-  CheckCircle2,
-  Loader2,
   AlertTriangle,
   WifiOff,
   Copy,
   Check,
   ExternalLink,
+  Fingerprint,
 } from 'lucide-react';
 import {
   isValidKenyanPhone,
@@ -62,6 +63,9 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   const [copiedRef, setCopiedRef] = useState<boolean>(false);
   const [pin, setPin] = useState<string>('');
   const server = hasServerWallet();
+  const [usePin, setUsePin] = useState(false);
+  // Fingerprint / face on this phone: no PIN typed on screen.
+  const useBio = server && rail === 'mpesa' && biometricOn() && !usePin;
 
   // Tando live bounds state
   const [tandoBounds, setTandoBounds] = useState<TandoBoundsResult | null>(null);
@@ -199,6 +203,19 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
       return;
     }
 
+    // Fingerprint / face first, before anything is shown as sending.
+    let passkey: unknown;
+    if (useBio) {
+      try {
+        passkey = await approveWithBiometric();
+      } catch (err: unknown) {
+        setErrorMessage(err instanceof Error ? err.message : 'Fingerprint not confirmed.');
+        setStep('error');
+        setIsNetworkFailure(false);
+        return;
+      }
+    }
+
     setStep('processing');
     setErrorMessage('');
     setIsNetworkFailure(false);
@@ -235,7 +252,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
         let paid: { paid: boolean; error?: string };
         if (server) {
           try {
-            await sendFromServerWallet(invoiceRes.pr, 0, pin);
+            await sendFromServerWallet(invoiceRes.pr, 0, pin, passkey);
             setPin('');
             paid = { paid: true };
           } catch (err: unknown) {
@@ -579,7 +596,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
               </div>
 
               {/* PIN for the Altradits wallet */}
-              {server && rail === 'mpesa' && (
+              {server && rail === 'mpesa' && !useBio && (
                 <div>
                   <div className="text-xs text-[var(--yb-secondary)] mb-1.5 font-semibold">PIN</div>
                   <input
@@ -591,7 +608,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                     maxLength={6}
                     value={pin}
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-3 text-lg font-mono tracking-[0.5em] text-[var(--yb-on-surface)] focus:outline-none"
+                    className="yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-3 text-lg font-mono tracking-[0.5em] text-[var(--yb-on-surface)] focus:outline-none"
                   />
                 </div>
               )}
@@ -604,20 +621,28 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                   amountValue <= 0 ||
                   !isPhoneValid ||
                   isInsufficientSats ||
-                  (server && rail === 'mpesa' && !/^\d{6}$/.test(pin))
+                  (server && rail === 'mpesa' && !useBio && !/^\d{6}$/.test(pin))
                 }
-                className="w-full h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center disabled:opacity-50 mt-2"
+                className="w-full h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
               >
+                {useBio && <Fingerprint className="w-4 h-4" />}
                 {ctaLabel}
               </button>
+              {server && rail === 'mpesa' && biometricOn() && (
+                <button
+                  type="button"
+                  onClick={() => { setUsePin(!usePin); setPin(''); }}
+                  className="w-full text-center text-[11px] font-semibold text-[var(--yb-primary)] hover:underline"
+                >
+                  {usePin ? 'Use fingerprint instead' : 'Use PIN instead'}
+                </button>
+              )}
             </>
           )}
 
           {step === 'processing' && (
             <div className="py-8 flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-[var(--yb-primary-container)]/20 border border-[var(--yb-primary)]/40 flex items-center justify-center text-[var(--yb-secondary)]">
-                <Loader2 className="w-8 h-8 animate-spin" />
-              </div>
+              <SatsMotion mode="sending" />
               <div className="space-y-1">
                 <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">
                   {rail === 'mpesa' ? 'Sending M-Pesa via Tando' : 'Sending Telebirr'}
@@ -660,9 +685,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
 
           {step === 'success' && (
             <div className="py-6 flex flex-col items-center text-center space-y-4">
-              <div className="w-14 h-14 rounded-full bg-[var(--yb-primary-container)]/25 border border-[var(--yb-primary)]/50 flex items-center justify-center text-[var(--yb-secondary)]">
-                <CheckCircle2 className="w-8 h-8 text-emerald-400" />
-              </div>
+              <SatsMotion mode="sent" />
               <div>
                 <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">
                   {wasOfflineQueued
@@ -681,7 +704,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
               <div className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl p-3.5 text-left font-mono text-xs space-y-2">
                 <div className="flex justify-between">
                   <span className="text-[var(--yb-on-surface-variant)]">Delivered</span>
-                  <span className="text-emerald-400 font-bold">{numericAmount.toLocaleString()} {currencyCode}</span>
+                  <span className="text-emerald-400 font-bold"><CountUp value={numericAmount} /> {currencyCode}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--yb-on-surface-variant)]">Recipient</span>

@@ -16,6 +16,7 @@ import {
   setupOfflineSyncListeners,
 } from './services/offlineService';
 import { TopBar } from './components/TopBar';
+import { forgetBiometric } from './services/biometric';
 import { BalanceCard } from './components/BalanceCard';
 import { ActionGrid } from './components/ActionGrid';
 import { TransactionHistory } from './components/TransactionHistory';
@@ -85,11 +86,26 @@ export default function App() {
     return () => clearInterval(interval);
   }, [loadRates]);
 
+  // Privacy: whenever the app isn't in front (app switcher, notification shade,
+  // screen-recording controls), PINs and the recovery phrase blur. A web page
+  // can't tell that a recording is running, so this is the closest it can get.
+  useEffect(() => {
+    const root = document.documentElement;
+    const update = () => {
+      if (document.visibilityState !== 'visible' || !document.hasFocus()) root.dataset.private = '1';
+      else delete root.dataset.private;
+    };
+    const events = ['visibilitychange', 'blur', 'focus', 'pagehide', 'pageshow'] as const;
+    events.forEach((e) => (e === 'visibilitychange' ? document : window).addEventListener(e, update));
+    return () => events.forEach((e) => (e === 'visibilitychange' ? document : window).removeEventListener(e, update));
+  }, []);
+
   // The Altradits wallet: balance, address and history come from the server.
   const syncServerWallet = useCallback(async () => {
     if (!hasServerWallet()) return;
     try {
       const [w, txs] = await Promise.all([fetchServerWallet(), fetchServerHistory()]);
+      if (!w.passkeys) forgetBiometric(); // turned off elsewhere, or reset by email recovery
       setWallet((cur) => ({
         ...cur,
         isConnected: true,

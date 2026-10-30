@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { UserWallet, Transaction } from '../types';
-import { ArrowLeft, CheckCircle2, AlertCircle, Loader2, Copy, Check } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Loader2, Copy, Check } from 'lucide-react';
 import { hasServerWallet } from '../services/altraditsWallet';
 import QRCode from 'qrcode';
 import { addressQrText } from '../services/paymentQr';
+import { SatsMotion, CountUp } from './SatsMotion';
 import {
   createDepositInvoice,
   checkInvoiceStatus,
@@ -438,9 +439,7 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
           {/* STEP 3: Success Screen */}
           {step === 'success' && (
             <div className="text-center py-4 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
+              <SatsMotion mode="received" />
 
               <div className="space-y-1">
                 <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">Payment Received</h3>
@@ -450,7 +449,7 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-[var(--yb-on-surface-variant)]">Amount Added</span>
                   <span className="text-sm font-mono font-bold text-emerald-400">
-                    +{numericSats.toLocaleString()} Sats
+                    +<CountUp value={numericSats} /> Sats
                   </span>
                 </div>
                 <div className="flex justify-between items-center">

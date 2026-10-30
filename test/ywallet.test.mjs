@@ -460,3 +460,53 @@ test("email recovery: a confirmed email gets a one-time link; the old devices ar
   assert.equal((await call("POST", "wallet/email", { email: "new@example.org", pin: "000000" }, done.token)).status, 403);
   assert.equal((await call("POST", "wallet/email", { email: "new@example.org", pin: "181818" }, done.token)).status, 200);
 });
+
+// ---- fingerprint / face approval: the test plays the phone's authenticator (ES256)
+test("fingerprint approval: turned on with the PIN, then a signed one-time challenge stands in for the PIN", async () => {
+  const token = (await (await call("POST", "wallet/create", { pin: "151515", handle: "bio-user" })).json()).token;
+  await call("POST", "wallet/create", { pin: "161616", handle: "bio-friend" });
+  await yw.credit({ walletId: (await yw.walletByHandle("bio-user")).id, sats: 1000, kind: "receive", ref: "fund-bio" });
+  const { privateKey, publicKey } = crypto.generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const id = crypto.randomBytes(20).toString("base64url");
+  const b64 = (b) => Buffer.from(b).toString("base64url");
+  const client = (type, challenge, origin = "https://altradits.test") => b64(JSON.stringify({ type, challenge, origin }));
+  let counter = 0;
+  const authData = (flags = 0x05, rp = "altradits.test") => { const c = Buffer.alloc(4); c.writeUInt32BE(++counter); return Buffer.concat([crypto.createHash("sha256").update(rp).digest(), Buffer.from([flags]), c]); };
+  const assertion = async ({ origin, flags, rp, key = privateKey } = {}) => {
+    const { challenge } = await (await call("POST", "wallet/passkey/options", {}, token)).json();
+    const cd = client("webauthn.get", challenge, origin), ad = authData(flags, rp);
+    const sig = crypto.sign("sha256", Buffer.concat([ad, crypto.createHash("sha256").update(Buffer.from(cd, "base64url")).digest()]), key);
+    return { id, clientDataJSON: cd, authenticatorData: b64(ad), signature: b64(sig) };
+  };
+  const send = (passkey) => call("POST", "wallet/send", { to: "bio-friend", sats: 10, passkey }, token);
+
+  // Not set up yet: refused.
+  assert.equal((await send(await assertion())).status, 403);
+  // Turning it on needs the PIN.
+  const add = async (pin) => {
+    const { challenge } = await (await call("POST", "wallet/passkey/options", {}, token)).json();
+    return call("POST", "wallet/passkey/add", { pin, id, alg: -7, publicKey: b64(publicKey.export({ type: "spki", format: "der" })), clientDataJSON: client("webauthn.create", challenge) }, token);
+  };
+  assert.equal((await add("000000")).status, 403);
+  assert.equal((await (await add("151515")).json()).passkeys, 1);
+  assert.equal((await (await call("GET", "wallet/me", null, token)).json()).wallet.passkeys, 1);
+
+  // A good approval pays; the same approval can't be used twice.
+  const a = await assertion();
+  assert.equal((await send(a)).status, 200);
+  assert.notEqual((await send(a)).status, 200);
+  // Another site, no fingerprint (user not verified), another key, or a copied key (counter going back): refused.
+  assert.equal((await send(await assertion({ origin: "https://evil.example" }))).status, 403);
+  assert.equal((await send(await assertion({ flags: 0x01 }))).status, 403);
+  assert.equal((await send(await assertion({ rp: "evil.example" }))).status, 403);
+  assert.equal((await send(await assertion({ key: crypto.generateKeyPairSync("ec", { namedCurve: "P-256" }).privateKey }))).status, 403);
+  counter = 0;
+  assert.equal((await send(await assertion())).status, 403);
+  // A body can't pretend to be an approval.
+  assert.equal((await call("POST", "wallet/send", { to: "bio-friend", sats: 10, pin: { walletId: "x", used: false } }, token)).status, 403);
+  assert.equal((await yw.walletByHandle("bio-user")).balance, 990);
+  // Turned off with the PIN.
+  assert.equal((await (await call("POST", "wallet/passkey/off", { pin: "151515" }, token)).json()).passkeys, 0);
+  counter = 100;
+  assert.equal((await send(await assertion())).status, 403);
+});
