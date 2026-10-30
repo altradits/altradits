@@ -25,8 +25,9 @@ test("every page carries its own up-to-date Content-Security-Policy (nginx sends
 
 test("every page refuses to load inside another site's frame (a meta policy can't forbid framing)", () => {
   for (const f of fs.readdirSync(root).filter((x) => x.endsWith(".html"))) {
-    const html = read(f), src = html.match(/<script[^>]*\bsrc="\/(assets\/[\w.-]+\.js)"/)?.[1];
-    assert.match(html + (src ? read(src) : ""), /window\.top !== window\.self/, `${f}: add the frame check at the top of its script`);
+    const html = read(f), srcs = [...html.matchAll(/<script[^>]*\bsrc="\/(assets\/[\w.-]+\.js)"/g)].map((m) => read(m[1])).join("\n");
+    assert.match(html + srcs, /window\.top !== window\.self/, `${f}: add the frame check at the top of its script`);
+    assert.match(html, /<script src="\/assets\/report\.js"><\/script>/, `${f}: the Security watch reporter is missing (run: node deploy/page-csp.mjs)`);
   }
 });
 
@@ -46,7 +47,7 @@ const FIXED_FETCH = {
   "lib/notify.js": ["u"], // api.callmebot.com, built from a constant
   "lib/store.js": ["REST_URL"], // Upstash, from the environment
   "lib/social.js": ["url"], // social network APIs, constant bases
-  "lib/lightning.js": ["url", '"https://open.er-api.com/v6/latest/USD"', "`${base}/fee-estimates`", "`${base}/v1/fees/recommended`", "`${base}/address/${address}`"], // price and mempool APIs
+  "lib/lightning.js": ["url", '"https://open.er-api.com/v6/latest/USD"', "`${base}/fee-estimates`", "`${base}/v1/fees/recommended`", "`${base}/address/${address}`", "`${base}/address/${address}/txs`", "`${base}/blocks/tip/height`"], // price and mempool APIs (CHAIN_APIS)
   "lib/email.js": ['"https://api.resend.com/emails"'],
   "api/kits.js": ["this.action"], // browser code inside the unsubscribe page, posting to our own URL
   "api/yebente.js": ["`${DARAJA()}/oauth/v1/generate?grant_type=client_credentials`", "`${DARAJA()}${path}`"], // Safaricom
@@ -108,6 +109,16 @@ test("money: a Lightning payment is refunded only on the node's own final answer
   assert.match(pay, /p\.status === "FAILED"\) return \{ status: "failed"/);
   const yw = read("lib/ywallet.js");
   assert.match(yw, /if \(Date\.now\(\) - Date\.parse\(p\.at\) < SETTLE_AFTER\) continue;/, "reconcilePayments leaves payments that may still be on their way alone");
+});
+
+test("Bitcoin-history guards stay in place (confirmations by amount, 21M cap, description hash, solvency)", () => {
+  const ln = read("lib/lightning.js"), pay = read("api/pay.js"), yw = read("lib/ywallet.js"), srv = read("server.mjs");
+  assert.match(ln, /export const confirmationsFor = \(sats\) => \(sats >= 10_000_000 \? 6 : sats >= 1_000_000 \? 3 : 1\)/, "confirmation tiers (whitepaper section 11)");
+  assert.match(ln, /num_confirmations\) >= depth/, "the node's own record must be as deep as the amount requires");
+  assert.match(pay, /addressReceived\(p\.onchain\.address, confirmationsFor\(/, "checkout waits for the right depth");
+  assert.match(yw, /sats > MAX_MONEY\) throw err\("That amount isn't possible\."\)/, "credits capped at 21 million BTC");
+  assert.match(yw, /bolt11DescriptionHash\(pr\)/, "LNURL invoices must match the description hash");
+  assert.match(srv, /checkSolvency\(\)/, "the hourly solvency check runs");
 });
 
 test("access: no code joins records or hands over a portal on an unconfirmed email", () => {

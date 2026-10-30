@@ -838,6 +838,7 @@ $("#mailApprovals").addEventListener("click", async (e) => {
 // ---- Stan's desk (read-only monitoring)
 async function loadStan() {
   loadArchives(); loadCleanup();
+  loadSecurity(); loadLibrary();
   let S; try { S = await api("?view=stan"); } catch { return; }
   STAN_D = S;
   $("#approvalCount").hidden = !S.approvals.length; $("#approvalCount").textContent = S.approvals.length;
@@ -1066,6 +1067,49 @@ async function load(navigate = true) {
   } catch (err) { if (!navigate) throw err; }
 }
 token ? load() : showLogin();
+
+// Security watch (lib/attacks.js): counts per technique, recent events, what to improve, and the attack history.
+async function loadSecurity() {
+  let W; try { W = await api("?view=security"); } catch { return; }
+  const T = W.techniques, kinds = Object.keys(T);
+  const today = kinds.reduce((t, k) => t + W.counts[k].today, 0), week = kinds.reduce((t, k) => t + W.counts[k].week, 0);
+  $("#secBadge").textContent = today ? `${today} today` : "quiet today";
+  $("#secKpis").innerHTML = [["Today", today], ["Last 7 days", week], ...kinds.filter((k) => W.counts[k].week).sort((a, b) => W.counts[b].week - W.counts[a].week).slice(0, 4).map((k) => [T[k].name, W.counts[k].week])]
+    .map(([k, v]) => `<div class="kpi"><small>${esc(k)}</small><div>${esc(v)}</div></div>`).join("");
+  const s = W.solvency;
+  $("#secSolvency").innerHTML = s ? `<b>Ye₿ente solvency</b> (${esc(ago(s.at))}): owed ${esc(sats(s.owedSats))} across ${esc(s.wallets)} wallets; the node can send ${s.outboundSats === null ? "an unknown amount" : esc(sats(s.outboundSats))}. ${s.covered === false ? '<span class="err"><b>Short: add outbound liquidity or pause buying.</b></span>' : s.covered ? "Covered." : ""}` : "";
+  const sev = { high: "failed", medium: "", low: "posted" };
+  $("#secEvents").innerHTML = W.events.length ? W.events.slice(0, 80).map((e) => `<div class="sm" style="border-bottom:1px solid var(--line);padding:.35rem 0"><span class="stage ${sev[T[e.kind]?.severity] || ""}">${esc(T[e.kind]?.name || e.kind)}</span> <span class="muted">${esc(ago(e.at))}${e.ip ? ` · conn ${esc(e.ip.slice(0, 8))}` : ""}</span><br>${esc(e.where)}${e.detail ? `<br><span class="muted">${esc(e.detail)}</span>` : ""}</div>`).join("") : '<p class="muted sm">Nothing turned away yet.</p>';
+  $("#secTech").innerHTML = kinds.map((k) => `<div class="sm" style="margin:.5rem 0"><b>${esc(T[k].name)}</b> <span class="muted">(${esc(T[k].ref)}, ${esc(T[k].severity)}; ${esc(W.counts[k].week)} this week)</span><br>${esc(T[k].what)}<br><b>Improve:</b> ${esc(T[k].improve)}</div>`).join("");
+  const st = { guarded: ["posted", "Guarded"], watch: ["", "Keep current"], action: ["failed", "Needs action"] };
+  $("#secHistory").innerHTML = W.history.slice().sort((a, b) => a.year - b.year).map((a) => `<div class="sm" style="margin:.5rem 0"><span class="stage ${st[a.status][0]}">${st[a.status][1]}</span> <b>${esc(a.year)}: ${esc(a.name)}</b><br>${esc(a.what)}<br><b>Lesson:</b> ${esc(a.lesson)}<br><b>Our guard:</b> ${esc(a.guard)}</div>`).join("");
+}
+
+// Stan's library: open any document as a PDF in the viewer below (download or share from there).
+async function loadLibrary() {
+  if ($("#libList").dataset.loaded) return;
+  let L; try { L = await api("?view=library"); } catch { return; }
+  $("#libList").dataset.loaded = "1";
+  const groups = [...new Set(L.docs.map((d) => d.group))];
+  $("#libList").innerHTML = groups.map((g) => `<h3 style="font-size:1rem;margin:.8rem 0 .3rem">${esc(g)}</h3>${L.docs.filter((d) => d.group === g).map((d) => `<div class="sm" style="margin:.35rem 0"><button class="rcpt" data-libdoc="${esc(d.id)}" data-libtitle="${esc(d.title)}">${esc(d.title)}</button>${d.original ? ' <span class="stage">original</span>' : ""}<br><span class="muted">${esc(d.summary)}</span></div>`).join("")}`).join("");
+}
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest?.("[data-libdoc]"); if (!b) return;
+  const res = await fetch(`/api/admin?view=libdoc&id=${encodeURIComponent(b.dataset.libdoc)}`, { headers: { Authorization: "Bearer " + token } });
+  if (!res.ok) { toast("Couldn't open that document.", true); return; }
+  const name = (res.headers.get("content-disposition") || "").match(/filename="([^"]+)"/)?.[1] || "altradits-document.pdf";
+  const file = new File([await res.blob()], name, { type: "application/pdf" });
+  if (rcptUrl) URL.revokeObjectURL(rcptUrl);
+  rcptUrl = URL.createObjectURL(file);
+  $("#rcptTitle").textContent = b.dataset.libtitle;
+  $("#rcptView").src = rcptUrl;
+  Object.assign($("#rcptDl"), { href: rcptUrl, download: file.name });
+  const canShare = Boolean(navigator.canShare?.({ files: [file] }));
+  $("#rcptShare").hidden = !canShare;
+  $("#rcptShare").onclick = () => navigator.share({ files: [file], title: b.dataset.libtitle }).catch(() => {});
+  $("#rcptNote").textContent = "Made from the current code each time you open it.";
+  $("#rcptBox").showModal();
+});
 
 // A receipt number anywhere in the admin opens that receipt: view, download, or
 // share the PDF (WhatsApp, email or any app the device offers).

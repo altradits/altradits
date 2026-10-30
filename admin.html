@@ -8,6 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; frame-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
 <title>Altradits Admin</title>
 <link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
@@ -383,6 +384,18 @@ dd{margin:0;overflow-wrap:anywhere}
       <p class="muted" style="margin-top:0">Every email from every department waits here. Edit if you like, then approve to send it from the department's address (stan@ copied), or reject it.</p>
       <div class="row bulkbar" id="apBulk" hidden><label class="sm"><input type="checkbox" id="apAll"> Select all</label><button class="btn ok" id="apGoSel" disabled>Approve selected</button><button class="btn" id="apNoSel" disabled>Reject selected</button><span class="sm muted" id="apSelMsg" role="status"></span></div>
       <div id="mailApprovals"></div>
+    </div>
+    <div class="panel"><h2>Security watch <span class="stage" id="secBadge"></span></h2>
+      <p class="muted sm" style="margin-top:0">Every attack or abuse the site turned away: the technique, where it happened and how to improve. High-severity techniques also email you, at most once an hour each. Connections are shown as keyed hashes.</p>
+      <div class="kpis" id="secKpis" style="margin:0"></div>
+      <p class="sm" id="secSolvency" style="margin:.6rem 0"></p>
+      <details open><summary class="sm" style="cursor:pointer"><b>Recent events</b></summary><div id="secEvents"></div></details>
+      <details><summary class="sm" style="cursor:pointer"><b>Techniques and how to improve</b></summary><div id="secTech"></div></details>
+      <details><summary class="sm" style="cursor:pointer"><b>Bitcoin's attack history: our guards</b></summary><div id="secHistory"></div></details>
+    </div>
+    <div class="panel"><h2>Library</h2>
+      <p class="muted sm" style="margin-top:0">Everything to recreate, secure and teach the system. Each document opens as a PDF made from the current code; download it to keep, print or share.</p>
+      <div id="libList"></div>
     </div>
     <div class="panel"><h2>Stan's desk</h2>
       <p class="muted" style="margin-top:0">Stan (stan@altradits.com) is Head of Quality and Internal Communications. He splits every job across his specialist QA team, holds the department to their criteria, makes the final decision and drafts the client message the department head sends. He sends all internal mail and each payment confirmation (blind-copied to you), and is copied on every external email. This view is read-only: watch, no buttons to press.</p>

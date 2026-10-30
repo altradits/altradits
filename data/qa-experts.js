@@ -419,6 +419,8 @@ export const QA_EXPERTS = [
       "Fees, limits and channel capacity explained plainly",
       "Sending code refunds only on the node's final FAILED or 'never started'; anything unclear stays pending and is rechecked",
       "Spending caps count the whole period and money still on its way in, not just the latest records",
+      "On-chain payments count only after confirmations that grow with the amount (e.g. 1, 3, 6 blocks); never zero-confirmation",
+      "Amounts checked against the 21 million BTC limit with safe integer maths",
     ],
     redFlags: ["Seed phrase or private key in any file or message", "We hold or can spend the client's funds", "Untested address or QR given to customers",
       "A payout refunded on a timeout or tunnel error", "An invoice or payout route anyone can call without signing in or a limit"] }),

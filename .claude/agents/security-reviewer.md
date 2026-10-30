@@ -55,6 +55,21 @@ orders, invoices or wallets on the live site.
    are never logged, and never appear in code, pages, commits or chat. Server
    randomness uses node:crypto, never Math.random.
 8. **Each fixed hole gets a test that fails on the old code.**
+9. **Bitcoin's history is the threat model** (data/bitcoin-attacks.js, the
+   library's attack-history PDF). In particular: confirmations scale with the
+   amount (confirmationsFor: 1, 3, 6; whitepaper section 11); receipts only from
+   our own node's record (section 8); no amount above 21 million BTC or outside
+   safe integers (the 2010 overflow); payments identified by payment hash,
+   address or node record, never a malleable txid (Mt. Gox); custodial balances
+   reconciled against what the node can pay (Mt. Gox, QuadrigaCX); an LNURL
+   invoice must match both the amount and the description hash asked for.
+10. **Everything turned away is recorded** with recordAttack (lib/attacks.js) so
+   the Security watch shows it; a new rejection path without a record is a gap.
+
+## Where the owner looks
+Admin → Stan → Security watch (events by technique, solvency, attack-history
+guards) and Stan → Library (the PDFs, rebuilt from docs/ on every open). If a
+change alters how something works, update its document in docs/ in the same PR.
 
 ## Build-stage checks to run
 - `npm test` (includes test/build-security.test.mjs, the automated form of these
