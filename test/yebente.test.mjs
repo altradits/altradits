@@ -38,10 +38,15 @@ test("the M-Pesa callback needs the secret, and keeps the result without the pho
   const raw = fs.readFileSync(path.join(".data", "db.json"), "utf8");
   assert.match(raw, /QAB12CD34/);
   assert.doesNotMatch(raw, /254712345678/);
-  // With buying switched on, the status query answers from the stored result.
+  // Even with buying switched on, nobody can query Daraja without signing in (wallet/buy/<id> instead).
   process.env.YEBENTE_MPESA_BUY = "on";
-  const q = await (await call("POST", "mpesa/query", { checkoutRequestId: "ws_CO_1" })).json();
-  assert.equal(q.resultCode, 0);
-  assert.equal(q.mpesaReceiptNumber, "QAB12CD34");
+  assert.equal((await call("POST", "mpesa/query", { checkoutRequestId: "ws_CO_1" })).status, 501);
   delete process.env.YEBENTE_MPESA_BUY;
+});
+
+test("routes that use the node or Daraja quota need a signed-in wallet", async () => {
+  process.env.YEBENTE_NODE_DEPOSITS = "on";
+  assert.equal((await call("POST", "lightning/create-invoice", { satsAmount: 1000 })).status, 501); // off for good, whatever the switch says
+  delete process.env.YEBENTE_NODE_DEPOSITS;
+  assert.equal((await call("POST", "mpesa/hakikisha/c2b", { shortCode: "174379" })).status, 401);
 });
