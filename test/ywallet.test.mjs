@@ -15,6 +15,8 @@ Object.assign(process.env, { YEBENTE_WALLETS: "on", SITE_URL: "https://altradits
 
 const yw = await import("../lib/ywallet.js");
 const { setJSON } = await import("../lib/store.js");
+yw.setLnurlFetcher((u, o) => globalThis.fetch(u, o)); // the tests stand in for the outside servers
+yw.setPayTimings({ recheckMs: 20 });
 const { bolt11PaymentHash } = await import("../lib/lightning.js");
 const api = await import("../api/yebente.js");
 let n = 0;
@@ -154,12 +156,21 @@ async function fakeLnd() {
         // Streams one JSON object per line, like LND's routerrpc REST gateway.
         if (payMode === "fail") { payments.set(hash, "FAILED"); res.end(JSON.stringify({ result: { payment_hash: hash, status: "FAILED", failure_reason: "FAILURE_REASON_NO_ROUTE" } }) + "\n"); return; }
         if (payMode === "hang") { payments.set(hash, "IN_FLIGHT"); return; } // never answers: the client times out
+        // The tunnel answers with a gateway page: the node either never got it, or is paying it.
+        if (payMode === "gateway" || payMode === "gateway-paying") { if (payMode === "gateway-paying") payments.set(hash, "IN_FLIGHT"); res.writeHead(502).end("<html>ERR_NGROK_3004</html>"); return; }
         payments.set(hash, "SUCCEEDED");
         res.end(JSON.stringify({ result: { payment_hash: hash, status: "SUCCEEDED", fee_sat: "3", payment_preimage: "aa".repeat(32) } }) + "\n");
         return;
       }
       if (req.method === "GET" && req.url.startsWith("/v1/payments")) {
         res.end(JSON.stringify({ payments: [...payments].map(([h, st]) => ({ payment_hash: h, status: st, fee_sat: "4" })) }));
+        return;
+      }
+      const track = req.url.match(/^\/v2\/router\/track\/([\w-]+)/);
+      if (track) {
+        const h = Buffer.from(track[1], "base64url").toString("hex");
+        if (!payments.has(h)) { res.writeHead(500).end(JSON.stringify({ code: 5, message: "payment isn't initiated" })); return; }
+        res.end(JSON.stringify({ result: { payment_hash: h, status: payments.get(h), fee_sat: "4" } }) + "\n");
         return;
       }
       if (req.url === "/v1/balance/channels") { res.end(JSON.stringify({ remote_balance: { sat: "10000000" }, local_balance: { sat: String(localBalance) } })); return; }
@@ -357,10 +368,61 @@ test("a payment whose result isn't known in time stays pending until the node an
   assert.equal((await yw.walletByHandle("slow")).balance, 2000 - 1000 - 10); // reserved while in flight
   payments.set(hash, "SUCCEEDED");
   assert.deepEqual(await lightning.paymentStatus(hash), { status: "succeeded", feeSats: 4 });
+  yw.setPayTimings({ settleAfterMs: 0 });
   await yw.reconcilePayments();
+  yw.setPayTimings({ settleAfterMs: 3 * 60e3 });
   assert.equal((await yw.walletByHandle("slow")).balance, 2000 - 1000 - 4);
   payMode = "ok";
   void p; void w;
+});
+
+test("an unclear answer from the node (tunnel error page) never refunds a payment the node may still be sending", async () => {
+  const token = (await (await call("POST", "wallet/create", { pin: "730184", handle: "tunnel" })).json()).token;
+  const id = (await yw.walletByHandle("tunnel")).id;
+  await yw.credit({ walletId: id, sats: 5000, kind: "receive", ref: "fund-tunnel" });
+  // The node never got it: it says so when asked, and only then is everything refunded.
+  payMode = "gateway";
+  let r = await call("POST", "wallet/send", { to: invoice(1000).pr, pin: "730184" }, token);
+  assert.equal(r.status, 502);
+  assert.equal((await yw.walletByHandle("tunnel")).balance, 5000);
+  // The node got it and is paying: it stays pending with the sats held, whatever the error page said.
+  payMode = "gateway-paying";
+  const { pr, hash } = invoice(1000);
+  r = await call("POST", "wallet/send", { to: pr, pin: "730184" }, token);
+  assert.equal(r.status, 200);
+  assert.equal((await r.json()).status, "pending");
+  assert.equal((await yw.walletByHandle("tunnel")).balance, 5000 - 1000 - 10);
+  // The background check leaves a payment this young alone, then settles it from the node's record.
+  payments.delete(hash);
+  await yw.reconcilePayments();
+  assert.equal((await yw.walletByHandle("tunnel")).balance, 5000 - 1000 - 10, "too young to judge: no refund");
+  payments.set(hash, "SUCCEEDED");
+  yw.setPayTimings({ settleAfterMs: 0 });
+  await yw.reconcilePayments();
+  yw.setPayTimings({ settleAfterMs: 3 * 60e3 });
+  assert.equal((await yw.walletByHandle("tunnel")).balance, 5000 - 1000 - 4);
+  payMode = "ok";
+});
+
+test("the daily sending cap counts the whole day, however many small entries follow", async () => {
+  await call("POST", "wallet/create", { pin: "730184", handle: "busy" });
+  const w = await yw.walletByHandle("busy");
+  await yw._internal.record(w.id, { kind: "send", sats: -199_500, fee: 0, status: "completed", ref: "big-one" });
+  for (let i = 0; i < 260; i++) await yw._internal.record(w.id, { kind: "receive", sats: 1, fee: 0, status: "completed", ref: `tiny-${i}` });
+  await assert.rejects(yw._internal.spendable({ ...w, balance: 10_000 }, 1000), /daily sending limit/);
+});
+
+test("several open invoices can't take a wallet past its balance limit together", async () => {
+  const was = process.env.YEBENTE_MAX_BALANCE_SATS;
+  process.env.YEBENTE_MAX_BALANCE_SATS = "8000";
+  try {
+    await call("POST", "wallet/create", { pin: "730184", handle: "capped" });
+    const w = await yw.walletByHandle("capped");
+    await yw.invoiceFor(w, 3000);
+    await yw.invoiceFor(w, 3000);
+    await assert.rejects(yw.invoiceFor(w, 3000), /over its limit/);
+    assert.ok(await yw.invoiceFor(w, 2000));
+  } finally { if (was === undefined) delete process.env.YEBENTE_MAX_BALANCE_SATS; else process.env.YEBENTE_MAX_BALANCE_SATS = was; }
 });
 
 test("without the pay macaroon, sending out is off (handles still work)", async () => {
