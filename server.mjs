@@ -1,7 +1,7 @@
 // The whole site in one Node process: static pages + api/*.js handlers.
 // Production: HostAfrica "Setup Node.js App" (Passenger) starts it via app.cjs.
 // Local:      npm run dev, then open http://localhost:3000
-import { safeEqual } from "./lib/http.js";
+import { safeEqual, clientIp } from "./lib/http.js";
 import http from "node:http";
 import fs from "node:fs";
 import crypto from "node:crypto";
@@ -121,6 +121,14 @@ const server = http.createServer(async (req, res) => {
         body: ["GET", "HEAD"].includes(req.method) ? undefined : Buffer.concat(chunks),
       });
       const response = await handler(request);
+      // Security watch (lib/attacks.js): what was turned away, recorded after the reply is decided.
+      const kind = response.status === 429 ? "rate_limited"
+        : response.status === 401 && api[1] === "admin" ? "admin_token_guess"
+        : (response.status === 401 && api[1] === "cron") || (response.status === 403 && (api[1] === "deploy" || /^\/mpesa\/callback\//.test(api[2] || ""))) ? "secret_guess" : null;
+      if (kind) {
+        const where = `${req.method} ${url.pathname.replace(/(\/mpesa\/callback\/).*/, "$1…")}`; // never the path secret, never the query
+        import("./lib/attacks.js").then((a) => a.recordAttack(kind, { where, ip: clientIp(request) })).catch(() => {});
+      }
       res.writeHead(response.status, { ...SECURITY, ...Object.fromEntries(response.headers) });
       res.end(Buffer.from(await response.arrayBuffer()));
       return;
@@ -204,6 +212,7 @@ async function maybeRunHourly() {
   if (process.env.LND_REST_URL) {
     import("./lib/channels.js").then((c) => c.watchChannels()).catch((e) => console.error("channels", e.message));
     import("./lib/finance.js").then((f) => f.checkHeld()).then((r) => r.confirmed && console.log("moved to node", r)).catch((e) => console.error("held", e.message));
+    import("./lib/attacks.js").then((a) => a.checkSolvency()).catch((e) => console.error("solvency", e.message)); // can the node pay every wallet?
   }
   import("./lib/bounces.js").then((b) => b.checkBounces()).then((r) => r.bounced && console.log("bounces", r)).catch((e) => console.error("bounces", e.message));
 }
