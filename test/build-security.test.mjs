@@ -139,7 +139,7 @@ test("main is signed: the trusted-keys file, the verify script and the deploy ch
   assert.match(read(".github/allowed_signers"), /^altradits@gmail\.com namespaces="git" ssh-ed25519 /m, "a trusted signing key");
   assert.match(read("deploy/verify-commits.sh"), /TRUST_ROOT=2ef931f7f09557cfa2a40b6679067532c1e09218/, "the trust root never moves");
   assert.match(read("deploy/cron.sh"), /verify-commits\.sh origin\/main "\$SIGNERS"/, "the server refuses unsigned code");
-  assert.match(read(".github/workflows/deploy.yml"), /needs: verify/, "the deploy Action waits for the signature check");
+  assert.match(read(".github/workflows/deploy.yml"), /needs: verify/, "the deploy Action runs the signature check first (advisory or strict)");
   assert.match(read(".githooks/pre-push"), /force-push/, "the local gate refuses force-pushes to main");
 });
 
