@@ -18,6 +18,12 @@ window.addEventListener(
   { passive: true }
 );
 
+// Never shown inside another site's frame (no tricking a tap onto Send).
+if (window.top !== window.self) {
+  document.documentElement.innerHTML = '';
+  throw new Error('Not shown inside a frame.');
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

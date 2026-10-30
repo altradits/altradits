@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-v1aBz9cWkBxIhd12D0fph9WsubjMMhwyynYktpcmLzU='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <link rel="canonical" href="https://altradits.com/">
 <title>Altradits · Small business tasks, done today, fixed price</title>
 <meta name="description" content="Pick a small business task, pay the fixed price you see, and get it back the same day. Inbox, social posts, invoices, spreadsheets, website fixes and more, from $5.">
@@ -95,6 +96,7 @@ a:hover,.btn:hover,button:hover{transform:none!important}
 <footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 
 <script type="module">
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 import { QUICK_JOBS, orderPath } from "/data/catalog.js";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);

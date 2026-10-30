@@ -4,12 +4,12 @@
 // What runs depends on the environment, so nothing moves money until Stanley
 // switches it on:
 //   GET  health                      always
-//   POST mpesa/hakikisha/c2b         with Daraja credentials (a read-only name lookup)
+//   POST mpesa/hakikisha/c2b         with Daraja credentials, signed in to a wallet (a read-only name lookup)
 //   POST mpesa/stkpush               off: it took shillings and delivered nothing (buy into a wallet instead)
-//   POST mpesa/query                  with Daraja credentials and YEBENTE_MPESA_BUY=on
+//   POST mpesa/query                  off: buys are checked through wallet/buy/<id> (signed in)
 //   POST mpesa/callback/<secret>     Safaricom's STK result (secret: YEBENTE_CALLBACK_SECRET)
-//   POST lightning/create-invoice    with YEBENTE_NODE_DEPOSITS=on (invoices on the Altradits node)
-//   GET  lightning/invoice-status/x  same
+//   POST lightning/create-invoice    off: anyone could fill the node with invoices; wallet/invoice instead
+//   GET  lightning/invoice-status/x  off (same)
 // Ye₿ente wallets (custodial, on the Altradits node; lib/ywallet.js):
 //   POST wallet/create {pin, handle?}     -> {wallet, token, recovery} (shown once)
 //   POST wallet/restore {recovery, pin}   -> {wallet, token}
@@ -40,7 +40,6 @@ const DARAJA = () => (env("MPESA_ENVIRONMENT") === "production" ? "https://api.s
 const darajaReady = () => Boolean(env("MPESA_CONSUMER_KEY") && env("MPESA_CONSUMER_SECRET"));
 const switchOn = (k) => ["on", "true", "yes", "1"].includes(env(k).replace(/^["']|["']$/g, "").toLowerCase());
 const buyOn = () => switchOn("YEBENTE_MPESA_BUY") && darajaReady() && Boolean(env("MPESA_SHORTCODE") && env("MPESA_PASSKEY") && env("YEBENTE_CALLBACK_SECRET"));
-const depositsOn = () => switchOn("YEBENTE_NODE_DEPOSITS") && Boolean(env("LND_REST_URL") && env("LND_INVOICE_MACAROON"));
 const site = () => (env("SITE_URL") || "https://altradits.com").replace(/\/$/, "");
 
 const NOT_CONFIGURED = "M-Pesa credentials not configured. Set MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET.";
@@ -140,6 +139,8 @@ async function callback(request, secret) {
 
 async function hakikisha(request) {
   if (!darajaReady()) return json({ success: false, verified: false, error: NOT_CONFIGURED }, 501);
+  const w = await me(request); // each lookup uses the Daraja quota: wallet holders only
+  if ((await hit(`rl:yb:hakw:${w.id}`, 3600)) > 20) return json({ success: false, verified: false, error: "Too many lookups. Try again in an hour." }, 429);
   const { shortCode, accountNumber, phone } = await readBody(request);
   const code = String(shortCode || "").trim();
   if (!/^\d{5,7}$/.test(code)) return json({ success: false, verified: false, error: "ShortCode is required." }, 400);
@@ -152,27 +153,6 @@ async function hakikisha(request) {
   if (!ok) return json({ success: false, verified: false, error: data.errorMessage || data.ResponseDescription || `Safaricom C2B Hakikisha lookup failed for ShortCode ${code}.` }, 400);
   if (!name) return json({ success: false, verified: false, error: `Safaricom merchant not found for ShortCode ${code}. Ensure the shortcode is active on Safaricom Daraja.` }, 404);
   return json({ success: true, verified: true, shortCode: code, name, accountNumber: accountNumber || "", provider: "Safaricom M-Pesa C2B Hakikisha", upstreamVerified: true });
-}
-
-async function createDepositInvoice(request) {
-  if (!depositsOn()) return off("No Lightning node is configured.");
-  const { satsAmount, memo } = await readBody(request);
-  const sats = Math.round(Number(satsAmount));
-  if (!(sats > 0) || sats > 1_000_000) return json({ success: false, error: "A positive satsAmount is required to generate a Lightning invoice." }, 400);
-  const { createInvoice } = await import("../lib/lightning.js");
-  const inv = await createInvoice({ sats, memo: String(memo || "Ye₿ente Sats Deposit").slice(0, 120), nodeOnly: true });
-  await setJSON(`yb:inv:${inv.paymentHash}`, { sats, at: inv.createdAt });
-  return json({ success: true, invoice: inv.bolt11, paymentHash: inv.paymentHash, satsAmount: sats });
-}
-
-async function invoiceStatus(hash) {
-  if (!depositsOn()) return off("Lightning node not configured for status check.");
-  const h = String(hash || "").toLowerCase();
-  const known = /^[0-9a-f]{64}$/.test(h) && (await getJSON(`yb:inv:${h}`));
-  if (!known) return json({ success: false, error: "Failed to query invoice status from LND." }, 404); // only invoices made here
-  const { invoicePaid } = await import("../lib/lightning.js");
-  const paid = await invoicePaid({ provider: "lnd", paymentHash: h });
-  return json({ success: true, settled: paid === true, paid: paid === true, satsAmount: known.sats });
 }
 
 // Whether the server reaches the node (cached a minute): null when no node is set.
@@ -285,7 +265,8 @@ async function walletGet(request, action) {
   if (buy) {
     const rec = await getJSON(`ywbuy:${buy[1]}`);
     if (!rec || rec.walletId !== w.id) return json({ success: false, error: "Not found" }, 404);
-    if (rec.state === "pending" && buyOn()) {
+    // Each check asks Daraja: a few a minute per wallet is plenty.
+    if (rec.state === "pending" && buyOn() && (await hit(`rl:yb:bq:${w.id}`, 600)) <= 60) {
       // Safaricom's callback may not have arrived: ask Daraja directly.
       const q = await (await stkQuery(new Request(request.url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ checkoutRequestId: buy[1] }) }))).json();
       if (q.success && q.resultCode !== undefined) await yw.finishBuy(buy[1], { resultCode: q.resultCode, receipt: q.mpesaReceiptNumber });
@@ -309,9 +290,8 @@ const sub = (request) => decodeURIComponent(new URL(request.url).pathname.replac
 
 export async function GET(request) {
   const path = sub(request);
-  if (path === "health") return json({ status: "ok", service: "yebente", wallets: switchOn("YEBENTE_WALLETS"), environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), deposits: depositsOn(), node: await nodeUp(), timestamp: Date.now() });
-  const inv = path.match(/^lightning\/invoice-status\/([\w-]+)$/);
-  if (inv) return invoiceStatus(inv[1]);
+  if (path === "health") return json({ status: "ok", service: "yebente", wallets: switchOn("YEBENTE_WALLETS"), environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), deposits: false, node: await nodeUp(), timestamp: Date.now() });
+  if (path.startsWith("lightning/invoice-status/")) return off("Create a Ye₿ente wallet first.");
   if (path === "wallet/email-confirm") {
     const { confirmEmail } = await import("../lib/ywallet.js");
     const ok = await confirmEmail(String(new URL(request.url).searchParams.get("t") || ""));
@@ -330,9 +310,9 @@ export async function POST(request) {
   const path = sub(request);
   try {
     if (path === "mpesa/stkpush") return off("Create a Ye₿ente wallet first.");
-    if (path === "mpesa/query") return await stkQuery(request);
+    if (path === "mpesa/query") return off("Check a purchase from your wallet.");
     if (path === "mpesa/hakikisha/c2b") return await hakikisha(request);
-    if (path === "lightning/create-invoice") return await createDepositInvoice(request);
+    if (path === "lightning/create-invoice") return off("Create a Ye₿ente wallet first.");
     const wp = path.match(/^wallet\/(create|restore|send|invoice|buy|email|recover-email|recover-email\/finish|passkey\/(?:options|add|off))$/);
     if (wp) return await walletPost(request, wp[1]);
     const cb = path.match(/^mpesa\/callback\/([\w-]{16,128})$/);
