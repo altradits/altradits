@@ -36,7 +36,11 @@ if (!SERVER) {
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
 const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|portal\.html|team\.html|join\.html|cv\.html|hunt\.html|templates\.html|donate\.html|va\.html|bitcoin\.html|products\.html|collect\.html|robots\.txt|sitemap\.xml|yebente\/app\/(?:index\.html|assets\/[\w.-]+|fonts\/[\w.-]+)|data\/(?:catalog|playbooks|community)\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
-const SECURITY = { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "SAMEORIGIN" };
+// HSTS: browsers that have visited once only ever use HTTPS here (no includeSubDomains,
+// so other subdomains such as mail are unaffected). COOP: no other site keeps a handle
+// on our windows.
+const SECURITY = { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "SAMEORIGIN",
+  "Strict-Transport-Security": "max-age=31536000", "Cross-Origin-Opener-Policy": "same-origin" };
 
 // Pages that show client or admin data get a Content Security Policy: only our
 // own scripts (and each page's inline script, by hash) can run, so even if some

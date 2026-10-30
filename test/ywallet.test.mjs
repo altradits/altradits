@@ -14,6 +14,7 @@ for (const k of ["UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "DATA_DIR"]) delet
 Object.assign(process.env, { YEBENTE_WALLETS: "on", SITE_URL: "https://altradits.test", YEBENTE_MAX_BALANCE_SATS: "10000", YEBENTE_MAX_PAYMENT_SATS: "5000", YEBENTE_DAILY_SEND_SATS: "6000" });
 
 const yw = await import("../lib/ywallet.js");
+const { setJSON } = await import("../lib/store.js");
 const { bolt11PaymentHash } = await import("../lib/lightning.js");
 const api = await import("../api/yebente.js");
 let n = 0;
@@ -24,7 +25,7 @@ const call = (method, p, body, token) => api[method](new Request(`https://altrad
 
 let amina, juma;
 test("create a wallet: a handle, a Lightning address, a device token and a recovery phrase shown once", async () => {
-  const r = await (await call("POST", "wallet/create", { pin: "123456", handle: "Amina" })).json();
+  const r = await (await call("POST", "wallet/create", { pin: "604391", handle: "Amina" })).json();
   assert.equal(r.success, true);
   assert.equal(r.wallet.handle, "amina");
   assert.equal(r.wallet.address, "amina@altradits.test");
@@ -35,14 +36,14 @@ test("create a wallet: a handle, a Lightning address, a device token and a recov
   const raw = fs.readFileSync(path.join(".data", "db.json"), "utf8");
   assert.doesNotMatch(raw, new RegExp(r.token));
   assert.doesNotMatch(raw, new RegExp(r.recovery));
-  assert.doesNotMatch(raw, /"123456"/);
+  assert.doesNotMatch(raw, /"604391"/);
   // Handle rules and uniqueness.
-  assert.equal((await call("POST", "wallet/create", { pin: "123456", handle: "amina" })).status, 409);
-  assert.equal((await call("POST", "wallet/create", { pin: "123456", handle: "admin" })).status, 400);
+  assert.equal((await call("POST", "wallet/create", { pin: "604391", handle: "amina" })).status, 409);
+  assert.equal((await call("POST", "wallet/create", { pin: "604391", handle: "admin" })).status, 400);
   assert.equal((await call("POST", "wallet/create", { pin: "1234", handle: "bob" })).status, 400);
-  const auto = await (await call("POST", "wallet/create", { pin: "654321" })).json();
+  const auto = await (await call("POST", "wallet/create", { pin: "568013" })).json();
   assert.match(auto.wallet.handle, /^[a-z]+\d{4}$/);
-  juma = await (await call("POST", "wallet/create", { pin: "111111", handle: "juma" })).json();
+  juma = await (await call("POST", "wallet/create", { pin: "284731", handle: "juma" })).json();
 });
 
 test("signed-in calls need the device token; a recovery phrase restores the wallet on a new phone", async () => {
@@ -50,8 +51,8 @@ test("signed-in calls need the device token; a recovery phrase restores the wall
   assert.equal((await call("GET", "wallet/me", null, "x".repeat(32))).status, 401);
   const me = await (await call("GET", "wallet/me", null, amina.token)).json();
   assert.equal(me.wallet.handle, "amina");
-  assert.equal((await call("POST", "wallet/restore", { recovery: "wrong words", pin: "222222" })).status, 404);
-  const back = await (await call("POST", "wallet/restore", { recovery: amina.recovery.toUpperCase(), pin: "222222" })).json();
+  assert.equal((await call("POST", "wallet/restore", { recovery: "wrong words", pin: "390517" })).status, 404);
+  const back = await (await call("POST", "wallet/restore", { recovery: amina.recovery.toUpperCase(), pin: "390517" })).json();
   assert.equal(back.wallet.handle, "amina");
   assert.notEqual(back.token, amina.token);
   amina.token = back.token; // the new PIN is 222222
@@ -61,7 +62,7 @@ test("transfers between wallets: free and instant, with the PIN; wrong PINs lock
   await yw.credit({ walletId: amina.wallet.id, sats: 8000, kind: "receive", ref: "hash-1" });
   const dup = await yw.credit({ walletId: amina.wallet.id, sats: 8000, kind: "receive", ref: "hash-1" });
   assert.equal(dup.duplicate, true); // the same payment never credits twice
-  let r = await call("POST", "wallet/send", { to: "juma@altradits.test", sats: 1500, pin: "222222", note: "lunch" }, amina.token);
+  let r = await call("POST", "wallet/send", { to: "juma@altradits.test", sats: 1500, pin: "390517", note: "lunch" }, amina.token);
   assert.equal(r.status, 200);
   assert.equal((await r.json()).wallet.balance, 6500);
   const j = await (await call("GET", "wallet/me", null, juma.token)).json();
@@ -70,30 +71,50 @@ test("transfers between wallets: free and instant, with the PIN; wrong PINs lock
   assert.equal(h.entries[0].kind, "transfer_in");
   assert.equal(h.entries[0].counterparty, "amina@altradits.test");
   // Unknown handle, self, external addresses (not yet).
-  assert.equal((await call("POST", "wallet/send", { to: "nobody", sats: 10, pin: "222222" }, amina.token)).status, 404);
-  assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 10, pin: "222222" }, amina.token)).status, 400);
+  assert.equal((await call("POST", "wallet/send", { to: "nobody", sats: 10, pin: "390517" }, amina.token)).status, 404);
+  assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 10, pin: "390517" }, amina.token)).status, 400);
   // Five wrong PINs lock spending, even with the right PIN after.
-  for (let i = 0; i < 5; i++) assert.equal((await call("POST", "wallet/send", { to: "juma", sats: 10, pin: "999999" }, amina.token)).status, 403);
-  assert.equal((await call("POST", "wallet/send", { to: "juma", sats: 10, pin: "222222" }, amina.token)).status, 429);
+  for (let i = 0; i < 5; i++) assert.equal((await call("POST", "wallet/send", { to: "juma", sats: 10, pin: "958302" }, amina.token)).status, 403);
+  const locked = await call("POST", "wallet/send", { to: "juma", sats: 10, pin: "390517" }, amina.token);
+  assert.equal(locked.status, 429);
+  assert.match((await locked.json()).error, /15 minutes/);
+  // Locked again the same day: longer each time (1 hour, then 24 hours).
+  const w = await yw.walletByHandle("amina");
+  const relock = async () => {
+    await yw._internal.withLedger(async () => { const cur = await yw.walletByHandle("amina"); cur.lockedUntil = null; await setJSON(`yw:${cur.id}`, cur); });
+    for (let i = 0; i < 5; i++) await call("POST", "wallet/send", { to: "juma", sats: 10, pin: "958302" }, amina.token);
+    return (await (await call("POST", "wallet/send", { to: "juma", sats: 10, pin: "390517" }, amina.token)).json()).error;
+  };
+  assert.match(await relock(), /60 minutes/);
+  assert.match(await relock(), /24 hours/);
+  await yw._internal.withLedger(async () => { const cur = await yw.walletByHandle("amina"); Object.assign(cur, { lockedUntil: null, lockCount: 0, lockedAt: null }); await setJSON(`yw:${cur.id}`, cur); });
+  assert.equal(w.id, amina.wallet.id);
+});
+
+test("new PINs can't be easy patterns; PINs already set keep working", async () => {
+  for (const pin of ["111111", "123456", "654321", "121212", "123123", "112233", "000000", "110011"])
+    assert.equal((await call("POST", "wallet/create", { pin, handle: `weak${pin}` })).status, 400, pin);
+  assert.equal((await call("POST", "wallet/create", { pin: "604391x" })).status, 400);
+  assert.equal((await call("POST", "wallet/create", { pin: "730184", handle: "strongpin" })).status, 200);
 });
 
 test("limits: per payment, per day, recipient balance; never more than the balance", async () => {
   // Juma: 1,500 sats. Over the balance, over the per-payment cap.
-  assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 2000, pin: "111111" }, juma.token)).status, 402);
+  assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 2000, pin: "284731" }, juma.token)).status, 402);
   await yw.credit({ walletId: juma.wallet.id, sats: 8000, kind: "receive", ref: "hash-2" });
-  assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 5001, pin: "111111" }, juma.token)).status, 400);
-  assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 1.5, pin: "111111" }, juma.token)).status, 400);
+  assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 5001, pin: "284731" }, juma.token)).status, 400);
+  assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 1.5, pin: "284731" }, juma.token)).status, 400);
   // Amina holds 6,500 of a 10,000 cap: 4,000 more would overfill her wallet.
-  assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 4000, pin: "111111" }, juma.token)).status, 400);
-  assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 3000, pin: "111111" }, juma.token)).status, 200);
+  assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 4000, pin: "284731" }, juma.token)).status, 400);
+  assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 3000, pin: "284731" }, juma.token)).status, 200);
   // Daily cap 6,000: 3,000 sent, 3,001 more is refused.
-  assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 3001, pin: "111111" }, juma.token)).status, 400);
+  assert.equal((await call("POST", "wallet/send", { to: "amina", sats: 3001, pin: "284731" }, juma.token)).status, 400);
 });
 
 test("ten sends at once can never spend the same sats twice", async () => {
-  const w = await (await call("POST", "wallet/create", { pin: "333333", handle: "rush" })).json();
+  const w = await (await call("POST", "wallet/create", { pin: "735018", handle: "rush" })).json();
   await yw.credit({ walletId: w.wallet.id, sats: 100, kind: "receive", ref: "hash-3" });
-  const results = await Promise.all(Array.from({ length: 10 }, () => call("POST", "wallet/send", { to: "juma", sats: 60, pin: "333333" }, w.token)));
+  const results = await Promise.all(Array.from({ length: 10 }, () => call("POST", "wallet/send", { to: "juma", sats: 60, pin: "735018" }, w.token)));
   assert.equal(results.filter((r) => r.status === 200).length, 1);
   const me = await (await call("GET", "wallet/me", null, w.token)).json();
   assert.equal(me.wallet.balance, 40);
@@ -153,7 +174,7 @@ async function fakeLnd() {
 
 test("receive: an invoice for the wallet is credited once, when the node says it is paid", async () => {
   await fakeLnd();
-  const w = await (await call("POST", "wallet/create", { pin: "444444", handle: "wanjiru" })).json();
+  const w = await (await call("POST", "wallet/create", { pin: "482915", handle: "wanjiru" })).json();
   const inv = await (await call("POST", "wallet/invoice", { sats: 2500 }, w.token)).json();
   assert.equal(inv.success, true);
   assert.match(inv.invoice, /^lnbc/);
@@ -204,7 +225,7 @@ test("handle@altradits.com is a Lightning address; a payment made while the app 
 
 test("wallets stay off until YEBENTE_WALLETS=on", async () => {
   delete process.env.YEBENTE_WALLETS;
-  assert.equal((await call("POST", "wallet/create", { pin: "555555" })).status, 501);
+  assert.equal((await call("POST", "wallet/create", { pin: "527864" })).status, 501);
   assert.equal((await call("GET", "lnurlp/wanjiru")).status, 404);
   process.env.YEBENTE_WALLETS = "on";
 });
@@ -224,10 +245,10 @@ test("send to an invoice: paid by the node, unused fee reserve refunded; failure
   process.env.YEBENTE_LND_PAY_MACAROON = MAC;
   process.env.JOBS_ALLOW_LOCAL = "1";
   await fakeLnd();
-  const w = await (await call("POST", "wallet/create", { pin: "121212", handle: "payer" })).json();
+  const w = await (await call("POST", "wallet/create", { pin: "129847", handle: "payer" })).json();
   await yw.credit({ walletId: w.wallet.id, sats: 4000, kind: "receive", ref: "fund-payer" });
   const { pr, hash } = invoice(1000);
-  let r = await call("POST", "wallet/send", { to: pr, pin: "121212" }, w.token);
+  let r = await call("POST", "wallet/send", { to: pr, pin: "129847" }, w.token);
   let d = await r.json();
   assert.equal(r.status, 200, JSON.stringify(d));
   assert.equal(d.status, "completed");
@@ -237,17 +258,17 @@ test("send to an invoice: paid by the node, unused fee reserve refunded; failure
   const e = (await (await call("GET", "wallet/history", null, w.token)).json()).entries[0];
   assert.equal(e.status, "completed"); assert.equal(e.fee, 3); assert.equal(e.ref, hash);
   // The same invoice can't be paid twice from Ye₿ente.
-  assert.equal((await call("POST", "wallet/send", { to: pr, pin: "121212" }, w.token)).status, 409);
+  assert.equal((await call("POST", "wallet/send", { to: pr, pin: "129847" }, w.token)).status, 409);
   // A failed route takes nothing.
   payMode = "fail";
-  r = await call("POST", "wallet/send", { to: invoice(500).pr, pin: "121212" }, w.token);
+  r = await call("POST", "wallet/send", { to: invoice(500).pr, pin: "129847" }, w.token);
   assert.equal(r.status, 502);
   assert.equal((await yw.walletByHandle("payer")).balance, 2997);
   assert.equal((await (await call("GET", "wallet/history", null, w.token)).json()).entries[0].status, "failed");
   payMode = "ok";
   // An amountless invoice, or the wrong amount, is refused before anything is taken.
-  assert.equal((await call("POST", "wallet/send", { to: "lnbc1qqqqqq", pin: "121212" }, w.token)).status, 400);
-  assert.equal((await call("POST", "wallet/send", { to: invoice(700).pr, sats: 600, pin: "121212" }, w.token)).status, 400);
+  assert.equal((await call("POST", "wallet/send", { to: "lnbc1qqqqqq", pin: "129847" }, w.token)).status, 400);
+  assert.equal((await call("POST", "wallet/send", { to: invoice(700).pr, sats: 600, pin: "129847" }, w.token)).status, 400);
 });
 
 test("send to a Lightning address (phone@bitcoin.co.ke pays M-Pesa); another Ye₿ente wallet's invoice stays in the ledger", async () => {
@@ -263,19 +284,19 @@ test("send to a Lightning address (phone@bitcoin.co.ke pays M-Pesa); another Ye�
   };
   try {
     const w = await yw.walletByHandle("payer");
-    const token = (await (await call("POST", "wallet/create", { pin: "131313", handle: "mpesa-user" })).json()).token;
+    const token = (await (await call("POST", "wallet/create", { pin: "316280", handle: "mpesa-user" })).json()).token;
     await yw.credit({ walletId: (await yw.walletByHandle("mpesa-user")).id, sats: 3000, kind: "receive", ref: "fund-mpesa" });
-    const r = await (await call("POST", "wallet/send", { to: "0712345678@bitcoin.co.ke", sats: 2000, pin: "131313" }, token)).json();
+    const r = await (await call("POST", "wallet/send", { to: "0712345678@bitcoin.co.ke", sats: 2000, pin: "316280" }, token)).json();
     assert.equal(r.status, "completed");
     assert.equal(lastAmount, 2_000_000);
     assert.equal(r.receiptUrl, "https://bitcoin.co.ke/receipt/abc");
     assert.equal((await yw.walletByHandle("mpesa-user")).balance, 3000 - 2000 - 3);
     // An address that returns an invoice for another amount is refused, nothing taken.
-    assert.equal((await call("POST", "wallet/send", { to: "x@evil.example", sats: 500, pin: "131313" }, token)).status, 400);
+    assert.equal((await call("POST", "wallet/send", { to: "x@evil.example", sats: 500, pin: "316280" }, token)).status, 400);
     // Paying another Ye₿ente wallet's invoice: a free transfer, no Lightning payment.
     const calls = payCalls.length;
     const inv = await yw.invoiceFor(w, 400);
-    const t = await (await call("POST", "wallet/send", { to: inv.invoice, pin: "131313" }, token)).json();
+    const t = await (await call("POST", "wallet/send", { to: inv.invoice, pin: "316280" }, token)).json();
     assert.ok(t.ref);
     assert.equal(payCalls.length, calls);
     assert.equal((await yw.walletByHandle("payer")).balance, 2997 + 400);
@@ -309,14 +330,14 @@ test("send to an LNURL from a QR code; a Ye₿ente wallet's own QR is a free tra
     return realFetch(url, opts);
   };
   try {
-    const token = (await (await call("POST", "wallet/create", { pin: "141414", handle: "qr-user" })).json()).token;
+    const token = (await (await call("POST", "wallet/create", { pin: "417306", handle: "qr-user" })).json()).token;
     await yw.credit({ walletId: (await yw.walletByHandle("qr-user")).id, sats: 2000, kind: "receive", ref: "fund-qr" });
-    const r = await (await call("POST", "wallet/send", { to: `lightning:${lnurlEncode("https://bitcoin.co.ke/.well-known/lnurlp/0712345678").toUpperCase()}`, sats: 500, pin: "141414" }, token)).json();
+    const r = await (await call("POST", "wallet/send", { to: `lightning:${lnurlEncode("https://bitcoin.co.ke/.well-known/lnurlp/0712345678").toUpperCase()}`, sats: 500, pin: "417306" }, token)).json();
     assert.equal(r.status, "completed");
     assert.equal(lastAmount, 500_000);
     const before = (await yw.walletByHandle("payer")).balance;
     const calls = payCalls.length;
-    const t = await (await call("POST", "wallet/send", { to: lnurlEncode("https://altradits.test/.well-known/lnurlp/payer"), sats: 100, pin: "141414" }, token)).json();
+    const t = await (await call("POST", "wallet/send", { to: lnurlEncode("https://altradits.test/.well-known/lnurlp/payer"), sats: 100, pin: "417306" }, token)).json();
     assert.ok(t.ref);
     assert.equal(payCalls.length, calls);
     assert.equal((await yw.walletByHandle("payer")).balance, before + 100);
@@ -325,13 +346,13 @@ test("send to an LNURL from a QR code; a Ye₿ente wallet's own QR is a free tra
 
 test("a payment whose result isn't known in time stays pending until the node answers", async () => {
   const w = await yw.walletByHandle("payer");
-  const token = (await (await call("POST", "wallet/restore", { recovery: (await (await call("POST", "wallet/create", { pin: "141414", handle: "slow" })).json()).recovery, pin: "141414" })).json()).token;
+  const token = (await (await call("POST", "wallet/restore", { recovery: (await (await call("POST", "wallet/create", { pin: "417306", handle: "slow" })).json()).recovery, pin: "417306" })).json()).token;
   await yw.credit({ walletId: (await yw.walletByHandle("slow")).id, sats: 2000, kind: "receive", ref: "fund-slow" });
   payMode = "hang";
   const { pr, hash } = invoice(1000);
   const lightning = await import("../lib/lightning.js");
   // Instead of waiting 65 s for the timeout, settle the in-flight state the way the app would see it.
-  const p = call("POST", "wallet/send", { to: pr, pin: "141414" }, token);
+  const p = call("POST", "wallet/send", { to: pr, pin: "417306" }, token);
   await new Promise((r) => setTimeout(r, 300));
   assert.equal((await yw.walletByHandle("slow")).balance, 2000 - 1000 - 10); // reserved while in flight
   payments.set(hash, "SUCCEEDED");
@@ -344,10 +365,10 @@ test("a payment whose result isn't known in time stays pending until the node an
 
 test("without the pay macaroon, sending out is off (handles still work)", async () => {
   delete process.env.YEBENTE_LND_PAY_MACAROON;
-  const token = (await (await call("POST", "wallet/create", { pin: "151515", handle: "nopay" })).json()).token;
+  const token = (await (await call("POST", "wallet/create", { pin: "518274", handle: "nopay" })).json()).token;
   await yw.credit({ walletId: (await yw.walletByHandle("nopay")).id, sats: 500, kind: "receive", ref: "fund-nopay" });
-  assert.equal((await call("POST", "wallet/send", { to: invoice(100).pr, pin: "151515" }, token)).status, 501);
-  assert.equal((await call("POST", "wallet/send", { to: "payer", sats: 100, pin: "151515" }, token)).status, 200);
+  assert.equal((await call("POST", "wallet/send", { to: invoice(100).pr, pin: "518274" }, token)).status, 501);
+  assert.equal((await call("POST", "wallet/send", { to: "payer", sats: 100, pin: "518274" }, token)).status, 200);
   process.env.YEBENTE_LND_PAY_MACAROON = MAC;
 });
 
@@ -367,7 +388,7 @@ test("buy with M-Pesa: the prompt goes out, the sats are credited once when Safa
     return realFetch(url, opts);
   };
   try {
-    const w = await (await call("POST", "wallet/create", { pin: "161616", handle: "buyer" })).json();
+    const w = await (await call("POST", "wallet/create", { pin: "619427", handle: "buyer" })).json();
     // 1 BTC = 100,000 USD x 130 = 13,000,000 KES: 1,000 KES = 7,692 sats (no spread by default).
     let r = await (await call("POST", "wallet/buy", { kes: 1000, phone: "0712345678" }, w.token)).json();
     assert.equal(r.success, true, JSON.stringify(r));
@@ -425,7 +446,7 @@ test("switches accept on / true / yes / 1 in any case, with stray spaces or quot
 test("email recovery: a confirmed email gets a one-time link; the old devices are signed out and large payments wait 24 h", async () => {
   const store = await import("../lib/store.js");
   const sent = async () => store.getMany("email", await store.listIds("emails", 50));
-  const w = await (await call("POST", "wallet/create", { pin: "171717", handle: "zawadi", email: "Zawadi@Example.org" })).json();
+  const w = await (await call("POST", "wallet/create", { pin: "719263", handle: "zawadi", email: "Zawadi@Example.org" })).json();
   assert.equal(w.wallet.emailPending, "zawadi@example.org");
   assert.equal(w.wallet.email, null);
   const confirm = (await sent()).find((e) => e.subject === "Confirm your Ye₿ente recovery email");
@@ -447,24 +468,24 @@ test("email recovery: a confirmed email gets a one-time link; the old devices ar
   assert.match(link.cta.url, /\/yebente\?recover=/);
   const token = new URL(link.cta.url).searchParams.get("recover");
 
-  const done = await (await call("POST", "wallet/recover-email/finish", { token, pin: "181818" })).json();
+  const done = await (await call("POST", "wallet/recover-email/finish", { token, pin: "813592" })).json();
   assert.equal(done.success, true);
   assert.ok(done.wallet.holdUntil);
-  assert.equal((await call("POST", "wallet/recover-email/finish", { token, pin: "181818" })).status, 410); // one use
+  assert.equal((await call("POST", "wallet/recover-email/finish", { token, pin: "813592" })).status, 410); // one use
   assert.equal((await call("GET", "wallet/me", null, w.token)).status, 401); // the old phone is signed out
   // The 24-hour hold: small payments go, larger ones wait.
-  assert.equal((await call("POST", "wallet/send", { to: "juma", sats: 500, pin: "181818" }, done.token)).status, 200);
-  assert.equal((await call("POST", "wallet/send", { to: "juma", sats: 2000, pin: "181818" }, done.token)).status, 423);
+  assert.equal((await call("POST", "wallet/send", { to: "juma", sats: 500, pin: "813592" }, done.token)).status, 200);
+  assert.equal((await call("POST", "wallet/send", { to: "juma", sats: 2000, pin: "813592" }, done.token)).status, 423);
   assert.ok((await sent()).some((e) => e.subject === "Your Ye₿ente wallet zawadi was recovered" && e.to === "zawadi@example.org"));
   // Changing the email needs the PIN.
-  assert.equal((await call("POST", "wallet/email", { email: "new@example.org", pin: "000000" }, done.token)).status, 403);
-  assert.equal((await call("POST", "wallet/email", { email: "new@example.org", pin: "181818" }, done.token)).status, 200);
+  assert.equal((await call("POST", "wallet/email", { email: "new@example.org", pin: "093716" }, done.token)).status, 403);
+  assert.equal((await call("POST", "wallet/email", { email: "new@example.org", pin: "813592" }, done.token)).status, 200);
 });
 
 // ---- fingerprint / face approval: the test plays the phone's authenticator (ES256)
 test("fingerprint approval: turned on with the PIN, then a signed one-time challenge stands in for the PIN", async () => {
-  const token = (await (await call("POST", "wallet/create", { pin: "151515", handle: "bio-user" })).json()).token;
-  await call("POST", "wallet/create", { pin: "161616", handle: "bio-friend" });
+  const token = (await (await call("POST", "wallet/create", { pin: "518274", handle: "bio-user" })).json()).token;
+  await call("POST", "wallet/create", { pin: "619427", handle: "bio-friend" });
   await yw.credit({ walletId: (await yw.walletByHandle("bio-user")).id, sats: 1000, kind: "receive", ref: "fund-bio" });
   const { privateKey, publicKey } = crypto.generateKeyPairSync("ec", { namedCurve: "P-256" });
   const id = crypto.randomBytes(20).toString("base64url");
@@ -487,8 +508,8 @@ test("fingerprint approval: turned on with the PIN, then a signed one-time chall
     const { challenge } = await (await call("POST", "wallet/passkey/options", {}, token)).json();
     return call("POST", "wallet/passkey/add", { pin, id, alg: -7, publicKey: b64(publicKey.export({ type: "spki", format: "der" })), clientDataJSON: client("webauthn.create", challenge) }, token);
   };
-  assert.equal((await add("000000")).status, 403);
-  assert.equal((await (await add("151515")).json()).passkeys, 1);
+  assert.equal((await add("093716")).status, 403);
+  assert.equal((await (await add("518274")).json()).passkeys, 1);
   assert.equal((await (await call("GET", "wallet/me", null, token)).json()).wallet.passkeys, 1);
 
   // A good approval pays; the same approval can't be used twice.
@@ -506,7 +527,7 @@ test("fingerprint approval: turned on with the PIN, then a signed one-time chall
   assert.equal((await call("POST", "wallet/send", { to: "bio-friend", sats: 10, pin: { walletId: "x", used: false } }, token)).status, 403);
   assert.equal((await yw.walletByHandle("bio-user")).balance, 990);
   // Turned off with the PIN.
-  assert.equal((await (await call("POST", "wallet/passkey/off", { pin: "151515" }, token)).json()).passkeys, 0);
+  assert.equal((await (await call("POST", "wallet/passkey/off", { pin: "518274" }, token)).json()).passkeys, 0);
   counter = 100;
   assert.equal((await send(await assertion())).status, 403);
 });
