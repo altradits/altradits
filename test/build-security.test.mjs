@@ -129,6 +129,20 @@ test("access: no code joins records or hands over a portal on an unconfirmed ema
   }
 });
 
+test("every Markdown file at the top level is denied to the web server", () => {
+  const deny = read(".htaccess").match(/<FilesMatch "\^\(([^"]+)\)\$">/)[1];
+  for (const f of fs.readdirSync(root).filter((x) => x.endsWith(".md")))
+    assert.ok(new RegExp(`^(${deny})$`).test(f), `${f}: add it to the FilesMatch deny list in .htaccess`);
+});
+
+test("main is signed: the trusted-keys file, the verify script and the deploy checks stay in place", () => {
+  assert.match(read(".github/allowed_signers"), /^altradits@gmail\.com namespaces="git" ssh-ed25519 /m, "a trusted signing key");
+  assert.match(read("deploy/verify-commits.sh"), /TRUST_ROOT=2ef931f7f09557cfa2a40b6679067532c1e09218/, "the trust root never moves");
+  assert.match(read("deploy/cron.sh"), /verify-commits\.sh origin\/main "\$SIGNERS"/, "the server refuses unsigned code");
+  assert.match(read(".github/workflows/deploy.yml"), /needs: verify/, "the deploy Action runs the signature check first (advisory or strict)");
+  assert.match(read(".githooks/pre-push"), /force-push/, "the local gate refuses force-pushes to main");
+});
+
 test("every top-level folder is either public on purpose or denied to the web server", () => {
   const PUBLIC = new Set(["assets"]); // pages' own scripts, styles and images
   const DOT = /^\./; // nginx refuses dot-folders (.git, .github, .claude); .htaccess adds 404s
