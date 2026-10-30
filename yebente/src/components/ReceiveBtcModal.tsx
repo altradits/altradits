@@ -5,6 +5,7 @@ import { hasServerWallet } from '../services/altraditsWallet';
 import QRCode from 'qrcode';
 import { addressQrText } from '../services/paymentQr';
 import { SatsMotion, CountUp } from './SatsMotion';
+import { celebrate } from '../services/celebrate';
 import {
   createDepositInvoice,
   checkInvoiceStatus,
@@ -207,6 +208,7 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
   };
 
   const triggerSuccess = (hash: string, sats: number) => {
+    celebrate({ kind: 'receive', sats, label: 'Lightning', ref: hash });
     setStep('success');
     onSuccess({
       type: 'receive_btc',

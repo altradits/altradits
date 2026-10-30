@@ -12,6 +12,7 @@ import { hasServerWallet, sendFromServerWallet } from '../services/altraditsWall
 import { parsePaymentText, bolt11Sats } from '../services/paymentQr';
 import { QrScanner } from './QrScanner';
 import { SatsMotion, CountUp } from './SatsMotion';
+import { celebrate } from '../services/celebrate';
 import { biometricOn, approveWithBiometric } from '../services/biometric';
 
 // A Ye₿ente wallet handle (another Altradits wallet): sent through the ledger, free.
@@ -355,6 +356,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
 
   const completeTransaction = (ref: string, targetRecipient: string) => {
     setWasOfflineDispatched(false);
+    celebrate({ kind: 'send', sats: numericSats, label: targetRecipient.length > 40 ? undefined : targetRecipient, ref });
     setStep('success');
     onSuccess({
       type: 'send_btc',
