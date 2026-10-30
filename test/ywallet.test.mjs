@@ -246,9 +246,9 @@ test("wallets stay off until YEBENTE_WALLETS=on", async () => {
 // A BOLT11-shaped invoice for `sats` with payment hash `hash` (the reader takes the
 // amount and the "p" field; signature and checksum are not checked here).
 const BECH = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
-function invoice(sats, hash = crypto.randomBytes(32).toString("hex")) {
-  const bits = [...Buffer.from(hash, "hex")].map((b) => b.toString(2).padStart(8, "0")).join("").padEnd(260, "0");
-  const words = [...Array(7).fill(0), 1, 1, 20, ...bits.match(/.{5}/g).map((b) => parseInt(b, 2)), ...Array(104).fill(0)];
+function invoice(sats, hash = crypto.randomBytes(32).toString("hex"), descHash = null) {
+  const w5 = (hex) => [...Buffer.from(hex, "hex")].map((b) => b.toString(2).padStart(8, "0")).join("").padEnd(260, "0").match(/.{5}/g).map((b) => parseInt(b, 2));
+  const words = [...Array(7).fill(0), 1, 1, 20, ...w5(hash), ...(descHash ? [23, 1, 20, ...w5(descHash)] : []), ...Array(104).fill(0)];
   return { pr: `lnbc${sats * 10}n1` + words.map((w) => BECH[w]).join("") + "qqqqqq", hash };
 }
 
@@ -374,6 +374,29 @@ test("a payment whose result isn't known in time stays pending until the node an
   assert.equal((await yw.walletByHandle("slow")).balance, 2000 - 1000 - 4);
   payMode = "ok";
   void p; void w;
+});
+
+test("an address whose invoice commits to someone else's description is refused, nothing taken", async () => {
+  const realFetch = globalThis.fetch;
+  const meta = JSON.stringify([["text/plain", "Pay shop@desc.example"]]);
+  const good = crypto.createHash("sha256").update(meta).digest("hex");
+  let wrong = true;
+  globalThis.fetch = async (url, opts) => {
+    const u = new URL(String(url));
+    if (u.hostname === "desc.example" && u.pathname === "/.well-known/lnurlp/shop") return Response.json({ tag: "payRequest", callback: "https://desc.example/cb", minSendable: 1000, maxSendable: 1e9, metadata: meta });
+    if (u.hostname === "desc.example" && u.pathname === "/cb") return Response.json({ pr: invoice(Number(u.searchParams.get("amount")) / 1000, undefined, wrong ? "ab".repeat(32) : good).pr });
+    return realFetch(url, opts);
+  };
+  try {
+    const token = (await (await call("POST", "wallet/create", { pin: "730184", handle: "desc-check" })).json()).token;
+    await yw.credit({ walletId: (await yw.walletByHandle("desc-check")).id, sats: 3000, kind: "receive", ref: "fund-desc" });
+    const r = await call("POST", "wallet/send", { to: "shop@desc.example", sats: 500, pin: "730184" }, token);
+    assert.equal(r.status, 400);
+    assert.match((await r.json()).error, /something else/);
+    assert.equal((await yw.walletByHandle("desc-check")).balance, 3000);
+    wrong = false; // the right description: paid
+    assert.equal((await (await call("POST", "wallet/send", { to: "shop@desc.example", sats: 500, pin: "730184" }, token)).json()).status, "completed");
+  } finally { globalThis.fetch = realFetch; }
 });
 
 test("an unclear answer from the node (tunnel error page) never refunds a payment the node may still be sending", async () => {

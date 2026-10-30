@@ -2,7 +2,8 @@
 // In production nginx sends .html files straight from disk, so header rules
 // (Apache's or Node's) never reach them: the policy has to live in the page.
 // Only our own scripts run, plus each page's inline script by its hash; no
-// other site is called, framed or posted to.
+// other site is called, framed or posted to. Right after the policy comes
+// /assets/report.js, which tells the Security watch when the lock blocks something.
 //
 //   node deploy/page-csp.mjs          rewrite the tags (after editing a page's inline script)
 //   node deploy/page-csp.mjs --check  fail if any page's tag is missing or stale (npm test runs this)
@@ -11,7 +12,8 @@ import path from "node:path";
 import crypto from "node:crypto";
 
 const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
-const TAG = /<meta http-equiv="Content-Security-Policy" content="[^"]*">\n?/;
+const TAG = /<meta http-equiv="Content-Security-Policy" content="[^"]*">\n?(?:<script src="\/assets\/report\.js"><\/script>\n?)?/;
+const REPORTER = `<script src="/assets/report.js"></script>\n`;
 
 export function pagePolicy(html) {
   const hashes = [...html.matchAll(/<script(?![^>]*\bsrc=)(?![^>]*type="application\/ld\+json")[^>]*>([\s\S]*?)<\/script>/gi)]
@@ -21,7 +23,7 @@ export function pagePolicy(html) {
 }
 
 export function withPolicy(html) {
-  const tag = `<meta http-equiv="Content-Security-Policy" content="${pagePolicy(html)}">\n`;
+  const tag = `<meta http-equiv="Content-Security-Policy" content="${pagePolicy(html)}">\n${REPORTER}`;
   if (TAG.test(html)) return html.replace(TAG, tag);
   const at = html.search(/<meta name="viewport"[^>]*>\n?/i);
   if (at < 0) throw new Error("no viewport meta to place the policy after");

@@ -7,7 +7,7 @@ import { hit, acquireLock } from "../lib/store.js";
 import { defang } from "../lib/screen.js";
 import { getProposal, saveProposal, getLead, logEvent, saveLead, confirmPayment } from "../lib/crm.js";
 import { emailOwner } from "../lib/email.js";
-import { createInvoice, invoicePaid, qrSvg, lightningMode, newOnchainAddress, onchainFeeRates, addressReceived, nodeSettlement } from "../lib/lightning.js";
+import { createInvoice, invoicePaid, qrSvg, lightningMode, newOnchainAddress, onchainFeeRates, addressReceived, nodeSettlement, confirmationsFor } from "../lib/lightning.js";
 import { PAYMENTS, DUST_SATS } from "../data/catalog.js";
 import { encodeLnurl } from "../lib/lnurl.js";
 import { siteUrl } from "../lib/http.js";
@@ -116,12 +116,13 @@ export async function GET(request) {
       if (r === false) paid = false;
     } catch (err) { console.error("lightning check", err); }
   }
-  // On-chain: paid once the full amount has 1 confirmation (1% tolerance for
-  // rounding); show the client that we've seen it before that.
+  // On-chain: paid once the full amount is buried deep enough for its size
+  // (1, 3 or 6 blocks: confirmationsFor), with 1% tolerance for rounding; show
+  // the client that we've seen it before that.
   let onchainSeen = false;
   if (!paid && p.onchain?.address && p.onchain.sats) {
     try {
-      const got = await addressReceived(p.onchain.address);
+      const got = await addressReceived(p.onchain.address, confirmationsFor(p.onchain.sats));
       const need = Math.floor(p.onchain.sats * 0.99);
       if (got.confirmed >= need) { paid = true; settled = { sats: got.confirmed, paymentHash: `onchain:${p.onchain.address}`, bolt11: "", onchain: true }; }
       else if (got.confirmed + got.unconfirmed >= need) onchainSeen = true;
@@ -161,5 +162,6 @@ export async function GET(request) {
     return json({ status: "paid" });
     } finally { await release(); }
   }
-  return json({ status: p.status, paid: false, verifiable: paid !== null || Boolean(p.onchain), onchainSeen });
+  return json({ status: p.status, paid: false, verifiable: paid !== null || Boolean(p.onchain), onchainSeen,
+    ...(p.onchain?.sats ? { confirmationsNeeded: confirmationsFor(p.onchain.sats) } : {}) });
 }
