@@ -29,7 +29,11 @@ jobs:
           persist-credentials: false
       - name: Every commit on main is signed by a trusted key
         continue-on-error: true # advisory for now (see above)
-        run: sh deploy/verify-commits.sh HEAD .github/allowed_signers || { echo "::warning::main has commits not signed by a trusted key (see the log). Deploying anyway: signatures are advisory for now."; exit 1; }
+        run: |
+          if ! sh deploy/verify-commits.sh HEAD .github/allowed_signers; then
+            echo "::warning::main has commits not signed by a trusted key (see the log above). Deploying anyway, because signatures are advisory for now."
+            exit 1
+          fi
 
   deploy:
     needs: verify
