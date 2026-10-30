@@ -34,7 +34,8 @@ const { runFollowups } = await import("../lib/followups.js");
 const { subscribe, confirmSubscription, runNurture } = await import("../lib/subscribers.js");
 const { orderable } = await import("../data/catalog.js");
 const portal = await import("../api/portal.js");
-import * as orderApi from "../api/order.js";
+// After the chdir above: a static import would load the store first and use the repository's .data.
+const orderApi = await import("../api/order.js");
 
 const DAY = 864e5;
 const req = (url, method = "GET", body, headers = {}) =>
