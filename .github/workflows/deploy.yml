@@ -11,8 +11,25 @@ concurrency:
   group: deploy
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
+  # Only code signed by a trusted key is deployed (deploy/verify-commits.sh, the
+  # Bitcoin Core verify-commits model). The server checks again with its own keys.
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned by commit
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Every commit on main is signed by a trusted key
+        run: sh deploy/verify-commits.sh HEAD .github/allowed_signers
+
   deploy:
+    needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
