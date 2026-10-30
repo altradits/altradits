@@ -2,6 +2,7 @@ import { payInvoiceWithWebLN } from '../services/lightningService';
 import { hasServerWallet, sendFromServerWallet } from '../services/altraditsWallet';
 import { biometricOn, approveWithBiometric } from '../services/biometric';
 import { SatsMotion, CountUp } from './SatsMotion';
+import { celebrate } from '../services/celebrate';
 import React, { useState, useEffect } from 'react';
 import { UserWallet, ExchangeRates, Transaction } from '../types';
 import {
@@ -311,6 +312,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
               note: `Tando M-Pesa delivery to ${formatKenyanDisplayPhone(phone)}`,
             });
 
+            celebrate({ kind: 'send', sats: totalSatsDeducted, label: `M-Pesa ${formatKenyanDisplayPhone(phone)}`, ref: paymentHash });
             setStep('success');
             return;
           }
@@ -343,6 +345,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
           note: `Tando M-Pesa transfer to ${formatKenyanDisplayPhone(phone)}`,
         });
 
+        celebrate({ kind: 'send', sats: totalSatsDeducted, label: `M-Pesa ${formatKenyanDisplayPhone(phone)}`, ref: paymentHash });
         setStep('success');
       } else {
         // --- TELEBIRR INTEGRATION (ETHIOPIA) ---

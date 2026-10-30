@@ -15,6 +15,7 @@ import {
 import { isLightningAddress, resolveLightningAddress, createLightningInvoice } from '../services/lightningService';
 import { KenyaPhoneInput } from './KenyaPhoneInput';
 import { SatsMotion } from './SatsMotion';
+import { celebrate } from '../services/celebrate';
 import { EthiopiaPhoneInput } from './EthiopiaPhoneInput';
 
 interface BuyBtcModalProps {
@@ -124,6 +125,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
         note: `Daraja STK purchase to ${configuredDestination}`,
       });
 
+      celebrate({ kind: 'receive', sats: satsAmount, label: 'M-Pesa', ref: refCode });
       setStep('success');
       return;
     }

@@ -137,3 +137,19 @@ html[data-private] .yb-sensitive {
 }
 .yb-sensitive { transition: filter .15s; }
 .yb-veiled { filter: blur(6px); cursor: pointer; }
+
+/* The full-screen sats show (SatsCelebration): the climax text */
+.yb-chant { animation: yb-chant .5s ease-in-out infinite alternate; }
+.yb-slam { animation: yb-slam .7s cubic-bezier(.2,1.6,.4,1) both; }
+.yb-slam-sub { animation: yb-rise .6s .25s ease-out both; }
+.yb-rise { animation: yb-rise .5s ease-out both; }
+@keyframes yb-chant { from { opacity: .45; letter-spacing: .3em; } to { opacity: 1; letter-spacing: .5em; } }
+@keyframes yb-slam {
+  0% { transform: scale(3.2) rotate(-8deg); opacity: 0; filter: blur(8px); }
+  60% { transform: scale(.92) rotate(2deg); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes yb-rise { from { transform: translateY(18px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .yb-chant, .yb-slam, .yb-slam-sub, .yb-rise { animation: none !important; }
+}
