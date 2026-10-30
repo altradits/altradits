@@ -17,6 +17,7 @@
 //   POST wallet/send {to, sats, pin}      a Ye₿ente handle (free), a Lightning address
 //                                          (incl. phone@bitcoin.co.ke = M-Pesa) or an invoice
 //   POST wallet/invoice {sats}            an invoice on the node for this wallet
+//   POST wallet/passkey/options|add|off   fingerprint / face approval instead of the PIN (send {passkey})
 //   GET  wallet/invoice/<hash>            credited once paid
 //   POST wallet/email {email, pin}       a recovery email (confirmed by a link)
 //   GET  wallet/email-confirm?t=          the link in that email
@@ -259,7 +260,16 @@ async function walletPost(request, action) {
     const w = await me(request);
     if ((await hit(`rl:yb:send:${w.id}`, 3600)) > 60) return json({ success: false, error: "Too many payments. Try again later." }, 429);
     // A handle (free, in the ledger), a Lightning address or an invoice (paid by the node).
-    return json({ success: true, ...(await yw.payOut({ from: w, to: body.to, sats: body.sats, pin: body.pin })) });
+    const pin = body.passkey ? await yw.passkeyPass(w, body.passkey) : body.pin;
+    return json({ success: true, ...(await yw.payOut({ from: w, to: body.to, sats: body.sats, pin })) });
+  }
+  if (action.startsWith("passkey/")) {
+    // Fingerprint / face approval: turned on with the PIN, per phone.
+    const w = await me(request);
+    if ((await hit(`rl:yb:pk:${w.id}`, 3600)) > 120) return json({ success: false, error: "Too many attempts. Try again later." }, 429);
+    if (action === "passkey/options") return json({ success: true, ...(await yw.passkeyOptions(w)) });
+    if (action === "passkey/add") return json({ success: true, ...(await yw.addPasskey(w, body)) });
+    if (action === "passkey/off") return json({ success: true, ...(await yw.removePasskeys(w, body.pin)) });
   }
   return json({ success: false, error: "Not found" }, 404);
 }
@@ -323,7 +333,7 @@ export async function POST(request) {
     if (path === "mpesa/query") return await stkQuery(request);
     if (path === "mpesa/hakikisha/c2b") return await hakikisha(request);
     if (path === "lightning/create-invoice") return await createDepositInvoice(request);
-    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy|email|recover-email|recover-email\/finish)$/);
+    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy|email|recover-email|recover-email\/finish|passkey\/(?:options|add|off))$/);
     if (wp) return await walletPost(request, wp[1]);
     const cb = path.match(/^mpesa\/callback\/([\w-]{16,128})$/);
     if (cb) return await callback(request, cb[1]);
