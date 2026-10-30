@@ -6,14 +6,13 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-UG5CBcZSaNjUPfAALFKyi+U0rYjSt8z1DnENMVCm4Lk='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/bitcoin">
-<title>Accept Bitcoin in your business · Altradits</title>
-<meta name="description" content="Accept Bitcoin in your business: a Lightning address and QR set up the same day for $15, or a full setup with checkout, invoices and clean books. Your keys always stay with you.">
+<title>Bitcoin knowledge, shared freely · Altradits</title>
+<meta name="description" content="Free Bitcoin learning for friends, family, businesses and communities, from your first sats to running a node and reviewing code. Peer to peer, the way Satoshi built it. With or without support.">
 <link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
-<link rel="modulepreload" href="/data/catalog.js">
 <style>
 /* Brand fonts, served from this site: Bricolage Grotesque and Figtree (SIL Open Font License 1.1, https://openfontlicense.org), latin and latin-ext (₿), variable weight */
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
@@ -80,6 +79,25 @@ h2{font:800 clamp(1.6rem,4vw,2.2rem)/1.1 'Bricolage Grotesque',sans-serif;margin
 .sitefoot .wrap{padding-top:0;padding-bottom:0}
 *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 a:hover,.btn:hover,button:hover{transform:none!important}
+/* Bitcoin knowledge page */
+.stages{display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(15.5rem,1fr));margin-top:1rem}
+.stage{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.2rem;display:flex;flex-direction:column;gap:.35rem}
+.stage .n{font:800 .85rem Figtree,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--btc-text)}
+.stage b{font:800 1.2rem 'Bricolage Grotesque',sans-serif}
+.stage ul{margin:.2rem 0 .5rem;padding-left:1.1rem;color:var(--muted);font-size:.96rem}
+.stage a{margin-top:auto;font-weight:700}
+.principles{display:grid;gap:.8rem;grid-template-columns:repeat(auto-fill,minmax(19rem,1fr));list-style:none;padding:0;margin:1rem 0 0}
+.principles li{border-left:4px solid var(--btc);padding:.2rem 0 .2rem .9rem}
+.principles b{display:block;font:800 1.05rem 'Bricolage Grotesque',sans-serif}
+.principles span{color:var(--muted)}
+.cols{display:grid;gap:1.4rem;grid-template-columns:repeat(auto-fit,minmax(19rem,1fr));margin-top:1rem}
+.card{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.3rem}
+.card h3{font:800 1.25rem 'Bricolage Grotesque',sans-serif;margin:0 0 .4rem}
+.card p{margin:.4rem 0;color:var(--muted)}
+.card p b{color:var(--ink)}
+.intro{max-width:44rem;color:var(--muted);margin:0}
+.ways{display:flex;flex-wrap:wrap;gap:.5rem;padding:0;margin:.8rem 0 1.2rem;list-style:none}
+.ways li{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:.35rem .8rem;font-size:.95rem}
 </style>
 </head>
 <body>
@@ -87,15 +105,57 @@ a:hover,.btn:hover,button:hover{transform:none!important}
   <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin" aria-current="page">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a></nav></div>
 
   <header class="hero">
-    <h1>Accept Bitcoin in <em>your business.</em></h1>
-    <p class="lead">Set up with you. Your keys always stay with you.</p>
-    <div class="ctas"><a class="btn dark" href="/lightning" id="start">Get a Lightning address</a></div>
+    <h1>Bitcoin knowledge, <em>shared freely.</em></h1>
+    <p class="lead">Peer to peer, the way Satoshi built it. Free learning for friends, family, businesses and communities, wherever you are in understanding Bitcoin. With or without support.</p>
+    <div class="ctas"><a class="btn dark" href="mailto:hello@altradits.com?subject=Learn%20Bitcoin">Learn with us</a><a class="btn" href="#support">Support or partner</a></div>
   </header>
 </div>
 
 <section><div class="wrap">
-  <h2>Two ways to start</h2>
-  <div class="help" id="help"></div>
+  <h2>Start where you are</h2>
+  <p class="intro">Everyone starts somewhere. Pick the stage that sounds like you; each one is free, one to one or in a group, in person or online.</p>
+  <div class="stages">
+    <div class="stage"><span class="n">Stage 1 · Curious</span><b>What Bitcoin is, and why it matters</b>
+      <ul><li>Money, and why a fixed supply of 21 million matters</li><li>Your first sats in a wallet you control</li><li>Spotting scams: nobody real asks for your recovery words</li></ul>
+      <a href="mailto:hello@altradits.com?subject=Bitcoin%20stage%201%3A%20curious">Ask for a session →</a></div>
+    <div class="stage"><span class="n">Stage 2 · Using</span><b>Paying, saving and getting paid</b>
+      <ul><li>Lightning payments, backups and privacy</li><li>Accepting Bitcoin in your business, set up with you</li><li>Your keys always stay with you</li></ul>
+      <a href="mailto:hello@altradits.com?subject=Bitcoin%20stage%202%3A%20using">Ask for a session →</a></div>
+    <div class="stage"><span class="n">Stage 3 · Verifying</span><b>Running your own node</b>
+      <ul><li>Setting up Bitcoin Core step by step, on your own laptop</li><li>Why confirmations matter, shown live</li><li>Don't trust, verify: check every payment yourself</li></ul>
+      <a href="mailto:hello@altradits.com?subject=Bitcoin%20stage%203%3A%20verifying">Ask for a session →</a></div>
+    <div class="stage"><span class="n">Stage 4 · Building</span><b>Open source, review and code</b>
+      <ul><li>Reading the whitepaper, BIPs and Lightning's BOLTs together</li><li>How Bitcoin Core reviews and merges code</li><li>Making your first contribution</li></ul>
+      <a href="mailto:hello@altradits.com?subject=Bitcoin%20stage%204%3A%20building">Ask for a session →</a></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>The principles we teach by</h2>
+  <p class="intro">Straight from the Bitcoin whitepaper and the way the network still works. <a href="https://bitcoin.org/bitcoin.pdf">Read the whitepaper</a> (9 pages).</p>
+  <ul class="principles">
+    <li><b>Peer to peer</b><span>Money that moves from one person to another without a bank in the middle.</span></li>
+    <li><b>Don't trust, verify</b><span>Run your own node and check every payment yourself, instead of taking anyone's word for it.</span></li>
+    <li><b>Your keys, your Bitcoin</b><span>Hold your own keys. If someone else holds them, they hold your money.</span></li>
+    <li><b>21 million, forever</b><span>A supply fixed in the rules, which no one can print more of.</span></li>
+    <li><b>Open source</b><span>Anyone can read the code, question it and help improve it. So can you.</span></li>
+    <li><b>Privacy by habit</b><span>A new address for every payment, and only the information a payment needs.</span></li>
+  </ul>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Learning together</h2>
+  <div class="cols">
+    <div class="card"><h3>BitDevs Kisumu</h3>
+      <p>Stanley co-founded BitDevs Kisumu, where we hold Socratic seminars: we read Bitcoin and Lightning developments together, ask questions and learn from each other. No one lectures; everyone brings something.</p>
+      <p>BitDevs Kisumu is sponsored by <b>Btrust</b>, and its mission of growing Bitcoin developers across Africa and the Global South is ours too.</p></div>
+    <div class="card"><h3>Open source</h3>
+      <p>Stanley has had <b>24 pull requests merged</b> into Minmo's open <a href="https://github.com/minmoto/payment-channels/pulls?q=is%3Apr+author%3Aaltradits+is%3Amerged">payment-channels</a> registry, starting with Ethiopia's Telebirr channel (<a href="https://github.com/altradits/payment-channels">his fork</a>).</p>
+      <p>The next goal is to become a Bitcoin code reviewer: reading, testing and questioning other people's changes, the way Bitcoin Core is kept safe. <a href="https://github.com/altradits/yebente">Ye₿ente</a>, our Bitcoin app for African households, is open source too.</p></div>
+    <div class="card"><h3>Ethiopia</h3>
+      <p>We are working towards introducing Bitcoin in Ethiopia: learning sessions, and tools that connect Bitcoin to the way people already pay, starting with Telebirr.</p>
+      <p>If you are in Ethiopia and want to learn or help, we would love to hear from you.</p></div>
+  </div>
 </div></section>
 
 <section><div class="wrap">
@@ -105,24 +165,29 @@ a:hover,.btn:hover,button:hover{transform:none!important}
   </ul>
 </div></section>
 
+<section id="support"><div class="wrap">
+  <h2>Support, partner, or teach us</h2>
+  <p class="intro">This work goes on with or without support. Support lets it reach more people, in more places, sooner. We welcome:</p>
+  <ul class="ways">
+    <li>Sponsors for seminars and workshops</li><li>Venues and internet for sessions</li><li>Devices for people's first wallets</li><li>Translation into local languages</li><li>Partners running Bitcoin education</li><li>Mentors and code-review practice</li>
+  </ul>
+  <p class="intro">And every chance to learn more: fellowships, programmes and open-source projects looking for contributors and reviewers.</p>
+  <div class="ctas" style="margin-top:1.2rem"><a class="btn dark" href="mailto:hello@altradits.com?subject=Partnership%20or%20sponsorship">Talk about partnering</a><a class="btn" href="/donate">Donate to Bitcoin education</a></div>
+</div></section>
+
 <section><div class="wrap"><div class="faq">
-  <h2>Before you pay</h2>
-  <details><summary>Do you ever hold my Bitcoin or my keys?</summary><p>No, never. The wallet is yours, the backup is yours, and payments go straight to you. We never ask for your recovery words.</p></details>
-  <details><summary>What do I need?</summary><p>For a Lightning address: your phone. For the full setup: access to where you sell, such as your website, shop or invoices.</p></details>
+  <h2>Questions</h2>
+  <details><summary>Is it really free?</summary><p>Yes. Learning sessions and help getting started cost nothing, with or without sponsors. The Bitcoin network charges its own small fees when you send a payment; those are paid to the network, not to us.</p></details>
+  <details><summary>Will you ever hold my Bitcoin or ask for my recovery words?</summary><p>No, never. You hold your own keys from your first sats. Anyone who asks for your recovery words, even claiming to be us, is trying to steal from you.</p></details>
+  <details><summary>Do you give investment advice?</summary><p>No. We teach how Bitcoin works and how to use it safely. No price talk, no predictions.</p></details>
+  <details><summary>I run a business. Can you help me accept Bitcoin?</summary><p>Yes, as part of stage 2: we set it up with you, show your team how it works, and your keys stay with you.</p></details>
+  <details><summary>How do we partner or sponsor?</summary><p>Email hello@altradits.com with what you have in mind. Sponsors get a plain report of what their support made possible, and credit if they want it.</p></details>
 </div></div></section>
 
 <footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 
 <script type="module">
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
-import { orderable, orderPath } from "/data/catalog.js";
-const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-// Offers, prices and deliverables come from the catalog, so they match the order page.
-const offer = (id, line) => { const o = orderable(id); return o ? `<a href="${orderPath(id)}"><b>${esc(o.name)}</b><span>${esc(line)}</span><span class="when">${esc(o.delivery)}</span><em>$${o.price}</em><span class="go">Order it →</span></a>` : ""; };
-$("#help").innerHTML = offer("q-lightning", "Start taking Bitcoin payments today.") + offer("bitcoin", "Checkout, invoices and clean books, with your team shown how.");
-const ln = orderable("q-lightning");
-if (ln) { $("#start").href = orderPath(ln.id); $("#start").textContent = `Get a Lightning address · $${ln.price}`; }
 </script>
 </body>
 </html>
