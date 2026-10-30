@@ -13,6 +13,9 @@ Read-only inspection of Stanley's Mac on 30 October 2026 (deploy/node-check.sh r
 - The channel backup (channel.backup) is current (29 Oct).
 - LND 0.21.3 is not affected by any published Lightning Labs advisory (the latest affecting 0.21.x, a DNS-seed panic, was fixed in 0.21.1).
 
+## Found later the same day
+- **The node could send 0 sats.** Our side of the channel held 20,143 sats, below the 29,434-sat channel reserve, so every send failed with "insufficient balance" (including M-Pesa sends through Tando). The site counted the reserve as spendable; it now doesn't, refuses such sends up front, alerts in Finance, and admin → Finance → Sending power tops the node up.
+
 ## Do now (high)
 1. **Give LND a full node to trust.** It runs Neutrino, a light client: it checks block headers itself but relies on other nodes for the block filters that tell it what concerns its channels. One preferred peer is configured (btcd-mainnet.lightning.computer) and Neutrino also finds others itself (about 2,800 known addresses). Eclipse, time-dilation and flood-and-loot attacks all target light clients. Best: your own Bitcoin Core; with 36 GB free and 8 GB RAM that means a pruned node now or an external SSD later. See Manual: LND for a business.
 2. **Delete router.macaroon after each LND start.** Like admin.macaroon, it can send payments, and LND recreates it at restart.

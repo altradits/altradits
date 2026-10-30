@@ -66,7 +66,7 @@ function tab(name) {
   document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === name));
   if (["tasks", "team"].includes(name)) loadOps();
   if (name === "growth") renderGrowth();
-  if (name === "finance") { loadFinance(); loadHeld(); loadChannels(); }
+  if (name === "finance") { loadFinance(); loadHeld(); loadPower(); loadChannels(); }
   if (name === "jobs") loadJobs();
   if (name === "marketing") loadMarketing();
   if (name === "stan") loadStan();
@@ -729,6 +729,52 @@ $("#heldList").addEventListener("click", async (e) => {
   try { await api("", { action: "move_to_node", id, sats: Number(amt) }); loadHeld(); } catch {}
 });
 $("#heldCheck").addEventListener("click", async () => { await loadHeld(); loadFinance(); });
+// Sending power: spendable after channel reserves, what Ye₿ente owes, and node top-ups.
+let spPoll = null;
+async function loadPower() {
+  let P; try { P = await api("?view=liquidity"); } catch (err) { $("#spNote").textContent = err.message; return; }
+  const kpi = (label, v) => `<div class="kpi"><small>${esc(label)}</small><div>${esc(v)}</div></div>`;
+  $("#spBadge").textContent = P.spendable < 1000 ? "can't send" : P.covered ? "covers every wallet" : "short";
+  $("#spBadge").className = `stage ${P.spendable < 1000 || !P.covered ? "failed" : "posted"}`;
+  $("#spKpis").innerHTML = kpi("Can send now", satsF(P.spendable)) + kpi("On our side", satsF(P.local)) + kpi("Locked as reserve", satsF(P.reserve))
+    + kpi("Owed to Ye₿ente wallets", `${satsF(P.owedSats)} (${P.wallets})`) + kpi("Can still receive", satsF(P.inbound));
+  $("#spNote").innerHTML = P.spendable < 1000 ? `<b class="err">The node can't send anything right now.</b> Ye₿ente payments out, including M-Pesa, fail until you top up.`
+    : !P.covered ? `<b class="err">Short:</b> wallets hold more than the node can send. Top up so every balance can be paid out.` : "Enough to pay out every Ye₿ente balance.";
+  spInfo = P;
+  if (!$("#spSats").value && P.suggested) $("#spSats").value = P.suggested;
+  $("#spSats").min = P.min; $("#spSats").max = P.max;
+  $("#spPresets").innerHTML = P.presets.map((n) => `<button type="button" class="btn${n === P.suggested ? " primary" : ""}" data-sp="${n}">${esc(satsF(n))}${n === P.suggested ? " (suggested)" : ""}</button>`).join("");
+  spPreview();
+  $("#spList").innerHTML = P.topups.length ? P.topups.map((t) => `<div>${esc(satsF(t.sats))} · <span class="stage ${t.state === "paid" ? "posted" : t.state === "expired" ? "" : "failed"}">${esc(t.state)}</span> <span class="muted">${esc(ago(t.at))}</span></div>`).join("") : '<p class="muted">No top-ups yet.</p>';
+}
+// What the amount in the field makes possible once paid: sending power after, and roughly how much M-Pesa.
+let spInfo = null;
+function spPreview() {
+  const n = Math.floor(Number($("#spSats").value));
+  if (!spInfo || !(n >= spInfo.min)) { $("#spPreview").textContent = spInfo ? `From ${satsF(spInfo.min)} to ${satsF(spInfo.max)}.` : ""; return; }
+  const after = spInfo.spendable + n;
+  const kes = spInfo.satsPerKes ? Math.floor(after / spInfo.satsPerKes / 1.01 / 10) * 10 : null; // Tando adds 1%
+  $("#spPreview").innerHTML = `After this top-up the node can send <b>${esc(satsF(after))}</b>${kes ? ` (about <b>${esc(kes.toLocaleString("en-US"))} KES</b> of M-Pesa sends at today's rate)` : ""}${after < spInfo.owedSats ? `, still below the ${esc(satsF(spInfo.owedSats))} wallets hold` : spInfo.owedSats ? ", enough to pay out every Ye₿ente balance" : ""}.`;
+}
+$("#spSats").addEventListener("input", spPreview);
+$("#spPresets").addEventListener("click", (e) => { const n = e.target.closest("[data-sp]")?.dataset.sp; if (n) { $("#spSats").value = n; spPreview(); } });
+$("#spGo").addEventListener("click", async () => {
+  $("#spErr").textContent = "";
+  let T; try { T = await api("", { action: "node_topup", sats: Number($("#spSats").value) }); } catch (err) { $("#spErr").textContent = err.message; return; }
+  $("#spInvoice").innerHTML = `<div class="ap" style="margin-top:.6rem"><p class="sm" style="margin:0 0 .4rem"><b>Pay ${esc(satsF(T.sats))} to your node</b> from any Lightning wallet. This page updates when it lands (the invoice works for an hour).</p>
+    <div style="max-width:15rem;background:#fff;padding:.5rem;border-radius:8px">${T.qr}</div>
+    <textarea readonly id="spBolt" rows="3" style="width:100%;margin-top:.5rem;font:12px ui-monospace,monospace">${esc(T.bolt11)}</textarea>
+    <div class="row"><button class="btn" id="spCopy">Copy invoice</button><a class="btn" href="lightning:${esc(T.bolt11)}">Open in wallet</a></div>
+    <p class="sm" id="spState" role="status">Waiting for payment…</p></div>`;
+  $("#spCopy").onclick = () => navigator.clipboard?.writeText(T.bolt11).then(() => toast("Invoice copied."));
+  clearInterval(spPoll);
+  spPoll = setInterval(async () => {
+    let s; try { s = await api(`?view=topup&hash=${encodeURIComponent(T.hash)}`); } catch { return; }
+    if (s.state === "paid") { clearInterval(spPoll); $("#spState").innerHTML = `<b style="color:var(--ok)">Paid ✓</b> ${esc(satsF(s.sats))} landed on the node.`; toast("Top-up received."); loadPower(); loadChannels(); }
+    else if (s.state === "expired") { clearInterval(spPoll); $("#spState").textContent = "This invoice expired. Make a new one."; loadPower(); }
+  }, 4000);
+});
+
 async function loadChannels() {
   let L; try { L = await api("?view=channels"); } catch (err) { $("#lnAlerts").textContent = err.message; return; }
   const color = { critical: "#B42318", warning: "#B54708" };
