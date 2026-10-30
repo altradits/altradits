@@ -15,24 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  # Signatures (deploy/verify-commits.sh, the Bitcoin Core verify-commits model).
-  # ADVISORY for now: commits from a machine without the signing key (the school
-  # laptop) still deploy, with a warning on the run. To enforce, remove
-  # "continue-on-error" below and create ~/.altradits-allowed-signers on the server.
-  verify:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned by commit
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Every commit on main is signed by a trusted key
-        continue-on-error: true # advisory for now (see above)
-        run: sh deploy/verify-commits.sh HEAD .github/allowed_signers || { echo "::warning::main has commits not signed by a trusted key (see the log). Deploying anyway: signatures are advisory for now."; exit 1; }
-
   deploy:
-    needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

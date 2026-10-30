@@ -22,6 +22,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0, pinned by commit
         with:
           node-version: 24
+      - name: Workflow files are valid (a broken file silently stops deploys)
+        run: ruby -ryaml -e 'Dir[".github/workflows/*.yml"].each { |f| YAML.load_file(f) }; puts "workflows ok"'
       - name: Install (no package scripts run)
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Tests and build-stage security guard
