@@ -14,6 +14,7 @@ import {
 } from '../services/telebirrService';
 import { isLightningAddress, resolveLightningAddress, createLightningInvoice } from '../services/lightningService';
 import { KenyaPhoneInput } from './KenyaPhoneInput';
+import { SatsMotion } from './SatsMotion';
 import { EthiopiaPhoneInput } from './EthiopiaPhoneInput';
 
 interface BuyBtcModalProps {
@@ -551,9 +552,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
 
           {step === 'success' && (
             <div className="py-6 flex flex-col items-center text-center space-y-4">
-              <div className="w-14 h-14 rounded-full bg-[var(--yb-primary-container)]/25 border border-[var(--yb-primary)]/50 flex items-center justify-center text-[var(--yb-secondary)]">
-                <CheckCircle2 className="w-8 h-8 text-emerald-400" />
-              </div>
+              <SatsMotion mode="received" />
               <div>
                 <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">Payment Verified & Sats Credited</h3>
                 <p className="text-xs text-emerald-400 font-mono mt-0.5">

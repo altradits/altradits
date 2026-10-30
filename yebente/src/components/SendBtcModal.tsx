@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserWallet, Transaction, ExchangeRates } from '../types';
-import { ArrowLeft, CheckCircle2, AlertCircle, Loader2, WifiOff, ScanLine, ClipboardPaste } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Loader2, WifiOff, ScanLine, ClipboardPaste, Fingerprint } from 'lucide-react';
 import { payInvoiceWithWebLN,
   isLightningAddress,
   resolveLightningAddress,
@@ -11,6 +11,8 @@ import { isNetworkOnline, queueOfflineTransaction } from '../services/offlineSer
 import { hasServerWallet, sendFromServerWallet } from '../services/altraditsWallet';
 import { parsePaymentText, bolt11Sats } from '../services/paymentQr';
 import { QrScanner } from './QrScanner';
+import { SatsMotion, CountUp } from './SatsMotion';
+import { biometricOn, approveWithBiometric } from '../services/biometric';
 
 // A Ye₿ente wallet handle (another Altradits wallet): sent through the ledger, free.
 const isYebenteHandle = (s: string) => /^[a-z0-9][a-z0-9._-]{1,18}[a-z0-9]$/i.test(s.trim());
@@ -64,7 +66,10 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
   const [wasOfflineDispatched, setWasOfflineDispatched] = useState<boolean>(false);
   const [pin, setPin] = useState<string>('');
   const [scanning, setScanning] = useState(false);
+  const [usePin, setUsePin] = useState(false);
   const server = hasServerWallet();
+  // Fingerprint / face on this phone: no PIN typed on screen.
+  const useBio = server && biometricOn() && !usePin;
   const toYebente = server && isYebenteHandle(sanitizeLightningInput(recipient));
   // An invoice carries its own amount: it fills the amount and can't be changed.
   const invoiceSats = recipientType === 'lightning_invoice' ? bolt11Sats(sanitizeLightningInput(recipient)) : null;
@@ -247,14 +252,25 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
       return;
     }
 
+    // Fingerprint / face first, before anything is shown as sending.
+    let passkey: unknown;
+    if (useBio) {
+      try {
+        passkey = await approveWithBiometric();
+      } catch (err: unknown) {
+        setErrorMessage(err instanceof Error ? err.message : 'Fingerprint not confirmed.');
+        return;
+      }
+    }
+
     setStep('processing');
     setErrorMessage('');
     setIsNetworkFailure(false);
 
-    // The Altradits wallet: the server pays from the ledger, with the PIN.
+    // The Altradits wallet: the server pays from the ledger, with the PIN or fingerprint.
     if (server) {
       try {
-        const res = await sendFromServerWallet(cleanRecipient, numericSats, pin);
+        const res = await sendFromServerWallet(cleanRecipient, numericSats, pin, passkey);
         setTxReference(res.ref);
         setPin('');
         completeTransaction(res.ref, cleanRecipient);
@@ -365,7 +381,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     numericSats > 0 &&
     !isInsufficientSats &&
     !amountlessInvoice &&
-    (!server || /^\d{6}$/.test(pin));
+    (!server || useBio || /^\d{6}$/.test(pin));
 
   if (scanning) return <QrScanner onResult={applyPaymentText} onClose={() => setScanning(false)} />;
 
@@ -505,7 +521,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
               </div>}
 
               {/* PIN for the Altradits wallet */}
-              {server && (
+              {server && !useBio && (
                 <div>
                   <div className="text-xs text-[var(--yb-secondary)] mb-1.5 font-semibold">PIN</div>
                   <input
@@ -517,7 +533,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                     maxLength={6}
                     value={pin}
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-3 text-lg font-mono tracking-[0.5em] text-[var(--yb-on-surface)] focus:outline-none"
+                    className="yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-3 text-lg font-mono tracking-[0.5em] text-[var(--yb-on-surface)] focus:outline-none"
                   />
                 </div>
               )}
@@ -549,18 +565,26 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                 type="button"
                 onClick={handleSend}
                 disabled={!isFormValid}
-                className="w-full h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center disabled:opacity-50"
+                className="w-full h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
               >
+                {useBio && <Fingerprint className="w-4 h-4" />}
                 Send Sats
               </button>
+              {server && biometricOn() && (
+                <button
+                  type="button"
+                  onClick={() => { setUsePin(!usePin); setPin(''); }}
+                  className="w-full text-center text-[11px] font-semibold text-[var(--yb-primary)] hover:underline"
+                >
+                  {usePin ? 'Use fingerprint instead' : 'Use PIN instead'}
+                </button>
+              )}
             </div>
           )}
 
           {step === 'processing' && (
             <div className="py-8 flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-[var(--yb-primary-container)]/20 border border-[var(--yb-primary)]/40 flex items-center justify-center text-[var(--yb-secondary)]">
-                <Loader2 className="w-8 h-8 animate-spin" />
-              </div>
+              <SatsMotion mode="sending" />
               <div className="space-y-1">
                 <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">Routing Lightning Payment</h3>
                 <p className="text-xs text-[var(--yb-on-surface-variant)] font-mono">
@@ -572,9 +596,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
 
           {step === 'success' && (
             <div className="text-center py-4 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
+              <SatsMotion mode="sent" />
 
               <div className="space-y-1">
                 <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">Payment Sent</h3>
@@ -589,7 +611,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-[var(--yb-on-surface-variant)]">Amount Sent</span>
                   <span className="text-sm font-mono font-bold text-emerald-400">
-                    -{numericSats.toLocaleString()} Sats
+                    -<CountUp value={numericSats} /> Sats
                   </span>
                 </div>
                 <div className="flex justify-between items-center">

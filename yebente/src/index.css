@@ -94,3 +94,46 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   outline-offset: 2px;
 }
 input:focus, textarea:focus { border-color: var(--yb-primary) !important; }
+
+/* Sats on the move (SatsMotion): coins out when sending, in when receiving */
+.yb-coin {
+  position: absolute;
+  top: 34%;
+  font: 800 18px/1 ui-sans-serif, system-ui, sans-serif;
+  color: #f7931a;
+  opacity: 0;
+  pointer-events: none;
+}
+.yb-coin-up { animation: yb-coin-up 1.1s ease-out both; }
+.yb-coin-in { animation: yb-coin-in 0.9s ease-in both; }
+.yb-loop { animation-iteration-count: infinite; }
+.yb-pop { animation: yb-pop 0.45s 0.35s cubic-bezier(.2,.9,.3,1.4) both; }
+.yb-ripple { animation: yb-ripple 1.2s 0.3s ease-out both; }
+.yb-pulse { animation: yb-pulse 1s ease-in-out infinite; }
+@keyframes yb-coin-up {
+  0% { transform: translate(-50%, 0) scale(.6); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translate(-50%, -80px) scale(1.1); opacity: 0; }
+}
+@keyframes yb-coin-in {
+  0% { transform: translate(-50%, -80px) scale(1.1); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translate(-50%, 0) scale(.5); opacity: 0; }
+}
+@keyframes yb-pop { 0% { transform: scale(0); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes yb-ripple { 0% { transform: scale(.85); opacity: .7; } 100% { transform: scale(1.7); opacity: 0; } }
+@keyframes yb-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+@media (prefers-reduced-motion: reduce) {
+  .yb-motion *, .yb-motion { animation: none !important; }
+  .yb-coin, .yb-ripple { display: none; }
+}
+
+/* Privacy: PINs and the recovery phrase blur whenever the app is not in front
+   (app switcher, notification shade, screen-recording controls, other windows). */
+html[data-private] .yb-sensitive {
+  filter: blur(8px);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.yb-sensitive { transition: filter .15s; }
+.yb-veiled { filter: blur(6px); cursor: pointer; }
