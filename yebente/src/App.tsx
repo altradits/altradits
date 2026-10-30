@@ -226,8 +226,10 @@ export default function App() {
         </main>
       </div>
 
-      {/* Modals */}
+      {/* Modals. Each action starts fresh when opened (the key changes), so
+          Done after a payment leaves nothing behind for the next one. */}
       <BuyBtcModal
+        key={activeModal === 'buy_btc' ? 'buy_btc-open' : 'buy_btc'}
         isOpen={activeModal === 'buy_btc'}
         onClose={() => setActiveModal('none')}
         wallet={wallet}
@@ -236,6 +238,7 @@ export default function App() {
       />
 
       <ReceiveBtcModal
+        key={activeModal === 'receive_btc' ? 'receive_btc-open' : 'receive_btc'}
         isOpen={activeModal === 'receive_btc'}
         onClose={() => setActiveModal('none')}
         wallet={wallet}
@@ -244,6 +247,7 @@ export default function App() {
       />
 
       <SendBtcModal
+        key={activeModal === 'send_btc' ? 'send_btc-open' : 'send_btc'}
         isOpen={activeModal === 'send_btc'}
         onClose={() => setActiveModal('none')}
         wallet={wallet}
@@ -252,6 +256,7 @@ export default function App() {
       />
 
       <SendMpesaModal
+        key={activeModal === 'send_mpesa' ? 'send_mpesa-open' : 'send_mpesa'}
         isOpen={activeModal === 'send_mpesa'}
         onClose={() => setActiveModal('none')}
         wallet={wallet}
