@@ -14,6 +14,7 @@ export interface ServerWallet {
   email?: string | null;
   emailPending?: string | null;
   holdUntil?: string | null;
+  passkeys?: number;
 }
 
 export interface ServerEntry {
@@ -36,9 +37,12 @@ const setWalletToken = (t: string | null) => {
   try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch { /* private mode */ }
 };
 export const hasServerWallet = () => Boolean(getWalletToken());
-export const forgetServerWallet = () => setWalletToken(null);
+export const forgetServerWallet = () => {
+  setWalletToken(null);
+  try { localStorage.removeItem('altradits_yw_passkey'); } catch { /* private mode */ }
+};
 
-async function api<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
+export async function api<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
   const token = getWalletToken();
   const res = await fetch(`/api/yebente/wallet/${path}`, {
     method,
@@ -70,8 +74,9 @@ export async function fetchServerHistory(): Promise<Transaction[]> {
   return entries.map(entryToTransaction);
 }
 
-export const sendFromServerWallet = (to: string, sats: number, pin: string) =>
-  api<{ wallet: ServerWallet; ref: string }>('POST', 'send', { to, sats, pin });
+// Approved with the PIN, or with the phone's fingerprint / face (a signed passkey approval).
+export const sendFromServerWallet = (to: string, sats: number, pin: string, passkey?: unknown) =>
+  api<{ wallet: ServerWallet; ref: string }>('POST', 'send', passkey ? { to, sats, passkey } : { to, sats, pin });
 
 // A ledger entry in the shape the history list already shows.
 function entryToTransaction(e: ServerEntry): Transaction {

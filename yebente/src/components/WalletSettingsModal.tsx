@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserWallet, WalletType } from '../types';
 import {
   isLightningAddress,
@@ -23,6 +23,8 @@ import {
 } from '../services/blinkService';
 import { hasServerWallet, createServerWallet, restoreServerWallet, setRecoveryEmail, requestEmailRecovery, finishEmailRecovery } from '../services/altraditsWallet';
 import { downloadRecoveryCard, shareRecoveryCard, canShareCard } from '../services/recoveryCard';
+import { biometricSupported, biometricOn, enableBiometric, disableBiometric } from '../services/biometric';
+import { Fingerprint } from 'lucide-react';
 import {
   getOfflineOutbox,
   syncOfflineOutbox,
@@ -113,6 +115,12 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   const [emailInput, setEmailInput] = useState('');
   const [emailPin, setEmailPin] = useState('');
   const [shareDone, setShareDone] = useState(false);
+  const [phraseVisible, setPhraseVisible] = useState(false);
+  const [bioSupported, setBioSupported] = useState(false);
+  const [bioActive, setBioActive] = useState(biometricOn());
+  const [bioPin, setBioPin] = useState('');
+  const [bioMsg, setBioMsg] = useState('');
+  useEffect(() => { biometricSupported().then(setBioSupported); }, []);
 
   if (!isOpen) return null;
 
@@ -478,7 +486,8 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                         rows={3}
                         value={restorePhrase}
                         onChange={(e) => setRestorePhrase(e.target.value)}
-                        className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] resize-none"
+                        autoComplete="off"
+                        className="yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] resize-none"
                       />
                     </div>
                   )}
@@ -526,7 +535,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                         data-1p-ignore="true"
                         value={walletPin}
                         onChange={(e) => setWalletPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.4em]"
+                        className="yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.4em]"
                       />
                     </div>
                     {(!restoreMode || recoveryToken) && (
@@ -542,7 +551,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                         data-1p-ignore="true"
                         value={walletPinConfirm}
                           onChange={(e) => setWalletPinConfirm(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.4em]"
+                          className="yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.4em]"
                         />
                       </div>
                     )}
@@ -579,7 +588,14 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                       {copiedRecovery ? <Check className="w-3.5 h-3.5 text-[var(--yb-secondary)]" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                   </div>
-                  <p className="font-mono text-sm leading-relaxed text-[var(--yb-on-surface)] select-all">{recoveryShown}</p>
+                  {/* Hidden until tapped, so it isn't caught by a screen recording or someone nearby. */}
+                  <p
+                    onClick={() => setPhraseVisible(!phraseVisible)}
+                    className={`yb-sensitive font-mono text-sm leading-relaxed text-[var(--yb-on-surface)] select-all ${phraseVisible ? '' : 'yb-veiled'}`}
+                  >
+                    {recoveryShown}
+                  </p>
+                  {!phraseVisible && <p className="text-[11px] text-[var(--yb-on-surface-variant)]">Tap to show</p>}
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <button type="button" onClick={() => downloadRecoveryCard({ address: wallet.blinkAddress || '', phrase: recoveryShown })} className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center gap-2 hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50">
                       <Download className="w-3.5 h-3.5" /> Download
@@ -628,6 +644,47 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                 </div>
               )}
 
+              {server && bioSupported && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs text-[var(--yb-secondary)]">
+                    <span className="font-semibold flex items-center gap-1.5"><Fingerprint className="w-3.5 h-3.5" /> Fingerprint / Face</span>
+                    <span className={`font-mono text-[10px] ${bioActive ? 'text-emerald-400' : 'text-[var(--yb-on-surface-variant)]'}`}>{bioActive ? 'On for this phone' : 'Off'}</span>
+                  </div>
+                  <div className="grid grid-cols-[1fr_7rem] gap-2">
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      name="yb-settings-bio-pin"
+                      autoComplete="new-password"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      maxLength={6}
+                      value={bioPin}
+                      onChange={(e) => setBioPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="PIN"
+                      className="yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.3em]"
+                    />
+                    <button
+                      type="button"
+                      disabled={walletBusy || !/^\d{6}$/.test(bioPin)}
+                      onClick={async () => {
+                        setWalletBusy(true); setValidationError(''); setBioMsg('');
+                        try {
+                          if (bioActive) { await disableBiometric(bioPin); setBioActive(false); setBioMsg('Payments now need the PIN.'); }
+                          else { await enableBiometric(bioPin); setBioActive(true); setBioMsg('Approve payments with your fingerprint or face.'); }
+                          setBioPin(''); onServerWalletChange?.();
+                        } catch (err: unknown) { setValidationError(err instanceof Error ? err.message : 'Fingerprint could not be set up.'); }
+                        finally { setWalletBusy(false); }
+                      }}
+                      className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50"
+                    >
+                      {bioActive ? 'Turn off' : 'Turn on'}
+                    </button>
+                  </div>
+                  {bioMsg && <p className="text-xs text-emerald-300 px-1">{bioMsg}</p>}
+                </div>
+              )}
+
               {server && (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-xs text-[var(--yb-secondary)]">
@@ -657,7 +714,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                       value={emailPin}
                       onChange={(e) => setEmailPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       placeholder="PIN"
-                      className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.3em]"
+                      className="yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.3em]"
                     />
                   </div>
                   <button
@@ -820,7 +877,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                     value={pinInput}
                     onChange={(e) => setPinInput(e.target.value.replace(/[^0-9]/g, ''))}
                     placeholder="••••••"
-                    className="w-full bg-[var(--yb-surface-container-low)] border border-[var(--yb-outline-variant)] rounded-xl px-3 py-2 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
+                    className="yb-sensitive w-full bg-[var(--yb-surface-container-low)] border border-[var(--yb-outline-variant)] rounded-xl px-3 py-2 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
                   />
                 </div>
                 <div>
@@ -831,7 +888,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                     value={confirmPinInput}
                     onChange={(e) => setConfirmPinInput(e.target.value.replace(/[^0-9]/g, ''))}
                     placeholder="••••••"
-                    className="w-full bg-[var(--yb-surface-container-low)] border border-[var(--yb-outline-variant)] rounded-xl px-3 py-2 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
+                    className="yb-sensitive w-full bg-[var(--yb-surface-container-low)] border border-[var(--yb-outline-variant)] rounded-xl px-3 py-2 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
                   />
                 </div>
                 <div className="flex gap-2 pt-1">
