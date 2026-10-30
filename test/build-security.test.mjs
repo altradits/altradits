@@ -129,6 +129,15 @@ test("access: no code joins records or hands over a portal on an unconfirmed ema
   }
 });
 
+test("tests never load project modules before moving into their temporary folder", () => {
+  // Static imports run before any statement, so they would open the repository's own .data store.
+  for (const f of fs.readdirSync(path.join(root, "test")).filter((x) => x.endsWith(".test.mjs"))) {
+    const src = read(`test/${f}`);
+    if (!/process\.chdir\(/.test(src)) continue;
+    assert.doesNotMatch(src, /^import\s[^;]*from\s+["']\.\.\/(lib|api|data)\//m, `test/${f}: import project modules with await import() after process.chdir()`);
+  }
+});
+
 test("every Markdown file at the top level is denied to the web server", () => {
   const deny = read(".htaccess").match(/<FilesMatch "\^\(([^"]+)\)\$">/)[1];
   for (const f of fs.readdirSync(root).filter((x) => x.endsWith(".md")))
