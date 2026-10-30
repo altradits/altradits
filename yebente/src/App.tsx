@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { UserWallet, ExchangeRates, Transaction } from './types';
 import { fetchLiveRates, getCachedRates } from './services/ratesService';
 import {
@@ -17,6 +17,8 @@ import {
 } from './services/offlineService';
 import { TopBar } from './components/TopBar';
 import { forgetBiometric } from './services/biometric';
+import { celebrate, markCelebrated, wasCelebrated, onCelebrate, Celebration } from './services/celebrate';
+import { SatsCelebration } from './components/SatsCelebration';
 import { BalanceCard } from './components/BalanceCard';
 import { ActionGrid } from './components/ActionGrid';
 import { TransactionHistory } from './components/TransactionHistory';
@@ -100,6 +102,12 @@ export default function App() {
     return () => events.forEach((e) => (e === 'visibilitychange' ? document : window).removeEventListener(e, update));
   }, []);
 
+  // The full-screen sats show: played here, asked for by the payment sheets, and
+  // by the sync below when sats arrive while the app is open.
+  const [show, setShow] = useState<{ c: Celebration; id: number } | null>(null);
+  useEffect(() => onCelebrate((c) => setShow({ c, id: Date.now() })), []);
+  const firstSync = useRef(true);
+
   // The Altradits wallet: balance, address and history come from the server.
   const syncServerWallet = useCallback(async () => {
     if (!hasServerWallet()) return;
@@ -119,6 +127,16 @@ export default function App() {
         recoveryEmail: w.email || (w.emailPending ? `${w.emailPending} (unconfirmed)` : ''),
         lastSyncedAt: Date.now(),
       }));
+      // Sats that came in since the last look: the receiver's show.
+      if (firstSync.current) markCelebrated(txs.map((t) => t.referenceNumber));
+      else {
+        const fresh = txs.filter((t) => t.type === 'receive_btc' && t.status === 'completed' && !wasCelebrated(t.referenceNumber));
+        if (fresh.length) {
+          markCelebrated(fresh.map((t) => t.referenceNumber));
+          celebrate({ kind: 'receive', sats: fresh.reduce((n, t) => n + (t.toAmount || t.fromAmount || 0), 0), label: fresh.length === 1 ? fresh[0].recipient : undefined });
+        }
+      }
+      firstSync.current = false;
       setTransactions(txs);
     } catch {
       // Signed out (token revoked) or offline: keep what is on screen.
@@ -279,6 +297,8 @@ export default function App() {
         rates={rates}
         onSuccess={handleTransactionSuccess}
       />
+
+      {show && <SatsCelebration key={show.id} c={show.c} onDone={() => setShow(null)} />}
 
       <TransactionDetailModal
         transaction={selectedTx}
