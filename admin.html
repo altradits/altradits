@@ -258,6 +258,15 @@ dd{margin:0;overflow-wrap:anywhere}
       <div class="row" style="margin:0 0 .6rem"><button class="btn" id="heldCheck">Check now</button></div>
       <div id="heldList"></div>
     </div>
+    <div class="panel"><h2>Sending power <span class="stage" id="spBadge"></span></h2>
+      <p class="muted sm" style="margin-top:0">What the node can actually send: Ye₿ente payments, M-Pesa through Tando, refunds. Each channel keeps a reserve (1% of it) on our side that can never be spent, so the node sends only what is above it. Any payment into the node adds sending power: make a top-up invoice here and pay it from any Lightning wallet (Wallet of Satoshi, Phoenix…). Supporters who want to help can give through altradits.com/donate, which lands on the node the same way.</p>
+      <div class="kpis" id="spKpis" style="margin:0 0 .8rem"></div>
+      <p class="sm" id="spNote" style="margin:0 0 .8rem"></p>
+      <div class="row"><label class="muted sm" for="spSats" style="align-self:center">Top up</label><input id="spSats" type="number" min="1000" step="1000" inputmode="numeric" style="max-width:11rem"><span class="muted sm" style="align-self:center">sats</span><button class="btn primary" id="spGo">Make top-up invoice</button></div>
+      <p class="err sm" id="spErr" role="status"></p>
+      <div id="spInvoice"></div>
+      <details style="margin-top:.6rem"><summary class="sm" style="cursor:pointer"><b>Recent top-ups</b></summary><div id="spList" class="sm"></div></details>
+    </div>
     <div class="panel"><h2>Lightning channels</h2>
       <p class="muted" style="margin-top:0">Your node's channels: what the website can still receive over Lightning. You get an email when something needs action (checked hourly, at most once a day per alert).</p>
       <div id="lnAlerts"></div>
