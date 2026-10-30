@@ -262,10 +262,24 @@ dd{margin:0;overflow-wrap:anywhere}
       <p class="muted sm" style="margin-top:0">What the node can actually send: Ye₿ente payments, M-Pesa through Tando, refunds. Each channel keeps a reserve (1% of it) on our side that can never be spent, so the node sends only what is above it. Any payment into the node adds sending power: make a top-up invoice here and pay it from any Lightning wallet (Wallet of Satoshi, Phoenix…). Supporters who want to help can give through altradits.com/donate, which lands on the node the same way.</p>
       <div class="kpis" id="spKpis" style="margin:0 0 .8rem"></div>
       <p class="sm" id="spNote" style="margin:0 0 .8rem"></p>
-      <div class="row"><label class="muted sm" for="spSats" style="align-self:center">Top up</label><input id="spSats" type="number" min="1000" step="1000" inputmode="numeric" style="max-width:11rem"><span class="muted sm" style="align-self:center">sats</span><button class="btn primary" id="spGo">Make top-up invoice</button></div>
+      <p class="sm" style="margin:0 0 .4rem"><b>Choose an amount</b> (or type any amount from 1,000 sats):</p>
+      <div class="row" id="spPresets" style="gap:.4rem;flex-wrap:wrap"></div>
+      <div class="row"><label class="muted sm" for="spSats" style="align-self:center">Top up</label><input id="spSats" type="number" min="1000" step="1000" inputmode="numeric" style="max-width:11rem"><span class="muted sm" style="align-self:center">sats</span><button class="btn primary" id="spGo">Make QR for this amount</button></div>
+      <p class="sm" id="spPreview" role="status" style="margin:.3rem 0"></p>
       <p class="err sm" id="spErr" role="status"></p>
       <div id="spInvoice"></div>
       <details style="margin-top:.6rem"><summary class="sm" style="cursor:pointer"><b>Recent top-ups</b></summary><div id="spList" class="sm"></div></details>
+      <details style="margin-top:.6rem"><summary class="sm" style="cursor:pointer"><b>How sending power affects everyone using the node</b></summary>
+        <div class="sm">
+          <p><b>What it is.</b> The node holds Bitcoin in a Lightning channel. Money on our side of the channel is what the node can send; money on the other side is what it can receive. Lightning makes each side keep a reserve (1% of the channel) that can never be spent, so the node can send only what is above it. Sending power is that amount.</p>
+          <p><b>Inside: Ye₿ente to Ye₿ente.</b> Payments between Ye₿ente handles (name@altradits.com to name@altradits.com, or scanning another Ye₿ente QR) never leave the ledger. They are instant and free, and they keep working even when sending power is zero.</p>
+          <p><b>Outside: to the rest of Bitcoin and to M-Pesa.</b> Every payment out of Ye₿ente goes through the node and uses sending power: paying another Lightning wallet or invoice, a Lightning address, and Send Mobile, which pays Tando (bitcoin.co.ke) so Tando can pay the phone number by M-Pesa. Without enough sending power these payments are refused before anything is taken: people's sats stay safe in their wallets, but they can't leave until the node is topped up. One payment can never be larger than the sending power.</p>
+          <p><b>Receiving is separate.</b> Website orders, donations, top-ups and money coming into Ye₿ente use the other side of the channel ("can still receive"). Every payment in moves sats to our side, so receiving also adds sending power; every payment out uses it up.</p>
+          <p><b>Why "owed to Ye₿ente wallets" matters.</b> Ye₿ente is custodial: the balances people see are sats the node holds for them. When sending power is below what wallets hold, not everyone could withdraw at once. That is the lesson of Mt. Gox and QuadrigaCX, so the Security watch alerts on it every hour. Keep sending power at or above what wallets hold, plus a buffer.</p>
+          <p><b>What a top-up does.</b> Paying one of these QRs from any Lightning wallet moves that many sats to our side of the channel. It is your own money changing place, not a fee: it can be sent out again at any time. The amounts above show what each one makes possible, in sats and in shillings of M-Pesa sends at today's rate (Tando adds 1%).</p>
+          <p><b>For people who want to help.</b> Donations at altradits.com/donate land on the node in the same way and add sending power for everyone. The node's balances themselves stay private: publishing them would tell an attacker exactly when the node can't pay.</p>
+        </div>
+      </details>
     </div>
     <div class="panel"><h2>Lightning channels</h2>
       <p class="muted" style="margin-top:0">Your node's channels: what the website can still receive over Lightning. You get an email when something needs action (checked hourly, at most once a day per alert).</p>

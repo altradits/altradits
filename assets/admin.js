@@ -740,10 +740,24 @@ async function loadPower() {
     + kpi("Owed to Ye₿ente wallets", `${satsF(P.owedSats)} (${P.wallets})`) + kpi("Can still receive", satsF(P.inbound));
   $("#spNote").innerHTML = P.spendable < 1000 ? `<b class="err">The node can't send anything right now.</b> Ye₿ente payments out, including M-Pesa, fail until you top up.`
     : !P.covered ? `<b class="err">Short:</b> wallets hold more than the node can send. Top up so every balance can be paid out.` : "Enough to pay out every Ye₿ente balance.";
+  spInfo = P;
   if (!$("#spSats").value && P.suggested) $("#spSats").value = P.suggested;
   $("#spSats").min = P.min; $("#spSats").max = P.max;
+  $("#spPresets").innerHTML = P.presets.map((n) => `<button type="button" class="btn${n === P.suggested ? " primary" : ""}" data-sp="${n}">${esc(satsF(n))}${n === P.suggested ? " (suggested)" : ""}</button>`).join("");
+  spPreview();
   $("#spList").innerHTML = P.topups.length ? P.topups.map((t) => `<div>${esc(satsF(t.sats))} · <span class="stage ${t.state === "paid" ? "posted" : t.state === "expired" ? "" : "failed"}">${esc(t.state)}</span> <span class="muted">${esc(ago(t.at))}</span></div>`).join("") : '<p class="muted">No top-ups yet.</p>';
 }
+// What the amount in the field makes possible once paid: sending power after, and roughly how much M-Pesa.
+let spInfo = null;
+function spPreview() {
+  const n = Math.floor(Number($("#spSats").value));
+  if (!spInfo || !(n >= spInfo.min)) { $("#spPreview").textContent = spInfo ? `From ${satsF(spInfo.min)} to ${satsF(spInfo.max)}.` : ""; return; }
+  const after = spInfo.spendable + n;
+  const kes = spInfo.satsPerKes ? Math.floor(after / spInfo.satsPerKes / 1.01 / 10) * 10 : null; // Tando adds 1%
+  $("#spPreview").innerHTML = `After this top-up the node can send <b>${esc(satsF(after))}</b>${kes ? ` (about <b>${esc(kes.toLocaleString("en-US"))} KES</b> of M-Pesa sends at today's rate)` : ""}${after < spInfo.owedSats ? `, still below the ${esc(satsF(spInfo.owedSats))} wallets hold` : spInfo.owedSats ? ", enough to pay out every Ye₿ente balance" : ""}.`;
+}
+$("#spSats").addEventListener("input", spPreview);
+$("#spPresets").addEventListener("click", (e) => { const n = e.target.closest("[data-sp]")?.dataset.sp; if (n) { $("#spSats").value = n; spPreview(); } });
 $("#spGo").addEventListener("click", async () => {
   $("#spErr").textContent = "";
   let T; try { T = await api("", { action: "node_topup", sats: Number($("#spSats").value) }); } catch (err) { $("#spErr").textContent = err.message; return; }

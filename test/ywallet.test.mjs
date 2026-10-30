@@ -484,11 +484,21 @@ test("admin top-up: shows sending power after reserves, makes a node invoice, co
   const req = (q, body, token = process.env.ADMIN_TOKEN) => (body ? admin.POST : admin.GET)(new Request(`https://altradits.test/api/admin${q}`, { method: body ? "POST" : "GET",
     headers: { authorization: `Bearer ${token}`, "content-type": "application/json", "x-forwarded-for": "198.51.100.9" }, body: body ? JSON.stringify(body) : undefined }));
   localBalance = 20_143; channelReserve = 29_434;
+  const realFetch = globalThis.fetch; // the same fixed rates as the M-Pesa test: no live prices in tests
+  globalThis.fetch = async (url, opts) => {
+    const u = String(url);
+    if (u.includes("api.coinbase.com")) return new Response(JSON.stringify({ data: { amount: "100000" } }));
+    if (u.includes("open.er-api.com")) return new Response(JSON.stringify({ rates: { KES: 130 } }));
+    return realFetch(url, opts);
+  };
   try {
     assert.equal((await req("?view=liquidity", null, "wrong-token-wrong-token-wrong-tok")).status, 401);
     const v = await (await req("?view=liquidity")).json();
     assert.equal(v.spendable, 0); assert.equal(v.reserve, 29_434); assert.equal(v.local, 20_143);
     assert.ok(v.suggested >= 20_000, "suggests enough to cover the wallets plus a buffer");
+    assert.ok(v.presets.includes(10_000) && v.presets.includes(60_000) && v.presets.includes(v.suggested), "ready-made amounts, including the suggested one");
+    assert.ok(v.presets.every((n) => n >= v.min && n <= v.max), "every preset can actually be paid in");
+    assert.deepEqual(v.presets, [...v.presets].sort((a, b) => a - b));
     assert.equal((await req("", { action: "node_topup", sats: 10 })).status, 400, "below the minimum");
     assert.equal((await req("", { action: "node_topup", sats: 1.5e15 })).status, 400, "above what the channels can take");
     const t = await (await req("", { action: "node_topup", sats: 60_000 })).json();
@@ -497,7 +507,7 @@ test("admin top-up: shows sending power after reserves, makes a node invoice, co
     lndInvoices.get(t.hash).state = "SETTLED"; // paid from a wallet
     assert.equal((await (await req(`?view=topup&hash=${t.hash}`)).json()).state, "paid");
     assert.equal((await req("?view=topup&hash=../../etc")).status, 404);
-  } finally { localBalance = 1_000_000; channelReserve = 0; }
+  } finally { localBalance = 1_000_000; channelReserve = 0; globalThis.fetch = realFetch; }
 });
 
 test("without the pay macaroon, sending out is off (handles still work)", async () => {
