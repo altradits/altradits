@@ -31,7 +31,7 @@
 // reversals, standing orders, Telebirr) answers 501: the app keeps its balance in
 // the visitor's browser, so a server that paid on request could be emptied by
 // anyone. The visitor pays from their own wallet (WebLN) instead.
-import { json, readBody, clientIp } from "../lib/http.js";
+import { json, readBody, clientIp, proxyShape } from "../lib/http.js";
 import { getJSON, setJSON, hit, listIds } from "../lib/store.js";
 import crypto from "node:crypto";
 
@@ -92,9 +92,11 @@ async function stkPush(request, body) {
   if (!phone || !amount || Number(amount) <= 0) return json({ success: false, error: "Valid phone and amount are required." }, 400);
   const formatted = formatKenyanPhone(phone);
   if (!/^254[71]\d{8}$/.test(formatted)) return json({ success: false, error: "Valid phone and amount are required." }, 400);
-  // A payment prompt lands on someone's phone: at most 5 an hour from one connection.
+  // A payment prompt lands on someone's phone: at most 5 an hour to one number, and a
+  // generous cap per connection (many people share one: an office, Safaricom's mobile addresses).
   const ipKey = crypto.createHash("sha256").update(clientIp(request) || "").digest("hex").slice(0, 16);
-  if ((await hit(`rl:yb:stk:${ipKey}`, 3600)) > 5) return json({ success: false, error: "Failed to trigger STK Push." }, 429);
+  if ((await hit(`rl:yb:stkp:${formatted}`, 3600)) > 5) return json({ success: false, error: "Too many M-Pesa prompts to this number. Try again in an hour." }, 429);
+  if ((await hit(`rl:yb:stk:${ipKey}`, 3600)) > 60) return json({ success: false, error: "Too many M-Pesa prompts from this network. Try again later." }, 429);
   const ts = timestamp();
   const { ok, data } = await daraja("/mpesa/stkpush/v1/processrequest", {
     BusinessShortCode: env("MPESA_SHORTCODE"), Password: stkPassword(ts), Timestamp: ts, TransactionType: "CustomerPayBillOnline",
@@ -197,11 +199,13 @@ async function walletPost(request, action) {
   const yw = await import("../lib/ywallet.js");
   const body = await readBody(request);
   if (action === "create") {
-    if ((await hit(`rl:yb:create:${ipKey(request)}`, 3600)) > 5) return json({ success: false, error: "Too many new wallets from this connection. Try again in an hour." }, 429);
+    // Per network, generous (an office or a mobile network shares one address), and an overall cap.
+    if ((await hit(`rl:yb:create:${ipKey(request)}`, 3600)) > 40) return json({ success: false, error: "Too many new wallets from this network. Try again in an hour." }, 429);
+    if ((await hit(`rl:yb:create:all:${new Date().toISOString().slice(0, 13)}`, 3600)) > 500) return json({ success: false, error: "Many people are joining right now. Try again in a few minutes." }, 429);
     return json({ success: true, ...(await yw.createWallet({ pin: body.pin, handle: body.handle, email: body.email, site: site() })) });
   }
   if (action === "restore") {
-    if ((await hit(`rl:yb:restore:${ipKey(request)}`, 3600)) > 10) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
+    if ((await hit(`rl:yb:restore:${ipKey(request)}`, 3600)) > 40) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
     return json({ success: true, ...(await yw.restoreWallet({ recovery: body.recovery, pin: body.pin })) });
   }
   if (action === "email") {
@@ -212,13 +216,13 @@ async function walletPost(request, action) {
   }
   if (action === "recover-email") {
     const email = String(body.email || "").trim().toLowerCase();
-    if ((await hit(`rl:yb:rec:${ipKey(request)}`, 3600)) > 5 || (await hit(`rl:yb:rece:${crypto.createHash("sha256").update(email).digest("hex").slice(0, 16)}`, 3600)) > 3)
+    if ((await hit(`rl:yb:rec:${ipKey(request)}`, 3600)) > 20 || (await hit(`rl:yb:rece:${crypto.createHash("sha256").update(email).digest("hex").slice(0, 16)}`, 3600)) > 3)
       return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
     await yw.requestEmailRecovery(email, site());
     return json({ success: true, message: "If that email is confirmed for a Ye₿ente wallet, a recovery link is on its way." });
   }
   if (action === "recover-email/finish") {
-    if ((await hit(`rl:yb:recf:${ipKey(request)}`, 3600)) > 10) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
+    if ((await hit(`rl:yb:recf:${ipKey(request)}`, 3600)) > 30) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
     return json({ success: true, ...(await yw.finishEmailRecovery({ token: String(body.token || ""), pin: body.pin })) });
   }
   if (action === "buy") {
@@ -290,7 +294,7 @@ const sub = (request) => decodeURIComponent(new URL(request.url).pathname.replac
 
 export async function GET(request) {
   const path = sub(request);
-  if (path === "health") return json({ status: "ok", service: "yebente", wallets: switchOn("YEBENTE_WALLETS"), environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), deposits: false, node: await nodeUp(), timestamp: Date.now() });
+  if (path === "health") return json({ status: "ok", service: "yebente", wallets: switchOn("YEBENTE_WALLETS"), environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), deposits: false, node: await nodeUp(), proxy: proxyShape(request), timestamp: Date.now() });
   if (path.startsWith("lightning/invoice-status/")) return off("Create a Ye₿ente wallet first.");
   if (path === "wallet/email-confirm") {
     const { confirmEmail } = await import("../lib/ywallet.js");

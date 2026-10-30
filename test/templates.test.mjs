@@ -212,6 +212,17 @@ test("security: someone else typing a subscriber's address gets nothing of their
   assert.notEqual(ipOf("6.6.6.6, 9.9.9.9"), ipOf("6.6.6.6"));
   assert.doesNotMatch(ipOf("9.9.9.9"), /9\.9/); // stored hashed, never the address
   assert.equal(ipOf("2001:db8:1:2:aaaa::1"), ipOf("2001:db8:1:2:bbbb::9")); // IPv6 bucketed by /64
+  // A proxy in front of Passenger (nginx) adds its own private hop: look past it,
+  // or everyone on the internet would share one bucket.
+  assert.equal(ipOf("9.9.9.9, 127.0.0.1"), ipOf("9.9.9.9"));
+  assert.equal(ipOf("6.6.6.6, 9.9.9.9, 10.0.0.2"), ipOf("9.9.9.9"));
+  assert.notEqual(ipOf("9.9.9.9, 127.0.0.1"), ipOf("8.8.8.8, 127.0.0.1"));
+  // A forged private hop on the left changes nothing.
+  assert.equal(ipOf("127.0.0.1, 9.9.9.9"), ipOf("9.9.9.9"));
+  // Listed proxies (TRUSTED_PROXIES) are looked past too.
+  process.env.TRUSTED_PROXIES = "5.5.5.5";
+  assert.equal(ipOf("9.9.9.9, 5.5.5.5"), ipOf("9.9.9.9"));
+  delete process.env.TRUSTED_PROXIES;
   assert.equal(EMAIL_RE.test("x,victim@y.com"), false);
   const first = await (await post({ kit: "replies", email: "victim@corp.co", name: "Vee" }, "7.7.7.1")).json();
   assert.ok(first.sub && first.files.length); // the new subscriber's own page gets the download
