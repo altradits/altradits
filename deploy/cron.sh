@@ -26,6 +26,17 @@ else
   NEW=$OLD
   [ "$(date +%M | sed 's/^0//')" -lt 5 ] && echo "$(date -u +%FT%TZ) git fetch failed: the site keeps running $(git log -1 --format=%h). Check the server's deploy key." || true
 fi
+# Signed code only (Bitcoin Core's verify-commits model). Once the server has
+# its own copy of the trusted keys, outside the repository, a main that isn't
+# signed by them is never deployed: the site keeps running the last good code.
+# The check runs from the code already deployed, never from what was fetched.
+SIGNERS="$HOME/.altradits-allowed-signers"
+if [ "$OLD" != "$NEW" ] && [ -f "$SIGNERS" ]; then
+  if ! { [ -f deploy/verify-commits.sh ] && sh deploy/verify-commits.sh origin/main "$SIGNERS" > /dev/null 2>&1; }; then
+    echo "$(date -u +%FT%TZ) REFUSED $(git log -1 --format='%h %s' origin/main): main has commits not signed by a trusted key. Still running $(git log -1 --format=%h)."
+    NEW=$OLD
+  fi
+fi
 CHANGED=""
 if [ "$OLD" != "$NEW" ]; then
   CHANGED=$(git diff --name-only "$OLD" "$NEW")
