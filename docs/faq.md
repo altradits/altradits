@@ -23,6 +23,8 @@ Short answers to questions about the system, with where to look in the code.
 
 **A Ye₿ente payment is "pending".** The node gave no clear answer. It is rechecked automatically; the sats are held, never lost, and refunded only if the node says the payment never started.
 
+**Send Mobile (M-Pesa) or any Ye₿ente send fails with "paused".** The node has no sending power: its side of the channel is below the channel reserve. Admin → Finance → Sending power: make a top-up invoice and pay it from any Lightning wallet.
+
 ## Security
 **Where do I see attacks?** Admin → Stan → Security watch: every rejection by technique, with what to improve. High-severity ones also email you hourly at most.
 

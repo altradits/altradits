@@ -63,6 +63,16 @@ export async function GET(request) {
     return json({ profile: publicProfile(await getProfile()), jobs, aiReady: jobsLive(), applicant: await getApplicant() });
   }
 
+  // Sending power: what the node can send after channel reserves, what Ye₿ente owes, and top-ups.
+  if (u.searchParams.get("view") === "liquidity") {
+    const { liquidityView } = await import("../lib/channels.js");
+    try { return json(await liquidityView()); } catch (err) { return json({ error: err.message }, 502); }
+  }
+  if (u.searchParams.get("view") === "topup") {
+    const { topupStatus } = await import("../lib/channels.js");
+    const t = await topupStatus(clean(u.searchParams.get("hash"), 64));
+    return t ? json(t) : json({ error: "No such top-up." }, 404);
+  }
   // Stan's library: the documents to recreate, secure and teach the system, as PDFs.
   if (u.searchParams.get("view") === "library") {
     const { libraryList } = await import("../lib/library.js");
@@ -429,6 +439,10 @@ export async function POST(request) {
     if (!note) return json({ error: "Write a rule or lesson to pin." }, 400);
     await recordOutcome({ kind: "stanley_override", dept: clean(body.dept, 30) || "admin", service: clean(body.service, 40) || null, note });
     return json({ ok: true, learning: await learningView() });
+  }
+  if (body.action === "node_topup") {
+    const { startTopup } = await import("../lib/channels.js");
+    try { return json(await startTopup(body.sats)); } catch (err) { return json({ error: err.message }, err.status || 502); }
   }
   if (body.action === "move_to_node") {
     const { moveToNode } = await import("../lib/finance.js");

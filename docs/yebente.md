@@ -30,6 +30,13 @@ Ye₿ente (/yebente) is a Bitcoin app with custodial Lightning wallets kept by A
 - Off unless YEBENTE_MPESA_BUY=on with Daraja credentials. A quote checks the wallet limit, the daily KES limit (including pending buys), and that the node could pay out everything wallets would then hold.
 - Safaricom's result arrives at a callback whose path carries YEBENTE_CALLBACK_SECRET; status checks go through the signed-in wallet only.
 
+## Sending power (the channel reserve)
+Each Lightning channel keeps a reserve on our side, 1% of the channel, that can never be spent. The node can send only what is above it: with a 2,943,434-sat channel, the first 29,434 sats on our side are locked. Below that, every send out of Ye₿ente (to other wallets, and M-Pesa through Tando) is refused before anything is taken, with "Sending out of Ye₿ente is paused"; payments between Ye₿ente handles still work.
+To add sending power, pay a node invoice: admin → Finance → Sending power suggests an amount (enough for every wallet balance plus 20,000 sats) and shows a QR to pay from any Lightning wallet; it updates when the node records the payment. Donations at /donate add sending power the same way.
+
+## M-Pesa through Tando
+Send Mobile pays a Kenyan Safaricom number through Tando (bitcoin.co.ke): the app asks Tando for an invoice priced in shillings (15 to 50,000 KES, Tando's 1% fee on top), the node pays it, Tando pays the phone by M-Pesa and publishes the Safaricom receipt code, which the app shows. It needs sending power on the node.
+
 ## Solvency
 Every hour the server compares the total of all Ye₿ente balances with what the node can send (lib/attacks.js checkSolvency). A shortfall is recorded in the Security watch and emailed to Stanley: add outbound liquidity or pause buying. This is the Mt. Gox and QuadrigaCX lesson.
 
