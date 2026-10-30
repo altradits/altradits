@@ -24,6 +24,16 @@ if (window.top !== window.self) {
   throw new Error('Not shown inside a frame.');
 }
 
+// Tell the Security watch when the page's script lock blocks something that isn't ours.
+let reported = 0;
+document.addEventListener('securitypolicyviolation', (e) => {
+  const blocked = String(e.blockedURI || '');
+  if (reported >= 3 || /-extension:/i.test(blocked) || /-extension:/i.test(String(e.sourceFile || ''))) return;
+  reported++;
+  const body = JSON.stringify({ page: location.pathname, directive: e.effectiveDirective, blocked: blocked.slice(0, 200) });
+  try { navigator.sendBeacon('/api/report', new Blob([body], { type: 'application/json' })); } catch { /* best effort */ }
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

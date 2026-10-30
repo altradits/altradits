@@ -63,6 +63,24 @@ export async function GET(request) {
     return json({ profile: publicProfile(await getProfile()), jobs, aiReady: jobsLive(), applicant: await getApplicant() });
   }
 
+  // Stan's library: the documents to recreate, secure and teach the system, as PDFs.
+  if (u.searchParams.get("view") === "library") {
+    const { libraryList } = await import("../lib/library.js");
+    return json({ docs: libraryList() });
+  }
+  if (u.searchParams.get("view") === "libdoc") {
+    const { docPdf } = await import("../lib/library.js");
+    const doc = docPdf(clean(u.searchParams.get("id"), 40));
+    if (!doc) return json({ error: "No such document." }, 404);
+    return new Response(doc.body, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="${doc.name}"`, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
+  }
+  // Security watch: what was turned away, by technique, and Bitcoin's attack history with our guards.
+  if (u.searchParams.get("view") === "security") {
+    const { securityView } = await import("../lib/attacks.js");
+    const { BITCOIN_ATTACKS } = await import("../data/bitcoin-attacks.js");
+    return json({ ...(await securityView()), history: BITCOIN_ATTACKS });
+  }
+
   // A receipt already issued, by its number: the same PDF the client got, rebuilt
   // from its record (never a new number), to view, download or share.
   if (u.searchParams.get("view") === "receipt") {
