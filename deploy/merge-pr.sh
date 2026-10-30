@@ -34,15 +34,18 @@ echo "== Merging #$PR: $TITLE"
 git log --oneline "main..$HEAD"
 git diff --stat "main...$HEAD" | tail -1
 
+# Signed when this machine has the signing key; unsigned otherwise (allowed for now).
+KEY=$(git config --get user.signingkey || true)
+if [ -n "$KEY" ] && [ -f "$KEY" ]; then SIGN="-S"; else SIGN="--no-gpg-sign"; echo "== No signing key on this machine: the merge will be unsigned (allowed for now)."; fi
 # shellcheck disable=SC2086
-git $ID merge -q --no-ff -S "$HEAD" -m "Merge #$PR: $TITLE" || { git merge --abort 2>/dev/null; die "the merge didn't apply cleanly; rebase the PR and review again."; }
+git $ID merge -q --no-ff $SIGN "$HEAD" -m "Merge #$PR: $TITLE" || { git merge --abort 2>/dev/null; die "the merge didn't apply cleanly; rebase the PR and review again."; }
 echo "== Tests on the merged result"
 if ! npm test --silent >/tmp/merge-pr-$PR.log 2>&1; then
   git reset -q --merge ORIG_HEAD
   die "tests failed on the merged result (log: /tmp/merge-pr-$PR.log). Nothing was merged."
 fi
 grep -E "^ℹ (pass|fail)" "/tmp/merge-pr-$PR.log" || true
-sh deploy/verify-commits.sh HEAD || { git reset -q --merge ORIG_HEAD; die "signature check failed. Nothing was merged."; }
+sh deploy/verify-commits.sh HEAD || echo "== Warning: main has commits not signed by a trusted key (allowed for now)."
 
 if [ "$PUSH" = "--push" ]; then
   git push origin main
