@@ -72,6 +72,7 @@ globalThis.fetch = async (url, opts) => {
 
 const root = new URL("../", import.meta.url);
 const crm = await import(new URL("lib/crm.js", root));
+(await import(new URL("lib/lightning.js", root))).setProviderFetcher((u, o) => globalThis.fetch(u, o)); // the tests stand in for the Lightning address provider
 const pay = await import(new URL("api/pay.js", root));
 const proposalApi = await import(new URL("api/proposal.js", root));
 const admin = await import(new URL("api/admin.js", root));

@@ -6,6 +6,7 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ZxWZ250h0EsYLYRVGnAJu1H4SPliMbiyqxRWL+jWcMY='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <link rel="canonical" href="https://altradits.com/cv">
 <title>Stanley Chege Thuita – CV</title>
 <meta name="description" content="CV of Stanley Chege Thuita: founder and operator of Altradits, software engineer (Go, Node.js, Bitcoin & Lightning).">
@@ -57,12 +58,13 @@ a{color:var(--blue)}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a class="logo" href="/"><img src="/assets/logo.png" alt="Altradits" width="325" height="119" style="height:2.4rem;width:auto;display:block"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a></nav><span id="tools" hidden><a class="btn" id="pdf" href="#" download>Download PDF</a> <button class="btn" onclick="print()">Print</button></span></div>
+  <div class="top"><a class="logo" href="/"><img src="/assets/logo.png" alt="Altradits" width="325" height="119" style="height:2.4rem;width:auto;display:block"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a></nav><span id="tools" hidden><a class="btn" id="pdf" href="#" download>Download PDF</a> <button class="btn" id="print" type="button">Print</button></span></div>
   <article class="doc" id="doc"><p>Loading…</p></article>
   <p class="meta" id="meta"></p>
 </div>
 <footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 function md(src) {
   const inline = (t) => esc(t)
@@ -92,6 +94,7 @@ function showCv(d, p) {
   meta.textContent = `Updated ${d.updated} · maintained by the Altradits Career Agent from verified experience${d.ats != null ? ` · ATS check ${d.ats}/100` : ""}.`;
   document.getElementById("pdf").href = `/api/cv?format=pdf&${q(p)}`;
   document.getElementById("tools").hidden = false;
+  document.getElementById("print").onclick = () => print();
 }
 
 // Preview + paywall: name, headline and summary are free; the rest is 100 sats.
