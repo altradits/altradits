@@ -9,7 +9,7 @@ import { holdIfUnsafe, screen, defang } from "../lib/screen.js";
 import { hit, listIds, getMany } from "../lib/store.js";
 import { createOrder, getProposal, saveProposal, getLead, saveLead, logEvent, sendKickoff } from "../lib/crm.js";
 import { emailOwner } from "../lib/email.js";
-import { getTask, saveTask, allTasks, ensurePortal, ensureReferral, indexLead, assignTask } from "../lib/ops.js";
+import { getTask, saveTask, ensurePortal, assignTask } from "../lib/ops.js";
 import { workersLive, kickQueue } from "../lib/workers.js";
 import { orderable, URGENCY } from "../data/catalog.js";
 import { OWNER_PHONE } from "../lib/contact.js";
@@ -91,30 +91,14 @@ async function update(body) {
   if (p.order.urgentOk && URGENCY.some((u) => u.id === body.urgency)) p.order.urgency = body.urgency;
   if (email) {
     lead.email = email;
-    // Unify repeat orders from the same paying client so their onboarding notes,
-    // referral code, and retainer context carry across orders.
+    // An email typed here is unconfirmed, so it never joins this order to an
+    // existing client's portal, tasks or retainer (anyone can type anyone's
+    // email). The match is only noted for Stanley.
     if (!hadEmail) {
       const prior = (await getMany("lead", await listIds("leads", 500))).find(
         (l) => l.id !== lead.id && l.email === email && l.stage === "active",
       );
-      if (prior) {
-        if (prior.onboarding && !lead.onboarding) lead.onboarding = prior.onboarding;
-        if (prior.refCode && !lead.refCode) lead.refCode = prior.refCode;
-        if (prior.portalToken && !lead.portalToken) lead.portalToken = prior.portalToken;
-        if (prior.retainer && !lead.retainer) lead.retainer = prior.retainer;
-        if (prior.referralCredit && !lead.referralCredit) lead.referralCredit = prior.referralCredit;
-        if (prior.referralCodes && !lead.referralCodes) lead.referralCodes = prior.referralCodes;
-        lead.priorLeadId = prior.id;
-        // Migrate prior tasks and deactivate the duplicate retainer on prior so renewals and portal hours stay unified.
-        for (const pt of (await allTasks()).filter((x) => x.leadId === prior.id)) {
-          pt.leadId = lead.id;
-          await saveTask(pt);
-        }
-        prior.retainer = null;
-        prior.mergedInto = lead.id;
-        await saveLead(prior);
-        await indexLead(lead);
-      }
+      if (prior) logEvent(lead, `Same email as an existing client (${prior.id}); not linked (the email isn't confirmed).`);
     }
   }
   if (body.name !== undefined) {

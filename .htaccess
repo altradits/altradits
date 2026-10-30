@@ -45,6 +45,7 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
 RedirectMatch 404 ^/\.git(?:/|$)
 RedirectMatch 404 ^/\.data(?:/|$)
 RedirectMatch 404 ^/\.github(?:/|$)
+RedirectMatch 404 ^/\.claude(?:/|$)
 RedirectMatch 404 ^/apply-extension(?:/|$)
 
 # Browser security for the pages Apache serves directly (Node adds the same to

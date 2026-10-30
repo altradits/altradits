@@ -6,6 +6,7 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5yUex9xZEzC6j6LpSWQyHRS16TAX9hd7D8aVAP1d/WI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <link rel="canonical" href="https://altradits.com/donate">
 <title>Donate · Altradits</title>
 <meta name="description" content="Donate in Bitcoin to fund Bitcoin education in our community, so more people and businesses earn, save and pay in Bitcoin instead of fiat.">
@@ -109,6 +110,7 @@ a:hover,.btn:hover,button:hover{transform:none!important}
 </div>
 <footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script type="module">
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 import { mountPay } from "/assets/pay-widget.js";
 const $ = (s) => document.querySelector(s);
 let info = { suggested: [5, 20, 50, 100], min: 1, max: 5000, minSats: 10, maxSats: 5000000 }, amount = null, satsAmount = null;

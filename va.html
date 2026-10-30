@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-BMGEnj9r3h8zcFDER0S8np31ZVYVQGr9qprnte4mw10='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <link rel="canonical" href="https://altradits.com/va">
 <title>Tasks · Altradits</title>
 <meta name="description" content="Small business tasks at fixed prices, delivered the same day: inbox, social posts, invoices, spreadsheets, website fixes, research and more, from $5. Pick a task and pay with any Bitcoin wallet.">
@@ -336,6 +337,7 @@ a:hover,.btn:hover,button:hover{transform:none!important}
 </div>
 
 <script type="module">
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 import { QUICK_JOBS, PILLARS, URGENCY, orderable, idForSlug, orderPath } from "/data/catalog.js";
 import { mountPay } from "/assets/pay-widget.js";
 
