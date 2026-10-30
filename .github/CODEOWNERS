@@ -1,0 +1,15 @@
+# Every change needs the maintainer's review. Money, security and deploy paths
+# are listed separately so they stand out (and can get a second reviewer when
+# the project has more maintainers).
+*                                   @altradits
+/lib/ywallet.js                     @altradits
+/lib/lightning.js                   @altradits
+/lib/netsafe.js                     @altradits
+/lib/attacks.js                     @altradits
+/api/pay.js                         @altradits
+/api/yebente.js                     @altradits
+/api/admin.js                       @altradits
+/deploy/                            @altradits
+/.github/                           @altradits
+/test/build-security.test.mjs       @altradits
+/SECURITY.md                        @altradits

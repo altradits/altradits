@@ -1,0 +1,4 @@
+# Trusted signing keys (like Bitcoin Core's contrib/verify-commits/trusted-keys).
+# Every commit on main's first-parent line after the trust root must be signed by one of these.
+# Format: <email> namespaces="git" <public key>. Add a key only in a commit signed by an existing key.
+altradits@gmail.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKfbc+NRwZcGLvtYHIv4Rbab/KckjSJC+ydntEVn0rmZ
