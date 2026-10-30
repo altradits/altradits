@@ -4,7 +4,12 @@ Never include secrets, personal data or real customer information.
 -->
 
 ### Why
-<!-- The problem, and why this is the right change (link the issue: "Closes #N" only on the PR that finishes it). -->
+<!-- The problem, and why this is the right change. -->
+
+### Issue
+<!-- Every PR belongs to an issue. Partial work: "Part of #N" (the issue stays open).
+     The PR that finishes it: "Closes #N" (the issue closes when this PR is merged). -->
+Part of #
 
 ### What changes
 <!-- In plain words, per area. -->
@@ -21,6 +26,7 @@ Never include secrets, personal data or real customer information.
 - [ ] Approach ACK: this is the right way to solve it
 - [ ] Read every line of the diff, commit by commit
 - [ ] Ran `npm test` and tried to break it
+- [ ] Looked at the change in a browser (desktop and phone) where it shows on a page
 - [ ] Security checklist in docs/review-guide.md
 - [ ] Docs in docs/ updated if behaviour changed
 - [ ] ACK comment posted with the head commit hash
