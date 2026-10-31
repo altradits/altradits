@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { UserWallet, ExchangeRates } from '../types';
 import { Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { queryWebLNBalance } from '../services/lightningService';
-import { computeCustodialBalanceFromTransactions, getStoredTransactions } from '../services/storageService';
+import { logBalance, getStoredTransactions } from '../services/storageService';
 
 interface BalanceCardProps {
   wallet: UserWallet;
   rates: ExchangeRates;
   onOpenWalletSettings: () => void;
   onUpdateWallet?: (updated: UserWallet) => void;
+  onRefreshServer?: () => Promise<void>; // the Ye₿ente wallet: ask the server again
 }
 
 export const BalanceCard: React.FC<BalanceCardProps> = ({
@@ -16,6 +17,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   rates,
   onOpenWalletSettings,
   onUpdateWallet,
+  onRefreshServer,
 }) => {
   const [hideBalances, setHideBalances] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -26,48 +28,18 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   }
 
   const handleSyncBalance = async () => {
-    if (!wallet.isConnected) return;
     setIsSyncing(true);
     try {
-      const verifiedSats = computeCustodialBalanceFromTransactions(getStoredTransactions());
-
-      // 1. If custodial wallet, sync balance strictly from verified transactions
+      // The Ye₿ente wallet: the balance is the server's, never worked out here.
       if (wallet.type === 'custodial') {
-        if (onUpdateWallet) {
-          onUpdateWallet({
-            ...wallet,
-            satsBalance: verifiedSats,
-            btcBalance: verifiedSats / 100_000_000,
-            lastSyncedAt: Date.now(),
-          });
-        }
+        await onRefreshServer?.();
         return;
       }
-
-      // 2. If WebLN is present in browser, auto-query it
-      const weblnRes = await queryWebLNBalance();
-      if (weblnRes.available && typeof weblnRes.sats === 'number') {
-        if (onUpdateWallet) {
-          const resolvedSats = Math.max(verifiedSats, weblnRes.sats);
-          onUpdateWallet({
-            ...wallet,
-            satsBalance: resolvedSats,
-            btcBalance: resolvedSats / 100_000_000,
-            lastSyncedAt: Date.now(),
-          });
-        }
-        return;
-      }
-
-      // 3. Ledger fallback: ensure sats balance is backed up by transaction evidence
-      if (onUpdateWallet) {
-        onUpdateWallet({
-          ...wallet,
-          satsBalance: verifiedSats,
-          btcBalance: verifiedSats / 100_000_000,
-          lastSyncedAt: Date.now(),
-        });
-      }
+      // Your own wallet: what its browser extension (WebLN) reports, else this app's log.
+      const logged = logBalance(getStoredTransactions());
+      const webln = await queryWebLNBalance();
+      const sats = webln.available && typeof webln.sats === 'number' ? Math.max(logged, webln.sats) : logged;
+      onUpdateWallet?.({ ...wallet, satsBalance: sats, btcBalance: sats / 100_000_000 });
     } finally {
       setIsSyncing(false);
     }

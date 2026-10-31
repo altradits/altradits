@@ -6,36 +6,15 @@ import {
   queryWebLNBalance,
   LightningAddressDetails,
 } from '../services/lightningService';
-import {
-  computeCustodialBalanceFromTransactions,
-  getStoredTransactions,
-  createInAppLightningWallet,
-} from '../services/storageService';
-import {
-  hasEncryptedVault,
-  initializeOrUpdateVault,
-  wipeVaultStorage,
-} from '../services/vaultService';
-import {
-  getBlinkSovereignAddress,
-  getBlinkSovereignUsername,
-  saveBlinkSovereignUsername,
-} from '../services/blinkService';
 import { hasServerWallet, setRecoveryEmail, lockServerWallet, forgetServerWallet } from '../services/altraditsWallet';
 import { PhonesAndSecurity } from './PhonesAndSecurity';
 import { biometricSupported, biometricOn, enableBiometric, disableBiometric } from '../services/biometric';
 import { Fingerprint } from 'lucide-react';
 import {
-  getOfflineOutbox,
-  syncOfflineOutbox,
-  isNetworkOnline,
-} from '../services/offlineService';
-import {
   ArrowLeft,
   Copy,
   Check,
   AlertCircle,
-  RefreshCw,
 } from 'lucide-react';
 
 interface WalletSettingsModalProps {
@@ -71,29 +50,13 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   const [weblnStatusMessage, setWeblnStatusMessage] = useState<string>('');
   const [validationError, setValidationError] = useState<string>('');
 
-  const [copiedBlink, setCopiedBlink] = useState(false);
+  const [copiedOwn, setCopiedOwn] = useState(false);
   const [copiedExternal, setCopiedExternal] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [lightningResult, setLightningResult] = useState<LightningAddressDetails | null>(null);
 
-  // Blink Sovereign Username state
-  const [blinkUsername, setBlinkUsername] = useState<string>(
-    wallet.blinkUsername || getBlinkSovereignUsername()
-  );
 
-  // Offline Outbox state
-  const [offlineCount, setOfflineCount] = useState<number>(() => getOfflineOutbox().length);
-  const [isSyncingOutbox, setIsSyncingOutbox] = useState<boolean>(false);
-  const [syncStatusMsg, setSyncStatusMsg] = useState<string>('');
-
-  // Vault encryption (external wallets only)
-  const [vaultProtected, setVaultProtected] = useState(hasEncryptedVault());
-  const [pinInput, setPinInput] = useState('');
-  const [confirmPinInput, setConfirmPinInput] = useState('');
-  const [pinSuccessMessage, setPinSuccessMessage] = useState('');
-  const [showPinSetup, setShowPinSetup] = useState(false);
-
-  // The Altradits wallet (custodial, on the Altradits node)
+  // The Ye₿ente wallet (custodial, on the Altradits node)
   const server = hasServerWallet();
   const [walletBusy, setWalletBusy] = useState(false);
   const [walletMsg, setWalletMsg] = useState('');
@@ -164,31 +127,17 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
     }
   };
 
-  const handleSyncOutbox = async () => {
-    setIsSyncingOutbox(true);
-    setSyncStatusMsg('');
-    try {
-      const res = await syncOfflineOutbox();
-      const remaining = getOfflineOutbox().length;
-      setOfflineCount(remaining);
-      if (res.syncedCount > 0) {
-        setSyncStatusMsg(`Successfully synchronized ${res.syncedCount} offline transaction(s).`);
-      } else if (!isNetworkOnline()) {
-        setSyncStatusMsg('Network offline. Reconnection required to sync.');
-      } else {
-        setSyncStatusMsg('Outbox is up to date.');
-      }
-      setTimeout(() => setSyncStatusMsg(''), 4000);
-    } finally {
-      setIsSyncingOutbox(false);
-    }
-  };
-
   const handleInsertOrUpdate = () => {
     setValidationError('');
     // The Altradits wallet lives on the server: nothing to save here.
     if (selectedType === 'custodial' && server) {
       onServerWalletChange?.();
+      onClose();
+      return;
+    }
+    // No Ye₿ente wallet yet: log in or create one (never a stand-in address).
+    if (selectedType === 'custodial') {
+      onOpenGate?.();
       onClose();
       return;
     }
@@ -214,49 +163,24 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
       }
     }
 
-    // Save Blink sovereign username
-    const cleanBlinkUser = blinkUsername.trim().toLowerCase().replace(/^@/, '');
-    if (cleanBlinkUser) {
-      saveBlinkSovereignUsername(cleanBlinkUser);
-    }
-
-    const sovereignAddr = `${cleanBlinkUser || getBlinkSovereignUsername()}@blink.sv`;
-    const finalAddress = selectedType === 'custodial'
-      ? sovereignAddr
-      : (rawAddress || sovereignAddr);
-
+    // An external wallet: only the address the user gave (never a stand-in).
     let finalSats = 0;
-    if (selectedType === 'non-custodial') {
-      if (weblnDetectedSats !== null) {
-        finalSats = weblnDetectedSats;
-      } else if (wallet.type === 'non-custodial' && wallet.satsBalance > 0 && wallet.onChainVerified) {
-        finalSats = wallet.satsBalance;
-      } else {
-        finalSats = 0;
-      }
-    } else {
-      finalSats = computeCustodialBalanceFromTransactions(getStoredTransactions());
+    if (weblnDetectedSats !== null) {
+      finalSats = weblnDetectedSats;
+    } else if (wallet.type === 'non-custodial' && wallet.satsBalance > 0 && wallet.onChainVerified) {
+      finalSats = wallet.satsBalance;
     }
-
-    const detectedLabel = selectedType === 'custodial'
-      ? 'In-App Lightning Sovereign Vault'
-      : (lightningResult?.provider ? `${lightningResult.provider} (Lightning)` : (weblnDetectedSats !== null ? 'WebLN Provider' : 'External Lightning'));
 
     onUpdateWallet({
       ...wallet,
       isConnected: true,
-      type: selectedType,
-      nonCustodialAddress: finalAddress,
-      nonCustodialLabel: detectedLabel,
-      blinkUsername: cleanBlinkUser || getBlinkSovereignUsername(),
-      blinkAddress: sovereignAddr,
+      type: 'non-custodial',
+      nonCustodialAddress: rawAddress,
+      blinkUsername: '',
+      blinkAddress: '',
       satsBalance: finalSats,
       btcBalance: finalSats / 100_000_000,
-      mpesaBalanceKes: 0,
-      telebirrBalanceEtb: 0,
-      insertedAt: wallet.insertedAt || Date.now(),
-      lastSyncedAt: Date.now(),
-      onChainVerified: selectedType === 'non-custodial' && Boolean(
+      onChainVerified: Boolean(
         lightningResult?.success ||
         weblnDetectedSats !== null ||
         (wallet.onChainVerified && wallet.satsBalance > 0)
@@ -266,32 +190,6 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
     onClose();
   };
 
-  const handleSavePin = async () => {
-    if (pinInput.length < 4) {
-      setValidationError('The vault PIN needs at least 4 digits.');
-      return;
-    }
-    if (pinInput !== confirmPinInput) {
-      setValidationError('PIN confirmation does not match.');
-      return;
-    }
-    setValidationError('');
-    const res = await initializeOrUpdateVault(pinInput, {
-      inAppSecret: `sec_${Date.now().toString(36)}`,
-      rootAddress: getBlinkSovereignAddress(),
-    });
-    if (res.success) {
-      setVaultProtected(true);
-      setShowPinSetup(false);
-      setPinInput('');
-      setConfirmPinInput('');
-      setPinSuccessMessage('Vault encrypted with AES-256-GCM.');
-      setTimeout(() => setPinSuccessMessage(''), 3000);
-    } else {
-      setValidationError(res.error || 'Failed to encrypt vault.');
-    }
-  };
-
   const handleEject = () => {
     onEjectWallet();
     onClose();
@@ -299,15 +197,14 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
 
   const handleWipe = () => {
     if (confirm('Permanently wipe and remove all wallet keys and balances from this device?')) {
-      wipeVaultStorage();
       onWipeWallet();
       onClose();
     }
   };
 
   const serverEmail = wallet.recoveryEmail || '';
-  const walletDomain = typeof window !== 'undefined' ? window.location.hostname : 'altradits.com';
-  const sovereignBlinkAddress = server ? (wallet.blinkAddress || '') : `${blinkUsername || getBlinkSovereignUsername()}@blink.sv`;
+  // The Ye₿ente wallet's own address (shown only when signed in).
+  const ownAddress = server ? (wallet.blinkAddress || '') : '';
 
   return (
     <div
@@ -348,7 +245,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                   : 'bg-[var(--yb-surface)] border-[var(--yb-outline-variant)] text-[var(--yb-on-surface-variant)]'
               }`}
             >
-              In-App Lightning
+              Ye₿ente wallet
             </button>
             <button
               type="button"
@@ -362,25 +259,13 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                   : 'bg-[var(--yb-surface)] border-[var(--yb-outline-variant)] text-[var(--yb-on-surface-variant)]'
               }`}
             >
-              External Lightning
+              My own Lightning wallet
             </button>
           </div>
 
           {/* In-App Lightning Section */}
           {selectedType === 'custodial' && (
             <div className="space-y-3">
-              <div className="flex justify-between items-center px-1 text-xs">
-                <span className="text-[var(--yb-on-surface-variant)]">Vault Balance</span>
-                <span className="font-mono font-bold text-[var(--yb-on-surface)]">
-                  {(wallet.type === 'custodial' ? (wallet.satsBalance || 0) : 0).toLocaleString()} Sats
-                </span>
-              </div>
-
-              {/* Off-Chain Zero Fee Indicator */}
-              <div className="flex justify-between items-center px-1 text-[11px]">
-                <span className="text-[var(--yb-on-surface-variant)]">Transaction Rail</span>
-                <span className="font-mono text-emerald-400 font-semibold">100% Off-Chain Lightning (0 On-Chain Fees)</span>
-              </div>
               {!server && (
                 <div className="p-3 rounded-2xl bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] space-y-2">
                   <p className="text-xs text-[var(--yb-on-surface-variant)]">Log in to your Ye₿ente wallet, or create one, from the start screen.</p>
@@ -391,26 +276,25 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
               {server && (
                 <div>
                   <div className="flex justify-between items-center text-xs text-[var(--yb-secondary)] mb-1.5">
-                    <span className="font-semibold">Sovereign Lightning Address</span>
-                    <span className="font-mono text-[10px] text-emerald-400">Zero On-Chain Fees</span>
+                    <span className="font-semibold">Your Lightning address</span>
                   </div>
                   <div className="relative">
                     <input
                       type="text"
                       readOnly
-                      value={sovereignBlinkAddress}
+                      value={ownAddress}
                       className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none pr-10 select-all"
                     />
                     <button
                       type="button"
                       onClick={() => {
-                        navigator.clipboard.writeText(sovereignBlinkAddress);
-                        setCopiedBlink(true);
-                        setTimeout(() => setCopiedBlink(false), 2000);
+                        navigator.clipboard.writeText(ownAddress);
+                        setCopiedOwn(true);
+                        setTimeout(() => setCopiedOwn(false), 2000);
                       }}
                       className="absolute right-3 top-3 text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
                     >
-                      {copiedBlink ? <Check className="w-3.5 h-3.5 text-[var(--yb-secondary)]" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedOwn ? <Check className="w-3.5 h-3.5 text-[var(--yb-secondary)]" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 </div>
@@ -588,107 +472,6 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                 </span>
               </div>
             </div>
-          )}
-
-          {/* Offline Outbox Section */}
-          <div className="space-y-2 pt-2 border-t border-[var(--yb-outline-variant)]/60">
-            <div className="flex justify-between items-center px-1 text-xs">
-              <span className="text-[var(--yb-secondary)] font-semibold">Offline Outbox</span>
-              <span className="font-mono text-[11px] text-[var(--yb-on-surface-variant)]">
-                {offlineCount > 0 ? `${offlineCount} Queued` : 'Empty'}
-              </span>
-            </div>
-
-            {syncStatusMsg && (
-              <div className="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-emerald-300 text-xs font-mono">
-                {syncStatusMsg}
-              </div>
-            )}
-
-            {offlineCount > 0 && (
-              <button
-                type="button"
-                onClick={handleSyncOutbox}
-                disabled={isSyncingOutbox}
-                className="w-full py-2.5 px-3 rounded-xl bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] hover:border-[var(--yb-primary)] text-[var(--yb-secondary)] hover:text-[var(--yb-on-surface)] text-xs font-mono flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingOutbox ? 'animate-spin' : ''}`} />
-                <span>{isSyncingOutbox ? 'Syncing...' : 'Sync Outbox Now'}</span>
-              </button>
-            )}
-          </div>
-
-          {/* Sovereign Vault Encryption Section (external wallets only; the Ye₿ente wallet has one PIN) */}
-          {!server && (
-          <div className="space-y-2 pt-2 border-t border-[var(--yb-outline-variant)]/60">
-            <div className="flex justify-between items-center px-1 text-xs">
-              <span className="text-[var(--yb-secondary)] font-semibold">Vault Security</span>
-              <span className="font-mono text-[11px] text-emerald-400">
-                {vaultProtected ? 'AES-256-GCM Active' : 'Unencrypted'}
-              </span>
-            </div>
-
-            {pinSuccessMessage && (
-              <div className="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-emerald-300 text-xs font-mono">
-                {pinSuccessMessage}
-              </div>
-            )}
-
-            {!showPinSetup ? (
-              <button
-                type="button"
-                onClick={() => setShowPinSetup(true)}
-                className="w-full py-2.5 px-3 rounded-xl bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] hover:border-[var(--yb-primary)] text-[var(--yb-secondary)] hover:text-[var(--yb-on-surface)] text-xs font-mono text-center"
-              >
-                {vaultProtected ? 'Change vault PIN' : 'Set vault PIN'}
-              </button>
-            ) : (
-              <div className="space-y-2 p-3 rounded-2xl bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)]">
-                <div>
-                  <label className="block text-[11px] text-[var(--yb-on-surface-variant)] mb-1">Vault PIN (4-6 digits)</label>
-                  <input
-                    type="password"
-                    maxLength={6}
-                    value={pinInput}
-                    onChange={(e) => setPinInput(e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="••••••"
-                    className="yb-sensitive w-full bg-[var(--yb-surface-container-low)] border border-[var(--yb-outline-variant)] rounded-xl px-3 py-2 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] text-[var(--yb-on-surface-variant)] mb-1">Confirm vault PIN</label>
-                  <input
-                    type="password"
-                    maxLength={6}
-                    value={confirmPinInput}
-                    onChange={(e) => setConfirmPinInput(e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="••••••"
-                    className="yb-sensitive w-full bg-[var(--yb-surface-container-low)] border border-[var(--yb-outline-variant)] rounded-xl px-3 py-2 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
-                  />
-                </div>
-                <div className="flex gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowPinSetup(false);
-                      setPinInput('');
-                      setConfirmPinInput('');
-                    }}
-                    className="flex-1 py-2 rounded-xl bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface-variant)] text-xs"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSavePin}
-                    className="flex-1 py-2 rounded-xl bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-semibold text-xs"
-                  >
-                    Save PIN
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
           )}
 
           {/* Validation error display */}

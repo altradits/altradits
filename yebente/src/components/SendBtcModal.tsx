@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserWallet, Transaction, ExchangeRates } from '../types';
-import { ArrowLeft, AlertCircle, Loader2, WifiOff, ScanLine, ClipboardPaste, Fingerprint } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Loader2, ScanLine, ClipboardPaste, Fingerprint } from 'lucide-react';
 import { payInvoiceWithWebLN,
   isLightningAddress,
   resolveLightningAddress,
   createLightningInvoice,
 } from '../services/lightningService';
-import { calculateRealTransactionCost, RealTransactionCost } from '../services/blinkService';
-import { isNetworkOnline, queueOfflineTransaction } from '../services/offlineService';
+import { isNetworkOnline } from '../services/offlineService';
 import { hasServerWallet, sendFromServerWallet } from '../services/altraditsWallet';
 import { parsePaymentText, bolt11Sats } from '../services/paymentQr';
 import { QrScanner } from './QrScanner';
@@ -49,22 +48,14 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
   onSuccess,
 }) => {
   const [recipient, setRecipient] = useState<string>('');
-  const [satsAmountStr, setSatsAmountStr] = useState<string>('1000');
+  const [satsAmountStr, setSatsAmountStr] = useState<string>('');
   const [step, setStep] = useState<'input' | 'processing' | 'success' | 'error'>('input');
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const [isNetworkFailure, setIsNetworkFailure] = useState<boolean>(false);
   const [resolvedProvider, setResolvedProvider] = useState<string>('');
   const [recipientType, setRecipientType] = useState<'unknown' | 'lightning_address' | 'lightning_invoice' | 'invalid_onchain'>('unknown');
   const [isResolving, setIsResolving] = useState(false);
   const [resolvedCallback, setResolvedCallback] = useState<string>('');
   const [txReference, setTxReference] = useState<string>('');
-  const [realCost, setRealCost] = useState<RealTransactionCost>({
-    feeSats: 1,
-    feeFiat: 0.11,
-    feeFiatCurrency: 'KES',
-    source: 'blink',
-  });
-  const [wasOfflineDispatched, setWasOfflineDispatched] = useState<boolean>(false);
   const [pin, setPin] = useState<string>('');
   const [scanning, setScanning] = useState(false);
   const [usePin, setUsePin] = useState(false);
@@ -93,24 +84,15 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
 
   const numericSats = parseInt(satsAmountStr, 10) || 0;
   const availableSats = wallet.satsBalance ?? Math.round((wallet.btcBalance || 0) * 100_000_000);
-  const btcRate = rates?.btcKes || 11100000;
-
-  // Real fee dynamically tracked via Blink
-  const satsFee = toYebente ? 0 : realCost.feeSats;
+  // Free between Ye₿ente wallets. Otherwise the server holds back a routing fee
+  // reserve (1%, at least 10 sats) and refunds what the payment didn't use.
+  // (Your own wallet sets its own fee: nothing to show for it here.)
+  const satsFee = !server || toYebente ? 0 : Math.max(10, Math.ceil(numericSats * 0.01));
+  const btcKes = rates?.btcKes || 0;
+  const feeKes = btcKes > 0 ? Math.round((satsFee / 100_000_000) * btcKes * 100) / 100 : 0;
   const totalDeducted = numericSats + satsFee;
   const isInsufficientSats = totalDeducted > availableSats;
   const currentlyOnline = isNetworkOnline();
-
-  // Recalculate real transaction cost when amount changes
-  useEffect(() => {
-    calculateRealTransactionCost({
-      type: 'lightning',
-      satsAmount: numericSats,
-      btcRate,
-      currency: 'KES',
-      isOffChainLightningRoute: true,
-    }).then(setRealCost);
-  }, [numericSats, btcRate]);
 
   // Auto-detect and resolve recipient format on change
   useEffect(() => {
@@ -135,7 +117,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
       setRecipientType('invalid_onchain');
       setResolvedProvider('On-Chain Bitcoin (Unsupported)');
       setResolvedCallback('');
-      setErrorMessage('On-chain Bitcoin addresses are not supported. Ye₿ente operates exclusively on Lightning. Please enter a Lightning Address (e.g. name@blink.sv) or a BOLT-11 invoice (lnbc...).');
+      setErrorMessage('On-chain Bitcoin addresses are not supported. Ye₿ente operates exclusively on Lightning. Please enter a Lightning Address (e.g. name@walletofsatoshi.com) or a BOLT-11 invoice (lnbc...).');
       return;
     }
 
@@ -164,7 +146,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
           })
           .finally(() => setIsResolving(false));
       } else {
-        setResolvedProvider('Lightning Address (Offline Mode)');
+        setResolvedProvider('Lightning Address');
       }
       return;
     }
@@ -181,75 +163,40 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     if (step === 'error') {
       setStep('input');
       setErrorMessage('');
-      setIsNetworkFailure(false);
     } else {
       onClose();
     }
   };
 
-  const executeOfflineQueue = (targetRecipient: string) => {
-    setWasOfflineDispatched(true);
-    const offlineTxData: Omit<Transaction, 'id' | 'timestamp'> = {
-      type: 'send_btc',
-      title: 'Sent Lightning Sats',
-      status: 'completed',
-      fromCurrency: 'SATS',
-      fromAmount: numericSats,
-      fee: satsFee,
-      feeCurrency: 'SATS',
-      realFeeSats: satsFee,
-      realFeeFiat: realCost.feeFiat,
-      realFeeCurrency: realCost.feeFiatCurrency,
-      feeRateSatPerVb: 0,
-      feeSource: 'blink',
-      recipient: targetRecipient,
-      referenceNumber: `OFFLINE-${Date.now().toString(36).toUpperCase()}`,
-      walletType: 'custodial',
-      note: `Offline dispatch to ${resolvedProvider || targetRecipient}`,
-      isOffline: true,
-      offlineStatus: 'queued',
-    };
-
-    const { queuedTx } = queueOfflineTransaction(offlineTxData, wallet);
-    setTxReference(queuedTx.referenceNumber);
-    setStep('success');
-  };
-
   const handleSend = async () => {
     const cleanRecipient = sanitizeLightningInput(recipient);
     if (!cleanRecipient) {
-      setErrorMessage('Please enter a Lightning Address (e.g. name@blink.sv) or BOLT-11 invoice (lnbc...).');
-      setIsNetworkFailure(false);
+      setErrorMessage('Please enter a Lightning Address (e.g. name@walletofsatoshi.com) or BOLT-11 invoice (lnbc...).');
       return;
     }
 
     if (recipientType === 'invalid_onchain' || isOnChainAddress(cleanRecipient)) {
       setErrorMessage('On-chain Bitcoin addresses are not supported. Ye₿ente operates exclusively on Lightning. Please enter a Lightning Address or a BOLT-11 invoice.');
-      setIsNetworkFailure(false);
       return;
     }
 
     if (recipientType !== 'lightning_address' && recipientType !== 'lightning_invoice') {
-      setErrorMessage('Please enter a valid Lightning Address (e.g. user@blink.sv) or a BOLT-11 invoice (lnbc...).');
-      setIsNetworkFailure(false);
+      setErrorMessage('Please enter a valid Lightning Address (e.g. name@walletofsatoshi.com) or a BOLT-11 invoice (lnbc...).');
       return;
     }
 
     if (numericSats <= 0) {
       setErrorMessage('Please enter an amount of 1 satoshi or more.');
-      setIsNetworkFailure(false);
       return;
     }
 
     if (isInsufficientSats) {
       setErrorMessage(`Insufficient balance. Required: ${totalDeducted.toLocaleString()} Sats (including fee). Available: ${availableSats.toLocaleString()} Sats.`);
-      setIsNetworkFailure(false);
       return;
     }
 
-    // If device is strictly offline, immediately queue offline transaction
     if (!isNetworkOnline()) {
-      executeOfflineQueue(cleanRecipient);
+      setErrorMessage("You're offline. Connect to the internet to send.");
       return;
     }
 
@@ -266,7 +213,6 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
 
     setStep('processing');
     setErrorMessage('');
-    setIsNetworkFailure(false);
 
     // The Altradits wallet: the server pays from the ledger, with the PIN or fingerprint.
     if (server) {
@@ -277,7 +223,6 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
         completeTransaction(res.ref, cleanRecipient);
       } catch (err: unknown) {
         setErrorMessage(err instanceof Error ? err.message : 'Error dispatching payment');
-        setIsNetworkFailure(false);
         setStep('error');
       }
       return;
@@ -294,9 +239,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
             finalInvoice = invRes.invoice;
           }
         } catch {
-          // If network error resolving callback, fall back to offline queue
-          setIsNetworkFailure(true);
-          setErrorMessage('Could not reach recipient Lightning server. You can queue this transaction offline.');
+          setErrorMessage("Could not reach the recipient's Lightning server. Try again.");
           setStep('error');
           return;
         }
@@ -311,51 +254,17 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
         return;
       }
 
-      // 3. Dispatch via Lightning Backend
-      try {
-        const disburseRes = await fetch('/api/yebente/lightning/disburse', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            invoice: finalInvoice,
-            satsAmount: numericSats,
-            destination: cleanRecipient,
-          }),
-        });
-
-        const disburseData = await disburseRes.json();
-
-        if (disburseRes.ok && disburseData.success) {
-          const ref = disburseData.paymentHash || `LN-${Date.now().toString(36).toUpperCase()}`;
-          setTxReference(ref);
-          completeTransaction(ref, cleanRecipient);
-          return;
-        }
-
-        // Node unconfigured or unreachable: offer offline queue
-        setIsNetworkFailure(true);
-        setErrorMessage(
-          disburseData.error ||
-          'Lightning payment route unavailable. You can queue this transaction offline to broadcast upon reconnect.'
-        );
-        setStep('error');
-        return;
-      } catch (fetchErr: unknown) {
-        setIsNetworkFailure(true);
-        setErrorMessage('Network error communicating with payment router. You can queue this transaction offline.');
-        setStep('error');
-        return;
-      }
+      // No Lightning wallet in this browser: Ye₿ente never pays for an external wallet.
+      setErrorMessage(ownWallet.error || 'No Lightning wallet was found in this browser. Pay from your own wallet app, or use a Ye₿ente wallet.');
+      setStep('error');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error dispatching payment';
-      setIsNetworkFailure(true);
       setErrorMessage(message);
       setStep('error');
     }
   };
 
   const completeTransaction = (ref: string, targetRecipient: string) => {
-    setWasOfflineDispatched(false);
     celebrate({ kind: 'send', sats: numericSats, label: targetRecipient.length > 40 ? undefined : targetRecipient, ref });
     setStep('success');
     onSuccess({
@@ -367,10 +276,8 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
       fee: satsFee,
       feeCurrency: 'SATS',
       realFeeSats: satsFee,
-      realFeeFiat: realCost.feeFiat,
-      realFeeCurrency: realCost.feeFiatCurrency,
-      feeRateSatPerVb: 0,
-      feeSource: 'blink',
+      realFeeFiat: feeKes,
+      realFeeCurrency: 'KES',
       recipient: targetRecipient,
       referenceNumber: ref,
       walletType: 'custodial',
@@ -432,7 +339,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                     type="text"
                     value={recipient}
                     onChange={(e) => setRecipient(e.target.value)}
-                    placeholder="user@blink.sv, user@walletofsatoshi.com, or lnbc..."
+                    placeholder="name@walletofsatoshi.com, a Ye₿ente name, or lnbc..."
                     className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl pl-4 pr-24 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
                   />
                   <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -545,18 +452,20 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
               )}
 
               {/* Real Transaction Cost Readouts (borderless typographic rows) */}
-              <div className="space-y-1.5 px-1 pt-1 text-xs">
-                <div className="flex justify-between items-center text-[var(--yb-on-surface-variant)]">
-                  <span>Lightning Routing Fee</span>
-                  <span className="font-mono text-[var(--yb-secondary)]">
-                    {satsFee.toLocaleString()} Sat (~{realCost.feeFiat} {realCost.feeFiatCurrency})
-                  </span>
+              {server && (
+                <div className="space-y-1.5 px-1 pt-1 text-xs">
+                  <div className="flex justify-between items-center text-[var(--yb-on-surface-variant)]">
+                    <span>{toYebente ? 'Fee (free between Ye₿ente wallets)' : 'Routing fee (at most; unused part refunded)'}</span>
+                    <span className="font-mono text-[var(--yb-secondary)]">
+                      {satsFee.toLocaleString()} Sat{feeKes > 0 ? ` (~${feeKes} KES)` : ''}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-[var(--yb-on-surface-variant)]">
+                    <span>Total deducted (at most)</span>
+                    <span className="font-mono font-bold text-[var(--yb-on-surface)]">{totalDeducted.toLocaleString()} Sats</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center text-[var(--yb-on-surface-variant)]">
-                  <span>Total Deducted</span>
-                  <span className="font-mono font-bold text-[var(--yb-on-surface)]">{totalDeducted.toLocaleString()} Sats</span>
-                </div>
-              </div>
+              )}
 
               {/* Error message */}
               {errorMessage && (
@@ -607,9 +516,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
               <div className="space-y-1">
                 <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">Payment Sent</h3>
                 <p className="text-xs text-[var(--yb-on-surface-variant)]">
-                  {wasOfflineDispatched
-                    ? 'Transaction recorded in local vault. Will sync automatically upon reconnect.'
-                    : `Dispatched to ${resolvedProvider || recipient}.`}
+                  {`Sent to ${resolvedProvider || recipient}.`}
                 </p>
               </div>
 
@@ -620,24 +527,18 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                     -<CountUp value={numericSats} /> Sats
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-[var(--yb-on-surface-variant)]">Routing Fee</span>
-                  <span className="text-xs font-mono text-[var(--yb-secondary)]">
-                    {satsFee.toLocaleString()} Sat (~{realCost.feeFiat} {realCost.feeFiatCurrency})
-                  </span>
-                </div>
+                {server && !toYebente && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-[var(--yb-on-surface-variant)]">Fee held (unused part refunded)</span>
+                    <span className="text-xs font-mono text-[var(--yb-secondary)]">{satsFee.toLocaleString()} Sat</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-[var(--yb-on-surface-variant)]">Reference</span>
                   <span className="text-xs font-mono text-[var(--yb-secondary)] break-all">
                     {txReference}
                   </span>
                 </div>
-                {wasOfflineDispatched && (
-                  <div className="flex justify-between items-center pt-1 border-t border-[var(--yb-outline-variant)]/60">
-                    <span className="text-xs text-amber-400">Status</span>
-                    <span className="text-xs font-mono text-amber-300">Queued Offline</span>
-                  </div>
-                )}
               </div>
 
               <button
@@ -664,23 +565,11 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
               </div>
 
               <div className="space-y-2">
-                {isNetworkFailure && (
-                  <button
-                    type="button"
-                    onClick={() => executeOfflineQueue(recipient)}
-                    className="w-full h-11 rounded-2xl bg-amber-600 hover:bg-amber-500 text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center gap-1.5"
-                  >
-                    <WifiOff className="w-4 h-4" />
-                    <span>Queue Offline Settlement</span>
-                  </button>
-                )}
-
                 <button
                   type="button"
                   onClick={() => {
                     setStep('input');
                     setErrorMessage('');
-                    setIsNetworkFailure(false);
                   }}
                   className="w-full h-11 rounded-2xl bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] hover:border-[var(--yb-primary)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center"
                 >

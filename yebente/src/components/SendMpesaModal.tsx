@@ -8,7 +8,6 @@ import { UserWallet, ExchangeRates, Transaction } from '../types';
 import {
   ArrowLeft,
   AlertTriangle,
-  WifiOff,
   Copy,
   Check,
   ExternalLink,
@@ -17,21 +16,14 @@ import {
 import {
   isValidKenyanPhone,
   formatKenyanDisplayPhone,
-  normalizeTandoPhone,
   getTandoLightningAddress,
   fetchTandoBounds,
   requestTandoInvoice,
   pollTandoReceipt,
   TandoBoundsResult,
 } from '../services/tandoService';
-import {
-  sendTelebirrPayout,
-  formatEthiopianDisplayPhone,
-  isValidEthiopianPhone,
-} from '../services/telebirrService';
-import { isNetworkOnline, queueOfflineTransaction } from '../services/offlineService';
+import { isNetworkOnline } from '../services/offlineService';
 import { KenyaPhoneInput } from './KenyaPhoneInput';
-import { EthiopiaPhoneInput } from './EthiopiaPhoneInput';
 
 interface SendMpesaModalProps {
   isOpen: boolean;
@@ -48,10 +40,9 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   rates,
   onSuccess,
 }) => {
-  const [rail, setRail] = useState<'mpesa' | 'telebirr'>('mpesa');
   const [amountMode, setAmountMode] = useState<'fiat' | 'sats'>('fiat');
   const [phone, setPhone] = useState<string>('');
-  const [fiatAmountStr, setFiatAmountStr] = useState<string>('500');
+  const [fiatAmountStr, setFiatAmountStr] = useState<string>('');
   const [satsAmountStr, setSatsAmountStr] = useState<string>('');
   const [step, setStep] = useState<'input' | 'processing' | 'success' | 'error'>('input');
   const [processingStatus, setProcessingStatus] = useState<string>('Initiating Lightning Transfer...');
@@ -59,14 +50,12 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   const [realReference, setRealReference] = useState<string>('');
   const [merchantRecipientName, setMerchantRecipientName] = useState<string>('');
   const [tandoReceiptUrl, setTandoReceiptUrl] = useState<string>('');
-  const [isNetworkFailure, setIsNetworkFailure] = useState<boolean>(false);
-  const [wasOfflineQueued, setWasOfflineQueued] = useState<boolean>(false);
   const [copiedRef, setCopiedRef] = useState<boolean>(false);
   const [pin, setPin] = useState<string>('');
   const server = hasServerWallet();
   const [usePin, setUsePin] = useState(false);
   // Fingerprint / face on this phone: no PIN typed on screen.
-  const useBio = server && rail === 'mpesa' && biometricOn() && !usePin;
+  const useBio = server && biometricOn() && !usePin;
 
   // Tando live bounds state
   const [tandoBounds, setTandoBounds] = useState<TandoBoundsResult | null>(null);
@@ -74,7 +63,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   // Fetch live Tando bounds when phone changes. Hooks run before the early
   // return below, in the same order on every render (React error #310).
   useEffect(() => {
-    if (isOpen && rail === 'mpesa' && isValidKenyanPhone(phone) && isNetworkOnline()) {
+    if (isOpen && isValidKenyanPhone(phone) && isNetworkOnline()) {
       fetchTandoBounds(phone).then((bounds) => {
         if (bounds.success) {
           setTandoBounds(bounds);
@@ -83,12 +72,12 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
     } else {
       setTandoBounds(null);
     }
-  }, [isOpen, phone, rail]);
+  }, [isOpen, phone]);
 
   if (!isOpen) return null;
 
-  const currentRate = rail === 'mpesa' ? rates.btcKes : rates.btcEtb;
-  const currencyCode = rail === 'mpesa' ? 'KES' : 'ETB';
+  const currentRate = rates.btcKes;
+  const currencyCode = 'KES';
   const amountValue = parseFloat(amountMode === 'fiat' ? fiatAmountStr : satsAmountStr) || 0;
   const availableSats = wallet.satsBalance ?? Math.round((wallet.btcBalance || 0) * 100_000_000);
 
@@ -99,94 +88,41 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   let numericAmount = 0;
   let satsRequired = 0;
 
-  if (rail === 'mpesa') {
-    if (amountMode === 'fiat') {
-      numericAmount = amountValue;
-      satsRequired = tandoMultiplier
-        ? Math.ceil((numericAmount * tandoMultiplier) / 1000)
-        : currentRate > 0
-          ? Math.round((numericAmount / currentRate) * 100_000_000)
-          : 0;
-    } else {
-      satsRequired = Math.round(amountValue);
-      numericAmount = tandoMultiplier
-        ? Math.floor((satsRequired * 1000) / tandoMultiplier)
-        : currentRate > 0
-          ? Math.round((satsRequired / 100_000_000) * currentRate)
-          : 0;
-    }
-  } else {
-    // Telebirr
-    numericAmount = amountMode === 'fiat'
-      ? amountValue
+  if (amountMode === 'fiat') {
+    numericAmount = amountValue;
+    satsRequired = tandoMultiplier
+      ? Math.ceil((numericAmount * tandoMultiplier) / 1000)
       : currentRate > 0
-        ? Math.round((amountValue / 100_000_000) * currentRate)
-        : 0;
-
-    satsRequired = currentRate > 0
-      ? amountMode === 'fiat'
         ? Math.round((numericAmount / currentRate) * 100_000_000)
-        : Math.round(amountValue)
-      : 0;
+        : 0;
+  } else {
+    satsRequired = Math.round(amountValue);
+    numericAmount = tandoMultiplier
+      ? Math.floor((satsRequired * 1000) / tandoMultiplier)
+      : currentRate > 0
+        ? Math.round((satsRequired / 100_000_000) * currentRate)
+        : 0;
   }
 
   // Tando charges a flat 1% conversion fee
-  const satsFee = rail === 'mpesa'
-    ? Math.max(1, Math.ceil(satsRequired * 0.01))
-    : 250;
+  const satsFee = Math.max(1, Math.ceil(satsRequired * 0.01));
 
   const feeFiat = currentRate > 0 ? Math.round((satsFee / 100_000_000) * currentRate * 100) / 100 : 0;
   const totalSatsDeducted = satsRequired + satsFee;
   const isInsufficientSats = totalSatsDeducted > availableSats;
   const currentlyOnline = isNetworkOnline();
 
-  const getRecipientDisplay = () =>
-    rail === 'mpesa' ? formatKenyanDisplayPhone(phone) : formatEthiopianDisplayPhone(phone);
+  const getRecipientDisplay = () => formatKenyanDisplayPhone(phone);
 
-  const isPhoneValid = rail === 'mpesa' ? isValidKenyanPhone(phone) : isValidEthiopianPhone(phone);
-  const tandoLightningAddress = rail === 'mpesa' && isPhoneValid ? getTandoLightningAddress(phone) : '';
-
-  const handleQueueOffline = () => {
-    setWasOfflineQueued(true);
-    const offlineTxData: Omit<Transaction, 'id' | 'timestamp'> = {
-      type: rail === 'mpesa' ? 'send_mpesa' : 'send_telebirr',
-      title: `${rail === 'mpesa' ? 'Send M-Pesa' : 'Send Telebirr'} (${getRecipientDisplay()})`,
-      status: 'completed',
-      fromCurrency: 'SATS',
-      fromAmount: satsRequired,
-      toCurrency: currencyCode,
-      toAmount: numericAmount,
-      fee: satsFee,
-      feeCurrency: 'SATS',
-      realFeeSats: satsFee,
-      realFeeFiat: feeFiat,
-      realFeeCurrency: currencyCode,
-      feeSource: 'blink',
-      rateUsed: currentRate,
-      recipient: getRecipientDisplay(),
-      referenceNumber: `OFFLINE-${Date.now().toString(36).toUpperCase()}`,
-      walletType: 'custodial',
-      note: `Queued offline payout to ${getRecipientDisplay()}`,
-      isOffline: true,
-      offlineStatus: 'queued',
-    };
-
-    const { queuedTx } = queueOfflineTransaction(offlineTxData, wallet);
-    setRealReference(queuedTx.referenceNumber);
-    setStep('success');
-  };
+  const isPhoneValid = isValidKenyanPhone(phone);
+  const tandoLightningAddress = isPhoneValid ? getTandoLightningAddress(phone) : '';
 
   const handleConfirm = async () => {
     if (numericAmount <= 0) return;
 
     if (!isPhoneValid) {
-      setErrorMessage(
-        rail === 'mpesa'
-          ? 'Enter a valid Kenyan Safaricom phone number: 07XXXXXXXX or 01XXXXXXXX.'
-          : 'Enter a valid Ethiopian Telebirr phone number: 09XXXXXXXX or 07XXXXXXXX.'
-      );
+      setErrorMessage('Enter a valid Kenyan Safaricom phone number: 07XXXXXXXX or 01XXXXXXXX.');
       setStep('error');
-      setIsNetworkFailure(false);
       return;
     }
 
@@ -195,12 +131,12 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
         `Insufficient Sats balance. Required: ${totalSatsDeducted.toLocaleString()} Sats, Available: ${availableSats.toLocaleString()} Sats.`
       );
       setStep('error');
-      setIsNetworkFailure(false);
       return;
     }
 
     if (!isNetworkOnline()) {
-      handleQueueOffline();
+      setErrorMessage("You're offline. Connect to the internet to send.");
+      setStep('error');
       return;
     }
 
@@ -212,187 +148,133 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
       } catch (err: unknown) {
         setErrorMessage(err instanceof Error ? err.message : 'Fingerprint not confirmed.');
         setStep('error');
-        setIsNetworkFailure(false);
         return;
       }
     }
 
     setStep('processing');
     setErrorMessage('');
-    setIsNetworkFailure(false);
-    setWasOfflineQueued(false);
     setMerchantRecipientName('');
     setTandoReceiptUrl('');
 
     try {
-      if (rail === 'mpesa') {
-        // --- PURE TANDO LIGHTNING INTEGRATION (bitcoin.co.ke) ---
-        setProcessingStatus('Requesting Tando Lightning Invoice...');
+      // --- PURE TANDO LIGHTNING INTEGRATION (bitcoin.co.ke) ---
+      setProcessingStatus('Requesting Tando Lightning Invoice...');
 
-        // Step 1: Request BOLT11 invoice priced in KES directly from Tando
-        const invoiceRes = await requestTandoInvoice({
-          phone,
-          amount: numericAmount,
-          mode: 'KES',
-          callbackUrl: tandoBounds?.callback,
+      // Step 1: Request BOLT11 invoice priced in KES directly from Tando
+      const invoiceRes = await requestTandoInvoice({
+        phone,
+        amount: numericAmount,
+        mode: 'KES',
+        callbackUrl: tandoBounds?.callback,
+      });
+
+      if (!invoiceRes.success || !invoiceRes.pr) {
+        setErrorMessage(invoiceRes.error || 'Failed to request Lightning invoice from Tando API.');
+        setStep('error');
+        return;
+      }
+
+      const paymentHash = invoiceRes.paymentHash;
+      const receiptUrl = invoiceRes.successAction?.url || (paymentHash ? `https://bitcoin.co.ke/receipt/${paymentHash}` : '');
+      setTandoReceiptUrl(receiptUrl);
+
+      // Step 2: Settle payment off-chain: from the Altradits wallet (with the PIN),
+      // or from the user's own wallet (WebLN)
+      let paid: { paid: boolean; error?: string };
+      if (server) {
+        try {
+          await sendFromServerWallet(invoiceRes.pr, 0, pin, passkey);
+          setPin('');
+          paid = { paid: true };
+        } catch (err: unknown) {
+          setErrorMessage(err instanceof Error ? err.message : 'Lightning payment route unavailable.');
+          setStep('error');
+          return;
+        }
+      } else {
+        paid = await payInvoiceWithWebLN(invoiceRes.pr);
+      }
+      if (!paid.paid) {
+        setErrorMessage(paid.error || 'No Lightning wallet was found in this browser to pay with.');
+        setStep('error');
+        return;
+      }
+      setProcessingStatus('Delivering Shillings to M-Pesa handset...');
+
+      // Step 3: Poll Tando receipt endpoint for the confirmed Safaricom receipt code
+      if (paymentHash) {
+        const pollRes = await pollTandoReceipt(paymentHash, {
+          timeoutMs: 90000,
+          intervalMs: 3000,
+          onUpdate: (tx) => {
+            if (tx.merchantName) setMerchantRecipientName(tx.merchantName);
+          },
         });
 
-        if (!invoiceRes.success || !invoiceRes.pr) {
-          setErrorMessage(invoiceRes.error || 'Failed to request Lightning invoice from Tando API.');
-          setStep('error');
-          setIsNetworkFailure(true);
-          return;
-        }
+        if (pollRes.success && pollRes.transaction) {
+          const tx = pollRes.transaction;
+          const refCode = tx.paymentNetworkReceipt || paymentHash.slice(0, 10).toUpperCase();
+          setRealReference(refCode);
+          if (tx.merchantName) setMerchantRecipientName(tx.merchantName);
 
-        const paymentHash = invoiceRes.paymentHash;
-        const receiptUrl = invoiceRes.successAction?.url || (paymentHash ? `https://bitcoin.co.ke/receipt/${paymentHash}` : '');
-        setTandoReceiptUrl(receiptUrl);
-
-        // Step 2: Settle payment off-chain: from the Altradits wallet (with the PIN),
-        // or from the user's own wallet (WebLN)
-        let paid: { paid: boolean; error?: string };
-        if (server) {
-          try {
-            await sendFromServerWallet(invoiceRes.pr, 0, pin, passkey);
-            setPin('');
-            paid = { paid: true };
-          } catch (err: unknown) {
-            setErrorMessage(err instanceof Error ? err.message : 'Lightning payment route unavailable.');
-            setStep('error');
-            setIsNetworkFailure(false);
-            return;
-          }
-        } else {
-          paid = await payInvoiceWithWebLN(invoiceRes.pr);
-        }
-        if (!paid.paid) {
-          setErrorMessage('Lightning payment route unavailable. You can queue this transaction offline to broadcast upon reconnect.');
-          setStep('error');
-          setIsNetworkFailure(true);
-          return;
-        }
-        setProcessingStatus('Delivering Shillings to M-Pesa handset...');
-
-        // Step 3: Poll Tando receipt endpoint for the confirmed Safaricom receipt code
-        if (paymentHash) {
-          const pollRes = await pollTandoReceipt(paymentHash, {
-            timeoutMs: 90000,
-            intervalMs: 3000,
-            onUpdate: (tx) => {
-              if (tx.merchantName) setMerchantRecipientName(tx.merchantName);
-            },
+          onSuccess({
+            type: 'send_mpesa',
+            title: `Send M-Pesa (${formatKenyanDisplayPhone(phone)})`,
+            status: 'completed',
+            fromCurrency: 'SATS',
+            fromAmount: satsRequired,
+            toCurrency: 'KES',
+            toAmount: tx.currencyAmountSent || numericAmount,
+            fee: satsFee,
+            feeCurrency: 'SATS',
+            realFeeSats: satsFee,
+            realFeeFiat: feeFiat,
+            realFeeCurrency: 'KES',
+                  rateUsed: currentRate,
+            recipient: tx.merchantName ? `${tx.merchantName} (${formatKenyanDisplayPhone(phone)})` : formatKenyanDisplayPhone(phone),
+            referenceNumber: refCode,
+            receiptUrl,
+            paymentHash,
+            walletType: 'custodial',
+            note: `Tando M-Pesa delivery to ${formatKenyanDisplayPhone(phone)}`,
           });
 
-          if (pollRes.success && pollRes.transaction) {
-            const tx = pollRes.transaction;
-            const refCode = tx.paymentNetworkReceipt || paymentHash.slice(0, 10).toUpperCase();
-            setRealReference(refCode);
-            if (tx.merchantName) setMerchantRecipientName(tx.merchantName);
-
-            onSuccess({
-              type: 'send_mpesa',
-              title: `Send M-Pesa (${formatKenyanDisplayPhone(phone)})`,
-              status: 'completed',
-              fromCurrency: 'SATS',
-              fromAmount: satsRequired,
-              toCurrency: 'KES',
-              toAmount: tx.currencyAmountSent || numericAmount,
-              fee: satsFee,
-              feeCurrency: 'SATS',
-              realFeeSats: satsFee,
-              realFeeFiat: feeFiat,
-              realFeeCurrency: 'KES',
-              feeSource: 'blink',
-              rateUsed: currentRate,
-              recipient: tx.merchantName ? `${tx.merchantName} (${formatKenyanDisplayPhone(phone)})` : formatKenyanDisplayPhone(phone),
-              referenceNumber: refCode,
-              receiptUrl,
-              paymentHash,
-              walletType: 'custodial',
-              note: `Tando M-Pesa delivery to ${formatKenyanDisplayPhone(phone)}`,
-            });
-
-            celebrate({ kind: 'send', sats: totalSatsDeducted, label: `M-Pesa ${formatKenyanDisplayPhone(phone)}`, ref: paymentHash });
-            setStep('success');
-            return;
-          }
-        }
-
-        // Fallback: If status poll times out, payment is in flight on M-Pesa side
-        const fallbackRef = paymentHash ? paymentHash.slice(0, 10).toUpperCase() : `LN-${Date.now().toString(36).toUpperCase()}`;
-        setRealReference(fallbackRef);
-
-        onSuccess({
-          type: 'send_mpesa',
-          title: `Send M-Pesa (${formatKenyanDisplayPhone(phone)})`,
-          status: 'pending',
-          fromCurrency: 'SATS',
-          fromAmount: satsRequired,
-          toCurrency: 'KES',
-          toAmount: numericAmount,
-          fee: satsFee,
-          feeCurrency: 'SATS',
-          realFeeSats: satsFee,
-          realFeeFiat: feeFiat,
-          realFeeCurrency: 'KES',
-          feeSource: 'blink',
-          rateUsed: currentRate,
-          recipient: formatKenyanDisplayPhone(phone),
-          referenceNumber: fallbackRef,
-          receiptUrl,
-          paymentHash,
-          walletType: 'custodial',
-          note: `Tando M-Pesa transfer to ${formatKenyanDisplayPhone(phone)}`,
-        });
-
-        celebrate({ kind: 'send', sats: totalSatsDeducted, label: `M-Pesa ${formatKenyanDisplayPhone(phone)}`, ref: paymentHash });
-        setStep('success');
-      } else {
-        // --- TELEBIRR INTEGRATION (ETHIOPIA) ---
-        setProcessingStatus('Dispatching Telebirr Payment...');
-        const res = await sendTelebirrPayout({
-          phone,
-          amount: numericAmount,
-          currency: 'ETB',
-          satsAmount: satsRequired,
-          note: 'Sats to Telebirr Transfer',
-        });
-
-        if (!res.success) {
-          setIsNetworkFailure(true);
-          setErrorMessage(res.error || 'Failed to dispatch Telebirr payment.');
-          setStep('error');
+          celebrate({ kind: 'send', sats: totalSatsDeducted, label: `M-Pesa ${formatKenyanDisplayPhone(phone)}`, ref: paymentHash });
+          setStep('success');
           return;
         }
-
-        const refCode = res.referenceNumber || `TB-${Date.now().toString(36).toUpperCase()}`;
-        setRealReference(refCode);
-
-        onSuccess({
-          type: 'send_telebirr',
-          title: `Send Telebirr (${formatEthiopianDisplayPhone(phone)})`,
-          status: 'completed',
-          fromCurrency: 'SATS',
-          fromAmount: satsRequired,
-          toCurrency: 'ETB',
-          toAmount: numericAmount,
-          fee: satsFee,
-          feeCurrency: 'SATS',
-          realFeeSats: satsFee,
-          realFeeFiat: feeFiat,
-          realFeeCurrency: 'ETB',
-          feeSource: 'blink',
-          rateUsed: currentRate,
-          recipient: getRecipientDisplay(),
-          referenceNumber: refCode,
-          walletType: 'custodial',
-          note: `Telebirr payout to ${formatEthiopianDisplayPhone(phone)}`,
-        });
-
-        setStep('success');
       }
+
+      // Fallback: If status poll times out, payment is in flight on M-Pesa side
+      const fallbackRef = paymentHash ? paymentHash.slice(0, 10).toUpperCase() : `LN-${Date.now().toString(36).toUpperCase()}`;
+      setRealReference(fallbackRef);
+
+      onSuccess({
+        type: 'send_mpesa',
+        title: `Send M-Pesa (${formatKenyanDisplayPhone(phone)})`,
+        status: 'pending',
+        fromCurrency: 'SATS',
+        fromAmount: satsRequired,
+        toCurrency: 'KES',
+        toAmount: numericAmount,
+        fee: satsFee,
+        feeCurrency: 'SATS',
+        realFeeSats: satsFee,
+        realFeeFiat: feeFiat,
+        realFeeCurrency: 'KES',
+          rateUsed: currentRate,
+        recipient: formatKenyanDisplayPhone(phone),
+        referenceNumber: fallbackRef,
+        receiptUrl,
+        paymentHash,
+        walletType: 'custodial',
+        note: `Tando M-Pesa transfer to ${formatKenyanDisplayPhone(phone)}`,
+      });
+
+      celebrate({ kind: 'send', sats: totalSatsDeducted, label: `M-Pesa ${formatKenyanDisplayPhone(phone)}`, ref: paymentHash });
+      setStep('success');
     } catch (err: unknown) {
-      setIsNetworkFailure(true);
       setErrorMessage(err instanceof Error ? err.message : 'Error processing transfer.');
       setStep('error');
     }
@@ -401,7 +283,6 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   const handleResetAndClose = () => {
     setStep('input');
     setErrorMessage('');
-    setIsNetworkFailure(false);
     onClose();
   };
 
@@ -409,7 +290,6 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
     if (step === 'error') {
       setStep('input');
       setErrorMessage('');
-      setIsNetworkFailure(false);
       return;
     }
     handleResetAndClose();
@@ -422,11 +302,11 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
     setTimeout(() => setCopiedRef(false), 2000);
   };
 
-  const headerTitle = rail === 'mpesa' ? 'Send M-Pesa' : 'Send Telebirr';
+  const headerTitle = 'Send M-Pesa';
   const ctaLabel = isInsufficientSats
     ? 'Insufficient Sats Balance'
     : !currentlyOnline
-      ? 'Queue Offline'
+      ? "You're offline"
       : headerTitle;
 
   return (
@@ -450,38 +330,6 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
         <div className="p-5 overflow-y-auto space-y-4">
           {step === 'input' && (
             <>
-              {/* Rail Selection */}
-              <div className="grid grid-cols-2 gap-2" role="group" aria-label="Select mobile network">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRail('mpesa');
-                    setPhone('');
-                  }}
-                  className={`p-2.5 rounded-xl border text-xs font-semibold ${
-                    rail === 'mpesa'
-                      ? 'bg-[var(--yb-surface-container-high)] border-[var(--yb-primary)] text-[var(--yb-on-surface)]'
-                      : 'bg-[var(--yb-surface)] border-[var(--yb-outline-variant)] text-[var(--yb-on-surface-variant)]'
-                  }`}
-                >
-                  M-Pesa (Kenya)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRail('telebirr');
-                    setPhone('');
-                  }}
-                  className={`p-2.5 rounded-xl border text-xs font-semibold ${
-                    rail === 'telebirr'
-                      ? 'bg-[var(--yb-surface-container-high)] border-[var(--yb-primary)] text-[var(--yb-on-surface)]'
-                      : 'bg-[var(--yb-surface)] border-[var(--yb-outline-variant)] text-[var(--yb-on-surface-variant)]'
-                  }`}
-                >
-                  Telebirr (Ethiopia)
-                </button>
-              </div>
-
               {/* Balance Display */}
               <div className="flex justify-between items-center px-1 text-xs">
                 <span className="text-[var(--yb-on-surface-variant)]">Available</span>
@@ -491,29 +339,20 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
               </div>
 
               {/* Phone Input */}
-              {rail === 'mpesa' ? (
-                <div>
-                  <KenyaPhoneInput
-                    value={phone}
-                    onChange={(full) => setPhone(full)}
-                    label="M-Pesa Recipient Phone"
-                    ariaLabel="M-Pesa recipient phone"
-                  />
-                  {tandoLightningAddress && (
-                    <div className="flex justify-between items-center px-1 pt-1 text-[11px] font-mono">
-                      <span className="text-[var(--yb-on-surface-variant)]">Lightning Address</span>
-                      <span className="text-emerald-400 truncate max-w-[220px]">{tandoLightningAddress}</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <EthiopiaPhoneInput
+              <div>
+                <KenyaPhoneInput
                   value={phone}
                   onChange={(full) => setPhone(full)}
-                  label="Telebirr Recipient Phone"
-                  ariaLabel="Telebirr recipient phone"
+                  label="M-Pesa Recipient Phone"
+                  ariaLabel="M-Pesa recipient phone"
                 />
-              )}
+                {tandoLightningAddress && (
+                  <div className="flex justify-between items-center px-1 pt-1 text-[11px] font-mono">
+                    <span className="text-[var(--yb-on-surface-variant)]">Lightning Address</span>
+                    <span className="text-emerald-400 truncate max-w-[220px]">{tandoLightningAddress}</span>
+                  </div>
+                )}
+              </div>
 
               {/* Currency vs Sats toggle */}
               <div className="grid grid-cols-2 gap-2" role="group" aria-label="Amount entry mode">
@@ -571,7 +410,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
               </div>
 
               {/* Tando Rail & Limits Details */}
-              {rail === 'mpesa' && tandoBounds?.currency && (
+              {tandoBounds?.currency && (
                 <div className="flex justify-between items-center px-1 text-[11px] font-mono text-[var(--yb-on-surface-variant)]">
                   <span>Tando Limits</span>
                   <span className="text-[var(--yb-secondary)]">
@@ -589,21 +428,21 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-[var(--yb-on-surface-variant)]">
-                  <span>{rail === 'mpesa' ? 'M-Pesa payout' : 'Telebirr payout'}</span>
+                  <span>M-Pesa payout</span>
                   <span>{numericAmount.toLocaleString()} {currencyCode}</span>
                 </div>
                 <div className="flex justify-between items-center text-[var(--yb-on-surface-variant)]">
-                  <span>{rail === 'mpesa' ? 'Tando Fee (1%)' : 'Real Transaction Cost'}</span>
+                  <span>Tando fee (1%)</span>
                   <span>{satsFee} Sats (~{feeFiat} {currencyCode})</span>
                 </div>
               </div>
 
               {/* Every payment is approved on its own, even while the app is open. */}
-              {server && rail === 'mpesa' && (
+              {server && (
                 <p className="text-[11px] text-[var(--yb-on-surface-variant)]">Every payment needs your {biometricOn() ? 'fingerprint, face or ' : ''}PIN, even while the app is open. If someone picks up your phone, they still can't send.</p>
               )}
               {/* PIN for the Altradits wallet */}
-              {server && rail === 'mpesa' && !useBio && (
+              {server && !useBio && (
                 <div>
                   <div className="text-xs text-[var(--yb-secondary)] mb-1.5 font-semibold">PIN</div>
                   <input
@@ -628,14 +467,14 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                   amountValue <= 0 ||
                   !isPhoneValid ||
                   isInsufficientSats ||
-                  (server && rail === 'mpesa' && !useBio && !/^\d{6}$/.test(pin))
+                  (server && !useBio && !/^\d{6}$/.test(pin))
                 }
                 className="w-full h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
               >
                 {useBio && <Fingerprint className="w-4 h-4" />}
                 {ctaLabel}
               </button>
-              {server && rail === 'mpesa' && biometricOn() && (
+              {server && biometricOn() && (
                 <button
                   type="button"
                   onClick={() => { setUsePin(!usePin); setPin(''); }}
@@ -652,7 +491,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
               <SatsMotion mode="sending" />
               <div className="space-y-1">
                 <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">
-                  {rail === 'mpesa' ? 'Sending M-Pesa via Tando' : 'Sending Telebirr'}
+                  Sending M-Pesa via Tando
                 </h3>
                 <p className="text-xs text-[var(--yb-on-surface-variant)] font-mono">{processingStatus}</p>
               </div>
@@ -670,15 +509,6 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
               </div>
 
               <div className="flex gap-2 w-full">
-                {isNetworkFailure && (
-                  <button
-                    type="button"
-                    onClick={handleQueueOffline}
-                    className="flex-1 h-11 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center"
-                  >
-                    Queue Offline
-                  </button>
-                )}
                 <button
                   type="button"
                   onClick={() => setStep('input')}
@@ -695,17 +525,8 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
               <SatsMotion mode="sent" />
               <div>
                 <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">
-                  {wasOfflineQueued
-                    ? 'Queued Offline'
-                    : rail === 'mpesa'
-                      ? 'M-Pesa Delivered'
-                      : 'Telebirr Sent'}
+                  M-Pesa Delivered
                 </h3>
-                <p className="text-xs text-[var(--yb-on-surface-variant)] font-mono mt-0.5">
-                  {wasOfflineQueued
-                    ? 'Transaction recorded locally and will synchronize upon reconnect'
-                    : '100% Settled via Bitcoin Lightning Rail'}
-                </p>
               </div>
 
               <div className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl p-3.5 text-left font-mono text-xs space-y-2">
@@ -724,7 +545,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                   <span className="text-[var(--yb-secondary)] font-bold">{totalSatsDeducted.toLocaleString()} Sats</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[var(--yb-on-surface-variant)]">{rail === 'mpesa' ? 'Tando Fee (1%)' : 'Real Cost'}</span>
+                  <span className="text-[var(--yb-on-surface-variant)]">Tando fee (1%)</span>
                   <span className="text-[var(--yb-secondary)]">{satsFee} Sats (~{feeFiat} {currencyCode})</span>
                 </div>
                 {realReference && (
