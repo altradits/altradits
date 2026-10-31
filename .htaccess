@@ -14,7 +14,7 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
   RewriteEngine On
 
   RewriteRule ^templates/?$ /products [R=301,L]
-  RewriteRule ^(admin|bitcoin|collect|cv|donate|hunt|join|portal|products|proposal|team|va)/?$ $1.html [L]
+  RewriteRule ^(admin|bitcoin|collect|cv|donate|hunt|join|portal|products|proposal|team|va|wallet)/?$ $1.html [L]
 
   # Ye₿ente: the built app lives in yebente/app.
   RewriteRule ^yebente/?$ yebente/app/index.html [L]
