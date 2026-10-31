@@ -63,15 +63,6 @@ export interface TandoTransactionDetails {
   failureReason?: string;
 }
 
-export interface TandoPaymentStatusResponse {
-  success: boolean;
-  transaction?: TandoTransactionDetails;
-  error?: {
-    errorCode: string;
-    message: string;
-  };
-}
-
 /**
  * Normalizes any Kenyan phone number to international 254 format without + or spaces
  * Formats supported: 07XXXXXXXX, 01XXXXXXXX, 2547XXXXXXXX, +2547XXXXXXXX
@@ -127,18 +118,6 @@ export function formatKenyanDisplayPhone(phone: string): string {
 export function getTandoLightningAddress(phone: string): string {
   const normalized = normalizeTandoPhone(phone);
   return `${normalized}@bitcoin.co.ke`;
-}
-
-/**
- * Checks whether an input string is a Tando Lightning address
- */
-export function isTandoLightningAddress(input: string): boolean {
-  const clean = input.trim().toLowerCase().replace(/^lightning:/i, '');
-  if (clean.endsWith('@bitcoin.co.ke')) {
-    const username = clean.replace('@bitcoin.co.ke', '');
-    return isValidTandoPhone(username);
-  }
-  return false;
 }
 
 /**

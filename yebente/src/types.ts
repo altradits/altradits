@@ -2,7 +2,7 @@ export type WalletType = 'custodial' | 'non-custodial';
 
 export type Currency = 'SATS' | 'BTC' | 'KES' | 'ETB' | 'USD';
 
-export type TransactionType = 'buy_btc' | 'sell_btc' | 'send_mpesa' | 'send_telebirr' | 'deposit_mpesa' | 'receive_btc' | 'send_btc';
+export type TransactionType = 'buy_btc' | 'send_mpesa' | 'receive_btc' | 'send_btc';
 
 export type TransactionStatus = 'completed' | 'pending' | 'failed';
 
@@ -26,15 +26,10 @@ export interface UserWallet {
   // Balances
   satsBalance: number;
   btcBalance?: number;
-  mpesaBalanceKes: number;
-  telebirrBalanceEtb: number;
-  // Non-custodial and sovereign details
+  // Your own wallet's address; blink* hold the Ye₿ente wallet's handle and address (older name)
   nonCustodialAddress: string;
-  nonCustodialLabel?: string;
   blinkUsername?: string;
   blinkAddress?: string;
-  insertedAt?: number;
-  lastSyncedAt?: number;
   onChainVerified?: boolean;
   recoveryEmail?: string;
 }
@@ -61,13 +56,6 @@ export interface Transaction {
   realFeeSats?: number;
   realFeeFiat?: number;
   realFeeCurrency?: Currency;
-  feeRateSatPerVb?: number;
-  feeSource?: 'blink' | 'mempool' | 'fixed';
-  
-  // Offline transaction metadata
-  isOffline?: boolean;
-  offlineStatus?: 'synced' | 'queued' | 'staged';
-  syncedAt?: number;
   
   recipient?: string; // Phone number or BTC address
   referenceNumber: string; // e.g. M-Pesa code QWE892, Telebirr code TB238, or BTC TXID

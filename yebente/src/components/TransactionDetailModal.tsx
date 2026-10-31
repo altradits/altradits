@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Transaction } from '../types';
-import { ArrowLeft, Copy, Check, WifiOff, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Copy, Check, ExternalLink } from 'lucide-react';
 
 interface TransactionDetailModalProps {
   transaction: Transaction | null;
@@ -9,10 +9,7 @@ interface TransactionDetailModalProps {
 
 const TYPE_TITLES: Record<string, string> = {
   buy_btc: 'Buy Sats',
-  sell_btc: 'Sell Sats',
   send_mpesa: 'Send M-Pesa',
-  send_telebirr: 'Send Telebirr',
-  deposit_mpesa: 'Deposit M-Pesa',
   receive_btc: 'Receive Sats',
   send_btc: 'Send Sats',
 };
@@ -46,7 +43,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
         : Number(transaction.toAmount || 0);
       return { text: `+${sats.toLocaleString()} Sats`, isPositive: true };
     }
-    if (transaction.type === 'sell_btc' || transaction.type === 'send_btc') {
+    if (transaction.type === 'send_btc') {
       const sats = transaction.fromCurrency === 'BTC'
         ? Math.round(Number(transaction.fromAmount || 0) * 100_000_000)
         : Number(transaction.fromAmount || 0);
@@ -54,10 +51,6 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     }
     if (transaction.type === 'send_mpesa') {
       return { text: `-${Number(transaction.toAmount || 0).toLocaleString()} KES`, isPositive: false };
-    }
-    if (transaction.type === 'send_telebirr') {
-      const etbVal = transaction.toCurrency === 'ETB' ? transaction.toAmount : transaction.fromAmount;
-      return { text: `-${Number(etbVal || 0).toLocaleString()} ETB`, isPositive: false };
     }
     return { text: `${Number(transaction.fromAmount || 0).toLocaleString()} ${transaction.fromCurrency}`, isPositive: false };
   };
@@ -136,7 +129,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               </div>
             )}
 
-            {(transaction.type === 'send_mpesa' || transaction.type === 'send_telebirr') && transaction.fromCurrency === 'SATS' && (
+            {transaction.type === 'send_mpesa' && transaction.fromCurrency === 'SATS' && (
               <>
                 <div className="flex justify-between items-center">
                   <span className="text-[var(--yb-on-surface-variant)]">Sats Debited</span>
@@ -164,7 +157,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
             {/* Real Transaction Cost */}
             <div className="flex justify-between items-center">
-              <span className="text-[var(--yb-on-surface-variant)]">Real Cost</span>
+              <span className="text-[var(--yb-on-surface-variant)]">Fee</span>
               <span className="text-[var(--yb-on-surface)]">
                 {feeSats > 0 ? (
                   `${feeSats.toLocaleString()} Sats${feeFiat ? ` (~${feeFiat} ${feeCurrency})` : ''}`
@@ -173,28 +166,6 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                 )}
               </span>
             </div>
-
-            {transaction.feeRateSatPerVb && (
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--yb-on-surface-variant)]">Fee Rate</span>
-                <span className="text-[var(--yb-secondary)]">
-                  {transaction.feeRateSatPerVb} sat/vB
-                </span>
-              </div>
-            )}
-
-            {/* Offline metadata */}
-            {transaction.isOffline && (
-              <div className="flex justify-between items-center pt-1 border-t border-[var(--yb-outline-variant)]/60">
-                <span className="text-amber-400 flex items-center gap-1">
-                  <WifiOff className="w-3 h-3" />
-                  <span>Settlement</span>
-                </span>
-                <span className="text-amber-300">
-                  {transaction.offlineStatus === 'synced' ? 'Synced Live' : 'Queued Offline'}
-                </span>
-              </div>
-            )}
 
             {/* Official Tando / M-Pesa Receipt */}
             {transaction.receiptUrl && (

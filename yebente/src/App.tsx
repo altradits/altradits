@@ -9,12 +9,7 @@ import {
   ejectWallet,
   wipeWallet,
 } from './services/storageService';
-import {
-  isNetworkOnline,
-  getOfflineOutbox,
-  syncOfflineOutbox,
-  setupOfflineSyncListeners,
-} from './services/offlineService';
+import { isNetworkOnline, onNetworkChange } from './services/offlineService';
 import { TopBar } from './components/TopBar';
 import { forgetBiometric } from './services/biometric';
 import { celebrate, markCelebrated, wasCelebrated, onCelebrate, Celebration } from './services/celebrate';
@@ -51,9 +46,7 @@ export default function App() {
   );
   const [ratesError, setRatesError] = useState<string | null>(null);
 
-  const [isFrameMode, setIsFrameMode] = useState(true);
   const [isOnline, setIsOnline] = useState<boolean>(isNetworkOnline);
-  const [pendingOfflineCount, setPendingOfflineCount] = useState<number>(() => getOfflineOutbox().length);
 
   // Modals
   const [activeModal, setActiveModal] = useState<
@@ -160,11 +153,9 @@ export default function App() {
         satsBalance: w.balance,
         btcBalance: w.balance / 100_000_000,
         nonCustodialAddress: w.address,
-        nonCustodialLabel: 'In-App Lightning Sovereign Vault',
         blinkUsername: w.handle,
         blinkAddress: w.address,
         recoveryEmail: w.email || (w.emailPending ? `${w.emailPending} (unconfirmed)` : ''),
-        lastSyncedAt: Date.now(),
       }));
       // Sats that came in since the last look: the receiver's show.
       if (firstSync.current) markCelebrated(txs.map((t) => t.referenceNumber));
@@ -188,16 +179,8 @@ export default function App() {
     return () => clearInterval(interval);
   }, [syncServerWallet]);
 
-  // Set up automatic offline listeners and sync reconciliation
-  useEffect(() => {
-    const cleanup = setupOfflineSyncListeners((onlineStatus, count) => {
-      setIsOnline(onlineStatus);
-      setPendingOfflineCount(count);
-      setTransactions(getStoredTransactions());
-      setWallet(getStoredWallet());
-    });
-    return cleanup;
-  }, []);
+  // The Offline badge in the top bar.
+  useEffect(() => onNetworkChange(setIsOnline), []);
 
   const handleUpdateWallet = (updated: UserWallet) => {
     setWallet(updated);
@@ -205,7 +188,7 @@ export default function App() {
   };
 
   const handleEjectWallet = () => {
-    const ejected = ejectWallet(wallet);
+    const ejected = ejectWallet();
     setWallet(ejected);
   };
 
@@ -214,7 +197,6 @@ export default function App() {
     const wiped = wipeWallet();
     setWallet(wiped);
     setTransactions([]);
-    setPendingOfflineCount(0);
   };
 
   const handleRequireWalletAction = (action: () => void) => {
@@ -233,35 +215,17 @@ export default function App() {
     const { updatedWallet, updatedTransactions } = addTransaction(txData, wallet);
     setWallet(updatedWallet);
     setTransactions(updatedTransactions);
-    setPendingOfflineCount(getOfflineOutbox().length);
-  };
-
-  const handleManualSyncOffline = async () => {
-    await syncOfflineOutbox();
-    setPendingOfflineCount(getOfflineOutbox().length);
-    setTransactions(getStoredTransactions());
-    setWallet(getStoredWallet());
   };
 
   return (
     <div className="min-h-screen bg-[var(--yb-surface)] text-[var(--yb-on-surface)] flex flex-col items-center justify-start p-0 md:p-6 select-none font-sans">
-      {/* Outer Mobile Frame container or full width */}
-      <div
-        className={`w-full ${
-          isFrameMode
-            ? 'max-w-[440px] md:my-4 md:border md:border-[var(--yb-outline-variant)] md:rounded-[40px] md:shadow-2xl md:shadow-black/90 md:overflow-hidden bg-[var(--yb-surface)] flex flex-col min-h-screen md:min-h-[860px]'
-            : 'max-w-2xl bg-[var(--yb-surface)] flex flex-col min-h-screen'
-        }`}
-      >
+      {/* A phone-sized column, framed on wide screens */}
+      <div className="w-full max-w-[440px] md:my-4 md:border md:border-[var(--yb-outline-variant)] md:rounded-[40px] md:shadow-2xl md:shadow-black/90 md:overflow-hidden bg-[var(--yb-surface)] flex flex-col min-h-screen md:min-h-[860px]">
         {/* Top Bar with brand yebente, offline badge, and settings */}
         <TopBar
           wallet={wallet}
           onOpenWalletSettings={() => { if (!showGate) setActiveModal('wallet_settings'); }}
-          isFrameMode={isFrameMode}
-          onToggleFrameMode={() => setIsFrameMode(!isFrameMode)}
           isOnline={isOnline}
-          pendingOfflineCount={pendingOfflineCount}
-          onSyncOffline={handleManualSyncOffline}
         />
 
         {showGate ? (
@@ -290,6 +254,7 @@ export default function App() {
               rates={rates}
               onOpenWalletSettings={() => setActiveModal('wallet_settings')}
               onUpdateWallet={handleUpdateWallet}
+              onRefreshServer={syncServerWallet}
             />
           )}
 
