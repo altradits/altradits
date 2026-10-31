@@ -41,6 +41,13 @@ before(async () => {
         res.end(JSON.stringify({ remote_balance: { sat: String(inbound) } }));
         return;
       }
+      if (req.method === "GET" && req.url === "/v1/graph/info") { res.end(JSON.stringify({ num_nodes: 39893, num_channels: 116205, graph_diameter: 13, avg_out_degree: 5.83 })); return; }
+      if (req.method === "GET" && req.url === "/v1/channels?peer_alias_lookup=true") { res.end(JSON.stringify({ channels: [{ peer_alias: "Satoshi 17", chan_id: "1069527945763422208", channel_point: "bd61:0", commitment_type: "ANCHORS", initiator: false, num_updates: "87", total_satoshis_sent: "611", total_satoshis_received: "90740", commit_fee: "285", csv_delay: 353, uptime: "59699", lifetime: "61186", pending_htlcs: [] }] })); return; }
+      if (req.method === "GET" && req.url === "/v1/peers") { res.end(JSON.stringify({ peers: [{ pub_key: "03d6", inbound: false, ping_time: "329066", flap_count: 183, sat_sent: "611", sat_recv: "90740" }] })); return; }
+      if (req.method === "GET" && req.url.startsWith("/v1/payments")) { res.end(JSON.stringify({ payments: [{ status: "SUCCEEDED", value_sat: "1000", fee_sat: "2" }, { status: "FAILED", value_sat: "500", fee_sat: "0" }] })); return; }
+      if (req.method === "GET" && req.url.startsWith("/v1/invoices?")) { const t = String(Math.floor(Date.now() / 1000)); res.end(JSON.stringify({ invoices: [{ state: "SETTLED", amt_paid_sat: "2100", creation_date: t }, { state: "CANCELED", creation_date: t }, { state: "SETTLED", amt_paid_sat: "9", creation_date: "1000" }] })); return; }
+      if (req.method === "GET" && req.url.startsWith("/v1/utxos")) { res.end(JSON.stringify({ utxos: [] })); return; }
+      if (req.method === "GET" && req.url === "/v1/channels/closed") { res.end(JSON.stringify({ channels: [] })); return; }
       if (req.method === "GET" && req.url === "/v1/balance/blockchain") { res.end(JSON.stringify({ confirmed_balance: "12000", unconfirmed_balance: "500" })); return; }
       if (req.method === "GET" && req.url === "/v1/fees") { res.end(JSON.stringify({ channel_fees: [{ channel_point: "ab:0", base_fee_msat: "1000", fee_per_mil: "1" }], day_fee_sum: "0", week_fee_sum: "2", month_fee_sum: "7" })); return; }
       if (req.method === "POST" && req.url === "/v1/switch") { res.end(JSON.stringify({ forwarding_events: [{ amt_out: "50000", fee: "3" }, { amt_out: "20000", fee: "2" }] })); return; }
@@ -169,6 +176,16 @@ test("node dashboard: needs the admin token; shows block height against the tip,
   assert.deepEqual(d.details.forwards, { count: 2, volumeSats: 70000, feeSats: 5 });
   assert.equal(d.details.earned.month, 7);
   assert.deepEqual(d.chainFees, { fast: 5, normal: 3, slow: 2 });
+  // The node explorer: network, channel internals, peers, payments and invoices.
+  const X = (await call(admin.GET, "GET", "/api/admin?view=explore")).body;
+  assert.deepEqual(X.graph, { nodes: 39893, channels: 116205, diameter: 13, avgOutDegree: 5.8 });
+  assert.equal(X.channels[0].scid, "972730x1173x0", "block × transaction × output");
+  assert.equal(X.channels[0].uptimePct, 97.6);
+  assert.equal(X.channels[0].csvDelay, 353);
+  assert.deepEqual(X.peers[0], { pubkey: "03d6", inbound: false, pingMs: 329, flaps: 183, sync: "", satSent: 611, satRecv: 90740 });
+  assert.deepEqual(X.payments, { count: 2, succeeded: 1, failed: 1, sats: 1000, feeSats: 2 });
+  assert.deepEqual(X.invoices, { count: 2, settled: 1, expired: 1, sats: 2100 }, "only the last 30 days");
+  assert.deepEqual(X.utxos, { count: 0, sats: 0 });
   noNode();
   assert.equal((await call(admin.GET, "GET", "/api/admin")).body.node, null, "no node set: says so");
 });

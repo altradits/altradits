@@ -1,6 +1,7 @@
 // Admin API for Stanley's node dashboard. Every request needs
 // Authorization: Bearer <ADMIN_TOKEN>.
 //   GET  /api/admin                  -> overview: node, chain, Ye₿ente, settlement hooks, visits, system
+//   GET  /api/admin?view=explore     -> the node explorer (read-only: network, channel internals, peers, payments, invoices, coins)
 //   GET  /api/admin?view=channels    -> channels, alerts and advice (lib/channels.js)
 //   GET  /api/admin?view=liquidity   -> sending power and top-up amounts
 //   GET  /api/admin?view=topup&hash= -> a top-up's state
@@ -45,6 +46,8 @@ export async function GET(request) {
   { const g = await gate(request); if (g) return g; }
   const view = new URL(request.url).searchParams.get("view");
 
+  // The node explorer: network, channel internals, peers, payments, invoices, coins and closed channels.
+  if (view === "explore") { const { nodeExplorer } = await import("../lib/lightning.js"); const d = await settle(nodeExplorer(), 9000); return json(d || { error: "The node isn't connected." }); }
   if (view === "channels") { const { channelReport } = await import("../lib/channels.js"); try { return json(await channelReport()); } catch (err) { return json({ error: err.message }, 502); } }
   if (view === "liquidity") { const { liquidityView } = await import("../lib/channels.js"); try { return json(await liquidityView()); } catch (err) { return json({ error: err.message }, 502); } }
   if (view === "topup") {
