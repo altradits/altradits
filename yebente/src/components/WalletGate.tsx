@@ -77,7 +77,7 @@ export const WalletGate: React.FC<Props> = ({ locked, recoveryToken, onOpen, onR
   );
 
   return (
-    <div className="flex-1 flex flex-col justify-center px-5 py-8 space-y-5 max-w-sm mx-auto w-full">
+    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col [justify-content:safe_center] px-5 py-8 space-y-5 max-w-sm mx-auto w-full">
       {mode === 'unlock' && (
         <>
           <div className="text-center space-y-2">
