@@ -65,7 +65,7 @@ export function decodeLnurl(lnurlStr: string): string | null {
   }
 }
 
-import { normalizeTandoPhone, isValidTandoPhone } from './tandoService';
+import { formatKenyanPhone, isValidKenyanPhone } from './mpesaService';
 
 /**
  * Checks if input is a valid Lightning Address (user@domain.com), encoded LNURL (lnurl1...),
@@ -76,7 +76,7 @@ export function isLightningAddress(input: string): boolean {
   if (clean.startsWith('lnurl1')) {
     return true;
   }
-  if (isValidTandoPhone(clean)) {
+  if (isValidKenyanPhone(clean)) {
     return true;
   }
   const lightningRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
@@ -93,8 +93,8 @@ export async function resolveLightningAddress(
   let clean = address.trim().toLowerCase().replace(/^lightning:/i, '');
 
   // If a Kenyan phone number is entered, normalize to Tando Lightning address
-  if (isValidTandoPhone(clean)) {
-    clean = `${normalizeTandoPhone(clean)}@bitcoin.co.ke`;
+  if (isValidKenyanPhone(clean)) {
+    clean = `${formatKenyanPhone(clean)}@bitcoin.co.ke`;
   }
 
   let targetUrl: string;
