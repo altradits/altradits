@@ -245,6 +245,56 @@ async function loadSecurity() {
   $("#secHistory").innerHTML = W.history.slice().sort((a, b) => a.year - b.year).map((a) => `<div class="sm ev"><b>${esc(a.year)}: ${esc(a.name)}</b><br>${esc(a.what)}<br><b>Lesson:</b> ${esc(a.lesson)}<br><b>Our guard:</b> ${esc(a.guard)}</div>`).join("");
 }
 
+// Ye₿ente activity: deposits and transactions per wallet, most active first.
+async function loadActivity() {
+  let A; try { A = await api(`?view=activity&days=${encodeURIComponent($("#actDays").value)}`); } catch (err) { $("#actList").textContent = err.message; return; }
+  const T = A.total;
+  $("#actKpis").innerHTML = kpi("Active wallets", `${A.active} of ${A.wallets}`, "", "Wallets with at least one completed transaction in the period.")
+    + kpi("Deposits", `${num(T.deposits)} · ${satsF(T.depositSats)}`, "", "Sats received from outside: Lightning and M-Pesa buys.")
+    + kpi("Sent out", `${num(T.sends)} · ${satsF(T.sentSats)}`, "", "Payments that left Ye₿ente: Lightning and M-Pesa.")
+    + kpi("Transfers", num(T.transfers), "", "Wallet-to-wallet, counted once for each side.");
+  $("#actList").innerHTML = A.top.length ? `<table><thead><tr><th>#</th><th>Wallet</th><th>Transactions</th><th>Deposits</th><th>Sent</th><th>Transfers</th><th>Last active</th></tr></thead><tbody>${A.top.map((r, i) =>
+    `<tr><td>${i + 1}</td><td><b>${esc(r.handle)}</b>@altradits.com</td><td>${num(r.transactions)}</td><td>${num(r.deposits)} · ${esc(satsF(r.depositSats))}</td><td>${num(r.sends)} · ${esc(satsF(r.sentSats))}</td><td>${num(r.transfers)}</td><td>${esc(ago(r.lastAt))}</td></tr>`).join("")}</tbody></table>` : '<p class="muted sm">No completed transactions in this period.</p>';
+}
+$("#actDays").addEventListener("change", loadActivity);
+
+// Money received through the website: totals, by month, every payment, and a CSV for the books.
+async function loadMoney() {
+  let S; try { S = await api("?view=statement"); } catch (err) { $("#moneyList").textContent = err.message; return; }
+  $("#moneyKpis").innerHTML = kpi("Total received", satsF(S.total.sats), "", `${S.total.count} payment${S.total.count === 1 ? "" : "s"}.`)
+    + kpi("Orders", satsF(S.orders.sats), "", `${S.orders.count}, before the agency moved out.`) + kpi("Donations", satsF(S.donations.sats), "", `${S.donations.count}.`)
+    + kpi("Support (/donate)", satsF(S.support.sats), "", `${S.support.count}, paid to your node.`);
+  $("#moneyList").innerHTML = S.payments.length ? `<table><thead><tr><th>Date</th><th>What</th><th>Sats</th><th>Via</th><th>Receipt</th></tr></thead><tbody>${S.payments.map((x) =>
+    `<tr><td>${esc(String(x.at).slice(0, 10))}</td><td>${esc(x.what)}${x.payer ? `<br><span class="muted sm">${esc(x.payer)}</span>` : ""}</td><td>${esc(num(x.sats))}</td><td>${esc(x.channel)}</td><td>${esc(x.receipt || "")}</td></tr>`).join("")}</tbody></table>`
+    + (S.months.length ? `<p class="sm muted">By month: ${S.months.map((m) => `${esc(m.month)} ${esc(satsF(m.sats))}`).join(" · ")}</p>` : "") : '<p class="muted sm">No payments recorded.</p>';
+}
+async function download(path, name) {
+  const res = await fetch("/api/admin" + path, { headers: { Authorization: "Bearer " + token } });
+  if (!res.ok) { toast("Couldn't download that.", true); return; }
+  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(await res.blob()), download: name });
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+$("#moneyCsv").addEventListener("click", () => download("?view=statement&format=csv", `altradits-statement-${new Date().toISOString().slice(0, 10)}.csv`));
+
+// Stanley's first CV (23 Oct 2026), and the CV file he uploaded, if it's still on the server.
+let cvMd = "", cvNow = "", cvExt = "";
+async function loadCv() {
+  let C; try { C = await api("?view=cv"); } catch { return; }
+  cvMd = C.initial; $("#cvText").textContent = C.initial;
+  cvNow = C.current; $("#cvNowText").textContent = C.current;
+  $("#cvUp").hidden = !C.uploaded; cvExt = C.uploaded?.ext || "";
+  $("#cvNote").textContent = `Current: the open-source path. First: 23 October 2026, with the website numbers as they were then.${C.uploaded ? ` Your uploaded CV (.${C.uploaded.ext}, ${Math.round(C.uploaded.bytes / 1024)} KB) is also on the server.` : ""}`;
+}
+$("#cvDl").addEventListener("click", () => {
+  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(new Blob([cvMd], { type: "text/markdown" })), download: "stanley-cv-first.md" });
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$("#cvNow").addEventListener("click", () => {
+  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(new Blob([cvNow], { type: "text/markdown" })), download: "stanley-cv.md" });
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$("#cvUp").addEventListener("click", () => download("?view=cv&file=uploaded", `stanley-cv.${cvExt}`));
+
 async function loadEmails() {
   let E; try { E = await api("?view=emails"); } catch { return; }
   $("#emails").innerHTML = E.emails.length ? `<table><thead><tr><th>When</th><th>Kind</th><th>Subject</th><th>Status</th></tr></thead><tbody>${E.emails.slice(0, 40).map((e) => `<tr><td>${esc(ago(e.at))}</td><td>${esc(e.kind)}</td><td>${esc(e.subject)}</td><td>${esc(e.status)}</td></tr>`).join("")}</tbody></table>` : '<p class="muted sm">No emails yet.</p>';
@@ -256,6 +306,6 @@ async function load() {
   $("#login").hidden = true; $("#app").hidden = false;
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
   renderChecklist(D); renderStan(D.stan); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderVisits(D.visits); renderSystem(D); renderGlossary();
-  loadPower(); loadChannels(); loadSecurity(); loadEmails();
+  loadPower(); loadChannels(); loadSecurity(); loadEmails(); loadMoney(); loadCv(); loadActivity();
 }
 token ? load() : showLogin();

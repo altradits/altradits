@@ -6,6 +6,9 @@
 //   GET  /api/admin?view=topup&hash= -> a top-up's state
 //   GET  /api/admin?view=security    -> what was turned away, and Bitcoin's attack history
 //   GET  /api/admin?view=emails      -> the email log (a wallet email's link is never stored)
+//   GET  /api/admin?view=statement   -> money received through the website (&format=csv for the books)
+//   GET  /api/admin?view=activity&days=30 -> Ye₿ente deposits and transactions per wallet, most active first
+//   GET  /api/admin?view=cv          -> Stanley's first CV, and whether an uploaded CV file is on the server (&file=uploaded downloads it)
 //   POST { action: "stan_report" } | { action: "node_topup", sats } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
 import { json, readBody, clean, safeEqual, clientIp } from "../lib/http.js";
 import { listIds, getMany, getJSON, usingRedis, hit, peek, listArchives } from "../lib/store.js";
@@ -52,6 +55,31 @@ export async function GET(request) {
     const { securityView } = await import("../lib/attacks.js");
     const { BITCOIN_ATTACKS } = await import("../data/bitcoin-attacks.js");
     return json({ ...(await securityView()), history: BITCOIN_ATTACKS });
+  }
+  // Money received through the website, and Stanley's CV (the first version, and any file he uploaded).
+  if (view === "statement") {
+    const { statement, statementCsv } = await import("../lib/statement.js");
+    if (new URL(request.url).searchParams.get("format") === "csv") return new Response(await statementCsv(), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="altradits-statement-${new Date().toISOString().slice(0, 10)}.csv"`, "Cache-Control": "no-store" } });
+    return json(await statement());
+  }
+  if (view === "cv") {
+    const fs = await import("node:fs"), path = await import("node:path");
+    const { dataDir } = await import("../lib/store.js");
+    const md = fs.readFileSync(new URL("../data/cv-initial.md", import.meta.url), "utf8");
+    const current = fs.readFileSync(new URL("../data/cv.md", import.meta.url), "utf8");
+    const file = ["pdf", "docx", "txt", "md"].map((ext) => ({ ext, p: path.join(dataDir(), "files", `cv.${ext}`) })).find((f) => fs.existsSync(f.p));
+    if (new URL(request.url).searchParams.get("file") === "uploaded") {
+      if (!file) return json({ error: "No uploaded CV on the server." }, 404);
+      const types = { pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", txt: "text/plain", md: "text/markdown" };
+      return new Response(fs.readFileSync(file.p), { headers: { "Content-Type": types[file.ext], "Content-Disposition": `attachment; filename="stanley-cv.${file.ext}"`, "Cache-Control": "no-store" } });
+    }
+    return json({ current, initial: md, uploaded: file ? { ext: file.ext, bytes: fs.statSync(file.p).size, at: fs.statSync(file.p).mtime.toISOString() } : null });
+  }
+  // Ye₿ente deposits and transactions per wallet, most active first (for rewards).
+  if (view === "activity") {
+    const days = Math.min(3650, Math.max(0, Math.floor(Number(new URL(request.url).searchParams.get("days") ?? 30)) || 0));
+    const { walletActivity } = await import("../lib/activity.js");
+    return json(await walletActivity({ days }));
   }
   if (view === "emails") return json({ emails: (await getMany("email", await listIds("emails", 100))).map(({ text, ...e }) => e) });
 
