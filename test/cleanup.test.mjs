@@ -13,19 +13,26 @@ const store = await import("../lib/store.js");
 const { retireAgency, autoClean } = await import("../lib/cleanup.js");
 const has = async (k) => (await store.getJSON(k)) != null;
 
-test("the agency's records (test orders included) are archived, then removed, once; Ye₿ente and the logs stay", async () => {
+test("the agency's records (test orders included) and the old email log are archived, then removed, once; Ye₿ente and the security log stay", async () => {
   await store.setJSON("proposal:p1", { id: "p1", status: "paid", donation: true });
   await store.pushId("proposals", "p1");
   for (const k of ["lead:l1", "task:t1", "sub:s1", "mkt:settings", "job:j1", "learn:traj:x", "stan:instr:i1", "coupon:ABC"]) await store.setJSON(k, { k });
-  for (const k of ["yw:w1", "ywe:e1", "ywinv:h1", "email:m1", "secw:events", "ln:lessons"]) await store.setJSON(k, { k });
+  for (const k of ["yw:w1", "ywe:e1", "ywinv:h1", "secw:events", "ln:lessons"]) await store.setJSON(k, { k });
+  await store.setJSON("email:m1", { k: "old" });
   await store.pushId("emails", "m1");
+  // Visits: removed pages (va, products) are dropped; pages that still exist stay.
+  const vdir = path.join(store.dataDir(), "visits");
+  fs.mkdirSync(vdir, { recursive: true });
+  fs.writeFileSync(path.join(vdir, "2026-10-30.jsonl"), ['{"p":"home","r":"","s":""}', '{"p":"va","r":"","s":""}', '{"p":"products","r":"","s":""}', '{"p":"library","r":"","s":""}'].join("\n") + "\n");
 
   const r = await retireAgency(new Date("2026-11-01T00:00:00Z"));
-  assert.equal(r.removed, 9);
-  for (const k of ["proposal:p1", "lead:l1", "task:t1", "sub:s1", "mkt:settings", "job:j1", "learn:traj:x", "stan:instr:i1", "coupon:ABC"]) assert.equal(await has(k), false, `${k} removed`);
-  for (const k of ["yw:w1", "ywe:e1", "ywinv:h1", "email:m1", "secw:events", "ln:lessons"]) assert.equal(await has(k), true, `${k} kept`);
+  assert.equal(r.removed, 10);
+  for (const k of ["proposal:p1", "lead:l1", "task:t1", "sub:s1", "mkt:settings", "job:j1", "learn:traj:x", "stan:instr:i1", "coupon:ABC", "email:m1"]) assert.equal(await has(k), false, `${k} removed`);
+  for (const k of ["yw:w1", "ywe:e1", "ywinv:h1", "secw:events", "ln:lessons"]) assert.equal(await has(k), true, `${k} kept`);
   assert.deepEqual(await store.listIds("proposals"), []);
-  assert.deepEqual(await store.listIds("emails"), ["m1"]);
+  assert.deepEqual(await store.listIds("emails"), []);
+  assert.equal(r.visitsDropped, 2);
+  assert.deepEqual(fs.readFileSync(path.join(vdir, "2026-10-30.jsonl"), "utf8").trim().split("\n").map((l) => JSON.parse(l).p), ["home", "library"]);
 
   // Archived first, owner-only, with every record.
   const file = path.join(store.ARCHIVE(), r.archive);
