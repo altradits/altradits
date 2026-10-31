@@ -3,6 +3,9 @@
 //   GET  /api/admin                  -> overview: node, chain, Ye₿ente, settlement hooks, visits, system
 //   GET  /api/admin?view=explore     -> the node explorer (read-only: network, channel internals, peers, payments, invoices, coins)
 //   GET  /api/admin?view=pnl&days=30 -> profit and loss, and what is yours after Ye₿ente's wallet holders
+//   GET  /api/admin?view=wallets     -> every Ye₿ente wallet's balance, and your own wallets with their history
+//   GET  /api/admin?view=destinations&days=90 -> where clients' payments out of Ye₿ente go (phone numbers masked)
+//   GET  /api/admin?view=walletinvoice&hash= -> has a receive invoice been paid?
 //   GET  /api/admin?view=channels    -> channels, alerts and advice (lib/channels.js)
 //   GET  /api/admin?view=liquidity   -> sending power and top-up amounts
 //   GET  /api/admin?view=topup&hash= -> a top-up's state
@@ -10,10 +13,9 @@
 //   GET  /api/admin?view=emails      -> the email log (a wallet email's link is never stored)
 //   GET  /api/admin?view=statement   -> money received through the website (&format=csv for the books)
 //   GET  /api/admin?view=activity&days=30 -> Ye₿ente deposits and transactions per wallet, most active first
-//   GET  /api/admin?view=cv          -> Stanley's first CV, and whether an uploaded CV file is on the server (&file=uploaded downloads it)
 //   POST { action: "stan_report" } | { action: "node_topup", sats } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
 import { json, readBody, clean, safeEqual, clientIp } from "../lib/http.js";
-import { listIds, getMany, getJSON, usingRedis, hit, peek, listArchives } from "../lib/store.js";
+import { listIds, getMany, getJSON, setJSON, usingRedis, hit, peek, listArchives } from "../lib/store.js";
 import { lightningMode } from "../lib/lightning.js";
 
 function authorized(request) {
@@ -55,6 +57,28 @@ export async function GET(request) {
     const { profitLoss } = await import("../lib/pnl.js");
     return json(await profitLoss({ days }));
   }
+  // Ye₿ente: every wallet's balance, your own wallets in detail, and where clients' payments go.
+  if (view === "wallets") {
+    const { walletBalances } = await import("../lib/activity.js");
+    const { walletByHandle, history, DOMAIN } = await import("../lib/ywallet.js");
+    const mine = [];
+    for (const h of (await getJSON("admin:mywallets")) || []) {
+      const w = await walletByHandle(h);
+      if (!w) { mine.push({ handle: h, missing: true }); continue; }
+      mine.push({ handle: w.handle, address: `${w.handle}@${DOMAIN()}`, balance: Number(w.balance) || 0, createdAt: w.createdAt,
+        history: (await history(w.id, 15)).map((e) => ({ at: e.at, kind: e.kind, sats: e.sats, fee: e.fee || 0, status: e.status, counterparty: e.counterparty || "", receiptUrl: /^https:\/\//.test(e.receiptUrl || "") ? e.receiptUrl : null })) });
+    }
+    return json({ ...(await walletBalances()), mine });
+  }
+  if (view === "destinations") {
+    const days = Math.min(3650, Math.max(0, Math.floor(Number(new URL(request.url).searchParams.get("days") ?? 90)) || 0));
+    const { destinations } = await import("../lib/activity.js");
+    return json(await destinations({ days }));
+  }
+  if (view === "walletinvoice") {
+    const inv = await getJSON(`ywinv:${clean(new URL(request.url).searchParams.get("hash"), 64)}`);
+    return inv ? json({ state: inv.state, sats: inv.sats }) : json({ error: "No such invoice." }, 404);
+  }
   if (view === "channels") { const { channelReport } = await import("../lib/channels.js"); try { return json(await channelReport()); } catch (err) { return json({ error: err.message }, 502); } }
   if (view === "liquidity") { const { liquidityView } = await import("../lib/channels.js"); try { return json(await liquidityView()); } catch (err) { return json({ error: err.message }, 502); } }
   if (view === "topup") {
@@ -67,24 +91,11 @@ export async function GET(request) {
     const { BITCOIN_ATTACKS } = await import("../data/bitcoin-attacks.js");
     return json({ ...(await securityView()), history: BITCOIN_ATTACKS });
   }
-  // Money received through the website, and Stanley's CV (the first version, and any file he uploaded).
+  // Money received through the website.
   if (view === "statement") {
     const { statement, statementCsv } = await import("../lib/statement.js");
     if (new URL(request.url).searchParams.get("format") === "csv") return new Response(await statementCsv(), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="altradits-statement-${new Date().toISOString().slice(0, 10)}.csv"`, "Cache-Control": "no-store" } });
     return json(await statement());
-  }
-  if (view === "cv") {
-    const fs = await import("node:fs"), path = await import("node:path");
-    const { dataDir } = await import("../lib/store.js");
-    const md = fs.readFileSync(new URL("../data/cv-initial.md", import.meta.url), "utf8");
-    const current = fs.readFileSync(new URL("../data/cv.md", import.meta.url), "utf8");
-    const file = ["pdf", "docx", "txt", "md"].map((ext) => ({ ext, p: path.join(dataDir(), "files", `cv.${ext}`) })).find((f) => fs.existsSync(f.p));
-    if (new URL(request.url).searchParams.get("file") === "uploaded") {
-      if (!file) return json({ error: "No uploaded CV on the server." }, 404);
-      const types = { pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", txt: "text/plain", md: "text/markdown" };
-      return new Response(fs.readFileSync(file.p), { headers: { "Content-Type": types[file.ext], "Content-Disposition": `attachment; filename="stanley-cv.${file.ext}"`, "Cache-Control": "no-store" } });
-    }
-    return json({ current, initial: md, uploaded: file ? { ext: file.ext, bytes: fs.statSync(file.p).size, at: fs.statSync(file.p).mtime.toISOString() } : null });
   }
   // Ye₿ente deposits and transactions per wallet, most active first (for rewards).
   if (view === "activity") {
@@ -137,6 +148,29 @@ export async function POST(request) {
   if (body.action === "node_topup") {
     const { startTopup } = await import("../lib/channels.js");
     try { return json(await startTopup(body.sats)); } catch (err) { return json({ error: err.message }, err.status || 502); }
+  }
+  // Your wallets: a list of handles you keep an eye on, and invoices to receive into them.
+  // Sending needs the wallet's PIN on a trusted device, so it happens in the Ye₿ente app, never here.
+  if (body.action === "my_wallet_add" || body.action === "my_wallet_remove") {
+    const h = clean(body.handle, 40).toLowerCase().replace(/@.*$/, "");
+    const list = (await getJSON("admin:mywallets")) || [];
+    if (body.action === "my_wallet_add") {
+      const { walletByHandle } = await import("../lib/ywallet.js");
+      if (!(await walletByHandle(h))) return json({ error: "No Ye₿ente wallet with that handle." }, 404);
+      if (!list.includes(h)) list.push(h);
+    }
+    await setJSON("admin:mywallets", body.action === "my_wallet_add" ? list : list.filter((x) => x !== h));
+    return json({ ok: true });
+  }
+  if (body.action === "wallet_invoice") {
+    const h = clean(body.handle, 40).toLowerCase();
+    if (!((await getJSON("admin:mywallets")) || []).includes(h)) return json({ error: "Add the wallet to your list first." }, 400);
+    const { walletByHandle, invoiceFor } = await import("../lib/ywallet.js");
+    const { qrSvg } = await import("../lib/lightning.js");
+    try {
+      const r = await invoiceFor(await walletByHandle(h), body.sats, { memo: "Ye₿ente payment" });
+      return json({ ...r, qr: await qrSvg(`lightning:${r.invoice}`.toUpperCase()) });
+    } catch (err) { return json({ error: err.message }, err.status || 400); }
   }
   if (body.action === "stan_report") {
     const { sendStanReport } = await import("../lib/stan.js");

@@ -87,11 +87,27 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
 .tabs button{flex:none;border:2px solid var(--line);background:var(--paper);border-radius:99px;padding:.45rem 1rem;font:600 .93rem Figtree,sans-serif;cursor:pointer;min-height:2.6rem;color:var(--ink)}
 .tabs button[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:#fff}
 .pane{display:none}.pane.on{display:block}
+button.pill{cursor:pointer;font-family:inherit}
 .pill{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .8rem;border-radius:99px;font-weight:700;font-size:.88rem;background:color-mix(in srgb,var(--ok) 15%,white);color:var(--ok);border:2px solid color-mix(in srgb,var(--ok) 45%,white)}
 .pill.bad{background:color-mix(in srgb,var(--crit) 12%,white);color:var(--crit);border-color:color-mix(in srgb,var(--crit) 40%,white)}
 .see{margin:-.2rem 0 .6rem;color:var(--muted)}
 body.quiet .see{display:none}
 .sub{font-size:1rem;margin:1rem 0 .5rem}
+.h{color:var(--btc-text);font-weight:700}
+.minew{border:2px solid var(--line);border-radius:.9rem;padding:.8rem 1rem;margin-top:.8rem}
+.minew h3{font-size:1.05rem}
+.linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--blue);text-decoration:underline;cursor:pointer}
+dialog{width:min(30rem,calc(100vw - 2rem));border:2px solid var(--ink);border-radius:1rem;padding:1.2rem}
+@media print{body>*:not(#rcpt){display:none!important}#rcpt{position:static;border:0;width:auto}#rcpt .row{display:none}}
+dialog::backdrop{background:rgba(15,27,45,.45)}
+.alerts{position:absolute;left:0;top:calc(100% + .4rem);z-index:20;width:min(26rem,calc(100vw - 2rem));background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:.8rem;box-shadow:0 10px 30px rgba(15,27,45,.18)}
+.alerts h3{font-size:1rem;margin:0 0 .5rem}
+.alerts ul{list-style:none;padding:0;margin:0;display:grid;gap:.4rem}
+.alerts a{display:block;padding:.55rem .7rem;border-radius:.6rem;text-decoration:none;color:var(--ink);border:1px solid var(--line)}
+.alerts a:hover{border-color:var(--blue)}
+.alerts .lv{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.alerts .crit{color:var(--crit)}.alerts .warn{color:var(--warn)}
+.flash{outline:3px solid var(--btc);outline-offset:4px;transition:outline-color 2s}
 .sel{width:auto;padding:.4rem .6rem;border:2px solid var(--line);border-radius:.6rem;font:inherit;background:var(--paper)}
 .ksh{display:block;font:600 .85rem Figtree,sans-serif;color:var(--muted);margin-top:.1rem}
 #verify td code{white-space:pre-wrap;word-break:break-all}
@@ -114,11 +130,11 @@ body.quiet .see{display:none}
 
 <div class="wrap" id="app" hidden>
   <header>
-    <div class="brand"><a href="/"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><h1>Node dashboard</h1><span class="pill" id="health" role="status">Checking…</span></div>
+    <div class="brand"><a href="/"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><h1>Node dashboard</h1><span style="position:relative"><button type="button" class="pill" id="health" aria-expanded="false" aria-controls="alerts">Checking…</button><div class="alerts" id="alerts" hidden><h3>What needs you</h3><ul id="alertList"></ul></div></span></div>
     <div class="row"><label class="switch"><input type="checkbox" id="explain" checked> Explain everything</label><span class="sm muted" id="checked"></span><button type="button" class="btn" id="refresh">Refresh</button><button type="button" class="btn" id="logout">Sign out</button></div>
   </header>
 
-  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="learn">Learn</button><button type="button" data-tab="you">You</button></nav>
+  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="learn">Learn</button></nav>
   <div class="pane" data-pane="overview">
   <section class="panel" aria-labelledby="hCheck">
     <h2 id="hCheck">Today's checklist</h2>
@@ -252,6 +268,53 @@ body.quiet .see{display:none}
   </div>
 
   <div class="pane" data-pane="yebente">
+  <section class="panel" aria-labelledby="hMine">
+    <h2 id="hMine">Your wallets</h2>
+    <div class="learn">
+      <p><b>How a custodial wallet works:</b> the sats sit on your node. A wallet is a record of how many of them belong to someone.</p>
+      <p><b>Receiving</b> makes an invoice on your node for that wallet. When it's paid, the node has more sats and the wallet's record goes up by the same amount.</p>
+      <p><b>Sending</b> pays from the node and takes the amount (plus the real routing fee) off the record. It always needs the wallet's PIN on a trusted phone, so it happens in the Ye₿ente app, never with this admin token.</p>
+    </div>
+    <div class="row"><input id="mineHandle" placeholder="Handle, e.g. stan" aria-label="Wallet handle" style="max-width:16rem"><button type="button" class="btn" id="mineAdd">Add to my list</button><a class="btn primary" href="/yebente#create" target="_blank" rel="noopener">Create a new wallet</a><a class="btn" href="/yebente#login" target="_blank" rel="noopener">Open Ye₿ente to send</a></div>
+    <div id="mineList"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="hCreate">
+    <h2 id="hCreate">Create a wallet, for you or someone else</h2>
+    <ol class="flow">
+      <li><b>For you:</b> press <i>Create a new wallet</i>. Choose a handle (it becomes handle@altradits.com) and a 6-digit PIN. Write the 12 recovery words on paper. Then add the handle above to watch it here.</li>
+      <li><b>For someone else:</b> open the link on <i>their</i> phone, or in a private window, and let them choose the PIN. Give them the 12 words on paper, then close the window. Only add it to your list if they agree.</li>
+      <li><b>Receive:</b> share handle@altradits.com, or press <i>Receive</i> below to make a QR for an exact amount.</li>
+      <li><b>Send:</b> in the Ye₿ente app, with the PIN or fingerprint. To M-Pesa through <i>Send Mobile</i>.</li>
+    </ol>
+  </section>
+
+  <section class="panel" aria-labelledby="hCli">
+    <h2 id="hCli">Try it from the command line, and watch the dashboard change</h2>
+    <div class="learn"><p>Receive 21 sats into your wallet step by step, and see where each step shows up. Uses the <code>ln-ro</code> shortcut from Learn → Verify. If <code>curl</code> is refused (403), open the same address in the browser.</p></div>
+    <ol class="flow" id="cliSteps">
+      <li>Ask your Lightning address what it accepts:<br><code>curl -s https://altradits.com/.well-known/lnurlp/<span class="h">HANDLE</span> | jq '{callback, minSendable, maxSendable}'</code><br><span class="muted sm">Amounts are in millisats: 1 sat = 1,000 msat.</span></li>
+      <li>Ask the callback for an invoice of 21 sats (21,000 msat):<br><code>curl -s "<span class="muted">CALLBACK</span>?amount=21000" | jq -r .pr</code><br><span class="muted sm">Dashboard: Ye₿ente → Open invoices goes up by 1.</span></li>
+      <li>Read the invoice your node made:<br><code>ln-ro decodepayreq <span class="muted">INVOICE</span> | jq '{destination, num_satoshis, expiry}'</code><br><span class="muted sm">The destination is your node's public key (Node &amp; network tab).</span></li>
+      <li>Pay it from another wallet (your phone). Then check the node:<br><code>ln-ro listinvoices --max_invoices 1 | jq '.invoices[0] | {state, amt_paid_sat}'</code><br><span class="muted sm">State becomes SETTLED.</span></li>
+      <li>Within 2 minutes, refresh this page: the wallet's balance goes up by 21 sats, <i>Owed to wallets</i> rises, and <code>ln-ro channelbalance</code> shows 21 more on your side.</li>
+    </ol>
+  </section>
+
+  <section class="panel" aria-labelledby="hAll">
+    <h2 id="hAll">All wallet balances</h2>
+    <div class="learn"><p>What each wallet holds. Together this is <b>Owed to wallets</b>: sats on your node that belong to other people.</p></div>
+    <div class="kpis" id="allKpis"></div>
+    <div id="allList" class="scroll"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="hDest">
+    <h2 id="hDest">Where clients' money goes</h2>
+    <div class="learn"><p>External wallets and M-Pesa numbers that received payments from Ye₿ente wallets (phone numbers are partly hidden). M-Pesa payouts have a receipt from the payout partner.</p></div>
+    <div class="row"><label for="destDays" class="sm"><b>Period</b></label><select id="destDays" class="sel"><option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="0">All time</option></select></div>
+    <div id="destList" class="scroll" style="margin-top:.6rem"></div>
+  </section>
+
   <section class="panel" aria-labelledby="hYb">
     <h2 id="hYb">6. Ye₿ente and how payments reach the node</h2>
     <div class="learn">
@@ -322,34 +385,10 @@ body.quiet .see{display:none}
   </section>
   </div>
 
-  <div class="pane" data-pane="you">
-  <section class="panel" aria-labelledby="hCv">
-    <h2 id="hCv">Your CV</h2>
-    <p class="sm muted" id="cvNote"></p>
-    <div class="row"><button type="button" class="btn primary" id="cvNow">Download current CV (.md)</button><button type="button" class="btn" id="cvDl">Download first CV (.md)</button><button type="button" class="btn" id="cvUp" hidden>Download uploaded CV</button></div>
-    <details style="margin-top:.6rem"><summary class="sm"><b>Read the current CV</b></summary><pre id="cvNowText" style="white-space:pre-wrap;font:inherit;font-size:.92rem;margin:.6rem 0 0"></pre></details>
-    <details style="margin-top:.2rem"><summary class="sm"><b>Read the first CV</b></summary><pre id="cvText" style="white-space:pre-wrap;font:inherit;font-size:.92rem;margin:.6rem 0 0"></pre></details>
-  </section>
-  <div class="grid2">
-    <section class="panel" aria-labelledby="hVisits">
-      <h2 id="hVisits">Visits</h2>
-      <div id="visits" class="scroll"></div>
-    </section>
-    <section class="panel" aria-labelledby="hMail">
-      <h2 id="hMail">Emails sent</h2>
-      <div id="emails" class="scroll"></div>
-    </section>
-  </div>
-  <section class="panel" aria-labelledby="hSys">
-    <h2 id="hSys">System</h2>
-    <dl id="system"></dl>
-    <h3 style="font-size:1rem;margin-top:1rem">Archive files</h3>
-    <div id="archives"></div>
-  </section>
-  </div>
 
 </div>
+<dialog id="rcpt" aria-labelledby="rcptTitle"><h2 id="rcptTitle" style="font-size:1.15rem">Receipt</h2><dl id="rcptBody" style="margin:.8rem 0"></dl><div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn primary" id="rcptClose">Close</button></div></dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=pnl2"></script>
+<script type="module" src="/assets/admin.js?v=wallets2"></script>
 </body>
 </html>
