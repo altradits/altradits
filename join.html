@@ -58,8 +58,8 @@ textarea{min-height:6rem;resize:vertical}
 .topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap}
 .topnav a:hover{color:var(--ink)}
 @media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
-/* Narrow phones: the menu moves under the logo instead of spilling off the screen */
-@media (max-width:420px){.top{flex-wrap:wrap;row-gap:.35rem}}
+/* When space runs out, the menu moves under the logo (and wraps) instead of spilling off the screen */
+.top{flex-wrap:wrap;row-gap:.35rem}.topnav{flex-wrap:wrap;row-gap:.2rem}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 /* Hero: the same on every page — headline, one line, at most one button. No motion anywhere. */
 .hero{position:static;display:block;max-width:none;margin:0;padding:2.25rem 0 2rem}
@@ -78,7 +78,7 @@ a:hover,.btn:hover,button:hover{transform:none!important}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/yebente#create">Wallet</a></nav></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/yebente#create">Wallet</a><a href="/bitcoin-core">Bitcoin Core</a></nav></div>
   <header class="hero">
     <h1>Join the <em>Altradits team.</em></h1>
     <p class="lead">Remote, flexible work for skilled assistants anywhere. We bring the clients and a clear brief.</p>
