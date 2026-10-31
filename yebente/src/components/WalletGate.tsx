@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Fingerprint, Lock, ArrowLeft, Download, Eye } from 'lucide-react';
+import { Fingerprint, Lock, ArrowLeft, Download, Eye, Copy, Check, Share2 } from 'lucide-react';
 import {
   needsMove, unlockServerWallet, moveToDeviceKey, startLogin, finishLogin, createServerWallet,
   restoreServerWallet, requestEmailRecovery, finishEmailRecovery, forgetServerWallet,
 } from '../services/altraditsWallet';
 import { biometricOn, approveUnlock } from '../services/biometric';
-import { downloadRecoveryCard } from '../services/recoveryCard';
+import { downloadRecoveryCard, shareRecoveryCard, canShareCard } from '../services/recoveryCard';
 
 // The screen before the wallet. One secret for people: the 6-digit PIN (or the
 // fingerprint once it's on). Log in comes first; recovery is only for a lost
@@ -49,6 +49,8 @@ export const WalletGate: React.FC<Props> = ({ locked, recoveryToken, onOpen, onR
   const [newAddress, setNewAddress] = useState('');
   const [wordsVisible, setWordsVisible] = useState(false);
   const [wroteDown, setWroteDown] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
@@ -175,6 +177,18 @@ export const WalletGate: React.FC<Props> = ({ locked, recoveryToken, onOpen, onR
           </button>
           {!wordsVisible && <p className="text-xs text-[var(--yb-on-surface-variant)] flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> Tap to show (make sure nobody is watching)</p>}
           <button type="button" className={secondary} onClick={() => downloadRecoveryCard({ address: newAddress, phrase: newWords })}><Download className="w-4 h-4" /> Save as a card to print</button>
+          {/* Only here, while setting up: help people get the words somewhere safe. */}
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" className={secondary} onClick={async () => {
+              try { await navigator.clipboard.writeText(newWords); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* clipboard blocked */ }
+            }}>{copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} Copy</button>
+            {canShareCard() && (
+              <button type="button" className={secondary} onClick={async () => setShared(await shareRecoveryCard({ address: newAddress, phrase: newWords }))}>
+                {shared ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />} Share
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-[var(--yb-on-surface-variant)]">Copy or share only to somewhere you alone control (your own notes or saved messages). Anyone who sees these words can take your sats.</p>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={wroteDown} onChange={(e) => setWroteDown(e.target.checked)} /> I've written them down</label>
           <button type="button" className={primary} disabled={!wroteDown} onClick={() => { setNewWords(''); onOpen(); }}>Open my wallet</button>
         </>
