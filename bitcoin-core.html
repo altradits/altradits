@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<link rel="canonical" href="https://altradits.com/bitcoin-core">
+<title>Set up Bitcoin Core: step by step for Windows, macOS and Linux · Altradits</title>
+<meta name="description" content="Install and run your own Bitcoin node with Bitcoin Core 32.1: download and verify, or build from source, on Windows, macOS and Linux. Exact commands, what you should see at each step, and links to the official sources.">
+<link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"HowTo","name":"How to set up Bitcoin Core","step":[{"@type":"HowToStep","name":"Check your computer","url":"https://altradits.com/bitcoin-core#before"},{"@type":"HowToStep","name":"Download and verify Bitcoin Core, or build it from source","url":"https://altradits.com/bitcoin-core#download"},{"@type":"HowToStep","name":"Start the node and let it synchronize","url":"https://altradits.com/bitcoin-core#first-run"},{"@type":"HowToStep","name":"Configure it safely","url":"https://altradits.com/bitcoin-core#config"}]}</script>
+<style>
+/* Brand fonts, served from this site: Bricolage Grotesque and Figtree (SIL Open Font License 1.1, https://openfontlicense.org), latin and latin-ext (₿), variable weight */
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0;padding:1.1rem 0}
+.top img{height:2.5rem;width:auto;display:block}
+.topnav{display:flex;gap:1.1rem}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap}
+.topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
+@media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
+/* Narrow phones: the menu moves under the logo instead of spilling off the screen */
+@media (max-width:420px){.top{flex-wrap:wrap;row-gap:.35rem}}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.hero{padding:2.25rem 0 2rem}
+.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:44rem}
+.hero h1 em{font-style:normal;color:var(--btc-text)}
+.lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:36rem}
+.ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
+.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none}
+.btn.ghost{background:transparent;border-color:var(--ink)}
+h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:2.2rem 0 .4rem}
+.intro{color:var(--muted);margin:0 0 1.2rem;max-width:40rem}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:2rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.6rem 0}
+*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+
+.wrap.read > :not(.top){max-width:46rem}
+h3{font:800 1.15rem 'Bricolage Grotesque',sans-serif;margin:1.4rem 0 .4rem}
+pre{background:#0F1B2D;color:#E8EEF6;border-radius:.7rem;padding:.8rem 1rem;overflow-x:auto;font:400 .86rem/1.5 ui-monospace,Menlo,Consolas,monospace;margin:.5rem 0 .9rem}
+pre .out{color:#9FB3C8}
+code{font:600 .9em ui-monospace,Menlo,Consolas,monospace;background:#fff;border:1px solid var(--line);border-radius:.3rem;padding:0 .25rem}
+pre code{background:none;border:0;padding:0;font:inherit}
+.paths{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.8rem;margin:.6rem 0 1rem}
+.paths a{display:block;background:var(--paper);border:2px solid var(--ink);border-radius:.9rem;padding:.9rem 1rem;text-decoration:none;color:var(--ink)}
+.paths a b{display:block;font:800 1.05rem 'Bricolage Grotesque',sans-serif}
+.paths a span{color:var(--muted);font-size:.93rem}
+details.os{background:var(--paper);border:2px solid var(--line);border-radius:.9rem;padding:.2rem 1rem;margin:.6rem 0}
+details.os[open]{border-color:var(--ink)}
+details.os > summary{font:800 1.05rem 'Bricolage Grotesque',sans-serif;cursor:pointer;min-height:2.9rem;display:flex;align-items:center}
+ol.howto{padding-left:1.2rem}
+ol.howto > li{margin:.5rem 0 .9rem}
+.expect{border-left:4px solid var(--ok);background:#fff;padding:.5rem .8rem;margin:.4rem 0 .9rem;border-radius:0 .5rem .5rem 0}
+.expect b{color:var(--ok)}
+.warn{border-left:4px solid var(--btc);background:#fff;padding:.5rem .8rem;margin:.4rem 0 .9rem;border-radius:0 .5rem .5rem 0}
+table{border-collapse:collapse;width:100%;margin:.5rem 0 1rem;font-size:.95rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:.45rem .5rem;vertical-align:top}
+.toc{columns:2;column-gap:2rem;padding-left:1.2rem}
+@media (max-width:560px){.toc{columns:1}}
+.links li{margin:.3rem 0}
+</style>
+</head>
+<body>
+<div class="wrap read">
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/yebente#create">Wallet</a></nav></div>
+
+  <header class="hero">
+    <h1>Run your own Bitcoin node, <em>step by step.</em></h1>
+    <p class="lead">Install Bitcoin Core 32.1 on Windows, macOS or Linux: download and verify it, or build it from source. Exact commands, what you should see at each step, and links to the official sources only.</p>
+  </header>
+
+  <p><b>Why bother?</b> A node downloads every block and checks every rule itself. You stop trusting anyone else's word about which payments are real: "don't trust, verify". Bitcoin Core is the reference software, written in the open at <a href="https://github.com/bitcoin/bitcoin">github.com/bitcoin/bitcoin</a> and released at <a href="https://bitcoincore.org">bitcoincore.org</a>.</p>
+
+  <h2>On this page</h2>
+  <ol class="toc">
+    <li><a href="#before">Before you start</a></li>
+    <li><a href="#download">Path A: download and verify</a></li>
+    <li><a href="#build">Path B: build from source</a></li>
+    <li><a href="#first-run">First run: what to expect</a></li>
+    <li><a href="#config">Configure it safely</a></li>
+    <li><a href="#practice">Practise without real money</a></li>
+    <li><a href="#safe">Keep your node safe</a></li>
+    <li><a href="#trouble">If something goes wrong</a></li>
+    <li><a href="#sources">Official sources</a></li>
+  </ol>
+
+  <h2 id="before">1. Before you start</h2>
+  <table>
+    <tr><th>Your system</th><td>Windows 10 (version 1903) or newer, macOS 14 or newer, or Linux (kernel 3.17 or newer), as tested for this release (<a href="https://bitcoincore.org/en/releases/32.1/">release notes</a>).</td></tr>
+    <tr><th>Disk</th><td>Over 750 GB for the whole chain, on a fast disk (an SSD helps a lot). Short on space? Pruning keeps only recent blocks, about 7 GB, and still checks everything (<a href="https://bitcoin.org/en/full-node#reduce-storage">bitcoin.org</a>).</td></tr>
+    <tr><th>Memory</th><td>2 GB or more. Building from source needs at least 1.5 GB free while compiling.</td></tr>
+    <tr><th>Internet</th><td>Several hundred GB downloaded the first time; afterwards about 20 GB a month down, and possibly 200 GB or more up (<a href="https://bitcoin.org/en/full-node#minimum-requirements">bitcoin.org</a>).</td></tr>
+    <tr><th>Time</th><td>Install: 10 minutes. First sync: hours to days, depending on your disk and connection. The node can stop and resume any time.</td></tr>
+  </table>
+  <p>Pick one path:</p>
+  <div class="paths">
+    <a href="#download"><b>Path A: download and verify</b><span>For most people. The ready-made app, checked against the developers' signatures. 15 minutes.</span></a>
+    <a href="#build"><b>Path B: build from source</b><span>For developers and learners. You compile the code you can read. 30–60 minutes.</span></a>
+  </div>
+
+  <h2 id="download">2. Path A: download and verify</h2>
+  <p>Download only from <a href="https://bitcoincore.org/en/download/">bitcoincore.org/en/download</a>. For every system you need three files from <a href="https://bitcoincore.org/bin/bitcoin-core-32.1/">the 32.1 folder</a>: your download, <code>SHA256SUMS</code> (the list of correct fingerprints) and <code>SHA256SUMS.asc</code> (the developers' signatures on that list). Put all three in one folder.</p>
+
+  <details class="os" id="download-windows"><summary>Windows</summary>
+    <ol class="howto">
+      <li><b>Download</b> <a href="https://bitcoincore.org/bin/bitcoin-core-32.1/bitcoin-32.1-win64-setup.exe">bitcoin-32.1-win64-setup.exe</a>, <a href="https://bitcoincore.org/bin/bitcoin-core-32.1/SHA256SUMS">SHA256SUMS</a> and <a href="https://bitcoincore.org/bin/bitcoin-core-32.1/SHA256SUMS.asc">SHA256SUMS.asc</a>.</li>
+      <li><b>Check the file matches the official list.</b> In PowerShell, in your Downloads folder:
+<pre><code>certUtil -hashfile bitcoin-32.1-win64-setup.exe SHA256
+type SHA256SUMS</code></pre>
+<div class="expect"><b>Expect:</b> certUtil prints a 64-character hash. Find the line ending in <code>bitcoin-32.1-win64-setup.exe</code> in SHA256SUMS: the hash on that line must be exactly the same. If it differs, delete the download and stop.</div></li>
+<li><b>Check who signed the list</b> (recommended, essential for real money). Install <a href="https://www.gpg4win.org/">Gpg4win</a> (GnuPG for Windows), download the builders' keys from <a href="https://github.com/bitcoin-core/guix.sigs/tree/main/builder-keys">guix.sigs/builder-keys</a>, import them and verify:
+<pre><code>gpg --import fanquake.gpg
+gpg --verify SHA256SUMS.asc SHA256SUMS</code></pre>
+<div class="expect"><b>Expect:</b> several lines <code>gpg: Good signature from "…"</code>, one per builder whose key you imported. For fanquake's key the line <code>Primary key fingerprint: E777 299F C265 DD04 7930 70EB 944D 35F9 AC3D B76A</code>. A warning that the key "is not certified with a trusted signature" is normal. "BAD signature" means stop.</div></li>
+      <li><b>Install:</b> double-click the setup file and follow the installer.
+        <div class="expect"><b>Expect:</b> "Bitcoin Core" in your Start menu.</div></li>
+      <li><b>Open Bitcoin Core.</b> Continue at <a href="#first-run">First run</a>.</li>
+    </ol>
+  </details>
+
+  <details class="os" id="download-macos"><summary>macOS</summary>
+    <ol class="howto">
+      <li><b>Check your Mac:</b> Apple menu → About This Mac. "Apple M…" chip: download <a href="https://bitcoincore.org/bin/bitcoin-core-32.1/bitcoin-32.1-arm64-apple-darwin.zip">bitcoin-32.1-arm64-apple-darwin.zip</a>. "Intel" processor: <a href="https://bitcoincore.org/bin/bitcoin-core-32.1/bitcoin-32.1-x86_64-apple-darwin.zip">bitcoin-32.1-x86_64-apple-darwin.zip</a>. Also download <a href="https://bitcoincore.org/bin/bitcoin-core-32.1/SHA256SUMS">SHA256SUMS</a> and <a href="https://bitcoincore.org/bin/bitcoin-core-32.1/SHA256SUMS.asc">SHA256SUMS.asc</a>.</li>
+      <li><b>Check the file matches the official list.</b> In Terminal, in the folder with the three files:
+<pre><code>shasum -a 256 --ignore-missing --check SHA256SUMS</code></pre>
+<div class="expect"><b>Expect:</b> <code>bitcoin-32.1-arm64-apple-darwin.zip: OK</code> (your file name). "FAILED" means delete the download and stop.</div></li>
+<li><b>Check who signed the list</b> (recommended, essential for real money). Install GnuPG with <a href="https://brew.sh">Homebrew</a>: <code>brew install gnupg</code>. Then import the builders' keys and verify:
+<pre><code>git clone https://github.com/bitcoin-core/guix.sigs
+gpg --import guix.sigs/builder-keys/*
+gpg --verify SHA256SUMS.asc SHA256SUMS</code></pre>
+<div class="expect"><b>Expect:</b> several lines <code>gpg: Good signature from "…"</code>, one per builder. A warning that a key "is not certified with a trusted signature" is normal: it means you haven't personally vouched for that person. "BAD signature" means stop.</div></li>
+      <li><b>Install:</b> unzip the file and drag <b>Bitcoin-Qt</b> into Applications.
+        <div class="expect"><b>Expect:</b> Bitcoin-Qt in your Applications folder.</div></li>
+      <li><b>Open Bitcoin-Qt.</b> Continue at <a href="#first-run">First run</a>.</li>
+    </ol>
+  </details>
+
+  <details class="os" id="download-linux"><summary>Linux</summary>
+    <ol class="howto">
+      <li><b>Download</b> for your processor (<code>uname -m</code> tells you): <a href="https://bitcoincore.org/bin/bitcoin-core-32.1/bitcoin-32.1-x86_64-linux-gnu.tar.gz">x86_64</a> or <a href="https://bitcoincore.org/bin/bitcoin-core-32.1/bitcoin-32.1-aarch64-linux-gnu.tar.gz">aarch64</a> (e.g. Raspberry Pi 4/5 with a 64-bit system), plus <a href="https://bitcoincore.org/bin/bitcoin-core-32.1/SHA256SUMS">SHA256SUMS</a> and <a href="https://bitcoincore.org/bin/bitcoin-core-32.1/SHA256SUMS.asc">SHA256SUMS.asc</a>.</li>
+      <li><b>Check the file matches the official list.</b> In Terminal, in the folder with the three files:
+<pre><code>sha256sum --ignore-missing --check SHA256SUMS</code></pre>
+<div class="expect"><b>Expect:</b> <code>bitcoin-32.1-x86_64-linux-gnu.tar.gz: OK</code> (your file name). "FAILED" means delete the download and stop.</div></li>
+<li><b>Check who signed the list</b> (recommended, essential for real money). GnuPG is usually installed already (<code>gpg --version</code>); if not: <code>sudo apt install gnupg</code>. Then import the builders' keys and verify:
+<pre><code>git clone https://github.com/bitcoin-core/guix.sigs
+gpg --import guix.sigs/builder-keys/*
+gpg --verify SHA256SUMS.asc SHA256SUMS</code></pre>
+<div class="expect"><b>Expect:</b> several lines <code>gpg: Good signature from "…"</code>, one per builder. A warning that a key "is not certified with a trusted signature" is normal: it means you haven't personally vouched for that person. "BAD signature" means stop.</div></li>
+      <li><b>Install:</b>
+<pre><code>tar xzf bitcoin-32.1-x86_64-linux-gnu.tar.gz      # aarch64: use that file's name
+sudo install -m 0755 -o root -g root -t /usr/local/bin bitcoin-32.1/bin/*</code></pre>
+        <div class="expect"><b>Expect:</b> <code>bitcoind --version</code> prints <code>Bitcoin Core daemon version v32.1</code>.</div></li>
+      <li><b>Start it:</b> <code>bitcoin-qt</code> for the window, or <code>bitcoind -daemon</code> for a background node. Continue at <a href="#first-run">First run</a>.</li>
+    </ol>
+  </details>
+
+  <h2 id="build">3. Path B: build from source</h2>
+  <p>You compile the exact code published on GitHub. Always build a <b>release tag</b> (here <code>v32.1</code>), never an untested branch, for real money. The official guides: <a href="https://github.com/bitcoin/bitcoin/blob/v32.1/doc/build-windows-msvc.md">Windows</a>, <a href="https://github.com/bitcoin/bitcoin/blob/v32.1/doc/build-osx.md">macOS</a>, <a href="https://github.com/bitcoin/bitcoin/blob/v32.1/doc/build-unix.md">Linux</a>.</p>
+
+  <h3>Get the code and verify the tag (every system)</h3>
+<pre><code>git clone https://github.com/bitcoin/bitcoin.git
+cd bitcoin
+git checkout v32.1</code></pre>
+  <div class="expect"><b>Expect:</b> <code>HEAD is now at …</code>. <code>git status</code> says <code>HEAD detached at v32.1</code>.</div>
+  <p>The tag is signed by the release manager. With GnuPG and the builders' keys imported (see Path A):</p>
+<pre><code>git verify-tag v32.1</code></pre>
+  <div class="expect"><b>Expect:</b> <code>gpg: Good signature from "…"</code>.</div>
+  <div class="warn"><b>No GnuPG?</b> Compare <code>git rev-parse v32.1^{commit}</code> with the commit shown on <a href="https://github.com/bitcoin/bitcoin/releases/tag/v32.1">GitHub's v32.1 page</a> (which shows a "Verified" badge) and confirm the release on <a href="https://bitcoincore.org/en/releases/32.1/">bitcoincore.org</a>. That cross-check is fine for practice; for real money, do the signature check once.</div>
+
+  <details class="os" id="build-windows"><summary>Windows (Visual Studio)</summary>
+    <ol class="howto">
+      <li><b>Install the tools</b>: Visual Studio 2026 (version 18.3 or later) with the "Desktop development with C++" workload, which includes CMake, vcpkg and Git. From PowerShell:
+<pre><code>winget install --id Microsoft.VisualStudio.Community --override "--wait --quiet --add Microsoft.VisualStudio.Workload.NativeDesktop --add Microsoft.VisualStudio.Component.Git --includeRecommended"
+winget install python3</code></pre></li>
+      <li><b>Open "Developer PowerShell for VS"</b> and get the code as above.</li>
+      <li><b>Configure and build</b> (with the window app):
+<pre><code>cmake -B build --preset vs2026-static
+cmake --build build --config Release
+ctest --test-dir build --build-config Release</code></pre>
+        Without the window app: <code>cmake -B build --preset vs2026 -DBUILD_GUI=OFF</code>.
+        <div class="expect"><b>Expect:</b> the last test line says <code>100% tests passed</code>. The programs are under <code>build\bin</code>.</div></li>
+      <li>Error "path is too long" or "paths with embedded space": see the troubleshooting at the end of the <a href="https://github.com/bitcoin/bitcoin/blob/v32.1/doc/build-windows-msvc.md">official Windows guide</a>.</li>
+    </ol>
+  </details>
+
+  <details class="os" id="build-macos"><summary>macOS</summary>
+    <ol class="howto">
+      <li><b>Install the tools:</b> Xcode Command Line Tools 16.2 or newer, then <a href="https://brew.sh">Homebrew</a>:
+<pre><code>xcode-select --install
+brew install cmake boost capnp
+brew install qt@6 qrencode      # only for the window app</code></pre></li>
+      <li><b>Get the code</b> as above, then <b>configure and build</b>:
+<pre><code>cmake -B build -DBUILD_GUI=ON          # leave out -DBUILD_GUI=ON for no window app
+cmake --build build -j $(sysctl -n hw.ncpu)
+ctest --test-dir build -j $(sysctl -n hw.ncpu)</code></pre>
+        <div class="expect"><b>Expect:</b> <code>100% tests passed</code>, and <code>./build/bin/</code> holds <code>bitcoind</code>, <code>bitcoin-cli</code> and (with the GUI) <code>bitcoin-qt</code>. <code>./build/bin/bitcoind --version</code> prints <code>v32.1</code>.</div></li>
+    </ol>
+  </details>
+
+  <details class="os" id="build-linux"><summary>Linux (Ubuntu, Debian, Fedora)</summary>
+    <ol class="howto">
+      <li><b>Install the tools.</b> Ubuntu or Debian:
+<pre><code>sudo apt install build-essential cmake pkgconf python3 libboost-dev libsqlite3-dev libcapnp-dev capnproto
+sudo apt install qt6-base-dev qt6-tools-dev qt6-l10n-tools qt6-tools-dev-tools libgl-dev qt6-wayland libqrencode-dev   # window app only</code></pre>
+        Fedora:
+<pre><code>sudo dnf install gcc-c++ cmake make python3 boost-devel sqlite-devel capnproto capnproto-devel
+sudo dnf install qt6-qtbase-devel qt6-qttools-devel qt6-qtwayland qrencode-devel   # window app only</code></pre>
+        Cap'n Proto is only for the IPC feature; to skip it, add <code>-DENABLE_IPC=OFF</code> below.</li>
+      <li><b>Get the code</b> as above, then <b>configure and build</b>:
+<pre><code>cmake -B build                  # add -DBUILD_GUI=ON for the window app
+cmake --build build -j $(nproc)
+ctest --test-dir build -j $(nproc)</code></pre>
+        <div class="expect"><b>Expect:</b> <code>100% tests passed</code>; <code>./build/bin/bitcoind --version</code> prints <code>v32.1</code>. Optional: <code>sudo cmake --install build</code> puts the programs in your path.</div></li>
+    </ol>
+  </details>
+
+  <h2 id="first-run">4. First run: what to expect</h2>
+  <p><b>The window app</b> (Bitcoin Core / Bitcoin-Qt) asks where to keep the data and offers to <b>limit block chain storage</b>: tick it if your disk is small (pruning). Then a bar shows "Synchronizing with network" and how far behind it is.</p>
+  <p><b>The background node</b> (<code>bitcoind -daemon</code>): ask how it's doing.</p>
+<pre><code>bitcoin-cli getblockchaininfo</code></pre>
+<p>Example while syncing (your numbers will differ):</p>
+<pre><code><span class="out">{
+  "chain": "main",
+  "blocks": 312004,
+  "headers": 922110,
+  "verificationprogress": 0.1931…,
+  "initialblockdownload": true,
+  …
+}</span></code></pre>
+  <div class="expect"><b>Expect:</b> <code>blocks</code> climbing towards <code>headers</code>, and <code>verificationprogress</code> towards 1. When it is done, <code>initialblockdownload</code> turns <code>false</code>: your node has checked every block since 2009 by itself.</div>
+  <p>Watch it work: the log is <code>debug.log</code> in the data folder, with a line <code>UpdateTip: new best=…</code> for each block.</p>
+  <table>
+    <tr><th>System</th><th>Data folder (bitcoin.conf and debug.log live here)</th></tr>
+    <tr><td>Windows</td><td><code>%LOCALAPPDATA%\Bitcoin\</code></td></tr>
+    <tr><td>macOS</td><td><code>~/Library/Application Support/Bitcoin/</code></td></tr>
+    <tr><td>Linux</td><td><code>~/.bitcoin/</code></td></tr>
+  </table>
+  <p>Stop it cleanly with <code>bitcoin-cli stop</code> (or close the window and wait): shutting down can take a minute.</p>
+
+  <h2 id="config">5. Configure it safely</h2>
+  <p>Settings go in <code>bitcoin.conf</code> in the data folder; you create the file yourself (<a href="https://github.com/bitcoin/bitcoin/blob/v32.1/doc/bitcoin-conf.md">official guide</a>). A sensible start for a home node:</p>
+<pre><code># Keep only recent blocks (about 7 GB) and still verify everything. Remove for a full archive.
+prune=550
+# The control port answers this computer only (the default; never open it to the internet).
+rpcbind=127.0.0.1
+rpcallowip=127.0.0.1</code></pre>
+  <div class="warn"><b>Never</b> put a plain password in bitcoin.conf, and never expose the RPC port (8332) to the internet: that is how nodes get emptied. <code>bitcoin-cli</code> on the same computer logs in automatically with a cookie file Bitcoin Core rewrites at every start. Other programs can use <code>rpcauth</code>, a salted hash, made by <code>share/rpcauth/rpcauth.py</code> in the source.</div>
+
+  <h2 id="practice">6. Practise without real money (regtest)</h2>
+  <p>Regtest is a private chain on your computer: no download, blocks on demand, nothing to lose. Five minutes:</p>
+<pre><code>bitcoind -regtest -daemon -fallbackfee=0.00001
+bitcoin-cli -regtest createwallet alice
+bitcoin-cli -regtest -rpcwallet=alice getnewaddress
+bitcoin-cli -regtest generatetoaddress 101 &lt;that address&gt;
+bitcoin-cli -regtest -rpcwallet=alice getbalances</code></pre>
+  <div class="expect"><b>Expect:</b> <code>"trusted": 50.00000000</code> and <code>"immature": 5000.00000000</code>. Block rewards wait 100 blocks before they can be spent, so of 101 blocks only the first counts. Stop with <code>bitcoin-cli -regtest stop</code>.</div>
+  <p>Want the full walk-through (send a payment, replace it, undo a confirmation)? Ask us for a free session: <a href="mailto:hello@altradits.com?subject=Bitcoin%20stage%203%3A%20verifying">hello@altradits.com</a>.</p>
+
+  <h2 id="safe">7. Keep your node safe</h2>
+  <ul>
+    <li><b>Stay on a maintained version.</b> With 32.1, versions 29.x and older no longer get fixes. Watch <a href="https://bitcoincore.org/en/releases/">releases</a> and <a href="https://bitcoincore.org/en/security-advisories/">security advisories</a>. To upgrade: stop the node, install the new version over the old one, start again.</li>
+    <li><b>Back up your wallet</b> if you hold funds in Bitcoin Core: File → Backup Wallet in the app, or <code>bitcoin-cli backupwallet &lt;file&gt;</code>, kept offline. Never share <code>listdescriptors true</code> output or wallet files.</li>
+    <li><b>Privacy:</b> run over Tor so peers don't learn your IP address (<a href="https://github.com/bitcoin/bitcoin/blob/v32.1/doc/tor.md">official Tor guide</a>).</li>
+    <li><b>Many peers, not one:</b> let Bitcoin Core choose its connections; tying it to a single peer lets that peer show you a false chain.</li>
+  </ul>
+
+  <h2 id="trouble">8. If something goes wrong</h2>
+  <ul>
+    <li><b>"Could not connect to the server"</b>: the node isn't running yet, or still starting. Start it and wait a few seconds.</li>
+    <li><b>Sync seems stuck</b>: check <code>debug.log</code> for new <code>UpdateTip</code> lines; slow disks make it crawl. Restarting is safe.</li>
+    <li><b>Disk full</b>: stop the node, add <code>prune=550</code>, start again.</li>
+    <li><b>"Wallet file not specified"</b>: more than one wallet is loaded; add <code>-rpcwallet=NAME</code>.</li>
+    <li><b>Build fails at <code>cmake -B build</code></b>: a tool is missing; repeat the install step. <code>cmake -B build -LH</code> lists every option.</li>
+  </ul>
+
+  <h2 id="sources">9. Official sources</h2>
+  <ul class="links">
+    <li><a href="https://bitcoincore.org/en/download/">Bitcoin Core download and verification</a> (bitcoincore.org)</li>
+    <li><a href="https://bitcoincore.org/en/releases/32.1/">Bitcoin Core 32.1 release notes</a></li>
+    <li><a href="https://github.com/bitcoin/bitcoin">Bitcoin Core source code</a> and <a href="https://github.com/bitcoin/bitcoin/tree/v32.1/doc">its documentation for 32.1</a></li>
+    <li>Build guides for 32.1: <a href="https://github.com/bitcoin/bitcoin/blob/v32.1/doc/build-windows-msvc.md">Windows</a>, <a href="https://github.com/bitcoin/bitcoin/blob/v32.1/doc/build-osx.md">macOS</a>, <a href="https://github.com/bitcoin/bitcoin/blob/v32.1/doc/build-unix.md">Linux</a>; <a href="https://github.com/bitcoin/bitcoin/blob/v32.1/doc/files.md">where files live</a>; <a href="https://github.com/bitcoin/bitcoin/blob/v32.1/doc/bitcoin-conf.md">bitcoin.conf</a></li>
+    <li><a href="https://github.com/bitcoin-core/guix.sigs">Builders' signatures and keys (guix.sigs)</a></li>
+    <li><a href="https://bitcoin.org/en/full-node">Running a full node: requirements</a> (bitcoin.org)</li>
+    <li><a href="https://bitcoin.org/bitcoin.pdf">The Bitcoin whitepaper</a></li>
+  </ul>
+  <p class="intro">Versions change: if bitcoincore.org lists a newer release, use it and replace 32.1 in the commands.</p>
+</div>
+
+<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/wallet">Get a Bitcoin wallet</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+</script>
+</body>
+</html>
