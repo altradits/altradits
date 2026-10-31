@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Transaction } from '../types';
-import { ChevronDown, WifiOff } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 interface TransactionHistoryProps {
   transactions: Transaction[];
@@ -9,10 +9,7 @@ interface TransactionHistoryProps {
 
 const TYPE_TITLES: Record<string, string> = {
   buy_btc: 'Buy Sats',
-  sell_btc: 'Sell Sats',
   send_mpesa: 'Send M-Pesa',
-  send_telebirr: 'Send Telebirr',
-  deposit_mpesa: 'Deposit M-Pesa',
   receive_btc: 'Receive Sats',
   send_btc: 'Send Sats',
 };
@@ -25,20 +22,8 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
 
   const validTransactions = transactions.filter((tx) => {
     if (!tx || typeof tx !== 'object') return false;
-    if (tx.status !== 'completed' && !tx.isOffline) return false;
+    if (tx.status !== 'completed') return false;
     if (!tx.referenceNumber || typeof tx.referenceNumber !== 'string' || !tx.referenceNumber.trim()) return false;
-    if (['tx_001', 'tx_002', 'tx_003', 'tx_004'].includes(tx.id)) return false;
-    const upperRef = tx.referenceNumber.toUpperCase();
-    if (
-      upperRef.includes('SIM-') ||
-      upperRef.includes('MOCK-') ||
-      upperRef.includes('FALLBACK') ||
-      upperRef.includes('TEST-') ||
-      upperRef.includes('FAKE-') ||
-      upperRef.includes('SIMULAT')
-    ) {
-      return false;
-    }
     const fromAmt = Number(tx.fromAmount || 0);
     const toAmt = Number(tx.toAmount || 0);
     if (fromAmt <= 0 && toAmt <= 0) return false;
@@ -66,7 +51,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
         : Number(tx.toAmount || 0);
       return { text: `+${sats.toLocaleString()} Sats`, isPositive: true };
     }
-    if (tx.type === 'sell_btc' || tx.type === 'send_btc') {
+    if (tx.type === 'send_btc') {
       const sats = tx.fromCurrency === 'BTC'
         ? Math.round(Number(tx.fromAmount || 0) * 100_000_000)
         : Number(tx.fromAmount || 0);
@@ -74,10 +59,6 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     }
     if (tx.type === 'send_mpesa') {
       return { text: `-${Number(tx.toAmount || 0).toLocaleString()} KES`, isPositive: false };
-    }
-    if (tx.type === 'send_telebirr') {
-      const etbVal = tx.toCurrency === 'ETB' ? tx.toAmount : tx.fromAmount;
-      return { text: `-${Number(etbVal || 0).toLocaleString()} ETB`, isPositive: false };
     }
     return { text: `${Number(tx.fromAmount || 0).toLocaleString()} ${tx.fromCurrency}`, isPositive: false };
   };
@@ -114,7 +95,6 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
             <div className="divide-y divide-[var(--yb-surface-container-high)]/50">
               {validTransactions.map((tx) => {
                 const amount = getAmountDisplay(tx);
-                const isQueuedOffline = tx.isOffline && tx.offlineStatus === 'queued';
                 return (
                   <button
                     key={tx.id}
@@ -126,12 +106,6 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                         <span className="text-sm font-semibold text-[var(--yb-on-surface)] group-hover:text-[var(--yb-secondary)]">
                           {TYPE_TITLES[tx.type] || tx.title}
                         </span>
-                        {isQueuedOffline && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-950/40 border border-amber-500/30 text-amber-300">
-                            <WifiOff className="w-2.5 h-2.5" />
-                            <span>Queued</span>
-                          </span>
-                        )}
                       </div>
                       <div className="text-xs text-[var(--yb-on-surface-variant)] font-mono mt-0.5">
                         {formatDate(tx.timestamp)}
