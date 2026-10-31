@@ -45,8 +45,6 @@ export async function ensureDeviceKey(): Promise<CryptoKeyPair> {
   return pair;
 }
 
-export const hasDeviceKey = async () => Boolean(await stored());
-
 // The public half, as the server stores it (SPKI, base64url).
 export async function devicePublicKey(): Promise<string> {
   const pair = await ensureDeviceKey();
