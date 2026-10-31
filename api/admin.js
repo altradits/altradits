@@ -55,14 +55,16 @@ export async function GET(request) {
   }
   if (view === "emails") return json({ emails: (await getMany("email", await listIds("emails", 100))).map(({ text, ...e }) => e) });
 
-  const { nodeInfo, chainTip, outboundSats, inboundSats } = await import("../lib/lightning.js");
-  const [node, tip, outbound, inbound] = await Promise.all([settle(nodeInfo()), settle(chainTip()), settle(outboundSats()), settle(inboundSats())]);
+  const { nodeInfo, nodeDetails, chainTip, outboundSats, inboundSats, onchainFeeRates } = await import("../lib/lightning.js");
+  const [node, details, tip, outbound, inbound, chainFees] = await Promise.all([settle(nodeInfo()), settle(nodeDetails()), settle(chainTip()), settle(outboundSats()), settle(inboundSats()), settle(onchainFeeRates())]);
   const { liabilities, walletsOn, switchOn } = await import("../lib/ywallet.js");
   const owed = walletsOn() ? await settle(liabilities()) : null;
   const openInvoices = (await listIds("ywinvopen", 500)).length;
   return json({
     node: node && !node.error ? { ...node, behind: typeof tip === "number" && node.blockHeight ? Math.max(0, tip - node.blockHeight) : null } : node,
     chainTip: typeof tip === "number" ? tip : null,
+    details: details && !details.error ? details : null,
+    chainFees: chainFees && !chainFees.error ? chainFees : null,
     liquidity: { outboundSats: typeof outbound === "number" ? outbound : null, inboundSats: typeof inbound === "number" ? inbound : null },
     // How payments reach the node and settle: Lightning addresses (LNURL-pay), invoices, and the background sweep.
     settlement: {

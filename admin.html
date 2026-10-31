@@ -5,32 +5,37 @@
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
+<meta name="robots" content="noindex">
 <title>Node dashboard · Altradits</title>
 <style>
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2')}
 @font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin.woff2) format('woff2')}
-:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--paper:#fff;--ok:#0B7A5F;--warn:#B54708;--crit:#B42318}
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--paper:#fff;--ok:#0B7A5F;--warn:#B54708;--crit:#B42318;--learn:#FFF7EC}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.55 Figtree,system-ui,sans-serif}
-h1,h2{font-family:'Bricolage Grotesque',Figtree,sans-serif;line-height:1.15;margin:0}
+h1,h2,h3{font-family:'Bricolage Grotesque',Figtree,sans-serif;line-height:1.15;margin:0}
 [hidden]{display:none!important}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 a{color:var(--blue)}
+code{font:.9em ui-monospace,Menlo,monospace;background:var(--bg);padding:.05rem .3rem;border-radius:.3rem}
 .wrap{max-width:74rem;margin:0 auto;padding:1rem}
 header{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.5rem 0 1rem;flex-wrap:wrap}
 header img{height:2.2rem;width:auto;display:block}
 header h1{font-size:1.3rem}
 .brand{display:flex;align-items:center;gap:.8rem}
-.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));gap:.75rem;margin-bottom:.8rem}
-.kpi{background:var(--bg);border:2px solid var(--line);border-radius:.9rem;padding:.75rem .9rem}
-.kpi.warn{border-color:var(--warn)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:.75rem;margin-bottom:.8rem}
+.kpi{background:var(--bg);border:2px solid var(--line);border-radius:.9rem;padding:.75rem .9rem;display:flex;flex-direction:column;gap:.2rem}
+.kpi.warn{border-color:var(--warn)}.kpi.good{border-color:color-mix(in srgb,var(--ok) 55%,var(--line))}
 .kpi small{color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
-.kpi div{font:800 1.5rem/1.15 'Bricolage Grotesque',sans-serif;margin-top:.2rem;overflow-wrap:anywhere}
+.kpi div{font:800 1.5rem/1.15 'Bricolage Grotesque',sans-serif;overflow-wrap:anywhere}
+.kpi .why{font-size:.82rem;color:var(--muted);line-height:1.4}
 .panel{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;margin-bottom:1.1rem}
-.panel h2{font-size:1.15rem;margin-bottom:.7rem}
+.panel h2{font-size:1.15rem;margin-bottom:.5rem}
+.learn{background:var(--learn);border-left:4px solid var(--btc);border-radius:.6rem;padding:.6rem .8rem;margin:.2rem 0 .9rem;font-size:.92rem}
+.learn p{margin:.25rem 0}
+body.quiet .learn,body.quiet .why{display:none}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
 @media (max-width:760px){.grid2{grid-template-columns:1fr}}
 table{width:100%;border-collapse:collapse;font-size:.92rem}
@@ -56,6 +61,25 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
 .qr{max-width:15rem;background:#fff;padding:.5rem;border-radius:8px}.qr svg{width:100%;height:auto;display:block}
 .ev{border-bottom:1px solid var(--line);padding:.4rem 0}
 .events{max-height:24rem;overflow-y:auto}
+/* One channel, drawn: their side, your locked reserve, what you can spend */
+.chan{margin:.4rem 0 1rem}
+.chan .strip{display:flex;height:2.2rem;border:2px solid var(--ink);border-radius:.6rem;overflow:hidden}
+.chan .strip span{display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;white-space:nowrap;overflow:hidden;min-width:2px}
+.chan .mine{background:var(--btc);color:var(--ink)}.chan .res{background:repeating-linear-gradient(45deg,#d9dee6,#d9dee6 4px,#eef1f5 4px,#eef1f5 8px);color:var(--muted)}.chan .theirs{background:#cfe0f3;color:var(--blue)}
+.chan .key{display:flex;flex-wrap:wrap;gap:.3rem 1.1rem;font-size:.85rem;margin-top:.4rem}
+.chan .key b{display:inline-block;width:.8rem;height:.8rem;border-radius:.2rem;margin-right:.3rem;vertical-align:-.1rem}
+.check{list-style:none;padding:0;margin:0;display:grid;gap:.45rem}
+.check li{display:grid;grid-template-columns:1.6rem 1fr;gap:.4rem;align-items:start}
+.check .m{font-weight:800}
+.check .m.y{color:var(--ok)}.check .m.n{color:var(--crit)}.check .m.u{color:var(--muted)}
+.gloss details{border-bottom:1px solid var(--line);padding:.45rem 0}
+.gloss summary{font-weight:700;cursor:pointer;min-height:2.2rem;display:flex;align-items:center}
+.gloss p{margin:.3rem 0 .2rem;color:var(--muted);font-size:.93rem}
+.flow{counter-reset:f;list-style:none;padding:0;margin:.4rem 0 0;display:grid;gap:.5rem}
+.flow li{counter-increment:f;display:grid;grid-template-columns:1.8rem 1fr;gap:.4rem;font-size:.93rem}
+.flow li::before{content:counter(f);display:flex;align-items:center;justify-content:center;width:1.6rem;height:1.6rem;border-radius:50%;background:var(--btc);font-weight:800;font-size:.85rem}
+.switch{display:inline-flex;align-items:center;gap:.5rem;font-weight:600;font-size:.9rem;cursor:pointer}
+.switch input{width:1.1rem;height:1.1rem;accent-color:var(--blue)}
 .login{max-width:24rem;margin:15vh auto;background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.5rem}
 .login img{height:2.4rem;width:auto;display:block;margin-bottom:1rem}
 #toast{position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.6rem 1rem;border-radius:.6rem;font-weight:600;z-index:9}
@@ -74,8 +98,14 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
 <div class="wrap" id="app" hidden>
   <header>
     <div class="brand"><a href="/"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><h1>Node dashboard</h1></div>
-    <div class="row"><span class="sm muted" id="checked"></span><button type="button" class="btn" id="refresh">Refresh</button><button type="button" class="btn" id="logout">Sign out</button></div>
+    <div class="row"><label class="switch"><input type="checkbox" id="explain" checked> Explain everything</label><span class="sm muted" id="checked"></span><button type="button" class="btn" id="refresh">Refresh</button><button type="button" class="btn" id="logout">Sign out</button></div>
   </header>
+
+  <section class="panel" aria-labelledby="hCheck">
+    <h2 id="hCheck">Today's checklist</h2>
+    <div class="learn"><p>What a node operator checks each day. Green means fine. Red means act today. Grey is something only you can check.</p></div>
+    <ul class="check" id="checklist"></ul>
+  </section>
 
   <section class="panel" aria-labelledby="hStan">
     <h2 id="hStan">Stan: security and messages</h2>
@@ -85,20 +115,31 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
   </section>
 
   <section class="panel" aria-labelledby="hNode">
-    <h2 id="hNode">Node</h2>
+    <h2 id="hNode">1. Your node and the blockchain</h2>
+    <div class="learn">
+      <p>Your node is two programs. <b>Bitcoin Core</b> downloads and checks every block. <b>LND</b> runs Lightning on top of it.</p>
+      <p>A new block arrives about every 10 minutes. Your node must keep up, or it can't safely pay or get paid.</p>
+    </div>
     <div class="kpis" id="nodeKpis"></div>
     <p class="sm muted" id="nodeNote"></p>
   </section>
 
-  <section class="panel" aria-labelledby="hYb">
-    <h2 id="hYb">Ye₿ente and settlement</h2>
-    <div class="kpis" id="ybKpis"></div>
-    <dl id="hooks"></dl>
+  <section class="panel" aria-labelledby="hChan">
+    <h2 id="hChan">2. Channels: where your Lightning money sits</h2>
+    <div class="learn">
+      <p>A channel is Bitcoin locked between you and one peer. The total never changes. Paying moves sats to their side. Getting paid moves sats to your side.</p>
+      <p>Each side keeps about 1% it can't spend: the <b>reserve</b>. It lets a cheater be punished.</p>
+    </div>
+    <div id="chanDraw"></div>
+    <div id="lnAlerts"></div>
+    <div id="lnList" class="scroll"></div>
+    <div id="lnAdvice" class="sm"></div>
   </section>
 
   <div class="grid2">
     <section class="panel" aria-labelledby="hPower">
-      <h2 id="hPower">Sending power</h2>
+      <h2 id="hPower">3. Sending power and top-ups</h2>
+      <div class="learn"><p>To send, sats must be on your side. A top-up is an invoice from your own node that you pay from another wallet. The sats cross the channel to your side.</p></div>
       <p class="sm" id="spNote"></p>
       <label for="spSats" class="sm"><b>Top up the node (sats)</b></label>
       <input id="spSats" type="number" inputmode="numeric">
@@ -108,44 +149,85 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
       <div id="spInvoice"></div>
       <div id="spList"></div>
     </section>
-    <section class="panel" aria-labelledby="hVisits">
-      <h2 id="hVisits">Visits</h2>
-      <div id="visits" class="scroll"></div>
+    <section class="panel" aria-labelledby="hChain">
+      <h2 id="hChain">4. On-chain wallet and fees</h2>
+      <div class="learn">
+        <p>Your node also has a normal Bitcoin wallet. You need it to open channels, and to pay fees if a channel ever closes.</p>
+        <p>On-chain fees are paid per size of transaction, in <b>sat/vB</b>. Open or close channels when fees are low.</p>
+      </div>
+      <div class="kpis" id="chainKpis"></div>
     </section>
   </div>
 
-  <section class="panel" aria-labelledby="hCh">
-    <h2 id="hCh">Channels and routing</h2>
-    <div id="lnAlerts"></div>
-    <div id="lnList" class="scroll"></div>
-    <div id="lnAdvice" class="sm"></div>
-    <h2 style="font-size:1rem;margin-top:1rem">Lessons from running the node</h2>
-    <div class="row"><input id="lnLesson" placeholder="A lesson worth keeping" aria-label="New lesson"><button type="button" class="btn" id="lnAdd">Add</button></div>
-    <ul id="lnLessons" class="sm"></ul>
+  <section class="panel" aria-labelledby="hRoute">
+    <h2 id="hRoute">5. Routing and fees</h2>
+    <div class="learn">
+      <p>Nodes pass payments for each other and charge a small fee: a <b>base fee</b> per payment plus a <b>rate</b> in parts per million (ppm).</p>
+      <p>Example: base 1 sat + 1 ppm on 100,000 sats = 1.1 sats.</p>
+      <p>Your channel is <b>private</b>. Others can pay you through it, but it won't route strangers' payments. That's normal for a shop or wallet node.</p>
+    </div>
+    <div class="kpis" id="routeKpis"></div>
+    <div id="feeList" class="scroll"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="hYb">
+    <h2 id="hYb">6. Ye₿ente and how payments reach the node</h2>
+    <div class="learn">
+      <p>Ye₿ente is custodial: wallet balances are sats your node owes people. <b>Can send</b> must stay above <b>Owed to wallets</b>.</p>
+      <p>How a payment arrives:</p>
+      <ol class="flow">
+        <li>A wallet looks up <code>name@altradits.com</code> at <code>/.well-known/lnurlp/name</code> (LNURL-pay).</li>
+        <li>It asks for an amount. Your node makes an <b>invoice</b> for exactly that, tied to the request by a hash.</li>
+        <li>The payer's wallet finds a route to you and pays. Your node holds the payment until it's settled.</li>
+        <li>Every 2 minutes the website checks open invoices and credits the wallet that was paid.</li>
+      </ol>
+    </div>
+    <div class="kpis" id="ybKpis"></div>
+    <dl id="hooks"></dl>
   </section>
 
   <div class="grid2">
     <section class="panel" aria-labelledby="hSec">
-      <h2 id="hSec">Security watch (Stan)</h2>
+      <h2 id="hSec">7. Security watch (Stan)</h2>
+      <div class="learn"><p>Everything the site turned away: guessed PINs, forged requests, blocked scripts. High-severity ones are emailed to you.</p></div>
       <div class="kpis" id="secKpis"></div>
       <p class="sm" id="secSolvency"></p>
       <div class="events" id="secEvents"></div>
     </section>
     <section class="panel" aria-labelledby="hHist">
       <h2 id="hHist">Bitcoin's attack history, and our guards</h2>
+      <div class="learn"><p>Real attacks from Bitcoin's history, the lesson each taught, and how this site guards against it.</p></div>
       <div class="events" id="secHistory"></div>
     </section>
   </div>
 
-  <section class="panel" aria-labelledby="hMail">
-    <h2 id="hMail">Emails sent</h2>
-    <div id="emails" class="scroll"></div>
+  <section class="panel" aria-labelledby="hLessons">
+    <h2 id="hLessons">Lessons from running the node</h2>
+    <div class="learn"><p>Write down what you learn. It stays here, and Stan uses it in channel advice.</p></div>
+    <div class="row"><input id="lnLesson" placeholder="A lesson worth keeping" aria-label="New lesson"><button type="button" class="btn" id="lnAdd">Add</button></div>
+    <ul id="lnLessons" class="sm"></ul>
   </section>
+
+  <section class="panel gloss" aria-labelledby="hGloss">
+    <h2 id="hGloss">Glossary</h2>
+    <div id="glossary"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel" aria-labelledby="hVisits">
+      <h2 id="hVisits">Visits</h2>
+      <div id="visits" class="scroll"></div>
+    </section>
+    <section class="panel" aria-labelledby="hMail">
+      <h2 id="hMail">Emails sent</h2>
+      <div id="emails" class="scroll"></div>
+    </section>
+  </div>
 
   <section class="panel" aria-labelledby="hSys">
     <h2 id="hSys">System</h2>
     <dl id="system"></dl>
-    <h2 style="font-size:1rem;margin-top:1rem">Archive files</h2>
+    <h3 style="font-size:1rem;margin-top:1rem">Archive files</h3>
     <div id="archives"></div>
   </section>
 </div>
