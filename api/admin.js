@@ -43,6 +43,8 @@ async function gate(request) {
 }
 
 // A part that fails or takes longer than 8 s becomes { error }, so the rest of the dashboard still loads.
+// The same 8 s limit, but failing: for a view that is all node data, so the page says why it's empty.
+const within = (p, ms = 8000) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("The node took too long to answer.")), ms).unref?.())]);
 const settle = (p, ms = 8000) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("The node took too long to answer.")), ms).unref?.())]).then((v) => v, (e) => ({ error: e.message }));
 
 export async function GET(request) {
@@ -50,12 +52,12 @@ export async function GET(request) {
   const view = new URL(request.url).searchParams.get("view");
 
   // The node explorer: network, channel internals, peers, payments, invoices, coins and closed channels.
-  if (view === "explore") { const { nodeExplorer } = await import("../lib/lightning.js"); const d = await settle(nodeExplorer(), 9000); return json(d || { error: "The node isn't connected." }); }
+  if (view === "explore") { const { nodeExplorer } = await import("../lib/lightning.js"); const d = await settle(nodeExplorer()); return json(d || { error: "The node isn't connected." }); }
   // Profit and loss over a period, and what is yours after Ye₿ente's wallet holders.
   if (view === "pnl") {
     const days = Math.min(3650, Math.max(1, Math.floor(Number(new URL(request.url).searchParams.get("days") ?? 30)) || 30));
     const { profitLoss } = await import("../lib/pnl.js");
-    return json(await profitLoss({ days }));
+    try { return json(await within(profitLoss({ days }))); } catch (err) { return json({ error: err.message }, 502); }
   }
   // Ye₿ente: every wallet's balance, your own wallets in detail, and where clients' payments go.
   if (view === "wallets") {
@@ -79,8 +81,8 @@ export async function GET(request) {
     const inv = await getJSON(`ywinv:${clean(new URL(request.url).searchParams.get("hash"), 64)}`);
     return inv ? json({ state: inv.state, sats: inv.sats }) : json({ error: "No such invoice." }, 404);
   }
-  if (view === "channels") { const { channelReport } = await import("../lib/channels.js"); try { return json(await channelReport()); } catch (err) { return json({ error: err.message }, 502); } }
-  if (view === "liquidity") { const { liquidityView } = await import("../lib/channels.js"); try { return json(await liquidityView()); } catch (err) { return json({ error: err.message }, 502); } }
+  if (view === "channels") { const { channelReport } = await import("../lib/channels.js"); try { return json(await within(channelReport())); } catch (err) { return json({ error: err.message }, 502); } }
+  if (view === "liquidity") { const { liquidityView } = await import("../lib/channels.js"); try { return json(await within(liquidityView())); } catch (err) { return json({ error: err.message }, 502); } }
   if (view === "topup") {
     const { topupStatus } = await import("../lib/channels.js");
     const t = await topupStatus(clean(new URL(request.url).searchParams.get("hash"), 64));

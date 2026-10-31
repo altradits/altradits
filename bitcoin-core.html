@@ -269,7 +269,7 @@ bitcoin-cli -regtest -rpcwallet=alice getnewaddress
 bitcoin-cli -regtest generatetoaddress 101 &lt;that address&gt;
 bitcoin-cli -regtest -rpcwallet=alice getbalances</code></pre>
   <div class="expect"><b>Expect:</b> <code>"trusted": 50.00000000</code> and <code>"immature": 5000.00000000</code>. Block rewards wait 100 blocks before they can be spent, so of 101 blocks only the first counts. Stop with <code>bitcoin-cli -regtest stop</code>.</div>
-  <p>Want the full walk-through (send a payment, replace it, undo a confirmation)? Ask us for a free session: <a href="mailto:hello@altradits.com?subject=Bitcoin%20stage%203%3A%20verifying">hello@altradits.com</a>.</p>
+  <p>Want the full walk-through (send a payment, replace it, bump its fee)? It's free in <a href="https://github.com/altradits/bitcoin-core-lab/tree/main/03-rbf-and-cpfp">Bitcoin Core Lab, stage 03</a>, and the whole lab starts at <a href="https://github.com/altradits/bitcoin-core-lab/tree/main/00-start-small">stage 00</a>.</p>
 
   <h2 id="safe">7. Keep your node safe</h2>
   <ul>

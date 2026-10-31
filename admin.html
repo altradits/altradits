@@ -88,6 +88,12 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
 .tabs button[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:#fff}
 .pane{display:none}.pane.on{display:block}
 button.pill{cursor:pointer;font-family:inherit}
+#refresh{gap:.4rem}
+#refresh .spin{display:inline-block;font-size:1.05rem;line-height:1}
+#refresh.busy{opacity:.75;cursor:progress}
+#refresh.busy .spin{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#refresh.busy .spin{animation:none}}
 .pill{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .8rem;border-radius:99px;font-weight:700;font-size:.88rem;background:color-mix(in srgb,var(--ok) 15%,white);color:var(--ok);border:2px solid color-mix(in srgb,var(--ok) 45%,white)}
 .pill.bad{background:color-mix(in srgb,var(--crit) 12%,white);color:var(--crit);border-color:color-mix(in srgb,var(--crit) 40%,white)}
 .see{margin:-.2rem 0 .6rem;color:var(--muted)}
@@ -131,7 +137,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 <div class="wrap" id="app" hidden>
   <header>
     <div class="brand"><a href="/"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><h1>Node dashboard</h1><span style="position:relative"><button type="button" class="pill" id="health" aria-expanded="false" aria-controls="alerts">Checking…</button><div class="alerts" id="alerts" hidden><h3>What needs you</h3><ul id="alertList"></ul></div></span></div>
-    <div class="row"><label class="switch"><input type="checkbox" id="explain" checked> Explain everything</label><span class="sm muted" id="checked"></span><button type="button" class="btn" id="refresh">Refresh</button><button type="button" class="btn" id="logout">Sign out</button></div>
+    <div class="row"><label class="switch"><input type="checkbox" id="explain" checked> Explain everything</label><span class="sm muted" id="checked"></span><button type="button" class="btn" id="refresh"><span class="spin" aria-hidden="true">↻</span>Refresh</button><button type="button" class="btn" id="logout">Sign out</button></div>
   </header>
 
   <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="learn">Learn</button></nav>
@@ -389,6 +395,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 </div>
 <dialog id="rcpt" aria-labelledby="rcptTitle"><h2 id="rcptTitle" style="font-size:1.15rem">Receipt</h2><dl id="rcptBody" style="margin:.8rem 0"></dl><div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn primary" id="rcptClose">Close</button></div></dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=wallets2"></script>
+<script type="module" src="/assets/admin.js?v=refresh1"></script>
 </body>
 </html>

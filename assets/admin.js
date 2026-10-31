@@ -85,7 +85,18 @@ $("#logout").addEventListener("click", () => {
   try { sessionStorage.removeItem("altra.admin"); } catch {}
   token = ""; showLogin("Signed out on this device.");
 });
-$("#refresh").addEventListener("click", () => load());
+// Refresh: the button spins and is disabled until every part has reloaded, then says when.
+$("#refresh").addEventListener("click", async () => {
+  const b = $("#refresh");
+  if (b.classList.contains("busy")) return;
+  b.classList.add("busy"); b.disabled = true; b.setAttribute("aria-busy", "true"); b.lastChild.textContent = "Refreshing…";
+  const t0 = Date.now();
+  try { await load(); } finally {
+    await new Promise((r) => setTimeout(r, Math.max(0, 600 - (Date.now() - t0)))); // long enough to see it worked
+    b.classList.remove("busy"); b.disabled = false; b.removeAttribute("aria-busy"); b.lastChild.textContent = "Refresh";
+    toast(`Updated ${new Date().toLocaleTimeString()}`);
+  }
+});
 
 // Today's checklist: what an operator checks daily. true = fine, false = act, null = only Stanley can check.
 function renderChecklist(D, L) {
@@ -456,8 +467,9 @@ async function load() {
   $("#loginErr").textContent = "";
   $("#login").hidden = true; $("#app").hidden = false;
   KES_PER_BTC = D.kesPerBtc;
-  $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
   renderChecklist(D); renderStan(D.stan); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderGlossary();
-  loadPower(); loadChannels(); loadSecurity(); loadMoney(); loadActivity(); loadExplorer(); loadPnl(); renderVerify(); loadWallets(); loadDestinations();
+  renderVerify();
+  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations()]);
+  $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
 }
 token ? load() : showLogin();
