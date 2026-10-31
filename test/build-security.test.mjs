@@ -47,6 +47,7 @@ const FIXED_FETCH = {
   "lib/store.js": ["REST_URL"], // Upstash, from the environment
   "lib/lightning.js": ["url", '"https://open.er-api.com/v6/latest/USD"', "`${base}/fee-estimates`", "`${base}/v1/fees/recommended`", "`${base}/address/${address}`", "`${base}/address/${address}/txs`", "`${base}/blocks/tip/height`"], // price and mempool APIs (CHAIN_APIS)
   "lib/email.js": ['"https://api.resend.com/emails"'],
+  "lib/tracker.js": ["`https://api.github.com${path}`"], // GitHub's public API, a constant host
   "api/yebente.js": ["`${DARAJA()}/oauth/v1/generate?grant_type=client_credentials`", "`${DARAJA()}${path}`"], // Safaricom
 };
 // The first argument of a call, brackets and template braces balanced.
