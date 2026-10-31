@@ -11,37 +11,23 @@ process.chdir(fs.mkdtempSync(path.join(os.tmpdir(), "altradits-security-")));
 for (const k of ["ANTHROPIC_API_KEY", "RESEND_API_KEY", "UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "SMTP_HOST", "DATA_DIR", "JOBS_ALLOW_LOCAL"]) delete process.env[k];
 process.env.EMAIL_APPROVAL = "off";
 
-const crm = await import("../lib/crm.js");
-const ops = await import("../lib/ops.js");
 const store = await import("../lib/store.js");
-const order = await import("../api/order.js");
-const { privateIp, publicFetch } = await import("../lib/netsafe.js");
+const { privateIp, publicFetch, safeUrl } = await import("../lib/netsafe.js");
+const tip = await import("../api/tip.js");
 
-const post = (body) => order.POST(new Request("http://x/api/order", { method: "POST", headers: { "Content-Type": "application/json", "x-forwarded-for": "203.0.113.9" }, body: JSON.stringify(body) }));
+test("support invoices: the paid check answers only for invoices made on the support page", async () => {
+  // Someone else's Ye₿ente invoice hash must not reveal whether it was paid.
+  const other = "ab".repeat(32);
+  const r = await tip.GET(new Request(`http://x/api/tip?hash=${other}`, { headers: { "x-forwarded-for": "203.0.113.9" } }));
+  assert.equal(r.status, 404);
+  for (const sats of [0, 9, 1.5, 5_000_001, "abc"]) {
+    const bad = await tip.POST(new Request("http://x/api/tip", { method: "POST", headers: { "Content-Type": "application/json", "x-forwarded-for": "203.0.113.9" }, body: JSON.stringify({ sats }) }));
+    assert.equal(bad.status, 400, String(sats));
+  }
+});
 
-test("typing a client's email on a new order never hands over their portal, tasks or retainer", async () => {
-  const client = await crm.createLead({ email: "client@example.com", name: "Client" });
-  client.stage = "active";
-  client.retainer = { status: "active", baseHours: 10 };
-  client.onboarding = { access: "delegate access to the shared inbox" };
-  const portalToken = ops.ensurePortal(client).split("c=")[1];
-  await ops.indexLead(client);
-  await crm.saveLead(client);
-  await store.setJSON("task:t-client", { id: "t-client", leadId: client.id, title: "Private work", history: [], status: "done" });
-  await store.pushId("tasks", "t-client");
-
-  const o = await (await post({ item: "hourly" })).json();
-  assert.deepEqual(await (await post({ id: o.id, t: o.t, email: "client@example.com" })).json(), { ok: true });
-
-  const theirs = await ops.leadByPortal(portalToken);
-  assert.equal(theirs?.id, client.id, "the client's portal link still opens the client's own record");
-  assert.equal((await store.getJSON("task:t-client")).leadId, client.id, "the client's task stays theirs");
-  const fresh = await crm.getLead(client.id);
-  assert.deepEqual(fresh.retainer, { status: "active", baseHours: 10 });
-  const other = await crm.getLead((await crm.getProposal(o.id)).leadId);
-  assert.notEqual(other.portalToken, portalToken);
-  assert.equal(other.onboarding ?? null, null, "the client's onboarding notes aren't copied");
-  assert.equal(other.retainer ?? null, null);
+test("links people give us: http(s) only, and never this machine or a private network", async () => {
+  for (const u of ["ftp://example.com/", "file:///etc/passwd", "http://localhost/", "http://127.0.0.1/", "http://[::1]/", "http://169.254.169.254/latest", "not a link"]) await assert.rejects(safeUrl(u), u);
 });
 
 test("outside addresses: private, reserved and disguised IPv4 ranges are refused", () => {

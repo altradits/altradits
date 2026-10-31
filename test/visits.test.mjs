@@ -17,8 +17,8 @@ const settle = () => new Promise((r) => setTimeout(r, 50));
 test("counts public pages with their source, never bots, admin pages or personal data", async () => {
   const ua = "Mozilla/5.0 (iPhone)";
   recordVisit(req(ua, "https://www.google.com/search"), url("/"), "/index.html");
-  recordVisit(req(ua), url("/va?utm_source=LinkedIn"), "/va.html");
-  recordVisit(req(ua, "https://altradits.com/"), url("/va"), "/va.html");
+  recordVisit(req(ua), url("/library?utm_source=LinkedIn"), "/library.html");
+  recordVisit(req(ua, "https://altradits.com/"), url("/library"), "/library.html");
   recordVisit(req("Googlebot/2.1"), url("/"), "/index.html");
   recordVisit(req(ua), url("/admin"), "/admin.html");
   recordVisit({ ...req(ua), method: "HEAD" }, url("/"), "/index.html");
@@ -26,7 +26,7 @@ test("counts public pages with their source, never bots, admin pages or personal
 
   const s = visitSummary();
   assert.equal(s.d7, 3);
-  assert.deepEqual(s.byPage, { home: { d7: 1, d30: 1 }, va: { d7: 2, d30: 2 } });
+  assert.deepEqual(s.byPage, { home: { d7: 1, d30: 1 }, library: { d7: 2, d30: 2 } });
   assert.deepEqual(Object.fromEntries(s.sources.map((x) => [x.source, x.views])), { "google.com": 1, linkedin: 1, direct: 1 });
   assert.equal(s.daily.length, 14);
   assert.equal(s.daily.at(-1).views, 3);

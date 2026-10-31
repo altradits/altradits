@@ -1,7 +1,7 @@
 // The whole site in one Node process: static pages + api/*.js handlers.
 // Production: HostAfrica "Setup Node.js App" (Passenger) starts it via app.cjs.
 // Local:      npm run dev, then open http://localhost:3000
-import { safeEqual, clientIp } from "./lib/http.js";
+import { clientIp } from "./lib/http.js";
 import http from "node:http";
 import fs from "node:fs";
 import crypto from "node:crypto";
@@ -25,7 +25,7 @@ try {
 // missing: the admin then refuses everyone instead of accepting "dev".
 const SERVER = PROD || Boolean(process.env.PASSENGER_APP_ENV) || typeof globalThis.PhusionPassenger !== "undefined";
 if (!SERVER) {
-  for (const k of ["ADMIN_TOKEN", "CRON_SECRET"]) {
+  for (const k of ["ADMIN_TOKEN"]) {
     if (!process.env[k]) { process.env[k] = "dev"; console.log(`${k} not set: using "dev" locally`); }
   }
 } else {
@@ -35,7 +35,7 @@ if (!SERVER) {
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|portal\.html|team\.html|join\.html|cv\.html|hunt\.html|templates\.html|donate\.html|va\.html|bitcoin\.html|products\.html|wallet\.html|bitcoin-core\.html|collect\.html|robots\.txt|sitemap\.xml|yebente\/app\/(?:index\.html|assets\/[\w.-]+|fonts\/[\w.-]+)|data\/(?:catalog|playbooks|community)\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|donate\.html|bitcoin\.html|wallet\.html|bitcoin-core\.html|robots\.txt|sitemap\.xml|yebente\/app\/(?:index\.html|assets\/[\w.-]+|fonts\/[\w.-]+)|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
 // HSTS: browsers that have visited once only ever use HTTPS here (no includeSubDomains,
 // so other subdomains such as mail are unaffected). COOP: no other site keeps a handle
 // on our windows.
@@ -97,10 +97,13 @@ function publicUrl(req) {
   return new URL(req.url, `${proto}://${host}`);
 }
 
+// Addresses of the old task orders (the agency moved to altradits/chouMi).
+const OLD_ORDERS = "bio captions schedule graphics reel newsletter blog product-copy try data-entry pdf-sheet sheet-cleanup slides sop inbox-cleanup meeting-notes invoices receipts job-post cv-screen booking trip subscriptions rsvp leads cold-email reply-templates faq reviews listings competitors suppliers email-signature site-fix google-profile business-email automation transcribe translate social-management content-writing short-video inbox-calendar data-docs bookkeeping-prep project-coordination hr-recruiting travel-life executive-assist events customer-support lead-generation ecommerce-ops host-assist research website store-payments automation-ai translation lite core partner".split(" ");
+
 const server = http.createServer(async (req, res) => {
   const url = publicUrl(req);
   try {
-    if (url.pathname === "/healthz") { res.writeHead(200, { "Content-Type": "text/plain" }).end("ok"); import("./lib/workers.js").then((w) => w.kickQueue()).catch(() => {}); marketing(); dueJobs(); return; }
+    if (url.pathname === "/healthz") { res.writeHead(200, { "Content-Type": "text/plain" }).end("ok"); dueJobs(); return; }
     // /api/<name>; only Ye₿ente's API takes a sub-path (/api/yebente/mpesa/stkpush…).
     const api = url.pathname.match(/^\/api\/([a-z]+)(\/[\w.\/-]+)?$/);
     if (api && api[2] && api[1] !== "yebente") { res.writeHead(404).end("Not found"); return; }
@@ -111,10 +114,7 @@ const server = http.createServer(async (req, res) => {
       if (!handler) { res.writeHead(405).end("Method not allowed"); return; }
       const chunks = [];
       let size = 0;
-      // CV uploads (admin only) need room, so only a request carrying the right
-      // admin token may send 8 MB; everything else stays small.
-      const isAdmin = api[1] === "admin" && Boolean(process.env.ADMIN_TOKEN) && safeEqual(process.env.ADMIN_TOKEN, String(req.headers.authorization || "").replace(/^Bearer\s+/i, ""));
-      const limit = isAdmin ? 8_000_000 : 100_000;
+      const limit = 100_000;
       for await (const c of req) { size += c.length; if (size > limit) { res.writeHead(413, { "Content-Type": "application/json" }).end('{"error":"That file is too large."}'); return; } chunks.push(c); }
       const request = new Request(url, {
         method: req.method, headers: req.headers,
@@ -124,7 +124,7 @@ const server = http.createServer(async (req, res) => {
       // Security watch (lib/attacks.js): what was turned away, recorded after the reply is decided.
       const kind = response.status === 429 ? "rate_limited"
         : response.status === 401 && api[1] === "admin" ? "admin_token_guess"
-        : (response.status === 401 && api[1] === "cron") || (response.status === 403 && (api[1] === "deploy" || /^\/mpesa\/callback\//.test(api[2] || ""))) ? "secret_guess" : null;
+        : (response.status === 403 && (api[1] === "deploy" || /^\/mpesa\/callback\//.test(api[2] || ""))) ? "secret_guess" : null;
       if (kind) {
         const where = `${req.method} ${url.pathname.replace(/(\/mpesa\/callback\/).*/, "$1…")}`; // never the path secret, never the query
         import("./lib/attacks.js").then((a) => a.recordAttack(kind, { where, ip: clientIp(request) })).catch(() => {});
@@ -141,26 +141,25 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(r.status, { ...SECURITY, ...Object.fromEntries(r.headers) }).end(Buffer.from(await r.arrayBuffer()));
       return;
     }
-    // Clean addresses: /templates, /hunt, /cv… for pages; /<job> (e.g. /hourly,
-    // /inbox-cleanup), /r/<ref> and /h/<hunt code> open the homepage, which reads
-    // the path. Old *.html addresses redirect to the clean ones.
-    const old = url.pathname.match(/^\/(templates|hunt|cv|join|team|portal|proposal|admin|donate|va|bitcoin|bitcoin-core|wallet|products|collect)\.html$/);
-    if (old && req.method === "GET") { res.writeHead(301, { Location: `/${old[1] === "templates" ? "products" : old[1]}${url.search}` }).end(); return; }
-    // The free kits now live under Products.
-    if (/^\/templates\/?$/.test(url.pathname) && req.method === "GET") { res.writeHead(301, { Location: `/products${url.search}` }).end(); return; }
-    const page = url.pathname.match(/^\/(hunt|cv|join|team|portal|proposal|admin|donate|va|bitcoin|bitcoin-core|wallet|products|collect)\/?$/);
-    const { idForSlug } = await import("./data/catalog.js");
-    // /<job> opens that order on the VA page; /r/<ref> and /h/<code> land on the homepage.
-    const order = idForSlug(url.pathname.slice(1).replace(/\/$/, ""));
-    const home = /^\/(?:r|h)\/[a-z0-9]{4,12}\/?$/.test(url.pathname);
+    // Clean addresses: /library, /journey… for pages. Old *.html addresses
+    // redirect to the clean ones; pages that sold tasks and kits (the agency
+    // moved to altradits/chouMi) redirect to their nearest page here.
+    const GONE = { cv: "journey", products: "library", templates: "library", va: "", hunt: "", join: "", team: "", portal: "", proposal: "", collect: "", hourly: "", "bitcoin-setup": "bitcoin", lightning: "bitcoin",
+      // Old order links (one per task), shared in posts and emails: home.
+      ...Object.fromEntries(OLD_ORDERS.map((s) => [s, ""])) };
+    const old = url.pathname.match(/^\/([a-z-]+)(?:\.html|\/)?$/);
+    if (old && req.method === "GET" && old[1] in GONE) { res.writeHead(301, { Location: `/${GONE[old[1]]}` }).end(); return; }
+    if (/^\/(?:r|h)\/[a-z0-9]{4,12}\/?$/.test(url.pathname) && req.method === "GET") { res.writeHead(301, { Location: "/" }).end(); return; }
+    const oldPage = url.pathname.match(/^\/(journey|library|players|admin|donate|bitcoin|bitcoin-core|wallet)\.html$/);
+    if (oldPage && req.method === "GET") { res.writeHead(301, { Location: `/${oldPage[1]}${url.search}` }).end(); return; }
+    const page = url.pathname.match(/^\/(journey|library|players|admin|donate|bitcoin|bitcoin-core|wallet)\/?$/);
     // Ye₿ente: the built app in yebente/app, served at /yebente.
     const yb = url.pathname.match(/^\/yebente(?:\/(?:index\.html)?)?$/) ? "/yebente/app/index.html" : url.pathname.match(/^\/yebente\/((?:assets|fonts)\/[\w.-]+)$/)?.[1];
-    const rel = yb ? (yb.startsWith("/") ? yb : `/yebente/app/${yb}`) : page ? `/${page[1]}.html` : order ? "/va.html" : url.pathname === "/" || home ? "/index.html" : url.pathname;
+    const rel = yb ? (yb.startsWith("/") ? yb : `/yebente/app/${yb}`) : page ? `/${page[1]}.html` : url.pathname === "/" ? "/index.html" : url.pathname;
     if (!PUBLIC.test(rel)) { res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found"); return; }
     const file = path.join(ROOT, rel);
     const headers = { ...SECURITY, "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" };
-    if (/^\/(admin|proposal|portal|team|collect)\.html$/.test(rel)) headers["X-Robots-Tag"] = "noindex";
-    if (/^\/(admin|portal|collect|proposal|team)\.html$/.test(rel)) headers["Content-Security-Policy"] = cspFor(file);
+    if (rel === "/admin.html") Object.assign(headers, { "X-Robots-Tag": "noindex", "Content-Security-Policy": cspFor(file) });
     // Ye₿ente: the same policy as yebente/public/.htaccess (Apache serves it in production).
     if (rel === "/yebente/app/index.html") Object.assign(headers, { "Content-Security-Policy": YEBENTE_CSP, "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer" });
     // Font files never change under the same name: keep them a year.
@@ -174,36 +173,25 @@ const server = http.createServer(async (req, res) => {
 });
 server.listen(PORT, () => console.log(`Altradits running on port ${PORT}${PROD ? "" : `: http://localhost:${PORT}  (admin: /admin)`}`));
 
-// The follow-up agent: once a day, after 06:00 UTC. The deploy cron pings
-// /healthz every 5 minutes, which keeps this process (and timer) alive.
+// Daily, after 06:00 UTC: backup, clean-up and Stan's report to Stanley. The deploy cron pings /healthz
+// every 5 minutes, which keeps this process (and timer) alive.
 async function maybeRunDaily() {
-  // On the server the daily jobs (backup, clean-up, follow-ups) always run.
-  const siteUrl = process.env.SITE_URL || (SERVER ? "https://altradits.com" : null);
-  if (!siteUrl || new Date().getUTCHours() < 6) return;
+  if (new Date().getUTCHours() < 6) return;
   const { getJSON, setJSON } = await import("./lib/store.js");
   const today = new Date().toISOString().slice(0, 10);
   if ((await getJSON("daily:last")) === today) return;
   await setJSON("daily:last", today);
-  const { runFollowups } = await import("./lib/followups.js");
-  console.log("daily follow-ups", today, await runFollowups(siteUrl.replace(/\/$/, "")));
   const { backupNow } = await import("./lib/backup.js");
   console.log("daily backup", await backupNow().catch((e) => `failed: ${e.message}`));
   const { autoClean } = await import("./lib/cleanup.js");
   console.log("daily clean-up", await autoClean().catch((e) => `failed: ${e.message}`));
-  const { runNurture } = await import("./lib/subscribers.js");
-  console.log("free-kit follow-ups", await runNurture().catch((e) => `failed: ${e.message}`));
-  const { dailyDiscovery, syncCv } = await import("./lib/career.js");
-  console.log("daily CV sync", await syncCv().catch((e) => `failed: ${e.message}`));
-  console.log("daily job discovery", await dailyDiscovery().catch((e) => `failed: ${e.message}`));
-  const { runLearningCadence } = await import("./lib/learning.js");
-  console.log("daily learning cadence", await runLearningCadence().catch((e) => `failed: ${e.message}`));
+  const { sendStanReport } = await import("./lib/stan.js");
+  console.log("Stan's report", await sendStanReport().then((r) => r.status).catch((e) => `failed: ${e.message}`));
 }
-// After each deploy, bring the CV in line with what the site now offers.
-setTimeout(() => import("./lib/career.js").then((c) => c.syncCv()).then((r) => console.log("CV sync", r)).catch((e) => console.error("CV sync", e.message)), 60 * 1000).unref();
 setInterval(() => maybeRunDaily().catch((e) => console.error("daily", e)), 10 * 60 * 1000).unref();
-// Hourly: Lightning channel alerts and held payments (once the node is
-// connected), and bounced emails marked in the admin log. The last run is kept
-// in the store, so a restarted app neither skips nor repeats it.
+// Hourly, once the node is connected: channel alerts, and whether the node can
+// pay every Ye₿ente wallet. The last run is kept in the store, so a restarted
+// app neither skips nor repeats it.
 async function maybeRunHourly() {
   const { getJSON, setJSON } = await import("./lib/store.js");
   const last = await getJSON("hourly:last");
@@ -211,14 +199,16 @@ async function maybeRunHourly() {
   await setJSON("hourly:last", new Date().toISOString());
   if (process.env.LND_REST_URL) {
     import("./lib/channels.js").then((c) => c.watchChannels()).catch((e) => console.error("channels", e.message));
-    import("./lib/finance.js").then((f) => f.checkHeld()).then((r) => r.confirmed && console.log("moved to node", r)).catch((e) => console.error("held", e.message));
-    import("./lib/attacks.js").then((a) => a.checkSolvency()).catch((e) => console.error("solvency", e.message)); // can the node pay every wallet?
+    import("./lib/attacks.js").then((a) => a.checkSolvency()).catch((e) => console.error("solvency", e.message));
   }
-  import("./lib/bounces.js").then((b) => b.checkBounces()).then((r) => r.bounced && console.log("bounces", r)).catch((e) => console.error("bounces", e.message));
 }
 setInterval(() => maybeRunHourly().catch((e) => console.error("hourly", e)), 10 * 60 * 1000).unref();
 // Ye₿ente wallets: credit invoices paid while the app was closed (every 2 minutes).
 setInterval(() => { if (["on", "true", "yes", "1"].includes(String(process.env.YEBENTE_WALLETS || "").trim().replace(/^["']|["']$/g, "").toLowerCase()) && process.env.LND_REST_URL) import("./lib/ywallet.js").then((y) => Promise.all([y.settleOpen(), y.reconcilePayments()])).catch((e) => console.error("yebente settle", e.message)); }, 2 * 60 * 1000).unref();
+
+// Once, after the agency moved to altradits/chouMi: its records (test orders
+// included) are archived to one owner-only file, then removed from the store.
+if (SERVER) setTimeout(() => import("./lib/cleanup.js").then((c) => c.retireAgency()).then((r) => !r.already && console.log("agency records retired", r)).catch((e) => console.error("retire", e.message)), 30 * 1000).unref();
 
 // The host stops an idle app, so the 10-minute timers alone can miss a day.
 // Every /healthz ping (the deploy cron, every 5 minutes) also runs what's due.
@@ -228,13 +218,3 @@ function dueJobs() {
   checking = true;
   Promise.allSettled([maybeRunDaily(), maybeRunHourly()]).then((r) => r.forEach((x) => x.status === "rejected" && console.error("due jobs", x.reason))).finally(() => { checking = false; });
 }
-
-// The marketing team: plans the day's posts and publishes each at its slot.
-// Also nudged by /healthz (a scheduled GitHub Action wakes the app at slot times).
-const marketing = () => import("./lib/marketing.js").then((m) => m.marketingTick()).then((r) => r.posted?.length && console.log("marketing", r)).catch((e) => console.error("marketing", e.message));
-setInterval(marketing, 5 * 60 * 1000).unref();
-
-// The department AI agents work through queued client tasks in the background.
-const kick = () => import("./lib/workers.js").then((w) => w.processQueue()).catch((e) => console.error("queue", e));
-setInterval(kick, 2 * 60 * 1000).unref();
-setTimeout(kick, 5000).unref();

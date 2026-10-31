@@ -6,13 +6,17 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5yUex9xZEzC6j6LpSWQyHRS16TAX9hd7D8aVAP1d/WI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g=' 'sha256-3Fc0tfNY8PNSFDzt94O7bs9deC+YLnsxnJSHJEMwRbE='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/donate">
-<title>Donate · Altradits</title>
-<meta name="description" content="Donate in Bitcoin to fund Bitcoin education in our community, so more people and businesses earn, save and pay in Bitcoin instead of fiat.">
+<title>Support Stanley's open-source Bitcoin work · Altradits</title>
+<meta name="description" content="Send sats over Lightning, straight to Stanley's own node, to support free Bitcoin guides, code review and community teaching in Kisumu. Nothing is sold.">
 <link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
+<meta property="og:title" content="Support Stanley's open-source Bitcoin work · Altradits">
+<meta property="og:description" content="Send sats over Lightning, straight to Stanley's own node, to support free Bitcoin guides, code review and community teaching in Kisumu. Nothing is sold.">
+<meta property="og:url" content="https://altradits.com/donate">
+<meta property="og:type" content="website">
 <style>
 /* Brand fonts, served from this site: Bricolage Grotesque and Figtree (SIL Open Font License 1.1, https://openfontlicense.org), latin and latin-ext (₿), variable weight */
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
@@ -25,131 +29,113 @@
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
 a{color:var(--blue)}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
-[hidden]{display:none!important}
 .wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
-.wrap > :not(.top):not(.hero){max-width:40rem}
-.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.75rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0;padding:1.1rem 0;flex-wrap:wrap;row-gap:.35rem}
 .top img{height:2.5rem;width:auto;display:block}
-.top a.jobs{font-weight:600;text-decoration:none;color:var(--muted)}
-h1{font:800 clamp(2rem,6vw,2.8rem)/1.05 'Bricolage Grotesque',sans-serif;margin:0 0 .6rem}
-h1 em{font-style:normal;color:var(--btc-text)}
-.lead{color:var(--muted);font-size:1.1rem;margin:0 0 1.2rem}
-.raised{font-weight:600;margin:0 0 1.4rem}
-.card{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.4rem}
-.amounts{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin:0 0 .7rem}
-.amounts button{font:800 1.2rem 'Bricolage Grotesque',sans-serif;padding:.75rem 0;border:2px solid var(--line);border-radius:.7rem;background:var(--paper);cursor:pointer;color:var(--ink)}
-.amounts button[aria-pressed=true]{border-color:var(--btc);background:color-mix(in srgb,var(--btc) 12%,white)}
-label{display:block;font-weight:600;font-size:.92rem;margin:.6rem 0 .2rem}
-input,textarea{width:100%;padding:.7rem .8rem;border:2px solid var(--line);border-radius:.6rem;font:inherit;background:var(--bg)}
-input:focus,textarea:focus{border-color:var(--ink);background:#fff}
-textarea{min-height:4.5rem;resize:vertical}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
-.btn{display:flex;width:100%;justify-content:center;margin-top:1rem;padding:.9rem 1.2rem;border-radius:.7rem;font:700 1.05rem Figtree,sans-serif;border:2px solid var(--btc);cursor:pointer;background:var(--btc);color:var(--ink)}
-.msg{min-height:1.4rem;margin:.6rem 0 0;color:var(--muted)}
-.msg.err{color:#B42318}
-.thanks{text-align:center}
-.thanks h2{font:800 1.6rem 'Bricolage Grotesque',sans-serif;margin:.2rem 0}
-.note{color:var(--muted);font-size:.9rem;margin:1.2rem 0 0}
-@media (max-width:420px){.amounts{grid-template-columns:repeat(2,1fr)}.row2{grid-template-columns:1fr}}
-.anon{display:flex;gap:.5rem;align-items:flex-start;font-weight:400;margin:.9rem 0 .2rem}.anon input{width:auto;margin-top:.3rem}
-.dname{margin-top:1rem;padding:.8rem 1rem;border:2px dashed var(--line);border-radius:.8rem;text-align:left}
-.dname code{font:700 1.05rem ui-monospace,Menlo,monospace}.dname p{margin:.2rem 0}.dname button{font:600 .85rem Figtree,sans-serif;padding:.25rem .7rem;border:2px solid var(--ink);border-radius:.5rem;background:#fff;cursor:pointer;margin-left:.4rem}
-.topnav{display:flex;gap:1.1rem}
-.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap}
-@media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
-/* When space runs out, the menu moves under the logo (and wraps) instead of spilling off the screen */
-.top{flex-wrap:wrap;row-gap:.35rem}.topnav{flex-wrap:wrap;row-gap:.2rem}
+.topnav{display:flex;gap:1.1rem;flex-wrap:wrap;row-gap:.2rem}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.35rem 0}
 .topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
-.payhead{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0 0 .6rem}.payhead h2{font:800 1.4rem 'Bricolage Grotesque',sans-serif;margin:0}
-.link{background:none;border:0;color:var(--blue);font:600 .95rem Figtree,sans-serif;cursor:pointer;min-height:2.75rem;padding:0}
-.dname{margin:0 0 1rem}.dname code{white-space:nowrap;font-size:clamp(.82rem,4vw,1.05rem)}.dname button{display:flex;margin:.4rem 0 0;min-height:2.75rem;align-items:center}
-.anon{min-height:2.75rem}.anon input{width:1.25rem;height:1.25rem}
-.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:2rem}
-.sitefoot a{color:var(--muted);display:inline-block;padding:.6rem 0}
+@media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
+.hero{padding:2.25rem 0 1.5rem}
+.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem}
+.hero h1 em{font-style:normal;color:var(--btc-text)}
+.lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:38rem}
+.ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
+.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none}
+.btn.ghost{background:transparent;border-color:var(--ink)}
+h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:2.4rem 0 .4rem}
+h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
+.intro{color:var(--muted);margin:0 0 1.2rem;max-width:42rem}
+.cards{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem}
+.cards>li{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem}
+.cards p{margin:0;color:var(--muted);font-size:.97rem}
+.cards .links{display:flex;flex-wrap:wrap;gap:.4rem 1rem;margin-top:auto;padding-top:.3rem;font-weight:600}
+.tag{align-self:flex-start;font-size:.78rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}
+.sitefoot .wp{margin:0 0 .6rem}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-/* Hero: the same on every page — headline, one line, at most one button. No motion anywhere. */
-.hero{position:static;display:block;max-width:none;margin:0;padding:2.25rem 0 2rem}
-.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:44rem;color:var(--ink)}
-.hero h1 em{font-style:normal;color:var(--blue)}
-.hero .lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:36rem}
-.hero .btn{padding:.9rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif}
-.hero .ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
-.top{margin:0!important;padding:1.1rem 0!important}
-.sitefoot .wrap{padding-top:0;padding-bottom:0}
 *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
-a:hover,.btn:hover,button:hover{transform:none!important}
+.pay{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.2rem;max-width:34rem}
+.pay h2{margin-top:0}
+.amts{display:flex;flex-wrap:wrap;gap:.4rem;margin:.4rem 0}
+.amts button{min-height:2.75rem;padding:.4rem .9rem;border-radius:.6rem;border:2px solid var(--line);background:var(--bg);font:600 1rem Figtree,sans-serif;cursor:pointer}
+input,textarea{width:100%;padding:.7rem .8rem;border:2px solid var(--line);border-radius:.6rem;font:inherit;background:var(--bg);margin:.3rem 0 .8rem}
+textarea{font:12px ui-monospace,Menlo,monospace}
+.qr{max-width:16rem;background:#fff;padding:.5rem;border-radius:.6rem;margin:1rem 0 .5rem}.qr svg{display:block;width:100%;height:auto}
+.addr{font-family:ui-monospace,Menlo,monospace;overflow-wrap:anywhere}
+.err{color:#B42318}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/yebente#create">Wallet</a><a href="/bitcoin-core">Bitcoin Core</a></nav></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/wallet">Ye₿ente</a><a href="/library">Library</a><a href="/bitcoin-core">Bitcoin Core</a><a href="/players">Players</a><a href="/journey">Journey</a></nav></div>
+
   <header class="hero">
-    <h1>Fund Bitcoin <em>education.</em></h1>
-    <p class="lead" id="purpose">Help people in our community learn to earn, save and pay in Bitcoin.</p>
+    <h1>Support my <em>open-source Bitcoin work.</em></h1>
+    <p class="lead">Nothing is for sale here. Sats help me spend more time reviewing code, writing guides and teaching for free.</p>
   </header>
-  <p class="raised" id="raised" hidden></p>
 
-  <div class="card" id="give">
-    <div class="amounts" role="group" aria-label="Amount in US dollars" id="amounts"></div>
-    <label for="custom">Or another amount (USD)</label>
-    <input id="custom" type="number" min="1" step="1" inputmode="decimal" placeholder="e.g. 35">
-    <label for="customSats">Or an amount in sats (from 10 sats)</label>
-    <input id="customSats" type="number" min="10" step="1" inputmode="numeric" placeholder="e.g. 2100">
-    <label class="anon"><input type="checkbox" id="anon"> <span><b>Give anonymously.</b> No name or email is kept. You get a donation name instead, to collect your receipt.</span></label>
-    <div class="row2" id="who">
-      <div><label for="name">Name (optional)</label><input id="name" autocomplete="name"></div>
-      <div><label for="email">Email for your receipt (optional)</label><input id="email" type="email" autocomplete="email"></div>
+  <section class="pay" aria-labelledby="hPay">
+    <h2 id="hPay">Send sats</h2>
+    <p class="intro">Any Lightning wallet. Straight to my own node.</p>
+    <form id="tipForm">
+      <label for="sats"><b>Amount (sats)</b></label>
+      <div class="amts" id="amts"><button type="button" data-s="1000">1,000</button><button type="button" data-s="5000">5,000</button><button type="button" data-s="21000">21,000</button><button type="button" data-s="100000">100,000</button></div>
+      <input id="sats" name="sats" type="number" inputmode="numeric" min="10" max="5000000" step="1" required>
+      <button class="btn" type="submit">Make an invoice</button>
+      <p class="err" id="err" role="alert"></p>
+    </form>
+    <div id="invoice" hidden>
+      <div class="qr" id="qr"></div>
+      <textarea id="bolt" readonly rows="3" aria-label="Lightning invoice"></textarea>
+      <div class="ctas"><button type="button" class="btn ghost" id="copy">Copy invoice</button><a class="btn ghost" id="open" href="#">Open in wallet</a></div>
+      <p id="state" role="status">Waiting for payment…</p>
     </div>
-    <label for="message">Message (optional)</label>
-    <textarea id="message" maxlength="600" placeholder="What made you give?"></textarea>
-    <button class="btn" id="go"><span class="lbl">Donate with <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></span></button>
-    <p class="msg" id="msg" role="status"></p>
-  </div>
+    <div id="fallback" hidden>
+      <p>Or send any amount to this Lightning address:</p>
+      <div class="qr" id="fbqr"></div>
+      <p class="addr" id="fbaddr"></p>
+    </div>
+  </section>
 
-  <div class="card" id="payCard" hidden><div class="payhead"><h2 id="payTitle">Your donation</h2><button type="button" class="link" id="change">← Change amount</button></div><div class="dname" id="dname" hidden></div><div id="pay"></div></div>
-  <div class="card thanks" id="thanks" hidden><h2>Thank you ⚡</h2><p>Your donation has arrived. It goes to Bitcoin education in our community.</p><div class="dname" id="dname2" hidden></div></div>
+  <h2>Other ways to help</h2>
+  <ul class="cards">
+    <li><h3>Mentor or review</h3><p>Point me to good first reviews. Check my pull requests.</p><div class="links"><a href="mailto:hello@altradits.com?subject=Mentoring%20or%20review">Get in touch</a></div></li>
+    <li><h3>Host a session</h3><p>A venue or internet for BitDevs Kisumu.</p><div class="links"><a href="mailto:hello@altradits.com?subject=Hosting%20BitDevs%20Kisumu">Offer a space</a></div></li>
+    <li><h3>Use and share the tools</h3><p>Try Ye₿ente. Report bugs. Share the Library.</p><div class="links"><a href="/wallet">Ye₿ente</a><a href="/library">Library</a></div></li>
+  </ul>
 
-  <p class="note">Pay with any Bitcoin wallet (<a href="/wallet">no wallet yet? get one in a minute</a>): Lightning settles in seconds, on-chain once confirmed. Altradits adds no fee. With an email, your receipt arrives by email; without one, collect it with your donation name.</p>
 </div>
-<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/wallet">Get a Bitcoin wallet</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
-<script type="module">
+
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/wallet">Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin in Kisumu</a> · <a href="/players">Players</a> · <a href="/journey">Journey</a> · <a href="/donate">Support my work</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
-import { mountPay } from "/assets/pay-widget.js";
-const $ = (s) => document.querySelector(s);
-let info = { suggested: [5, 20, 50, 100], min: 1, max: 5000, minSats: 10, maxSats: 5000000 }, amount = null, satsAmount = null;
-try {
-  info = await (await fetch("/api/donate")).json();
-  if (info.raised > 0) { $("#raised").hidden = false; $("#raised").textContent = `$${info.raised.toLocaleString("en-US")} raised from ${info.donors} donor${info.donors === 1 ? "" : "s"} so far.`; }
-} catch {}
-$("#amounts").innerHTML = info.suggested.map((a) => `<button type="button" aria-pressed="false" data-a="${a}">$${a}</button>`).join("");
-$("#amounts").addEventListener("click", (e) => {
-  const a = e.target.dataset.a; if (!a) return;
-  amount = Number(a); satsAmount = null; $("#custom").value = ""; $("#customSats").value = "";
-  document.querySelectorAll("#amounts button").forEach((b) => b.setAttribute("aria-pressed", b === e.target));
-});
-$("#anon").addEventListener("change", (e) => { $("#who").hidden = e.target.checked; if (e.target.checked) { $("#name").value = ""; $("#email").value = ""; } });
-const nameBox = (n) => `<p><b>Your donation name</b></p><p><code>${n.replace(/[^A-Z0-9-]/g, "")}</code><button type="button" data-copy="${n.replace(/[^A-Z0-9-]/g, "")}">Copy</button></p><p class="note" style="margin:.3rem 0 0">Save it: enter it at <a href="/collect">altradits.com/collect</a> to download your receipt once the payment is confirmed.</p>`;
-document.addEventListener("click", async (e) => { const n = e.target.dataset?.copy; if (!n) return; try { await navigator.clipboard.writeText(n); e.target.textContent = "Copied ✓"; } catch { e.target.textContent = "Select and copy it"; } });
-$("#change").addEventListener("click", () => { $("#payCard").hidden = true; $("#give").hidden = false; $("#go").disabled = false; $("#msg").textContent = ""; });
-$("#customSats").addEventListener("input", () => { satsAmount = Number($("#customSats").value) || null; amount = null; $("#custom").value = ""; document.querySelectorAll("#amounts button").forEach((b) => b.setAttribute("aria-pressed", "false")); });
-$("#custom").addEventListener("input", () => { amount = Number($("#custom").value) || null; satsAmount = null; $("#customSats").value = ""; document.querySelectorAll("#amounts button").forEach((b) => b.setAttribute("aria-pressed", "false")); });
-$("#go").addEventListener("click", async () => {
-  const msg = $("#msg");
-  if (satsAmount !== null ? !(Number.isInteger(satsAmount) && satsAmount >= info.minSats && satsAmount <= info.maxSats) : !(amount >= info.min && amount <= info.max)) {
-    msg.className = "msg err"; msg.textContent = satsAmount !== null ? `Choose a whole number of sats, from ${info.minSats} to ${info.maxSats.toLocaleString("en-US")}.` : `Choose an amount between $${info.min} and $${info.max}, or from ${info.minSats} sats.`; return;
+</script>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  let poll = null;
+  $("#amts").addEventListener("click", (e) => { const s = e.target.closest("[data-s]")?.dataset.s; if (s) $("#sats").value = s; });
+  async function fallback() {
+    try { const r = await (await fetch("/api/tip")).json(); $("#fbqr").innerHTML = r.qr; $("#fbaddr").textContent = r.address; $("#fallback").hidden = false; } catch {}
   }
-  msg.className = "msg"; msg.textContent = "Creating your payment QR…"; $("#go").disabled = true;
-  try {
-    const r = await fetch("/api/donate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...(satsAmount !== null ? { sats: satsAmount } : { usd: amount }), anonymous: $("#anon").checked, name: $("#name").value, email: $("#email").value, message: $("#message").value }) });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || "Something went wrong.");
-    $("#give").hidden = true; $("#payCard").hidden = false;
-    $("#payTitle").textContent = satsAmount !== null ? `Donate ${satsAmount.toLocaleString("en-US")} sats` : `Donate $${amount}`;
-    const showName = !$("#email").value.trim() && d.name;
-    if (showName) for (const id of ["#dname", "#dname2"]) { $(id).innerHTML = nameBox(d.name); $(id).hidden = false; }
-    mountPay($("#pay"), { id: d.id, t: d.t, claim: true, onPaid: () => { $("#payCard").hidden = true; $("#thanks").hidden = false; } });
-  } catch (err) { msg.className = "msg err"; msg.textContent = err.message; $("#go").disabled = false; }
-});
+  $("#tipForm").addEventListener("submit", async (e) => {
+    e.preventDefault(); $("#err").textContent = "";
+    let r;
+    try { r = await (await fetch("/api/tip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sats: Number($("#sats").value) }) })).json(); }
+    catch { $("#err").textContent = "No connection. Try again."; return; }
+    if (r.error) { $("#err").textContent = r.error; if (r.offline) fallback(); return; }
+    $("#qr").innerHTML = r.qr; $("#bolt").value = r.bolt11; $("#open").href = "lightning:" + r.bolt11;
+    $("#invoice").hidden = false; $("#state").textContent = "Waiting for payment…";
+    clearInterval(poll);
+    poll = setInterval(async () => {
+      if (Date.parse(r.expiresAt) < Date.now()) { clearInterval(poll); $("#state").textContent = "This invoice expired. Make a new one."; return; }
+      try { const s = await (await fetch("/api/tip?hash=" + r.hash)).json(); if (s.paid) { clearInterval(poll); $("#state").textContent = "Received. Thank you ⚡"; } } catch {}
+    }, 4000);
+  });
+  $("#copy").addEventListener("click", () => navigator.clipboard?.writeText($("#bolt").value).then(() => { $("#copy").textContent = "Copied"; }));
+})();
 </script>
 </body>
 </html>

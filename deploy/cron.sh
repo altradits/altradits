@@ -47,7 +47,7 @@ fi
 # Dependencies live in the Node.js App's virtualenv (~/nodevenv/...).
 VENV=$(ls -d "$HOME/nodevenv/${APP_DIR#$HOME/}"/*/bin 2>/dev/null | sort -V | tail -1 || true)
 if [ -n "$VENV" ]; then
-  if [ ! -e node_modules/@anthropic-ai/sdk ] || echo "$CHANGED" | grep -qE '^package(-lock)?\.json$'; then
+  if [ ! -e node_modules/nodemailer ] || echo "$CHANGED" | grep -qE '^package(-lock)?\.json$'; then
     . "$VENV/activate"
     # No package install scripts run on the server (versions are pinned in package.json
     # and package-lock.json). Not "npm ci": it deletes node_modules, which on this host

@@ -37,14 +37,12 @@ test("deploy runs once, then is rate limited for a minute", async () => {
   assert.equal((await second.json()).started, false);
 });
 
-test("Apache never serves server code, internal data or the extension (a revert removed this once)", () => {
+test("Apache never serves server code or internal data (a revert removed this once)", () => {
   const root = new URL("..", import.meta.url).pathname;
   const ht = fs.readFileSync(path.join(root, ".htaccess"), "utf8");
   assert.match(ht, /CLOUDLINUX PASSENGER CONFIGURATION BEGIN/); // the app still starts
-  for (const f of ["server\\.mjs", "app\\.cjs", "package(-lock)?\\.json", "README\\.md", "RedirectMatch 404 ^/\\.git", "RedirectMatch 404 ^/apply-extension"]) assert.ok(ht.includes(f), f);
-  const data = fs.readFileSync(path.join(root, "data/.htaccess"), "utf8");
-  assert.ok(data.includes("(?!catalog\\.js$|playbooks\\.js$|community\\.js$)")); // only the three public data files
-  for (const d of ["lib", "api", "deploy", "test", "apply-extension"]) assert.match(fs.readFileSync(path.join(root, d, ".htaccess"), "utf8"), /Require all denied/, d);
+  for (const f of ["server\\.mjs", "app\\.cjs", "package(-lock)?\\.json", "README\\.md", "RedirectMatch 404 ^/\\.git"]) assert.ok(ht.includes(f), f);
+  for (const d of ["lib", "api", "data", "deploy", "test"]) assert.match(fs.readFileSync(path.join(root, d, ".htaccess"), "utf8"), /Require all denied/, d);
 });
 
 test("a failed git fetch doesn't stop the deploy script before its keep-warm ping", () => {
@@ -52,4 +50,13 @@ test("a failed git fetch doesn't stop the deploy script before its keep-warm pin
   assert.match(sh, /GIT_TERMINAL_PROMPT=0/);
   assert.match(sh, /if git fetch -q origin main/);
   assert.doesNotMatch(sh, /^git fetch -q origin main$/m);
+});
+
+test("old addresses: agency pages and every old task order redirect, in Node and in Apache", () => {
+  const root = new URL("..", import.meta.url).pathname;
+  const srv = fs.readFileSync(path.join(root, "server.mjs"), "utf8"), ht = fs.readFileSync(path.join(root, ".htaccess"), "utf8");
+  const orders = srv.match(/const OLD_ORDERS = "([^"]+)"/)[1].split(" ");
+  assert.ok(orders.length >= 60 && orders.includes("inbox-cleanup") && orders.includes("try"));
+  for (const s of orders) assert.ok(ht.includes(`|${s}|`) || ht.includes(`(${s}|`) || ht.includes(`|${s})`), `${s} redirects in Apache too`);
+  assert.match(ht, /RewriteRule \^cv\(\\\.html\)\?\/\?\$ \/journey \[R=301,L\]/);
 });
