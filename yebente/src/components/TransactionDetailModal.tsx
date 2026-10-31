@@ -9,7 +9,6 @@ interface TransactionDetailModalProps {
 
 const TYPE_TITLES: Record<string, string> = {
   buy_btc: 'Buy Sats',
-  send_mpesa: 'Send M-Pesa',
   receive_btc: 'Receive Sats',
   send_btc: 'Send Sats',
 };
@@ -50,7 +49,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
       return { text: `-${sats.toLocaleString()} Sats`, isPositive: false };
     }
     if (transaction.type === 'send_mpesa') {
-      return { text: `-${Number(transaction.toAmount || 0).toLocaleString()} KES`, isPositive: false };
+      return { text: `-${Number(transaction.toAmount || 0).toLocaleString()} ${transaction.toCurrency || 'KES'}`, isPositive: false };
     }
     return { text: `${Number(transaction.fromAmount || 0).toLocaleString()} ${transaction.fromCurrency}`, isPositive: false };
   };
@@ -95,7 +94,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               {amount.text}
             </div>
             <div className="text-sm font-semibold text-[var(--yb-secondary)] mt-1">
-              {TYPE_TITLES[transaction.type] || transaction.title}
+              {TYPE_TITLES[transaction.type] || transaction.title.replace(/\s*\(\+?\d[\d ]*\)$/, '')}
             </div>
             <div className="text-xs text-[var(--yb-on-surface-variant)] font-mono mt-0.5">
               {dateStr}

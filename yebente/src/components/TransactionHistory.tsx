@@ -9,7 +9,6 @@ interface TransactionHistoryProps {
 
 const TYPE_TITLES: Record<string, string> = {
   buy_btc: 'Buy Sats',
-  send_mpesa: 'Send M-Pesa',
   receive_btc: 'Receive Sats',
   send_btc: 'Send Sats',
 };
@@ -58,7 +57,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
       return { text: `-${sats.toLocaleString()} Sats`, isPositive: false };
     }
     if (tx.type === 'send_mpesa') {
-      return { text: `-${Number(tx.toAmount || 0).toLocaleString()} KES`, isPositive: false };
+      return { text: `-${Number(tx.toAmount || 0).toLocaleString()} ${tx.toCurrency || 'KES'}`, isPositive: false };
     }
     return { text: `${Number(tx.fromAmount || 0).toLocaleString()} ${tx.fromCurrency}`, isPositive: false };
   };
@@ -104,7 +103,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                     <div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-semibold text-[var(--yb-on-surface)] group-hover:text-[var(--yb-secondary)]">
-                          {TYPE_TITLES[tx.type] || tx.title}
+                          {TYPE_TITLES[tx.type] || tx.title.replace(/\s*\(\+?\d[\d ]*\)$/, '')}
                         </span>
                       </div>
                       <div className="text-xs text-[var(--yb-on-surface-variant)] font-mono mt-0.5">
