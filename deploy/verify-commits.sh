@@ -17,7 +17,9 @@
 # the trust root isn't an ancestor (rewritten history).
 set -u
 # Everything up to here predates signing (30 Oct 2026). Never move this backwards.
-TRUST_ROOT=2ef931f7f09557cfa2a40b6679067532c1e09218
+# (Same commit as 2ef931f, renumbered on 31 Oct 2026 when an AI co-author line
+# was removed from an older commit message.)
+TRUST_ROOT=3c9ca96542d750fc51b62df42cb93be251920c09
 REF="${1:-HEAD}"
 SIGNERS="${2:-.github/allowed_signers}"
 

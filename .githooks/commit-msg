@@ -1,0 +1,3 @@
+#!/bin/sh
+# Refuses a commit whose message names an AI co-author (see deploy/no-ai-coauthor.sh).
+exec sh deploy/no-ai-coauthor.sh --message "$1"
