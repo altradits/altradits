@@ -60,3 +60,10 @@ test("old addresses: agency pages and every old task order redirect, in Node and
   for (const s of orders) assert.ok(ht.includes(`|${s}|`) || ht.includes(`(${s}|`) || ht.includes(`|${s})`), `${s} redirects in Apache too`);
   assert.match(ht, /RewriteRule \^cv\(\\\.html\)\?\/\?\$ \/journey \[R=301,L\]/);
 });
+
+test("pages are revalidated on every visit, so updates show at once (Apache serves them directly)", () => {
+  const root = new URL("..", import.meta.url).pathname;
+  for (const f of [".htaccess", "yebente/public/.htaccess", "yebente/app/.htaccess"]) {
+    assert.match(fs.readFileSync(path.join(root, f), "utf8"), /<FilesMatch "\\\.html\$">\s*Header set Cache-Control "no-cache"/, f);
+  }
+});

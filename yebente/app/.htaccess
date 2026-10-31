@@ -17,4 +17,13 @@
   Header always set Permissions-Policy "camera=(self), microphone=(), geolocation=()"
   Header always set Strict-Transport-Security "max-age=31536000"
   Header always set Cross-Origin-Opener-Policy "same-origin"
+  # Updates show at once: the start page is checked on every visit (an unchanged
+  # one still loads from cache). Built files carry a version in their name, so
+  # they can be kept a year.
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "\.(js|css|woff2)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
 </IfModule>
