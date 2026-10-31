@@ -1,8 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import { extractKenyanSubscriberDigits } from '../services/mpesaService';
 
-interface KenyaPhoneInputProps {
+// A mobile number: the country code is fixed (+254, +251…), people type or paste
+// the rest in any form (07…, 2547…, +254 7…).
+const subscriber = (dial: string, digits: number, phone: string) => {
+  let d = String(phone || '').replace(/\D/g, '');
+  if (d.startsWith(dial)) d = d.slice(dial.length);
+  return d.replace(/^0+/, '').slice(0, digits);
+};
+
+interface PhoneInputProps {
+  dial: string; // country code without +, e.g. 254
+  digits: number; // subscriber digits after it
+  example: string; // e.g. 712 345 678
   value: string;
   onChange: (fullPhone: string, rawDigits: string) => void;
   label?: string;
@@ -11,19 +21,22 @@ interface KenyaPhoneInputProps {
   required?: boolean;
 }
 
-export const KenyaPhoneInput: React.FC<KenyaPhoneInputProps> = ({
+export const PhoneInput: React.FC<PhoneInputProps> = ({
+  dial,
+  digits: length,
+  example,
   value,
   onChange,
-  label = 'M-Pesa phone number',
+  label = 'Phone number',
   ariaLabel,
   disabled = false,
 }) => {
-  const [digits, setDigits] = useState<string>(() => extractKenyanSubscriberDigits(value));
+  const [digits, setDigits] = useState<string>(() => subscriber(dial, length, value));
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Keep internal digits synced if value prop changes externally
   useEffect(() => {
-    const extracted = extractKenyanSubscriberDigits(value);
+    const extracted = subscriber(dial, length, value);
     if (extracted !== digits) {
       setDigits(extracted);
     }
@@ -31,10 +44,10 @@ export const KenyaPhoneInput: React.FC<KenyaPhoneInputProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
-    const cleanDigits = extractKenyanSubscriberDigits(raw);
+    const cleanDigits = subscriber(dial, length, raw);
     setDigits(cleanDigits);
 
-    const fullPhone = cleanDigits.length > 0 ? `254${cleanDigits}` : '';
+    const fullPhone = cleanDigits.length > 0 ? `${dial}${cleanDigits}` : '';
     onChange(fullPhone, cleanDigits);
   };
 
@@ -49,7 +62,7 @@ export const KenyaPhoneInput: React.FC<KenyaPhoneInputProps> = ({
     if (!val) return '';
     if (val.length <= 3) return val;
     if (val.length <= 6) return `${val.slice(0, 3)} ${val.slice(3)}`;
-    return `${val.slice(0, 3)} ${val.slice(3, 6)} ${val.slice(6, 9)}`;
+    return `${val.slice(0, 3)} ${val.slice(3, 6)} ${val.slice(6)}`;
   };
 
   return (
@@ -60,25 +73,25 @@ export const KenyaPhoneInput: React.FC<KenyaPhoneInputProps> = ({
         </label>
       )}
 
-      {/* Input container with fixed Kenya prefix */}
+      {/* The country code is fixed */}
       <div
         className="flex items-center rounded-2xl bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] focus-within:border-[var(--yb-primary)] overflow-hidden"
       >
         {/* Country Code Prefix Badge */}
         <div className="flex items-center px-3 py-2.5 bg-[var(--yb-surface-container-low)] border-r border-[var(--yb-outline-variant)] shrink-0 select-none">
-          <span className="text-xs font-mono font-bold text-[var(--yb-on-surface)]">+254</span>
+          <span className="text-xs font-mono font-bold text-[var(--yb-on-surface)]">+{dial}</span>
         </div>
 
-        {/* 9-digit Subscriber Number input */}
+        {/* The subscriber number */}
         <div className="relative flex-1 flex items-center">
           <input
             ref={inputRef}
             type="tel"
-            aria-label={ariaLabel || label || 'Kenyan phone number'}
+            aria-label={ariaLabel || label || 'Phone number'}
             disabled={disabled}
             value={formatDisplayDigits(digits)}
             onChange={handleInputChange}
-            placeholder="7XX XXX XXX"
+            placeholder={example}
             maxLength={20} // Allows pasting full international formats
             className="w-full bg-transparent pl-3.5 pr-10 py-2.5 text-sm font-mono font-bold text-[var(--yb-on-surface)] placeholder-[#554653] focus:outline-none disabled:opacity-50"
           />

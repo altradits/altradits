@@ -20,6 +20,7 @@
 //   POST wallet/device/register {pin, device}  an older token moves to a device key
 //   POST wallet/lock, wallet/device/remove {deviceId, pin}
 //   GET  wallet/me, wallet/history, wallet/security  (Authorization: Bearer <session>)
+//   GET  rails                           Send Mobile's switched-on payout options (lib/rails.js)
 //   POST wallet/send {to, sats, pin}      a Ye₿ente handle (free), a Lightning address
 //                                          (incl. phone@bitcoin.co.ke = M-Pesa) or an invoice
 //   POST wallet/invoice {sats}            an invoice on the node for this wallet
@@ -365,6 +366,8 @@ export async function GET(request) {
     return emailPage(200, "Confirm your email", "Press the button to confirm this email for your Ye₿ente wallet.",
       `<form method="post" action="/api/yebente/wallet/email-confirm"><input type="hidden" name="t" value="${t}"><button style="font:600 1rem system-ui;padding:.7rem 1.2rem;border-radius:999px;border:0;background:#DDB8FF;color:#141117;cursor:pointer">Confirm my email</button></form>`);
   }
+  // Send Mobile's switched-on payout options (lib/rails.js): the app draws one button each.
+  if (path === "rails") return json({ success: true, rails: (await import("../lib/rails.js")).railsOn() });
   const lp = path.match(/^lnurlp\/([a-z0-9._-]{3,20})$/) || path.match(/^lnurl\/([a-z0-9._-]{3,20})$/);
   if (lp) return lnurlPay(request, lp[1], path.startsWith("lnurl/"));
   const wg = path.match(/^wallet\/(me|history|security|invoice\/[0-9a-f]{64}|buy\/[\w-]{6,80})$/);
