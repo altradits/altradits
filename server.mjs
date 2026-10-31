@@ -35,7 +35,7 @@ if (!SERVER) {
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|donate\.html|bitcoin\.html|wallet\.html|bitcoin-core\.html|robots\.txt|sitemap\.xml|yebente\/app\/(?:index\.html|assets\/[\w.-]+|fonts\/[\w.-]+)|assets\/[\w.-]+|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|donate\.html|bitcoin\.html|wallet\.html|bitcoin-core\.html|robots\.txt|sitemap\.xml|yebente\/app\/(?:index\.html|assets\/[\w.-]+|fonts\/[\w.-]+)|assets\/[\w.-]+|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
 // HSTS: browsers that have visited once only ever use HTTPS here (no includeSubDomains,
 // so other subdomains such as mail are unaffected). COOP: no other site keeps a handle
 // on our windows.
@@ -150,9 +150,9 @@ const server = http.createServer(async (req, res) => {
     const old = url.pathname.match(/^\/([a-z-]+)(?:\.html|\/)?$/);
     if (old && req.method === "GET" && old[1] in GONE) { res.writeHead(301, { Location: `/${GONE[old[1]]}` }).end(); return; }
     if (/^\/(?:r|h)\/[a-z0-9]{4,12}\/?$/.test(url.pathname) && req.method === "GET") { res.writeHead(301, { Location: "/" }).end(); return; }
-    const oldPage = url.pathname.match(/^\/(journey|library|players|admin|donate|bitcoin|bitcoin-core|wallet)\.html$/);
+    const oldPage = url.pathname.match(/^\/(journey|library|players|tracker|admin|donate|bitcoin|bitcoin-core|wallet)\.html$/);
     if (oldPage && req.method === "GET") { res.writeHead(301, { Location: `/${oldPage[1]}${url.search}` }).end(); return; }
-    const page = url.pathname.match(/^\/(journey|library|players|admin|donate|bitcoin|bitcoin-core|wallet)\/?$/);
+    const page = url.pathname.match(/^\/(journey|library|players|tracker|admin|donate|bitcoin|bitcoin-core|wallet)\/?$/);
     // Ye₿ente: the built app in yebente/app, served at /yebente.
     const yb = url.pathname.match(/^\/yebente(?:\/(?:index\.html)?)?$/) ? "/yebente/app/index.html" : url.pathname.match(/^\/yebente\/((?:assets|fonts)\/[\w.-]+)$/)?.[1];
     const rel = yb ? (yb.startsWith("/") ? yb : `/yebente/app/${yb}`) : page ? `/${page[1]}.html` : url.pathname === "/" ? "/index.html" : url.pathname;
@@ -185,6 +185,7 @@ async function maybeRunDaily() {
   console.log("daily backup", await backupNow().catch((e) => `failed: ${e.message}`));
   const { autoClean } = await import("./lib/cleanup.js");
   console.log("daily clean-up", await autoClean().catch((e) => `failed: ${e.message}`));
+  await import("./lib/tracker.js").then((t) => t.tracker()).catch((e) => console.error("tracker", e.message)); // fresh for Stan's report
   const { sendStanReport } = await import("./lib/stan.js");
   console.log("Stan's report", await sendStanReport().then((r) => r.status).catch((e) => `failed: ${e.message}`));
 }
