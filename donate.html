@@ -58,6 +58,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 .pay{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.2rem;max-width:34rem}
 .pay h2{margin-top:0}
+.halving{margin:.1rem 0 .6rem;font-size:.85rem;color:var(--muted)}
 .amts{display:flex;flex-wrap:wrap;gap:.4rem;margin:.4rem 0}
 .amts button{min-height:2.75rem;padding:.4rem .9rem;border-radius:.6rem;border:2px solid var(--line);background:var(--bg);font:600 1rem Figtree,sans-serif;cursor:pointer}
 input,textarea{width:100%;padding:.7rem .8rem;border:2px solid var(--line);border-radius:.6rem;font:inherit;background:var(--bg);margin:.3rem 0 .8rem}
@@ -81,7 +82,8 @@ textarea{font:12px ui-monospace,Menlo,monospace}
     <p class="intro">Any Lightning wallet. Straight to my own node.</p>
     <form id="tipForm">
       <label for="sats"><b>Amount (sats)</b></label>
-      <div class="amts" id="amts"><button type="button" data-s="1000">1,000</button><button type="button" data-s="5000">5,000</button><button type="button" data-s="21000">21,000</button><button type="button" data-s="100000">100,000</button></div>
+      <div class="amts" id="amts"><button type="button" data-s="50000">50,000</button><button type="button" data-s="25000">25,000</button><button type="button" data-s="12500">12,500</button><button type="button" data-s="6250">6,250</button><button type="button" data-s="3125">3,125</button></div>
+      <p class="halving">Halving, like Bitcoin's block reward: 50 → 25 → 12.5 → 6.25 → 3.125 BTC since 2009.</p>
       <input id="sats" name="sats" type="number" inputmode="numeric" min="10" max="5000000" step="1" required>
       <button class="btn" type="submit">Make an invoice</button>
       <p class="err" id="err" role="alert"></p>
@@ -108,7 +110,7 @@ textarea{font:12px ui-monospace,Menlo,monospace}
 
 </div>
 
-<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/wallet">Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin in Kisumu</a> · <a href="/players">Players</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/donate">Support my work</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/wallet">Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin in Kisumu</a> · <a href="/players">Players</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/donate">Support my work</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 </script>
