@@ -44,12 +44,9 @@ test("pages have no inline event handlers or javascript: links (the policy would
 // (public IPs only, checked at connect time). A new fetch() here fails until it is
 // either moved to publicFetch or reviewed and added with its reason.
 const FIXED_FETCH = {
-  "lib/notify.js": ["u"], // api.callmebot.com, built from a constant
   "lib/store.js": ["REST_URL"], // Upstash, from the environment
-  "lib/social.js": ["url"], // social network APIs, constant bases
   "lib/lightning.js": ["url", '"https://open.er-api.com/v6/latest/USD"', "`${base}/fee-estimates`", "`${base}/v1/fees/recommended`", "`${base}/address/${address}`", "`${base}/address/${address}/txs`", "`${base}/blocks/tip/height`"], // price and mempool APIs (CHAIN_APIS)
   "lib/email.js": ['"https://api.resend.com/emails"'],
-  "api/kits.js": ["this.action"], // browser code inside the unsubscribe page, posting to our own URL
   "api/yebente.js": ["`${DARAJA()}/oauth/v1/generate?grant_type=client_credentials`", "`${DARAJA()}${path}`"], // Safaricom
 };
 // The first argument of a call, brackets and template braces balanced.
@@ -74,18 +71,12 @@ test("server code only fetches fixed services directly; everything else uses the
 });
 
 // Public endpoints are rate-limited. These are the reviewed exceptions.
-const NO_LIMIT_OK = {
-  "api/cron.js": "needs CRON_SECRET",
-  "api/hunt.js": "limits live in lib/hunt.js",
-  "api/kits.js": "limits live in lib/subscribers.js",
-};
+const NO_LIMIT_OK = {};
 test("every public API file has rate limits (or a reviewed reason)", () => {
   for (const f of files("api")) {
     if (NO_LIMIT_OK[f]) continue;
     assert.match(read(f), /\b(hit|peek)\(/, `${f}: add per-visitor and site-wide limits with hit() from lib/store.js`);
   }
-  assert.match(read("lib/hunt.js"), /\bhit\(/);
-  assert.match(read("lib/subscribers.js"), /\bhit\(/);
 });
 
 test("secrets are never logged, compared with ===, or made with Math.random", () => {
@@ -112,10 +103,9 @@ test("money: a Lightning payment is refunded only on the node's own final answer
 });
 
 test("Bitcoin-history guards stay in place (confirmations by amount, 21M cap, description hash, solvency)", () => {
-  const ln = read("lib/lightning.js"), pay = read("api/pay.js"), yw = read("lib/ywallet.js"), srv = read("server.mjs");
+  const ln = read("lib/lightning.js"), yw = read("lib/ywallet.js"), srv = read("server.mjs");
   assert.match(ln, /export const confirmationsFor = \(sats\) => \(sats >= 10_000_000 \? 6 : sats >= 1_000_000 \? 3 : 1\)/, "confirmation tiers (whitepaper section 11)");
   assert.match(ln, /num_confirmations\) >= depth/, "the node's own record must be as deep as the amount requires");
-  assert.match(pay, /addressReceived\(p\.onchain\.address, confirmationsFor\(/, "checkout waits for the right depth");
   assert.match(yw, /sats > MAX_MONEY\) throw err\("That amount isn't possible\."\)/, "credits capped at 21 million BTC");
   assert.match(yw, /bolt11DescriptionHash\(pr\)/, "LNURL invoices must match the description hash");
   assert.match(srv, /checkSolvency\(\)/, "the hourly solvency check runs");

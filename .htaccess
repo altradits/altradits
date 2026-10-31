@@ -13,20 +13,17 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  RewriteRule ^templates/?$ /products [R=301,L]
-  RewriteRule ^(admin|bitcoin|collect|cv|donate|hunt|join|portal|products|proposal|team|va|wallet|bitcoin-core)/?$ $1.html [L]
+  # The agency moved to altradits/chouMi: its old pages send people to the nearest page here.
+  RewriteRule ^cv(\.html)?/?$ /journey [R=301,L]
+  RewriteRule ^(products|templates)(\.html)?/?$ /library [R=301,L]
+  RewriteRule ^(va|hunt|join|team|portal|proposal|collect|hourly)(\.html)?/?$ / [R=301,L]
+  RewriteRule ^(r|h)/[a-z0-9]{4,12}/?$ / [R=301,L]
+  RewriteRule ^(admin|bitcoin|donate|wallet|bitcoin-core|library|players|journey)/?$ $1.html [L]
 
   # Ye₿ente: the built app lives in yebente/app.
   RewriteRule ^yebente/?$ yebente/app/index.html [L]
   RewriteRule ^yebente/index\.html$ yebente/app/index.html [L]
   RewriteRule ^yebente/((assets|fonts)/[A-Za-z0-9._-]+)$ yebente/app/$1 [L]
-
-  # Referral and hunt links open the homepage, which reads the original path.
-  RewriteRule ^(r|h)/[a-z0-9]{4,12}/?$ index.html [L]
-
-  # Order slugs are rendered by the VA page; keep the health check out of this fallback.
-  RewriteCond %{REQUEST_URI} !^/healthz/?$
-  RewriteRule ^[a-z0-9-]+/?$ va.html [L]
 </IfModule>
 
 # Server code and project files are never web content. The Node router only
@@ -41,12 +38,11 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
   </IfModule>
 </FilesMatch>
 
-# Git metadata, local runtime state and the browser extension are never web content.
+# Git metadata and local runtime state are never web content.
 RedirectMatch 404 ^/\.git(?:/|$)
 RedirectMatch 404 ^/\.data(?:/|$)
 RedirectMatch 404 ^/\.github(?:/|$)
 RedirectMatch 404 ^/\.claude(?:/|$)
-RedirectMatch 404 ^/apply-extension(?:/|$)
 
 # Browser security for the pages Apache serves directly (Node adds the same to
 # its own responses): HTTPS only once visited, no MIME sniffing, no framing.

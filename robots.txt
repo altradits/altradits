@@ -1,9 +1,6 @@
 User-agent: *
 Disallow: /admin.html
-Disallow: /proposal.html
-Disallow: /portal.html
-Disallow: /team.html
-Disallow: /collect
+Disallow: /admin
 Disallow: /api/
 
 Sitemap: https://altradits.com/sitemap.xml

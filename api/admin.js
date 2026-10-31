@@ -1,31 +1,15 @@
-// Admin API for Stanley's dashboard. Every request needs
+// Admin API for Stanley's node dashboard. Every request needs
 // Authorization: Bearer <ADMIN_TOKEN>.
-import { json, readBody, clean, siteUrl, safeEqual, clientIp } from "../lib/http.js";
-import { listIds, getMany, getJSON, setJSON, usingRedis, hit, peek } from "../lib/store.js";
-import {
-  STAGES, getLead, saveLead, logEvent, getProposal, saveProposal, publishProposal,
-  recomputeTotals, proposalUrl, publicLead, confirmPayment,
-} from "../lib/crm.js";
+//   GET  /api/admin                  -> overview: node, chain, Ye₿ente, settlement hooks, visits, system
+//   GET  /api/admin?view=channels    -> channels, alerts and advice (lib/channels.js)
+//   GET  /api/admin?view=liquidity   -> sending power and top-up amounts
+//   GET  /api/admin?view=topup&hash= -> a top-up's state
+//   GET  /api/admin?view=security    -> what was turned away, and Bitcoin's attack history
+//   GET  /api/admin?view=emails      -> the email log (a wallet email's link is never stored)
+//   POST { action: "node_topup", sats } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
+import { json, readBody, clean, safeEqual, clientIp } from "../lib/http.js";
+import { listIds, getMany, getJSON, usingRedis, hit, peek, listArchives } from "../lib/store.js";
 import { lightningMode } from "../lib/lightning.js";
-import { allMembers, allTasks, getMember, setMemberStatus, getTask, saveTask, assignTask, publicMember, notifyClient, OPEN } from "../lib/ops.js";
-import { DEPARTMENTS } from "../data/playbooks.js";
-import { kickQueue, workersLive, AGENT_ROSTER } from "../lib/workers.js";
-import { getProfile, saveProfile, allJobs, addFromUrl, prepareJob, setJobStatus, htmlToText, jobsLive, getJob, hasCv, saveCvFile, removeCvFile, readCvFile } from "../lib/jobs.js";
-import fs from "node:fs";
-import { buildMasterCv, discoverJobs, updateSettings, careerLive } from "../lib/career.js";
-import { getApplicant, saveApplicant, suggestApplicant, queueApply, cancelApply, startApply, applyFile, agentUpdate, think } from "../lib/apply.js";
-import { sendEmail } from "../lib/email.js";
-import { agentLive } from "../lib/agent.js";
-import { aiStatus, resumeAi } from "../lib/ai.js";
-import { marketingView, saveSettings as saveMarketing, createMaster, repurpose, cancelPost, editPost, postNow, marketingLive } from "../lib/marketing.js";
-import { BUSINESS } from "../data/catalog.js";
-
-// The dashboard gets the uploaded CV's details, not its full text.
-function publicProfile(p) {
-  if (!p.cvFile) return p;
-  const { text, ...file } = p.cvFile;
-  return { ...p, cvFile: { ...file, textChars: (text || "").length } };
-}
 
 function authorized(request) {
   const token = process.env.ADMIN_TOKEN;
@@ -41,9 +25,8 @@ async function gate(request) {
   if ((await peek(key)) >= 20) return json({ error: "Too many wrong tokens. Wait 15 minutes and try again." }, 429);
   if (authorized(request)) return null;
   await hit(key, 900);
-  // Many wrong tokens across the whole site (someone guessing from many
-  // connections): Stanley is told, at most once an hour. Never a site-wide
-  // lockout, which would let a stranger lock him out of his own admin.
+  // Many wrong tokens across the whole site: Stanley is told, at most once an
+  // hour. Never a site-wide lockout, which would let a stranger lock him out.
   const hour = new Date().toISOString().slice(0, 13);
   if ((await hit(`rl:admin:fail:all:${hour}`, 3600)) === 100) {
     const { emailOwner } = await import("../lib/email.js");
@@ -52,653 +35,68 @@ async function gate(request) {
   return deny();
 }
 
+const settle = (p) => p.then((v) => v, (e) => ({ error: e.message }));
+
 export async function GET(request) {
   { const g = await gate(request); if (g) return g; }
-  const u = new URL(request.url);
+  const view = new URL(request.url).searchParams.get("view");
 
-  if (u.searchParams.get("view") === "jobs") {
-    const jobs = (await allJobs()).map(({ pageText, ...j }) => ({
-      ...j, followUp: j.status === "applied" && Date.now() - Date.parse(j.appliedAt || j.updatedAt) > 7 * 864e5,
-    }));
-    return json({ profile: publicProfile(await getProfile()), jobs, aiReady: jobsLive(), applicant: await getApplicant() });
-  }
-
-  // Sending power: what the node can send after channel reserves, what Ye₿ente owes, and top-ups.
-  if (u.searchParams.get("view") === "liquidity") {
-    const { liquidityView } = await import("../lib/channels.js");
-    try { return json(await liquidityView()); } catch (err) { return json({ error: err.message }, 502); }
-  }
-  if (u.searchParams.get("view") === "topup") {
+  if (view === "channels") { const { channelReport } = await import("../lib/channels.js"); try { return json(await channelReport()); } catch (err) { return json({ error: err.message }, 502); } }
+  if (view === "liquidity") { const { liquidityView } = await import("../lib/channels.js"); try { return json(await liquidityView()); } catch (err) { return json({ error: err.message }, 502); } }
+  if (view === "topup") {
     const { topupStatus } = await import("../lib/channels.js");
-    const t = await topupStatus(clean(u.searchParams.get("hash"), 64));
+    const t = await topupStatus(clean(new URL(request.url).searchParams.get("hash"), 64));
     return t ? json(t) : json({ error: "No such top-up." }, 404);
   }
-  // Stan's library: the documents to recreate, secure and teach the system, as PDFs.
-  if (u.searchParams.get("view") === "library") {
-    const { libraryList } = await import("../lib/library.js");
-    return json({ docs: libraryList() });
-  }
-  if (u.searchParams.get("view") === "libdoc") {
-    const { docPdf } = await import("../lib/library.js");
-    const doc = docPdf(clean(u.searchParams.get("id"), 40));
-    if (!doc) return json({ error: "No such document." }, 404);
-    return new Response(doc.body, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="${doc.name}"`, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
-  }
-  // Security watch: what was turned away, by technique, and Bitcoin's attack history with our guards.
-  if (u.searchParams.get("view") === "security") {
+  if (view === "security") {
     const { securityView } = await import("../lib/attacks.js");
     const { BITCOIN_ATTACKS } = await import("../data/bitcoin-attacks.js");
     return json({ ...(await securityView()), history: BITCOIN_ATTACKS });
   }
+  if (view === "emails") return json({ emails: (await getMany("email", await listIds("emails", 100))).map(({ text, ...e }) => e) });
 
-  // A receipt already issued, by its number: the same PDF the client got, rebuilt
-  // from its record (never a new number), to view, download or share.
-  if (u.searchParams.get("view") === "receipt") {
-    const no = clean(u.searchParams.get("no"), 20);
-    const p = no && (await getMany("proposal", await listIds("proposals", 100000))).find((x) => x.receipt?.no === no);
-    const lead = p && (await getLead(p.leadId));
-    if (!lead) return json({ error: "No receipt with that number." }, 404);
-    const { receiptPdf } = await import("../lib/finance.js");
-    return new Response(receiptPdf(lead, p, no), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="altradits-receipt-${no}.pdf"`,
-      "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
-  }
-
-  if (u.searchParams.get("view") === "cvfile") {
-    const p = await getProfile();
-    const buf = readCvFile(p);
-    if (!buf) return json({ error: "No CV uploaded." }, 404);
-    const types = { pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", txt: "text/plain", md: "text/markdown" };
-    return new Response(buf, { headers: { "Content-Type": types[p.cvFile.ext], "Content-Disposition": `attachment; filename="${p.cvFile.name.replace(/"/g, "")}"`, "Cache-Control": "no-store" } });
-  }
-
-  if (u.searchParams.get("view") === "marketing") return json(await marketingView());
-
-  // Department inboxes (read-only IMAP); passwords stay in the environment.
-  // Payments held in the backup wallet, waiting to move to the node.
-  if (u.searchParams.get("view") === "held") {
-    const { heldView, checkHeld } = await import("../lib/finance.js");
-    await checkHeld();
-    const { qrSvg } = await import("../lib/lightning.js");
-    const v = await heldView();
-    return json({ ...v, held: await Promise.all(v.held.map(async (x) => ({ ...x, sweep: x.sweep ? { bolt11: x.sweep.bolt11, qr: await qrSvg(`lightning:${x.sweep.bolt11}`), expiresAt: x.sweep.expiresAt } : null }))) });
-  }
-  if (u.searchParams.get("view") === "statement") {
-    const { statement, statementCsv } = await import("../lib/statement.js");
-    if (u.searchParams.get("format") === "csv") return new Response(await statementCsv(), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="altradits-statement-${new Date().toISOString().slice(0, 10)}.csv"` } });
-    return json(await statement());
-  }
-  if (u.searchParams.get("view") === "cleanup") { const { cleanupView } = await import("../lib/cleanup.js"); return json(await cleanupView()); }
-  if (u.searchParams.get("view") === "channels") { const { channelReport } = await import("../lib/channels.js"); return json(await channelReport()); }
-  if (u.searchParams.get("view") === "donations") {
-    const all = (await getMany("proposal", await listIds("proposals", 2000))).filter((p) => p.donation && p.status === "paid");
-    return json({
-      total: Math.round(all.reduce((t, p) => t + p.totals.dueNow, 0) * 100) / 100, sats: all.reduce((t, p) => t + (Number(p.payment?.sats) || 0), 0), count: all.length,
-      recent: all.slice(0, 50).map((p) => ({ at: p.payment?.confirmedAt || p.updatedAt, name: p.client?.name, email: p.client?.email, usd: p.totals.dueNow, sats: p.payment?.sats || null, message: p.donation.message, receipt: p.receipt?.no || null })),
-    });
-  }
-  if (u.searchParams.get("view") === "inboxes") {
-    const { listInboxes } = await import("../lib/inbox.js");
-    return json({ boxes: await listInboxes({ fresh: u.searchParams.get("fresh") === "1" }) });
-  }
-  if (u.searchParams.get("view") === "message") {
-    const { readMessage } = await import("../lib/inbox.js");
-    try { return json(await readMessage(clean(u.searchParams.get("box"), 30), Number(u.searchParams.get("uid")))); }
-    catch (err) { return json({ error: err.message }, 400); }
-  }
-
-  // Stan's desk: everything Stan sent, was copied on and reviewed (read-only, for Stanley to monitor).
-  if (u.searchParams.get("view") === "stan") {
-    const STAN = "stan@altradits.com";
-    const mail = await getMany("email", await listIds("emails", 400));
-    const tasks = await allTasks();
-    const reviews = tasks.flatMap((t) => t.history.filter((h) => /^QA: /.test(h.text)).map((h) => ({ at: h.at, task: t.title, client: t.client, department: t.department, pass: !/^QA: (changes required|Stan sent it back)/.test(h.text), text: h.text })))
-      .sort((a, b) => b.at.localeCompare(a.at)).slice(0, 60);
-    const pick = (e) => ({ at: e.at, to: e.to, from: e.from, subject: e.subject, kind: e.kind, status: e.status, bcc: e.bcc || null, text: (e.text || "").slice(0, 400) });
-    const records = tasks.filter((t) => t.qa?.panel).sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || "")).slice(0, 40)
-      .map((t) => ({ id: t.id, task: t.title, client: t.client, department: t.department, status: t.status, panel: t.qa.panel, rounds: t.qa.rounds, final: t.qa.final }));
-    const { pendingApprovals } = await import("../lib/email.js");
-    const { recentInstructions, senders } = await import("../lib/stan.js");
-    return json({
-      approvals: (await pendingApprovals()).map(({ payload, ...e }) => e),
-      instructions: await recentInstructions(20),
-      departments: senders().map((c) => ({ id: c.id, address: c.address, name: c.name, head: c.head.name })),
-      records,
-      sent: mail.filter((e) => (e.from || "").includes(STAN)).slice(0, 60).map(pick),
-      copied: mail.filter((e) => e.cc === STAN).slice(0, 60).map(pick),
-      escalations: mail.filter((e) => e.kind === "owner").slice(0, 30).map(pick),
-      reviews,
-      learning: await import("../lib/learning.js").then((m) => m.learningView()),
-    });
-  }
-  if (u.searchParams.get("view") === "subscribers") {
-    const { subscribersView, subscribersCsv } = await import("../lib/subscribers.js");
-    if (u.searchParams.get("format") === "csv") return new Response(await subscribersCsv(), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="altradits-subscribers.csv"', "Cache-Control": "no-store" } });
-    return json(await subscribersView());
-  }
-
-  if (u.searchParams.get("view") === "ops") {
-    const [members, tasks] = await Promise.all([allMembers(), allTasks()]);
-    const load = (id) => tasks.filter((t) => t.assigneeId === id && OPEN.includes(t.status)).reduce((s, t) => s + t.estimateHours, 0);
-    return json({
-      members: members.map((m) => ({ ...publicMember(m), sample: m.sample, openHours: load(m.id) })),
-      tasks: tasks.map((t) => ({ ...t, assignee: members.find((m) => m.id === t.assigneeId)?.name || null })),
-      departments: DEPARTMENTS.map((d) => ({ id: d.id, name: d.name, agent: d.agent.name,
-        approved: members.filter((m) => m.status === "approved" && m.departments.includes(d.id)).length })),
-      pipeline: Object.fromEntries(["queued", "working", "waiting_client", "owner", "review", "follow_up", "done"].map((st) => [st, tasks.filter((t) => t.status === st).length])),
-      satisfaction: (() => { const r = tasks.filter((t) => t.satisfaction).map((t) => t.satisfaction.rating); return r.length ? { avg: Math.round((r.reduce((a, b) => a + b, 0) / r.length) * 10) / 10, count: r.length } : null; })(),
-      agents: AGENT_ROSTER, workersLive: workersLive(),
-      comms: (await import("../data/team-comms.js")).COMMS,
-      internal: (await import("../data/team-comms.js")).INTERNAL,
-      qa: await import("../data/qa-experts.js").then((m) => ({ stan: m.STAN, experts: m.QA_EXPERTS.map(({ id, name, source, domains, always, checklist }) => ({ id, name, source, domains, always, checklist })) })),
-      learning: await import("../lib/learning.js").then((m) => m.learningView()),
-    });
-  }
-
-  if (u.searchParams.get("view") === "lead") {
-    const lead = await getLead(clean(u.searchParams.get("id"), 40));
-    if (!lead) return json({ error: "Not found" }, 404);
-    const proposal = lead.proposalId ? await getProposal(lead.proposalId) : null;
-    return json({
-      lead: { ...publicLead(lead), notes: lead.notes, events: lead.events, context: lead.context },
-      proposal: proposal && { ...proposal, url: proposalUrl(siteUrl(request), proposal) },
-    });
-  }
-
-  const [leads, approvals, proposals, emails] = await Promise.all([
-    listIds("leads", 300).then((ids) => getMany("lead", ids)),
-    listIds("approvals", 200).then((ids) => getMany("approval", ids)),
-    listIds("proposals", 300).then((ids) => getMany("proposal", ids)),
-    listIds("emails", 60).then((ids) => getMany("email", ids)),
-  ]);
-
-  const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
-  // Donations are tracked separately, not as revenue or open proposals.
-  const paid = proposals.filter((p) => p.status === "paid" && !p.donation);
-  const open = proposals.filter((p) => ["sent", "accepted", "paid_claimed"].includes(p.status) && !p.donation);
-  const stats = {
-    leads: leads.length,
-    leads7d: leads.filter((l) => Date.now() - Date.parse(l.createdAt) < 7 * 864e5).length,
-    qualified: leads.filter((l) => STAGES.indexOf(l.stage) >= STAGES.indexOf("qualified") && l.stage !== "lost").length,
-    proposalsOpen: open.length,
-    pipelineUsd: open.reduce((t, p) => t + p.totals.monthly + p.totals.oneOff, 0),
-    wonMonthUsd: paid.filter((p) => Date.parse(p.payment?.confirmedAt || p.updatedAt) >= monthStart).reduce((t, p) => t + p.totals.dueNow, 0),
-    wonMonthSats: paid.filter((p) => Date.parse(p.payment?.confirmedAt || p.updatedAt) >= monthStart).reduce((t, p) => t + (Number(p.payment?.sats) || 0), 0),
-    mrrUsd: (() => {
-      const cutoff = Date.now() - 35 * 864e5;
-      const byLead = new Map();
-      for (const p of paid) {
-        if (!(p.totals?.monthly > 0)) continue;
-        const confirmedMs = Date.parse(p.payment?.confirmedAt || p.updatedAt || p.createdAt);
-        if (confirmedMs < cutoff) continue;
-        const l = leads.find((x) => x.id === p.leadId);
-        if (l?.retainer?.status === "paused") continue;
-        const prev = byLead.get(p.leadId);
-        if (!prev || confirmedMs >= prev.confirmedMs) byLead.set(p.leadId, { monthly: p.totals.monthly, confirmedMs });
-      }
-      return [...byLead.values()].reduce((t, v) => t + v.monthly, 0);
-    })(),
-    activeClients: leads.filter((l) => l.stage === "active").length,
-    pendingApprovals: approvals.filter((a) => a.status === "pending").length,
-    // Paid to the backup wallet while the node was down, not yet moved to the node.
-    toMove: (() => {
-      const w = proposals.filter((p) => p.status === "paid" && p.payment?.held && p.payment.wallet);
-      const live = (p) => [...(p.sweeps || []), p.sweep].some((s) => s && Date.parse(s.expiresAt) > Date.now());
-      return { count: w.length, sats: w.reduce((t, p) => t + (Number(p.payment.expectedSats || p.payment.sats) || 0), 0), ready: w.filter(live).length };
-    })(),
-    byStage: Object.fromEntries(STAGES.map((s) => [s, leads.filter((l) => l.stage === s).length])),
-    // Page views next to the orders they led to, over the same 30 days.
-    visits: await import("../lib/visits.js").then((v) => v.visitSummary()).catch(() => null),
-    orders30d: proposals.filter((p) => !p.donation && Date.now() - Date.parse(p.createdAt) < 30 * 864e5).length,
-    // Ye₿ente wallets: what Altradits owes its wallet holders vs what the node can pay out.
-    yebente: await (async () => {
-      const [{ liabilities, walletsOn }, { outboundSats }] = await Promise.all([import("../lib/ywallet.js"), import("../lib/lightning.js")]);
-      if (!walletsOn()) return null;
-      const owed = await liabilities();
-      return { wallets: owed.wallets, owedSats: owed.sats, outboundSats: await outboundSats() };
-    })().catch(() => null),
-    paid30d: paid.filter((p) => Date.now() - Date.parse(p.payment?.confirmedAt || p.updatedAt) < 30 * 864e5).length,
-  };
-
-  // The admin shows sats only: prices not yet paid are converted at this rate.
-  const btcUsd = await import("../lib/lightning.js").then((m) => m.btcUsd()).catch(() => null);
+  const { nodeInfo, chainTip, outboundSats, inboundSats } = await import("../lib/lightning.js");
+  const [node, tip, outbound, inbound] = await Promise.all([settle(nodeInfo()), settle(chainTip()), settle(outboundSats()), settle(inboundSats())]);
+  const { liabilities, walletsOn, switchOn } = await import("../lib/ywallet.js");
+  const owed = walletsOn() ? await settle(liabilities()) : null;
+  const openInvoices = (await listIds("ywinvopen", 500)).length;
   return json({
-    btcUsd,
-    ai: { configured: Boolean(process.env.ANTHROPIC_API_KEY), ...aiStatus() },
-    stats,
-    approvals: approvals.filter((a) => a.status === "pending").concat(approvals.filter((a) => a.status !== "pending").slice(0, 20)),
-    leads: leads.map((l) => ({
-      id: l.id, name: l.name, email: l.email, company: l.company, stage: l.stage, score: l.score,
-      needs: l.needs, source: l.source, createdAt: l.createdAt, updatedAt: l.updatedAt,
-      refCode: l.refCode || null, referredBy: l.referredBy || null,
-      lastMessage: l.transcript.at(-1)?.text?.slice(0, 140) || "",
-    })),
-    emails,
+    node: node && !node.error ? { ...node, behind: typeof tip === "number" && node.blockHeight ? Math.max(0, tip - node.blockHeight) : null } : node,
+    chainTip: typeof tip === "number" ? tip : null,
+    liquidity: { outboundSats: typeof outbound === "number" ? outbound : null, inboundSats: typeof inbound === "number" ? inbound : null },
+    // How payments reach the node and settle: Lightning addresses (LNURL-pay), invoices, and the background sweep.
+    settlement: {
+      mode: lightningMode() === "lnd" ? "LND node" : lightningMode() === "address" ? "fallback Lightning address (node not set)" : "not set",
+      wallets: walletsOn(), lightningAddresses: walletsOn() ? `handle@${(process.env.SITE_URL || "https://altradits.com").replace(/^https?:\/\//, "")}` : null,
+      lnurlp: "/.well-known/lnurlp/<handle>", openInvoices, sweep: walletsOn() && Boolean(process.env.LND_REST_URL) ? "every 2 minutes" : "off",
+      payouts: Boolean(process.env.YEBENTE_LND_PAY_MACAROON), telebirr: switchOn("YEBENTE_TELEBIRR"),
+    },
+    yebente: owed && !owed.error ? { wallets: owed.wallets, owedSats: owed.sats, covered: typeof outbound === "number" ? outbound >= owed.sats : null } : owed,
+    visits: await import("../lib/visits.js").then((v) => v.visitSummary()).catch(() => null),
+    retired: await getJSON("retired:agency"),
+    archives: listArchives(),
     system: {
-      agents: !agentLive ? "scripted fallback: set ANTHROPIC_API_KEY" : aiStatus().paused ? "paused (no AI credit): chat scripted, tasks queued" : "live (Claude)",
       email: process.env.SMTP_HOST ? `SMTP (${process.env.SMTP_HOST})` : process.env.EMAIL_TRANSPORT === "sendmail" ? "server mail (sendmail)" : process.env.RESEND_API_KEY ? "Resend" : "log only: set EMAIL_TRANSPORT=sendmail",
       storage: usingRedis ? "Redis" : `file store (${process.env.DATA_DIR || ".data"})`,
-      ownerEmail: process.env.OWNER_EMAIL || BUSINESS.email,
-      lightning: lightningMode() === "lnd" ? "LND node (QR invoices, auto-confirmed)" : "Lightning address (QR invoices, you confirm payment)",
     },
   });
-}
-
-async function resolveApproval(request, body) {
-  const a = await getJSON(`approval:${clean(body.id, 40)}`);
-  if (!a) return json({ error: "Approval not found" }, 404);
-  if (a.status !== "pending") return json({ error: "Already resolved" }, 409);
-  const approve = body.decision === "approve";
-  const note = clean(body.note, 3000);
-  const lead = a.leadId ? await getLead(a.leadId) : null;
-  const base = siteUrl(request);
-
-  if (a.type === "proposal_review") {
-    const p = await getProposal(a.payload.proposalId);
-    if (approve && p && lead) {
-      if (body.edits?.summary) p.summary = clean(body.edits.summary, 3000);
-      if (Array.isArray(body.edits?.prices)) {
-        body.edits.prices.forEach((price, i) => { if (p.items[i] && Number(price) > 0) p.items[i].price = Math.round(Number(price)); });
-      }
-      recomputeTotals(p);
-      await publishProposal(base, lead, p, { approved: true }); // Stanley just approved it
-      if (body.edits?.summary || Array.isArray(body.edits?.prices) || note) {
-        const { recordOutcome } = await import("../lib/learning.js");
-        await recordOutcome({
-          kind: "stanley_override",
-          dept: "growth",
-          leadId: lead.id,
-          note: note || (body.edits?.summary ? `Proposal summary edited by Stanley: ${clean(body.edits.summary, 200)}` : "Proposal pricing adjusted by Stanley."),
-        }).catch(() => {});
-      }
-    } else if (p && lead) {
-      p.status = "declined";
-      await saveProposal(p);
-      if (note) {
-        const { recordOutcome } = await import("../lib/learning.js");
-        await recordOutcome({ kind: "stanley_override", dept: "growth", leadId: lead.id, note: `Proposal declined by Stanley: ${note}` }).catch(() => {});
-      }
-      await sendEmail({ to: lead.email, leadId: lead.id, dept: "growth", approved: true, subject: "About your proposal",
-        text: note || `Hi ${lead.name || "there"}, thanks for your patience. ${BUSINESS.owner} would like to talk this through before sending a proposal. Just reply with a good time.` });
-    }
-  } else if (a.type === "payment_check") {
-    const p = await getProposal(a.payload.proposalId);
-    // Already confirmed by the node meanwhile: resolve the approval, change nothing else
-    // (and don't save the copies loaded above over fresher data).
-    if (p?.status === "paid") {
-      Object.assign(a, { status: "approved", resolvedAt: new Date().toISOString(), note: `${note ? `${note} · ` : ""}already confirmed by the node` });
-      await setJSON(`approval:${a.id}`, a);
-      return json({ ok: true, approval: a });
-    }
-    if (p && lead) {
-      if (approve) {
-        const { acquireLock } = await import("../lib/store.js");
-        const release = await acquireLock(`confirm:${p.id}`, 300);
-        if (!release) return json({ error: "This payment is being confirmed right now. Refresh in a moment." }, 409);
-        try {
-          const latest = await getProposal(p.id);
-          if (latest?.status !== "paid") await confirmPayment(lead, latest || p, note, { approved: true });
-        } finally { await release(); }
-        // Return here: the copies loaded above are stale now and must not be saved over the confirmed order.
-        Object.assign(a, { status: "approved", resolvedAt: new Date().toISOString(), note });
-        await setJSON(`approval:${a.id}`, a);
-        return json({ ok: true, approval: a });
-      } else {
-        // Decline under the same lock, on the latest record: never undo a confirmation that just landed.
-        const { acquireLock } = await import("../lib/store.js");
-        const release = await acquireLock(`confirm:${p.id}`, 300);
-        if (!release) return json({ error: "This payment is being confirmed right now. Refresh in a moment." }, 409);
-        try {
-          const latest = await getProposal(p.id);
-          if (latest?.status === "paid") {
-            Object.assign(a, { status: "approved", resolvedAt: new Date().toISOString(), note: "already confirmed by the node" });
-            await setJSON(`approval:${a.id}`, a);
-            return json({ ok: true, approval: a });
-          }
-          latest.status = "accepted";
-          await saveProposal(latest);
-        } finally { await release(); }
-        logEvent(lead, "Payment not found yet.");
-        await sendEmail({ to: lead.email, leadId: lead.id, dept: "orders", approved: true, subject: "We couldn't find your payment yet",
-          text: note || `Hi ${lead.name || "there"}, we haven't received the payment yet. Could you reply with the transaction reference or a screenshot? Sometimes it just takes a little longer.` });
-      }
-      await saveLead(lead); // the order itself was saved under the lock above
-    }
-  } else if (lead && note) {
-    // trial_task, call_request, escalation: the note goes to the client.
-    await sendEmail({ to: lead.email, leadId: lead.id, approved: true, subject: a.type === "trial_task" ? "Your free task is done" : "A note from Stanley", text: note });
-    if (a.type === "escalation") {
-      const { recordOutcome } = await import("../lib/learning.js");
-      await recordOutcome({
-        kind: "escalation_resolved",
-        dept: "growth",
-        leadId: lead.id,
-        question: a.summary || "Escalated client question",
-        answer: note,
-        note,
-      }).catch(() => {});
-    }
-  }
-
-  if (lead) { logEvent(lead, `${a.type} ${approve ? "approved" : "declined"} by Stanley.`); await saveLead(lead); }
-  a.status = approve ? "approved" : "declined";
-  a.resolvedAt = new Date().toISOString();
-  a.note = note;
-  await setJSON(`approval:${a.id}`, a);
-  return json({ ok: true, approval: a });
 }
 
 export async function POST(request) {
   { const g = await gate(request); if (g) return g; }
   const body = await readBody(request);
-
-  if (body.action === "approval") return resolveApproval(request, body);
-
-  // After topping up the Anthropic credit: lift the AI pause and restart the queue.
-  if (body.action === "ai_recheck") {
-    const ai = resumeAi();
-    kickQueue();
-    return json({ ai });
-  }
-
-  // Stanley → Stan: an instruction, optionally about a message in one of the inboxes.
-  if (body.action === "stan_instruct") {
-    const { instruct } = await import("../lib/stan.js");
-    let context = null, to = clean(body.to, 200), dept = clean(body.dept, 30);
-    if (body.box && body.uid) {
-      const { readMessage, mailboxes } = await import("../lib/inbox.js");
-      const { COMMS } = await import("../data/team-comms.js");
-      try { context = await readMessage(clean(body.box, 30), Number(body.uid)); } catch (err) { return json({ error: err.message }, 400); }
-      to ||= (context.from.match(/[^\s<>]+@[^\s<>]+/) || [""])[0];
-      const address = mailboxes().find((b) => b.id === body.box)?.address;
-      dept ||= COMMS.find((c) => c.address === address && c.sendsAs !== false && !c.internal && c.id !== "founder")?.id || "";
-    }
-    instruct({ text: body.text, dept: dept || null, to: to || null, context }).catch((e) => console.error("stan", e.message)); // takes up to a minute
-    return json({ started: true });
-  }
-  // Start fresh: clear old communications and/or test clients, archived first
-  // unless Stanley chose to delete them for good. Archives can be deleted too.
-  if (body.action === "start_fresh") {
-    const forever = body.mode === "delete";
-    if (body.confirm !== (forever ? "DELETE FOREVER" : "START FRESH")) return json({ error: `Type ${forever ? "DELETE FOREVER" : "START FRESH"} to confirm.` }, 400);
-    const { clearGroups } = await import("../lib/cleanup.js");
-    try { return json(await clearGroups([].concat(body.groups || []).map((g) => clean(g, 30)), { keep: !forever })); }
-    catch (err) { return json({ error: err.message }, 400); }
+  if (body.action === "node_topup") {
+    const { startTopup } = await import("../lib/channels.js");
+    try { return json(await startTopup(body.sats)); } catch (err) { return json({ error: err.message }, err.status || 502); }
   }
   if (body.action === "ln_lesson") {
     const { addLesson } = await import("../lib/channels.js");
     try { return json({ lesson: await addLesson(clean(body.text, 600)) }); } catch (err) { return json({ error: err.message }, 400); }
   }
-  if (body.action === "learning_consolidate") {
-    const { consolidateLearning, learningView } = await import("../lib/learning.js");
-    const summary = await consolidateLearning();
-    return json({ ok: true, summary, learning: await learningView() });
-  }
-  if (body.action === "learning_rule") {
-    const { recordOutcome, learningView } = await import("../lib/learning.js");
-    const note = clean(body.text || body.note, 500);
-    if (!note) return json({ error: "Write a rule or lesson to pin." }, 400);
-    await recordOutcome({ kind: "stanley_override", dept: clean(body.dept, 30) || "admin", service: clean(body.service, 40) || null, note });
-    return json({ ok: true, learning: await learningView() });
-  }
-  if (body.action === "node_topup") {
-    const { startTopup } = await import("../lib/channels.js");
-    try { return json(await startTopup(body.sats)); } catch (err) { return json({ error: err.message }, err.status || 502); }
-  }
-  if (body.action === "move_to_node") {
-    const { moveToNode } = await import("../lib/finance.js");
-    const p = await getProposal(clean(body.id, 30));
-    if (!p) return json({ error: "Payment not found." }, 404);
-    try { const s = await moveToNode(p, body.sats); return json({ bolt11: s.bolt11, sats: s.sats }); } catch (err) { return json({ error: /connected|LND|ECONN|timed out/i.test(err.message) ? "The node isn't reachable yet. Start it on the Mac, then try again." : err.message }, 400); }
-  }
-  if (body.action === "erase_person") {
-    if (body.confirm !== "ERASE") return json({ error: "Type ERASE to confirm." }, 400);
-    const { erasePerson } = await import("../lib/cleanup.js");
-    try { return json(await erasePerson(clean(body.email, 200))); } catch (err) { return json({ error: err.message }, 400); }
-  }
-  if (body.action === "archives") { const { listArchives } = await import("../lib/store.js"); return json({ archives: listArchives() }); }
   if (body.action === "archive_delete") {
     if (body.confirm !== "DELETE") return json({ error: "Type DELETE to confirm." }, 400);
     const { deleteArchive } = await import("../lib/store.js");
     try { return json(deleteArchive(clean(body.name, 80))); } catch (err) { return json({ error: err.message }, 400); }
   }
-  // Several drafts at once: each one sent (or rejected) as it stands.
-  if (body.action === "mail_decide_bulk") {
-    const { decideEmail } = await import("../lib/email.js");
-    // items carry any edits made on the cards; ids alone send the drafts as they are.
-    const items = [].concat(body.items || (body.ids || []).map((id) => ({ id }))).slice(0, 100)
-      .map((x) => ({ id: clean(x?.id, 30), subject: clean(x?.subject, 200), text: clean(x?.text, 10000) })).filter((x) => x.id);
-    if (!items.length) return json({ error: "Select at least one email." }, 400);
-    const results = [];
-    for (const { id, subject, text } of items) {
-      try { const r = await decideEmail(id, { approve: Boolean(body.approve), subject, text }); results.push({ id, ok: true, status: r.status }); }
-      catch (err) { results.push({ id, ok: false, error: err.message }); }
-    }
-    return json({ results, done: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length });
-  }
-  if (body.action === "mail_trash") {
-    const { trashMessages } = await import("../lib/inbox.js");
-    try { return json(await trashMessages(clean(body.box, 30), body.uids)); } catch (err) { return json({ error: err.message }, 400); }
-  }
-  if (body.action === "mail_decide") {
-    const { decideEmail } = await import("../lib/email.js");
-    try { return json({ email: await decideEmail(clean(body.id, 30), { approve: Boolean(body.approve), subject: clean(body.subject, 200), text: clean(body.text, 10000), note: clean(body.note, 500) }) }); }
-    catch (err) { return json({ error: err.message }, 400); }
-  }
-
-  if (body.action?.startsWith("mkt_")) {
-    try {
-      if (body.action === "mkt_pause") return json({ settings: await saveMarketing({ paused: Boolean(body.paused) }) });
-      if (body.action === "mkt_warmmail") return json({ settings: await saveMarketing({ warmupEmails: Boolean(body.on) }) });
-      if (body.action === "mkt_autoreply") return json({ settings: await saveMarketing({ autoReply: Boolean(body.on) }) });
-      if (body.action === "mkt_cancel") return json({ post: await cancelPost(clean(body.id, 20)) });
-      if (body.action === "mkt_post_now") return json({ post: await postNow(clean(body.id, 20)) });
-      if (body.action === "mkt_shout_approve") { const { approveShoutout } = await import("../lib/hunt.js"); await approveShoutout(clean(body.id, 20)); return json({ ok: true }); }
-      if (body.action === "mkt_shout_remove") { const { removeShoutout } = await import("../lib/hunt.js"); await removeShoutout(clean(body.id, 20)); return json({ ok: true }); }
-      if (body.action === "mkt_edit") return json({ post: await editPost(clean(body.id, 20), body.text) });
-      // These take a minute or two: start them and let the dashboard refresh.
-      if (["mkt_master", "mkt_repurpose"].includes(body.action)) {
-        if (!marketingLive()) return json({ error: "Set ANTHROPIC_API_KEY to switch the marketing team on." }, 400);
-        const job = body.action === "mkt_master"
-          ? createMaster({ brief: clean(body.brief, 1500) })
-          : repurpose(clean(body.id, 20), { start: /^\d{4}-\d\d-\d\d$/.test(body.start || "") ? body.start : undefined, days: Number(body.days) || 1 });
-        job.catch(async (e) => { console.error("marketing", e.message); await setJSON("mkt:lastError", { at: new Date().toISOString(), error: e.message }); });
-        return json({ started: true });
-      }
-    } catch (err) { return json({ error: err.message }, 400); }
-    return json({ error: "Unknown marketing action" }, 400);
-  }
-
-  if (body.action?.startsWith("job_")) {
-    try {
-      if (body.action === "job_profile") return json({ profile: publicProfile(await saveProfile(body)) });
-      if (body.action === "job_applicant") return json({ applicant: await saveApplicant(body) });
-      if (body.action === "job_apply") return json({ job: await queueApply(clean(body.id, 40)) });
-      if (body.action === "job_apply_cancel") return json({ job: await cancelApply(clean(body.id, 40)) });
-      if (body.action === "job_applicant_suggest") return json({ applicant: await suggestApplicant() });
-      // Called by the Altradits Apply extension in Stanley's Chrome.
-      if (body.action === "job_agent_start") return json(await startApply(body.id));
-      if (body.action === "job_agent_think") return json(await think(body.id, body.messages));
-      if (body.action === "job_agent_file") {
-        const f = await applyFile(body.id, body.file);
-        return json({ name: f.name, type: f.type, data: f.data.toString("base64") });
-      }
-      if (body.action === "job_agent_update") return json({ job: await agentUpdate(body) });
-      if (body.action === "job_settings") return json({ profile: publicProfile(await updateSettings(body)) });
-      if (body.action === "job_master_build" || body.action === "job_discover") {
-        if (!careerLive()) return json({ error: "Add ANTHROPIC_API_KEY to use the Career Agent." }, 400);
-        const p = await getProfile();
-        if (body.action === "job_master_build") {
-          if (!hasCv(p)) return json({ error: "Upload your CV or add your profile first." }, 400);
-          if (p.masterBuilding && Date.now() - Date.parse(p.masterBuilding.since) < 10 * 60e3) return json({ started: false, error: "Already building." }, 409);
-          buildMasterCv().catch((err) => console.error("master cv", err.message));
-        } else {
-          if (!hasCv(p) && !p.targets) return json({ error: "Upload your CV and set target roles first." }, 400);
-          if (p.discovery?.running && Date.now() - Date.parse(p.discovery.startedAt) < 15 * 60e3) return json({ started: false, error: "Already searching." }, 409);
-          discoverJobs().catch((err) => console.error("discover", err.message));
-        }
-        return json({ started: true }, 202);
-      }
-      if (body.action === "job_cv_upload") return json({ profile: publicProfile(await saveCvFile(body)) });
-      if (body.action === "job_cv_remove") return json({ profile: publicProfile(await removeCvFile()) });
-      if (body.action === "job_import_readme") {
-        // Start the profile from the public GitHub profile README in this repo.
-        const md = fs.readFileSync(new URL("../README.md", import.meta.url), "utf8");
-        const text = htmlToText(md.replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/<img[^>]*>/gi, "")).replace(/[*_`#|]+/g, " ").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
-        const p = await getProfile();
-        return json({ profile: publicProfile(await saveProfile({ ...p, cv: p.cv ? `${p.cv}\n\n${text}` : text })) });
-      }
-      if (body.action === "job_add") return json(await addFromUrl(body.url));
-      if (body.action === "job_prepare") {
-        const id = clean(body.id, 40);
-        if (!jobsLive()) return json({ error: "Add ANTHROPIC_API_KEY to use the Career Agent." }, 400);
-        if (!hasCv(await getProfile())) return json({ error: "Upload your CV or add your profile first (My profile, above)." }, 400);
-        if (!(await getJob(id))) return json({ error: "Job not found" }, 404);
-        // Runs in the background (can take a minute); the dashboard polls.
-        prepareJob(id).catch((err) => console.error("job prepare", err.message));
-        return json({ started: true }, 202);
-      }
-      if (body.action === "job_status") return json({ job: await setJobStatus(clean(body.id, 40), body.status, body.note) });
-    } catch (err) {
-      return json({ error: err.message }, 400);
-    }
-    return json({ error: "Unknown job action" }, 400);
-  }
-
-  if (body.action === "member_status") {
-    const m = await getMember(clean(body.id, 40));
-    if (!m) return json({ error: "Member not found" }, 404);
-    try { await setMemberStatus(m, body.status); } catch (err) { return json({ error: err.message }, 400); }
-    return json({ ok: true });
-  }
-  if (["task_send_client", "task_rerun", "task_close"].includes(body.action)) {
-    const t = await getTask(clean(body.id, 40));
-    if (!t) return json({ error: "Task not found" }, 404);
-    const at = new Date().toISOString();
-    if (body.action === "task_send_client") {
-      if (!t.deliverable) return json({ error: "No deliverable to send." }, 409);
-      t.status = "review";
-      t.reviewAt = at;
-      t.history.push({ at, by: "Stanley", text: "Checked and sent to client" });
-      await saveTask(t);
-      await notifyClient(t, `Ready for your review: ${t.title}`, `${t.deliverable.summary || "Your task is done."}\n\nOpen your portal to download it, then approve and rate it, or ask for changes.`, { approved: true });
-    } else if (body.action === "task_rerun") {
-      const note = clean(body.note, 1000);
-      t.status = "queued";
-      t.attempts = 0;
-      (await import("../lib/qa.js")).reopen(t.qa, note);
-      t.history.push({ at, by: "Stanley", text: note ? `Changes requested: ${note}` : "Re-run requested" });
-      await saveTask(t);
-      if (note) {
-        const { recordOutcome } = await import("../lib/learning.js");
-        await recordOutcome({
-          kind: "stanley_override",
-          dept: t.department,
-          service: t.service,
-          taskId: t.id,
-          leadId: t.leadId,
-          title: t.title,
-          specialist: t.specialist,
-          note,
-        }).catch(() => {});
-      }
-      kickQueue();
-    } else {
-      const note = clean(body.note, 500);
-      t.status = "done";
-      t.history.push({ at, by: "Stanley", text: `Follow-up closed${note ? `: ${note}` : ""}` });
-      await saveTask(t);
-      if (note) {
-        const { recordOutcome } = await import("../lib/learning.js");
-        await recordOutcome({
-          kind: "stanley_override",
-          dept: t.department,
-          service: t.service,
-          task: t,
-          leadId: t.leadId,
-          title: t.title,
-          specialist: t.specialist,
-          note: `Follow-up resolution on "${t.title}": ${note}`,
-        }).catch(() => {});
-      }
-    }
-    return json({ ok: true });
-  }
-
-  if (body.action === "task_submit") {
-    const t = await getTask(clean(body.id, 40));
-    if (!t || !["new", "in_progress", "changes", "assigned", "owner"].includes(t.status)) return json({ error: "Task is not open" }, 409);
-    const wasOwner = t.status === "owner";
-    const url = clean(body.url, 500), note = clean(body.note, 2000);
-    if (!/^https?:\/\//.test(url) && note.length < 10) return json({ error: "Add a deliverable link or a note." }, 400);
-    const at = new Date().toISOString();
-    t.deliverable = { url: /^https?:\/\//.test(url) ? url : "", note, at };
-    t.hoursLogged = Math.max(0, Math.min(40, Number(body.hours) || 0));
-    t.status = "review";
-    t.reviewAt = at;
-    t.history.push({ at, by: "Stanley", text: `Submitted for review (${t.hoursLogged}h)` });
-    await saveTask(t);
-    if (wasOwner && note) {
-      const { recordOutcome } = await import("../lib/learning.js");
-      await recordOutcome({
-        kind: "stanley_override",
-        dept: t.department,
-        service: t.service,
-        task: t,
-        leadId: t.leadId,
-        title: t.title,
-        specialist: t.specialist,
-        note: `Stanley resolved escalated task "${t.title}": ${clean(note, 400)}`,
-      }).catch(() => {});
-    }
-    await notifyClient(t, `Ready for your review: ${t.title}`, `Your task "${t.title}" is done.\n\n${note}${t.deliverable.url ? `\n\nDeliverable: ${t.deliverable.url}` : ""}\n\nApprove it or ask for changes in your portal.`, { approved: true });
-    return json({ ok: true });
-  }
-  if (body.action === "task_release") {
-    const t = await getTask(clean(body.id, 40));
-    if (!t) return json({ error: "Task not found" }, 404);
-    if (t.status !== "held") return json({ error: "This task isn't on hold." }, 409);
-    const at = new Date().toISOString();
-    t.held.releasedAt = at;
-    t.status = workersLive() ? "queued" : "new";
-    t.history.push({ at, by: "Stanley", text: `Released after security review${clean(body.note, 300) ? `: ${clean(body.note, 300)}` : ""}` });
-    await saveTask(t);
-    if (workersLive()) kickQueue(); else await assignTask(t);
-    return json({ ok: true, task: t });
-  }
-
-  if (body.action === "task_assign" || body.action === "task_cancel") {
-    const t = await getTask(clean(body.id, 40));
-    if (!t) return json({ error: "Task not found" }, 404);
-    if (body.action === "task_cancel") {
-      t.status = "cancelled";
-      t.history.push({ at: new Date().toISOString(), by: "Stanley", text: "Cancelled" });
-      await saveTask(t);
-    } else if (body.memberId === "self") {
-      t.assigneeId = null;
-      t.status = "in_progress";
-      t.history.push({ at: new Date().toISOString(), by: "Stanley", text: "Stanley is doing this one" });
-      await saveTask(t);
-    } else {
-      await assignTask(t, body.memberId ? clean(body.memberId, 40) : undefined);
-    }
-    return json({ ok: true });
-  }
-
-  const lead = await getLead(clean(body.id, 40));
-  if (!lead) return json({ error: "Lead not found" }, 404);
-
-  if (body.action === "lead_update") {
-    if (STAGES.includes(body.stage)) lead.stage = body.stage;
-    if (typeof body.notes === "string") lead.notes = clean(body.notes, 5000);
-    await saveLead(lead);
-    return json({ ok: true });
-  }
-  if (body.action === "email_client") {
-    if (!lead.email) return json({ error: "This lead has no email." }, 400);
-    const sent = await sendEmail({ to: lead.email, leadId: lead.id, approved: true, subject: clean(body.subject, 200) || "A note from Altradits", text: clean(body.text, 8000) });
-    logEvent(lead, `Stanley emailed: ${sent.subject}`);
-    await saveLead(lead);
-    return json({ ok: true, status: sent.status });
-  }
-  return json({ error: "Unknown action" }, 400);
+  return json({ error: "Unknown action." }, 400);
 }

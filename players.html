@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<link rel="canonical" href="https://altradits.com/players">
+<title>Bitcoin players to learn from · Altradits</title>
+<meta name="description" content="People and projects doing great work in Bitcoin: Btrust, Brink, OpenSats, Bitcoin Core, Lightning, and builders across Africa. What they do, and how to learn from them.">
+<link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
+<meta property="og:title" content="Bitcoin players to learn from · Altradits">
+<meta property="og:description" content="People and projects doing great work in Bitcoin: Btrust, Brink, OpenSats, Bitcoin Core, Lightning, and builders across Africa. What they do, and how to learn from them.">
+<meta property="og:url" content="https://altradits.com/players">
+<meta property="og:type" content="website">
+<style>
+/* Brand fonts, served from this site: Bricolage Grotesque and Figtree (SIL Open Font License 1.1, https://openfontlicense.org), latin and latin-ext (₿), variable weight */
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0;padding:1.1rem 0;flex-wrap:wrap;row-gap:.35rem}
+.top img{height:2.5rem;width:auto;display:block}
+.topnav{display:flex;gap:1.1rem;flex-wrap:wrap;row-gap:.2rem}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.35rem 0}
+.topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
+@media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
+.hero{padding:2.25rem 0 1.5rem}
+.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem}
+.hero h1 em{font-style:normal;color:var(--btc-text)}
+.lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:38rem}
+.ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
+.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none}
+.btn.ghost{background:transparent;border-color:var(--ink)}
+h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:2.4rem 0 .4rem}
+h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
+.intro{color:var(--muted);margin:0 0 1.2rem;max-width:42rem}
+.cards{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem}
+.cards>li{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem}
+.cards p{margin:0;color:var(--muted);font-size:.97rem}
+.cards .links{display:flex;flex-wrap:wrap;gap:.4rem 1rem;margin-top:auto;padding-top:.3rem;font-weight:600}
+.tag{align-self:flex-start;font-size:.78rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}
+.sitefoot .wp{margin:0 0 .6rem}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/wallet">Ye₿ente</a><a href="/library">Library</a><a href="/bitcoin-core">Bitcoin Core</a><a href="/players" aria-current="page">Players</a><a href="/journey">Journey</a></nav></div>
+
+  <header class="hero">
+    <h1>Who I learn from, <em>and want to help.</em></h1>
+    <p class="lead">People and projects doing great work in Bitcoin. What they do, and what I'm learning from them.</p>
+  </header>
+
+  <h2>Funding open-source developers</h2>
+  <ul class="cards"><li><h3>Btrust</h3><p>Funds and trains Bitcoin open-source developers across Africa and the Global South. BitDevs Kisumu's sponsor.<br><b>Me:</b> Apply for a starter grant once I meet the bar.</p><div class="links"><a href="https://www.btrust.tech/">Visit</a></div></li><li><h3>Brink</h3><p>Funds and mentors Bitcoin protocol developers.<br><b>Me:</b> Learn from their fellowship and grantees' work.</p><div class="links"><a href="https://brink.dev/">Visit</a></div></li><li><h3>OpenSats</h3><p>Grants for open-source Bitcoin and freedom tech.<br><b>Me:</b> Follow funded projects and contribute.</p><div class="links"><a href="https://opensats.org/">Visit</a></div></li><li><h3>Human Rights Foundation</h3><p>Its Bitcoin Development Fund backs open-source tools for people under financial repression.<br><b>Me:</b> Co-sponsored the Lightning Bootcamp I attended.</p><div class="links"><a href="https://hrf.org/">Visit</a></div></li></ul>
+
+  <h2>Building the protocol</h2>
+  <ul class="cards"><li><h3>Bitcoin Core</h3><p>The reference implementation of Bitcoin.<br><b>Me:</b> Review pull requests; test releases.</p><div class="links"><a href="https://bitcoincore.org/">Visit</a></div></li><li><h3>Bitcoin Core PR Review Club</h3><p>Weekly review sessions for newcomers and regulars.<br><b>Me:</b> Join, read the notes, ask questions.</p><div class="links"><a href="https://bitcoincore.reviews/">Visit</a></div></li><li><h3>Bitcoin Optech</h3><p>Plain-English technical news for Bitcoin builders.<br><b>Me:</b> Read weekly.</p><div class="links"><a href="https://bitcoinops.org/">Visit</a></div></li><li><h3>Chaincode Labs</h3><p>Bitcoin research and developer education.<br><b>Me:</b> Their study material is free.</p><div class="links"><a href="https://chaincode.com/">Visit</a></div></li></ul>
+
+  <h2>Lightning</h2>
+  <ul class="cards"><li><h3>LND (Lightning Labs)</h3><p>The Lightning node behind Ye₿ente.<br><b>Me:</b> Run it, report issues, review.</p><div class="links"><a href="https://github.com/lightningnetwork/lnd">Visit</a></div></li><li><h3>Core Lightning</h3><p>A Lightning implementation by Blockstream.<br><b>Me:</b> Read the code; compare designs.</p><div class="links"><a href="https://github.com/ElementsProject/lightning">Visit</a></div></li><li><h3>BOLTs</h3><p>The Lightning specifications.<br><b>Me:</b> Read one spec a week.</p><div class="links"><a href="https://github.com/lightning/bolts">Visit</a></div></li></ul>
+
+  <h2>Bitcoin in Africa</h2>
+  <ul class="cards"><li><h3>Bitcoin Ekasi</h3><p>A Bitcoin circular economy in a South African township.<br><b>Me:</b> Learn how they teach a whole community.</p><div class="links"><a href="https://bitcoinekasi.com/">Visit</a></div></li><li><h3>Bitcoin Dada</h3><p>Bitcoin education for women across Africa.<br><b>Me:</b> Learn from their cohorts.</p><div class="links"><a href="https://btcdada.com/">Visit</a></div></li><li><h3>Dada Devs</h3><p>Trains African women as Bitcoin and Lightning developers.<br><b>Me:</b> Learn how they train developers.</p><div class="links"><a href="https://dadadevs.com/">Visit</a></div></li><li><h3>Machankura</h3><p>Bitcoin over USSD, for phones without internet.<br><b>Me:</b> Study Bitcoin for basic phones.</p><div class="links"><a href="https://8333.mobi/">Visit</a></div></li><li><h3>Tando</h3><p>Pays M-Pesa from Lightning. Ye₿ente's Send Mobile uses it.<br><b>Me:</b> Build with it.</p><div class="links"><a href="https://tando.me/">Visit</a></div></li></ul>
+
+  <h2>Wallet and tools</h2>
+  <ul class="cards"><li><h3>Blink</h3><p>A Lightning wallet. Ye₿ente reads its exchange rates.<br><b>Me:</b> Learn from its open-source code.</p><div class="links"><a href="https://www.blink.sv/">Visit</a></div></li><li><h3>Bitcoin Dev Kit</h3><p>Libraries for building Bitcoin wallets.<br><b>Me:</b> A path to my first wallet-library contribution.</p><div class="links"><a href="https://bitcoindevkit.org/">Visit</a></div></li></ul>
+
+  <p class="intro" style="margin-top:2rem">Know someone who should be here? <a href="mailto:hello@altradits.com?subject=A%20Bitcoin%20player%20to%20feature">Tell me</a>.</p>
+
+</div>
+
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/wallet">Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin in Kisumu</a> · <a href="/players">Players</a> · <a href="/journey">Journey</a> · <a href="/donate">Support my work</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+</script>
+</body>
+</html>
