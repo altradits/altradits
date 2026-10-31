@@ -218,9 +218,10 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--yb-surface)] text-[var(--yb-on-surface)] flex flex-col items-center justify-start p-0 md:p-6 select-none font-sans">
-      {/* A phone-sized column, framed on wide screens */}
-      <div className="w-full max-w-[440px] md:my-4 md:border md:border-[var(--yb-outline-variant)] md:rounded-[40px] md:shadow-2xl md:shadow-black/90 md:overflow-hidden bg-[var(--yb-surface)] flex flex-col min-h-screen md:min-h-[860px]">
+    <div className="h-dvh overflow-hidden bg-[var(--yb-surface)] text-[var(--yb-on-surface)] flex flex-col items-center justify-start md:justify-center p-0 md:p-6 select-none font-sans">
+      {/* A phone-sized column, framed on wide screens. It always fits the
+          screen: the page never scrolls, only the content inside the app. */}
+      <div className="w-full max-w-[440px] md:border md:border-[var(--yb-outline-variant)] md:rounded-[40px] md:shadow-2xl md:shadow-black/90 overflow-hidden bg-[var(--yb-surface)] flex flex-col h-full md:max-h-[860px]">
         {/* Top Bar with brand yebente, offline badge, and settings */}
         <TopBar
           wallet={wallet}
@@ -239,7 +240,7 @@ export default function App() {
             onUseExternal={() => { setGateOpen(false); setExternalSetup(true); setWallet((w) => ({ ...w, type: 'non-custodial' })); setActiveModal('wallet_settings'); }}
           />
         ) : (
-        <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-6">
+        <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-4 pb-6">
           {ratesError && rates.btcUsd === 0 && (
             <div className="p-3 rounded-2xl bg-amber-950/40 border border-amber-500/30 text-amber-300 text-xs font-mono">
               <p className="font-semibold">Exchange Rates Offline</p>
