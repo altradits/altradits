@@ -208,6 +208,14 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
     <ul id="lnLessons" class="sm"></ul>
   </section>
 
+  <section class="panel" aria-labelledby="hAct">
+    <h2 id="hAct">Most active Ye₿ente wallets</h2>
+    <div class="learn"><p>Deposits and completed transactions per wallet, most active first. Use it to reward your most active users, for example with a transfer from your own Ye₿ente wallet.</p></div>
+    <div class="row"><label for="actDays" class="sm"><b>Period</b></label><select id="actDays" style="width:auto;padding:.4rem .6rem;border:2px solid var(--line);border-radius:.6rem;font:inherit"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="0">All time</option></select></div>
+    <div class="kpis" id="actKpis" style="margin-top:.8rem"></div>
+    <div id="actList" class="scroll"></div>
+  </section>
+
   <section class="panel" aria-labelledby="hMoney">
     <h2 id="hMoney">Money received through the website</h2>
     <div class="learn"><p>Every payment the website took, in sats: orders and donations before the agency moved out, and support payments since. Ye₿ente deposits aren't here; they belong to wallet holders.</p></div>
@@ -219,8 +227,9 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
   <section class="panel" aria-labelledby="hCv">
     <h2 id="hCv">Your CV</h2>
     <p class="sm muted" id="cvNote"></p>
-    <div class="row"><button type="button" class="btn" id="cvDl">Download first CV (.md)</button><button type="button" class="btn" id="cvUp" hidden>Download uploaded CV</button></div>
-    <details style="margin-top:.6rem"><summary class="sm"><b>Read it here</b></summary><pre id="cvText" style="white-space:pre-wrap;font:inherit;font-size:.92rem;margin:.6rem 0 0"></pre></details>
+    <div class="row"><button type="button" class="btn primary" id="cvNow">Download current CV (.md)</button><button type="button" class="btn" id="cvDl">Download first CV (.md)</button><button type="button" class="btn" id="cvUp" hidden>Download uploaded CV</button></div>
+    <details style="margin-top:.6rem"><summary class="sm"><b>Read the current CV</b></summary><pre id="cvNowText" style="white-space:pre-wrap;font:inherit;font-size:.92rem;margin:.6rem 0 0"></pre></details>
+    <details style="margin-top:.2rem"><summary class="sm"><b>Read the first CV</b></summary><pre id="cvText" style="white-space:pre-wrap;font:inherit;font-size:.92rem;margin:.6rem 0 0"></pre></details>
   </section>
 
   <section class="panel gloss" aria-labelledby="hGloss">
@@ -247,6 +256,6 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
   </section>
 </div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=learn2"></script>
+<script type="module" src="/assets/admin.js?v=learn3"></script>
 </body>
 </html>
