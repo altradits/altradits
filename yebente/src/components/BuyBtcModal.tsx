@@ -8,7 +8,7 @@ import {
   formatKenyanDisplayPhone,
 } from '../services/mpesaService';
 import { isLightningAddress, resolveLightningAddress, createLightningInvoice } from '../services/lightningService';
-import { KenyaPhoneInput } from './KenyaPhoneInput';
+import { PhoneInput } from './PhoneInput';
 import { SatsMotion } from './SatsMotion';
 import { celebrate } from '../services/celebrate';
 
@@ -337,7 +337,10 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
               </div>
 
               {/* Phone input component */}
-              <KenyaPhoneInput
+              <PhoneInput
+                dial="254"
+                digits={9}
+                example="712 345 678"
                 value={phone}
                 onChange={(full) => setPhone(full)}
                 label="M-Pesa Phone Number"

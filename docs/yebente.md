@@ -49,6 +49,13 @@ To add sending power, pay a node invoice: admin → Finance → Sending power su
 ## M-Pesa through Tando
 Send Mobile pays a Kenyan Safaricom number through Tando (bitcoin.co.ke): the app asks Tando for an invoice priced in shillings (15 to 50,000 KES, Tando's 1% fee on top), the node pays it, Tando pays the phone by M-Pesa and publishes the Safaricom receipt code, which the app shows. It needs sending power on the node.
 
+## Send Mobile's payout options (lib/rails.js)
+Send Mobile draws one button per payout option the server lists at GET /api/yebente/rails; with one option there are no buttons, only its form. Each option pays a mobile-money number through a partner that gives every number a Lightning address (number@host) and quotes in the local currency over LNURL-pay, the way Tando does: country code, number format, currency, partner fee and receipt path all come from the list, so the app needs no change for a new one.
+- M-Pesa (Kenya, KES) through Tando is always on.
+- Telebirr (Ethiopia, ETB) is listed but off. To switch it on, with no code change or app rebuild: set YEBENTE_TELEBIRR_HOST to the partner's domain, optionally YEBENTE_TELEBIRR_PARTNER (its name), YEBENTE_TELEBIRR_FEE_PERCENT and YEBENTE_TELEBIRR_RECEIPT (its payment-status path), then YEBENTE_TELEBIRR=on and restart the app.
+- A partner whose option is off is never paid or even asked for an invoice, whether through Send Mobile, Send Sats (number@host) or a direct call (test/rails.test.mjs).
+- A partner with a different kind of API (not number@host over LNURL-pay) needs a server adapter written once; the app's buttons still come from the list.
+
 ## Solvency
 Every hour the server compares the total of all Ye₿ente balances with what the node can send (lib/attacks.js checkSolvency). A shortfall is recorded in the Security watch and emailed to Stanley: add outbound liquidity or pause buying. This is the Mt. Gox and QuadrigaCX lesson.
 
