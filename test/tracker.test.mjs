@@ -12,8 +12,10 @@ for (const k of ["UPSTASH_REDIS_REST_URL", "KV_REST_API_URL"]) delete process.en
 const t = await import("../lib/tracker.js");
 const { TRACK, DONE } = await import("../data/tracker.js");
 const now = Date.parse("2026-11-01T12:00:00Z"), day = (d) => new Date(now - d * 864e5).toISOString();
-const item = (repo, title, extra = {}) => ({ repository_url: `https://api.github.com/repos/${repo}`, title, html_url: `https://github.com/${repo}/pull/1`, created_at: day(1), state: "open", ...extra });
+let n = 0;
+const item = (repo, title, extra = {}) => ({ repository_url: `https://api.github.com/repos/${repo}`, number: ++n, title, html_url: `https://github.com/${repo}/pull/${n}`, created_at: day(1), state: "open", pull_request: {}, ...extra });
 let calls = 0, fail = false;
+const review = { repository_url: "https://api.github.com/repos/bitcoin/bitcoin", number: 900, title: "net: something", html_url: "https://github.com/bitcoin/bitcoin/pull/900", created_at: day(1), state: "open", pull_request: {} };
 t.setGitHubFetcher(async (p) => {
   calls++;
   if (fail) throw new Error("GitHub 403");
@@ -23,11 +25,17 @@ t.setGitHubFetcher(async (p) => {
     { type: "PushEvent", repo: { name: "altradits/altradits" }, created_at: day(2) }, // his own repo: doesn't count
     { type: "PushEvent", repo: { name: "minmoto/payment-channels" }, created_at: day(3) },
   ];
+  if (p.startsWith("/repos/")) return { private: p.includes("private/repo"), visibility: p.includes("private/repo") ? "private" : "public" };
   const q = decodeURIComponent(p.split("q=")[1]);
-  assert.ok(TRACK.every((x) => q.includes(`repo:${x.repo}`)) && q.includes(`repo:${DONE[0].repo}`), "every project in one search");
-  if (q.startsWith("author:altradits type:pr")) return { items: [item("minmoto/payment-channels", "Telebirr", { pull_request: { merged_at: day(20) } }), item("lightningnetwork/lnd", "docs: fix typo")] };
-  if (q.startsWith("reviewed-by:")) return { items: [item("bitcoin/bitcoin", "net: something")] };
-  if (q.startsWith("commenter:")) return { items: [item("bitcoin/bitcoin", "net: something")] }; // same PR: counted once
+  assert.match(q, /-user:altradits/, "never his own repositories");
+  if (q.startsWith("author:altradits type:pr")) return { items: [
+    item("minmoto/payment-channels", "Telebirr", { created_at: day(40), state: "closed", pull_request: { merged_at: day(20) } }),
+    item("lightningnetwork/lnd", "docs: fix typo", { created_at: day(2) }),
+    item("someone/else", "abandoned idea", { created_at: day(30), state: "closed", pull_request: { merged_at: null } }),
+    item("private/repo", "secret work", { created_at: day(5), state: "closed", pull_request: { merged_at: day(4) } })] };
+  if (q.startsWith("author:altradits type:issue")) return { items: [item("jamaljsr/polar", "a bug", { created_at: day(35), pull_request: undefined })] };
+  if (q.startsWith("reviewed-by:")) return { items: [review] };
+  if (q.startsWith("commenter:")) return { items: [review] }; // same PR: counted once
   return { items: [] };
 });
 
@@ -45,11 +53,26 @@ test("steps tick from GitHub; the streak counts only tracked projects; the day's
   assert.equal(r.next.step.key, "review");
 });
 
+test("the blockchain: every contribution mines a block; merged wins the mempool; every block links to GitHub", async () => {
+  const C = (await t.computeTracker(now)).chain;
+  assert.equal(C.blocks, 5, "3 pull requests, 1 issue, 1 review (counted once); nothing from a private repository");
+  assert.ok(!JSON.stringify(C).includes("secret work"), "private titles never published");
+  assert.equal(C.height, 4);
+  assert.deepEqual(C.list.map((b) => [b.height, b.kind, b.status]).reverse(), [[0, "pr", "confirmed"], [1, "issue", "mined"], [2, "pr", "orphaned"], [3, "pr", "mempool"], [4, "review", "mined"]]);
+  assert.ok(C.list.every((b) => /^https:\/\/github\.com\//.test(b.url) && /^[0-9a-f]{64}$/.test(b.hash)), "clickable, with a fixed hash");
+  assert.deepEqual([C.confirmed, C.mempool, C.orphaned], [1, 1, 1]);
+  const [genesis, first, starter] = C.milestones;
+  assert.equal(genesis.block.title, "Telebirr");
+  assert.equal(first.reached, true);
+  assert.equal(starter.reached, false, "five merges not reached");
+  assert.equal(C.fullTime, null, "the 21M day is set by hand when it happens");
+});
+
 test("cached for 24 hours, and the last result is kept if GitHub can't be reached", async () => {
   calls = 0;
   const a = await t.tracker(now);
   const b = await t.tracker(now + 23 * 3600e3);
-  assert.equal(calls, 5, "five GitHub calls, then the cache");
+  assert.equal(calls, 11, "4 searches, the events and 6 repository checks, then the cache");
   assert.equal(b.updatedAt, a.updatedAt);
   fail = true;
   const c = await t.tracker(now + 25 * 3600e3);

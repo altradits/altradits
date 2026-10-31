@@ -6,7 +6,7 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g=' 'sha256-tPLGs/tkTYDUDXw51GTU4F9XmFsrDrWBKf/RlgQRuC8='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g=' 'sha256-1/TJwym94R0JaouiFTkmVPqF5D/aB2EYHsWlvFbLaHU='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/tracker">
 <title>Open-source tracker · Altradits</title>
@@ -63,6 +63,28 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .stat{background:var(--paper);border:2px solid var(--line);border-radius:.9rem;padding:.8rem 1rem}
 .stat b{display:block;font:800 1.7rem/1.1 'Bricolage Grotesque',sans-serif}
 .stat span{color:var(--muted);font-size:.88rem}
+.chainbox{margin-top:.5rem}
+.strip{display:flex;flex-wrap:wrap;gap:4px;margin:1rem 0 .4rem;max-width:60rem}
+.strip a{display:block;width:16px;height:16px;border-radius:3px;border:1px solid rgba(15,27,45,.25)}
+.strip a:hover,.strip a:focus-visible{transform:scale(1.5);outline:2px solid var(--ink)}
+.strip a.genesis{width:22px;height:22px;border:2px solid var(--ink)}
+.b{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:.35rem;vertical-align:-1px;border:1px solid rgba(15,27,45,.25)}
+.confirmed{background:#F7931A}.mempool{background:#fff;border:2px dashed #F7931A!important}.mined{background:#2A5A8F}.orphaned{background:#C9D3DF}
+.key{display:flex;flex-wrap:wrap;gap:.3rem 1.2rem;font-size:.86rem;color:var(--muted);margin:0 0 .6rem}
+.sub{font:800 1.1rem 'Bricolage Grotesque',sans-serif;margin:1.4rem 0 .6rem}
+.miles{list-style:none;padding:0;margin:0;display:grid;gap:.5rem;max-width:46rem}
+.miles li{display:grid;grid-template-columns:2rem 1fr;gap:.5rem;align-items:start;background:var(--paper);border:2px solid var(--line);border-radius:.9rem;padding:.65rem .9rem}
+.miles li.on{border-color:#F7931A}
+.miles li.final{border:2px dashed var(--ink)}
+.miles .ic{font-size:1.2rem;line-height:1.4}
+.miles small{color:var(--muted)}
+.scroll{overflow-x:auto}
+.explorer{width:100%;border-collapse:collapse;font-size:.92rem;background:var(--paper);border-radius:.8rem;overflow:hidden}
+.explorer th,.explorer td{text-align:left;padding:.55rem .6rem;border-bottom:1px solid var(--line);vertical-align:top}
+.explorer th{font-size:.76rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.explorer code{font:.78rem ui-monospace,Menlo,monospace;color:var(--muted)}
+.explorer .st{font-weight:700;font-size:.82rem;white-space:nowrap}
+.more{margin-top:.8rem;min-height:2.75rem;padding:.5rem 1rem;border-radius:.6rem;border:2px solid var(--ink);background:transparent;font:600 .95rem Figtree,sans-serif;cursor:pointer}
 .rules{padding-left:1.2rem;max-width:46rem;color:var(--muted)}
 .rules li{margin:.3rem 0}
 .proj{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr));gap:1rem}
@@ -90,6 +112,20 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
     <p class="lead">Six projects I don't own. One challenge each, solved without AI, following each project's own rules. Every step ticks itself when GitHub shows I did it.</p>
   </header>
 
+  <section class="chainbox" aria-labelledby="hChain">
+    <h2 id="hChain">My blockchain to the 21M day</h2>
+    <p class="intro">Every contribution to someone else's open-source project <b>mines a block</b>. A merged pull request <b>won the mempool</b> and is confirmed. An open one waits in the mempool. One closed without merging was orphaned. The chain ends the day I'm accepted as a full-time open-source contributor: <b>my 21M day</b>. Click any block to see the work on GitHub.</p>
+    <div class="stats" id="chainStats"></div>
+    <div class="strip" id="strip" aria-label="Every block, oldest first"></div>
+    <p class="key"><span><i class="b confirmed"></i>Confirmed (merged)</span><span><i class="b mempool"></i>In the mempool (open)</span><span><i class="b mined"></i>Mined (review, issue, comment)</span><span><i class="b orphaned"></i>Orphaned (closed, not merged)</span></p>
+    <h3 class="sub">Milestones</h3>
+    <ol class="miles" id="miles"></ol>
+    <h3 class="sub">Latest blocks</h3>
+    <div class="scroll"><table class="explorer"><thead><tr><th>Height</th><th>Block</th><th>Status</th><th>Hash</th></tr></thead><tbody id="blocks"></tbody></table></div>
+    <button type="button" class="more" id="more" hidden>Show every block</button>
+  </section>
+
+  <h2>Today</h2>
   <section class="today" id="today" aria-live="polite"><p class="muted">Loading from GitHub…</p></section>
 
   <div class="stats" id="stats"></div>
@@ -120,6 +156,21 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
   let T;
   try { const r = await fetch("/api/tracker"); T = await r.json(); if (!r.ok) throw new Error(T.error); }
   catch (e) { $("#today").innerHTML = `<p class="muted">${esc(e.message || "GitHub can't be reached right now.")}</p>`; return; }
+  const C = T.chain, KIND = { pr: "Pull request", issue: "Issue", review: "Review", comment: "Comment" };
+  const LABEL = { confirmed: "Confirmed ✓ won the mempool", mempool: "In the mempool", mined: "Mined", orphaned: "Orphaned" };
+  const day = (iso) => (iso ? new Date(iso).toISOString().slice(0, 10) : "");
+  if (C) {
+    $("#chainStats").innerHTML = [[C.height >= 0 ? C.height : "–", "block height"], [C.confirmed, "blocks confirmed (merged)"], [C.mempool, "in the mempool (open)"], [C.orphaned, "orphaned"], [C.repos, "projects"], [C.days, "days since genesis"]]
+      .map(([b, s]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join("");
+    const old = C.list.slice().reverse();
+    $("#strip").innerHTML = old.map((b) => `<a class="${b.status}${b.height === 0 ? " genesis" : ""}" href="${esc(b.url)}" title="Block ${b.height} · ${esc(KIND[b.kind])} · ${esc(b.repo)}#${b.number}: ${esc(b.title)} · ${esc(LABEL[b.status])}" aria-label="Block ${b.height}: ${esc(b.title)}"></a>`).join("");
+    const F = C.fullTime;
+    $("#miles").innerHTML = C.milestones.map((m) => `<li class="${m.reached ? "on" : ""}"><span class="ic">${m.reached ? "⛏️" : "○"}</span><span><b>${esc(m.title)}</b> <small>${esc(m.text)}</small>${m.block ? `<br><a href="${esc(m.block.url)}">Block ${m.block.height}: ${esc(m.block.title)}</a> <small>${esc(day(m.block.at))}</small>` : `<br><small>Not mined yet.</small>`}</span></li>`).join("")
+      + `<li class="final ${F ? "on" : ""}"><span class="ic">${F ? "🎉" : "₿"}</span><span><b>The 21M day</b> <small>Accepted as a full-time open-source contributor.</small><br>${F ? `<a href="${esc(F.url)}">${esc(F.title)}</a> <small>${esc(F.date)}</small>` : `<small>Not mined yet. Block ${esc(C.height + 1)} is next.</small>`}</span></li>`;
+    const row = (b) => `<tr><td><b>${b.height}</b><br><small class="muted">${esc(day(b.at))}</small></td><td>${esc(KIND[b.kind])} · <a href="${esc(b.url)}">${esc(b.title)}</a><br><small class="muted">${esc(b.repo)}#${b.number}</small></td><td class="st"><i class="b ${b.status}"></i>${esc(LABEL[b.status])}</td><td><code>${esc(b.hash.slice(0, 16))}…</code></td></tr>`;
+    $("#blocks").innerHTML = C.list.slice(0, 15).map(row).join("");
+    if (C.list.length > 15) { $("#more").hidden = false; $("#more").onclick = () => { $("#blocks").innerHTML = C.list.map(row).join(""); $("#more").hidden = true; }; }
+  }
   const n = T.next;
   $("#today").innerHTML = n ? `<span class="tag">Today's task</span><h2>${esc(n.name)}: ${esc(n.step.title)}</h2><p>${esc(n.step.text)}</p><p><b>Challenge:</b> ${esc(n.challenge)}</p><div class="links"><a href="${esc(n.start)}">Find a task</a><a href="${esc(n.guide)}">Read the guide</a></div>`
     : `<span class="tag">All steps done</span><h2>Every challenge is complete.</h2><p>Time to pick harder ones.</p>`;
