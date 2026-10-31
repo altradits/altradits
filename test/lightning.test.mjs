@@ -148,9 +148,6 @@ test("support page: any amount, invoiced on our own node, and shown as paid once
   const S = (await call(admin.GET, "GET", "/api/admin?view=statement")).body;
   assert.equal(S.support.sats, 21000, "a paid support payment is on the statement");
   assert.match((await call(admin.GET, "GET", "/api/admin?view=statement&format=csv")).body, /^date,type,what,sats[\s\S]*support,Support for open-source work,21000/);
-  const cv = (await call(admin.GET, "GET", "/api/admin?view=cv")).body;
-  assert.match(cv.initial, /^# Stanley Chege Thuita/);
-  assert.doesNotMatch(cv.initial, /\{\{|\+?254[ \d]{9}/, "numbers filled in; no phone number");
   noNode();
   // Node offline: no invoice from someone else's wallet; the page shows the public address instead.
   const off = await call(tip.POST, "POST", "/api/tip", { sats: 21000 });
@@ -186,6 +183,18 @@ test("node dashboard: needs the admin token; shows block height against the tip,
   assert.deepEqual(X.payments, { count: 2, succeeded: 1, failed: 1, sats: 1000, feeSats: 2 });
   assert.deepEqual(X.invoices, { count: 2, settled: 1, expired: 1, sats: 2100 }, "only the last 30 days");
   assert.deepEqual(X.utxos, { count: 0, sats: 0 });
+  // Your wallets: only listed handles can receive from here; receiving makes a node invoice for that wallet.
+  const store = await import(new URL("lib/store.js", root));
+  await store.setJSON("yw:wa", { id: "wa", handle: "stan", balance: 0, createdAt: new Date().toISOString() }); await store.setJSON("yw:h:stan", "wa"); await store.pushId("ywallets", "wa");
+  assert.equal((await call(admin.POST, "POST", "/api/admin", { action: "wallet_invoice", handle: "stan", sats: 21 })).status, 400, "not on the list yet");
+  assert.equal((await call(admin.POST, "POST", "/api/admin", { action: "my_wallet_add", handle: "nobody" })).status, 404);
+  assert.equal((await call(admin.POST, "POST", "/api/admin", { action: "my_wallet_add", handle: "Stan@altradits.com" })).status, 200);
+  const inv = (await call(admin.POST, "POST", "/api/admin", { action: "wallet_invoice", handle: "stan", sats: 21 })).body;
+  assert.equal(inv.satsAmount, 21);
+  assert.match(inv.qr, /^<svg/);
+  assert.equal((await call(admin.GET, "GET", `/api/admin?view=walletinvoice&hash=${inv.paymentHash}`)).body.state, "open");
+  const Wv = (await call(admin.GET, "GET", "/api/admin?view=wallets")).body;
+  assert.equal(Wv.mine[0].address, "stan@altradits.test");
   noNode();
   assert.equal((await call(admin.GET, "GET", "/api/admin")).body.node, null, "no node set: says so");
 });

@@ -36,6 +36,25 @@ document.querySelector(".tabs").addEventListener("click", (e) => { const t = e.t
 window.addEventListener("hashchange", () => tab(location.hash.slice(1)));
 tab(location.hash.slice(1));
 
+// What needs attention, from every part of the dashboard: { key: { level, text, go: "tab:sectionId" } }.
+const ISSUES = {};
+function issue(key, level, text, go) { if (level) ISSUES[key] = { level, text, go }; else delete ISSUES[key]; renderAlerts(); }
+function renderAlerts() {
+  const list = Object.values(ISSUES).sort((a, b) => (a.level === "crit" ? 0 : 1) - (b.level === "crit" ? 0 : 1));
+  $("#health").textContent = list.length ? `${list.length} thing${list.length === 1 ? "" : "s"} need${list.length === 1 ? "s" : ""} you ▾` : "All good";
+  $("#health").classList.toggle("bad", list.length > 0);
+  $("#alertList").innerHTML = list.length ? list.map((x) => `<li><a href="#${esc(x.go.split(":")[0])}" data-go="${esc(x.go)}"><span class="lv ${x.level}">${x.level === "crit" ? "Act now" : "Soon"}</span><br>${esc(x.text)}</a></li>`).join("") : '<li class="sm muted">Nothing needs you right now.</li>';
+}
+function go(target) {
+  const [t, id] = target.split(":");
+  tab(t);
+  const el = id && document.getElementById(id);
+  if (el) { const box = el.closest(".panel") || el; box.scrollIntoView({ block: "start" }); window.scrollBy(0, -70); box.classList.add("flash"); setTimeout(() => box.classList.remove("flash"), 2500); }
+}
+$("#health").addEventListener("click", () => { const open = $("#alerts").hidden; $("#alerts").hidden = !open; $("#health").setAttribute("aria-expanded", String(open)); });
+$("#alertList").addEventListener("click", (e) => { const a = e.target.closest("[data-go]"); if (!a) return; e.preventDefault(); $("#alerts").hidden = true; $("#health").setAttribute("aria-expanded", "false"); go(a.dataset.go); });
+document.addEventListener("click", (e) => { if (!$("#alerts").hidden && !e.target.closest("#alerts, #health")) { $("#alerts").hidden = true; $("#health").setAttribute("aria-expanded", "false"); } });
+
 let toastTimer;
 function toast(text, fail = false, ms = 2600) {
   const el = $("#toast");
@@ -80,9 +99,8 @@ function renderChecklist(D, L) {
     [null, "Channel backup copied off this machine", "After every channel opens or closes, copy channel.backup to a safe place. With your 24 words, it gets your channel funds back."],
     [null, "24 recovery words safe on paper", "Never typed into a website or a phone. Only the node's own setup asks for them."],
   ];
-  const bad = items.filter(([ok]) => ok === false).length;
-  $("#health").textContent = bad ? `${bad} thing${bad === 1 ? "" : "s"} need you` : "All good";
-  $("#health").classList.toggle("bad", Boolean(bad));
+  const where = ["node:hNode", "channels:hChan", "money:hPower", "money:hChain", "overview:hStan"];
+  items.slice(0, 5).forEach(([ok, title, why], i) => issue(`check${i}`, ok === false ? (i < 3 ? "crit" : "warn") : null, `${title}: ${why}`, where[i]));
   $("#checklist").innerHTML = items.map(([ok, title, why]) => `<li><span class="m ${ok === null ? "u" : ok ? "y" : "n"}" aria-label="${ok === null ? "check yourself" : ok ? "fine" : "needs attention"}">${ok === null ? "○" : ok ? "✓" : "✗"}</span><span><b>${esc(title)}</b><br><span class="sm muted">${esc(why)}</span></span></li>`).join("");
 }
 
@@ -181,32 +199,12 @@ function renderGlossary() {
   $("#glossary").innerHTML = GLOSSARY.map(([t, d]) => `<details><summary>${esc(t)}</summary><p>${esc(d)}</p></details>`).join("");
 }
 
-function renderVisits(V) {
-  if (!V) { $("#visits").innerHTML = '<p class="muted">No views counted yet.</p>'; return; }
-  const max = Math.max(1, ...V.daily.map((d) => d.views));
-  $("#visits").innerHTML = `<div class="kpis">${kpi("Views, 7 days", V.d7)}${kpi("Views, 30 days", V.d30)}</div>
-    <div class="spark" aria-label="Views per day, last 14 days">${V.daily.map((d) => `<i title="${esc(d.day)}: ${d.views}" style="height:${Math.max(4, (d.views / max) * 100)}%"></i>`).join("")}</div>
-    <table><thead><tr><th>Page</th><th>7 days</th><th>30 days</th></tr></thead><tbody>${Object.entries(V.byPage).sort((a, b) => b[1].d30 - a[1].d30).map(([p, v]) => `<tr><td>${esc(p)}</td><td>${v.d7}</td><td>${v.d30}</td></tr>`).join("")}</tbody></table>
-    <p class="sm muted">Top sources: ${V.sources.map((s) => `${esc(s.source)} (${s.views})`).join(", ") || "none yet"}</p>`;
-}
-
 function renderStan(S) {
   $("#stanLast").textContent = S ? `Last report ${ago(S.at)}: “${S.subject}” (${S.status}).` : "No report sent yet. The first goes out tomorrow after 06:00 UTC.";
 }
 $("#stanGo").addEventListener("click", async () => {
   try { const r = await api("", { action: "stan_report" }); toast(r.status === "sent" ? "Stan's report is on its way." : `Report ${r.status}.`, r.status !== "sent"); renderStan({ at: new Date().toISOString(), subject: r.subject, status: r.status }); }
   catch (err) { toast(err.message, true, 6000); }
-});
-
-function renderSystem(D) {
-  $("#system").innerHTML = `<dt>Email</dt><dd>${esc(D.system.email)}</dd><dt>Storage</dt><dd>${esc(D.system.storage)}</dd>`
-    + (D.retired ? `<dt>Agency records</dt><dd>${esc(D.retired.removed)} moved out ${esc(ago(D.retired.at))}${D.retired.archive ? ` (archived as ${esc(D.retired.archive)})` : ""}</dd>` : "");
-  $("#archives").innerHTML = D.archives.length ? D.archives.map((a) => `<div class="row sm"><span>${esc(a.name)} · ${esc(Math.round(a.bytes / 1024))} KB · ${esc(ago(a.at))}</span><button type="button" class="btn" data-archive="${esc(a.name)}">Delete</button></div>`).join("") : '<p class="muted sm">No archive files.</p>';
-}
-$("#archives").addEventListener("click", async (e) => {
-  const name = e.target.closest("[data-archive]")?.dataset.archive; if (!name) return;
-  const confirm = prompt(`Delete ${name} for good? Type DELETE to confirm.`); if (confirm === null) return;
-  try { await api("", { action: "archive_delete", name, confirm }); toast("Archive deleted."); load(); } catch (err) { toast(err.message, true, 6000); }
 });
 
 // 3. Sending power: spendable after channel reserves, what Ye₿ente owes, and node top-ups.
@@ -248,6 +246,8 @@ $("#spGo").addEventListener("click", async () => {
 async function loadChannels() {
   let L; try { L = await api("?view=channels"); } catch (err) { $("#lnAlerts").textContent = err.message; return; }
   drawChannels(L);
+  Object.keys(ISSUES).filter((k) => k.startsWith("ch:")).forEach((k) => delete ISSUES[k]);
+  L.alerts.forEach((a, i) => issue(`ch:${i}`, a.level === "critical" ? "crit" : "warn", a.text, "channels:hChan"));
   $("#lnAlerts").innerHTML = L.alerts.length ? L.alerts.map((a) => `<p class="alert ${a.level === "critical" ? "crit" : "warn"}"><b>${a.level === "critical" ? "Action needed" : "Heads-up"}:</b> ${esc(a.text)}</p>`).join("") : '<p class="ok"><b>All good:</b> enough inbound for what the node receives.</p>';
   const rows = [...L.channels, ...L.pending].map((c) => { const pct = c.capacity ? Math.round((c.local / c.capacity) * 100) : 0;
     return `<tr><td>${c.alias ? `<b>${esc(c.alias)}</b><br>` : ""}<code title="${esc(c.peer)}">${esc(c.peer.slice(0, 16))}…</code>${c.private ? " · private" : ""}</td><td>${satsF(c.capacity)}</td><td>${satsF(c.remote)}</td><td>${satsF(c.local)}</td><td><span class="bar"><i style="width:${pct}%"></i></span><small class="muted">${pct}% ours</small></td><td>${c.status ? esc(c.status) : c.active ? "Active" : '<b class="err">Offline</b>'}</td></tr>`; });
@@ -265,6 +265,8 @@ async function loadSecurity() {
   let W; try { W = await api("?view=security"); } catch { return; }
   const T = W.techniques, kinds = Object.keys(T);
   const today = kinds.reduce((t, k) => t + W.counts[k].today, 0), week = kinds.reduce((t, k) => t + W.counts[k].week, 0);
+  const high = W.events.filter((e) => T[e.kind]?.severity === "high" && Date.now() - Date.parse(e.at) < 864e5);
+  issue("sec", high.length ? "warn" : null, `${high.length} high-severity attempt${high.length === 1 ? "" : "s"} turned away today. Check what and where.`, "security:hSec");
   $("#secKpis").innerHTML = kpi("Turned away today", today, "", "Every one was blocked. Counts show who's trying.") + kpi("Last 7 days", week);
   const s = W.solvency;
   $("#secSolvency").innerHTML = s ? `<b>Ye₿ente solvency</b> (${esc(ago(s.at))}): owed ${esc(satsF(s.owedSats))} across ${esc(s.wallets)} wallets; the node can send ${esc(satsF(s.outboundSats))}. ${s.covered === false ? '<b class="err">Short.</b>' : s.covered ? "Covered." : ""}` : "";
@@ -291,8 +293,9 @@ async function loadMoney() {
   $("#moneyKpis").innerHTML = kpi("Total received", satsF(S.total.sats), "", `${S.total.count} payment${S.total.count === 1 ? "" : "s"}.`)
     + kpi("Orders", satsF(S.orders.sats), "", `${S.orders.count}, before the agency moved out.`) + kpi("Donations", satsF(S.donations.sats), "", `${S.donations.count}.`)
     + kpi("Support (/donate)", satsF(S.support.sats), "", `${S.support.count}, paid to your node.`);
-  $("#moneyList").innerHTML = S.payments.length ? `<table><thead><tr><th>Date</th><th>What</th><th>Sats</th><th>Via</th><th>Receipt</th></tr></thead><tbody>${S.payments.map((x) =>
-    `<tr><td>${esc(String(x.at).slice(0, 10))}</td><td>${esc(x.what)}${x.payer ? `<br><span class="muted sm">${esc(x.payer)}</span>` : ""}</td><td>${esc(num(x.sats))}</td><td>${esc(x.channel)}</td><td>${esc(x.receipt || "")}</td></tr>`).join("")}</tbody></table>`
+  PAYMENTS = S.payments;
+  $("#moneyList").innerHTML = S.payments.length ? `<table><thead><tr><th>Date</th><th>What</th><th>Sats</th><th>Via</th><th>Receipt</th></tr></thead><tbody>${S.payments.map((x, i) =>
+    `<tr><td>${esc(String(x.at).slice(0, 10))}</td><td>${esc(x.what)}${x.payer ? `<br><span class="muted sm">${esc(x.payer)}</span>` : ""}</td><td>${esc(num(x.sats))}</td><td>${esc(x.channel)}</td><td><button type="button" class="linkbtn" data-receipt="${i}">${esc(x.receipt || "View")}</button></td></tr>`).join("")}</tbody></table>`
     + (S.months.length ? `<p class="sm muted">By month: ${S.months.map((m) => `${esc(m.month)} ${esc(satsF(m.sats))}`).join(" · ")}</p>` : "") : '<p class="muted sm">No payments recorded.</p>';
 }
 async function download(path, name) {
@@ -301,26 +304,8 @@ async function download(path, name) {
   const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(await res.blob()), download: name });
   a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
+$("#moneyList").addEventListener("click", (e) => { const i = e.target.closest("[data-receipt]")?.dataset.receipt; if (i !== undefined) openReceipt(Number(i)); });
 $("#moneyCsv").addEventListener("click", () => download("?view=statement&format=csv", `altradits-statement-${new Date().toISOString().slice(0, 10)}.csv`));
-
-// Stanley's first CV (23 Oct 2026), and the CV file he uploaded, if it's still on the server.
-let cvMd = "", cvNow = "", cvExt = "";
-async function loadCv() {
-  let C; try { C = await api("?view=cv"); } catch { return; }
-  cvMd = C.initial; $("#cvText").textContent = C.initial;
-  cvNow = C.current; $("#cvNowText").textContent = C.current;
-  $("#cvUp").hidden = !C.uploaded; cvExt = C.uploaded?.ext || "";
-  $("#cvNote").textContent = `Current: the open-source path. First: 23 October 2026, with the website numbers as they were then.${C.uploaded ? ` Your uploaded CV (.${C.uploaded.ext}, ${Math.round(C.uploaded.bytes / 1024)} KB) is also on the server.` : ""}`;
-}
-$("#cvDl").addEventListener("click", () => {
-  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(new Blob([cvMd], { type: "text/markdown" })), download: "stanley-cv-first.md" });
-  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-});
-$("#cvNow").addEventListener("click", () => {
-  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(new Blob([cvNow], { type: "text/markdown" })), download: "stanley-cv.md" });
-  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-});
-$("#cvUp").addEventListener("click", () => download("?view=cv&file=uploaded", `stanley-cv.${cvExt}`));
 
 // Profit and loss: what the node earned and spent, and what is yours after Ye₿ente's wallet holders.
 async function loadPnl() {
@@ -374,6 +359,8 @@ const closeWhy = { COOPERATIVE_CLOSE: "Cooperative: both sides agreed. Fast and 
 async function loadExplorer() {
   let X; try { X = await api("?view=explore"); } catch (err) { $("#exInfo").textContent = err.message; return; }
   if (X.error) { $("#exInfo").textContent = X.error; return; }
+  const flappy = (X.peers || []).filter((p) => p.flaps > 50);
+  issue("peers", flappy.length ? "warn" : null, `Your peer connection keeps dropping (${flappy.map((p) => p.flaps).join(", ")} reconnections). Payments can fail during a drop: check the internet and tunnel.`, "node:hNet");
   const I = X.info, G = X.graph;
   $("#exInfo").innerHTML = I ? kpi("Last block seen", ago(I.lastBlockAt), judge(Date.now() - Date.parse(I.lastBlockAt) < 3600e3), "Blocks come about every 10 minutes. Over an hour may mean the node is stuck.")
       + kpi("Inactive channels", I.inactive, judge(I.inactive === 0), "Channels whose peer is offline. They can't move payments until it's back.")
@@ -405,10 +392,62 @@ async function loadExplorer() {
   if (X.utxos) $("#chainKpis").insertAdjacentHTML("beforeend", kpi("Coins (UTXOs)", num(X.utxos.count), "", "Separate pieces of bitcoin in the on-chain wallet. Each one costs fees to spend."));
 }
 
-async function loadEmails() {
-  let E; try { E = await api("?view=emails"); } catch { return; }
-  $("#emails").innerHTML = E.emails.length ? `<table><thead><tr><th>When</th><th>Kind</th><th>Subject</th><th>Status</th></tr></thead><tbody>${E.emails.slice(0, 40).map((e) => `<tr><td>${esc(ago(e.at))}</td><td>${esc(e.kind)}</td><td>${esc(e.subject)}</td><td>${esc(e.status)}</td></tr>`).join("")}</tbody></table>` : '<p class="muted sm">No emails yet.</p>';
+// Ye₿ente wallets: your own (receive, history, send in the app), every balance, and where payments go.
+const KIND = { receive: "Received", buy: "Bought with M-Pesa", send: "Sent", transfer_in: "From a Ye₿ente wallet", transfer_out: "To a Ye₿ente wallet" };
+async function loadWallets() {
+  let W; try { W = await api("?view=wallets"); } catch (err) { $("#allList").textContent = err.message; return; }
+  $("#allKpis").innerHTML = kpi("Wallets", num(W.count), "", "Every Ye₿ente wallet on your node.") + kpi("Owed to wallets", satsF(W.total), "", ksh(W.total));
+  $("#allList").innerHTML = W.wallets.length ? `<table><thead><tr><th>Wallet</th><th>Balance</th><th>Shillings</th><th>Last active</th><th>Recovery email</th></tr></thead><tbody>${W.wallets.map((w) =>
+    `<tr><td><b>${esc(w.handle)}</b>@altradits.com</td><td>${esc(satsF(w.balance))}</td><td>${esc(ksh(w.balance))}</td><td>${w.lastAt ? esc(ago(w.lastAt)) : "never"}</td><td>${w.email ? "Yes" : '<span class="muted">No</span>'}</td></tr>`).join("")}</tbody></table>` : '<p class="muted sm">No wallets yet.</p>';
+  $("#mineList").innerHTML = W.mine.length ? W.mine.map((w) => w.missing ? `<div class="minew"><b>${esc(w.handle)}</b>: no longer exists. <button type="button" class="linkbtn" data-remove="${esc(w.handle)}">Remove</button></div>` : `<div class="minew">
+      <h3>${esc(w.address)}</h3>
+      <div class="kpis">${kpi("Balance", satsF(w.balance), "", ksh(w.balance))}</div>
+      <div class="row"><input type="number" inputmode="numeric" min="1" placeholder="Sats to receive" aria-label="Sats to receive into ${esc(w.handle)}" data-amt="${esc(w.handle)}" style="max-width:12rem"><button type="button" class="btn primary" data-recv="${esc(w.handle)}">Receive</button><a class="btn" href="/yebente#login" target="_blank" rel="noopener">Send in the app</a><button type="button" class="linkbtn sm" data-remove="${esc(w.handle)}">Remove from my list</button></div>
+      <div data-inv="${esc(w.handle)}"></div>
+      ${w.history.length ? `<table style="margin-top:.6rem"><thead><tr><th>When</th><th>What</th><th>Sats</th><th>With</th><th>Receipt</th></tr></thead><tbody>${w.history.map((e) =>
+        `<tr><td>${esc(ago(e.at))}</td><td>${esc(KIND[e.kind] || e.kind)}${e.status !== "completed" ? ` <span class="muted">(${esc(e.status)})</span>` : ""}</td><td>${esc(num(e.sats))}${e.fee ? ` <span class="muted">+${esc(num(e.fee))} fee</span>` : ""}</td><td>${esc(e.counterparty)}</td><td>${e.receiptUrl ? `<a href="${esc(e.receiptUrl)}" target="_blank" rel="noopener">View receipt</a>` : ""}</td></tr>`).join("")}</tbody></table>` : '<p class="muted sm">No transactions yet.</p>'}
+    </div>`).join("") : '<p class="muted sm" style="margin-top:.6rem">No wallets on your list yet. Create one, or add a handle you own.</p>';
+  const first = W.mine.find((w) => !w.missing)?.handle;
+  if (first) document.querySelectorAll("#cliSteps .h").forEach((x) => { x.textContent = first; });
 }
+$("#mineAdd").addEventListener("click", async () => {
+  try { await api("", { action: "my_wallet_add", handle: $("#mineHandle").value }); $("#mineHandle").value = ""; toast("Added."); loadWallets(); } catch (err) { toast(err.message, true, 6000); }
+});
+let recvPoll = null;
+$("#mineList").addEventListener("click", async (e) => {
+  const rm = e.target.closest("[data-remove]")?.dataset.remove;
+  if (rm) { try { await api("", { action: "my_wallet_remove", handle: rm }); loadWallets(); } catch (err) { toast(err.message, true); } return; }
+  const h = e.target.closest("[data-recv]")?.dataset.recv; if (!h) return;
+  const box = document.querySelector(`[data-inv="${CSS.escape(h)}"]`), sats = Number(document.querySelector(`[data-amt="${CSS.escape(h)}"]`).value);
+  let R; try { R = await api("", { action: "wallet_invoice", handle: h, sats }); } catch (err) { box.innerHTML = `<p class="err sm">${esc(err.message)}</p>`; return; }
+  box.innerHTML = `<p class="sm"><b>Pay ${esc(satsKsh(R.satsAmount))} into ${esc(h)}</b> from any Lightning wallet. This updates when it's paid.</p><div class="qr">${R.qr}</div>
+    <textarea readonly rows="3" class="mono">${esc(R.invoice)}</textarea><p class="sm" data-state>Waiting for payment…</p>
+    <p class="sm muted">Learn: <code>ln-ro decodepayreq ${esc(R.invoice.slice(0, 24))}…</code> shows this invoice; after paying, <code>ln-ro listinvoices --max_invoices 1</code> shows it SETTLED.</p>`;
+  clearInterval(recvPoll);
+  recvPoll = setInterval(async () => {
+    let s; try { s = await api(`?view=walletinvoice&hash=${encodeURIComponent(R.paymentHash)}`); } catch { return; }
+    if (s.state === "settled") { clearInterval(recvPoll); box.querySelector("[data-state]").innerHTML = `<b class="ok">Received ✓</b> ${esc(satsF(s.sats))} added to ${esc(h)}.`; setTimeout(loadWallets, 1500); }
+    else if (s.state === "expired") { clearInterval(recvPoll); box.querySelector("[data-state]").textContent = "Expired unpaid. Make a new one."; }
+  }, 4000);
+});
+async function loadDestinations() {
+  let D; try { D = await api(`?view=destinations&days=${encodeURIComponent($("#destDays").value)}`); } catch (err) { $("#destList").textContent = err.message; return; }
+  $("#destList").innerHTML = D.destinations.length ? `<table><thead><tr><th>Received by</th><th>Payments</th><th>Sats</th><th>From wallets</th><th>Last</th><th>Receipts</th></tr></thead><tbody>${D.destinations.map((d) =>
+    `<tr><td>${esc(d.to)}${d.mpesa ? ' <span class="muted sm">M-Pesa</span>' : ""}</td><td>${num(d.payments)}</td><td>${esc(satsF(d.sats))}<span class="ksh">${esc(ksh(d.sats))}</span></td><td>${num(d.from)}</td><td>${esc(ago(d.lastAt))}</td><td>${d.receipts.map((r, i) => `<a href="${esc(r.url)}" target="_blank" rel="noopener">Receipt ${i + 1}</a>`).join(" · ")}</td></tr>`).join("")}</tbody></table>` : '<p class="muted sm">No payments out of Ye₿ente in this period.</p>';
+}
+$("#destDays").addEventListener("change", loadDestinations);
+
+// A receipt from the statement, to read, print or save as PDF.
+let PAYMENTS = [];
+function openReceipt(i) {
+  const x = PAYMENTS[i]; if (!x) return;
+  $("#rcptTitle").textContent = x.receipt ? `Receipt ${x.receipt}` : "Payment record";
+  $("#rcptBody").innerHTML = [["Date", String(x.at).replace("T", " ").slice(0, 16) + " UTC"], ["For", x.what], ["Amount", satsKsh(x.sats)], ["Paid by", x.payer || "—"], ["Via", x.channel === "onchain" ? "Bitcoin on-chain" : "Lightning"], ["Received by", "Altradits, altradits.com"]]
+    .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
+  $("#rcpt").showModal();
+}
+$("#rcptClose").addEventListener("click", () => $("#rcpt").close());
+$("#rcptPrint").addEventListener("click", () => window.print());
 
 async function load() {
   let D;
@@ -418,7 +457,7 @@ async function load() {
   $("#login").hidden = true; $("#app").hidden = false;
   KES_PER_BTC = D.kesPerBtc;
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
-  renderChecklist(D); renderStan(D.stan); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderVisits(D.visits); renderSystem(D); renderGlossary();
-  loadPower(); loadChannels(); loadSecurity(); loadEmails(); loadMoney(); loadCv(); loadActivity(); loadExplorer(); loadPnl(); renderVerify();
+  renderChecklist(D); renderStan(D.stan); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderGlossary();
+  loadPower(); loadChannels(); loadSecurity(); loadMoney(); loadActivity(); loadExplorer(); loadPnl(); renderVerify(); loadWallets(); loadDestinations();
 }
 token ? load() : showLogin();
