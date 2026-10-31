@@ -45,14 +45,14 @@ test("steps tick from GitHub; the streak counts only tracked projects; the day's
   assert.equal(r.next.step.key, "review");
 });
 
-test("cached for 3 hours, and the last result is kept if GitHub can't be reached", async () => {
+test("cached for 24 hours, and the last result is kept if GitHub can't be reached", async () => {
   calls = 0;
   const a = await t.tracker(now);
-  const b = await t.tracker(now + 3600e3);
+  const b = await t.tracker(now + 23 * 3600e3);
   assert.equal(calls, 5, "five GitHub calls, then the cache");
   assert.equal(b.updatedAt, a.updatedAt);
   fail = true;
-  const c = await t.tracker(now + 4 * 3600e3);
+  const c = await t.tracker(now + 25 * 3600e3);
   assert.equal(c.stale, true);
   assert.equal(c.totals.steps, a.totals.steps);
   fail = false;

@@ -1,4 +1,4 @@
-// GET /api/tracker: Stanley's open-source progress, read from GitHub (cached 3 hours).
+// GET /api/tracker: Stanley's open-source progress, read from GitHub (cached 24 hours).
 import { json, clientIp } from "../lib/http.js";
 import { hit } from "../lib/store.js";
 import { tracker } from "../lib/tracker.js";
