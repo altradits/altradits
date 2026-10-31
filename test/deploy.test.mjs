@@ -67,3 +67,13 @@ test("pages are revalidated on every visit, so updates show at once (Apache serv
     assert.match(fs.readFileSync(path.join(root, f), "utf8"), /<FilesMatch "\\\.html\$">\s*Header set Cache-Control "no-cache"/, f);
   }
 });
+
+test("player logos are served from assets/players, and nothing else under assets/ subfolders", () => {
+  const root = new URL("..", import.meta.url).pathname;
+  const src = fs.readFileSync(path.join(root, "server.mjs"), "utf8");
+  const PUBLIC = eval(src.match(/const PUBLIC = (\/.*\/);/)[1]);
+  assert.ok(PUBLIC.test("/assets/players/btrust.png"));
+  for (const bad of ["/assets/players/../server.mjs", "/assets/players/x.svg", "/assets/other/x.png", "/yebente/app/assets/players/x.png"]) assert.equal(PUBLIC.test(bad), false, bad);
+  const html = fs.readFileSync(path.join(root, "players.html"), "utf8");
+  for (const [, slug] of html.matchAll(/src="\/assets\/players\/([\w-]+)\.png"/g)) assert.ok(fs.existsSync(path.join(root, "assets/players", `${slug}.png`)), `${slug}.png`);
+});

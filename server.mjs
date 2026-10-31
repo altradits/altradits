@@ -35,7 +35,7 @@ if (!SERVER) {
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|donate\.html|bitcoin\.html|wallet\.html|bitcoin-core\.html|robots\.txt|sitemap\.xml|yebente\/app\/(?:index\.html|assets\/[\w.-]+|fonts\/[\w.-]+)|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|donate\.html|bitcoin\.html|wallet\.html|bitcoin-core\.html|robots\.txt|sitemap\.xml|yebente\/app\/(?:index\.html|assets\/[\w.-]+|fonts\/[\w.-]+)|assets\/[\w.-]+|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
 // HSTS: browsers that have visited once only ever use HTTPS here (no includeSubDomains,
 // so other subdomains such as mail are unaffected). COOP: no other site keeps a handle
 // on our windows.
