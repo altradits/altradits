@@ -35,7 +35,7 @@ if (!SERVER) {
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|portal\.html|team\.html|join\.html|cv\.html|hunt\.html|templates\.html|donate\.html|va\.html|bitcoin\.html|products\.html|wallet\.html|collect\.html|robots\.txt|sitemap\.xml|yebente\/app\/(?:index\.html|assets\/[\w.-]+|fonts\/[\w.-]+)|data\/(?:catalog|playbooks|community)\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(index\.html|admin\.html|proposal\.html|portal\.html|team\.html|join\.html|cv\.html|hunt\.html|templates\.html|donate\.html|va\.html|bitcoin\.html|products\.html|wallet\.html|bitcoin-core\.html|collect\.html|robots\.txt|sitemap\.xml|yebente\/app\/(?:index\.html|assets\/[\w.-]+|fonts\/[\w.-]+)|data\/(?:catalog|playbooks|community)\.js|assets\/[\w.-]+|\.well-known\/acme-challenge\/[\w-]+)$/;
 // HSTS: browsers that have visited once only ever use HTTPS here (no includeSubDomains,
 // so other subdomains such as mail are unaffected). COOP: no other site keeps a handle
 // on our windows.
@@ -144,11 +144,11 @@ const server = http.createServer(async (req, res) => {
     // Clean addresses: /templates, /hunt, /cv… for pages; /<job> (e.g. /hourly,
     // /inbox-cleanup), /r/<ref> and /h/<hunt code> open the homepage, which reads
     // the path. Old *.html addresses redirect to the clean ones.
-    const old = url.pathname.match(/^\/(templates|hunt|cv|join|team|portal|proposal|admin|donate|va|bitcoin|wallet|products|collect)\.html$/);
+    const old = url.pathname.match(/^\/(templates|hunt|cv|join|team|portal|proposal|admin|donate|va|bitcoin|bitcoin-core|wallet|products|collect)\.html$/);
     if (old && req.method === "GET") { res.writeHead(301, { Location: `/${old[1] === "templates" ? "products" : old[1]}${url.search}` }).end(); return; }
     // The free kits now live under Products.
     if (/^\/templates\/?$/.test(url.pathname) && req.method === "GET") { res.writeHead(301, { Location: `/products${url.search}` }).end(); return; }
-    const page = url.pathname.match(/^\/(hunt|cv|join|team|portal|proposal|admin|donate|va|bitcoin|wallet|products|collect)\/?$/);
+    const page = url.pathname.match(/^\/(hunt|cv|join|team|portal|proposal|admin|donate|va|bitcoin|bitcoin-core|wallet|products|collect)\/?$/);
     const { idForSlug } = await import("./data/catalog.js");
     // /<job> opens that order on the VA page; /r/<ref> and /h/<code> land on the homepage.
     const order = idForSlug(url.pathname.slice(1).replace(/\/$/, ""));
