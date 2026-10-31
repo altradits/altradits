@@ -28,6 +28,14 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
   RewriteRule ^yebente/((assets|fonts)/[A-Za-z0-9._-]+)$ yebente/app/$1 [L]
 </IfModule>
 
+# Pages are checked on every visit, so an update shows at once (an unchanged
+# page still loads from cache). Without this, browsers guess and keep old pages for hours.
+<IfModule mod_headers.c>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
+
 # Server code and project files are never web content. The Node router only
 # serves whitelisted paths, but Apache answers directly for existing files.
 <FilesMatch "^(\.env(\..*)?|server\.mjs|app\.cjs|README\.md|CLAUDE\.md|DEPLOY\.md|LICENSE|package(-lock)?\.json|vercel\.json|\.gitignore|\.deploy\.lock|SECURITY\.md|CONTRIBUTING\.md)$">
