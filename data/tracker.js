@@ -55,12 +55,12 @@ export const STEPS = [
 
 // Milestones on the chain, by merged pull requests (blocks that won the mempool).
 export const MILESTONES = [
-  { merged: 0, title: "Genesis block", text: "The first contribution." },
-  { merged: 1, title: "First block confirmed", text: "The first pull request merged." },
-  { merged: 5, title: "The Btrust starter bar", text: "Five merged pull requests: one of the starter grant's asks." },
-  { merged: 21, title: "21 confirmed", text: "A block for every million bitcoin." },
-  { merged: 50, title: "50 confirmed", text: "A regular contributor." },
-  { merged: 100, title: "100 confirmed", text: "A hundred merged pull requests." },
+  { merged: 0, title: "Genesis", text: "Where the chain starts." },
+  { merged: 1, title: "Block 1 won", text: "The first pull request merged." },
+  { merged: 5, title: "Block 5 won: the Btrust starter bar", text: "Five merged pull requests: one of the starter grant's asks." },
+  { merged: 21, title: "Block 21 won", text: "A block for every million bitcoin." },
+  { merged: 50, title: "Block 50 won", text: "A regular contributor." },
+  { merged: 100, title: "Block 100 won", text: "A hundred merged pull requests." },
 ];
 
 // The 21M day: accepted as a full-time open-source contributor. Set by hand,

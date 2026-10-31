@@ -6,7 +6,7 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g=' 'sha256-opiUyG50rDfguzPdkmrW2ym5Sm+NogEaYtnc+aX3Mi8='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g=' 'sha256-9XaiZGV28GpH3ioPUejJ3xEC8aW2iBtb/pA6hsnut68='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/tracker">
 <title>Open-source tracker · Altradits</title>
@@ -66,7 +66,8 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .chainbox{margin-top:.5rem}
 .chainview{margin:1.2rem 0 .3rem;background:#11121a;border-radius:1rem;padding:2.2rem 1.2rem 1.4rem;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-color:#3a3d55 transparent}
 .lane{display:flex;align-items:flex-start;gap:2.6rem;width:max-content;padding-right:1rem}
-.divider{align-self:stretch;width:0;border-left:3px dashed #5a5f80;margin:0 .2rem}
+.gap{align-self:center;display:flex;flex-direction:column;align-items:center;gap:.3rem;color:#c9cbe0;font-size:.78rem;text-align:center;width:7rem;margin-top:2rem}
+.gap b{font-size:2.4rem;line-height:1;letter-spacing:.1em;color:#f7931a}
 .blk{position:relative;display:block;width:125px;text-decoration:none;color:#fff;scroll-snap-align:start;flex:none}
 .blk .ht{display:block;text-align:center;font:700 .95rem ui-monospace,Menlo,monospace;color:#4ea3ff;margin-bottom:22px}
 .blk.future .ht,.blk.mempool .ht{color:#c9cbe0}
@@ -154,7 +155,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
     <div class="chainview" id="chainview">
       <div class="lane" id="lane" role="list" aria-label="The mempool on the left, then every mined block, newest first"></div>
     </div>
-    <p class="hint">Scroll sideways to walk back to the genesis block.</p>
+    <p class="hint">The blocks I've won, numbered in the order they won. Scroll back to block 1.</p>
     <p class="key"><span><i class="b confirmed"></i>Confirmed (merged)</span><span><i class="b mempool"></i>In the mempool (open)</span><span><i class="b mined"></i>Mined (review, issue, comment)</span><span><i class="b orphaned"></i>Orphaned (closed, not merged)</span></p>
     <h3 class="sub">Milestones</h3>
     <ol class="miles" id="miles"></ol>
@@ -198,20 +199,26 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
   const LABEL = { confirmed: "Confirmed ✓ won the mempool", mempool: "In the mempool", mined: "Mined", orphaned: "Orphaned" };
   const day = (iso) => (iso ? new Date(iso).toISOString().slice(0, 10) : "");
   if (C) {
-    $("#chainStats").innerHTML = [[C.height >= 0 ? C.height : "–", "block height"], [C.confirmed, "blocks confirmed (merged)"], [C.mempool, "in the mempool (open)"], [C.orphaned, "orphaned"], [C.repos, "projects"], [C.days, "days since genesis"]]
+    $("#chainStats").innerHTML = [[C.confirmed, "blocks won (merged)"], [C.mempool, "in the mempool (open)"], [C.blocks, "contributions mined"], [C.orphaned, "orphaned"], [C.repos, "projects"], [C.days, "days since the first contribution"]]
       .map(([b, s]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join("");
     const ago = (iso) => { const d = Math.floor((Date.now() - Date.parse(iso)) / 864e5); return d < 1 ? "today" : d === 1 ? "1 day ago" : d < 60 ? `${d} days ago` : `${Math.round(d / 30)} months ago`; };
     const short = (r) => r.split("/")[1] || r;
     const cube = (cls, i, height, href, k, repo, title, when, label) => `<a class="blk ${cls}" role="listitem" style="--i:${i}" href="${esc(href)}" aria-label="${esc(label)}"><span class="ht">${esc(height)}</span><span class="cube"><span class="face"><span class="fill"></span><span class="txt"><span class="k">${esc(k)}</span><span class="r">${esc(repo)}</span><span class="t">${esc(title)}</span><span class="w">${esc(when)}</span></span></span></span></a>`;
-    const FT = C.fullTime, waiting = C.list.filter((b) => b.status === "mempool"), mined = C.list.filter((b) => b.status !== "mempool");
+    // The blocks I've won (merged pull requests), numbered 1, 2, 3… in the order they won;
+    // then what's in the mempool; then, after the gap, the target: block 21,000,000, the 21M day.
+    const FT = C.fullTime, TARGET = 21000000;
+    const won = C.list.filter((b) => b.status === "confirmed").sort((a, b) => String(a.mergedAt).localeCompare(String(b.mergedAt)));
+    const waiting = C.list.filter((b) => b.status === "mempool");
     let i = 0;
-    const future = cube("future", i++, "21M", FT ? FT.url : "/journey", "21M day", "full-time open source", FT ? FT.title : "Accepted as a full-time open-source contributor", FT ? FT.date : "not mined yet", FT ? `The 21M day: ${FT.title}` : "The 21M day: not mined yet");
-    const pending = waiting.map((b) => cube("mempool", i++, "mempool", b.url, `#${b.number}`, short(b.repo), b.title, `waiting · ${ago(b.at)}`, `In the mempool: ${b.title}`)).join("");
-    const chain = mined.map((b) => cube(b.status, i++, b.height, b.url, b.kind === "pr" ? `#${b.number}` : KIND[b.kind], short(b.repo), b.title, b.status === "confirmed" ? `won ${ago(b.mergedAt || b.at)}` : b.status === "orphaned" ? "orphaned" : ago(b.at), `Block ${b.height}: ${b.title} · ${LABEL[b.status]}`)).join("");
-    $("#lane").innerHTML = future + pending + '<span class="divider" aria-hidden="true"></span>' + chain;
+    const chain = won.map((b, n) => cube("confirmed", i++, n + 1, b.url, `#${b.number}`, short(b.repo), b.title, `won ${ago(b.mergedAt || b.at)}`, `Block ${n + 1} won: ${b.title}`)).join("");
+    const pending = waiting.map((b) => cube("mempool", i++, "next", b.url, `#${b.number}`, short(b.repo), b.title, `in the mempool · ${ago(b.at)}`, `In the mempool: ${b.title}`)).join("");
+    const gap = `<span class="gap" aria-label="${(TARGET - won.length).toLocaleString("en-US")} blocks to go"><b>⋯</b><span>${(TARGET - won.length).toLocaleString("en-US")} blocks to go</span></span>`;
+    const target = cube("future", i++, TARGET.toLocaleString("en-US"), FT ? FT.url : "/journey", "21M day", "full-time open source", FT ? FT.title : "Accepted as a full-time open-source contributor", FT ? FT.date : "the target", FT ? `Block 21,000,000: ${FT.title}` : "Block 21,000,000, the 21M day: the target");
+    $("#lane").innerHTML = chain + pending + gap + target;
+    const cv = $("#chainview"); requestAnimationFrame(() => { cv.scrollLeft = cv.scrollWidth; }); // the latest win and the target in view
     const F = C.fullTime;
-    $("#miles").innerHTML = C.milestones.map((m) => `<li class="${m.reached ? "on" : ""}"><span class="ic">${m.reached ? "⛏️" : "○"}</span><span><b>${esc(m.title)}</b> <small>${esc(m.text)}</small>${m.block ? `<br><a href="${esc(m.block.url)}">Block ${m.block.height}: ${esc(m.block.title)}</a> <small>${esc(day(m.block.at))}</small>` : `<br><small>Not mined yet.</small>`}</span></li>`).join("")
-      + `<li class="final ${F ? "on" : ""}"><span class="ic">${F ? "🎉" : "₿"}</span><span><b>The 21M day</b> <small>Accepted as a full-time open-source contributor.</small><br>${F ? `<a href="${esc(F.url)}">${esc(F.title)}</a> <small>${esc(F.date)}</small>` : `<small>Not mined yet. Block ${esc(C.height + 1)} is next.</small>`}</span></li>`;
+    $("#miles").innerHTML = C.milestones.map((m) => `<li class="${m.reached ? "on" : ""}"><span class="ic">${m.reached ? "⛏️" : "○"}</span><span><b>${esc(m.title)}</b> <small>${esc(m.text)}</small>${m.block ? `<br><a href="${esc(m.block.url)}">${m.merged ? `Block ${m.merged}` : "First contribution"}: ${esc(m.block.title)}</a> <small>${esc(day(m.block.at))}</small>` : `<br><small>Not won yet.</small>`}</span></li>`).join("")
+      + `<li class="final ${F ? "on" : ""}"><span class="ic">${F ? "🎉" : "₿"}</span><span><b>The 21M day</b> <small>Accepted as a full-time open-source contributor.</small><br>${F ? `<a href="${esc(F.url)}">${esc(F.title)}</a> <small>${esc(F.date)}</small>` : `<small>Block 21,000,000, the target. Block ${esc(C.confirmed + 1)} is next.</small>`}</span></li>`;
     const row = (b) => `<tr><td><b>${b.height}</b><br><small class="muted">${esc(day(b.at))}</small></td><td>${esc(KIND[b.kind])} · <a href="${esc(b.url)}">${esc(b.title)}</a><br><small class="muted">${esc(b.repo)}#${b.number}</small></td><td class="st"><i class="b ${b.status}"></i>${esc(LABEL[b.status])}</td><td><code>${esc(b.hash.slice(0, 16))}…</code></td></tr>`;
     $("#blocks").innerHTML = C.list.slice(0, 15).map(row).join("");
     if (C.list.length > 15) { $("#more").hidden = false; $("#more").onclick = () => { $("#blocks").innerHTML = C.list.map(row).join(""); $("#more").hidden = true; }; }
