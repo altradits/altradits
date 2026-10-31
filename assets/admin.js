@@ -39,6 +39,8 @@ async function api(path, body) {
   }
 }
 function showLogin(msg) { $("#app").hidden = true; $("#login").hidden = false; $("#loginErr").textContent = msg || ""; $("#tok").focus(); }
+// When signed in already, show the login card with a loading note until the first data arrives.
+if (token) { $("#login").hidden = false; }
 $("#login").addEventListener("submit", (e) => {
   e.preventDefault(); token = $("#tok").value.trim();
   try { sessionStorage.setItem("altra.admin", token); } catch {}
@@ -302,7 +304,9 @@ async function loadEmails() {
 
 async function load() {
   let D;
-  try { D = await api(""); } catch { return; }
+  $("#loginErr").textContent = "Loading… reading the node can take a few seconds.";
+  try { D = await api(""); } catch (err) { if (!$("#login").hidden) $("#loginErr").textContent = err.message; else toast(err.message, true, 8000); return; }
+  $("#loginErr").textContent = "";
   $("#login").hidden = true; $("#app").hidden = false;
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
   renderChecklist(D); renderStan(D.stan); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderVisits(D.visits); renderSystem(D); renderGlossary();

@@ -38,7 +38,8 @@ async function gate(request) {
   return deny();
 }
 
-const settle = (p) => p.then((v) => v, (e) => ({ error: e.message }));
+// A part that fails or takes longer than 8 s becomes { error }, so the rest of the dashboard still loads.
+const settle = (p, ms = 8000) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("The node took too long to answer.")), ms).unref?.())]).then((v) => v, (e) => ({ error: e.message }));
 
 export async function GET(request) {
   { const g = await gate(request); if (g) return g; }
@@ -85,6 +86,11 @@ export async function GET(request) {
 
   const { nodeInfo, nodeDetails, chainTip, outboundSats, inboundSats, onchainFeeRates } = await import("../lib/lightning.js");
   const [node, details, tip, outbound, inbound, chainFees] = await Promise.all([settle(nodeInfo()), settle(nodeDetails()), settle(chainTip()), settle(outboundSats()), settle(inboundSats()), settle(onchainFeeRates())]);
+  try { return await overview(node, details, tip, outbound, inbound, chainFees); }
+  catch (err) { return json({ error: `The dashboard couldn't load: ${err.message}` }, 500); }
+}
+
+async function overview(node, details, tip, outbound, inbound, chainFees) {
   const { liabilities, walletsOn, switchOn } = await import("../lib/ywallet.js");
   const owed = walletsOn() ? await settle(liabilities()) : null;
   const openInvoices = (await listIds("ywinvopen", 500)).length;
