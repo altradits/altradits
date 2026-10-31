@@ -92,6 +92,9 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
 .see{margin:-.2rem 0 .6rem;color:var(--muted)}
 body.quiet .see{display:none}
 .sub{font-size:1rem;margin:1rem 0 .5rem}
+.sel{width:auto;padding:.4rem .6rem;border:2px solid var(--line);border-radius:.6rem;font:inherit;background:var(--paper)}
+.ksh{display:block;font:600 .85rem Figtree,sans-serif;color:var(--muted);margin-top:.1rem}
+#verify td code{white-space:pre-wrap;word-break:break-all}
 .cmds{grid-template-columns:minmax(12rem,20rem) 1fr}
 @media (max-width:600px){.cmds,dl{grid-template-columns:1fr}.cmds dd{margin-bottom:.5rem}}
 .inside{border:2px solid var(--line);border-radius:.9rem;padding:.8rem 1rem;margin-bottom:.8rem}
@@ -183,13 +186,29 @@ body.quiet .see{display:none}
   </div>
 
   <div class="pane" data-pane="money">
+  <section class="panel" aria-labelledby="hPnl">
+    <h2 id="hPnl">Profit and loss</h2>
+    <p class="see sm">Verify on the Mac: <code>lncli fwdinghistory</code> · <code>lncli listpayments</code> · <code>lncli listchaintxns</code> (see Learn → Verify)</p>
+    <div class="learn">
+      <p><b>You earn</b> from routing other people's payments, the spread on M-Pesa buys (if you set one), and support payments.</p>
+      <p><b>You spend</b> on routing fees for your own payments, and on-chain fees to open or close channels. Ye₿ente users pay their own routing fees, so those cancel out.</p>
+      <p><b>Top-ups aren't profit.</b> They move your own sats onto the node.</p>
+    </div>
+    <div class="row"><label for="pnlDays" class="sm"><b>Period</b></label><select id="pnlDays" class="sel"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last year</option></select></div>
+    <div class="kpis" id="pnlKpis" style="margin-top:.8rem"></div>
+    <div id="pnlTable" class="scroll"></div>
+    <h3 class="sub">What's yours right now</h3>
+    <div class="kpis" id="pnlYours"></div>
+  </section>
+
   <div class="grid2">
     <section class="panel" aria-labelledby="hPower">
       <h2 id="hPower">3. Sending power and top-ups</h2>
       <div class="learn"><p>To send, sats must be on your side. A top-up is an invoice from your own node that you pay from another wallet. The sats cross the channel to your side.</p></div>
       <p class="sm" id="spNote"></p>
       <label for="spSats" class="sm"><b>Top up the node (sats)</b></label>
-      <input id="spSats" type="number" inputmode="numeric">
+      <input id="spSats" type="number" inputmode="numeric" aria-describedby="spKsh">
+      <span class="ksh" id="spKsh" aria-live="polite"></span>
       <div class="row" id="spPresets"></div>
       <div class="row"><button type="button" class="btn primary" id="spGo">Make a top-up invoice</button></div>
       <p class="err sm" id="spErr" role="alert"></p>
@@ -275,6 +294,12 @@ body.quiet .see{display:none}
   </div>
 
   <div class="pane" data-pane="learn">
+  <section class="panel" aria-labelledby="hVerify">
+    <h2 id="hVerify">Verify every number on the Mac</h2>
+    <div class="learn"><p>Make a safe shortcut once (it can only read): <code>alias ln-ro='lncli --lnddir=$HOME/.lnd-altradits --macaroonpath=$HOME/.lnd-altradits/data/chain/bitcoin/mainnet/readonly.macaroon'</code></p><p>Then compare each dashboard number with the command beside it.</p></div>
+    <div id="verify" class="scroll"></div>
+  </section>
+
   <section class="panel" aria-labelledby="hCmds">
     <h2 id="hCmds">Practise with read-only commands</h2>
     <div class="learn"><p>Each command reads your node and changes nothing. Add <code>--macaroonpath=~/.lnd-altradits/data/chain/bitcoin/mainnet/readonly.macaroon</code> so you can't spend by mistake.</p></div>
@@ -325,6 +350,6 @@ body.quiet .see{display:none}
 
 </div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=explore2"></script>
+<script type="module" src="/assets/admin.js?v=pnl2"></script>
 </body>
 </html>
