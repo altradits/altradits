@@ -80,3 +80,11 @@ test("cached for 24 hours, and the last result is kept if GitHub can't be reache
   assert.equal(c.totals.steps, a.totals.steps);
   fail = false;
 });
+
+test("a cached result from older code is refreshed at once, not kept for a day", async () => {
+  const store = await import("../lib/store.js");
+  await store.setJSON("tracker:cache", { updatedAt: new Date(now).toISOString(), projects: [], totals: { steps: 0, of: 0, merged: 0 } }); // no version, no chain
+  assert.equal(await t.trackerCached(), null, "Stan doesn't read it either");
+  const r = await t.tracker(now + 60e3);
+  assert.ok(r.chain && r.chain.blocks > 0, "recomputed with the chain");
+});
