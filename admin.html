@@ -76,12 +76,26 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
 .gloss summary{font-weight:700;cursor:pointer;min-height:2.2rem;display:flex;align-items:center}
 .gloss p{margin:.3rem 0 .2rem;color:var(--muted);font-size:.93rem}
 .flow{counter-reset:f;list-style:none;padding:0;margin:.4rem 0 0;display:grid;gap:.5rem}
-.flow li{counter-increment:f;display:grid;grid-template-columns:1.8rem 1fr;gap:.4rem;font-size:.93rem}
-.flow li::before{content:counter(f);display:flex;align-items:center;justify-content:center;width:1.6rem;height:1.6rem;border-radius:50%;background:var(--btc);font-weight:800;font-size:.85rem}
+.flow li{counter-increment:f;position:relative;padding-left:2.3rem;min-height:1.7rem;font-size:.93rem}
+.flow li::before{content:counter(f);position:absolute;left:0;top:0;display:flex;align-items:center;justify-content:center;width:1.6rem;height:1.6rem;border-radius:50%;background:var(--btc);font-weight:800;font-size:.85rem}
 .switch{display:inline-flex;align-items:center;gap:.5rem;font-weight:600;font-size:.9rem;cursor:pointer}
 .switch input{width:1.1rem;height:1.1rem;accent-color:var(--blue)}
 .login{max-width:24rem;margin:15vh auto;background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.5rem}
 .login img{height:2.4rem;width:auto;display:block;margin-bottom:1rem}
+/* Tabs: one area at a time; the header stays */
+.tabs{position:sticky;top:0;z-index:5;display:flex;gap:.35rem;overflow-x:auto;padding:.5rem 0 .7rem;background:var(--bg);margin-bottom:.4rem;scrollbar-width:thin}
+.tabs button{flex:none;border:2px solid var(--line);background:var(--paper);border-radius:99px;padding:.45rem 1rem;font:600 .93rem Figtree,sans-serif;cursor:pointer;min-height:2.6rem;color:var(--ink)}
+.tabs button[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.pane{display:none}.pane.on{display:block}
+.pill{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .8rem;border-radius:99px;font-weight:700;font-size:.88rem;background:color-mix(in srgb,var(--ok) 15%,white);color:var(--ok);border:2px solid color-mix(in srgb,var(--ok) 45%,white)}
+.pill.bad{background:color-mix(in srgb,var(--crit) 12%,white);color:var(--crit);border-color:color-mix(in srgb,var(--crit) 40%,white)}
+.see{margin:-.2rem 0 .6rem;color:var(--muted)}
+body.quiet .see{display:none}
+.sub{font-size:1rem;margin:1rem 0 .5rem}
+.cmds{grid-template-columns:minmax(12rem,20rem) 1fr}
+@media (max-width:600px){.cmds,dl{grid-template-columns:1fr}.cmds dd{margin-bottom:.5rem}}
+.inside{border:2px solid var(--line);border-radius:.9rem;padding:.8rem 1rem;margin-bottom:.8rem}
+.inside h3{font-size:1rem;margin-bottom:.4rem}
 #toast{position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.6rem 1rem;border-radius:.6rem;font-weight:600;z-index:9}
 #toast.fail{background:var(--crit)}
 </style>
@@ -97,25 +111,29 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
 
 <div class="wrap" id="app" hidden>
   <header>
-    <div class="brand"><a href="/"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><h1>Node dashboard</h1></div>
+    <div class="brand"><a href="/"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><h1>Node dashboard</h1><span class="pill" id="health" role="status">Checking…</span></div>
     <div class="row"><label class="switch"><input type="checkbox" id="explain" checked> Explain everything</label><span class="sm muted" id="checked"></span><button type="button" class="btn" id="refresh">Refresh</button><button type="button" class="btn" id="logout">Sign out</button></div>
   </header>
 
+  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="learn">Learn</button><button type="button" data-tab="you">You</button></nav>
+  <div class="pane" data-pane="overview">
   <section class="panel" aria-labelledby="hCheck">
     <h2 id="hCheck">Today's checklist</h2>
     <div class="learn"><p>What a node operator checks each day. Green means fine. Red means act today. Grey is something only you can check.</p></div>
     <ul class="check" id="checklist"></ul>
   </section>
-
   <section class="panel" aria-labelledby="hStan">
     <h2 id="hStan">Stan: security and messages</h2>
     <p class="sm">Stan watches the site and the node, and emails you every alert plus a short report each morning.</p>
     <p class="sm" id="stanLast"></p>
     <div class="row"><button type="button" class="btn primary" id="stanGo">Email me Stan's report now</button></div>
   </section>
+  </div>
 
+  <div class="pane" data-pane="node">
   <section class="panel" aria-labelledby="hNode">
     <h2 id="hNode">1. Your node and the blockchain</h2>
+    <p class="see sm">See it yourself on the Mac: <code>lncli getinfo</code></p>
     <div class="learn">
       <p>Your node is two programs. <b>Bitcoin Core</b> downloads and checks every block. <b>LND</b> runs Lightning on top of it.</p>
       <p>A new block arrives about every 10 minutes. Your node must keep up, or it can't safely pay or get paid.</p>
@@ -123,9 +141,22 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
     <div class="kpis" id="nodeKpis"></div>
     <p class="sm muted" id="nodeNote"></p>
   </section>
+  <section class="panel" aria-labelledby="hNet">
+    <h2 id="hNet">Your node, its peer and the network</h2>
+    <p class="see sm">See it yourself on the Mac: <code>lncli getnetworkinfo</code> · <code>lncli listpeers</code></p>
+    <div class="learn"><p>Your node has a public key: its address on the Lightning Network. It learns the <b>network graph</b> (every public node and channel) from its peers, and uses it to find routes.</p></div>
+    <div class="kpis" id="exInfo"></div>
+    <div class="kpis" id="exGraph"></div>
+    <h3 class="sub">Peers</h3>
+    <div class="learn"><p><b>Ping</b> is how long a message takes to the peer and back. <b>Reconnections</b> count how often the link dropped: many means an unstable internet or tunnel, and payments can fail during a drop.</p></div>
+    <div id="exPeers" class="scroll"></div>
+  </section>
+  </div>
 
+  <div class="pane" data-pane="channels">
   <section class="panel" aria-labelledby="hChan">
     <h2 id="hChan">2. Channels: where your Lightning money sits</h2>
+    <p class="see sm">See it yourself on the Mac: <code>lncli listchannels</code></p>
     <div class="learn">
       <p>A channel is Bitcoin locked between you and one peer. The total never changes. Paying moves sats to their side. Getting paid moves sats to your side.</p>
       <p>Each side keeps about 1% it can't spend: the <b>reserve</b>. It lets a cheater be punished.</p>
@@ -135,7 +166,23 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
     <div id="lnList" class="scroll"></div>
     <div id="lnAdvice" class="sm"></div>
   </section>
+  <section class="panel" aria-labelledby="hInside">
+    <h2 id="hInside">Inside each channel</h2>
+    <p class="see sm">See it yourself on the Mac: <code>lncli listchannels</code> · <code>lncli closedchannels</code></p>
+    <div class="learn"><p>A channel starts as one on-chain transaction (the <b>funding transaction</b>). Its <b>short channel ID</b> says where: block × transaction × output. Every payment through it is an <b>update</b> to a shared balance sheet both sides sign.</p></div>
+    <div id="exChans"></div>
+    <h3 class="sub">Closed channels</h3>
+    <div id="exClosed"></div>
+  </section>
+  <section class="panel" aria-labelledby="hLessons">
+    <h2 id="hLessons">Lessons from running the node</h2>
+    <div class="learn"><p>Write down what you learn. It stays here, and Stan uses it in channel advice.</p></div>
+    <div class="row"><input id="lnLesson" placeholder="A lesson worth keeping" aria-label="New lesson"><button type="button" class="btn" id="lnAdd">Add</button></div>
+    <ul id="lnLessons" class="sm"></ul>
+  </section>
+  </div>
 
+  <div class="pane" data-pane="money">
   <div class="grid2">
     <section class="panel" aria-labelledby="hPower">
       <h2 id="hPower">3. Sending power and top-ups</h2>
@@ -158,9 +205,9 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
       <div class="kpis" id="chainKpis"></div>
     </section>
   </div>
-
   <section class="panel" aria-labelledby="hRoute">
     <h2 id="hRoute">5. Routing and fees</h2>
+    <p class="see sm">See it yourself on the Mac: <code>lncli feereport</code></p>
     <div class="learn">
       <p>Nodes pass payments for each other and charge a small fee: a <b>base fee</b> per payment plus a <b>rate</b> in parts per million (ppm).</p>
       <p>Example: base 1 sat + 1 ppm on 100,000 sats = 1.1 sats.</p>
@@ -169,7 +216,23 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
     <div class="kpis" id="routeKpis"></div>
     <div id="feeList" class="scroll"></div>
   </section>
+  <section class="panel" aria-labelledby="hFlow">
+    <h2 id="hFlow">Payments and invoices, last 30 days</h2>
+    <p class="see sm">See it yourself on the Mac: <code>lncli listpayments</code> · <code>lncli listinvoices</code></p>
+    <div class="learn"><p><b>Payments</b> are what your node sent; each paid a small routing fee to the nodes on the way. <b>Invoices</b> are requests your node made; settled ones were paid, cancelled ones expired unpaid.</p></div>
+    <div class="kpis" id="exPays"></div>
+    <div class="kpis" id="exInvs"></div>
+  </section>
+  <section class="panel" aria-labelledby="hMoney">
+    <h2 id="hMoney">Money received through the website</h2>
+    <div class="learn"><p>Every payment the website took, in sats: orders and donations before the agency moved out, and support payments since. Ye₿ente deposits aren't here; they belong to wallet holders.</p></div>
+    <div class="kpis" id="moneyKpis"></div>
+    <div class="row"><button type="button" class="btn" id="moneyCsv">Download for the books (CSV)</button></div>
+    <div id="moneyList" class="scroll"></div>
+  </section>
+  </div>
 
+  <div class="pane" data-pane="yebente">
   <section class="panel" aria-labelledby="hYb">
     <h2 id="hYb">6. Ye₿ente and how payments reach the node</h2>
     <div class="learn">
@@ -185,7 +248,16 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
     <div class="kpis" id="ybKpis"></div>
     <dl id="hooks"></dl>
   </section>
+  <section class="panel" aria-labelledby="hAct">
+    <h2 id="hAct">Most active Ye₿ente wallets</h2>
+    <div class="learn"><p>Deposits and completed transactions per wallet, most active first. Use it to reward your most active users, for example with a transfer from your own Ye₿ente wallet.</p></div>
+    <div class="row"><label for="actDays" class="sm"><b>Period</b></label><select id="actDays" style="width:auto;padding:.4rem .6rem;border:2px solid var(--line);border-radius:.6rem;font:inherit"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="0">All time</option></select></div>
+    <div class="kpis" id="actKpis" style="margin-top:.8rem"></div>
+    <div id="actList" class="scroll"></div>
+  </section>
+  </div>
 
+  <div class="pane" data-pane="security">
   <div class="grid2">
     <section class="panel" aria-labelledby="hSec">
       <h2 id="hSec">7. Security watch (Stan)</h2>
@@ -200,30 +272,32 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
       <div class="events" id="secHistory"></div>
     </section>
   </div>
+  </div>
 
-  <section class="panel" aria-labelledby="hLessons">
-    <h2 id="hLessons">Lessons from running the node</h2>
-    <div class="learn"><p>Write down what you learn. It stays here, and Stan uses it in channel advice.</p></div>
-    <div class="row"><input id="lnLesson" placeholder="A lesson worth keeping" aria-label="New lesson"><button type="button" class="btn" id="lnAdd">Add</button></div>
-    <ul id="lnLessons" class="sm"></ul>
+  <div class="pane" data-pane="learn">
+  <section class="panel" aria-labelledby="hCmds">
+    <h2 id="hCmds">Practise with read-only commands</h2>
+    <div class="learn"><p>Each command reads your node and changes nothing. Add <code>--macaroonpath=~/.lnd-altradits/data/chain/bitcoin/mainnet/readonly.macaroon</code> so you can't spend by mistake.</p></div>
+    <dl class="cmds">
+      <dt><code>lncli getinfo</code></dt><dd>Your node: public key, block height, sync, channel and peer counts.</dd>
+      <dt><code>lncli getnetworkinfo</code></dt><dd>The Lightning Network as your node sees it.</dd>
+      <dt><code>lncli listpeers</code></dt><dd>Who you're connected to, ping and reconnections.</dd>
+      <dt><code>lncli listchannels</code></dt><dd>Each channel: balances, reserve, updates, type, uptime.</dd>
+      <dt><code>lncli channelbalance</code></dt><dd>Totals: what you can send and receive.</dd>
+      <dt><code>lncli walletbalance</code></dt><dd>The on-chain wallet.</dd>
+      <dt><code>lncli feereport</code></dt><dd>Your routing fee on each channel.</dd>
+      <dt><code>lncli listinvoices --max_invoices 5</code></dt><dd>The last invoices your node made.</dd>
+      <dt><code>lncli listpayments --max_payments 5</code></dt><dd>The last payments your node sent, with fees.</dd>
+      <dt><code>lncli fwdinghistory --start_time=-30d</code></dt><dd>Payments routed through you for others.</dd>
+    </dl>
   </section>
-
-  <section class="panel" aria-labelledby="hAct">
-    <h2 id="hAct">Most active Ye₿ente wallets</h2>
-    <div class="learn"><p>Deposits and completed transactions per wallet, most active first. Use it to reward your most active users, for example with a transfer from your own Ye₿ente wallet.</p></div>
-    <div class="row"><label for="actDays" class="sm"><b>Period</b></label><select id="actDays" style="width:auto;padding:.4rem .6rem;border:2px solid var(--line);border-radius:.6rem;font:inherit"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="0">All time</option></select></div>
-    <div class="kpis" id="actKpis" style="margin-top:.8rem"></div>
-    <div id="actList" class="scroll"></div>
+  <section class="panel gloss" aria-labelledby="hGloss">
+    <h2 id="hGloss">Glossary</h2>
+    <div id="glossary"></div>
   </section>
+  </div>
 
-  <section class="panel" aria-labelledby="hMoney">
-    <h2 id="hMoney">Money received through the website</h2>
-    <div class="learn"><p>Every payment the website took, in sats: orders and donations before the agency moved out, and support payments since. Ye₿ente deposits aren't here; they belong to wallet holders.</p></div>
-    <div class="kpis" id="moneyKpis"></div>
-    <div class="row"><button type="button" class="btn" id="moneyCsv">Download for the books (CSV)</button></div>
-    <div id="moneyList" class="scroll"></div>
-  </section>
-
+  <div class="pane" data-pane="you">
   <section class="panel" aria-labelledby="hCv">
     <h2 id="hCv">Your CV</h2>
     <p class="sm muted" id="cvNote"></p>
@@ -231,12 +305,6 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
     <details style="margin-top:.6rem"><summary class="sm"><b>Read the current CV</b></summary><pre id="cvNowText" style="white-space:pre-wrap;font:inherit;font-size:.92rem;margin:.6rem 0 0"></pre></details>
     <details style="margin-top:.2rem"><summary class="sm"><b>Read the first CV</b></summary><pre id="cvText" style="white-space:pre-wrap;font:inherit;font-size:.92rem;margin:.6rem 0 0"></pre></details>
   </section>
-
-  <section class="panel gloss" aria-labelledby="hGloss">
-    <h2 id="hGloss">Glossary</h2>
-    <div id="glossary"></div>
-  </section>
-
   <div class="grid2">
     <section class="panel" aria-labelledby="hVisits">
       <h2 id="hVisits">Visits</h2>
@@ -247,15 +315,16 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
       <div id="emails" class="scroll"></div>
     </section>
   </div>
-
   <section class="panel" aria-labelledby="hSys">
     <h2 id="hSys">System</h2>
     <dl id="system"></dl>
     <h3 style="font-size:1rem;margin-top:1rem">Archive files</h3>
     <div id="archives"></div>
   </section>
+  </div>
+
 </div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=learn4"></script>
+<script type="module" src="/assets/admin.js?v=explore2"></script>
 </body>
 </html>

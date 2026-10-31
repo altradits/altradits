@@ -20,6 +20,18 @@ $("#explain").addEventListener("change", (e) => {
   try { localStorage.setItem("altra.explain", e.target.checked ? "on" : "off"); } catch {}
 });
 
+// Tabs: one area at a time, remembered in the address (#node, #channels…).
+const TABS = [...document.querySelectorAll("[data-tab]")].map((b) => b.dataset.tab);
+function tab(name) {
+  if (!TABS.includes(name)) name = "overview";
+  document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+  document.querySelectorAll("[data-pane]").forEach((p) => p.classList.toggle("on", p.dataset.pane === name));
+  if (location.hash.slice(1) !== name) history.replaceState(null, "", `#${name}`);
+}
+document.querySelector(".tabs").addEventListener("click", (e) => { const t = e.target.closest("[data-tab]")?.dataset.tab; if (t) { tab(t); window.scrollTo(0, 0); } });
+window.addEventListener("hashchange", () => tab(location.hash.slice(1)));
+tab(location.hash.slice(1));
+
 let toastTimer;
 function toast(text, fail = false, ms = 2600) {
   const el = $("#toast");
@@ -64,6 +76,9 @@ function renderChecklist(D, L) {
     [null, "Channel backup copied off this machine", "After every channel opens or closes, copy channel.backup to a safe place. With your 24 words, it gets your channel funds back."],
     [null, "24 recovery words safe on paper", "Never typed into a website or a phone. Only the node's own setup asks for them."],
   ];
+  const bad = items.filter(([ok]) => ok === false).length;
+  $("#health").textContent = bad ? `${bad} thing${bad === 1 ? "" : "s"} need you` : "All good";
+  $("#health").classList.toggle("bad", Boolean(bad));
   $("#checklist").innerHTML = items.map(([ok, title, why]) => `<li><span class="m ${ok === null ? "u" : ok ? "y" : "n"}" aria-label="${ok === null ? "check yourself" : ok ? "fine" : "needs attention"}">${ok === null ? "○" : ok ? "✓" : "✗"}</span><span><b>${esc(title)}</b><br><span class="sm muted">${esc(why)}</span></span></li>`).join("");
 }
 
@@ -297,6 +312,44 @@ $("#cvNow").addEventListener("click", () => {
 });
 $("#cvUp").addEventListener("click", () => download("?view=cv&file=uploaded", `stanley-cv.${cvExt}`));
 
+// The node explorer: what a new operator can learn from the node itself.
+const blocksToDays = (b) => `${num(b)} blocks ≈ ${Math.round((b * 10) / 60 / 24 * 10) / 10} days`;
+const typeWhy = { ANCHORS: "Anchor channel: fees to close are added when closing, so a force close can still confirm when fees rise.", STATIC_REMOTE_KEY: "Static remote key: an older type; funds return to a fixed key on close.", SIMPLE_TAPROOT: "Taproot channel: newer; looks like a normal payment on-chain." };
+const closeWhy = { COOPERATIVE_CLOSE: "Cooperative: both sides agreed. Fast and cheap.", LOCAL_FORCE_CLOSE: "Force close by you: funds waited out the delay.", REMOTE_FORCE_CLOSE: "Force close by the peer.", BREACH_CLOSE: "Breach: a cheat was punished.", FUNDING_CANCELED: "Funding cancelled: the channel never opened.", ABANDONED: "Abandoned." };
+async function loadExplorer() {
+  let X; try { X = await api("?view=explore"); } catch (err) { $("#exInfo").textContent = err.message; return; }
+  if (X.error) { $("#exInfo").textContent = X.error; return; }
+  const I = X.info, G = X.graph;
+  $("#exInfo").innerHTML = I ? kpi("Last block seen", ago(I.lastBlockAt), judge(Date.now() - Date.parse(I.lastBlockAt) < 3600e3), "Blocks come about every 10 minutes. Over an hour may mean the node is stuck.")
+      + kpi("Inactive channels", I.inactive, judge(I.inactive === 0), "Channels whose peer is offline. They can't move payments until it's back.")
+      + `<div class="kpi"><small>Public key</small><div style="font:600 .78rem/1.35 ui-monospace,Menlo,monospace">${esc(I.pubkey)}</div><span class="why">Your node's address on the Lightning Network. Safe to share.</span></div>`
+      + kpi("LND build", I.commit || "–", "", "The exact code your node runs. Compare it with the release notes before upgrading.") : "";
+  $("#exGraph").innerHTML = G ? kpi("Nodes in the network", num(G.nodes), "", "Every public Lightning node your node knows about.")
+      + kpi("Public channels", num(G.channels), "", "Every channel announced to the network.")
+      + kpi("Network diameter", `${G.diameter} hops`, "", "The longest shortest path between two nodes. Most payments need far fewer hops.")
+      + kpi("Channels per node", G.avgOutDegree, "", "On average. Well-connected nodes have many; yours has one private channel.") : "";
+  $("#exPeers").innerHTML = X.peers?.length ? `<table><thead><tr><th>Peer</th><th>Ping</th><th>Reconnections</th><th>Sent</th><th>Received</th><th>Who connected</th></tr></thead><tbody>${X.peers.map((p) =>
+    `<tr><td><code title="${esc(p.pubkey)}">${esc(p.pubkey.slice(0, 16))}…</code></td><td>${esc(num(p.pingMs))} ms${p.pingMs > 500 ? ' <span class="err">slow</span>' : ""}</td><td>${esc(num(p.flaps))}${p.flaps > 50 ? ' <span class="err">unstable</span>' : ""}</td><td>${esc(satsF(p.satSent))}</td><td>${esc(satsF(p.satRecv))}</td><td>${p.inbound ? "They did" : "You did"}</td></tr>`).join("")}</tbody></table>` : '<p class="muted sm">No peers connected.</p>';
+  $("#exChans").innerHTML = (X.channels || []).map((c) => { const txid = c.point.split(":")[0];
+    return `<div class="inside"><h3>${esc(c.alias || "Channel")}</h3><div class="kpis">`
+      + kpi("Short channel ID", c.scid || "private alias", "", c.scid ? "Block × transaction × output of the funding transaction." : "Private channels can use an alias instead of their on-chain position.")
+      + kpi("Updates", num(c.updates), "", "Every payment, sent or received, is one signed update.")
+      + kpi("Sent through it", satsF(c.sent), "", "All-time, from your side.") + kpi("Received through it", satsF(c.received), "", "All-time, into your side.")
+      + kpi("Closing fee set aside", satsF(c.commitFee), "", "Kept from your balance to pay for closing on-chain.")
+      + kpi("Wait if force-closed", blocksToDays(c.csvDelay), "", "If a channel is closed by one side alone, that side's sats wait this long.")
+      + kpi("Uptime", c.uptimePct === null ? "–" : `${c.uptimePct}%`, judge(c.uptimePct === null ? null : c.uptimePct >= 95), "Share of its life the peer was online. Below 95% means missed payments.")
+      + kpi("Payments in flight", c.pendingHtlcs, "", "HTLCs not yet settled. Usually 0; many stuck ones need attention.")
+      + `</div><p class="why sm">${esc(typeWhy[c.type] || c.type)} ${c.initiator ? "You opened it." : "The peer opened it."} ${txid ? `<a href="https://mempool.space/tx/${esc(txid)}" target="_blank" rel="noopener">See the funding transaction on mempool.space</a>.` : ""}</p></div>`; }).join("") || '<p class="muted sm">No channels.</p>';
+  $("#exClosed").innerHTML = X.closed?.length ? `<table><thead><tr><th>How</th><th>Capacity</th><th>Came back to you</th><th>Block</th></tr></thead><tbody>${X.closed.map((c) => `<tr><td>${esc(closeWhy[c.type] || c.type)}</td><td>${esc(satsF(c.capacity))}</td><td>${esc(satsF(c.settled))}</td><td>${esc(num(c.height))}</td></tr>`).join("")}</tbody></table>` : '<p class="muted sm">No channel has closed yet.</p>';
+  const P = X.payments, V = X.invoices;
+  $("#exPays").innerHTML = P ? kpi("Payments sent", `${P.succeeded} of ${P.count}`, "", `${P.failed} failed. Failures are normal when no route has enough room.`)
+      + kpi("Sats sent", satsF(P.sats), "", "Total paid out over Lightning.")
+      + kpi("Routing fees paid", satsF(P.feeSats), "", P.sats ? `About ${Math.round((P.feeSats / P.sats) * 1e6)} ppm of what you sent.` : "Paid to the nodes that carried your payments.") : "";
+  $("#exInvs").innerHTML = V ? kpi("Invoices made", num(V.count), "", "Payment requests your node created.") + kpi("Paid", num(V.settled), "", `${satsF(V.sats)} received.`)
+      + kpi("Expired unpaid", num(V.expired), "", "Normal: people open a QR and don't pay.") : "";
+  if (X.utxos) $("#chainKpis").insertAdjacentHTML("beforeend", kpi("Coins (UTXOs)", num(X.utxos.count), "", "Separate pieces of bitcoin in the on-chain wallet. Each one costs fees to spend."));
+}
+
 async function loadEmails() {
   let E; try { E = await api("?view=emails"); } catch { return; }
   $("#emails").innerHTML = E.emails.length ? `<table><thead><tr><th>When</th><th>Kind</th><th>Subject</th><th>Status</th></tr></thead><tbody>${E.emails.slice(0, 40).map((e) => `<tr><td>${esc(ago(e.at))}</td><td>${esc(e.kind)}</td><td>${esc(e.subject)}</td><td>${esc(e.status)}</td></tr>`).join("")}</tbody></table>` : '<p class="muted sm">No emails yet.</p>';
@@ -310,6 +363,6 @@ async function load() {
   $("#login").hidden = true; $("#app").hidden = false;
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
   renderChecklist(D); renderStan(D.stan); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderVisits(D.visits); renderSystem(D); renderGlossary();
-  loadPower(); loadChannels(); loadSecurity(); loadEmails(); loadMoney(); loadCv(); loadActivity();
+  loadPower(); loadChannels(); loadSecurity(); loadEmails(); loadMoney(); loadCv(); loadActivity(); loadExplorer();
 }
 token ? load() : showLogin();
