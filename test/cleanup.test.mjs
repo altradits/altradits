@@ -14,7 +14,7 @@ const { retireAgency, autoClean } = await import("../lib/cleanup.js");
 const has = async (k) => (await store.getJSON(k)) != null;
 
 test("the agency's records (test orders included) and the old email log are archived, then removed, once; Ye₿ente and the security log stay", async () => {
-  await store.setJSON("proposal:p1", { id: "p1", status: "paid", donation: true });
+  await store.setJSON("proposal:p1", { id: "p1", status: "paid", donation: true, payment: { sats: 2100, confirmedAt: "2026-10-20T10:00:00Z" } });
   await store.pushId("proposals", "p1");
   for (const k of ["lead:l1", "task:t1", "sub:s1", "mkt:settings", "job:j1", "learn:traj:x", "stan:instr:i1", "coupon:ABC"]) await store.setJSON(k, { k });
   for (const k of ["yw:w1", "ywe:e1", "ywinv:h1", "secw:events", "ln:lessons"]) await store.setJSON(k, { k });
@@ -38,6 +38,14 @@ test("the agency's records (test orders included) and the old email log are arch
   const file = path.join(store.ARCHIVE(), r.archive);
   assert.equal(fs.statSync(file).mode & 0o777, 0o600);
   assert.equal(JSON.parse(fs.readFileSync(file, "utf8")).kv["proposal:p1"].status, "paid");
+
+  // Payments are never lost: the paid donation stays on the statement, even once the archive is deleted.
+  const { statement } = await import("../lib/statement.js");
+  let s = await statement();
+  assert.equal(s.donations.count, 1);
+  store.deleteArchive(r.archive);
+  s = await statement();
+  assert.equal(s.donations.count, 1, "kept in the permanent ledger");
 
   // Never twice: records made later are left alone.
   await store.setJSON("lead:l2", { k: 1 });

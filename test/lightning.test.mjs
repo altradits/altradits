@@ -138,6 +138,12 @@ test("support page: any amount, invoiced on our own node, and shown as paid once
   assert.equal((await call(tip.GET, "GET", `/api/tip?hash=${r.body.hash}`)).body.paid, false);
   invoices.get(r.body.hash).state = "SETTLED";
   assert.equal((await call(tip.GET, "GET", `/api/tip?hash=${r.body.hash}`)).body.paid, true);
+  const S = (await call(admin.GET, "GET", "/api/admin?view=statement")).body;
+  assert.equal(S.support.sats, 21000, "a paid support payment is on the statement");
+  assert.match((await call(admin.GET, "GET", "/api/admin?view=statement&format=csv")).body, /^date,type,what,sats[\s\S]*support,Support for open-source work,21000/);
+  const cv = (await call(admin.GET, "GET", "/api/admin?view=cv")).body;
+  assert.match(cv.initial, /^# Stanley Chege Thuita/);
+  assert.doesNotMatch(cv.initial, /\{\{|\+?254[ \d]{9}/, "numbers filled in; no phone number");
   noNode();
   // Node offline: no invoice from someone else's wallet; the page shows the public address instead.
   const off = await call(tip.POST, "POST", "/api/tip", { sats: 21000 });

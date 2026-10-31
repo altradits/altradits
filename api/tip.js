@@ -27,5 +27,9 @@ export async function GET(request) {
   if (!hash) return json({ address: PAYMENTS.lightningAddress, qr: await qrSvg(`lightning:${PAYMENTS.lightningAddress}`.toUpperCase()) });
   if ((await hit(`rl:tipcheck:${clientIp(request)}`, 600)) > 300) return json({ error: "Too many checks." }, 429);
   if (!/^[0-9a-f]{64}$/.test(hash) || !(await getJSON(`tip:${hash}`))) return json({ error: "Unknown invoice." }, 404);
-  return json({ paid: (await invoicePaid({ provider: "lnd", paymentHash: hash })) === true });
+  const rec = await getJSON(`tip:${hash}`);
+  if (rec.paidAt) return json({ paid: true });
+  const paid = (await invoicePaid({ provider: "lnd", paymentHash: hash })) === true;
+  if (paid) await setJSON(`tip:${hash}`, { ...rec, paidAt: new Date().toISOString() }); // for the statement (lib/statement.js)
+  return json({ paid });
 }

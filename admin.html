@@ -208,6 +208,21 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
     <ul id="lnLessons" class="sm"></ul>
   </section>
 
+  <section class="panel" aria-labelledby="hMoney">
+    <h2 id="hMoney">Money received through the website</h2>
+    <div class="learn"><p>Every payment the website took, in sats: orders and donations before the agency moved out, and support payments since. Ye₿ente deposits aren't here; they belong to wallet holders.</p></div>
+    <div class="kpis" id="moneyKpis"></div>
+    <div class="row"><button type="button" class="btn" id="moneyCsv">Download for the books (CSV)</button></div>
+    <div id="moneyList" class="scroll"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="hCv">
+    <h2 id="hCv">Your CV</h2>
+    <p class="sm muted" id="cvNote"></p>
+    <div class="row"><button type="button" class="btn" id="cvDl">Download first CV (.md)</button><button type="button" class="btn" id="cvUp" hidden>Download uploaded CV</button></div>
+    <details style="margin-top:.6rem"><summary class="sm"><b>Read it here</b></summary><pre id="cvText" style="white-space:pre-wrap;font:inherit;font-size:.92rem;margin:.6rem 0 0"></pre></details>
+  </section>
+
   <section class="panel gloss" aria-labelledby="hGloss">
     <h2 id="hGloss">Glossary</h2>
     <div id="glossary"></div>
@@ -232,6 +247,6 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
   </section>
 </div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=learn1"></script>
+<script type="module" src="/assets/admin.js?v=learn2"></script>
 </body>
 </html>
