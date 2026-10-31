@@ -19,11 +19,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned by commit
         with:
           persist-credentials: false
+          fetch-depth: 0 # full history, for the co-author check
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0, pinned by commit
         with:
           node-version: 24
       - name: Workflow files are valid (a broken file silently stops deploys)
         run: ruby -ryaml -e 'Dir[".github/workflows/*.yml"].each { |f| YAML.load_file(f) }; puts "workflows ok"'
+      - name: No AI co-authors (GitHub lists every Co-Authored-By as a contributor)
+        run: sh deploy/no-ai-coauthor.sh HEAD
       - name: Install (no package scripts run)
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Tests and build-stage security guard

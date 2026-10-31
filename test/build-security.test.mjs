@@ -146,9 +146,16 @@ test("every Markdown file at the top level is denied to the web server", () => {
 
 test("signing stays available: the trusted-keys file, the verify script and the server option stay in place", () => {
   assert.match(read(".github/allowed_signers"), /^altradits@gmail\.com namespaces="git" ssh-ed25519 /m, "a trusted signing key");
-  assert.match(read("deploy/verify-commits.sh"), /TRUST_ROOT=2ef931f7f09557cfa2a40b6679067532c1e09218/, "the trust root never moves");
+  assert.match(read("deploy/verify-commits.sh"), /TRUST_ROOT=3c9ca96542d750fc51b62df42cb93be251920c09/, "the trust root never moves");
   assert.match(read("deploy/cron.sh"), /verify-commits\.sh origin\/main "\$SIGNERS"/, "the server refuses unsigned code");
   assert.match(read(".githooks/pre-push"), /force-push/, "the local gate refuses force-pushes to main");
+});
+
+test("no AI co-authors: the check runs in CI, before every push and on every commit message", () => {
+  assert.match(read(".github/workflows/test.yml"), /sh deploy\/no-ai-coauthor\.sh HEAD/, "CI checks every commit");
+  assert.match(read(".github/workflows/test.yml"), /fetch-depth: 0/, "CI sees the whole history");
+  assert.match(read(".githooks/pre-push"), /no-ai-coauthor\.sh/, "the local gate checks pushed commits");
+  assert.match(read(".githooks/commit-msg"), /no-ai-coauthor\.sh --message/, "the commit-msg hook checks each message");
 });
 
 test("every top-level folder is either public on purpose or denied to the web server", () => {
