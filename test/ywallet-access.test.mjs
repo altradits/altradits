@@ -161,3 +161,24 @@ test("the Lightning address tells nobody what a wallet holds", async () => {
   const r = await json(await call("POST", "wallet/send", { to: "full-one", sats: 2000, pin: "602817" }, prober.session));
   assert.equal(r.error, "This payment can't be delivered to that wallet right now.");
 });
+
+test("an open app never pays on its own: every payment needs the PIN or a fresh fingerprint, whatever opened the app", async () => {
+  const p = phone();
+  const payer = await json(await call("POST", "wallet/create", { pin: "846193", handle: "always-ask", device: p.spki }));
+  await call("POST", "wallet/create", { pin: "846193", handle: "always-ask-to", device: phone().spki });
+  await yw.credit({ walletId: payer.wallet.id, sats: 4000, kind: "receive", ref: "fund-always-ask" });
+  // Opened with the PIN a moment ago: that unlock approves nothing.
+  await call("POST", "wallet/lock", {}, payer.session);
+  const open = await unlockWith(p, payer.deviceId, payer.wallet.id, { pin: "846193" });
+  assert.equal(open.status, 200);
+  const send = async (extra) => json(await call("POST", "wallet/send", { to: "always-ask-to", sats: 100, ...extra }, open.session));
+  for (const extra of [{}, { pin: "" }, { pin: null }, { pin: "000000" }, { pin: { walletId: payer.wallet.id, used: false } }, { passkey: {} }, { passkey: { id: "made-up" } }])
+    { const r = await send(extra); assert.ok(r.status >= 400 && !r.success, `refused without verification: ${JSON.stringify(extra)} -> ${r.status} ${r.error}`); }
+  assert.equal((await json(await call("GET", "wallet/me", null, open.session))).wallet.balance, 4000, "nothing left the wallet");
+  // The empty and wrong tries counted as wrong PINs: payments are now locked, even with the right PIN.
+  assert.match((await send({ pin: "846193" })).error, /Too many wrong PINs/);
+  const { getJSON, setJSON } = store;
+  const w = await getJSON(`yw:${payer.wallet.id}`);
+  await setJSON(`yw:${w.id}`, { ...w, lockedUntil: null, failedPins: 0 });
+  { const r = await send({ pin: "846193" }); assert.equal(r.status, 200, `with the PIN it goes: ${r.error}`); }
+});

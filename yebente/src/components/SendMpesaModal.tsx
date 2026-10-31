@@ -598,6 +598,10 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                 </div>
               </div>
 
+              {/* Every payment is approved on its own, even while the app is open. */}
+              {server && rail === 'mpesa' && (
+                <p className="text-[11px] text-[var(--yb-on-surface-variant)]">Every payment needs your {biometricOn() ? 'fingerprint, face or ' : ''}PIN, even while the app is open. If someone picks up your phone, they still can't send.</p>
+              )}
               {/* PIN for the Altradits wallet */}
               {server && rail === 'mpesa' && !useBio && (
                 <div>
