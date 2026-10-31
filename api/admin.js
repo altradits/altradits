@@ -2,6 +2,7 @@
 // Authorization: Bearer <ADMIN_TOKEN>.
 //   GET  /api/admin                  -> overview: node, chain, Ye₿ente, settlement hooks, visits, system
 //   GET  /api/admin?view=explore     -> the node explorer (read-only: network, channel internals, peers, payments, invoices, coins)
+//   GET  /api/admin?view=pnl&days=30 -> profit and loss, and what is yours after Ye₿ente's wallet holders
 //   GET  /api/admin?view=channels    -> channels, alerts and advice (lib/channels.js)
 //   GET  /api/admin?view=liquidity   -> sending power and top-up amounts
 //   GET  /api/admin?view=topup&hash= -> a top-up's state
@@ -48,6 +49,12 @@ export async function GET(request) {
 
   // The node explorer: network, channel internals, peers, payments, invoices, coins and closed channels.
   if (view === "explore") { const { nodeExplorer } = await import("../lib/lightning.js"); const d = await settle(nodeExplorer(), 9000); return json(d || { error: "The node isn't connected." }); }
+  // Profit and loss over a period, and what is yours after Ye₿ente's wallet holders.
+  if (view === "pnl") {
+    const days = Math.min(3650, Math.max(1, Math.floor(Number(new URL(request.url).searchParams.get("days") ?? 30)) || 30));
+    const { profitLoss } = await import("../lib/pnl.js");
+    return json(await profitLoss({ days }));
+  }
   if (view === "channels") { const { channelReport } = await import("../lib/channels.js"); try { return json(await channelReport()); } catch (err) { return json({ error: err.message }, 502); } }
   if (view === "liquidity") { const { liquidityView } = await import("../lib/channels.js"); try { return json(await liquidityView()); } catch (err) { return json({ error: err.message }, 502); } }
   if (view === "topup") {
@@ -88,18 +95,20 @@ export async function GET(request) {
   if (view === "emails") return json({ emails: (await getMany("email", await listIds("emails", 100))).map(({ text, ...e }) => e) });
 
   const { nodeInfo, nodeDetails, chainTip, outboundSats, inboundSats, onchainFeeRates } = await import("../lib/lightning.js");
-  const [node, details, tip, outbound, inbound, chainFees] = await Promise.all([settle(nodeInfo()), settle(nodeDetails()), settle(chainTip()), settle(outboundSats()), settle(inboundSats()), settle(onchainFeeRates())]);
-  try { return await overview(node, details, tip, outbound, inbound, chainFees); }
+  const { btcKes } = await import("../lib/lightning.js");
+  const [node, details, tip, outbound, inbound, chainFees, kes] = await Promise.all([settle(nodeInfo()), settle(nodeDetails()), settle(chainTip()), settle(outboundSats()), settle(inboundSats()), settle(onchainFeeRates()), settle(btcKes())]);
+  try { return await overview(node, details, tip, outbound, inbound, chainFees, kes); }
   catch (err) { return json({ error: `The dashboard couldn't load: ${err.message}` }, 500); }
 }
 
-async function overview(node, details, tip, outbound, inbound, chainFees) {
+async function overview(node, details, tip, outbound, inbound, chainFees, kes) {
   const { liabilities, walletsOn, switchOn } = await import("../lib/ywallet.js");
   const owed = walletsOn() ? await settle(liabilities()) : null;
   const openInvoices = (await listIds("ywinvopen", 500)).length;
   return json({
     node: node && !node.error ? { ...node, behind: typeof tip === "number" && node.blockHeight ? Math.max(0, tip - node.blockHeight) : null } : node,
     chainTip: typeof tip === "number" ? tip : null,
+    kesPerBtc: typeof kes === "number" ? Math.round(kes) : null, // shillings per bitcoin, for KSh beside sats
     details: details && !details.error ? details : null,
     chainFees: chainFees && !chainFees.error ? chainFees : null,
     liquidity: { outboundSats: typeof outbound === "number" ? outbound : null, inboundSats: typeof inbound === "number" ? inbound : null },

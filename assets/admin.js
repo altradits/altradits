@@ -9,6 +9,10 @@ const satsF = (n) => (n === null || n === undefined ? "–" : `${num(n)} sats`);
 const ago = (iso) => { const m = (Date.now() - Date.parse(iso)) / 6e4; return m < 60 ? `${Math.round(m)}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`; };
 // One reading: label, value, state ("good", "warn" or none) and what it means.
 const kpi = (label, v, state, why) => `<div class="kpi${state ? ` ${state}` : ""}"><small>${esc(label)}</small><div>${esc(v)}</div>${why ? `<span class="why">${esc(why)}</span>` : ""}</div>`;
+// Shillings beside sats, at the rate the dashboard last read (BTC price × USD/KES).
+let KES_PER_BTC = null;
+const ksh = (sats) => (KES_PER_BTC && sats !== null && sats !== undefined ? `KSh ${Math.round((Number(sats) / 1e8) * KES_PER_BTC).toLocaleString("en-US")}` : "");
+const satsKsh = (sats) => `${satsF(sats)}${ksh(sats) ? ` (${ksh(sats)})` : ""}`;
 const judge = (ok) => (ok === null || ok === undefined ? "" : ok ? "good" : "warn");
 let token = "";
 try { token = sessionStorage.getItem("altra.admin") || ""; } catch {}
@@ -209,18 +213,24 @@ $("#archives").addEventListener("click", async (e) => {
 let spPoll = null;
 async function loadPower() {
   let P; try { P = await api("?view=liquidity"); } catch (err) { $("#spNote").textContent = err.message; return; }
-  $("#spNote").innerHTML = P.spendable < 1000 ? `<b class="err">The node can't send anything right now.</b> Ye₿ente payments out fail until you top up.`
-    : !P.covered ? `<b class="err">Short:</b> wallets hold more than the node can send. Top up so every balance can be paid out.` : `Can send ${esc(satsF(P.spendable))}: enough to pay out every Ye₿ente balance.`;
+  $("#spNote").innerHTML = `<span class="kpis" style="display:grid;margin:0 0 .6rem">${kpi("Can send now", satsF(P.spendable), judge(P.spendable >= 1000), ksh(P.spendable))}${kpi("Owed to wallets", satsF(P.owedSats), "", ksh(P.owedSats))}${kpi("Can still receive", satsF(P.inbound), "", `${ksh(P.inbound)} · after the peer's reserve`)}</span>`
+    + (P.spendable < 1000 ? `<b class="err">The node can't send anything right now.</b> Ye₿ente payments out fail until you top up.`
+    : !P.covered ? `<b class="err">Short:</b> wallets hold more than the node can send. Top up so every balance can be paid out.` : "Enough to pay out every Ye₿ente balance.")
+    + (KES_PER_BTC ? `<br><span class="muted">Rate: 1 BTC ≈ KSh ${esc(num(KES_PER_BTC))}, so 1,000 sats ≈ ${esc(ksh(1000))}.</span>` : "");
   if (!$("#spSats").value && P.suggested) $("#spSats").value = P.suggested;
+  spKsh();
   $("#spSats").min = P.min; $("#spSats").max = P.max;
-  $("#spPresets").innerHTML = P.presets.map((n) => `<button type="button" class="btn${n === P.suggested ? " primary" : ""}" data-sp="${n}">${esc(satsF(n))}${n === P.suggested ? " (suggested)" : ""}</button>`).join("");
-  $("#spList").innerHTML = P.topups.length ? P.topups.map((t) => `<div class="sm">${esc(satsF(t.sats))} · ${esc(t.state)} <span class="muted">${esc(ago(t.at))}</span></div>`).join("") : '<p class="muted sm">No top-ups yet.</p>';
+  $("#spPresets").innerHTML = P.presets.map((n) => `<button type="button" class="btn${n === P.suggested ? " primary" : ""}" data-sp="${n}">${esc(satsF(n))}${ksh(n) ? ` · ${esc(ksh(n))}` : ""}${n === P.suggested ? " (suggested)" : ""}</button>`).join("");
+  $("#spList").innerHTML = P.topups.length ? P.topups.map((t) => `<div class="sm">${esc(satsKsh(t.sats))} · ${esc(t.state)} <span class="muted">${esc(ago(t.at))}</span></div>`).join("") : '<p class="muted sm">No top-ups yet.</p>';
 }
-$("#spPresets").addEventListener("click", (e) => { const n = e.target.closest("[data-sp]")?.dataset.sp; if (n) $("#spSats").value = n; });
+$("#spPresets").addEventListener("click", (e) => { const n = e.target.closest("[data-sp]")?.dataset.sp; if (n) { $("#spSats").value = n; spKsh(); } });
+// The amount typed, in shillings too.
+function spKsh() { const n = Math.floor(Number($("#spSats").value)); $("#spSats").title = n ? ksh(n) : ""; $("#spKsh").textContent = n && ksh(n) ? `≈ ${ksh(n)}` : ""; }
+$("#spSats").addEventListener("input", spKsh);
 $("#spGo").addEventListener("click", async () => {
   $("#spErr").textContent = "";
   let T; try { T = await api("", { action: "node_topup", sats: Number($("#spSats").value) }); } catch (err) { $("#spErr").textContent = err.message; return; }
-  $("#spInvoice").innerHTML = `<p class="sm"><b>Pay ${esc(satsF(T.sats))} to your node</b> from any Lightning wallet. This updates when it lands (the invoice works for an hour).</p>
+  $("#spInvoice").innerHTML = `<p class="sm"><b>Pay ${esc(satsKsh(T.sats))} to your node</b> from any Lightning wallet. This updates when it lands (the invoice works for an hour).</p>
     <div class="qr">${T.qr}</div>
     <textarea readonly rows="3" class="mono">${esc(T.bolt11)}</textarea>
     <div class="row"><button type="button" class="btn" id="spCopy">Copy invoice</button><a class="btn" href="lightning:${esc(T.bolt11)}">Open in wallet</a></div>
@@ -312,6 +322,51 @@ $("#cvNow").addEventListener("click", () => {
 });
 $("#cvUp").addEventListener("click", () => download("?view=cv&file=uploaded", `stanley-cv.${cvExt}`));
 
+// Profit and loss: what the node earned and spent, and what is yours after Ye₿ente's wallet holders.
+async function loadPnl() {
+  let L; try { L = await api(`?view=pnl&days=${encodeURIComponent($("#pnlDays").value)}`); } catch (err) { $("#pnlTable").textContent = err.message; return; }
+  const E = L.earned, S = L.spent, Y = L.yours;
+  $("#pnlKpis").innerHTML = kpi("Earned", satsF(E.total), "", ksh(E.total)) + kpi("Spent", satsF(S.total), "", ksh(S.total))
+    + kpi(L.net >= 0 ? "Profit" : "Loss", satsF(Math.abs(L.net)), L.net >= 0 ? "good" : "warn", ksh(Math.abs(L.net)));
+  const row = (what, sats, why, sign = "") => `<tr><td>${esc(what)}<br><span class="muted sm">${esc(why)}</span></td><td>${sign}${esc(satsF(sats))}</td><td>${esc(ksh(sats))}</td></tr>`;
+  $("#pnlTable").innerHTML = `<table><thead><tr><th>Item</th><th>Sats</th><th>Shillings</th></tr></thead><tbody>
+    ${row("Routing fees earned", E.routing, `${E.routed} payment${E.routed === 1 ? "" : "s"} passed through you. A private channel routes few or none.`, "+")}
+    ${row("M-Pesa buy spread", E.spread, E.spreadPct ? `${E.spreadPct}% on ${E.buys} buy${E.buys === 1 ? "" : "s"} (KSh ${num(E.buyKes)} paid in).` : `Off: YEBENTE_BUY_SPREAD_PCT is 0, so buys earn nothing. ${E.buys} buy${E.buys === 1 ? "" : "s"}, KSh ${num(E.buyKes)}.`, "+")}
+    ${row("Support payments", E.support, `${E.supportCount} on /donate.`, "+")}
+    ${row("Routing fees you paid", S.routeFees, `Your own payments. Of ${num(S.routeFeesAll)} sats in fees, Ye₿ente users repaid ${num(S.routeFeesRepaid)}.`, "−")}
+    ${row("On-chain fees", S.onchain, "Opening or closing channels, moving coins.", "−")}
+  </tbody></table>${L.nodeRead ? "" : '<p class="sm err">The node couldn\'t be read, so node figures show 0. Set LND_READONLY_MACAROON.</p>'}`;
+  $("#pnlYours").innerHTML = kpi("On the node", satsF(Y.assets), "", `${ksh(Y.assets)} · your side of channels ${num(Y.channelSats)} + on-chain ${num(Y.onchainSats)}`)
+    + kpi("Owed to Ye₿ente wallets", satsF(Y.owed), "", ksh(Y.owed)) + kpi("Yours", satsF(Y.net), judge(Y.net === null ? null : Y.net >= 0), `${ksh(Y.net)} · on the node minus what wallets hold. Below 0 means wallets hold more than the node has.`);
+}
+$("#pnlDays").addEventListener("change", loadPnl);
+
+// Each dashboard number, the read-only command that shows it, and where to look.
+const VERIFY = [
+  ["Block height, synced, channels, peers", "ln-ro getinfo | jq '{block_height, synced_to_chain, synced_to_graph, num_active_channels, num_peers}'"],
+  ["Chain tip", "curl -s https://mempool.space/api/blocks/tip/height"],
+  ["Can send (your side minus reserve)", "ln-ro listchannels | jq '[.channels[] | select(.active) | (.local_balance|tonumber) - (.local_constraints.chan_reserve_sat|tonumber)] | add'"],
+  ["Can receive (Ye₿ente tab: the peer's whole side)", "ln-ro channelbalance | jq .remote_balance.sat"],
+  ["Can still receive (Sending power: after the peer's reserve)", "ln-ro listchannels | jq '[.channels[] | select(.active) | (.remote_balance|tonumber) - (.remote_constraints.chan_reserve_sat|tonumber)] | add'"],
+  ["On your side of channels", "ln-ro channelbalance | jq .local_balance.sat"],
+  ["On-chain balance", "ln-ro walletbalance | jq .confirmed_balance"],
+  ["Coins (UTXOs)", "ln-ro listunspent | jq '.utxos | length'"],
+  ["Fee policy", "ln-ro feereport | jq '.channel_fees[] | {base_fee_msat, fee_per_mil}'"],
+  ["Routing fees earned, 30 days", "ln-ro fwdinghistory --start_time=-30d | jq '[.forwarding_events[].fee|tonumber] | add // 0'"],
+  ["Payments sent and fees paid, 30 days", "ln-ro listpayments --max_payments 2000 | jq '[.payments[] | select(.status==\"SUCCEEDED\")] | {count: length, fees: (map(.fee_sat|tonumber)|add)}'"],
+  ["Invoices made and paid", "ln-ro listinvoices --max_invoices 1000 | jq '[.invoices[].state] | group_by(.) | map({(.[0]): length}) | add'"],
+  ["On-chain fees paid", "ln-ro listchaintxns | jq '[.transactions[].total_fees|tonumber] | add // 0'"],
+  ["Each channel: updates, uptime, force-close wait", "ln-ro listchannels | jq '.channels[] | {peer_alias, num_updates, uptime, lifetime, csv_delay, commitment_type}'"],
+  ["Peers: ping and reconnections", "ln-ro listpeers | jq '.peers[] | {ping_ms: ((.ping_time|tonumber)/1000), flap_count}'"],
+  ["Network size", "ln-ro getnetworkinfo | jq '{num_nodes, num_channels, graph_diameter}'"],
+  ["Closed channels", "ln-ro closedchannels | jq '.channels[] | {close_type, capacity, settled_balance}'"],
+  ["BTC price used for KSh", "curl -s https://api.coinbase.com/v2/prices/BTC-USD/spot | jq -r .data.amount; curl -s https://open.er-api.com/v6/latest/USD | jq .rates.KES"],
+  ["Owed to Ye₿ente wallets, profit from buys", "Only on the server: the wallet records live there, not on the node."],
+];
+function renderVerify() {
+  $("#verify").innerHTML = `<table><thead><tr><th>On the dashboard</th><th>On the Mac</th></tr></thead><tbody>${VERIFY.map(([what, cmd]) => `<tr><td>${esc(what)}</td><td>${/^(ln-ro|curl)/.test(cmd) ? `<code>${esc(cmd)}</code>` : `<span class="muted">${esc(cmd)}</span>`}</td></tr>`).join("")}</tbody></table>`;
+}
+
 // The node explorer: what a new operator can learn from the node itself.
 const blocksToDays = (b) => `${num(b)} blocks ≈ ${Math.round((b * 10) / 60 / 24 * 10) / 10} days`;
 const typeWhy = { ANCHORS: "Anchor channel: fees to close are added when closing, so a force close can still confirm when fees rise.", STATIC_REMOTE_KEY: "Static remote key: an older type; funds return to a fixed key on close.", SIMPLE_TAPROOT: "Taproot channel: newer; looks like a normal payment on-chain." };
@@ -361,8 +416,9 @@ async function load() {
   try { D = await api(""); } catch (err) { if (!$("#login").hidden) $("#loginErr").textContent = err.message; else toast(err.message, true, 8000); return; }
   $("#loginErr").textContent = "";
   $("#login").hidden = true; $("#app").hidden = false;
+  KES_PER_BTC = D.kesPerBtc;
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
   renderChecklist(D); renderStan(D.stan); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderVisits(D.visits); renderSystem(D); renderGlossary();
-  loadPower(); loadChannels(); loadSecurity(); loadEmails(); loadMoney(); loadCv(); loadActivity(); loadExplorer();
+  loadPower(); loadChannels(); loadSecurity(); loadEmails(); loadMoney(); loadCv(); loadActivity(); loadExplorer(); loadPnl(); renderVerify();
 }
 token ? load() : showLogin();
