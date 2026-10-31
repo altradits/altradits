@@ -17,7 +17,7 @@ Merging a PR into `main` is the deploy. Within 5 minutes the server picks it up.
 - **Never edit files on the server.** The reset discards them. Change the repo instead.
 - **Data** (Ye₿ente wallets, the email log, the security log) lives in `DATA_DIR` outside the web root.
 - **Email** goes out through the server's own mail (`EMAIL_TRANSPORT=sendmail`).
-- **Daily jobs** (backup, clean-up) run inside the app after 06:00 UTC; hourly jobs
+- **Daily jobs** (backup, clean-up, Stan's report to `OWNER_EMAIL`) run inside the app after 06:00 UTC; hourly jobs
   (channel alerts, Ye₿ente solvency) once the node is connected.
 
 ## Configuration
@@ -48,7 +48,8 @@ The node's REST port (default 8080) must be reachable from the hosting server
 
 ## The agency
 
-The agents, marketing, CRM and sales pages moved to
+Stan stayed (security watch, alerts and the daily report, see `lib/stan.js`).
+The other agents, marketing, CRM and sales pages moved to
 [altradits/chouMi](https://github.com/altradits/chouMi) on 31 October 2026. On
 its first start after that, the app archived their records to one owner-only
 file in `DATA_DIR/archive` and removed them from the store (admin → System).

@@ -69,6 +69,14 @@ function renderVisits(V) {
     <p class="sm muted">Top sources: ${V.sources.map((s) => `${esc(s.source)} (${s.views})`).join(", ") || "none yet"}</p>`;
 }
 
+function renderStan(S) {
+  $("#stanLast").textContent = S ? `Last report ${ago(S.at)}: “${S.subject}” (${S.status}).` : "No report sent yet. The first goes out tomorrow after 06:00 UTC.";
+}
+$("#stanGo").addEventListener("click", async () => {
+  try { const r = await api("", { action: "stan_report" }); toast(r.status === "sent" ? "Stan's report is on its way." : `Report ${r.status}.`, r.status !== "sent"); renderStan({ at: new Date().toISOString(), subject: r.subject, status: r.status }); }
+  catch (err) { toast(err.message, true, 6000); }
+});
+
 function renderSystem(D) {
   $("#system").innerHTML = `<dt>Email</dt><dd>${esc(D.system.email)}</dd><dt>Storage</dt><dd>${esc(D.system.storage)}</dd>`
     + (D.retired ? `<dt>Agency records</dt><dd>${esc(D.retired.removed)} moved out ${esc(ago(D.retired.at))}${D.retired.archive ? ` (archived as ${esc(D.retired.archive)})` : ""}</dd>` : "");
@@ -147,7 +155,7 @@ async function load() {
   try { D = await api(""); } catch { return; }
   $("#login").hidden = true; $("#app").hidden = false;
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
-  renderNode(D); renderSettlement(D); renderVisits(D.visits); renderSystem(D);
+  renderStan(D.stan); renderNode(D); renderSettlement(D); renderVisits(D.visits); renderSystem(D);
   loadPower(); loadChannels(); loadSecurity(); loadEmails();
 }
 token ? load() : showLogin();

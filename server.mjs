@@ -97,6 +97,9 @@ function publicUrl(req) {
   return new URL(req.url, `${proto}://${host}`);
 }
 
+// Addresses of the old task orders (the agency moved to altradits/chouMi).
+const OLD_ORDERS = "bio captions schedule graphics reel newsletter blog product-copy try data-entry pdf-sheet sheet-cleanup slides sop inbox-cleanup meeting-notes invoices receipts job-post cv-screen booking trip subscriptions rsvp leads cold-email reply-templates faq reviews listings competitors suppliers email-signature site-fix google-profile business-email automation transcribe translate social-management content-writing short-video inbox-calendar data-docs bookkeeping-prep project-coordination hr-recruiting travel-life executive-assist events customer-support lead-generation ecommerce-ops host-assist research website store-payments automation-ai translation lite core partner".split(" ");
+
 const server = http.createServer(async (req, res) => {
   const url = publicUrl(req);
   try {
@@ -141,7 +144,9 @@ const server = http.createServer(async (req, res) => {
     // Clean addresses: /library, /journey… for pages. Old *.html addresses
     // redirect to the clean ones; pages that sold tasks and kits (the agency
     // moved to altradits/chouMi) redirect to their nearest page here.
-    const GONE = { cv: "journey", products: "library", templates: "library", va: "", hunt: "", join: "", team: "", portal: "", proposal: "", collect: "", hourly: "" };
+    const GONE = { cv: "journey", products: "library", templates: "library", va: "", hunt: "", join: "", team: "", portal: "", proposal: "", collect: "", hourly: "", "bitcoin-setup": "bitcoin", lightning: "bitcoin",
+      // Old order links (one per task), shared in posts and emails: home.
+      ...Object.fromEntries(OLD_ORDERS.map((s) => [s, ""])) };
     const old = url.pathname.match(/^\/([a-z-]+)(?:\.html|\/)?$/);
     if (old && req.method === "GET" && old[1] in GONE) { res.writeHead(301, { Location: `/${GONE[old[1]]}` }).end(); return; }
     if (/^\/(?:r|h)\/[a-z0-9]{4,12}\/?$/.test(url.pathname) && req.method === "GET") { res.writeHead(301, { Location: "/" }).end(); return; }
@@ -168,7 +173,7 @@ const server = http.createServer(async (req, res) => {
 });
 server.listen(PORT, () => console.log(`Altradits running on port ${PORT}${PROD ? "" : `: http://localhost:${PORT}  (admin: /admin)`}`));
 
-// Daily, after 06:00 UTC: backup and clean-up. The deploy cron pings /healthz
+// Daily, after 06:00 UTC: backup, clean-up and Stan's report to Stanley. The deploy cron pings /healthz
 // every 5 minutes, which keeps this process (and timer) alive.
 async function maybeRunDaily() {
   if (new Date().getUTCHours() < 6) return;
@@ -180,6 +185,8 @@ async function maybeRunDaily() {
   console.log("daily backup", await backupNow().catch((e) => `failed: ${e.message}`));
   const { autoClean } = await import("./lib/cleanup.js");
   console.log("daily clean-up", await autoClean().catch((e) => `failed: ${e.message}`));
+  const { sendStanReport } = await import("./lib/stan.js");
+  console.log("Stan's report", await sendStanReport().then((r) => r.status).catch((e) => `failed: ${e.message}`));
 }
 setInterval(() => maybeRunDaily().catch((e) => console.error("daily", e)), 10 * 60 * 1000).unref();
 // Hourly, once the node is connected: channel alerts, and whether the node can

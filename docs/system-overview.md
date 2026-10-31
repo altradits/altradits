@@ -17,6 +17,12 @@ library, and his journey towards full-time open-source work. Nothing is sold.
 LND, on Stanley's machine, reached through a tunnel. Invoices, wallets and the
 dashboard all use it. See `docs/manual-lnd.md` and `docs/manual-tunnel.md`.
 
+**Stan** (`lib/stan.js`)
+Stan stayed for security and communication. He keeps the security watch,
+emails Stanley every alert, and sends a short report each morning: the node
+against the chain tip, sending power, Ye₿ente's balances, and what was turned
+away. Admin → "Email me Stan's report now" sends one on demand.
+
 **Safety**
 Every page locks its scripts with a Content-Security-Policy and refuses frames;
 every public endpoint is rate-limited; the admin needs a long token.

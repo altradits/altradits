@@ -77,6 +77,13 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
     <div class="row"><span class="sm muted" id="checked"></span><button type="button" class="btn" id="refresh">Refresh</button><button type="button" class="btn" id="logout">Sign out</button></div>
   </header>
 
+  <section class="panel" aria-labelledby="hStan">
+    <h2 id="hStan">Stan: security and messages</h2>
+    <p class="sm">Stan watches the site and the node, and emails you every alert plus a short report each morning.</p>
+    <p class="sm" id="stanLast"></p>
+    <div class="row"><button type="button" class="btn primary" id="stanGo">Email me Stan's report now</button></div>
+  </section>
+
   <section class="panel" aria-labelledby="hNode">
     <h2 id="hNode">Node</h2>
     <div class="kpis" id="nodeKpis"></div>
@@ -119,7 +126,7 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
 
   <div class="grid2">
     <section class="panel" aria-labelledby="hSec">
-      <h2 id="hSec">Security watch</h2>
+      <h2 id="hSec">Security watch (Stan)</h2>
       <div class="kpis" id="secKpis"></div>
       <p class="sm" id="secSolvency"></p>
       <div class="events" id="secEvents"></div>

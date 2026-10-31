@@ -157,3 +157,26 @@ test("node dashboard: needs the admin token; shows block height against the tip,
   noNode();
   assert.equal((await call(admin.GET, "GET", "/api/admin")).body.node, null, "no node set: says so");
 });
+
+test("Stan: the report says what needs Stanley first, comes from Stan, and the admin can send it on demand", async () => {
+  const { stanReportText } = await import(new URL("lib/stan.js", root));
+  const quiet = stanReportText({ node: { blockHeight: 921000, behind: 0, synced: true, activeChannels: 2, peers: 3 }, tip: 921000, outbound: 50_000, owed: { wallets: 2, sats: 10_000 }, security: [], emailsFailed: 0 });
+  assert.equal(quiet.subject, "Stan: all quiet");
+  assert.match(quiet.text, /^Nothing needs you today\./);
+  const busy = stanReportText({ node: { blockHeight: 920990, behind: 10, synced: false, activeChannels: 0, peers: 0 }, tip: 921000, outbound: 1_000, owed: { wallets: 2, sats: 10_000 },
+    security: [{ kind: "pin_guessing", name: "Wallet PIN guessing", severity: "high", n: 4 }], emailsFailed: 1 });
+  assert.match(busy.subject, /^Stan: 5 things need you$/);
+  assert.match(busy.text, /behind the chain[\s\S]*No active channel[\s\S]*top up at least 9,000 sats[\s\S]*Wallet PIN guessing[\s\S]*1 email failed/);
+
+  assert.equal((await call(admin.POST, "POST", "/api/admin", { action: "stan_report" }, "Bearer wrong")).status, 401);
+  useNode();
+  const r = await call(admin.POST, "POST", "/api/admin", { action: "stan_report" });
+  assert.equal(r.status, 200);
+  assert.match(r.body.subject, /^Stan: /);
+  const store = await import(new URL("lib/store.js", root));
+  const mail = await store.getJSON(`email:${(await store.listIds("emails", 1))[0]}`);
+  assert.match(mail.from, /^Stan · Altradits </);
+  assert.equal(mail.kind, "owner");
+  assert.equal((await call(admin.GET, "GET", "/api/admin")).body.stan.subject, r.body.subject);
+  noNode();
+});

@@ -6,7 +6,7 @@
 //   GET  /api/admin?view=topup&hash= -> a top-up's state
 //   GET  /api/admin?view=security    -> what was turned away, and Bitcoin's attack history
 //   GET  /api/admin?view=emails      -> the email log (a wallet email's link is never stored)
-//   POST { action: "node_topup", sats } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
+//   POST { action: "stan_report" } | { action: "node_topup", sats } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
 import { json, readBody, clean, safeEqual, clientIp } from "../lib/http.js";
 import { listIds, getMany, getJSON, usingRedis, hit, peek, listArchives } from "../lib/store.js";
 import { lightningMode } from "../lib/lightning.js";
@@ -74,6 +74,7 @@ export async function GET(request) {
     yebente: owed && !owed.error ? { wallets: owed.wallets, owedSats: owed.sats, covered: typeof outbound === "number" ? outbound >= owed.sats : null } : owed,
     visits: await import("../lib/visits.js").then((v) => v.visitSummary()).catch(() => null),
     retired: await getJSON("retired:agency"),
+    stan: await import("../lib/stan.js").then((s) => s.stanLast()).catch(() => null),
     archives: listArchives(),
     system: {
       email: process.env.SMTP_HOST ? `SMTP (${process.env.SMTP_HOST})` : process.env.EMAIL_TRANSPORT === "sendmail" ? "server mail (sendmail)" : process.env.RESEND_API_KEY ? "Resend" : "log only: set EMAIL_TRANSPORT=sendmail",
@@ -88,6 +89,10 @@ export async function POST(request) {
   if (body.action === "node_topup") {
     const { startTopup } = await import("../lib/channels.js");
     try { return json(await startTopup(body.sats)); } catch (err) { return json({ error: err.message }, err.status || 502); }
+  }
+  if (body.action === "stan_report") {
+    const { sendStanReport } = await import("../lib/stan.js");
+    try { return json(await sendStanReport()); } catch (err) { return json({ error: err.message }, 502); }
   }
   if (body.action === "ln_lesson") {
     const { addLesson } = await import("../lib/channels.js");
