@@ -38,6 +38,8 @@ a{color:var(--blue)}
 .topnav{display:flex;gap:1.1rem}
 .topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap}
 @media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
+/* Narrow phones: the menu moves under the logo instead of spilling off the screen */
+@media (max-width:420px){.top{flex-wrap:wrap;row-gap:.35rem}}
 .topnav a:hover{color:var(--ink)}
 h1{font:800 clamp(2.3rem,7vw,4rem)/1.02 'Bricolage Grotesque',sans-serif;margin:.5rem 0 1rem;letter-spacing:-.015em;max-width:52rem}
 h1 em,h2 em{font-style:normal;color:var(--btc-text)}
@@ -79,7 +81,7 @@ a:hover,.btn:hover,button:hover{transform:none!important}
 </head>
 <body id="top">
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a></nav></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/yebente#create">Wallet</a></nav></div>
 
   <header class="hero">
     <h1>Small business tasks, <em>done today.</em></h1>
@@ -94,7 +96,7 @@ a:hover,.btn:hover,button:hover{transform:none!important}
   <a class="all" href="/va" id="all">See every task →</a>
 </div></section>
 
-<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/wallet">Get a Bitcoin wallet</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 
 <script type="module">
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking

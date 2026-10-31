@@ -58,6 +58,8 @@ textarea{min-height:6rem;resize:vertical}
 .topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap}
 .topnav a:hover{color:var(--ink)}
 @media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
+/* Narrow phones: the menu moves under the logo instead of spilling off the screen */
+@media (max-width:420px){.top{flex-wrap:wrap;row-gap:.35rem}}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 /* Hero: the same on every page — headline, one line, at most one button. No motion anywhere. */
 .hero{position:static;display:block;max-width:none;margin:0;padding:2.25rem 0 2rem}
@@ -76,7 +78,7 @@ a:hover,.btn:hover,button:hover{transform:none!important}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a></nav></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/yebente#create">Wallet</a></nav></div>
   <header class="hero">
     <h1>Join the <em>Altradits team.</em></h1>
     <p class="lead">Remote, flexible work for skilled assistants anywhere. We bring the clients and a clear brief.</p>
@@ -109,7 +111,7 @@ a:hover,.btn:hover,button:hover{transform:none!important}
   </form>
   <div class="ok" id="done" hidden><h2 style="font-size:1.3rem">Application received ✓</h2><p>Thanks! We review applications weekly and reply either way. Approved team members get a private workspace link by email.</p></div>
 </div>
-<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/wallet">Get a Bitcoin wallet</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script type="module">
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 import { DEPARTMENTS } from "/data/playbooks.js";
