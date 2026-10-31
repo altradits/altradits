@@ -37,8 +37,8 @@ a{color:var(--blue)}
 .topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap}
 .topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
 @media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
-/* Narrow phones: the menu moves under the logo instead of spilling off the screen */
-@media (max-width:420px){.top{flex-wrap:wrap;row-gap:.35rem}}
+/* When space runs out, the menu moves under the logo (and wraps) instead of spilling off the screen */
+.top{flex-wrap:wrap;row-gap:.35rem}.topnav{flex-wrap:wrap;row-gap:.2rem}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .hero{padding:2.25rem 0 2rem}
 .hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:44rem}
@@ -80,7 +80,7 @@ h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/yebente#create">Wallet</a></nav></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/yebente#create">Wallet</a><a href="/bitcoin-core">Bitcoin Core</a></nav></div>
 
   <header class="hero">
     <h1>Your first Bitcoin wallet, <em>in a minute.</em></h1>

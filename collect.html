@@ -33,8 +33,8 @@ a{color:var(--blue)}
 .topnav{display:flex;gap:1.1rem}
 .topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap}
 @media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
-/* Narrow phones: the menu moves under the logo instead of spilling off the screen */
-@media (max-width:420px){.top{flex-wrap:wrap;row-gap:.35rem}}
+/* When space runs out, the menu moves under the logo (and wraps) instead of spilling off the screen */
+.top{flex-wrap:wrap;row-gap:.35rem}.topnav{flex-wrap:wrap;row-gap:.2rem}
 .topnav a:hover{color:var(--ink)}
 h1{font:800 clamp(2rem,6vw,2.8rem)/1.05 'Bricolage Grotesque',sans-serif;margin:0 0 .6rem}
 h1 em{font-style:normal;color:var(--btc-text)}
@@ -76,7 +76,7 @@ a:hover,.btn:hover,button:hover{transform:none!important}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/yebente#create">Wallet</a></nav></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/yebente#create">Wallet</a><a href="/bitcoin-core">Bitcoin Core</a></nav></div>
   <header class="hero">
     <h1>Collect your <em>order.</em></h1>
     <p class="lead">Enter the order name you saved when you paid.</p>
