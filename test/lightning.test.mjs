@@ -41,6 +41,9 @@ before(async () => {
         res.end(JSON.stringify({ remote_balance: { sat: String(inbound) } }));
         return;
       }
+      if (req.method === "GET" && req.url === "/v1/balance/blockchain") { res.end(JSON.stringify({ confirmed_balance: "12000", unconfirmed_balance: "500" })); return; }
+      if (req.method === "GET" && req.url === "/v1/fees") { res.end(JSON.stringify({ channel_fees: [{ channel_point: "ab:0", base_fee_msat: "1000", fee_per_mil: "1" }], day_fee_sum: "0", week_fee_sum: "2", month_fee_sum: "7" })); return; }
+      if (req.method === "POST" && req.url === "/v1/switch") { res.end(JSON.stringify({ forwarding_events: [{ amt_out: "50000", fee: "3" }, { amt_out: "20000", fee: "2" }] })); return; }
       if (req.method === "GET" && req.url === "/v1/getinfo") { res.end(JSON.stringify({ alias: "altradits", version: "0.21.3-beta commit=v0.21.3", block_height: 921000, synced_to_chain: true, synced_to_graph: true, num_active_channels: 2, num_pending_channels: 0, num_peers: 3, chains: [{ chain: "bitcoin", network: "mainnet" }] })); return; }
       if (req.method === "GET" && req.url.startsWith("/v1/newaddress")) { res.end(JSON.stringify({ address: `bcrt1qfakeaddress${++addrCount}` })); return; }
       const m = req.url.match(/^\/v1\/invoice\/([0-9a-f]+)$/);
@@ -154,6 +157,12 @@ test("node dashboard: needs the admin token; shows block height against the tip,
   assert.equal(d.node.version, "0.21.3-beta");
   assert.equal(d.settlement.mode, "LND node");
   assert.equal(d.settlement.lnurlp, "/.well-known/lnurlp/<handle>");
+  // What the dashboard teaches from: the on-chain wallet, fee policy and routing.
+  assert.deepEqual(d.details.onchain, { confirmed: 12000, unconfirmed: 500 });
+  assert.deepEqual(d.details.fees, [{ point: "ab:0", baseMsat: 1000, ppm: 1 }]);
+  assert.deepEqual(d.details.forwards, { count: 2, volumeSats: 70000, feeSats: 5 });
+  assert.equal(d.details.earned.month, 7);
+  assert.deepEqual(d.chainFees, { fast: 5, normal: 3, slow: 2 });
   noNode();
   assert.equal((await call(admin.GET, "GET", "/api/admin")).body.node, null, "no node set: says so");
 });

@@ -25,7 +25,7 @@ test("every page carries its own up-to-date Content-Security-Policy (nginx sends
 
 test("every page refuses to load inside another site's frame (a meta policy can't forbid framing)", () => {
   for (const f of fs.readdirSync(root).filter((x) => x.endsWith(".html"))) {
-    const html = read(f), srcs = [...html.matchAll(/<script[^>]*\bsrc="\/(assets\/[\w.-]+\.js)"/g)].map((m) => read(m[1])).join("\n");
+    const html = read(f), srcs = [...html.matchAll(/<script[^>]*\bsrc="\/(assets\/[\w.-]+\.js)(?:\?[\w=.-]*)?"/g)].map((m) => read(m[1])).join("\n");
     assert.match(html + srcs, /window\.top !== window\.self/, `${f}: add the frame check at the top of its script`);
     assert.match(html, /<script src="\/assets\/report\.js"><\/script>/, `${f}: the Security watch reporter is missing (run: node deploy/page-csp.mjs)`);
   }

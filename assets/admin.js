@@ -1,13 +1,24 @@
-// The admin page's script: Stanley's node dashboard. Kept out of the HTML so
-// the page's Content Security Policy allows only our own script files.
+// The admin page's script: Stanley's node dashboard, built to learn from. Every
+// reading says what it means and what good looks like ("Explain everything").
+// Kept out of the HTML so the page's Content Security Policy allows only our own script files.
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const satsF = (n) => (n === null || n === undefined ? "–" : `${Math.round(Number(n) || 0).toLocaleString("en-US")} sats`);
+const num = (n) => Math.round(Number(n) || 0).toLocaleString("en-US");
+const satsF = (n) => (n === null || n === undefined ? "–" : `${num(n)} sats`);
 const ago = (iso) => { const m = (Date.now() - Date.parse(iso)) / 6e4; return m < 60 ? `${Math.round(m)}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`; };
-const kpi = (label, v, warn) => `<div class="kpi${warn ? " warn" : ""}"><small>${esc(label)}</small><div>${esc(v)}</div></div>`;
+// One reading: label, value, state ("good", "warn" or none) and what it means.
+const kpi = (label, v, state, why) => `<div class="kpi${state ? ` ${state}` : ""}"><small>${esc(label)}</small><div>${esc(v)}</div>${why ? `<span class="why">${esc(why)}</span>` : ""}</div>`;
+const judge = (ok) => (ok === null || ok === undefined ? "" : ok ? "good" : "warn");
 let token = "";
 try { token = sessionStorage.getItem("altra.admin") || ""; } catch {}
+
+// "Explain everything": on by default, remembered on this device.
+try { if (localStorage.getItem("altra.explain") === "off") { $("#explain").checked = false; document.body.classList.add("quiet"); } } catch {}
+$("#explain").addEventListener("change", (e) => {
+  document.body.classList.toggle("quiet", !e.target.checked);
+  try { localStorage.setItem("altra.explain", e.target.checked ? "on" : "off"); } catch {}
+});
 
 let toastTimer;
 function toast(text, fail = false, ms = 2600) {
@@ -39,25 +50,114 @@ $("#logout").addEventListener("click", () => {
 });
 $("#refresh").addEventListener("click", () => load());
 
-// Node and chain: block height against the public tip, sync, peers and channels.
+// Today's checklist: what an operator checks daily. true = fine, false = act, null = only Stanley can check.
+function renderChecklist(D, L) {
+  const N = D.node && !D.node.error ? D.node : null, Y = D.yebente && !D.yebente.error ? D.yebente : null, chain = D.details?.onchain;
+  const items = [
+    [N ? N.synced && (N.behind ?? 0) <= 2 : false, "Node in step with the chain", N ? `Block ${num(N.blockHeight)}, ${N.behind ?? "?"} behind the tip.` : "The website can't read the node."],
+    [N ? N.activeChannels > 0 : false, "At least one channel active", N ? `${N.activeChannels} active. With none, Lightning payments can't move.` : "Unknown until the node can be read."],
+    [Y ? Y.covered : null, "Node can pay every Ye₿ente wallet", Y ? `Owed ${satsF(Y.owedSats)}; can send ${satsF(D.liquidity.outboundSats)}.` : "Wallets are off, or the balance can't be read."],
+    [chain ? chain.confirmed >= 10_000 : null, "Some sats on-chain for emergencies", chain ? `${satsF(chain.confirmed)} on-chain. Keep about 10,000+ to pay fees if a channel ever closes by force.` : "Needs the read-only key to check."],
+    [D.stan ? Date.now() - Date.parse(D.stan.at) < 36 * 3600e3 : null, "Stan's report arrived", D.stan ? `Last one ${ago(D.stan.at)}.` : "The first goes out tomorrow morning."],
+    [null, "Channel backup copied off this machine", "After every channel opens or closes, copy channel.backup to a safe place. With your 24 words, it gets your channel funds back."],
+    [null, "24 recovery words safe on paper", "Never typed into a website or a phone. Only the node's own setup asks for them."],
+  ];
+  $("#checklist").innerHTML = items.map(([ok, title, why]) => `<li><span class="m ${ok === null ? "u" : ok ? "y" : "n"}" aria-label="${ok === null ? "check yourself" : ok ? "fine" : "needs attention"}">${ok === null ? "○" : ok ? "✓" : "✗"}</span><span><b>${esc(title)}</b><br><span class="sm muted">${esc(why)}</span></span></li>`).join("");
+}
+
+// 1. Node and chain: block height against the public tip, sync, peers and channels.
 function renderNode(D) {
   const N = D.node;
   if (!N) { $("#nodeKpis").innerHTML = ""; $("#nodeNote").innerHTML = "The node isn't connected: set <code>LND_REST_URL</code> and the macaroons in DirectAdmin."; return; }
-  if (N.error) { $("#nodeKpis").innerHTML = D.chainTip ? kpi("Chain tip (mempool.space)", D.chainTip.toLocaleString("en-US")) : ""; $("#nodeNote").textContent = N.error; return; }
-  $("#nodeKpis").innerHTML = kpi("Block height", N.blockHeight.toLocaleString("en-US")) + kpi("Behind the tip", N.behind === null ? "–" : N.behind, N.behind > 2)
-    + kpi("Synced to chain", N.synced ? "Yes" : "No", !N.synced) + kpi("Synced to graph", N.graphSynced ? "Yes" : "No", !N.graphSynced)
-    + kpi("Channels active", `${N.activeChannels}${N.pendingChannels ? ` (+${N.pendingChannels} pending)` : ""}`, !N.activeChannels) + kpi("Peers", N.peers, !N.peers);
+  if (N.error) { $("#nodeKpis").innerHTML = D.chainTip ? kpi("Chain tip (mempool.space)", num(D.chainTip), "", "The newest block the rest of the world sees.") : ""; $("#nodeNote").textContent = N.error; return; }
+  $("#nodeKpis").innerHTML =
+      kpi("Block height", num(N.blockHeight), "", "How many blocks your node has checked since 2009.")
+    + kpi("Chain tip", D.chainTip ? num(D.chainTip) : "–", "", "The newest block, as mempool.space sees it.")
+    + kpi("Behind the tip", N.behind ?? "–", judge(N.behind === null ? null : N.behind <= 2), "Good: 0–2. More means it's catching up or offline.")
+    + kpi("Synced to chain", N.synced ? "Yes" : "No", judge(N.synced), "LND agrees with Bitcoin Core's newest block. Needed to pay safely.")
+    + kpi("Synced to graph", N.graphSynced ? "Yes" : "No", judge(N.graphSynced), "LND knows the public map of channels. Needed to find routes when sending.")
+    + kpi("Channels active", `${N.activeChannels}${N.pendingChannels ? ` (+${N.pendingChannels} opening)` : ""}`, judge(N.activeChannels > 0), "Channels whose peer is online right now.")
+    + kpi("Peers", N.peers, judge(N.peers > 0), "Nodes you're connected to. A channel works only while its peer is connected.");
   $("#nodeNote").textContent = `${N.alias || "Your node"} · LND ${N.version}${N.network ? ` · ${N.network}` : ""}`;
 }
 
-// Ye₿ente and the settlement hooks: how payments reach the node and settle.
+// 2. Each channel drawn as one strip: their side, your locked reserve, what you can spend.
+function drawChannels(L) {
+  $("#chanDraw").innerHTML = L.channels.map((c) => {
+    const reserve = Math.min(c.local, c.localReserve || 0), spend = Math.max(0, c.local - reserve), pct = (n) => (c.capacity ? (n / c.capacity) * 100 : 0);
+    return `<div class="chan"><div class="sm"><b>${esc(c.alias || "Channel")}</b> · ${satsF(c.capacity)} in total${c.private ? " · private" : ""}${c.active ? "" : ' · <b class="err">offline</b>'}</div>
+      <div class="strip" role="img" aria-label="You can send ${num(spend)} sats, ${num(reserve)} locked as reserve, you can receive ${num(c.remote)} sats">
+        <span class="mine" style="width:${pct(spend)}%">${pct(spend) > 12 ? `send ${num(spend)}` : ""}</span><span class="res" style="width:${pct(reserve)}%"></span><span class="theirs" style="width:${pct(c.remote)}%">${pct(c.remote) > 12 ? `receive ${num(c.remote)}` : ""}</span>
+      </div>
+      <div class="key"><span><b style="background:var(--btc)"></b>You can send: ${satsF(spend)}</span><span><b class="res" style="background:#d9dee6"></b>Your reserve (locked): ${satsF(reserve)}</span><span><b style="background:#cfe0f3"></b>You can receive: ${satsF(c.remote)}</span></div>
+      <p class="why sm muted">Paying someone moves sats from orange to blue. Getting paid moves them back. A top-up is getting paid by yourself.</p></div>`;
+  }).join("");
+}
+
+// 4. On-chain wallet and chain fees.
+function renderChain(D) {
+  const C = D.details?.onchain, F = D.chainFees;
+  $("#chainKpis").innerHTML =
+      kpi("On-chain balance", C ? satsF(C.confirmed) : "–", C ? judge(C.confirmed >= 10_000) : "", C ? "Sats in the node's own Bitcoin wallet. Used to open channels and pay closing fees." : "Needs the read-only key.")
+    + (C?.unconfirmed ? kpi("Waiting to confirm", satsF(C.unconfirmed), "", "Arrived but not yet in a block.") : "")
+    + kpi("Fee now: fast", F ? `${F.fast} sat/vB` : "–", "", "Into the next block or two.")
+    + kpi("Fee now: slow", F ? `${F.slow} sat/vB` : "–", "", "Within about an hour. Best for opening channels.");
+}
+
+// 5. Routing: fee policy per channel, and what passed through the node.
+function renderRouting(D) {
+  const R = D.details;
+  $("#routeKpis").innerHTML =
+      kpi("Forwarded, 30 days", R?.forwards ? `${R.forwards.count}` : "–", "", "Payments that passed through your node for others.")
+    + kpi("Volume forwarded", R?.forwards ? satsF(R.forwards.volumeSats) : "–", "", "Their total size.")
+    + kpi("Earned, 30 days", R?.earned ? satsF(R.earned.month) : "–", "", "Routing fees your node collected.");
+  $("#feeList").innerHTML = R?.fees?.length ? `<table><thead><tr><th>Channel</th><th>Base fee</th><th>Rate</th><th>On 100,000 sats</th></tr></thead><tbody>${R.fees.map((f) =>
+    `<tr><td><code>${esc(f.point.slice(0, 12))}…</code></td><td>${esc(num(f.baseMsat / 1000))} sat</td><td>${esc(f.ppm)} ppm</td><td>${esc((f.baseMsat / 1000 + (100_000 * f.ppm) / 1e6).toFixed(2))} sats</td></tr>`).join("")}</tbody></table>` : '<p class="muted sm">Fee policy needs the read-only key.</p>';
+}
+
+// 6. Ye₿ente and the settlement hooks: how payments reach the node and settle.
 function renderSettlement(D) {
   const S = D.settlement, Y = D.yebente;
-  $("#ybKpis").innerHTML = (Y && !Y.error ? kpi("Wallets", Y.wallets) + kpi("Owed to wallets", satsF(Y.owedSats)) + kpi("Node covers them", Y.covered === null ? "–" : Y.covered ? "Yes" : "No", Y.covered === false) : "")
-    + kpi("Can send", satsF(D.liquidity.outboundSats)) + kpi("Can receive", satsF(D.liquidity.inboundSats)) + kpi("Open invoices", S.openInvoices);
+  $("#ybKpis").innerHTML = (Y && !Y.error ? kpi("Wallets", Y.wallets, "", "Ye₿ente wallets on this node.") + kpi("Owed to wallets", satsF(Y.owedSats), "", "What all wallets hold: sats the node owes.")
+      + kpi("Node covers them", Y.covered === null ? "–" : Y.covered ? "Yes" : "No", judge(Y.covered), "Can send must be at least what's owed.") : "")
+    + kpi("Can send", satsF(D.liquidity.outboundSats), "", "Your side of active channels, minus reserves.")
+    + kpi("Can receive", satsF(D.liquidity.inboundSats), "", "Their side: room for incoming payments.")
+    + kpi("Open invoices", S.openInvoices, "", "Asked for but not yet paid. Expired ones are cleared.");
   $("#hooks").innerHTML = [["Payments land on", S.mode], ["Ye₿ente wallets", S.wallets ? "on" : "off"], ["Lightning addresses (LNURL-pay)", S.lightningAddresses ? `${S.lightningAddresses} → ${S.lnurlp}` : "off"],
     ["Paid-invoice sweep", S.sweep], ["Payouts (send key)", S.payouts ? "set" : "not set"], ["Telebirr payouts", S.telebirr ? "on" : "off"]]
     .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
+}
+
+// The words node operators use, in plain English.
+const GLOSSARY = [
+  ["Node", "A computer running Bitcoin software that checks every rule itself, instead of trusting anyone."],
+  ["Bitcoin Core (bitcoind)", "The program that downloads and verifies the blockchain. LND asks it about blocks."],
+  ["LND", "Lightning Network Daemon: the program that runs your Lightning channels and payments."],
+  ["Block, block height", "A batch of transactions, about every 10 minutes. Height is how many blocks exist."],
+  ["Mempool", "Transactions waiting for a block. When it's full, fees rise."],
+  ["sat/vB", "Fee per unit of transaction size. Higher pays to be confirmed sooner."],
+  ["Channel", "Bitcoin locked between two nodes so they can pay each other instantly, many times."],
+  ["Capacity", "The channel's total. It only changes when the channel is opened or closed."],
+  ["Local and remote balance", "Your side (what you can send) and their side (what you can receive)."],
+  ["Inbound and outbound liquidity", "Room to receive (inbound) and to send (outbound), across all channels."],
+  ["Channel reserve", "About 1% each side must keep. If someone cheats, there is something to take."],
+  ["Invoice (BOLT11)", "A one-time payment request: amount, your node and a payment hash. Starts with lnbc."],
+  ["Payment hash and preimage", "The invoice holds a hash; paying reveals the secret behind it. That's the receipt."],
+  ["HTLC", "A payment in flight, locked by the hash, passed hop by hop. It settles or fails, never half."],
+  ["Route, hop", "The path of channels a payment takes. Each node on it is one hop."],
+  ["Private channel, route hints", "Not announced to the network. Your invoices carry hints so payers can still find you."],
+  ["Base fee, ppm", "A router's price: a fixed fee per payment plus parts per million of the amount."],
+  ["LNURL-pay, Lightning address", "name@domain: wallets look it up and ask your node for a fresh invoice."],
+  ["Macaroon", "A permission key for LND. Invoice-only can't spend; read-only can't change anything; admin can do everything and never leaves the node."],
+  ["Cooperative close", "Both sides agree to close; money returns on-chain quickly and cheaply."],
+  ["Force close", "One side closes alone. Funds wait about two weeks, and fees are higher."],
+  ["Anchor outputs", "Small outputs that let you add fee to a force close later. That's why on-chain sats matter."],
+  ["channel.backup (SCB)", "A file that, with your 24 words, lets your peers return your channel funds after a disaster."],
+  ["Seed (24 words)", "The master key to the node's wallet. Paper only. Anyone with it can take the funds."],
+  ["Custodial", "Someone else holds the keys. Ye₿ente is custodial: your node holds its users' sats."],
+];
+function renderGlossary() {
+  $("#glossary").innerHTML = GLOSSARY.map(([t, d]) => `<details><summary>${esc(t)}</summary><p>${esc(d)}</p></details>`).join("");
 }
 
 function renderVisits(V) {
@@ -88,13 +188,12 @@ $("#archives").addEventListener("click", async (e) => {
   try { await api("", { action: "archive_delete", name, confirm }); toast("Archive deleted."); load(); } catch (err) { toast(err.message, true, 6000); }
 });
 
-// Sending power: spendable after channel reserves, what Ye₿ente owes, and node top-ups.
-let spInfo = null, spPoll = null;
+// 3. Sending power: spendable after channel reserves, what Ye₿ente owes, and node top-ups.
+let spPoll = null;
 async function loadPower() {
   let P; try { P = await api("?view=liquidity"); } catch (err) { $("#spNote").textContent = err.message; return; }
-  spInfo = P;
   $("#spNote").innerHTML = P.spendable < 1000 ? `<b class="err">The node can't send anything right now.</b> Ye₿ente payments out fail until you top up.`
-    : !P.covered ? `<b class="err">Short:</b> wallets hold more than the node can send. Top up so every balance can be paid out.` : "Enough to pay out every Ye₿ente balance.";
+    : !P.covered ? `<b class="err">Short:</b> wallets hold more than the node can send. Top up so every balance can be paid out.` : `Can send ${esc(satsF(P.spendable))}: enough to pay out every Ye₿ente balance.`;
   if (!$("#spSats").value && P.suggested) $("#spSats").value = P.suggested;
   $("#spSats").min = P.min; $("#spSats").max = P.max;
   $("#spPresets").innerHTML = P.presets.map((n) => `<button type="button" class="btn${n === P.suggested ? " primary" : ""}" data-sp="${n}">${esc(satsF(n))}${n === P.suggested ? " (suggested)" : ""}</button>`).join("");
@@ -118,27 +217,28 @@ $("#spGo").addEventListener("click", async () => {
   }, 4000);
 });
 
-// Channels: alerts, balances, advice for the next channel, and the lessons log.
+// 2. Channels: the picture, alerts, the table, advice for the next channel, and the lessons log.
 async function loadChannels() {
   let L; try { L = await api("?view=channels"); } catch (err) { $("#lnAlerts").textContent = err.message; return; }
+  drawChannels(L);
   $("#lnAlerts").innerHTML = L.alerts.length ? L.alerts.map((a) => `<p class="alert ${a.level === "critical" ? "crit" : "warn"}"><b>${a.level === "critical" ? "Action needed" : "Heads-up"}:</b> ${esc(a.text)}</p>`).join("") : '<p class="ok"><b>All good:</b> enough inbound for what the node receives.</p>';
   const rows = [...L.channels, ...L.pending].map((c) => { const pct = c.capacity ? Math.round((c.local / c.capacity) * 100) : 0;
     return `<tr><td>${c.alias ? `<b>${esc(c.alias)}</b><br>` : ""}<code title="${esc(c.peer)}">${esc(c.peer.slice(0, 16))}…</code>${c.private ? " · private" : ""}</td><td>${satsF(c.capacity)}</td><td>${satsF(c.remote)}</td><td>${satsF(c.local)}</td><td><span class="bar"><i style="width:${pct}%"></i></span><small class="muted">${pct}% ours</small></td><td>${c.status ? esc(c.status) : c.active ? "Active" : '<b class="err">Offline</b>'}</td></tr>`; });
   $("#lnList").innerHTML = rows.length ? `<table><thead><tr><th>Peer</th><th>Capacity</th><th>Can receive</th><th>Ours</th><th>Balance</th><th>Status</th></tr></thead><tbody>${rows.join("")}</tbody></table>` : '<p class="muted">No channels yet.</p>';
   const A = L.advice;
-  $("#lnAdvice").innerHTML = `<p><b>Suggested size: ${satsF(A.capacity)} of inbound.</b> ${esc(A.why)}</p>${A.fees ? `<p>${esc(A.fees)}</p>` : ""}<b>Avoid</b><ul>${A.avoid.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  $("#lnAdvice").innerHTML = `<p><b>Suggested size for your next channel: ${satsF(A.capacity)} of inbound.</b> ${esc(A.why)}</p>${A.fees ? `<p>${esc(A.fees)}</p>` : ""}<b>Avoid</b><ul>${A.avoid.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
   $("#lnLessons").innerHTML = L.lessons.map((l) => `<li><b>${esc(l.at)}</b> ${esc(l.text)}</li>`).join("");
 }
 $("#lnAdd").addEventListener("click", async () => {
   try { await api("", { action: "ln_lesson", text: $("#lnLesson").value }); $("#lnLesson").value = ""; loadChannels(); } catch (err) { toast(err.message, true, 6000); }
 });
 
-// Security watch: what was turned away, and Bitcoin's attack history with our guards.
+// 7. Security watch: what was turned away, and Bitcoin's attack history with our guards.
 async function loadSecurity() {
   let W; try { W = await api("?view=security"); } catch { return; }
   const T = W.techniques, kinds = Object.keys(T);
   const today = kinds.reduce((t, k) => t + W.counts[k].today, 0), week = kinds.reduce((t, k) => t + W.counts[k].week, 0);
-  $("#secKpis").innerHTML = kpi("Turned away today", today) + kpi("Last 7 days", week);
+  $("#secKpis").innerHTML = kpi("Turned away today", today, "", "Every one was blocked. Counts show who's trying.") + kpi("Last 7 days", week);
   const s = W.solvency;
   $("#secSolvency").innerHTML = s ? `<b>Ye₿ente solvency</b> (${esc(ago(s.at))}): owed ${esc(satsF(s.owedSats))} across ${esc(s.wallets)} wallets; the node can send ${esc(satsF(s.outboundSats))}. ${s.covered === false ? '<b class="err">Short.</b>' : s.covered ? "Covered." : ""}` : "";
   $("#secEvents").innerHTML = W.events.length ? W.events.slice(0, 40).map((e) => `<div class="sm ev"><b>${esc(T[e.kind]?.name || e.kind)}</b> <span class="muted">${esc(ago(e.at))}</span><br>${esc(e.where)}${e.detail ? `<br><span class="muted">${esc(e.detail)}</span>` : ""}</div>`).join("") : '<p class="muted sm">Nothing turned away yet.</p>';
@@ -155,7 +255,7 @@ async function load() {
   try { D = await api(""); } catch { return; }
   $("#login").hidden = true; $("#app").hidden = false;
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
-  renderStan(D.stan); renderNode(D); renderSettlement(D); renderVisits(D.visits); renderSystem(D);
+  renderChecklist(D); renderStan(D.stan); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderVisits(D.visits); renderSystem(D); renderGlossary();
   loadPower(); loadChannels(); loadSecurity(); loadEmails();
 }
 token ? load() : showLogin();
