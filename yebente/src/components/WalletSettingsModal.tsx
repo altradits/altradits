@@ -21,8 +21,8 @@ import {
   getBlinkSovereignUsername,
   saveBlinkSovereignUsername,
 } from '../services/blinkService';
-import { hasServerWallet, createServerWallet, restoreServerWallet, setRecoveryEmail, requestEmailRecovery, finishEmailRecovery } from '../services/altraditsWallet';
-import { downloadRecoveryCard, shareRecoveryCard, canShareCard } from '../services/recoveryCard';
+import { hasServerWallet, setRecoveryEmail, lockServerWallet, forgetServerWallet } from '../services/altraditsWallet';
+import { PhonesAndSecurity } from './PhonesAndSecurity';
 import { biometricSupported, biometricOn, enableBiometric, disableBiometric } from '../services/biometric';
 import { Fingerprint } from 'lucide-react';
 import {
@@ -36,8 +36,6 @@ import {
   Check,
   AlertCircle,
   RefreshCw,
-  Download,
-  Share2,
 } from 'lucide-react';
 
 interface WalletSettingsModalProps {
@@ -46,8 +44,7 @@ interface WalletSettingsModalProps {
   wallet: UserWallet;
   onUpdateWallet: (updated: UserWallet) => void;
   onServerWalletChange?: () => void;
-  recoveryToken?: string;
-  onRecoveryDone?: () => void;
+  onOpenGate?: () => void;
   onEjectWallet: () => void;
   onWipeWallet: () => void;
 }
@@ -58,8 +55,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   wallet,
   onUpdateWallet,
   onServerWalletChange,
-  recoveryToken,
-  onRecoveryDone,
+  onOpenGate,
   onEjectWallet,
   onWipeWallet,
 }) => {
@@ -74,7 +70,6 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   const [isVerifyingWebln, setIsVerifyingWebln] = useState(false);
   const [weblnStatusMessage, setWeblnStatusMessage] = useState<string>('');
   const [validationError, setValidationError] = useState<string>('');
-  const [generatedMessage, setGeneratedMessage] = useState<string>('');
 
   const [copiedBlink, setCopiedBlink] = useState(false);
   const [copiedExternal, setCopiedExternal] = useState(false);
@@ -91,7 +86,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   const [isSyncingOutbox, setIsSyncingOutbox] = useState<boolean>(false);
   const [syncStatusMsg, setSyncStatusMsg] = useState<string>('');
 
-  // Vault Encryption and Master PIN state
+  // Vault encryption (external wallets only)
   const [vaultProtected, setVaultProtected] = useState(hasEncryptedVault());
   const [pinInput, setPinInput] = useState('');
   const [confirmPinInput, setConfirmPinInput] = useState('');
@@ -99,23 +94,11 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   const [showPinSetup, setShowPinSetup] = useState(false);
 
   // The Altradits wallet (custodial, on the Altradits node)
-  const [server, setServer] = useState<boolean>(hasServerWallet());
-  const [walletPin, setWalletPin] = useState('');
-  const [walletPinConfirm, setWalletPinConfirm] = useState('');
-  const [recoveryShown, setRecoveryShown] = useState('');
-  const [copiedRecovery, setCopiedRecovery] = useState(false);
-  const [restoreMode, setRestoreMode] = useState(false);
-  const [restorePhrase, setRestorePhrase] = useState('');
+  const server = hasServerWallet();
   const [walletBusy, setWalletBusy] = useState(false);
-  // A new wallet's handle starts empty (the server picks a free one when left empty).
-  const [newHandle, setNewHandle] = useState('');
-  const [newEmail, setNewEmail] = useState('');
-  const [recoverEmail, setRecoverEmail] = useState('');
   const [walletMsg, setWalletMsg] = useState('');
   const [emailInput, setEmailInput] = useState('');
   const [emailPin, setEmailPin] = useState('');
-  const [shareDone, setShareDone] = useState(false);
-  const [phraseVisible, setPhraseVisible] = useState(false);
   const [bioSupported, setBioSupported] = useState(false);
   const [bioActive, setBioActive] = useState(biometricOn());
   const [bioPin, setBioPin] = useState('');
@@ -285,7 +268,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
 
   const handleSavePin = async () => {
     if (pinInput.length < 4) {
-      setValidationError('Master PIN must be at least 4 digits.');
+      setValidationError('The vault PIN needs at least 4 digits.');
       return;
     }
     if (pinInput !== confirmPinInput) {
@@ -319,42 +302,6 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
       wipeVaultStorage();
       onWipeWallet();
       onClose();
-    }
-  };
-
-  const handleGenerateInAppLightningWallet = async () => {
-    setValidationError('');
-    if (!/^\d{6}$/.test(walletPin)) {
-      setValidationError('Master PIN must be 6 digits.');
-      return;
-    }
-    if ((!restoreMode || recoveryToken) && walletPin !== walletPinConfirm) {
-      setValidationError('PIN confirmation does not match.');
-      return;
-    }
-    setWalletBusy(true);
-    try {
-      if (recoveryToken) {
-        await finishEmailRecovery(recoveryToken, walletPin);
-        onRecoveryDone?.();
-      } else if (restoreMode) {
-        await restoreServerWallet(restorePhrase, walletPin);
-      } else {
-        const r = await createServerWallet(walletPin, newHandle.trim(), newEmail.trim());
-        setRecoveryShown(r.recovery);
-      }
-      setServer(true);
-      setSelectedType('custodial');
-      setWalletPin('');
-      setWalletPinConfirm('');
-      setRestorePhrase('');
-      setGeneratedMessage('In-App Lightning Wallet Active: 100% off-chain with 0 on-chain fees.');
-      setTimeout(() => setGeneratedMessage(''), 5000);
-      onServerWalletChange?.();
-    } catch (err: unknown) {
-      setValidationError(err instanceof Error ? err.message : 'Wallet service unavailable.');
-    } finally {
-      setWalletBusy(false);
     }
   };
 
@@ -434,185 +381,10 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                 <span className="text-[var(--yb-on-surface-variant)]">Transaction Rail</span>
                 <span className="font-mono text-emerald-400 font-semibold">100% Off-Chain Lightning (0 On-Chain Fees)</span>
               </div>
-
-              {(!server || recoveryToken) && (
-                <div className="space-y-3">
-                  {!restoreMode && !recoveryToken && (
-                    <div>
-                      <label className="block text-xs font-semibold text-[var(--yb-secondary)] mb-1.5">
-                        Custom Lightning Handle
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={newHandle}
-                          name="yb-handle"
-                          autoComplete="off"
-                          data-lpignore="true"
-                          data-1p-ignore="true"
-                          spellCheck={false}
-                          onChange={(e) => setNewHandle(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 20))}
-                          placeholder="username"
-                          className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] pr-28"
-                        />
-                        <span className="absolute right-3 top-3 font-mono text-xs text-[var(--yb-on-surface-variant)]">
-                          @{walletDomain}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {!restoreMode && !recoveryToken && (
-                    <div>
-                      <label className="block text-xs font-semibold text-[var(--yb-secondary)] mb-1.5">Email (optional)</label>
-                      <input
-                        type="email"
-                        name="yb-email"
-                        autoComplete="off"
-                        data-lpignore="true"
-                        data-1p-ignore="true"
-                        value={newEmail}
-                        onChange={(e) => setNewEmail(e.target.value.slice(0, 200))}
-                        placeholder="you@email.com"
-                        className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
-                      />
-                    </div>
-                  )}
-
-                  {restoreMode && !recoveryToken && (
-                    <div>
-                      <label className="block text-xs font-semibold text-[var(--yb-secondary)] mb-1.5">Recovery phrase</label>
-                      <textarea
-                        rows={3}
-                        value={restorePhrase}
-                        onChange={(e) => setRestorePhrase(e.target.value)}
-                        autoComplete="off"
-                        className="yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] resize-none"
-                      />
-                    </div>
-                  )}
-
-                  {restoreMode && !recoveryToken && (
-                    <div className="space-y-2 pt-1">
-                      <label className="block text-xs font-semibold text-[var(--yb-secondary)] mb-1.5">Email</label>
-                      <input
-                        type="email"
-                        name="yb-recover-email"
-                        autoComplete="off"
-                        data-lpignore="true"
-                        data-1p-ignore="true"
-                        value={recoverEmail}
-                        onChange={(e) => setRecoverEmail(e.target.value.slice(0, 200))}
-                        placeholder="you@email.com"
-                        className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
-                      />
-                      <button
-                        type="button"
-                        disabled={walletBusy || !recoverEmail.includes('@')}
-                        onClick={async () => {
-                          setWalletBusy(true); setValidationError(''); setWalletMsg('');
-                          try { const r = await requestEmailRecovery(recoverEmail.trim()); setWalletMsg(r.message); }
-                          catch (err: unknown) { setValidationError(err instanceof Error ? err.message : 'Wallet service unavailable.'); }
-                          finally { setWalletBusy(false); }
-                        }}
-                        className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center gap-2 hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50"
-                      >
-                        Send recovery link
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[11px] text-[var(--yb-on-surface-variant)] mb-1">Enter Master PIN</label>
-                      <input
-                        type="password"
-                        inputMode="numeric"
-                        maxLength={6}
-                        name="yb-walletpin"
-                        autoComplete="new-password"
-                        data-lpignore="true"
-                        data-1p-ignore="true"
-                        value={walletPin}
-                        onChange={(e) => setWalletPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        className="yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.4em]"
-                      />
-                    </div>
-                    {(!restoreMode || recoveryToken) && (
-                      <div>
-                        <label className="block text-[11px] text-[var(--yb-on-surface-variant)] mb-1">Confirm Master PIN</label>
-                        <input
-                          type="password"
-                          inputMode="numeric"
-                          maxLength={6}
-                          name="yb-walletpinconfirm"
-                        autoComplete="new-password"
-                        data-lpignore="true"
-                        data-1p-ignore="true"
-                        value={walletPinConfirm}
-                          onChange={(e) => setWalletPinConfirm(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.4em]"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleGenerateInAppLightningWallet}
-                    disabled={walletBusy}
-                    className="w-full h-11 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-xs flex items-center justify-center disabled:opacity-50"
-                  >
-                    {restoreMode || recoveryToken ? 'Restore' : 'Generate In-App Lightning Wallet'}
-                  </button>
-                  {!recoveryToken && <button
-                    type="button"
-                    onClick={() => { setRestoreMode(!restoreMode); setValidationError(''); setWalletMsg(''); }}
-                    className="w-full text-center text-[11px] font-semibold text-[var(--yb-primary)] hover:underline"
-                  >
-                    {restoreMode ? 'Generate In-App Lightning Wallet' : 'Restore'}
-                  </button>}
-                  {walletMsg && <p className="text-xs text-emerald-300 px-1">{walletMsg}</p>}
-                </div>
-              )}
-
-              {recoveryShown && (
-                <div className="p-3 rounded-2xl bg-[var(--yb-surface-container-high)] border border-[var(--yb-primary)]/50 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-semibold text-[var(--yb-secondary)]">Recovery phrase</span>
-                    <button
-                      type="button"
-                      onClick={() => { navigator.clipboard.writeText(recoveryShown); setCopiedRecovery(true); setTimeout(() => setCopiedRecovery(false), 2000); }}
-                      className="text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
-                    >
-                      {copiedRecovery ? <Check className="w-3.5 h-3.5 text-[var(--yb-secondary)]" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-                  {/* Hidden until tapped, so it isn't caught by a screen recording or someone nearby. */}
-                  <p
-                    onClick={() => setPhraseVisible(!phraseVisible)}
-                    className={`yb-sensitive font-mono text-sm leading-relaxed text-[var(--yb-on-surface)] select-all ${phraseVisible ? '' : 'yb-veiled'}`}
-                  >
-                    {recoveryShown}
-                  </p>
-                  {!phraseVisible && <p className="text-[11px] text-[var(--yb-on-surface-variant)]">Tap to show</p>}
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <button type="button" onClick={() => downloadRecoveryCard({ address: wallet.blinkAddress || '', phrase: recoveryShown })} className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center gap-2 hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50">
-                      <Download className="w-3.5 h-3.5" /> Download
-                    </button>
-                    {canShareCard() && (
-                      <button type="button" onClick={async () => setShareDone(await shareRecoveryCard({ address: wallet.blinkAddress || '', phrase: recoveryShown }))} className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center gap-2 hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50">
-                        {shareDone ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />} Share to WhatsApp
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {generatedMessage && (
-                <div className="p-3 rounded-2xl bg-emerald-950/30 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
-                  <Check className="w-4 h-4 shrink-0 text-emerald-400" />
-                  <span>{generatedMessage}</span>
+              {!server && (
+                <div className="p-3 rounded-2xl bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] space-y-2">
+                  <p className="text-xs text-[var(--yb-on-surface-variant)]">Log in to your Ye₿ente wallet, or create one, from the start screen.</p>
+                  <button type="button" onClick={() => { onOpenGate?.(); onClose(); }} className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center hover:bg-[var(--yb-surface-container-high)]">Log in or create a wallet</button>
                 </div>
               )}
 
@@ -733,6 +505,8 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                   {walletMsg && <p className="text-xs text-emerald-300 px-1">{walletMsg}</p>}
                 </div>
               )}
+
+              {server && <PhonesAndSecurity onChanged={onServerWalletChange} />}
             </div>
           )}
 
@@ -844,7 +618,8 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
             )}
           </div>
 
-          {/* Sovereign Vault Encryption Section */}
+          {/* Sovereign Vault Encryption Section (external wallets only; the Ye₿ente wallet has one PIN) */}
+          {!server && (
           <div className="space-y-2 pt-2 border-t border-[var(--yb-outline-variant)]/60">
             <div className="flex justify-between items-center px-1 text-xs">
               <span className="text-[var(--yb-secondary)] font-semibold">Vault Security</span>
@@ -865,12 +640,12 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                 onClick={() => setShowPinSetup(true)}
                 className="w-full py-2.5 px-3 rounded-xl bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] hover:border-[var(--yb-primary)] text-[var(--yb-secondary)] hover:text-[var(--yb-on-surface)] text-xs font-mono text-center"
               >
-                {vaultProtected ? 'Update Master PIN' : 'Set Master PIN'}
+                {vaultProtected ? 'Change vault PIN' : 'Set vault PIN'}
               </button>
             ) : (
               <div className="space-y-2 p-3 rounded-2xl bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)]">
                 <div>
-                  <label className="block text-[11px] text-[var(--yb-on-surface-variant)] mb-1">Enter Master PIN (4-6 digits)</label>
+                  <label className="block text-[11px] text-[var(--yb-on-surface-variant)] mb-1">Vault PIN (4-6 digits)</label>
                   <input
                     type="password"
                     maxLength={6}
@@ -881,7 +656,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-[var(--yb-on-surface-variant)] mb-1">Confirm Master PIN</label>
+                  <label className="block text-[11px] text-[var(--yb-on-surface-variant)] mb-1">Confirm vault PIN</label>
                   <input
                     type="password"
                     maxLength={6}
@@ -914,6 +689,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
               </div>
             )}
           </div>
+          )}
 
           {/* Validation error display */}
           {validationError && (
@@ -932,8 +708,29 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
             {wallet.isConnected ? 'Save Settings' : 'Connect Wallet'}
           </button>
 
-          {/* Disconnect & Wipe Options */}
-          {wallet.isConnected && (
+          {/* This phone: lock or forget the Ye₿ente wallet; disconnect or wipe an external one */}
+          {server ? (
+            <div className="pt-2 border-t border-[var(--yb-outline-variant)]/60 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={async () => { await lockServerWallet(); onClose(); }}
+                className="h-10 rounded-xl bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-medium text-xs flex items-center justify-center"
+              >
+                Lock now
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!confirm('Remove the wallet from this phone? Your sats stay safe; log in again with your email and PIN, or your recovery words.')) return;
+                  try { await lockServerWallet(); } catch { /* offline: forget locally anyway */ }
+                  await forgetServerWallet(); onWipeWallet(); onClose();
+                }}
+                className="h-10 rounded-xl bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] hover:border-red-500/60 text-[var(--yb-on-surface-variant)] hover:text-red-400 font-medium text-xs flex items-center justify-center"
+              >
+                Remove from this phone
+              </button>
+            </div>
+          ) : wallet.isConnected && (
             <div className="pt-2 border-t border-[var(--yb-outline-variant)]/60 grid grid-cols-2 gap-2">
               <button
                 type="button"

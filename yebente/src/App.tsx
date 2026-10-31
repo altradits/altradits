@@ -28,7 +28,8 @@ import { SendBtcModal } from './components/SendBtcModal';
 import { SendMpesaModal } from './components/SendMpesaModal';
 import { TransactionDetailModal } from './components/TransactionDetailModal';
 import { WalletSettingsModal } from './components/WalletSettingsModal';
-import { hasServerWallet, fetchServerWallet, fetchServerHistory, forgetServerWallet } from './services/altraditsWallet';
+import { WalletGate } from './components/WalletGate';
+import { access, Access, hasServerWallet, fetchServerWallet, fetchServerHistory, forgetServerWallet, lockServerWallet } from './services/altraditsWallet';
 
 export default function App() {
   const [wallet, setWallet] = useState<UserWallet>(getStoredWallet);
@@ -60,16 +61,54 @@ export default function App() {
   >('none');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
-  // Opened from a recovery email (/yebente?recover=...): Settings asks for a new PIN.
+  // Opened from a recovery email (/yebente#recover=..., older links ?recover=...):
+  // the start screen asks for a new PIN.
   const [recoveryToken, setRecoveryToken] = useState<string>(() => {
-    try { return new URLSearchParams(window.location.search).get('recover') || ''; } catch { return ''; }
+    try {
+      return new URLSearchParams(window.location.hash.slice(1)).get('recover')
+        || new URLSearchParams(window.location.search).get('recover') || '';
+    } catch { return ''; }
   });
   useEffect(() => {
     if (!recoveryToken) return;
     // The link's token stays out of the address bar and history from here on.
     window.history.replaceState(null, '', window.location.pathname);
-    setActiveModal('wallet_settings');
   }, [recoveryToken]);
+
+  // Open, locked (this phone is trusted, PIN or fingerprint opens it) or none
+  // (log in, create, or recover). Locked hides the balance and history.
+  const [walletAccess, setWalletAccess] = useState<Access>(access);
+  const [gateOpen, setGateOpen] = useState(false); // an external-wallet user asked for the start screen
+  const [externalSetup, setExternalSetup] = useState(false); // chose "my own Lightning wallet"
+  const walletType = useRef(wallet.type);
+  walletType.current = wallet.type;
+  useEffect(() => {
+    const update = () => {
+      const a = access();
+      setWalletAccess(a);
+      if (a === 'open') return;
+      // Nothing of the wallet stays on screen or in memory while it's locked.
+      if (walletType.current !== 'custodial') return;
+      setWallet((cur) => ({ ...cur, satsBalance: 0, btcBalance: 0 }));
+      setTransactions([]);
+    };
+    window.addEventListener('yebente:access', update);
+    return () => window.removeEventListener('yebente:access', update);
+  }, []);
+  const external = wallet.isConnected && wallet.type === 'non-custodial';
+  const showGate = Boolean(recoveryToken) || gateOpen || (walletAccess !== 'open' && !external && !externalSetup);
+
+  // Locks itself after 3 minutes away from the app, like a banking app.
+  useEffect(() => {
+    let hiddenAt = 0;
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+      if (hiddenAt && Date.now() - hiddenAt > 3 * 60_000 && hasServerWallet()) { setActiveModal('none'); lockServerWallet(); }
+      hiddenAt = 0;
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
 
   // Load live rates with Blink as primary engine
   const loadRates = useCallback(async () => {
@@ -171,7 +210,7 @@ export default function App() {
   };
 
   const handleWipeWallet = () => {
-    forgetServerWallet();
+    void forgetServerWallet();
     const wiped = wipeWallet();
     setWallet(wiped);
     setTransactions([]);
@@ -217,7 +256,7 @@ export default function App() {
         {/* Top Bar with brand yebente, offline badge, and settings */}
         <TopBar
           wallet={wallet}
-          onOpenWalletSettings={() => setActiveModal('wallet_settings')}
+          onOpenWalletSettings={() => { if (!showGate) setActiveModal('wallet_settings'); }}
           isFrameMode={isFrameMode}
           onToggleFrameMode={() => setIsFrameMode(!isFrameMode)}
           isOnline={isOnline}
@@ -225,7 +264,17 @@ export default function App() {
           onSyncOffline={handleManualSyncOffline}
         />
 
-        {/* Main Content Area */}
+        {showGate ? (
+          <WalletGate
+            key={recoveryToken ? 'recover' : 'gate'}
+            locked={walletAccess === 'locked'}
+            recoveryToken={recoveryToken}
+            onOpen={() => { setGateOpen(false); setExternalSetup(false); setWalletAccess(access()); firstSync.current = true; syncServerWallet(); }}
+            onRecoveryDone={() => setRecoveryToken('')}
+            onHold={() => setGateOpen(true)}
+            onUseExternal={() => { setGateOpen(false); setExternalSetup(true); setWallet((w) => ({ ...w, type: 'non-custodial' })); setActiveModal('wallet_settings'); }}
+          />
+        ) : (
         <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-6">
           {ratesError && rates.btcUsd === 0 && (
             <div className="p-3 rounded-2xl bg-amber-950/40 border border-amber-500/30 text-amber-300 text-xs font-mono">
@@ -258,6 +307,7 @@ export default function App() {
             onSelectTransaction={(tx) => setSelectedTx(tx)}
           />
         </main>
+        )}
       </div>
 
       {/* Modals. Each action starts fresh when opened (the key changes), so
@@ -311,8 +361,7 @@ export default function App() {
         wallet={wallet}
         onUpdateWallet={handleUpdateWallet}
         onServerWalletChange={syncServerWallet}
-        recoveryToken={recoveryToken}
-        onRecoveryDone={() => { setRecoveryToken(''); syncServerWallet(); }}
+        onOpenGate={() => setGateOpen(true)}
         onEjectWallet={handleEjectWallet}
         onWipeWallet={handleWipeWallet}
       />

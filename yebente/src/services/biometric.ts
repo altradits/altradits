@@ -92,3 +92,20 @@ export async function approveWithBiometric() {
     signature: b64u(res.signature),
   };
 }
+
+// Unlocking with the fingerprint / face: the same signed approval, over the unlock challenge.
+export async function approveUnlock(challenge: string, rpId: string, credentials: string[]) {
+  const id = biometricId();
+  if (!id || !credentials.includes(id)) throw new Error('Fingerprint is not on for this phone. Use the PIN.');
+  let cred: PublicKeyCredential | null;
+  try {
+    cred = (await navigator.credentials.get({
+      publicKey: { challenge: fromB64u(challenge), rpId, allowCredentials: [{ type: 'public-key', id: fromB64u(id) }], userVerification: 'required', timeout: 60000 },
+    })) as PublicKeyCredential | null;
+  } catch {
+    cred = null;
+  }
+  if (!cred) throw new Error('Fingerprint not confirmed. Try again, or use the PIN.');
+  const res = cred.response as AuthenticatorAssertionResponse;
+  return { id: cred.id, clientDataJSON: b64u(res.clientDataJSON), authenticatorData: b64u(res.authenticatorData), signature: b64u(res.signature) };
+}
