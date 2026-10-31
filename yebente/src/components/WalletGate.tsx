@@ -25,6 +25,11 @@ const field = 'w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-var
 const primary = 'w-full h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50';
 const secondary = 'w-full h-12 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50';
 const link = 'text-xs font-semibold text-[var(--yb-primary)] hover:underline';
+// Links from altradits.com open a screen directly: /yebente#create (the navbar's
+// Wallet link) or /yebente#login. A phone that already has a wallet still unlocks.
+const linked = (): Mode | null => {
+  try { const h = window.location.hash.slice(1); return h === 'create' || h === 'login' ? h : null; } catch { return null; }
+};
 const digits = (v: string, n = 6) => v.replace(/\D/g, '').slice(0, n);
 
 const PinInput: React.FC<{ value: string; onChange: (v: string) => void; label: string; name: string; autoFocus?: boolean }> = ({ value, onChange, label, name, autoFocus }) => (
@@ -37,7 +42,7 @@ const PinInput: React.FC<{ value: string; onChange: (v: string) => void; label: 
 );
 
 export const WalletGate: React.FC<Props> = ({ locked, recoveryToken, onOpen, onRecoveryDone, onUseExternal, onHold }) => {
-  const [mode, setMode] = useState<Mode>(recoveryToken ? 'newpin' : locked ? 'unlock' : 'start');
+  const [mode, setMode] = useState<Mode>(recoveryToken ? 'newpin' : locked ? 'unlock' : linked() || 'start');
   const [pin, setPin] = useState('');
   const [pin2, setPin2] = useState('');
   const [email, setEmail] = useState('');
@@ -55,6 +60,7 @@ export const WalletGate: React.FC<Props> = ({ locked, recoveryToken, onOpen, onR
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
   useEffect(() => { if (recoveryToken) setMode('newpin'); }, [recoveryToken]);
+  useEffect(() => { if (linked()) window.history.replaceState(null, '', window.location.pathname); }, []);
 
   const go = (m: Mode) => { setMode(m); setError(''); setNote(''); setPin(''); setPin2(''); };
   const run = async (fn: () => Promise<void>) => {
@@ -149,6 +155,7 @@ export const WalletGate: React.FC<Props> = ({ locked, recoveryToken, onOpen, onR
       {mode === 'create' && (
         <>
           <div className="flex items-center gap-2">{back()}<h1 className="text-lg font-bold">Create a wallet</h1></div>
+          <p className="text-xs text-[var(--yb-on-surface-variant)]">Already have one? <button type="button" className={link} onClick={() => go('login')}>Log in</button> · New to Bitcoin? <a className={link} href="/wallet">See the 1-minute guide</a></p>
           <PinInput value={pin} onChange={setPin} label="Choose a 6-digit PIN (avoid 123456 or 112233)" name="yb-new-pin" autoFocus />
           <PinInput value={pin2} onChange={setPin2} label="The same PIN again" name="yb-new-pin2" />
           <label className="block">

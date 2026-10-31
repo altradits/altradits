@@ -33,6 +33,8 @@ a{color:var(--blue)}
 .topnav{display:flex;gap:1.1rem}
 .topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap}
 @media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
+/* Narrow phones: the menu moves under the logo instead of spilling off the screen */
+@media (max-width:420px){.top{flex-wrap:wrap;row-gap:.35rem}}
 .topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
 .hero{padding:3rem 0 2.5rem;max-width:46rem}
 h1{font:800 clamp(2.2rem,6.5vw,3.6rem)/1.03 'Bricolage Grotesque',sans-serif;margin:.4rem 0 .9rem;letter-spacing:-.01em}
@@ -102,7 +104,7 @@ a:hover,.btn:hover,button:hover{transform:none!important}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin" aria-current="page">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a></nav></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/va">Tasks</a><a href="/products">Free kits</a><a href="/bitcoin" aria-current="page">Accept <span aria-hidden="true">₿itcoin</span><span class="sr-only">Bitcoin</span></a><a href="/yebente#create">Wallet</a></nav></div>
 
   <header class="hero">
     <h1>Bitcoin knowledge, <em>shared freely.</em></h1>
@@ -128,6 +130,7 @@ a:hover,.btn:hover,button:hover{transform:none!important}
       <ul><li>Reading the whitepaper, BIPs and Lightning's BOLTs together</li><li>How Bitcoin Core reviews and merges code</li><li>Making your first contribution</li></ul>
       <a href="mailto:hello@altradits.com?subject=Bitcoin%20stage%204%3A%20building">Ask for a session →</a></div>
   </div>
+  <p class="intro">No wallet yet? <a href="/wallet">Get your first Bitcoin wallet in a minute</a>, free, then work your way to holding your own keys.</p>
 </div></section>
 
 <section><div class="wrap">
@@ -178,13 +181,13 @@ a:hover,.btn:hover,button:hover{transform:none!important}
 <section><div class="wrap"><div class="faq">
   <h2>Questions</h2>
   <details><summary>Is it really free?</summary><p>Yes. Learning sessions and help getting started cost nothing, with or without sponsors. The Bitcoin network charges its own small fees when you send a payment; those are paid to the network, not to us.</p></details>
-  <details><summary>Will you ever hold my Bitcoin or ask for my recovery words?</summary><p>No, never. You hold your own keys from your first sats. Anyone who asks for your recovery words, even claiming to be us, is trying to steal from you.</p></details>
+  <details><summary>Will you ever hold my Bitcoin or ask for my recovery words?</summary><p>We never ask for your recovery words: anyone who does, even claiming to be us, is trying to steal from you. Our lessons and setups leave your keys with you. The one exception is one you choose: <a href="/wallet">Ye₿ente, our starter wallet</a>, holds small amounts for you so you can begin in a minute, and we help you move to your own keys when you're ready.</p></details>
   <details><summary>Do you give investment advice?</summary><p>No. We teach how Bitcoin works and how to use it safely. No price talk, no predictions.</p></details>
   <details><summary>I run a business. Can you help me accept Bitcoin?</summary><p>Yes, as part of stage 2: we set it up with you, show your team how it works, and your keys stay with you.</p></details>
   <details><summary>How do we partner or sponsor?</summary><p>Email hello@altradits.com with what you have in mind. Sponsors get a plain report of what their support made possible, and credit if they want it.</p></details>
 </div></div></section>
 
-<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<footer class="sitefoot"><div class="wrap">© Altradits · <a href="/va">Tasks</a> · <a href="/products">Free kits</a> · <a href="/bitcoin">Accept Bitcoin</a> · <a href="/wallet">Get a Bitcoin wallet</a> · <a href="/donate">Donate</a> · <a href="/collect">Collect an order</a> · <a href="/join">Join the team</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 
 <script type="module">
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
