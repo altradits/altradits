@@ -140,7 +140,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div class="row"><label class="switch"><input type="checkbox" id="explain" checked> Explain everything</label><span class="sm muted" id="checked"></span><button type="button" class="btn" id="refresh"><span class="spin" aria-hidden="true">↻</span>Refresh</button><button type="button" class="btn" id="logout">Sign out</button></div>
   </header>
 
-  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="learn">Learn</button></nav>
+  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="learn">Learn</button></nav>
   <div class="pane" data-pane="overview">
   <section class="panel" aria-labelledby="hCheck">
     <h2 id="hCheck">Today's checklist</h2>
@@ -358,6 +358,103 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       <h2 id="hHist">Bitcoin's attack history, and our guards</h2>
       <div class="learn"><p>Real attacks from Bitcoin's history, the lesson each taught, and how this site guards against it.</p></div>
       <div class="events" id="secHistory"></div>
+    </section>
+  </div>
+  </div>
+
+  <div class="pane" data-pane="choumi">
+  <section class="panel" aria-labelledby="hDeadman">
+    <h2 id="hDeadman">Deadman's Switch</h2>
+    <div class="learn"><p><b>Step 1</b> runs in plain code (even with no AI key): if an intrusion trigger fires or you press the switch, every money-out action, top-up, and external email freezes at once while public pages keep loading. <b>Step 2</b> wakes Choumi and the response departments (Web/Bitcoin, Operations, Community Care, Personal Assistant) while Social and Marketing stay silent.</p></div>
+    <div class="kpis" id="dmKpis"></div>
+    <p class="sm" id="dmReason"></p>
+    <div id="dmFrozen" class="sm"></div>
+    <h3 class="sub">Neutralized checklist (required to lift lockdown)</h3>
+    <div id="dmChecklist" class="sm"></div>
+    <div class="row">
+      <input id="dmNote" placeholder="Reason to trip or note when lifting" aria-label="Deadman's Switch note" style="max-width:22rem">
+      <button type="button" class="btn" id="dmSaveCheck">Save checklist</button>
+      <button type="button" class="btn primary" id="dmToggle">Trip Deadman's Switch</button>
+      <button type="button" class="btn" id="dmDrill">Run local security drill</button>
+    </div>
+    <p class="sm muted" id="dmDrillNote"></p>
+  </section>
+
+  <div class="grid2">
+    <section class="panel" aria-labelledby="hAiStatus">
+      <h2 id="hAiStatus">AI status &amp; circuit breaker</h2>
+      <div class="learn"><p>If the Anthropic API key is missing, out of credits, rate-limited, or over the monthly ceiling, AI pauses cleanly and the website keeps running.</p></div>
+      <div class="kpis" id="aiKpis"></div>
+      <p class="sm" id="aiNote"></p>
+      <div class="row"><button type="button" class="btn primary" id="aiRecheck">Re-check AI</button></div>
+    </section>
+
+    <section class="panel" aria-labelledby="hPowerBtns">
+      <h2 id="hPowerBtns">Department power buttons</h2>
+      <div class="learn"><p>Every department starts <b>OFF</b> by default. Off means zero AI model calls. Only you can toggle a button; an intrusion overrides the response team on and restores your settings when lifted.</p></div>
+      <div class="row" style="margin-bottom:.6rem">
+        <button type="button" class="btn" id="deptAllOn">Turn all on</button>
+        <button type="button" class="btn" id="deptAllOff">Turn all off</button>
+      </div>
+      <div id="deptPowerList" class="scroll"></div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="hDepts">
+    <h2 id="hDepts">Choumi Yakunte &amp; the 5 departments</h2>
+    <div class="learn"><p>Each specialist works in the background on open-source engineering, Ye₿ente care, operations, and BitDevs Kisumu. Choumi reviews every output through the 4-step QA rubric before you see it.</p></div>
+    <div id="choumiDepts" class="scroll"></div>
+    <h3 class="sub">Queue a department task</h3>
+    <div class="row">
+      <select id="choumiTaskDept" class="sel" aria-label="Department">
+        <option value="">Auto-route department</option>
+        <option value="tech">Web, Automation &amp; Bitcoin</option>
+        <option value="admin">Operations &amp; Admin</option>
+        <option value="growth">Community Care</option>
+        <option value="personal">Personal Assistant</option>
+        <option value="social">Social &amp; Content</option>
+      </select>
+      <input id="choumiInput" placeholder="Task title or note…" aria-label="Task title or note" style="flex:1;min-width:16rem">
+      <button type="button" class="btn primary" id="choumiQueueBtn">Queue task</button>
+      <button type="button" class="btn" id="choumiWorkBtn">Run next queued task</button>
+    </div>
+    <p class="sm" id="choumiActionReply"></p>
+    <h3 class="sub">Task queue &amp; security holds</h3>
+    <div id="choumiTasks" class="scroll"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="hApprovals">
+    <h2 id="hApprovals">Approvals waiting for Stanley</h2>
+    <div class="learn"><p>Nothing goes out in your name without your approval. Draft emails, community notices, and social drafts wait here until you approve or reject them.</p></div>
+    <div id="choumiApprovals"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel" aria-labelledby="hLearning">
+      <h2 id="hLearning">Continual learning engine</h2>
+      <div class="learn"><p>Every revision, QA escape, security drill, and Stanley override is distilled into a reusable rule (scrubbed of PII and screened for prompt injection).</p></div>
+      <div class="kpis" id="learnKpis"></div>
+      <div id="learnByDept" class="sm muted" style="margin-bottom:.6rem"></div>
+      <div class="row">
+        <select id="learnDept" class="sel" aria-label="Rule department">
+          <option value="all">All departments</option>
+          <option value="tech">Web &amp; Bitcoin</option>
+          <option value="admin">Operations &amp; Admin</option>
+          <option value="growth">Community Care</option>
+          <option value="personal">Personal Assistant</option>
+          <option value="social">Social &amp; Content</option>
+        </select>
+        <input id="learnRuleText" placeholder="Pin a standing rule for the team…" aria-label="New standing rule" style="flex:1;min-width:12rem">
+        <button type="button" class="btn" id="learnAddBtn">Pin rule</button>
+        <button type="button" class="btn" id="learnConsolidateBtn">Consolidate</button>
+      </div>
+      <div id="learnRules" class="events" style="margin-top:.6rem"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="hSettling">
+      <h2 id="hSettling">Settling-in report &amp; open questions</h2>
+      <div class="learn"><p>Tracked in GitHub so every tool and session shares the same memory and rules.</p></div>
+      <div id="choumiSettling" class="sm"></div>
     </section>
   </div>
   </div>

@@ -102,9 +102,7 @@ export async function GET(request) {
     return json({ ...(await securityView()), deadman: deadmanStatus(), history: BITCOIN_ATTACKS });
   }
   if (view === "choumi" || view === "ai") {
-    const { deptPowerView } = await import("../lib/ai.js");
-    const { deadmanStatus } = await import("../lib/deadman.js");
-    return json({ ai: deptPowerView(), deadman: deadmanStatus() });
+    return json(await buildChoumiView());
   }
   // Money received through the website.
   if (view === "statement") {
@@ -159,6 +157,92 @@ async function overview(node, details, tip, outbound, inbound, chainFees, kes) {
   });
 }
 
+async function buildChoumiView() {
+  const { deptPowerView } = await import("../lib/ai.js");
+  const { deadmanStatus, lastSecurityDrill } = await import("../lib/deadman.js");
+  const { DEPARTMENTS } = await import("../data/playbooks.js");
+  const { allTasks, opsSummary } = await import("../lib/ops.js");
+  const { CHOUMI, pendingDrafts, recentInstructions, stanLast, securityLessonOfTheDay } = await import("../lib/stan.js");
+  const { learningView } = await import("../lib/learning.js");
+
+  const view = deptPowerView();
+  const ai = { ...view, incidentOverrideActive: Boolean(view.incidentOverride) };
+  const deadman = { ...deadmanStatus(), lastDrill: await lastSecurityDrill().catch(() => null) };
+  const [tasks, ops, approvals, instructions, learning, lastReport] = await Promise.all([
+    allTasks(120).catch(() => []),
+    opsSummary().catch(() => ({ total: 0, counts: {}, satisfaction: null, recent: [] })),
+    pendingDrafts(50).catch(() => []),
+    recentInstructions(20).catch(() => []),
+    learningView().catch(() => ({ totalRules: 0, totalExemplars: 0, answerBankCount: 0, departments: [], byDepartment: {}, answers: [], recentTrajectories: [], digests: {} })),
+    stanLast().catch(() => null),
+  ]);
+
+  const powerMap = Object.fromEntries((ai.departments || []).map((d) => [d.id, d]));
+  const departments = DEPARTMENTS.map((d) => {
+    const deptTasks = tasks.filter((t) => t.department === d.id);
+    const last = deptTasks[0] || null;
+    const qaDecision = last?.qa?.final
+      ? (last.qa.final.approve ? "approve" : "revise")
+      : last?.qa?.rounds?.length
+        ? (last.qa.rounds.at(-1)?.passed ? "approve" : "revise")
+        : null;
+    const qaHeadline = last?.qa?.final?.subject || (last?.qa?.final?.issues || [])[0] || "";
+    return {
+      id: d.id,
+      name: d.name,
+      agent: { name: d.agent.name, title: d.agent.title, persona: d.agent.persona },
+      currentWork: d.currentWork,
+      security: d.security,
+      power: powerMap[d.id] || { id: d.id, on: false, today: { calls: 0, usd: 0 }, month: { calls: 0, usd: 0 } },
+      queue: deptTasks.filter((t) => t.status === "queued" || t.status === "working").length,
+      waiting: deptTasks.filter((t) => ["owner", "review", "held", "waiting_client", "follow_up"].includes(t.status)).length,
+      doneCount: deptTasks.filter((t) => t.status === "done").length,
+      lastTask: last
+        ? {
+            id: last.id,
+            title: last.title,
+            status: last.status,
+            updatedAt: last.updatedAt || last.createdAt,
+            lastOutput: last.deliverable?.summary || (last.deliverable?.files?.[0]?.content ? String(last.deliverable.files[0].content).slice(0, 240) : ""),
+            qaVerdict: qaDecision,
+            qaHeadline,
+            qaRounds: last.qa?.rounds?.length || 0,
+          }
+        : null,
+    };
+  });
+
+  return {
+    identity: CHOUMI,
+    ai,
+    deadman,
+    departments,
+    ops,
+    approvals,
+    instructions,
+    learning,
+    report: { last: lastReport, lesson: securityLessonOfTheDay() },
+    settlingIn: {
+      issueNumber: 248,
+      issueUrl: "https://github.com/altradits/altradits/issues/248",
+      workingMemoryIssue: 253,
+      workingMemoryUrl: "https://github.com/altradits/altradits/issues/253",
+      summary: "Choumi Yakunte and the 5 background departments are back in altradits/altradits with the 2-step Deadman's Switch, per-department power buttons (off by default, $10/month ceiling, $2/incident cap, 20 worker calls/day), 4-step QA, and continual learning.",
+      decisions: [
+        "Keep lib/stan.js in code; display name is Choumi Yakunte",
+        "Power buttons start OFF by default; only Stanley turns them on or off",
+        "Monthly AI ceiling $10, incident cap $2, WORKER_CALLS_PER_DAY = 20",
+        "Deadman's Switch Step 1 freezes money & outgoing actions in plain code; Step 2 wakes tech, admin, growth & personal while social & marketing stay silent",
+        "Deferred until requested: inbox reading, marketing autoposting, career tools",
+      ],
+      openQuestions: [
+        { id: "signers", text: "On the server, run ls -l ~/.altradits-allowed-signers to confirm signed-code-only deploy is active." },
+        { id: "node_read_alert", text: "Follow-up issue: alert when the Deadman's balance check cannot read the node several times in a row." },
+      ],
+    },
+  };
+}
+
 export async function POST(request) {
   { const g = await gate(request); if (g) return g; }
   const body = await readBody(request);
@@ -183,6 +267,11 @@ export async function POST(request) {
     try { return json(await updateDeadmanChecklist(body.checklist || {}, { by: "stanley" })); }
     catch (err) { return json({ error: err.message }, 400); }
   }
+  if (body.action === "deadman_drill") {
+    const { runSecurityDrill } = await import("../lib/deadman.js");
+    try { return json(await runSecurityDrill({ scenario: clean(body.scenario, 80) || "intrusion_drill", lesson: clean(body.lesson, 500) })); }
+    catch (err) { return json({ error: err.message }, 400); }
+  }
   if (body.action === "dept_power") {
     const { setDeptPower } = await import("../lib/ai.js");
     try { return json(setDeptPower(clean(body.dept, 40), Boolean(body.on), { by: "stanley" })); }
@@ -202,6 +291,73 @@ export async function POST(request) {
     const { recordNodeAction } = await import("../lib/deadman.js");
     try { return json(await recordNodeAction({ sats: body.sats, reason: clean(body.reason, 200), by: "stanley" })); }
     catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "draft_decide") {
+    const { decideDraft } = await import("../lib/stan.js");
+    try { return json(await decideDraft(clean(body.id, 80), { approve: Boolean(body.approve), note: clean(body.note, 500), by: "stanley" })); }
+    catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "task_create") {
+    const title = clean(body.title, 200);
+    if (!title) return json({ error: "Give the task a title first." }, 400);
+    const { createTask } = await import("../lib/ops.js");
+    try {
+      const task = await createTask({
+        title,
+        details: clean(body.details, 4000),
+        department: clean(body.department, 40),
+        service: clean(body.service, 80),
+        due: clean(body.due, 40),
+        by: "Stanley",
+      });
+      return json({ ok: true, task });
+    } catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "task_work") {
+    const { processQueue } = await import("../lib/workers.js");
+    try {
+      const count = await processQueue(Math.min(10000, Math.max(500, Number(body.budgetMs) || 5000)));
+      return json({ ok: true, count });
+    } catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "task_decide") {
+    const id = clean(body.id, 80);
+    const sub = clean(body.subaction, 40);
+    const note = clean(body.note, 2000);
+    if (!id) return json({ error: "Task ID is required." }, 400);
+    const { releaseTask, cancelTask, answerTask, rerunTask, approveTask, closeTask } = await import("../lib/ops.js");
+    try {
+      if (sub === "release") return json({ ok: true, task: await releaseTask(id, { note, by: "stanley" }) });
+      if (sub === "cancel") return json({ ok: true, task: await cancelTask(id, { note, by: "stanley" }) });
+      if (sub === "answer") return json({ ok: true, task: await answerTask(id, { answer: note, by: "stanley" }) });
+      if (sub === "rerun") return json({ ok: true, task: await rerunTask(id, { note, by: "stanley" }) });
+      if (sub === "approve") return json({ ok: true, task: await approveTask(id, { rating: Number(body.rating) || 5, comment: note, by: "stanley" }) });
+      if (sub === "close") return json({ ok: true, task: await closeTask(id, { note, by: "stanley" }) });
+      return json({ error: "Unknown task subaction." }, 400);
+    } catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "learning_rule") {
+    const note = clean(body.note, 500);
+    if (!note) return json({ error: "Write a rule to save first." }, 400);
+    const { recordOutcome } = await import("../lib/learning.js");
+    try {
+      const r = await recordOutcome({
+        kind: "stanley_override",
+        dept: clean(body.dept, 40) || "all",
+        service: clean(body.service, 80) || "general",
+        note,
+      });
+      // The security screen drops rules that look like links, code, commands or requests for secrets.
+      if (!r?.traj?.distilledRuleIds?.length) return json({ error: "The security screen didn't save this rule: it looks like a link, code, a command or a request for secrets. Reword it in plain words." }, 400);
+      return json({ ok: true, ruleIds: r.traj.distilledRuleIds });
+    } catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "learning_consolidate") {
+    const { consolidateLearning, learningView } = await import("../lib/learning.js");
+    try {
+      const consolidated = await consolidateLearning();
+      return json({ ok: true, consolidated, learning: await learningView() });
+    } catch (err) { return json({ error: err.message }, 400); }
   }
   // Your wallets: a list of handles you keep an eye on, and invoices to receive into them.
   // Sending needs the wallet's PIN on a trusted device, so it happens in the Ye₿ente app, never here.
