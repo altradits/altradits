@@ -16,10 +16,11 @@
 # Exit 0: all good. Exit 1: something is unsigned, signed by an unknown key, or
 # the trust root isn't an ancestor (rewritten history).
 set -u
-# Everything up to here predates signing (30 Oct 2026). Never move this backwards.
-# (Same commit as 2ef931f, renumbered on 31 Oct 2026 when an AI co-author line
-# was removed from an older commit message.)
-TRUST_ROOT=3c9ca96542d750fc51b62df42cb93be251920c09
+# Everything up to here predates signing (30 Oct 2026) or precedes the removal
+# of .github/workflows/snake.yml, which committed two unsigned snake updates
+# (539d492 and b323ec5) to main before being deleted. Moved forward to 4b6c2a2
+# on 1 Nov 2026 after removing snake.yml. Never move this backwards.
+TRUST_ROOT=4b6c2a2f2c1e0c9efb046b4f314538d6bd9ff0d0
 REF="${1:-HEAD}"
 SIGNERS="${2:-.github/allowed_signers}"
 

@@ -27,6 +27,9 @@ jobs:
         run: ruby -ryaml -e 'Dir[".github/workflows/*.yml"].each { |f| YAML.load_file(f) }; puts "workflows ok"'
       - name: No AI co-authors (GitHub lists every Co-Authored-By as a contributor)
         run: sh deploy/no-ai-coauthor.sh HEAD
+      - name: Signed commits on main (every first-parent commit after TRUST_ROOT)
+        if: github.event_name == 'push'
+        run: sh deploy/verify-commits.sh HEAD .github/allowed_signers
       - name: Install (no package scripts run)
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Tests and build-stage security guard
