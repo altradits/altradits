@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import https from "node:https";
 import { execFileSync } from "node:child_process";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "altradits-deadman-"));
@@ -46,6 +47,7 @@ async function resetDeadman() {
   await store.setJSON("deadman:admin_guess_burst", null);
   await store.setJSON("secw:admin_ips", null);
   await store.setJSON("deadman:check:last", null);
+  await store.setJSON("secw:nodebal", null);
   store.purgeCounters(Date.now() + 7200_000);
 }
 
@@ -315,6 +317,133 @@ test("deadman: custodial solvency shortfall stays an alert, while an unexplained
   assert.equal(deadman.deadmanStatus().trigger, "unexplained_balance_drop");
 
   await resetDeadman();
+});
+
+test("deadman: nodeTotalBalance counts funds in transit (pending_open_local_balance, unsettled_local_balance, unconfirmed_balance, total_limbo_balance) so channel opens and force-closes do not trip the switch", async () => {
+  await resetDeadman();
+  await store.setJSON("secw:nodebal", null);
+
+  execFileSync("openssl", [
+    "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1",
+    "-subj", "/CN=127.0.0.1", "-addext", "subjectAltName=IP:127.0.0.1,DNS:localhost",
+    "-keyout", "lnd-key.pem", "-out", "lnd-cert.pem",
+  ], { stdio: "ignore" });
+
+  const READONLY_MAC = "0201036c6e64726561646f6e6c79";
+  let state = {
+    local_balance: 300_000,
+    pending_open_local_balance: 0,
+    unsettled_local_balance: 0,
+    confirmed_balance: 500_000,
+    unconfirmed_balance: 0,
+    total_limbo_balance: 0,
+  };
+
+  const lnd = https.createServer(
+    { key: fs.readFileSync("lnd-key.pem"), cert: fs.readFileSync("lnd-cert.pem") },
+    (req, res) => {
+      if (req.headers["grpc-metadata-macaroon"] !== READONLY_MAC) {
+        res.writeHead(401).end(JSON.stringify({ message: "wrong macaroon" }));
+        return;
+      }
+      if (req.method === "GET" && req.url === "/v1/balance/channels") {
+        res.end(JSON.stringify({
+          local_balance: { sat: String(state.local_balance) },
+          pending_open_local_balance: { sat: String(state.pending_open_local_balance) },
+          unsettled_local_balance: { sat: String(state.unsettled_local_balance) },
+        }));
+        return;
+      }
+      if (req.method === "GET" && req.url === "/v1/balance/blockchain") {
+        res.end(JSON.stringify({
+          confirmed_balance: String(state.confirmed_balance),
+          unconfirmed_balance: String(state.unconfirmed_balance),
+        }));
+        return;
+      }
+      if (req.method === "GET" && req.url === "/v1/channels/pending") {
+        res.end(JSON.stringify({
+          total_limbo_balance: String(state.total_limbo_balance),
+        }));
+        return;
+      }
+      res.writeHead(404).end("{}");
+    },
+  );
+  await new Promise((r) => lnd.listen(0, "127.0.0.1", r));
+  const port = lnd.address().port;
+
+  process.env.LND_REST_URL = `https://127.0.0.1:${port}`;
+  process.env.LND_READONLY_MACAROON = READONLY_MAC;
+  process.env.LND_TLS_CERT = fs.readFileSync("lnd-cert.pem", "utf8");
+
+  try {
+    const lightning = await import("../lib/lightning.js");
+
+    // 0. Baseline snapshot: 300k local + 500k confirmed on-chain = 800,000 sats
+    const nb0 = await lightning.nodeTotalBalance();
+    assert.equal(nb0.totalSats, 800_000);
+    const check0 = await deadman.runDeadmanChecks({ force: true });
+    assert.equal(check0.balance.ok, true);
+    assert.equal(deadman.deadmanActive(), false);
+
+    // 1. Channel open: 400k confirmed UTXO spent into a 300k pending-open channel + 98.5k unconfirmed change (1,500 sat chain fee)
+    state = {
+      local_balance: 300_000,
+      pending_open_local_balance: 300_000,
+      unsettled_local_balance: 0,
+      confirmed_balance: 100_000,
+      unconfirmed_balance: 98_500,
+      total_limbo_balance: 0,
+    };
+    const nbOpen = await lightning.nodeTotalBalance();
+    assert.equal(nbOpen.totalSats, 798_500);
+    assert.equal(nbOpen.pendingOpenSats, 300_000);
+    assert.equal(nbOpen.unconfirmedSats, 98_500);
+    const checkOpen = await deadman.runDeadmanChecks({ force: true });
+    assert.equal(checkOpen.balance.ok, true, "channel open moving funds from on-chain to pending + unconfirmed change does NOT trip");
+    assert.equal(deadman.deadmanActive(), false);
+
+    // 2. Force-close: 200k moves from local_balance into total_limbo_balance, and 50k is in unsettled_local_balance (HTLC in flight)
+    state = {
+      local_balance: 50_000,
+      pending_open_local_balance: 300_000,
+      unsettled_local_balance: 50_000,
+      confirmed_balance: 198_500,
+      unconfirmed_balance: 0,
+      total_limbo_balance: 200_000,
+    };
+    const nbClose = await lightning.nodeTotalBalance();
+    assert.equal(nbClose.totalSats, 798_500);
+    assert.equal(nbClose.limboSats, 200_000);
+    assert.equal(nbClose.unsettledSats, 50_000);
+    const checkClose = await deadman.runDeadmanChecks({ force: true });
+    assert.equal(checkClose.balance.ok, true, "force-close moving funds into limbo + unsettled local balance does NOT trip");
+    assert.equal(deadman.deadmanActive(), false);
+
+    // 3. Unexplained drop of the same size (200,000 sats vanish with no recorded payment) -> TRIPS!
+    state = {
+      local_balance: 50_000,
+      pending_open_local_balance: 300_000,
+      unsettled_local_balance: 50_000,
+      confirmed_balance: 198_500,
+      unconfirmed_balance: 0,
+      total_limbo_balance: 0,
+    };
+    const nbDrain = await lightning.nodeTotalBalance();
+    assert.equal(nbDrain.totalSats, 598_500);
+    const checkDrain = await deadman.runDeadmanChecks({ force: true });
+    assert.equal(checkDrain.balance.ok, false, "unexplained 200k drop trips the Deadman's Switch");
+    assert.equal(checkDrain.balance.unexplainedSats, 200_000);
+    assert.equal(deadman.deadmanActive(), true);
+    assert.equal(deadman.deadmanStatus().trigger, "unexplained_balance_drop");
+  } finally {
+    delete process.env.LND_REST_URL;
+    delete process.env.LND_READONLY_MACAROON;
+    delete process.env.LND_TLS_CERT;
+    lnd.close();
+    await resetDeadman();
+  }
 });
 
 test("deadman: file integrity ignores clean deploys and DirectAdmin Passenger block edits in .htaccess, trips on tampering, and runs via 5-minute runDeadmanChecks", async () => {
