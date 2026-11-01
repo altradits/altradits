@@ -28,12 +28,17 @@ const deny = () => json({ error: process.env.ADMIN_TOKEN ? "Wrong admin token." 
 
 // Wrong tokens are throttled: 20 per connection per 15 minutes, then a pause.
 async function gate(request) {
-  const key = `rl:admin:fail:${clientIp(request)}`;
+  const ip = clientIp(request);
+  const key = `rl:admin:fail:${ip}`;
   if ((await peek(key)) >= 20) return json({ error: "Too many wrong tokens. Wait 15 minutes and try again." }, 429);
-  if (authorized(request)) return null;
+  if (authorized(request)) {
+    const { noteAdminSignIn } = await import("../lib/deadman.js");
+    await noteAdminSignIn(ip).catch(() => {});
+    return null;
+  }
   await hit(key, 900);
   const { recordAttack } = await import("../lib/attacks.js");
-  await recordAttack("admin_token_guess", { where: "/api/admin", ip: clientIp(request) || "" }).catch(() => {});
+  await recordAttack("admin_token_guess", { where: `${request.method} /api/admin`, ip: ip || "" }).catch(() => {});
   // Many wrong tokens across the whole site: Stanley is told, at most once an
   // hour. Never a site-wide lockout, which would let a stranger lock him out.
   const hour = new Date().toISOString().slice(0, 13);
@@ -170,7 +175,7 @@ export async function POST(request) {
   }
   if (body.action === "deadman_lift") {
     const { liftDeadman } = await import("../lib/deadman.js");
-    try { return json(await liftDeadman({ by: "stanley", note: clean(body.note, 500), checklist: body.checklist })); }
+    try { return json(await liftDeadman({ by: "stanley", note: clean(body.note, 500), checklist: body.checklist, force: body.force })); }
     catch (err) { return json({ error: err.message }, 400); }
   }
   if (body.action === "deadman_checklist") {
