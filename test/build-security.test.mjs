@@ -137,9 +137,12 @@ test("every Markdown file at the top level is denied to the web server", () => {
 
 test("signing stays available: the trusted-keys file, the verify script and the server option stay in place", () => {
   assert.match(read(".github/allowed_signers"), /^altradits@gmail\.com namespaces="git" ssh-ed25519 /m, "a trusted signing key");
-  assert.match(read("deploy/verify-commits.sh"), /TRUST_ROOT=3c9ca96542d750fc51b62df42cb93be251920c09/, "the trust root never moves");
+  assert.match(read("deploy/verify-commits.sh"), /TRUST_ROOT=4b6c2a2f2c1e0c9efb046b4f314538d6bd9ff0d0/, "the trust root never moves backwards");
   assert.match(read("deploy/cron.sh"), /verify-commits\.sh origin\/main "\$SIGNERS"/, "the server refuses unsigned code");
+  assert.match(read(".github/workflows/test.yml"), /if:\s*github\.event_name == 'push'\s*\n\s*run:\s*sh deploy\/verify-commits\.sh HEAD \.github\/allowed_signers/, "CI verifies signed commits on push to main");
   assert.match(read(".githooks/pre-push"), /force-push/, "the local gate refuses force-pushes to main");
+  for (const f of fs.readdirSync(path.join(root, ".github/workflows")).filter((x) => x.endsWith(".yml")))
+    assert.doesNotMatch(read(`.github/workflows/${f}`), /\bwrite\b/, `.github/workflows/${f}: no workflow has write access`);
 });
 
 test("no AI co-authors: the check runs in CI, before every push and on every commit message", () => {
