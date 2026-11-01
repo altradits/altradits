@@ -49,8 +49,9 @@ test("steps tick from GitHub; the streak counts only tracked projects; the day's
   assert.equal(r.totals.merged, 1);
   assert.equal(r.streak, 2, "today and yesterday on Bitcoin Core");
   assert.equal(r.activeDays30, 3, "his own repository doesn't count");
-  assert.ok(r.next && !["bitcoin/bitcoin", "lightningnetwork/lnd"].includes(r.next.repo), "a project with nothing done yet");
-  assert.equal(r.next.step.key, "review");
+  assert.equal(r.next.repo, "lightningnetwork/lnd", "the focus project first");
+  assert.equal(r.next.focus, true);
+  assert.equal(r.next.step.key, "review", "its first step not yet done (it has a pull request, not a review)");
 });
 
 test("the blockchain: every contribution mines a block; merged wins the mempool; every block links to GitHub", async () => {

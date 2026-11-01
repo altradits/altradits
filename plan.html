@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<link rel="canonical" href="https://altradits.com/plan">
+<title>My plan to full-time open source · Altradits</title>
+<meta name="description" content="Stanley's plan to become a full-time Bitcoin open-source contributor: one focus (LND), the problem, the proof, six months with time for review, who benefits, and Btrust's funding checklist answered.">
+<link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
+<meta property="og:title" content="My plan to full-time open source · Altradits">
+<meta property="og:description" content="Stanley's plan to become a full-time Bitcoin open-source contributor: one focus (LND), the problem, the proof, six months with time for review, who benefits, and Btrust's funding checklist answered.">
+<meta property="og:url" content="https://altradits.com/plan">
+<meta property="og:type" content="website">
+<style>
+/* Brand fonts, served from this site: Bricolage Grotesque and Figtree (SIL Open Font License 1.1, https://openfontlicense.org), latin and latin-ext (₿), variable weight */
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0;padding:1.1rem 0;flex-wrap:wrap;row-gap:.35rem}
+.top img{height:2.5rem;width:auto;display:block}
+.topnav{display:flex;gap:1.1rem;flex-wrap:wrap;row-gap:.2rem}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.35rem 0}
+.topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
+@media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
+.hero{padding:2.25rem 0 1.5rem}
+.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem}
+.hero h1 em{font-style:normal;color:var(--btc-text)}
+.lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:38rem}
+.ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
+.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none}
+.btn.ghost{background:transparent;border-color:var(--ink)}
+h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:2.4rem 0 .4rem}
+h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
+.intro{color:var(--muted);margin:0 0 1.2rem;max-width:42rem}
+.cards{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem}
+.cards>li{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem}
+.cards p{margin:0;color:var(--muted);font-size:.97rem}
+.cards .links{display:flex;flex-wrap:wrap;gap:.4rem 1rem;margin-top:auto;padding-top:.3rem;font-weight:600}
+.tag{align-self:flex-start;font-size:.78rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}
+.sitefoot .wp{margin:0 0 .6rem}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+.sm{font-size:.92rem}
+.proof{max-width:46rem;padding-left:1.2rem;color:var(--muted)}
+.proof li{margin:.4rem 0}
+.months{list-style:none;padding:0;margin:0;display:grid;gap:.6rem;max-width:46rem}
+.months li{background:var(--paper);border:2px solid var(--line);border-radius:.9rem;padding:.8rem 1rem;display:flex;flex-direction:column;gap:.15rem}
+.months .when{font-size:.78rem;font-weight:800;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
+.months span:not(.when){color:var(--muted);font-size:.95rem}
+.check{list-style:none;padding:0;margin:0;display:grid;gap:.5rem;max-width:46rem}
+.check li{display:grid;grid-template-columns:1.6rem 1fr;gap:.5rem;background:var(--paper);border:2px solid var(--line);border-radius:.9rem;padding:.7rem .9rem;color:var(--muted)}
+.check b{color:var(--ink)}
+.check .m{font-weight:800;font-size:1.1rem}.check .y{color:var(--ok)}.check .p{color:var(--btc-text)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/wallet">Ye₿ente</a><a href="/library">Library</a><a href="/bitcoin-core">Bitcoin Core</a><a href="/players">Players</a><a href="/friends">Friends</a><a href="/tracker">Tracker</a><a href="/journey">Journey</a></nav></div>
+
+  <header class="hero">
+    <h1>My plan: <em>full-time open source on Lightning.</em></h1>
+    <p class="lead">One area of work, the problem first, proof I can point to, and six months that leave time for review. Written the way Bitcoin funders ask.</p>
+    <div class="ctas"><a class="btn" href="/tracker">See my progress</a><a class="btn ghost" href="https://blog.btrust.tech/how-bitcoin-developers-can-get-funding-for-open-source-work/">What funders look for</a></div>
+  </header>
+
+  <h2 id="focus">My area of work: LND</h2>
+  <ul class="cards">
+    <li><h3>I run it</h3><p>Ye₿ente, my open-source wallet, runs on my own LND node. I meet its invoices, payments and channels every day.</p></li>
+    <li><h3>It's Go</h3><p>158 Go challenges at Zone01 Kisumu, and 100+ Go developers at LakeHub to learn with.</p></li>
+    <li><h3>It's Lightning</h3><p>Fast, cheap payments: what people around me need to use Bitcoin day to day.</p></li>
+  </ul>
+  <p class="intro sm">Alongside: reviewing Bitcoin Core pull requests, to learn how careful review is done.</p>
+
+  <h2>The problem</h2>
+  <p class="intro">In Kenya and Ethiopia, people pay with M-Pesa and Telebirr. Lightning can serve them, but the node software has to stay simple to run, safe for the people relying on it, and understood by developers close to the people who use it.</p>
+
+  <h2>What I've done</h2>
+  <ul class="proof">
+    <li><a href="/tracker">28 merged pull requests and counting</a> on public projects, every one linked.</li>
+    <li><a href="https://github.com/altradits/yebente">Ye₿ente</a>: a Lightning wallet on my own LND node, with M-Pesa payouts.</li>
+    <li><a href="https://github.com/altradits/bitcoin-core-lab">Bitcoin Core Lab</a>: 13 hands-on stages, regtest to mainnet.</li>
+    <li><a href="/bitcoin-core">My first talk</a> at BitDevs Kisumu, now a free setup guide.</li>
+    <li><a href="/friends">BitDevs Kisumu</a>, which I co-founded, sponsored by Btrust.</li>
+  </ul>
+
+  <h2 id="six-months">Six months</h2>
+  <ol class="months"><li><span class="when">Month 1</span><b>Learn the project</b><span>Build LND from source; run the unit tests. Follow the code contribution guidelines. Review two open pull requests, saying exactly what I tested.</span></li><li><span class="when">Month 2</span><b>First contribution</b><span>Take a good first issue. Open a small, tested pull request. Answer review until it's merged or closed.</span></li><li><span class="when">Months 3–4</span><b>Where Ye₿ente lives</b><span>Review and contribute around the parts Ye₿ente relies on every day: invoices, payments and macaroons. Two more pull requests, with time left for review.</span></li><li><span class="when">Months 5–6</span><b>Sustain and share</b><span>Regular reviews each week. Write up what I learned, in plain words, and present it at BitDevs Kisumu.</span></li></ol>
+  <p class="intro sm">Each step ticks on <a href="/tracker">my tracker</a> when GitHub shows it. No AI: I write, test and review everything myself.</p>
+
+  <h2 id="benefit">Who benefits</h2>
+  <ul class="proof">
+    <li>People using Ye₿ente: a node run by someone who knows its code.</li>
+    <li>Developers at BitDevs Kisumu and LakeHub: a path into Lightning, from someone a step ahead.</li>
+    <li>LND: another careful reviewer and tester, close to its users in East Africa.</li>
+  </ul>
+
+  <h2 id="funding">What funding changes</h2>
+  <p class="intro">Today I contribute around my apprenticeship and running Ye₿ente. Funding would let me give LND my full working day: reviews, tests and pull requests, every day. Details go to funders directly.</p>
+
+  <h2>The path</h2>
+  <ol class="months">
+    <li><span class="when">Now</span><b>Btrust Builders</b><span>Builders programs first: in Q2 2026, all but one of Btrust's seven grant recipients came through Btrust Builders.</span></li>
+    <li><span class="when">Next</span><b>Btrust Starter Grant</b><span>Six months full-time, once I meet <a href="/journey">its bar</a>.</span></li>
+    <li><span class="when">Then</span><b>Btrust Open-Source Cohort</b><span>Monthly support for sustained contributors.</span></li>
+  </ol>
+  <p class="intro sm">Also funding Bitcoin open source: OpenSats, the Human Rights Foundation's Bitcoin Development Fund, Brink, Spiral and Vinteum. See <a href="/players">Players</a>.</p>
+
+  <h2>The funder's checklist, answered</h2>
+  <ul class="check"><li><span class="m y">✓</span><span><b>A clear area of open-source work?</b><br>LND, the Lightning node: the software Ye₿ente runs on. <a href="#focus">Why LND</a>.</span></li><li><span class="m y">✓</span><span><b>Technical ability shown with something concrete?</b><br><a href="https://github.com/altradits/yebente">Ye₿ente</a>, a Lightning wallet on my own LND node, and <a href="https://github.com/altradits/bitcoin-core-lab">Bitcoin Core Lab</a>.</span></li><li><span class="m y">✓</span><span><b>Previous work or contributions to point to?</b><br>28 merged pull requests on public projects, every one linked on <a href="/tracker">my tracker</a>.</span></li><li><span class="m p">◐</span><span><b>Understanding of the problem, beyond wanting to solve it?</b><br>From running LND for Ye₿ente every day. Next: reviews on LND pull requests, with what I tested.</span></li><li><span class="m p">◐</span><span><b>A plan and timeline that would survive scrutiny?</b><br><a href="#six-months">The six months above</a>, with review and testing time built in.</span></li><li><span class="m y">✓</span><span><b>Specific about what funding would enable?</b><br><a href="#funding">What funding changes</a>.</span></li><li><span class="m y">✓</span><span><b>Connected to the wider ecosystem, not just my interests?</b><br><a href="#benefit">Who benefits</a>.</span></li></ul>
+  <p class="intro sm">From Btrust's guide: <a href="https://blog.btrust.tech/how-bitcoin-developers-can-get-funding-for-open-source-work/">How Bitcoin developers can get funding for open-source work</a>.</p>
+
+</div>
+
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/wallet">Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin in Kisumu</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/donate">Support my work</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+</script>
+</body>
+</html>

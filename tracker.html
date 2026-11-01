@@ -6,7 +6,7 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g=' 'sha256-9XaiZGV28GpH3ioPUejJ3xEC8aW2iBtb/pA6hsnut68='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g=' 'sha256-IPX07CC/hGOENM1dsZ0utaxHxsMFOudUUD0z4HdTsBs='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/tracker">
 <title>Open-source tracker · Altradits</title>
@@ -184,7 +184,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 
 </div>
 
-<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/wallet">Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin in Kisumu</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/donate">Support my work</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/wallet">Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin in Kisumu</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/donate">Support my work</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 </script>
@@ -224,12 +224,12 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
     if (C.list.length > 15) { $("#more").hidden = false; $("#more").onclick = () => { $("#blocks").innerHTML = C.list.map(row).join(""); $("#more").hidden = true; }; }
   }
   const n = T.next;
-  $("#today").innerHTML = n ? `<span class="tag">Today's task</span><h2>${esc(n.name)}: ${esc(n.step.title)}</h2><p>${esc(n.step.text)}</p><p><b>Challenge:</b> ${esc(n.challenge)}</p><div class="links"><a href="${esc(n.start)}">Find a task</a><a href="${esc(n.guide)}">Read the guide</a></div>`
+  $("#today").innerHTML = n ? `<span class="tag">${n.focus ? "Today's task · my focus" : "Today's task"}</span><h2>${esc(n.name)}: ${esc(n.step.title)}</h2><p>${esc(n.step.text)}</p><p><b>Challenge:</b> ${esc(n.challenge)}</p><div class="links"><a href="${esc(n.start)}">Find a task</a><a href="${esc(n.guide)}">Read the guide</a><a href="/plan">My six-month plan</a></div>`
     : `<span class="tag">All steps done</span><h2>Every challenge is complete.</h2><p>Time to pick harder ones.</p>`;
   $("#stats").innerHTML = [[`${T.totals.steps} of ${T.totals.of}`, "steps done"], [T.streak, `day${T.streak === 1 ? "" : "s"} in a row`], [T.activeDays30, "active days, last 30"], [T.totals.merged, "pull requests merged"]]
     .map(([b, s]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join("");
   $("#rules").innerHTML = T.rules.map((r) => `<li>${esc(r)}</li>`).join("");
-  const card = (p, withChallenge) => `<li><div class="who">${p.logo ? `<img src="/assets/players/${esc(p.logo)}.png" alt="" width="44" height="44">` : ""}<div><h3>${esc(p.name)}</h3><small>${esc(p.repo)}</small></div></div>
+  const card = (p, withChallenge) => `<li><div class="who">${p.logo ? `<img src="/assets/players/${esc(p.logo)}.png" alt="" width="44" height="44">` : ""}<div><h3>${esc(p.name)}</h3><small>${esc(p.repo)}</small>${p.repo === T.focus ? '<span class="tag">My focus</span>' : ""}</div></div>
     ${withChallenge ? `<p>${esc(p.challenge)}</p>` : `<p>${esc(p.note || "")}</p>`}
     <div class="bar" role="img" aria-label="${p.done} of 4 steps done"><i style="width:${(p.done / 4) * 100}%"></i></div>
     <ul class="steps">${p.steps.map((s, i) => `<li><span class="m ${s.done ? "y" : "n"}">${s.done ? "✓" : "○"}</span><span>${esc(T.stepInfo[i].title)}${s.count > 1 ? ` ×${s.count}` : ""}${s.link ? `<br><a href="${esc(s.link.url)}">${esc(s.link.title)}</a>` : ""}</span></li>`).join("")}</ul>

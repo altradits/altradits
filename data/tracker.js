@@ -13,6 +13,10 @@
 
 export const GITHUB_USER = "altradits";
 
+// One clear area of work, as funders ask (blog.btrust.tech: "be precise").
+// The day's task comes from this project until its four steps are done.
+export const FOCUS = "lightningnetwork/lnd";
+
 export const RULES = [
   "No AI: I read, write, build and test everything myself.",
   "Follow each project's contributing guide to the letter.",
