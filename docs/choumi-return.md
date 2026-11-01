@@ -96,6 +96,25 @@ The AI pause switch grows into the **Deadman's Switch**: the moment the whole te
   - node activity the read-only checks did not expect (new channels, payments, peers);
   - Ye₿ente balances that don't match the node.
 
+### Power buttons: each department on or off
+
+Every department that uses Anthropic credit has its own **power button** in the "Choumi" admin tab, to save credit.
+- **Off by default.** A department that is off makes no AI calls at all; its tasks wait in its queue.
+- **Manual only.** Only Stanley turns a department on or off, by hand, in the admin (behind `ADMIN_TOKEN`). No schedule, email, chat, task or agent can press it, and Choumi can't either.
+- **Shown clearly:** each button shows on or off, who changed it and when, and the credit that department used today and this month.
+- The state is stored server-side (like the AI pause state), so every process and restart sees the same buttons.
+- The plain-code parts (security watch, Step 1 lockdown, Stan's daily report numbers) use no credit and are always on. They have no button.
+
+**The one exception is an intrusion.** The Deadman's Switch triggers by itself, 24/7, and powers on the departments its response needs (Step 2), whatever their buttons say. When the switch is lifted, every department goes back to the button state Stanley left it in.
+
+### Until the threat is neutralized
+
+Once triggered, the switch stays on until the threat is neutralized:
+- The team keeps working the incident, and the lockdown keeps holding, for as long as it takes.
+- "Neutralized" means a written checklist, checked by Choumi: the way in is found and closed, every exposed secret is rotated by Stanley, the books match the node, and no new intrusion signals for a set quiet period.
+- Stanley lifts the switch himself once that checklist is complete. Nothing lifts it automatically, so an intruder can't switch it off.
+- A response credit cap (set by Stanley) stops a long incident from draining the account; when reached, Step 1 still holds and Stanley is asked to raise it.
+
 ### Step 1: lockdown (no AI, always works)
 
 This runs in plain code within seconds, even when Anthropic credit is zero:
@@ -167,20 +186,22 @@ Post these in the settling-in issue and wait for answers. Ask anything else the 
 5. **Budget:** the monthly AI limit and `WORKER_CALLS_PER_DAY`.
 6. **Cadence:** when the daily report and the department runs happen (Africa/Nairobi time).
 7. **Dashboard:** confirm one "Choumi" admin tab and what it shows (see 8).
-8. **Deadman's Switch:** confirm the intrusion triggers and their thresholds, what Step 1 freezes, and the update cadence (hourly by default).
+8. **Deadman's Switch:** confirm the intrusion triggers and their thresholds, what Step 1 freezes, the update cadence (hourly by default), the quiet period before "neutralized", and the response credit cap.
+9. **Power buttons:** which departments start on (default: all off).
 
 ## 8. Phase 3: bring him back
 
 Each step is its own issue and PR, with tests, and waits for "merge".
 
 1. **Circuit breaker and store:** port `lib/ai.js` and its test. Prove the site runs with no key.
-2. **Deadman's Switch:** Step 1 lockdown in plain code with tests (manual trigger, each intrusion trigger, everything frozen, Stanley alerted, pages still served, works with no AI key). Then Step 2's department roles.
+2. **Deadman's Switch:** Step 1 lockdown in plain code with tests (manual trigger, each intrusion trigger, everything frozen, Stanley alerted, pages still served, works with no AI key). Then the department power buttons (off by default, manual only), and Step 2's department roles, which power on automatically during an intrusion.
 3. **Choumi's core:** the identity, the approval queue and the daily report, merged into the existing `lib/stan.js` behaviour (keep every alert and the tracker task).
 4. **QA:** `lib/qa.js`, `data/qa-experts.js`.
 5. **Departments:** `data/playbooks.js` (skills unchanged; targets as answered in Phase 2), `lib/workers.js`, `lib/screen.js`.
 6. **Learning:** `lib/learning.js`.
 7. **Dashboard:** one admin tab, "Choumi", showing:
-   - the Deadman's Switch: armed or triggered, why, what is frozen, and the button;
+   - the Deadman's Switch: armed or triggered, why, what is frozen, the neutralized checklist, and the button;
+   - a power button per department, with today's and this month's credit use;
    - AI status (running or paused, why, retry time) and a "Re-check AI" button;
    - each department: queue, last output, QA verdict;
    - approvals waiting for Stanley;
@@ -204,5 +225,6 @@ For each step: port the module's chouMi tests, run `npm test`, run `node deploy/
 - [ ] Public pages unchanged except approved improvements.
 - [ ] The "Choumi" tab shows AI status, departments, approvals and learning.
 - [ ] The Deadman's Switch is tested: manual and intrusion triggers, lockdown with no AI key, Stanley alerted.
+- [ ] Each department's power button works: off means no AI calls; only Stanley can press it; an intrusion powers the response team on and the switch hands the buttons back as Stanley left them.
 - [ ] Every department playbook has its security section; the first drill ran on a local copy.
 - [ ] Stanley has received one daily report from Choumi Yakunte.
