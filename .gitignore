@@ -24,3 +24,6 @@ node_modules/
 .env
 .data/
 .vercel/
+
+# Session handoff note (altradits-handoff mod); local only.
+HANDOFF.md
