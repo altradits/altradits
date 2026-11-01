@@ -45,7 +45,7 @@ Clone `altradits/chouMi` read-only first. Read `README.md`, `docs/agents.md`, `d
 | Brand voice | `data/brand.js` | The voice guide |
 | Email, inboxes, follow-ups | `lib/email.js`, `lib/inbox.js`, `lib/followups.js`, `data/team-comms.js` | Read-only IMAP; approval before external mail |
 | Security screen and misuse guard | `lib/screen.js`, `lib/guard.js`, `.claude/agents/security-reviewer.md` | Untrusted text never reaches an AI unscreened |
-| AI circuit breaker | `lib/ai.js` | **Mandatory** |
+| AI circuit breaker, the base of the **Deadman's Switch** (section 6) | `lib/ai.js`, `lib/attacks.js`, `lib/stan.js` | **Mandatory** |
 | Career and job tools (Stanley's own) | `lib/career.js`, `lib/jobs.js`, `apply-extension/` | Only if Stanley asks |
 | Chat (Altra) | `lib/agent.js`, `lib/agents.js` | Stays off (`CHAT_ENABLED` unset) |
 
@@ -61,7 +61,7 @@ Change nothing in this phase. Read, run and write down.
 4. In chouMi: the files in section 3 and their tests.
 5. Write a **settling-in report** as a GitHub issue in altradits titled "Choumi: settling-in report". It answers:
    - What Altradits is focused on now (the tracker focus, Ye₿ente, BitDevs Kisumu, the funding plan).
-   - For each department: its original skills, and the current work they would serve. Use the table in 6 as a starting hypothesis, not a decision.
+   - For each department: its original skills, and the current work they would serve. Use the table in 7 as a starting hypothesis, not a decision.
    - Which chouMi modules are needed, which are not, and which import code that stayed in altradits (`lib/attacks.js`, `lib/channels.js` need the altradits versions, not stubs).
    - Every setting each module needs (names only, from chouMi `docs/recreate.md` section 3). Never write a value.
    - Monthly AI cost estimate at the default `WORKER_CALLS_PER_DAY`.
@@ -71,6 +71,7 @@ Change nothing in this phase. Read, run and write down.
 
 - **Do not restructure.** Pages, routes, menu, admin tabs, Ye₿ente and the tracker stay. Improvements are proposed in an issue and wait for Stanley's yes.
 - **Background only.** No new public page, no chat, no posting to strangers. New routes go under `/api/admin/*` behind `ADMIN_TOKEN`, or run from `deploy/cron.sh`.
+- **Security is paramount.** It comes before every feature, every department and every deadline. See the Deadman's Switch (section 6).
 - **AI can run out safely.** Every AI call goes through `lib/ai.js`. When credit or the key fails: AI pauses, the site keeps serving, tasks wait, alerts go to Stanley once. `npm test` must prove it (port `test/ai-pause.test.mjs`).
 - **The API key.** The old `ANTHROPIC_API_KEY` was removed after the October 2026 malware cleanup. Never reuse it. Stanley creates a new key on a clean device and sets it himself in DirectAdmin. Never type, print or log a key.
 - **The node.** Never read `admin.macaroon`. Use `readonly.macaroon` for checks. Choumi never moves funds or opens channels on his own.
@@ -80,7 +81,71 @@ Change nothing in this phase. Read, run and write down.
 - **Pages.** After editing any page, run `node deploy/page-csp.mjs`. Pin every dependency.
 - **Privacy.** No phone numbers, private repo names or client data in public text.
 
-## 6. Phase 2: ask before building
+## 6. The Deadman's Switch
+
+The AI pause switch grows into the **Deadman's Switch**: the moment the whole team stops its normal work and works together to secure every Altradits asset, secret and operation.
+
+### Triggers
+
+- **Manual:** Stanley presses "Deadman's Switch" in the admin (behind `ADMIN_TOKEN`). Nothing else can trigger it by hand: no email, chat or page text.
+- **Intrusion:** the security watch (`lib/attacks.js`) sees any of:
+  - a high-severity attack event, or a burst of medium ones;
+  - repeated wrong admin tokens;
+  - a deploy that did not come from a merged PR on `main`;
+  - a change to served files that no deploy explains;
+  - node activity the read-only checks did not expect (new channels, payments, peers);
+  - Ye₿ente balances that don't match the node.
+
+### Step 1: lockdown (no AI, always works)
+
+This runs in plain code within seconds, even when Anthropic credit is zero:
+
+1. Freeze Ye₿ente sends and buys; receiving stays on. Freeze `/api/tip` invoices.
+2. Admin goes read-only except the switch itself.
+3. Stop all outgoing email except to Stanley.
+4. Take an encrypted backup and keep the evidence: logs, security events, the deployed commit.
+5. Email Stanley at **altradits@gmail.com** at once: what triggered it, when, and what is frozen.
+
+The public pages keep serving.
+
+### Step 2: the team responds (needs Anthropic credit)
+
+Anthropic credit is required for this step. If credit is out, Step 1 still holds and Stanley's alert says the team is waiting for credit.
+
+All departments work together under Choumi:
+
+| Department | Role during the switch |
+|---|---|
+| Choumi (Head of Quality) | Leads; checks every finding; writes the incident report |
+| Web, Automation & Bitcoin | Investigates logs, deploys, served files and node activity (read-only key); finds the way in |
+| Operations & Admin | Keeps the evidence and the payment records intact; checks the books against the node |
+| Community Care | Drafts a notice for Ye₿ente users; it waits for Stanley's approval |
+| Personal Assistant | Builds Stanley's step-by-step response list and times it |
+| Social & Content, Marketing | Silent: nothing is posted or scheduled |
+
+### What stays with Stanley
+
+The team prepares; Stanley acts on anything that can't be undone:
+- rotating secrets (API keys, macaroons, `ADMIN_TOKEN`, server and GitHub logins) from a clean device;
+- moving funds or closing channels;
+- sending the user notice;
+- lifting the switch, after the team's checklist shows the way in is closed.
+
+The team never sees, types or emails a secret value, and never moves funds. An intruder who reached the AI must not reach the keys through it.
+
+### Constant communication
+
+During the switch Stanley gets an update at altradits@gmail.com every hour, and at once on any new finding. Each update covers what is known, what is frozen, and the next step he must take. No secret values, ever.
+
+### Upskilling: the top priority
+
+Every department is trained in security first:
+- Each playbook in `data/playbooks.js` gets a security section: its threats, its role in the switch, its escalation rule.
+- The security QA experts in `data/qa-experts.js` check every output, every time.
+- A monthly drill runs the switch on a local copy (`npm run dev`), never on the live site. The learning engine records what the drill taught.
+- The daily report to Stanley carries one security lesson.
+
+## 7. Phase 2: ask before building
 
 Post these in the settling-in issue and wait for answers. Ask anything else the analysis raised. If an answer means restructuring something, stop and ask again with the exact change.
 
@@ -101,37 +166,43 @@ Post these in the settling-in issue and wait for answers. Ask anything else the 
 4. **Email:** which addresses and mailboxes are live today?
 5. **Budget:** the monthly AI limit and `WORKER_CALLS_PER_DAY`.
 6. **Cadence:** when the daily report and the department runs happen (Africa/Nairobi time).
-7. **Dashboard:** confirm one "Choumi" admin tab and what it shows (see 7).
+7. **Dashboard:** confirm one "Choumi" admin tab and what it shows (see 8).
+8. **Deadman's Switch:** confirm the intrusion triggers and their thresholds, what Step 1 freezes, and the update cadence (hourly by default).
 
-## 7. Phase 3: bring him back
+## 8. Phase 3: bring him back
 
 Each step is its own issue and PR, with tests, and waits for "merge".
 
 1. **Circuit breaker and store:** port `lib/ai.js` and its test. Prove the site runs with no key.
-2. **Choumi's core:** the identity, the approval queue and the daily report, merged into the existing `lib/stan.js` behaviour (keep every alert and the tracker task).
-3. **QA:** `lib/qa.js`, `data/qa-experts.js`.
-4. **Departments:** `data/playbooks.js` (skills unchanged; targets as answered in Phase 2), `lib/workers.js`, `lib/screen.js`.
-5. **Learning:** `lib/learning.js`.
-6. **Dashboard:** one admin tab, "Choumi", showing:
+2. **Deadman's Switch:** Step 1 lockdown in plain code with tests (manual trigger, each intrusion trigger, everything frozen, Stanley alerted, pages still served, works with no AI key). Then Step 2's department roles.
+3. **Choumi's core:** the identity, the approval queue and the daily report, merged into the existing `lib/stan.js` behaviour (keep every alert and the tracker task).
+4. **QA:** `lib/qa.js`, `data/qa-experts.js`.
+5. **Departments:** `data/playbooks.js` (skills unchanged; targets as answered in Phase 2), `lib/workers.js`, `lib/screen.js`.
+6. **Learning:** `lib/learning.js`.
+7. **Dashboard:** one admin tab, "Choumi", showing:
+   - the Deadman's Switch: armed or triggered, why, what is frozen, and the button;
    - AI status (running or paused, why, retry time) and a "Re-check AI" button;
    - each department: queue, last output, QA verdict;
    - approvals waiting for Stanley;
    - the learning engine's state;
    - the settling-in report and open questions.
-7. **Then, only if approved:** email desk, marketing drafts, career tools.
+8. **Then, only if approved:** email desk, marketing drafts, career tools.
 
 For each step: port the module's chouMi tests, run `npm test`, run `node deploy/page-csp.mjs` if a page changed, check the admin locally (`npm run dev`, token "dev"), then the live site once after deploy.
 
-## 8. Phase 4: his duties
+## 9. Phase 4: his duties
 
+- **First:** security. Watch for intrusion, keep every department trained, run the monthly drill.
 - **Daily:** the report (node vs chain tip, sending power, Ye₿ente balances, security watch, the day's open-source task), the department runs, QA on everything produced.
 - **Weekly:** a short review: what the tracker shows, what each department did, what learning changed, and one proposed improvement as an issue.
-- **Always:** ask before restructuring; keep the site's current shape; pause safely when AI is unavailable; never act in Stanley's name without approval.
+- **Always:** keep Stanley informed at altradits@gmail.com; ask before restructuring; keep the site's current shape; pause safely when AI is unavailable; never act in Stanley's name without approval.
 
-## 9. Done when
+## 10. Done when
 
 - [ ] Settling-in report written and every Phase 2 question answered.
 - [ ] `npm test` passes, including the AI-pause test with no key set.
 - [ ] Public pages unchanged except approved improvements.
 - [ ] The "Choumi" tab shows AI status, departments, approvals and learning.
+- [ ] The Deadman's Switch is tested: manual and intrusion triggers, lockdown with no AI key, Stanley alerted.
+- [ ] Every department playbook has its security section; the first drill ran on a local copy.
 - [ ] Stanley has received one daily report from Choumi Yakunte.
