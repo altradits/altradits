@@ -460,6 +460,306 @@ function openReceipt(i) {
 $("#rcptClose").addEventListener("click", () => $("#rcpt").close());
 $("#rcptPrint").addEventListener("click", () => window.print());
 
+// Choumi Yakunte tab: Deadman's Switch, department power buttons, AI status,
+// the 5 departments, approvals waiting for Stanley, learning engine, and settling-in report.
+// The server's own checklist keys (lib/deadman.js CHECKLIST_KEYS).
+const DM_CHECK_LABELS = [
+  ["attackStopped15m", "The attack has stopped: no new intrusion signs for 15 minutes"],
+  ["solvencyConfirmed", "Node balances and Ye₿ente wallet records reconciled"],
+  ["forensicBackupSaved", "Encrypted forensic backup saved"],
+  ["secretsRotatedIfNeeded", "Exposed secrets rotated from a clean device (keys, macaroons, ADMIN_TOKEN)"],
+  ["stanleyConfirmed", "I confirm the way in is found and closed"],
+];
+const FROZEN_LABELS = {
+  yebenteSends: "Ye₿ente sends",
+  yebenteTransfers: "Ye₿ente transfers",
+  yebenteBuys: "M-Pesa buys",
+  nonOwnerEmail: "Email (except to you and wallet security notices)",
+  nodeTopup: "Node top-ups",
+};
+
+function usdF(n) { return `$${(Number(n) || 0).toFixed(4)}`; }
+
+async function loadChoumi() {
+  let C; try { C = await api("?view=choumi"); } catch (err) { $("#dmReason").textContent = err.message; return; }
+  const dm = C.deadman || {}, ai = C.ai || {}, status = ai.status || {};
+  const cl = dm.checklist || {};
+  const done = DM_CHECK_LABELS.filter(([k]) => cl[k]).length;
+
+  // 1. Deadman's Switch
+  issue("deadman", dm.active ? "crit" : null, dm.active ? `Deadman's Switch TRIGGERED (${dm.trigger || "manual"}): ${dm.reason || "lockdown active"}` : "", "choumi:hDeadman");
+  $("#dmKpis").innerHTML =
+      kpi("Switch state", dm.active ? "TRIGGERED" : "Armed", dm.active ? "warn" : "good", dm.active ? `Since ${dm.trippedAt ? ago(dm.trippedAt) : "?"} (${dm.trigger || "manual"}).` : "Watching for intrusion 24/7.")
+    + kpi("Neutralized checklist", `${done} / ${DM_CHECK_LABELS.length}`, dm.active ? (done === DM_CHECK_LABELS.length ? "good" : "warn") : "", "Every item must be ticked before you can lift the lockdown.")
+    + kpi("Incident override", ai.incidentOverrideActive ? "Active" : "Standby", ai.incidentOverrideActive ? "warn" : "", "Powers on response departments during lockdown.")
+    + kpi("Last drill", dm.lastDrill?.at ? ago(dm.lastDrill.at) : "None yet", dm.lastDrill?.ok ? "good" : "", dm.lastDrill?.scenario || "Run monthly on a local copy.");
+  $("#dmReason").innerHTML = dm.active
+    ? `<b class="err">Lockdown active:</b> ${esc(dm.reason || "Triggered")} ${dm.detail ? `<span class="muted">(${esc(dm.detail)})</span>` : ""}`
+    : "All triggers quiet. Money-out and external actions are operating normally.";
+  const frozenEntries = Object.entries(dm.frozen || {}).filter(([, v]) => v).map(([k]) => FROZEN_LABELS[k] || k);
+  $("#dmFrozen").innerHTML = frozenEntries.length
+    ? `<p class="alert crit"><b>Frozen right now:</b> ${frozenEntries.map(esc).join(" · ")}</p>`
+    : "";
+  $("#dmChecklist").innerHTML = DM_CHECK_LABELS.map(([k, label]) =>
+    `<label class="switch" style="display:flex;margin:.3rem 0"><input type="checkbox" data-dm-check="${esc(k)}"${cl[k] ? " checked" : ""}> ${esc(label)}</label>`
+  ).join("");
+  const toggleBtn = $("#dmToggle");
+  toggleBtn.textContent = dm.active ? "Lift Deadman's Switch" : "Trip Deadman's Switch";
+  toggleBtn.dataset.active = dm.active ? "1" : "0";
+  if (dm.lastDrill) {
+    $("#dmDrillNote").textContent = `Last local drill (${dm.lastDrill.scenario}): ${dm.lastDrill.lesson || "completed"} · ${ago(dm.lastDrill.at)}.`;
+  }
+
+  // 2. AI status & circuit breaker
+  const inc = status.incidentOverride;
+  const anyOn = (ai.departments || []).some((d) => d.on);
+  issue("ai_paused", status.paused && anyOn ? "warn" : null, `AI is paused (${status.kind || "unavailable"}) while departments are switched on: their tasks wait.`, "choumi:hAiStatus");
+    $("#aiKpis").innerHTML =
+      kpi("AI status", status.paused ? "Paused" : "Running", status.paused ? "warn" : "good", status.paused ? (status.reason || status.kind || "paused") : "The Anthropic key works and every budget has room.")
+    + kpi("Calls today", `${num(status.todayCalls)} / ${num(status.dailyCallLimit)}`, "", `${usdF(status.todayUsd)} today`)
+    + kpi("Month spend", `${usdF(status.monthUsd)} / $${Number(status.monthlyUsdCap || 0).toFixed(2)}`, (status.monthUsd || 0) < (status.monthlyUsdCap || 0) ? "good" : "warn", `${num(status.monthCalls)} calls this month`)
+    + kpi("Incident spend", inc ? `${usdF(inc.usd)} / $${Number(status.incidentUsdCap || 0).toFixed(2)}` : "No incident", inc ? "warn" : "", inc ? `${num(inc.calls)} calls in incident ${inc.incidentId}` : `Cap per incident: $${Number(status.incidentUsdCap || 0).toFixed(2)}.`);
+  $("#aiNote").textContent = status.paused
+    ? `Paused (${status.kind || "unavailable"}): ${String(status.reason || "").replace(/\.$/, "")}${status.retryAt ? ` · Retries after ${new Date(status.retryAt).toLocaleTimeString()}` : ""}. The site keeps running.`
+    : "Healthy. If credit runs out or the key fails, AI pauses and the site keeps running.";
+
+  // 3. Department power buttons
+  const pRows = (ai.departments || []).map((d) =>
+    `<tr><td><code>${esc(d.id)}</code></td>`
+    + `<td><button type="button" class="btn${d.on ? " primary" : ""}" data-dept-power="${esc(d.id)}" data-on="${d.on ? "1" : "0"}" aria-pressed="${d.on}">${d.on ? "ON" : "OFF"}</button></td>`
+    + `<td>${num(d.today?.calls)} · ${esc(usdF(d.today?.usd))}</td>`
+    + `<td>${num(d.month?.calls)} · ${esc(usdF(d.month?.usd))}</td></tr>`
+  ).concat((ai.permanentlyDisabled || []).map((d) => `<tr><td><code>${esc(d.id)}</code></td><td class="muted sm">Disabled in code</td><td>–</td><td>–</td></tr>`));
+  $("#deptPowerList").innerHTML = pRows.length
+    ? `<table><thead><tr><th>Department</th><th>Power</th><th>Today</th><th>This month</th></tr></thead><tbody>${pRows.join("")}</tbody></table>`
+      + (ai.updatedAt ? `<p class="sm muted">Last changed ${esc(ago(ai.updatedAt))}${ai.updatedBy ? ` by ${esc(ai.updatedBy)}` : ""}.</p>` : "")
+      + (ai.incidentOverride ? '<p class="sm"><b>Incident override:</b> the response departments are on until the switch is lifted; your settings come back then.</p>' : "")
+    : '<p class="muted sm">No department power records.</p>';
+
+  // 4. The 5 departments (queue, last output, QA verdict)
+  const dRows = (C.departments || []).map((d) => {
+    const lt = d.lastTask;
+    const verdict = lt?.qaVerdict
+      ? `<span class="${lt.qaVerdict === "approve" ? "ok" : "err"}"><b>${esc(lt.qaVerdict.toUpperCase())}</b>${lt.qaRounds ? ` (${num(lt.qaRounds)} round${lt.qaRounds === 1 ? "" : "s"})` : ""}</span>${lt.qaHeadline ? `<br><span class="muted sm">${esc(lt.qaHeadline)}</span>` : ""}`
+      : '<span class="muted sm">No QA run yet</span>';
+    const lastOut = lt
+      ? `<b>${esc(lt.title)}</b> <span class="muted sm">(${esc(lt.status)})</span>${lt.lastOutput ? `<br><span class="sm">${esc(lt.lastOutput)}</span>` : ""}`
+      : '<span class="muted sm">No output yet</span>';
+    return `<tr>`
+      + `<td><b>${esc(d.name)}</b><br><span class="sm muted">${esc(d.agent?.name)} · ${esc(d.agent?.title)}</span><br><span class="sm">${esc(d.currentWork)}</span></td>`
+      + `<td>${d.power?.on ? '<b class="ok">ON</b>' : '<span class="muted">OFF</span>'}</td>`
+      + `<td>${num(d.queue)} queued<br><span class="muted sm">${num(d.waiting)} waiting · ${num(d.doneCount)} done</span></td>`
+      + `<td>${lastOut}</td>`
+      + `<td>${verdict}</td>`
+      + `</tr>`;
+  });
+  $("#choumiDepts").innerHTML = dRows.length
+    ? `<table><thead><tr><th>Department &amp; specialist</th><th>Power</th><th>Queue</th><th>Last output</th><th>Choumi QA verdict</th></tr></thead><tbody>${dRows.join("")}</tbody></table>`
+    : '<p class="muted sm">No departments configured.</p>';
+
+  // Active / held / waiting tasks
+  const ops = C.ops || {};
+  const activeTasks = (ops.recent || []).slice(0, 20);
+  const heldCount = ops.counts?.held || 0;
+  issue("choumi_held", heldCount ? "warn" : null, `${heldCount} task(s) held by the security screen waiting for your review.`, "choumi:hDepts");
+  $("#choumiTasks").innerHTML = activeTasks.length
+    ? `<table><thead><tr><th>Task</th><th>Dept</th><th>Status</th><th>Summary / Notes</th><th>Actions</th></tr></thead><tbody>${activeTasks.map((t) => {
+        const btns = [];
+        if (t.status === "held") {
+          btns.push(`<button type="button" class="btn" data-task-act="release" data-id="${esc(t.id)}">Release</button>`);
+          btns.push(`<button type="button" class="btn" data-task-act="cancel" data-id="${esc(t.id)}">Cancel</button>`);
+        } else if (t.status === "queued") {
+          btns.push(`<button type="button" class="btn primary" data-task-work="${esc(t.id)}">Run queue</button>`);
+          btns.push(`<button type="button" class="btn" data-task-act="cancel" data-id="${esc(t.id)}">Cancel</button>`);
+        } else if (["owner", "review", "follow_up"].includes(t.status)) {
+          btns.push(`<button type="button" class="btn primary" data-task-act="approve" data-id="${esc(t.id)}">Approve 5★</button>`);
+          btns.push(`<button type="button" class="btn" data-task-act="rerun" data-id="${esc(t.id)}">Revise</button>`);
+          btns.push(`<button type="button" class="btn" data-task-act="close" data-id="${esc(t.id)}">Close</button>`);
+        }
+        const summary = t.deliverable?.summary || (t.held?.reasons || []).join(", ") || t.details || "";
+        return `<tr><td><b>${esc(t.title)}</b><br><code class="muted">${esc(t.id)}</code></td><td>${esc(t.department)}</td><td><b>${esc(t.status)}</b></td><td class="sm">${esc(summary.slice(0, 200))}</td><td><div class="row" style="margin:0">${btns.join("")}</div></td></tr>`;
+      }).join("")}</tbody></table>`
+    : '<p class="muted sm">No tasks in the queue right now.</p>';
+
+  // 5. Approvals waiting for Stanley
+  const approvals = C.approvals || [];
+  issue("choumi_approvals", approvals.length ? "warn" : null, `${approvals.length} draft(s) from Choumi's team waiting for your approval.`, "choumi:hApprovals");
+  $("#choumiApprovals").innerHTML = approvals.length
+    ? approvals.map((a) => `<div class="inside">
+        <h3>${esc(a.subject || a.title || "Draft")} <span class="muted sm">· ${esc(a.dept)} ${a.to ? `→ ${esc(a.to)}` : ""} · ${esc(ago(a.at || a.createdAt))}</span></h3>
+        <p class="sm" style="white-space:pre-wrap">${esc(a.body || a.text || "")}</p>
+        <div class="row">
+          <button type="button" class="btn primary" data-draft-decide="${esc(a.id)}" data-approve="1">${String(a.to || "").toLowerCase() === "altradits@gmail.com" ? "Approve &amp; send to me" : "Approve (held: external email is off)"}</button>
+          <button type="button" class="btn" data-draft-decide="${esc(a.id)}" data-approve="0">Reject</button>
+        </div>
+      </div>`).join("")
+    : '<p class="muted sm">No drafts waiting for approval right now.</p>';
+
+  // 6. Continual learning engine
+  const L = C.learning || {};
+  $("#learnKpis").innerHTML =
+      kpi("Active rules", num(L.totalRules || 0), "", "Distilled rules injected into specialist briefs.")
+    + kpi("5★ exemplars", num(L.totalExemplars || 0), "", "Approved deliverables kept as gold standards.")
+    + kpi("Answer Bank", num(L.answerBankCount || 0), "", "Stanley's past answers reused across tasks.");
+  const byDept = (L.departments || []).map((d) => `${esc(d.dept)}: <b>${num((d.rules || []).length)}</b>`).join(" · ");
+  $("#learnByDept").innerHTML = byDept ? `Rules by department: ${byDept}` : "";
+  const allRules = (L.departments || []).flatMap((d) => (d.rules || []).map((r) => ({ ...r, dept: d.dept }))).slice(0, 20);
+  $("#learnRules").innerHTML = allRules.length
+    ? allRules.map((r) => `<div class="sm ev"><b>[${esc(r.dept)}]</b> ${esc(r.rule)} <span class="muted">(${esc(r.source || "distilled")})</span></div>`).join("")
+    : '<p class="muted sm">No distilled rules yet. Pin a rule above or complete a review cycle.</p>';
+
+  // 7. Settling-in report & open questions
+  const S = C.settlingIn || {}, lesson = C.report?.lesson;
+  $("#choumiSettling").innerHTML =
+      `<p>${esc(S.summary || "")}</p>`
+    + `<p><b>References:</b> <a href="${esc(S.issueUrl || "https://github.com/altradits/altradits/issues/248")}" target="_blank" rel="noopener">Settling-in report (#${esc(S.issueNumber || 248)})</a> · <a href="${esc(S.workingMemoryUrl || "https://github.com/altradits/altradits/issues/253")}" target="_blank" rel="noopener">Working memory (#${esc(S.workingMemoryIssue || 253)})</a></p>`
+    + (S.decisions?.length ? `<b>Agreed guardrails</b><ul>${S.decisions.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "")
+    + (S.openQuestions?.length ? `<b>Open items for Stanley</b><ul>${S.openQuestions.map((q) => `<li>${esc(q.text)}</li>`).join("")}</ul>` : "")
+    + (lesson ? `<div class="learn" style="margin-top:.8rem"><b>Today's security lesson:</b> ${esc(typeof lesson === "string" ? lesson : lesson.lesson || "")}</div>` : "");
+}
+
+function readDmChecklistInputs() {
+  const out = {};
+  document.querySelectorAll("[data-dm-check]").forEach((el) => { out[el.dataset.dmCheck] = el.checked; });
+  return out;
+}
+
+$("#dmSaveCheck").addEventListener("click", async () => {
+  try {
+    await api("", { action: "deadman_checklist", checklist: readDmChecklistInputs() });
+    toast("Neutralized checklist saved.");
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#dmToggle").addEventListener("click", async () => {
+  const active = $("#dmToggle").dataset.active === "1";
+  const note = $("#dmNote").value.trim();
+  try {
+    if (active) {
+      await api("", { action: "deadman_lift", note: note || "Lifted from Choumi admin tab", checklist: readDmChecklistInputs() });
+      toast("Deadman's Switch lifted.");
+    } else {
+      await api("", { action: "deadman_trip", reason: note || "Manual trigger from Choumi admin tab" });
+      toast("Deadman's Switch tripped: lockdown active.");
+    }
+    $("#dmNote").value = "";
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#dmDrill").addEventListener("click", async () => {
+  try {
+    const r = await api("", { action: "deadman_drill", scenario: "monthly_admin_drill", lesson: $("#dmNote").value.trim() });
+    toast("Local security drill passed.");
+    $("#dmDrillNote").textContent = `Drill passed (${r.scenario}): ${r.lesson}`;
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#aiRecheck").addEventListener("click", async () => {
+  try {
+    await api("", { action: "ai_resume" });
+    toast("AI circuit breaker re-checked.");
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
+// Turning everything on spends credit in every department: it takes a second click.
+let allOnArmed = 0;
+$("#deptAllOn").addEventListener("click", async () => {
+  const b = $("#deptAllOn");
+  if (!allOnArmed) { allOnArmed = setTimeout(() => { allOnArmed = 0; b.textContent = "Turn all on"; }, 5000); b.textContent = "Click again to turn all on"; return; }
+  clearTimeout(allOnArmed); allOnArmed = 0; b.textContent = "Turn all on";
+  try { await api("", { action: "dept_power_all", on: true }); toast("All departments powered ON."); loadChoumi(); }
+  catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#deptAllOff").addEventListener("click", async () => {
+  try { await api("", { action: "dept_power_all", on: false }); toast("All departments powered OFF."); loadChoumi(); }
+  catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#deptPowerList").addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-dept-power]");
+  if (!btn) return;
+  const dept = btn.dataset.deptPower, nextOn = btn.dataset.on !== "1";
+  try {
+    await api("", { action: "dept_power", dept, on: nextOn });
+    toast(`${dept} turned ${nextOn ? "ON" : "OFF"}.`);
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#choumiQueueBtn").addEventListener("click", async () => {
+  const title = $("#choumiInput").value.trim(), department = $("#choumiTaskDept").value;
+  if (!title) { toast("Give the task a title first.", true); return; }
+  try {
+    const r = await api("", { action: "task_create", title, department });
+    $("#choumiInput").value = "";
+    $("#choumiActionReply").textContent = `Task ${r.task.id} (${r.task.department}): ${r.task.status}`;
+    toast(`Task ${r.task.status} (${r.task.department}).`);
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#choumiWorkBtn").addEventListener("click", async () => {
+  try {
+    const r = await api("", { action: "task_work", budgetMs: 5000 });
+    toast(r.count ? `Ran ${r.count} task(s).` : "No queued tasks to run (check department power buttons).");
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#choumiTasks").addEventListener("click", async (e) => {
+  const workBtn = e.target.closest("[data-task-work]");
+  if (workBtn) {
+    try {
+      const r = await api("", { action: "task_work", budgetMs: 5000 });
+      toast(r.count ? `Ran ${r.count} task(s).` : "No queued tasks ran (check department power buttons).");
+      loadChoumi();
+    } catch (err) { toast(err.message, true, 6000); }
+    return;
+  }
+  const actBtn = e.target.closest("[data-task-act]");
+  if (!actBtn) return;
+  try {
+    await api("", { action: "task_decide", id: actBtn.dataset.id, subaction: actBtn.dataset.taskAct, note: $("#choumiInput").value.trim() });
+    toast(`Task ${actBtn.dataset.taskAct} complete.`);
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#choumiApprovals").addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-draft-decide]");
+  if (!btn) return;
+  const id = btn.dataset.draftDecide, approve = btn.dataset.approve === "1";
+  try {
+    await api("", { action: "draft_decide", id, approve });
+    toast(approve ? "Draft approved." : "Draft rejected.");
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#learnAddBtn").addEventListener("click", async () => {
+  const note = $("#learnRuleText").value.trim(), dept = $("#learnDept").value;
+  if (!note) { toast("Write a rule to pin first.", true); return; }
+  try {
+    await api("", { action: "learning_rule", dept, note });
+    $("#learnRuleText").value = "";
+    toast("Rule pinned to the learning engine.");
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#learnConsolidateBtn").addEventListener("click", async () => {
+  try {
+    await api("", { action: "learning_consolidate" });
+    toast("Learning rules consolidated.");
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
 async function load() {
   let D;
   $("#loginErr").textContent = "Loading… reading the node can take a few seconds.";
@@ -469,7 +769,7 @@ async function load() {
   KES_PER_BTC = D.kesPerBtc;
   renderChecklist(D); renderStan(D.stan); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderGlossary();
   renderVerify();
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations()]);
+  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi()]);
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
 }
 token ? load() : showLogin();
