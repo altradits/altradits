@@ -73,13 +73,18 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .side h3 img{border-radius:.5rem;border:1px solid var(--line);background:#fff}
 .side p{margin:0;color:var(--muted)}
 .side .tag{align-self:flex-start}
+.sm{font-size:.92rem}
+.gap{margin-top:1.2rem}
+.friends.four{grid-template-columns:repeat(auto-fit,minmax(14rem,1fr))}
 .steps{max-width:46rem;padding-left:1.3rem;color:var(--muted)}
 .steps li{margin:.45rem 0}
+.topnav a.launch{background:var(--btc);color:var(--ink);padding:.35rem .9rem;border-radius:99px}
+.topnav a.launch:hover{color:var(--ink);background:#ffa94d}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/wallet">Ye₿ente</a><a href="/library">Library</a><a href="/bitcoin-core">Bitcoin Core</a><a href="/players">Players</a><a href="/friends" aria-current="page">Friends</a><a href="/tracker">Tracker</a><a href="/journey">Journey</a></nav></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/library">Library</a><a href="/bitcoin-core">Bitcoin Core</a><a href="/players">Players</a><a href="/friends" aria-current="page">Friends</a><a href="/tracker">Tracker</a><a href="/journey">Journey</a><a class="launch" href="/yebente">Open Ye₿ente</a></nav></div>
 
   <header class="hero">
     <h1>The friends behind <em>my Bitcoin journey.</em></h1>
@@ -118,6 +123,23 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
     </section>
   </div>
 
+  <h2 id="kisumu">From where they build, to Kisumu</h2>
+  <p class="intro">Four teams made Bitcoin simple to start. Each began in one place, for the people around them. That's what I want for Kisumu.</p>
+  <ul class="friends four">
+    <li><div class="who"><img src="/assets/players/wallet-of-satoshi.png" alt="" width="56" height="56"><div><span class="role">Australia · since 2019</span><br><b><a href="https://www.walletofsatoshi.com/">Wallet of Satoshi</a></b></div></div><p>A Lightning wallet built to be simple: "Bitcoin. Simple." Your first sats in a minute.</p><p><b>For Kisumu:</b> anyone with a phone holds their first sats in a minute, through Ye₿ente.</p></li>
+    <li><div class="who"><img src="/assets/players/bitika.png" alt="" width="56" height="56"><div><span class="role">Nairobi, Kenya</span><br><b><a href="https://bitika.xyz/">Bitika</a></b></div></div><p>Buy Bitcoin with shillings over M-Pesa or Airtel, from KES 10, with no account.</p><p><b>For Kisumu:</b> a fisherman or a student starts with KES 10, not a bank form.</p></li>
+    <li><div class="who"><img src="/assets/players/tando.png" alt="" width="56" height="56"><div><span class="role">Kenya · since 2024</span><br><b><a href="https://tando.me/">Tando</a></b></div></div><p>Turns M-Pesa numbers and tills into Lightning payments, so a Kenyan vendor can be paid in Bitcoin without changing anything.</p><p><b>For Kisumu:</b> Kibuye market traders take sats on the till they already have.</p></li>
+    <li><div class="who"><img src="/assets/players/minmo.png" alt="" width="56" height="56"><div><span class="role">Kenya · since 2025</span><br><b><a href="https://minmo.to/">Minmo</a></b></div></div><p>Started as a tool for Bitsacco members. Now agents serve their own community, buying and selling Bitcoin with people they know.</p><p><b>For Kisumu:</b> trusted local agents, so Bitcoin spreads person to person.</p></li>
+  </ul>
+  <p class="intro gap"><b>Kisumu</b> is Kenya's third-largest city, on the shore of Lake Victoria, and home to <a href="https://lakehub.co.ke/">LakeHub</a>. The goals, not claims:</p>
+  <ol class="steps">
+    <li><b>Households:</b> start on Ye₿ente, then learn to hold their own keys.</li>
+    <li><b>Traders:</b> paid in sats through the M-Pesa tills they already use.</li>
+    <li><b>Developers:</b> LakeHub's Go developers learn Bitcoin at BitDevs Kisumu and contribute to open source.</li>
+    <li><b>Everyone:</b> free education through Bitcoin Kisumu.</li>
+  </ol>
+  <p class="intro sm">Sources: <a href="https://apps.apple.com/app/id1438599608">Wallet of Satoshi on the App Store</a> · <a href="https://bitika.xyz/">bitika.xyz</a> · <a href="https://www.caplight.com/company/bitika">Caplight: Bitika</a> · <a href="https://blink.sv/blog/tando-bitcoin-adoption-in-kenya">Blink: Tando in Kenya</a> · <a href="https://blink.sv/blog/40-million-kenyans-now-have-a-bitcoin-lightning-address">Blink: 40 million Kenyans have a Lightning address</a> · <a href="https://www.fedi.xyz/blog/buy-bitcoin-through-someone-you-trust-with-the-minmo-mini-app-on-fedi">Fedi: Minmo</a></p>
+
   <h2>How I work with partners</h2>
   <ol class="steps">
     <li><b>Start the conversation.</b> With a company our 100+ Go developers at LakeHub would value.</li>
@@ -129,7 +151,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 
 </div>
 
-<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/wallet">Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin in Kisumu</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/donate">Support my work</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/yebente">Open Ye₿ente</a> · <a href="/wallet">Ye₿ente guide</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin in Kisumu</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/donate">Support my work</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 </script>

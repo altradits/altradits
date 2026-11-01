@@ -73,11 +73,13 @@ th,td{text-align:left;border-bottom:1px solid var(--line);padding:.45rem .5rem;v
 .toc{columns:2;column-gap:2rem;padding-left:1.2rem}
 @media (max-width:560px){.toc{columns:1}}
 .links li{margin:.3rem 0}
+.topnav a.launch{background:var(--btc);color:var(--ink);padding:.35rem .9rem;border-radius:99px}
+.topnav a.launch:hover{color:var(--ink);background:#ffa94d}
 </style>
 </head>
 <body>
 <div class="wrap read">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/wallet">Ye₿ente</a><a href="/library">Library</a><a href="/bitcoin-core" aria-current="page">Bitcoin Core</a><a href="/players">Players</a><a href="/friends">Friends</a><a href="/tracker">Tracker</a><a href="/journey">Journey</a></nav></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/library">Library</a><a href="/bitcoin-core" aria-current="page">Bitcoin Core</a><a href="/players">Players</a><a href="/friends">Friends</a><a href="/tracker">Tracker</a><a href="/journey">Journey</a><a class="launch" href="/yebente">Open Ye₿ente</a></nav></div>
 
   <header class="hero">
     <h1>Run your own Bitcoin node, <em>step by step.</em></h1>
@@ -301,7 +303,7 @@ bitcoin-cli -regtest -rpcwallet=alice getbalances</code></pre>
   <p class="intro">Versions change: if bitcoincore.org lists a newer release, use it and replace 32.1 in the commands.</p>
 </div>
 
-<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/wallet">Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin in Kisumu</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/donate">Support my work</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/yebente">Open Ye₿ente</a> · <a href="/wallet">Ye₿ente guide</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin in Kisumu</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/donate">Support my work</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 </script>
