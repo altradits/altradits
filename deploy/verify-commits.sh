@@ -29,10 +29,16 @@ if ! git merge-base --is-ancestor "$TRUST_ROOT" "$REF" 2>/dev/null; then
   echo "verify-commits: the trust root $TRUST_ROOT is not an ancestor of $REF (history rewritten, or not fetched)."
   exit 1
 fi
+# Servers with OpenSSH older than 8.2 can't run git's SSH check (no
+# `ssh-keygen -Y verify`); there the same signature is checked in Node
+# (deploy/verify-sshsig.mjs). Either check alone must pass; neither weakens the other.
+ROOT=$(git rev-parse --show-toplevel)
+NODE_BIN=$(command -v node 2>/dev/null || ls -d "$HOME/nodevenv/${ROOT#$HOME/}"/*/bin/node 2>/dev/null | sort -V | tail -1 || true)
 bad=0; n=0
 for c in $(git rev-list --first-parent "$TRUST_ROOT..$REF"); do
   n=$((n + 1))
-  if ! git -c gpg.format=ssh -c gpg.ssh.allowedSignersFile="$SIGNERS" verify-commit "$c" >/dev/null 2>&1; then
+  if ! git -c gpg.format=ssh -c gpg.ssh.allowedSignersFile="$SIGNERS" verify-commit "$c" >/dev/null 2>&1 \
+    && ! { [ -n "$NODE_BIN" ] && "$NODE_BIN" "$ROOT/deploy/verify-sshsig.mjs" "$c" "$SIGNERS" >/dev/null 2>&1; }; then
     echo "verify-commits: NOT trusted: $(git log -1 --format='%h %an: %s' "$c")"
     bad=$((bad + 1))
   fi
