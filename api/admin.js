@@ -28,10 +28,17 @@ const deny = () => json({ error: process.env.ADMIN_TOKEN ? "Wrong admin token." 
 
 // Wrong tokens are throttled: 20 per connection per 15 minutes, then a pause.
 async function gate(request) {
-  const key = `rl:admin:fail:${clientIp(request)}`;
+  const ip = clientIp(request);
+  const key = `rl:admin:fail:${ip}`;
   if ((await peek(key)) >= 20) return json({ error: "Too many wrong tokens. Wait 15 minutes and try again." }, 429);
-  if (authorized(request)) return null;
+  if (authorized(request)) {
+    const { noteAdminSignIn } = await import("../lib/deadman.js");
+    await noteAdminSignIn(ip).catch(() => {});
+    return null;
+  }
   await hit(key, 900);
+  const { recordAttack } = await import("../lib/attacks.js");
+  await recordAttack("admin_token_guess", { where: `${request.method} /api/admin`, ip: ip || "" }).catch(() => {});
   // Many wrong tokens across the whole site: Stanley is told, at most once an
   // hour. Never a site-wide lockout, which would let a stranger lock him out.
   const hour = new Date().toISOString().slice(0, 13);
@@ -90,8 +97,14 @@ export async function GET(request) {
   }
   if (view === "security") {
     const { securityView } = await import("../lib/attacks.js");
+    const { deadmanStatus } = await import("../lib/deadman.js");
     const { BITCOIN_ATTACKS } = await import("../data/bitcoin-attacks.js");
-    return json({ ...(await securityView()), history: BITCOIN_ATTACKS });
+    return json({ ...(await securityView()), deadman: deadmanStatus(), history: BITCOIN_ATTACKS });
+  }
+  if (view === "choumi" || view === "ai") {
+    const { deptPowerView } = await import("../lib/ai.js");
+    const { deadmanStatus } = await import("../lib/deadman.js");
+    return json({ ai: deptPowerView(), deadman: deadmanStatus() });
   }
   // Money received through the website.
   if (view === "statement") {
@@ -136,6 +149,8 @@ async function overview(node, details, tip, outbound, inbound, chainFees, kes) {
     visits: await import("../lib/visits.js").then((v) => v.visitSummary()).catch(() => null),
     retired: await getJSON("retired:agency"),
     stan: await import("../lib/stan.js").then((s) => s.stanLast()).catch(() => null),
+    deadman: await import("../lib/deadman.js").then((d) => d.deadmanStatus()).catch(() => null),
+    ai: await import("../lib/ai.js").then((a) => a.deptPowerView()).catch(() => null),
     archives: listArchives(),
     system: {
       email: process.env.SMTP_HOST ? `SMTP (${process.env.SMTP_HOST})` : process.env.EMAIL_TRANSPORT === "sendmail" ? "server mail (sendmail)" : process.env.RESEND_API_KEY ? "Resend" : "log only: set EMAIL_TRANSPORT=sendmail",
@@ -148,8 +163,45 @@ export async function POST(request) {
   { const g = await gate(request); if (g) return g; }
   const body = await readBody(request);
   if (body.action === "node_topup") {
+    const { deadmanActive } = await import("../lib/deadman.js");
+    if (deadmanActive()) return json({ error: "Deadman's Switch is active: node top-ups are paused until you lift the lockdown." }, 503);
     const { startTopup } = await import("../lib/channels.js");
     try { return json(await startTopup(body.sats)); } catch (err) { return json({ error: err.message }, err.status || 502); }
+  }
+  if (body.action === "deadman_trip") {
+    const { tripDeadman } = await import("../lib/deadman.js");
+    try { return json(await tripDeadman({ trigger: "manual", reason: clean(body.reason, 200) || "Manual trigger from /admin", detail: clean(body.detail, 400) })); }
+    catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "deadman_lift") {
+    const { liftDeadman } = await import("../lib/deadman.js");
+    try { return json(await liftDeadman({ by: "stanley", note: clean(body.note, 500), checklist: body.checklist, force: body.force })); }
+    catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "deadman_checklist") {
+    const { updateDeadmanChecklist } = await import("../lib/deadman.js");
+    try { return json(await updateDeadmanChecklist(body.checklist || {}, { by: "stanley" })); }
+    catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "dept_power") {
+    const { setDeptPower } = await import("../lib/ai.js");
+    try { return json(setDeptPower(clean(body.dept, 40), Boolean(body.on), { by: "stanley" })); }
+    catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "dept_power_all") {
+    const { setAllDeptPower } = await import("../lib/ai.js");
+    try { return json(setAllDeptPower(Boolean(body.on), { by: "stanley" })); }
+    catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "ai_resume") {
+    const { resumeAi, deptPowerView } = await import("../lib/ai.js");
+    resumeAi();
+    return json(deptPowerView());
+  }
+  if (body.action === "node_action_record") {
+    const { recordNodeAction } = await import("../lib/deadman.js");
+    try { return json(await recordNodeAction({ sats: body.sats, reason: clean(body.reason, 200), by: "stanley" })); }
+    catch (err) { return json({ error: err.message }, 400); }
   }
   // Your wallets: a list of handles you keep an eye on, and invoices to receive into them.
   // Sending needs the wallet's PIN on a trusted device, so it happens in the Ye₿ente app, never here.

@@ -134,7 +134,13 @@ async function stkQuery(request) {
 // and only when the secret in the path matches, so nobody can fake a payment.
 async function callback(request, secret) {
   const want = env("YEBENTE_CALLBACK_SECRET");
-  if (!want || secret.length !== want.length || !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(want))) return json({ ResultCode: 1, ResultDesc: "Rejected" }, 403);
+  if (!want || secret.length !== want.length || !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(want))) {
+    if (want && secret) {
+      const { recordAttack } = await import("../lib/attacks.js");
+      await recordAttack("secret_guess", { where: "/api/yebente/mpesa/callback", detail: "wrong callback secret" }).catch(() => {});
+    }
+    return json({ ResultCode: 1, ResultDesc: "Rejected" }, 403);
+  }
   const stk = (await readBody(request))?.Body?.stkCallback;
   const id = safeId(stk?.CheckoutRequestID);
   if (id) {

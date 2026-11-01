@@ -206,6 +206,13 @@ async function maybeRunHourly() {
 setInterval(() => maybeRunHourly().catch((e) => console.error("hourly", e)), 10 * 60 * 1000).unref();
 // Ye₿ente wallets: credit invoices paid while the app was closed (every 2 minutes).
 setInterval(() => { if (["on", "true", "yes", "1"].includes(String(process.env.YEBENTE_WALLETS || "").trim().replace(/^["']|["']$/g, "").toLowerCase()) && process.env.LND_REST_URL) import("./lib/ywallet.js").then((y) => Promise.all([y.settleOpen(), y.reconcilePayments()])).catch((e) => console.error("yebente settle", e.message)); }, 2 * 60 * 1000).unref();
+// Every 5 minutes (and on every /healthz ping from deploy/cron.sh): Deadman's
+// Switch file/.htaccess integrity check and node total balance check.
+async function maybeRunDeadmanChecks() {
+  const { runDeadmanChecks } = await import("./lib/deadman.js");
+  await runDeadmanChecks({ rootDir: ROOT });
+}
+setInterval(() => maybeRunDeadmanChecks().catch((e) => console.error("deadman check", e)), 5 * 60 * 1000).unref();
 
 // Once, after the agency moved to altradits/chouMi: its records (test orders
 // included) are archived to one owner-only file, then removed from the store.
@@ -217,5 +224,5 @@ let checking = false;
 function dueJobs() {
   if (checking) return;
   checking = true;
-  Promise.allSettled([maybeRunDaily(), maybeRunHourly()]).then((r) => r.forEach((x) => x.status === "rejected" && console.error("due jobs", x.reason))).finally(() => { checking = false; });
+  Promise.allSettled([maybeRunDaily(), maybeRunHourly(), maybeRunDeadmanChecks()]).then((r) => r.forEach((x) => x.status === "rejected" && console.error("due jobs", x.reason))).finally(() => { checking = false; });
 }

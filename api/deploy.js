@@ -15,7 +15,12 @@ export function setDeployRunner(f) { run = f; } // tests: never the real deploy 
 
 export async function POST(request) {
   const secret = process.env.DEPLOY_SECRET;
-  if (!secret || !safeEqual(secret, request.headers.get("x-deploy-secret") || "")) {
+  const given = request.headers.get("x-deploy-secret") || "";
+  if (!secret || !safeEqual(secret, given)) {
+    if (secret && given) {
+      const { recordAttack } = await import("../lib/attacks.js");
+      await recordAttack("secret_guess", { where: "/api/deploy", detail: "wrong X-Deploy-Secret" }).catch(() => {});
+    }
     return json({ started: false, reason: secret ? "Wrong deploy secret." : "DEPLOY_SECRET isn't set on the server; the 5-minute cron deploys instead." }, 403);
   }
   if ((await hit("rl:deploy", 60)) > 1) {
