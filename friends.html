@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<link rel="canonical" href="https://altradits.com/friends">
+<title>Friends behind my Bitcoin journey · Altradits</title>
+<meta name="description" content="Btrust, Minmo, Tando, Wallet of Satoshi, LakeHub and My First Bitcoin: the friends behind Ye₿ente, BitDevs Kisumu and my path to full-time open source. Plus the difference between BitDevs Kisumu and Bitcoin Kisumu.">
+<link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
+<meta property="og:title" content="Friends behind my Bitcoin journey · Altradits">
+<meta property="og:description" content="Btrust, Minmo, Tando, Wallet of Satoshi, LakeHub and My First Bitcoin: the friends behind Ye₿ente, BitDevs Kisumu and my path to full-time open source. Plus the difference between BitDevs Kisumu and Bitcoin Kisumu.">
+<meta property="og:url" content="https://altradits.com/friends">
+<meta property="og:type" content="website">
+<style>
+/* Brand fonts, served from this site: Bricolage Grotesque and Figtree (SIL Open Font License 1.1, https://openfontlicense.org), latin and latin-ext (₿), variable weight */
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0;padding:1.1rem 0;flex-wrap:wrap;row-gap:.35rem}
+.top img{height:2.5rem;width:auto;display:block}
+.topnav{display:flex;gap:1.1rem;flex-wrap:wrap;row-gap:.2rem}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.35rem 0}
+.topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
+@media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
+.hero{padding:2.25rem 0 1.5rem}
+.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem}
+.hero h1 em{font-style:normal;color:var(--btc-text)}
+.lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:38rem}
+.ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
+.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none}
+.btn.ghost{background:transparent;border-color:var(--ink)}
+h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:2.4rem 0 .4rem}
+h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
+.intro{color:var(--muted);margin:0 0 1.2rem;max-width:42rem}
+.cards{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem}
+.cards>li{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem}
+.cards p{margin:0;color:var(--muted);font-size:.97rem}
+.cards .links{display:flex;flex-wrap:wrap;gap:.4rem 1rem;margin-top:auto;padding-top:.3rem;font-weight:600}
+.tag{align-self:flex-start;font-size:.78rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}
+.sitefoot .wp{margin:0 0 .6rem}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+.photo{margin:0 0 1rem;max-width:56rem}
+.photo img{display:block;width:100%;height:auto;border-radius:1rem;border:2px solid var(--ink)}
+.photo figcaption{color:var(--muted);font-size:.92rem;margin-top:.5rem}
+.friends{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:1rem}
+.friends>li{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.6rem}
+.friends .who{display:flex;align-items:center;gap:.8rem}
+.friends .who img{width:56px;height:56px;border-radius:.8rem;border:1px solid var(--line);background:#fff;flex:none;object-fit:contain}
+.friends .role{font-size:.8rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.04em}
+.friends p{margin:0;color:var(--muted);font-size:.97rem}
+.links{display:flex;flex-wrap:wrap;gap:.3rem 1rem;font-weight:600;margin-top:auto}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:1rem}
+.side{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem}
+.side h3{display:flex;align-items:center;gap:.5rem;font-size:1.25rem}
+.side h3 img{border-radius:.5rem;border:1px solid var(--line);background:#fff}
+.side p{margin:0;color:var(--muted)}
+.side .tag{align-self:flex-start}
+.steps{max-width:46rem;padding-left:1.3rem;color:var(--muted)}
+.steps li{margin:.45rem 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/wallet">Ye₿ente</a><a href="/library">Library</a><a href="/bitcoin-core">Bitcoin Core</a><a href="/players">Players</a><a href="/friends" aria-current="page">Friends</a><a href="/tracker">Tracker</a><a href="/journey">Journey</a></nav></div>
+
+  <header class="hero">
+    <h1>The friends behind <em>my Bitcoin journey.</em></h1>
+    <p class="lead">Companies and people I've worked with in person. Each one shaped Ye₿ente, BitDevs Kisumu, or my path to full-time open source.</p>
+  </header>
+
+  <figure class="photo">
+    <img src="/assets/bitdevs-kisumu-btrust.jpg" alt="Four people stand smiling between a BitDevs Kisumu banner and a Btrust banner at LakeHub in Kisumu." width="1200" height="900">
+    <figcaption>BitDevs Kisumu, sponsored by Btrust, at LakeHub. Co-founders to the left, with Carson, Val and Pau.</figcaption>
+  </figure>
+
+  <h2>Thank you</h2>
+  <ul class="friends"><li><div class="who"><img src="/assets/players/btrust.png" alt="Btrust logo" width="56" height="56" loading="lazy"><div><h3>Btrust</h3><span class="role">Sponsor of BitDevs Kisumu</span></div></div><p>Btrust sponsored the founding of BitDevs Kisumu and sponsors it today. Thank you for giving Bitcoin developers in Western Kenya a place to learn together.</p><div class="links"><a href="https://www.btrust.tech/">Visit Btrust</a></div></li><li><div class="who"><img src="/assets/players/minmo.png" alt="Minmo logo" width="56" height="56" loading="lazy"><div><h3>Minmo</h3><span class="role">Mentors, and my first open-source home</span></div></div><p>Minmo introduced me to APIs and was the first to engage when I set out to build YeboBank, a bank idea for Ethiopia. Their guidance, through much restructuring, gave birth to Ye₿ente. I became their agent, helping peers buy and sell bitcoin, and they mentored me into open source: adding Ethiopia's Telebirr to their payment-channels registry.</p><div class="links"><a href="https://minmo.to/">Visit Minmo</a></div></li><li><div class="who"><img src="/assets/players/tando.png" alt="Tando logo" width="56" height="56" loading="lazy"><div><h3>Tando</h3><span class="role">Bitcoin to M-Pesa</span></div></div><p>It started as a phone conversation. Their APIs let Ye₿ente send bitcoin to M-Pesa, and spared me the cost of running that myself.</p><div class="links"><a href="https://tando.me/">Visit Tando</a></div></li><li><div class="who"><img src="/assets/players/wallet-of-satoshi.png" alt="Wallet of Satoshi logo" width="56" height="56" loading="lazy"><div><h3>Wallet of Satoshi</h3><span class="role">The fallback, and the inspiration</span></div></div><p>When my node is down, payments fall back to Wallet of Satoshi. Its simplicity is the inspiration behind Ye₿ente's.</p><div class="links"><a href="https://www.walletofsatoshi.com/">Visit Wallet of Satoshi</a></div></li><li><div class="who"><img src="/assets/players/lakehub.png" alt="LakeHub logo" width="56" height="56" loading="lazy"><div><h3>LakeHub</h3><span class="role">Home of BitDevs Kisumu</span></div></div><p>BitDevs Kisumu meets at LakeHub, which also backs it. It's where I learn alongside more than 100 Go developers.</p><div class="links"><a href="https://lakehub.co.ke/">Visit LakeHub</a></div></li><li><div class="who"><img src="/assets/players/my-first-bitcoin.png" alt="My First Bitcoin logo" width="56" height="56" loading="lazy"><div><h3>My First Bitcoin</h3><span class="role">In conversation</span></div></div><p>We are in conversation about helping a group of developers from LakeHub establish Bitcoin Kisumu, with My First Bitcoin's free education.</p><div class="links"><a href="https://myfirstbitcoin.io/">Visit My First Bitcoin</a></div></li></ul>
+
+  <h2>BitDevs Kisumu and Bitcoin Kisumu</h2>
+  <p class="intro">Two different groups, with two different jobs.</p>
+  <div class="two">
+    <section class="side">
+      <span class="tag">Running · sponsored by Btrust</span>
+      <h3><img src="/assets/players/bitdevs-kisumu.png" alt="" width="40" height="40"> BitDevs Kisumu</h3>
+      <p><b>For developers.</b> Socratic seminars on Bitcoin Core pull requests, BIPs and Lightning. Nobody lectures; everyone brings something.</p>
+      <p>Co-founded by me. Sponsored by Btrust, hosted at LakeHub.</p>
+      <p>My first talk there: <a href="/bitcoin-core">setting up Bitcoin Core</a>, now a free step-by-step guide.</p>
+      <div class="links"><a href="https://bitdevsksm.org/">bitdevsksm.org</a><a href="https://x.com/BitDevsKsm">@BitDevsKsm</a></div>
+    </section>
+    <section class="side">
+      <span class="tag">Being formed</span>
+      <h3>₿ Bitcoin Kisumu</h3>
+      <p><b>For the wider community.</b> A group of developers from LakeHub, in conversation with My First Bitcoin, setting out to grow Bitcoin education in Kisumu.</p>
+      <p>The group will lead it. I help start the conversation, then keep building for the community.</p>
+    </section>
+  </div>
+
+  <h2>How I work with partners</h2>
+  <ol class="steps">
+    <li><b>Start the conversation.</b> With a company our 100+ Go developers at LakeHub would value.</li>
+    <li><b>Hand over the lead.</b> When we partner, a group takes ownership.</li>
+    <li><b>Everyone benefits.</b> I keep building tools for the community.</li>
+    <li><b>We learn together</b> towards full-time open-source work. <a href="/tracker">Follow the tracker</a>.</li>
+  </ol>
+  <p class="intro">It hasn't been easy. The Bitcoin community has given us enough hope. I can't wait to see what's next.</p>
+
+</div>
+
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/wallet">Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin in Kisumu</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/donate">Support my work</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+</script>
+</body>
+</html>
