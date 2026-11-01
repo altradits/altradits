@@ -359,42 +359,136 @@ test("deadman Step 2, hourly incident update, local security drill, and combined
   const latestDrill = await deadman.lastSecurityDrill();
   assert.equal(latestDrill.id, drill.id);
 
-  // 3. Trip Deadman's Switch and verify Step 2 tasks + hourly update email
-  const tripped = await deadman.tripDeadman({
-    trigger: "manual",
-    reason: "Testing Step 2 coordination",
-  });
-  assert.equal(tripped.active, true);
-  assert.ok(tripped.step2);
-  assert.equal(tripped.step2.taskIds.length, 4);
-  assert.deepEqual(
-    tripped.step2.tasks.map((t) => t.department).sort(),
-    ["admin", "growth", "personal", "tech"],
-    "Step 2 queues tasks for tech, admin, growth, personal while social & marketing stay silent",
-  );
-  for (const d of ["founder", "tech", "admin", "growth", "personal", "quality"]) {
-    assert.equal(ai.isDeptOn(d), true, `${d} powered on during incident`);
+  // 3. Single source of truth: INCIDENT_DEPARTMENTS derives from INCIDENT_RESPONSE_ROLES
+  // (plus founder & quality). With every button OFF and a fake client set, tripping the
+  // switch powers on the override list so all 4 response tasks (tech, admin, growth,
+  // personal) get past the power check and complete, while social & marketing stay OFF.
+  assert.equal(deadman.INCIDENT_RESPONSE_ROLES, ai.INCIDENT_RESPONSE_ROLES, "single source of truth for incident roles");
+  const expectedOverrideDepts = [
+    ...new Set([
+      ...Object.entries(ai.INCIDENT_RESPONSE_ROLES)
+        .filter(([, r]) => r.activeDuringSwitch)
+        .map(([id]) => id),
+      "founder",
+      "quality",
+    ]),
+  ];
+  assert.deepEqual(ai.INCIDENT_DEPARTMENTS, expectedOverrideDepts);
+  assert.ok(!ai.INCIDENT_DEPARTMENTS.includes("social"));
+  assert.ok(!ai.INCIDENT_DEPARTMENTS.includes("marketing"));
+
+  ai.setAllDeptPower(false, { by: "stanley" });
+  for (const d of ai.DEPARTMENTS_LIST) {
+    assert.equal(ai.isDeptOn(d), false, `${d} is off before trip`);
   }
-  assert.equal(ai.isDeptOn("social"), false, "social stays off during incident");
-  assert.equal(ai.isDeptOn("marketing"), false, "marketing stays off during incident");
 
-  const hourly = await deadman.sendIncidentHourlyUpdate({ force: true });
-  assert.equal(hourly.sent, true);
-  const recentEmails = await store.getMany("email", await store.listIds("emails", 10));
-  assert.ok(recentEmails.some((e) => /^\[DEADMAN UPDATE\]/.test(e.subject)));
-
-  // Clean lift
-  await deadman.updateDeadmanChecklist(
-    {
-      attackStopped15m: true,
-      solvencyConfirmed: true,
-      forensicBackupSaved: true,
-      secretsRotatedIfNeeded: true,
-      stanleyConfirmed: true,
+  const incidentCalls = [];
+  const tool = (name, input) => ({
+    model: "claude-sonnet-5-5",
+    stop_reason: "tool_use",
+    content: [{ type: "tool_use", id: `t_${Math.random()}`, name, input }],
+    usage: { input_tokens: 100, output_tokens: 50 },
+  });
+  const QA_TOOLS = ["qa_plan", "area_verdict", "stan_decision"];
+  const fakeIncidentClient = {
+    messages: {
+      create: async (p) => { incidentCalls.push(p); return reply(p); },
+      stream: (p) => ({ finalMessage: async () => { incidentCalls.push(p); return reply(p); } }),
     },
-    { by: "stanley" },
-  );
-  await deadman.liftDeadman({ by: "stanley", note: "Step 2 test complete" });
+  };
+  function reply(p) {
+    const isQA = (p.tools || []).some((t) => QA_TOOLS.includes(t.name));
+    if (!isQA) {
+      return tool("submit_deliverable", {
+        title: "Incident containment finding",
+        summary_for_client: "Verified read-only logs, forensic backup, and ledger balance.",
+        files: [{ name: "finding.md", format: "md", content: "# Incident Report\nNo unauthorized outbound payments." }],
+        hours_saved: 1,
+        human_steps: [],
+        sources: ["https://altradits.com"],
+      });
+    }
+    const name = p.tools[0].name;
+    if (name === "qa_plan") {
+      const ids = [...p.messages[0].content.matchAll(/^- ([a-z-]+): /gm)].map((m) => m[1]);
+      return tool("qa_plan", { areas: ids.map((id) => ({ id, criteria: [`${id} criterion`] })) });
+    }
+    if (name === "area_verdict") {
+      const crits = [...p.messages[0].content.matchAll(/^\d+\. (.+ criterion)$/gm)].map((m) => m[1]);
+      return tool("area_verdict", {
+        items: crits.map((c, i) => ({ index: i + 1, criterion: c, pass: true, evidence: "finding.md line 1", fix: "" })),
+      });
+    }
+    return tool("stan_decision", {
+      approve: true,
+      reason: "Incident deliverable verified",
+      issues: [],
+      subject: "Incident task ready",
+      body: "Verified by Choumi.",
+    });
+  }
+
+  process.env.WORKER_CALLS_PER_DAY = "100";
+  workers.setWorkerClient(fakeIncidentClient);
+  try {
+    // Queue a social task while all buttons are off: it must stay queued during the incident
+    const socialTask = await ops.createTask({
+      title: "Draft social post during lockdown",
+      details: "Should stay silent during lockdown",
+      department: "social",
+      trustedInternal: true,
+    });
+
+    const tripped = await deadman.tripDeadman({
+      trigger: "manual",
+      reason: "Testing Step 2 coordination",
+    });
+    assert.equal(tripped.active, true);
+    assert.ok(tripped.step2);
+    assert.equal(tripped.step2.taskIds.length, 4);
+    assert.deepEqual(
+      tripped.step2.tasks.map((t) => t.department).sort(),
+      ["admin", "growth", "personal", "tech"],
+      "Step 2 queues tasks for tech, admin, growth, personal while social & marketing stay silent",
+    );
+    for (const d of expectedOverrideDepts) {
+      assert.equal(ai.isDeptOn(d), true, `${d} powered on during incident`);
+    }
+    assert.equal(ai.isDeptOn("social"), false, "social stays off during incident");
+    assert.equal(ai.isDeptOn("marketing"), false, "marketing stays off during incident");
+
+    await workers.processQueue(5000);
+    for (const tid of tripped.step2.taskIds) {
+      const doneTask = await settleTask(tid);
+      assert.equal(doneTask.status, "review", `incident task ${doneTask.department} (${tid}) passed power check and QA`);
+      assert.ok(doneTask.deliverable?.files?.length, `${doneTask.department} produced deliverable`);
+    }
+    assert.equal((await ops.getTask(socialTask.id)).status, "queued", "social task stayed queued because social remained off");
+
+    const hourly = await deadman.sendIncidentHourlyUpdate({ force: true });
+    assert.equal(hourly.sent, true);
+    const recentEmails = await store.getMany("email", await store.listIds("emails", 10));
+    assert.ok(recentEmails.some((e) => /^\[DEADMAN UPDATE\]/.test(e.subject)));
+
+    // Clean lift restores all buttons to off
+    await deadman.updateDeadmanChecklist(
+      {
+        attackStopped15m: true,
+        solvencyConfirmed: true,
+        forensicBackupSaved: true,
+        secretsRotatedIfNeeded: true,
+        stanleyConfirmed: true,
+      },
+      { by: "stanley" },
+    );
+    await deadman.liftDeadman({ by: "stanley", note: "Step 2 test complete" });
+    for (const d of ai.DEPARTMENTS_LIST) {
+      assert.equal(ai.isDeptOn(d), false, `${d} restored to off after lift`);
+    }
+  } finally {
+    workers.setWorkerClient(null);
+    delete process.env.WORKER_CALLS_PER_DAY;
+  }
 
   // 4. Combined daily report in lib/stan.js includes Choumi's team & learned rules
   const st = await stan.stanStatus();
