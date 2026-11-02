@@ -52,10 +52,10 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .cards p{margin:0;color:var(--muted);font-size:.97rem}
 .cards .links{display:flex;flex-wrap:wrap;gap:.4rem 1rem;margin-top:auto;padding-top:.3rem;font-weight:600}
 .tag{align-self:flex-start;font-size:.78rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
-.setupshots{display:flex;gap:1rem;margin:1.4rem 0 0;flex-wrap:wrap}
-.setupshots>div{flex:1 1 10rem;max-width:15rem}
+.setupshots{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(13rem,100%),1fr));gap:2rem;margin:2rem auto 0;max-width:62rem}
 .setupshots img{width:100%;height:auto;border:2px solid var(--ink);border-radius:.9rem;display:block;background:#000}
-.setupshots figcaption{font-size:.85rem;color:var(--muted);margin-top:.4rem;text-align:center}
+.setupshots figcaption{font-size:.92rem;color:var(--muted);margin-top:.6rem;text-align:center}
+.setupshots figcaption b{color:var(--ink)}
 .sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
 .sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}
 .sitefoot .wp{margin:0 0 .6rem}
@@ -77,17 +77,13 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
   </header>
 
   <h2>Your first three steps</h2>
-  <p class="intro">Minutes each. No experience needed.</p>
-  <ul class="cards">
-    <li><span class="tag">1</span><h3>Open your wallet</h3><p>Free, about a minute, nothing to install.</p><div class="links"><a href="/yebente#create">Open the app</a></div></li>
-    <li><span class="tag">2</span><h3>Send your first payment</h3><p>Try it with a friend for almost nothing, or cash out to mobile money where available.</p><div class="links"><a href="/wallet">How it works</a></div></li>
-    <li><span class="tag">3</span><h3>Learn the ropes</h3><p>Short guides that teach you to hold your own money with confidence.</p><div class="links"><a href="/library">Start reading</a></div></li>
-  </ul>
+  <p class="intro">Minutes each. No experience needed. Follow along:</p>
   <figure class="setupshots">
-    <div><img src="/assets/yebente-start.png" alt="YeBente's first screen, with a Create a wallet button" width="390" height="844" loading="lazy"><figcaption>Tap Create a wallet</figcaption></div>
-    <div><img src="/assets/yebente-create.png" alt="YeBente's Create a wallet form: PIN, email and a Create my wallet button" width="390" height="844" loading="lazy"><figcaption>Pick a PIN, add your email</figcaption></div>
-    <div><img src="/assets/yebente-words.png" alt="YeBente's recovery words screen, with the words hidden until tapped" width="390" height="844" loading="lazy"><figcaption>Write down 12 words</figcaption></div>
+    <div><img src="/assets/yebente-start.png" alt="YeBente's first screen, with a Create a wallet button" width="390" height="844" loading="lazy"><figcaption><b>1.</b> Tap Create a wallet</figcaption></div>
+    <div><img src="/assets/yebente-create.png" alt="YeBente's Create a wallet form: PIN, email and a Create my wallet button" width="390" height="844" loading="lazy"><figcaption><b>2.</b> Pick a PIN, add your email</figcaption></div>
+    <div><img src="/assets/yebente-words.png" alt="YeBente's recovery words screen, with the words hidden until tapped" width="390" height="844" loading="lazy"><figcaption><b>3.</b> Write down 12 words</figcaption></div>
   </figure>
+  <div class="ctas"><a class="btn" href="/yebente#create">Open your free wallet</a></div>
 
   <h2>Learn in order</h2>
   <p class="intro">The free Library: from the history of money to Lightning, one step at a time.</p>
