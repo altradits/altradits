@@ -18,6 +18,7 @@ test("healthy channel: no alerts; advice sized from what the website receives", 
   const r = assess({ channels: [ch()] }, need, { fast: 5, normal: 3, slow: 2 });
   assert.deepEqual(r.alerts, []);
   assert.equal(r.totals.inbound, 790_000); // minus the reserve
+  assert.equal(r.totals.want, 180_000); // max(half the month, 3 × largest, 100k): exposed for the coverage KPI
   assert.equal(r.advice.capacity, 600_000); // max(2 × month, 10 × largest, 500k), rounded up
   assert.match(r.advice.fees, /good time/);
   assert.ok(r.advice.avoid.some((x) => /Force closes/.test(x)));
