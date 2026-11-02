@@ -313,6 +313,8 @@ async function walletGet(request, action) {
   const w = await me(request);
   if (action === "me") {
     // Credit anything paid while the app was closed before showing the balance.
+    // Each check can ask the node: 120 an hour per wallet is plenty for an app.
+    if ((await hit(`rl:yb:me:${w.id}`, 3600)) > 120) return json({ success: false, error: "Too many requests. Try again later." }, 429);
     for (const h of await listIds("ywinvopen", 200)) { const inv = await getJSON(`ywinv:${h}`); if (inv?.walletId === w.id) await yw.settleInvoice(h).catch(() => {}); }
     return json({ success: true, wallet: yw.publicWallet((await yw.walletForToken(bearer(request))) || w) });
   }
@@ -333,6 +335,7 @@ async function walletGet(request, action) {
   if (inv) {
     const rec = await getJSON(`ywinv:${inv[1]}`);
     if (!rec || rec.walletId !== w.id) return json({ success: false, error: "Not found" }, 404);
+    if ((await hit(`rl:yb:invq:${w.id}`, 600)) > 60) return json({ success: false, error: "Too many checks. Try again later." }, 429);
     const state = await yw.settleInvoice(inv[1]);
     return json({ success: true, settled: state === "settled", paid: state === "settled", state, satsAmount: rec.sats });
   }
@@ -345,6 +348,8 @@ async function walletGet(request, action) {
 const emailPage = (status, title, text, extra = "") => new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ye₿ente</title><body style="font:17px/1.6 system-ui,sans-serif;background:#141117;color:#F3ECF2;margin:0;display:grid;place-items:center;min-height:100vh"><main style="background:#221E27;border:1px solid #3F3846;border-radius:24px;padding:2rem;max-width:26rem;margin:1rem"><h1 style="margin:0 0 .5rem;font-size:1.4rem">${title}</h1><p style="margin:0 0 1rem;color:#CBC2CF">${text}</p>${extra}<p style="margin:1rem 0 0"><a href="/yebente" style="color:#DDB8FF">Open Ye₿ente</a></p></main>`,
   { status, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'" } });
 async function confirmEmailPost(request) {
+  if ((await hit(`rl:yb:emailcf:${ipKey(request)}`, 3600)) > 30)
+    return emailPage(429, "Too many attempts", "Try again in an hour.");
   const { confirmEmail } = await import("../lib/ywallet.js");
   const form = await request.formData().catch(() => null);
   const ok = await confirmEmail(String(form?.get("t") || ""));

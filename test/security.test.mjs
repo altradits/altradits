@@ -13,6 +13,7 @@ process.env.EMAIL_APPROVAL = "off";
 
 const store = await import("../lib/store.js");
 const { privateIp, publicFetch, safeUrl } = await import("../lib/netsafe.js");
+const { clientIp } = await import("../lib/http.js");
 const tip = await import("../api/tip.js");
 
 test("support invoices: the paid check answers only for invoices made on the support page", async () => {
@@ -52,4 +53,40 @@ test("outside addresses: the IP actually connected to is checked (no DNS rebindi
     delete process.env.PASSENGER_APP_ENV;
     assert.equal(await (await publicFetch(`http://localhost:${port}/`)).text(), "internal"); // tests only
   } finally { delete process.env.JOBS_ALLOW_LOCAL; delete process.env.PASSENGER_APP_ENV; srv.close(); }
+});
+
+test("rate-limit identity: forwarded headers are ignored on a direct connection (no IP spoofing)", () => {
+  // Behind our proxies the right-most untrusted hop is the visitor (existing logic).
+  const viaProxyA = new Request("http://x/", { headers: { "x-remote-addr": "127.0.0.1", "x-forwarded-for": "1.2.3.4" } });
+  const viaProxyB = new Request("http://x/", { headers: { "x-remote-addr": "127.0.0.1", "x-forwarded-for": "5.6.7.8" } });
+  assert.notEqual(clientIp(viaProxyA), clientIp(viaProxyB));
+  // Direct to Node from a public address: X-Forwarded-For and X-Real-Ip are the
+  // client's own words and must not move the rate-limit bucket.
+  const directA = new Request("http://x/", { headers: { "x-remote-addr": "203.0.113.5", "x-forwarded-for": "1.2.3.4", "x-real-ip": "1.2.3.4" } });
+  const directB = new Request("http://x/", { headers: { "x-remote-addr": "203.0.113.5", "x-forwarded-for": "5.6.7.8", "x-real-ip": "5.6.7.8" } });
+  const directC = new Request("http://x/", { headers: { "x-remote-addr": "203.0.113.6", "x-forwarded-for": "1.2.3.4" } });
+  assert.equal(clientIp(directA), clientIp(directB));
+  assert.notEqual(clientIp(directA), clientIp(directC));
+});
+
+test("tracker links: only GitHub's own addresses become links, even if the API reply carries others", async () => {
+  const { computeTracker, setGitHubFetcher } = await import("../lib/tracker.js");
+  const item = (url) => ({ repository_url: "https://api.github.com/repos/foo/bar", number: 1, title: "x", html_url: url,
+    created_at: "2026-01-01T00:00:00Z", pull_request: { merged_at: null }, state: "open" });
+  setGitHubFetcher(async (path) => {
+    if (path.startsWith("/search/issues")) return { items: [item("https://github.com/foo/bar/pull/1"), item("javascript:alert(1)"), item("https://evil.example.com/x")] };
+    if (path.startsWith("/repos/")) return { private: false, visibility: "public" };
+    return [];
+  });
+  const t = await computeTracker(Date.now());
+  const urls = t.chain.list.map((b) => b.url);
+  assert.ok(urls.includes("https://github.com/foo/bar/pull/1"));
+  assert.ok(urls.every((u) => u.startsWith("https://github.com/")), urls.join(", "));
+});
+
+test("QR pictures: a plain SVG with no scripts or handlers, safe for innerHTML", async () => {
+  const { qrSvg } = await import("../lib/lightning.js");
+  const svg = await qrSvg("LIGHTNING:LNBC123");
+  assert.match(svg, /^<svg/);
+  assert.doesNotMatch(svg, /<script|on\w+\s*=|javascript:/i);
 });

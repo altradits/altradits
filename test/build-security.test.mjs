@@ -183,3 +183,33 @@ test("no secrets committed: keys, tokens, macaroons or private keys in any track
   }
   assert.ok(!tracked.some((f) => /(^|\/)\.env(\..*)?$/.test(f) && !f.endsWith(".example")), "no .env file is tracked");
 });
+
+test("rate-limit identity can't be spoofed: the socket address is passed in and trusted over forwarded headers", () => {
+  const srv = read("server.mjs"), http = read("lib/http.js");
+  assert.match(srv, /"x-remote-addr": req\.socket\.remoteAddress/, "server.mjs: pass the connected address into every API request");
+  assert.match(http, /x-remote-addr/, "lib/http.js: read the connected address");
+  assert.match(http, /Ignore them and use the connected address|forged X-Forwarded-For/, "lib/http.js: ignore forwarded headers on a direct connection");
+});
+
+test("live-server URLs never come from visitor headers, static answers only GET/HEAD, and symlinks can't escape the site", () => {
+  const srv = read("server.mjs");
+  assert.match(srv, /if \(SERVER\) \{\s*\n\s*const host = \(process\.env\.SITE_URL/, "server.mjs publicUrl: pin the host to SITE_URL on the live server");
+  assert.match(srv, /Static content answers only GET and HEAD/, "server.mjs: refuse POST/PUT/DELETE to static paths with 405");
+  assert.match(srv, /realpathSync\(file\)\.startsWith\(ROOT_REAL/, "server.mjs sendStatic: refuse symlinks that leave the site");
+  assert.match(srv, /"Permissions-Policy": "camera=\(\), microphone=\(\), geolocation=\(\)"/, "server.mjs SECURITY: deny camera, microphone and geolocation by default");
+  assert.match(srv, /"Permissions-Policy": "camera=\(self\), microphone=\(\), geolocation=\(\)"/, "server.mjs Ye₿ente: allow the camera only for the wallet app itself");
+});
+
+test("links rendered as href come only from trusted hosts, and QR pictures carry no scripts", () => {
+  assert.match(read("lib/tracker.js"), /\^https:\\\/\\\/github\\.com\\\//, "lib/tracker.js: only GitHub's own addresses become links");
+  const qr = read("lib/lightning.js").slice(read("lib/lightning.js").indexOf("export async function qrSvg"));
+  assert.match(qr, /startsWith\("<svg"\)/, "lib/lightning.js qrSvg: check the picture starts with <svg");
+  assert.match(qr, /<script\|on\\w\+/, "lib/lightning.js qrSvg: refuse scripts and event handlers in the SVG");
+});
+
+test("every wallet read that can ask the node or confirm an email is rate-limited", () => {
+  const yb = read("api/yebente.js");
+  assert.match(yb, /rl:yb:emailcf/, "api/yebente.js confirmEmailPost: limit confirmation attempts per network");
+  assert.match(yb, /rl:yb:me:/, "api/yebente.js wallet/me: limit balance checks per wallet");
+  assert.match(yb, /rl:yb:invq:/, "api/yebente.js wallet/invoice: limit settlement checks per wallet");
+});
