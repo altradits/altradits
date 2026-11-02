@@ -145,6 +145,8 @@ async function overview(node, details, tip, outbound, inbound, chainFees, kes) {
     },
     yebente: owed && !owed.error ? { wallets: owed.wallets, owedSats: owed.sats, covered: typeof outbound === "number" ? outbound >= owed.sats : null } : owed,
     visits: await import("../lib/visits.js").then((v) => v.visitSummary()).catch(() => null),
+    deploy: await import("../lib/deploy.js").then((d) => d.deployInfo()).catch(() => ({ commit: "unknown", subject: "", at: null })),
+    backup: await import("../lib/backup.js").then((b) => b.lastBackup()).catch(() => ({ ok: false, at: null, file: null, encrypted: null })),
     retired: await getJSON("retired:agency"),
     stan: await import("../lib/stan.js").then((s) => s.stanLast()).catch(() => null),
     deadman: await import("../lib/deadman.js").then((d) => d.deadmanStatus()).catch(() => null),

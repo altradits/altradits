@@ -153,6 +153,17 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <p class="sm" id="stanLast"></p>
     <div class="row"><button type="button" class="btn primary" id="stanGo">Email me Stan's report now</button></div>
   </section>
+  <section class="panel" aria-labelledby="hDeploy">
+    <h2 id="hDeploy">This deployment</h2>
+    <div class="learn"><p>What code is live, when it last backed itself up, and which mail and storage it uses.</p></div>
+    <div class="kpis" id="deployKpis"></div>
+  </section>
+  <section class="panel" aria-labelledby="hEyes">
+    <h2 id="hEyes">Site eyes</h2>
+    <div class="learn"><p>Humans reading the site (bots filtered): views, busiest pages, and where readers come from.</p></div>
+    <div class="kpis" id="eyesKpis"></div>
+    <div id="eyesLists"></div>
+  </section>
   </div>
 
   <div class="pane" data-pane="node">
@@ -360,6 +371,12 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       <div class="events" id="secHistory"></div>
     </section>
   </div>
+  <section class="panel" aria-labelledby="hMail">
+    <h2 id="hMail">Recent emails</h2>
+    <div class="learn"><p>What the site emailed lately, and whether each send succeeded. Bodies stay out of this list.</p></div>
+    <div class="kpis" id="mailKpis"></div>
+    <div class="events" id="mailList"></div>
+  </section>
   </div>
 
   <div class="pane" data-pane="choumi">

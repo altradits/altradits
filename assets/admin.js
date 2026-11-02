@@ -460,6 +460,46 @@ function openReceipt(i) {
 $("#rcptClose").addEventListener("click", () => $("#rcpt").close());
 $("#rcptPrint").addEventListener("click", () => window.print());
 
+// This deployment: live commit, backup freshness, mail and storage paths.
+function renderDeploy(D) {
+  const d = D.deploy || {}, b = D.backup || {}, s = D.system || {};
+  $("#deployKpis").innerHTML =
+      kpi("Live commit", d.commit === "unknown" ? "unknown" : d.commit, d.commit === "unknown" ? "warn" : "", d.subject || "Which code is serving this page.")
+    + kpi("Deployed", d.at ? ago(d.at) : "–", "", d.at ? new Date(d.at).toLocaleString() : "Commit date unknown.")
+    + kpi("Backup", !b.at ? "none yet" : b.ok ? `fresh (${ago(b.at)})` : `stale (${ago(b.at)})`, !b.at || !b.ok ? "warn" : "good", b.file ? `${b.file}${b.encrypted ? ", encrypted" : ", NOT encrypted"}` : "No snapshot found in the backup folder.")
+    + kpi("Mail", s.email || "–", "", "How the site sends email right now.")
+    + kpi("Storage", s.storage || "–", "", "Where the live data sits.");
+  issue("backup_stale", b.at && !b.ok ? "warn" : null, `Last backup is ${ago(b.at)} (older than 36h): check the daily backup job.`, "overview:hDeploy");
+}
+
+// Site eyes: human views, busiest pages, and where readers come from.
+function renderEyes(V) {
+  if (!V) { $("#eyesKpis").innerHTML = ""; $("#eyesLists").innerHTML = '<p class="muted sm">No visit data.</p>'; return; }
+  $("#eyesKpis").innerHTML =
+      kpi("Views, 7 days", num(V.d7 || 0), "", "Humans only; bots are filtered out.")
+    + kpi("Views, 30 days", num(V.d30 || 0), "", "Same filter, longer window.");
+  const pages = Object.entries(V.byPage || {}).sort((a, b) => b[1].d30 - a[1].d30).slice(0, 5);
+  const sources = (V.sources || []).slice(0, 5);
+  $("#eyesLists").innerHTML =
+      (pages.length ? `<p class="sm"><b>Busiest pages (30d):</b> ${pages.map(([p, c]) => `${esc(p)} (${num(c.d30)})`).join(" · ")}</p>` : "")
+    + (sources.length ? `<p class="sm"><b>Top sources:</b> ${sources.map((s) => `${esc(s.source)} (${num(s.views)})`).join(" · ")}</p>` : "");
+}
+
+// Recent emails: what the site sent lately and whether each send succeeded.
+async function loadEmails() {
+  let E; try { E = await api("?view=emails"); } catch (err) { $("#mailList").textContent = err.message; return; }
+  const list = (E.emails || []).slice(0, 15);
+  const failed = (E.emails || []).filter((e) => String(e.status || "").startsWith("failed") && Date.now() - Date.parse(e.at) < 7 * 864e5);
+  $("#mailKpis").innerHTML =
+      kpi("Shown", num(list.length), "", "Latest sends first; bodies stay out of this list.")
+    + kpi("Failed, 7 days", num(failed.length), failed.length ? "warn" : "good", failed.length ? "A failing mail path silences alerts and reports." : "Every recent send succeeded.");
+  issue("mail_failed", failed.length ? "warn" : null, `${failed.length} email(s) failed in the last 7 days: check the mail path.`, "security:hMail");
+  $("#mailList").innerHTML = list.length ? list.map((e) =>
+    `<div class="ev"><b>${esc(e.subject || "(no subject)")}</b> <span class="muted sm">→ ${esc(e.to || "?")} · ${esc(ago(e.at))}</span><br>`
+    + (String(e.status || "").startsWith("failed") ? `<span class="err sm">${esc(e.status)}</span>` : `<span class="muted sm">${esc(e.status || "logged")}</span>`) + "</div>").join("")
+    : '<p class="muted sm">No emails logged yet.</p>';
+}
+
 // Choumi Yakunte tab: Deadman's Switch, department power buttons, AI status,
 // the 5 departments, approvals waiting for Stanley, learning engine, and settling-in report.
 // The server's own checklist keys (lib/deadman.js CHECKLIST_KEYS).
@@ -767,9 +807,9 @@ async function load() {
   $("#loginErr").textContent = "";
   $("#login").hidden = true; $("#app").hidden = false;
   KES_PER_BTC = D.kesPerBtc;
-  renderChecklist(D); renderStan(D.stan); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderGlossary();
+  renderChecklist(D); renderStan(D.stan); renderDeploy(D); renderEyes(D.visits); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderGlossary();
   renderVerify();
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi()]);
+  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadEmails()]);
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
 }
 token ? load() : showLogin();
