@@ -152,7 +152,9 @@ function renderChain(D) {
       kpi("On-chain balance", C ? satsF(C.confirmed) : "–", C ? judge(C.confirmed >= 10_000) : "", C ? "Sats in the node's own Bitcoin wallet. Used to open channels and pay closing fees." : "Needs the read-only key.")
     + (C?.unconfirmed ? kpi("Waiting to confirm", satsF(C.unconfirmed), "", "Arrived but not yet in a block.") : "")
     + kpi("Fee now: fast", F ? `${F.fast} sat/vB` : "–", "", "Into the next block or two.")
-    + kpi("Fee now: slow", F ? `${F.slow} sat/vB` : "–", "", "Within about an hour. Best for opening channels.");
+    + kpi("Fee now: slow", F ? `${F.slow} sat/vB` : "–", "", F && F.fast === F.slow
+      ? "Same price as fast: the network is quiet, so even the cheapest transaction confirms quickly. Best time to open channels."
+      : "Within about an hour. Best for opening channels.");
 }
 
 // 5. Routing: fee policy per channel, and what passed through the node.
