@@ -49,7 +49,7 @@ export const COMMS = [
     sla: { firstReply: "Escalation decision within 4 working hours (EAT)", resolution: "Decision or a dated plan within 1 working day" },
     escalate: ["Refunds, legal matters, secret rotation, channel actions and anything Choumi cannot decide go to Stanley (altradits@gmail.com)"],
     cc: [],
-    signature: ["Choumi Yakunte", "Head of Quality and Internal Communications, Altradits", "stan@altradits.com · altradits.com"],
+    signature: ["Stan", "Head of Quality and Internal Communications, Altradits", "stan@altradits.com · altradits.com"],
     strategy: ["Review every deliverable with the right experts before Stanley sees it (data/qa-experts.js)", "Turn repeat causes into playbook or answer-bank updates each week", "Keep Stanley's inbox for the combined daily report, security alerts and decisions only he can make"],
     metrics: ["Escalations per week by department", "First-pass QA approval rate", "Repeat escalations with the same cause"],
     internal: false,

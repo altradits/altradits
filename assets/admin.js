@@ -503,8 +503,10 @@ $("#destDays").addEventListener("change", loadDestinations);
 let PAYMENTS = [];
 function openReceipt(i) {
   const x = PAYMENTS[i]; if (!x) return;
-  $("#rcptTitle").textContent = x.receipt ? `Receipt ${x.receipt}` : "Payment record";
-  $("#rcptBody").innerHTML = [["Date", String(x.at).replace("T", " ").slice(0, 16) + " UTC"], ["For", x.what], ["Amount", satsKsh(x.sats)], ["Paid by", x.payer || "—"], ["Via", x.channel === "onchain" ? "Bitcoin on-chain" : "Lightning"], ["Received by", "Altradits, altradits.com"]]
+  $("#rcptTitle").textContent = "Receipt";
+  $("#rcptNo").textContent = x.receipt ? `No. ${x.receipt}` : "Payment record";
+  const via = { onchain: "Bitcoin on-chain", lightning: "Lightning" }[x.channel] || String(x.channel || "—");
+  $("#rcptBody").innerHTML = [["Date", String(x.at).replace("T", " ").slice(0, 16) + " UTC"], ["For", x.what], ["Amount", satsKsh(x.sats)], ["Paid by", x.payer || "—"], ["Via", via], ["Received by", "Altradits · altradits.com"]]
     .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
   $("#rcpt").showModal();
 }

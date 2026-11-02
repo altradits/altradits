@@ -106,7 +106,20 @@ body.quiet .see{display:none}
 .minew h3{font-size:1.05rem}
 .linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--blue);text-decoration:underline;cursor:pointer}
 dialog{width:min(30rem,calc(100vw - 2rem));border:2px solid var(--ink);border-radius:1rem;padding:1.2rem}
-@media print{body>*:not(#rcpt){display:none!important}#rcpt{position:static;border:0;width:auto}#rcpt .row{display:none}}
+@media print{body>*:not(#rcpt){display:none!important}#rcpt{position:static;border:0;width:auto;max-width:none;margin:0}#rcpt .row{display:none}}
+@page{margin:16mm}
+.rcpt-head{display:flex;gap:.9rem;align-items:center;border-bottom:3px solid #274C77;padding-bottom:.7rem}
+.rcpt-head img{height:2.6rem;width:auto}
+.rcpt-name{font-weight:700;font-size:1.15rem}
+.rcpt-tag,.rcpt-contact{font-size:.8rem;color:var(--muted)}
+.rcpt-titlerow{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;border-bottom:2px solid #EA5158;padding:.55rem 0}
+.rcpt-titlerow h2{font-size:1.15rem;margin:0}
+.rcpt-no{font-size:.85rem;color:var(--muted);white-space:nowrap}
+#rcptBody{display:grid;grid-template-columns:8.5rem 1fr;gap:.35rem .8rem;margin:.9rem 0;font-size:.92rem}
+#rcptBody dt{color:var(--muted)}
+#rcptBody dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.rcpt-foot{font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);padding-top:.6rem}
+@media print{.rcpt-head,.rcpt-titlerow{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
 dialog::backdrop{background:rgba(15,27,45,.45)}
 .alerts{position:absolute;left:0;top:calc(100% + .4rem);z-index:20;width:min(26rem,calc(100vw - 2rem));background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:.8rem;box-shadow:0 10px 30px rgba(15,27,45,.18)}
 .alerts h3{font-size:1rem;margin:0 0 .5rem}
@@ -553,7 +566,18 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 
 
 </div>
-<dialog id="rcpt" aria-labelledby="rcptTitle"><h2 id="rcptTitle" style="font-size:1.15rem">Receipt</h2><dl id="rcptBody" style="margin:.8rem 0"></dl><div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn primary" id="rcptClose">Close</button></div></dialog>
+<dialog id="rcpt" aria-labelledby="rcptTitle">
+  <div class="rcpt-head">
+    <img src="/assets/logo.png" alt="Altradits" width="325" height="119">
+    <div><div class="rcpt-name">Altradits</div>
+    <div class="rcpt-tag">Open-source Bitcoin &amp; Lightning engineering in Kenya</div>
+    <div class="rcpt-contact">Kisumu, Kenya · hello@altradits.com · altradits.com</div></div>
+  </div>
+  <div class="rcpt-titlerow"><h2 id="rcptTitle">Receipt</h2><div id="rcptNo" class="rcpt-no"></div></div>
+  <dl id="rcptBody"></dl>
+  <p class="rcpt-foot">Thank you — every payment supports open-source Bitcoin &amp; Lightning work in Kenya.<br>Keep this receipt for your records.</p>
+  <div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn primary" id="rcptClose">Close</button></div>
+</dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <script type="module" src="/assets/admin.js?v=refresh1"></script>
 </body>
