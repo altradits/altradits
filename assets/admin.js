@@ -11,6 +11,7 @@ const ago = (iso) => { const m = (Date.now() - Date.parse(iso)) / 6e4; return m 
 const kpi = (label, v, state, why) => `<div class="kpi${state ? ` ${state}` : ""}"><small>${esc(label)}</small><div>${esc(v)}</div>${why ? `<span class="why">${esc(why)}</span>` : ""}</div>`;
 // Shillings beside sats, at the rate the dashboard last read (BTC price × USD/KES).
 let KES_PER_BTC = null;
+let OVERVIEW = null;
 const ksh = (sats) => (KES_PER_BTC && sats !== null && sats !== undefined ? `KSh ${Math.round((Number(sats) / 1e8) * KES_PER_BTC).toLocaleString("en-US")}` : "");
 const satsKsh = (sats) => `${satsF(sats)}${ksh(sats) ? ` (${ksh(sats)})` : ""}`;
 const judge = (ok) => (ok === null || ok === undefined ? "" : ok ? "good" : "warn");
@@ -191,6 +192,8 @@ const GLOSSARY = [
   ["Local and remote balance", "Your side (what you can send) and their side (what you can receive)."],
   ["Inbound and outbound liquidity", "Room to receive (inbound) and to send (outbound), across all channels."],
   ["Channel reserve", "About 1% each side must keep. If someone cheats, there is something to take."],
+  ["Rebalancing", "Shifting sats between the two sides without closing: spend to move sats out (more room to receive), receive in to move sats to your side (more to send)."],
+  ["Top-up", "Paying one of your node's own invoices from another Lightning wallet. The sats land on your side: sending power rises, receiving room shrinks by the same amount."],
   ["Invoice (BOLT11)", "A one-time payment request: amount, your node and a payment hash. Starts with lnbc."],
   ["Payment hash and preimage", "The invoice holds a hash; paying reveals the secret behind it. That's the receipt."],
   ["HTLC", "A payment in flight, locked by the hash, passed hop by hop. It settles or fails, never half."],
@@ -205,6 +208,8 @@ const GLOSSARY = [
   ["channel.backup (SCB)", "A file that, with your 24 words, lets your peers return your channel funds after a disaster."],
   ["Seed (24 words)", "The master key to the node's wallet. Paper only. Anyone with it can take the funds."],
   ["Custodial", "Someone else holds the keys. Ye₿ente is custodial: your node holds its users' sats."],
+  ["Sweep", "Sending a wallet's whole balance to one address in a single transaction: the last step of a liquidation."],
+  ["Gap limit", "Wallets watch the newest 20 unused addresses. Make more than that without using them and funds can hide until you rescan."],
 ];
 function renderGlossary() {
   $("#glossary").innerHTML = GLOSSARY.map(([t, d]) => `<details><summary>${esc(t)}</summary><p>${esc(d)}</p></details>`).join("");
@@ -220,8 +225,30 @@ $("#stanGo").addEventListener("click", async () => {
 
 // 3. Sending power: spendable after channel reserves, what Ye₿ente owes, and node top-ups.
 let spPoll = null;
+// Where your money is: on-chain, your side of channels, minus what wallets are owed.
+function renderMap(P) {
+  const on = OVERVIEW?.details?.onchain || {};
+  const conf = Number(on.confirmed) || 0, unconf = Number(on.unconfirmed) || 0;
+  const spend = Number(P.spendable) || 0, reserve = Number(P.reserve) || 0;
+  const local = Number(P.local) || spend + reserve;
+  const owed = Number(P.owedSats) || 0, inbound = Number(P.inbound) || 0;
+  const yours = conf + local - owed, total = Math.max(conf + local, 1);
+  const seg = (v, cls, label) => v > 0 ? `<i class="${cls}" style="width:${Math.max(Math.round((v / total) * 100), 2)}%" title="${esc(label)}"></i>` : "";
+  const row = (what, sats, note, muted) => `<tr${muted ? ' class="muted"' : ""}><td>${what}</td><td>${sats}</td><td class="sm">${note}</td></tr>`;
+  $("#mapBody").innerHTML = `<span class="stack" role="img" aria-label="On-chain ${esc(satsF(conf))}, spendable ${esc(satsF(spend))}, locked ${esc(satsF(reserve))}">${seg(conf, "s-on", `On-chain: ${satsF(conf)}`)}${seg(spend, "s-sp", `Spendable: ${satsF(spend)}`)}${seg(reserve, "s-re", `Locked: ${satsF(reserve)}`)}</span>`
+    + `<table><thead><tr><th>Where</th><th>Sats</th><th>What it means</th></tr></thead><tbody>`
+    + row("On-chain wallet", esc(satsF(conf)), unconf > 0 ? `Plus ${esc(satsF(unconf))} waiting for confirmations. Pays for channels and fees.` : "Pays for channels and fees.")
+    + row("Your side of channels, spendable", esc(satsF(spend)), "Can send right now.")
+    + row("Locked in channel reserves", esc(satsF(reserve)), "Unlocks when each channel closes.")
+    + row("Minus: owed to Ye₿ente wallets", "−" + esc(satsF(owed)), "Users' money, held by your node.")
+    + row("<b>Yours in total</b>", `<b>${esc(satsF(yours))}</b>`, KES_PER_BTC ? esc(ksh(yours)) : "On-chain plus your side, minus what's owed.")
+    + row("Peer's side (not yours)", esc(satsF(inbound)), "The peer's money in the channels. Never count it.", true)
+    + `</tbody></table>`;
+}
+
 async function loadPower() {
   let P; try { P = await api("?view=liquidity"); } catch (err) { $("#spNote").textContent = err.message; return; }
+  renderMap(P);
   $("#spNote").innerHTML = `<span class="kpis" style="display:grid;margin:0 0 .6rem">${kpi("Can send now", satsF(P.spendable), judge(P.spendable >= 1000), ksh(P.spendable))}${kpi("Owed to wallets", satsF(P.owedSats), "", ksh(P.owedSats))}${kpi("Can still receive", satsF(P.inbound), "", `${ksh(P.inbound)} · after the peer's reserve`)}</span>`
     + (P.spendable < 1000 ? `<b class="err">The node can't send anything right now.</b> Ye₿ente payments out fail until you top up.`
     : !P.covered ? `<b class="err">Short:</b> wallets hold more than the node can send. Top up so every balance can be paid out.` : "Enough to pay out every Ye₿ente balance.")
@@ -265,6 +292,16 @@ async function loadChannels() {
   $("#lnList").innerHTML = rows.length ? `<table><thead><tr><th>Peer</th><th>Capacity</th><th>Can receive</th><th>Ours</th><th>Balance</th><th>Status</th></tr></thead><tbody>${rows.join("")}</tbody></table>` : '<p class="muted">No channels yet.</p>';
   const A = L.advice;
   $("#lnAdvice").innerHTML = `<p><b>Suggested size for your next channel: ${satsF(A.capacity)} of inbound.</b> ${esc(A.why)}</p>${A.fees ? `<p>${esc(A.fees)}</p>` : ""}<b>Avoid</b><ul>${A.avoid.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  const T = L.totals;
+  if (!T) { $("#liqKpis").innerHTML = ""; $("#liqNow").innerHTML = '<p class="muted sm">The node couldn\'t be read, so live numbers are unavailable.</p>'; }
+  else {
+    const cover = T.want > 0 ? Math.round((T.inbound / T.want) * 100) : null;
+    $("#liqKpis").innerHTML = kpi("Can send", satsF(T.spendable), judge(T.spendable >= 10000), "Your side, minus the 1% reserves.")
+      + kpi("Can receive", satsF(T.inbound), judge(T.inbound >= (T.want || 0)), "Peer sides added up, minus their reserves.")
+      + kpi("30-day need covered", cover === null ? "–" : `${cover}%`, judge(cover === null ? null : cover >= 100), `Need: about ${satsF(T.want)} of room for the next two weeks.`);
+    const ex = 100_000;
+    $("#liqNow").innerHTML = `<p><b>Right now, a ${satsF(ex)} payment in</b> would leave receiving room at ${satsF(Math.max(0, T.inbound - ex))} and sending power at ${satsF(T.spendable + ex)}. <b>A ${satsF(ex)} payment out</b> would do the reverse. Watch coverage stay above 100% — the alerts above email you before it runs dry.</p>`;
+  }
   $("#lnLessons").innerHTML = L.lessons.map((l) => `<li><b>${esc(l.at)}</b> ${esc(l.text)}</li>`).join("");
 }
 $("#lnAdd").addEventListener("click", async () => {
@@ -347,12 +384,21 @@ const VERIFY = [
   ["On your side of channels", "ln-ro channelbalance | jq .local_balance.sat"],
   ["On-chain balance", "ln-ro walletbalance | jq .confirmed_balance"],
   ["Coins (UTXOs)", "ln-ro listunspent | jq '.utxos | length'"],
+  ["Each coin: address, size, confirmations", "ln-ro listunspent | jq '.utxos[] | {address, amount_sat, confirmations}'"],
+  ["Make a fresh receive address", "lncli newaddress p2wkh"],
+  ["Find each channel's close ID", "ln-ro listchannels | jq -r '.channels[] | [.peer_alias, .channel_point] | @tsv'"],
+  ["Close one channel (add --force if stuck)", "lncli closechannel <CHANNEL_POINT>"],
+  ["Track closing channels and unlock waits", "ln-ro pendingchannels | jq '{limbo: .total_limbo_balance, closing: [.pending_closing_channels[].channel.channel_point], force: [.pending_force_closing_channels[] | {cp: .channel.channel_point, blocks_left: .blocks_til_maturity}]}'"],
+  ["Sweep everything to one address", "lncli sendcoins --sweepall <YOUR_ADDRESS> --sat_per_vbyte <FEE>"],
   ["Fee policy", "ln-ro feereport | jq '.channel_fees[] | {base_fee_msat, fee_per_mil}'"],
   ["Routing fees earned, 30 days", "ln-ro fwdinghistory --start_time=-30d | jq '[.forwarding_events[].fee|tonumber] | add // 0'"],
   ["Payments sent and fees paid, 30 days", "ln-ro listpayments --max_payments 2000 | jq '[.payments[] | select(.status==\"SUCCEEDED\")] | {count: length, fees: (map(.fee_sat|tonumber)|add)}'"],
   ["Invoices made and paid", "ln-ro listinvoices --max_invoices 1000 | jq '[.invoices[].state] | group_by(.) | map({(.[0]): length}) | add'"],
   ["On-chain fees paid", "ln-ro listchaintxns | jq '[.transactions[].total_fees|tonumber] | add // 0'"],
   ["Each channel: updates, uptime, force-close wait", "ln-ro listchannels | jq '.channels[] | {peer_alias, num_updates, uptime, lifetime, csv_delay, commitment_type}'"],
+  ["Each channel: your side vs peer's side", "ln-ro listchannels | jq '.channels[] | {peer: .peer_alias, ours: .local_balance, theirs: .remote_balance}'"],
+  ["Inbound per peer, biggest first", "ln-ro listchannels | jq '.channels | sort_by(.remote_balance|tonumber) | reverse | .[] | {peer: .peer_alias, inbound: .remote_balance}'"],
+  ["Payments in flight (pending HTLCs)", "ln-ro listchannels | jq '[.channels[].pending_htlcs | length] | add'"],
   ["Peers: ping and reconnections", "ln-ro listpeers | jq '.peers[] | {ping_ms: ((.ping_time|tonumber)/1000), flap_count}'"],
   ["Network size", "ln-ro getnetworkinfo | jq '{num_nodes, num_channels, graph_diameter}'"],
   ["Closed channels", "ln-ro closedchannels | jq '.channels[] | {close_type, capacity, settled_balance}'"],
@@ -360,7 +406,7 @@ const VERIFY = [
   ["Owed to Ye₿ente wallets, profit from buys", "Only on the server: the wallet records live there, not on the node."],
 ];
 function renderVerify() {
-  $("#verify").innerHTML = `<table><thead><tr><th>On the dashboard</th><th>On the Mac</th></tr></thead><tbody>${VERIFY.map(([what, cmd]) => `<tr><td>${esc(what)}</td><td>${/^(ln-ro|curl)/.test(cmd) ? `<code>${esc(cmd)}</code>` : `<span class="muted">${esc(cmd)}</span>`}</td></tr>`).join("")}</tbody></table>`;
+  $("#verify").innerHTML = `<table><thead><tr><th>On the dashboard</th><th>On the Mac</th></tr></thead><tbody>${VERIFY.map(([what, cmd]) => `<tr><td>${esc(what)}</td><td>${/^(ln-ro|lncli|curl)/.test(cmd) ? `<code>${esc(cmd)}</code>` : `<span class="muted">${esc(cmd)}</span>`}</td></tr>`).join("")}</tbody></table>`;
 }
 
 // The node explorer: what a new operator can learn from the node itself.
@@ -369,7 +415,7 @@ const typeWhy = { ANCHORS: "Anchor channel: fees to close are added when closing
 const closeWhy = { COOPERATIVE_CLOSE: "Cooperative: both sides agreed. Fast and cheap.", LOCAL_FORCE_CLOSE: "Force close by you: funds waited out the delay.", REMOTE_FORCE_CLOSE: "Force close by the peer.", BREACH_CLOSE: "Breach: a cheat was punished.", FUNDING_CANCELED: "Funding cancelled: the channel never opened.", ABANDONED: "Abandoned." };
 async function loadExplorer() {
   let X; try { X = await api("?view=explore"); } catch (err) { $("#exInfo").textContent = err.message; return; }
-  if (X.error) { $("#exInfo").textContent = X.error; return; }
+  if (X.error) { $("#exInfo").textContent = X.error; $("#coinList").innerHTML = '<p class="muted">The node couldn\'t be read, so the coin list is unavailable.</p>'; return; }
   const flappy = (X.peers || []).filter((p) => p.flaps > 50);
   issue("peers", flappy.length ? "warn" : null, `Your peer connection keeps dropping (${flappy.map((p) => p.flaps).join(", ")} reconnections). Payments can fail during a drop: check the internet and tunnel.`, "node:hNet");
   const I = X.info, G = X.graph;
@@ -401,6 +447,9 @@ async function loadExplorer() {
   $("#exInvs").innerHTML = V ? kpi("Invoices made", num(V.count), "", "Payment requests your node created.") + kpi("Paid", num(V.settled), "", `${satsF(V.sats)} received.`)
       + kpi("Expired unpaid", num(V.expired), "", "Normal: people open a QR and don't pay.") : "";
   if (X.utxos) $("#chainKpis").insertAdjacentHTML("beforeend", kpi("Coins (UTXOs)", num(X.utxos.count), "", "Separate pieces of bitcoin in the on-chain wallet. Each one costs fees to spend."));
+  if (X.utxos) $("#coinList").innerHTML = X.utxos.coins?.length ? `<table><thead><tr><th>Address holding it</th><th>Sats</th><th>Confirmations</th></tr></thead><tbody>${X.utxos.coins.map((c) =>
+    `<tr><td><a href="https://mempool.space/address/${esc(c.address)}" target="_blank" rel="noopener"><code title="${esc(c.outpoint || c.address)}">${esc(c.address.slice(0, 14))}…${esc(c.address.slice(-6))}</code></a></td><td>${esc(satsF(c.sats))}</td><td>${c.confs > 0 ? esc(num(c.confs)) : '<b class="err">waiting</b>'}</td></tr>`).join("")}</tbody></table>
+    <p class="muted">Each address links to its page on mempool.space, where you can watch for confirmations.</p>` : '<p class="muted">No coins: the on-chain wallet is empty. Fund it from “Your wallet address” below.</p>';
 }
 
 // Ye₿ente wallets: your own (receive, history, send in the app), every balance, and where payments go.
@@ -767,6 +816,7 @@ async function load() {
   $("#loginErr").textContent = "";
   $("#login").hidden = true; $("#app").hidden = false;
   KES_PER_BTC = D.kesPerBtc;
+  OVERVIEW = D;
   renderChecklist(D); renderStan(D.stan); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderGlossary();
   renderVerify();
   await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi()]);

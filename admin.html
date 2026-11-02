@@ -57,6 +57,8 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
 .alert{margin:0 0 .6rem;padding:.6rem .8rem;border-radius:.6rem;border:1px solid}
 .alert.crit{color:var(--crit);border-color:var(--crit)}.alert.warn{color:var(--warn);border-color:var(--warn)}
 .bar{display:block;background:#E4E9F0;border-radius:4px;height:8px;width:7rem}.bar i{display:block;background:var(--blue);border-radius:4px;height:8px}
+.stack{display:flex;height:1rem;background:#E4E9F0;border-radius:4px;overflow:hidden;margin:.5rem 0;max-width:34rem}.stack i{display:block;height:100%}.stack .s-on{background:var(--blue)}.stack .s-sp{background:#2F9E44}.stack .s-re{background:#E8890C}
+ul.warn{list-style:none;padding:.7rem .9rem;margin:.7rem 0 0;border:1px solid var(--warn);border-radius:6px}ul.warn li{margin:.35rem 0;font-size:.86rem}ul.warn li::before{content:"! ";color:var(--warn);font-weight:700}
 .spark{display:flex;align-items:flex-end;gap:3px;height:3rem;margin:.4rem 0 .8rem}.spark i{flex:1;background:var(--blue);border-radius:2px 2px 0 0;min-height:2px}
 .qr{max-width:15rem;background:#fff;padding:.5rem;border-radius:8px}.qr svg{width:100%;height:auto;display:block}
 .ev{border-bottom:1px solid var(--line);padding:.4rem 0}
@@ -191,6 +193,16 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div id="lnList" class="scroll"></div>
     <div id="lnAdvice" class="sm"></div>
   </section>
+  <section class="panel" aria-labelledby="hLiq">
+    <h2 id="hLiq">Liquidity, plainly</h2>
+    <div class="learn">
+      <p>Every channel is a seesaw: your side is what you can <b>send</b>, the peer's side is what you can <b>receive</b>. The total never moves — each payment just shifts sats from one side to the other.</p>
+      <p>Receiving needs <b>room</b>: inbound is all peer sides added up, minus the 1% reserves. A top-up or a buy fills <i>your</i> side (more to send, less room to receive). A send does the reverse.</p>
+      <p>A lopsided channel needs no closing: nearly all yours → spend or send out to reopen receiving room; nearly all theirs → receive in (a top-up) to rebuild sending power. Close and reopen only when a peer is dead or the channel is tiny.</p>
+    </div>
+    <div class="kpis" id="liqKpis"></div>
+    <div id="liqNow" class="sm"></div>
+  </section>
   <section class="panel" aria-labelledby="hInside">
     <h2 id="hInside">Inside each channel</h2>
     <p class="see sm">See it yourself on the Mac: <code>lncli listchannels</code> · <code>lncli closedchannels</code></p>
@@ -208,6 +220,11 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </div>
 
   <div class="pane" data-pane="money">
+  <section class="panel" aria-labelledby="hMap">
+    <h2 id="hMap">Where your money is</h2>
+    <p class="see sm">Verify on the Mac: <code>lncli walletbalance</code> · <code>lncli channelbalance</code> (see Learn → Verify)</p>
+    <div id="mapBody"><p class="muted sm">Loading…</p></div>
+  </section>
   <section class="panel" aria-labelledby="hPnl">
     <h2 id="hPnl">Profit and loss</h2>
     <p class="see sm">Verify on the Mac: <code>lncli fwdinghistory</code> · <code>lncli listpayments</code> · <code>lncli listchaintxns</code> (see Learn → Verify)</p>
@@ -227,6 +244,13 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <section class="panel" aria-labelledby="hPower">
       <h2 id="hPower">3. Sending power and top-ups</h2>
       <div class="learn"><p>To send, sats must be on your side. A top-up is an invoice from your own node that you pay from another wallet. The sats cross the channel to your side.</p></div>
+      <ol class="flow">
+        <li><b>Pick an amount:</b> a preset, the suggested figure (covers every Ye₿ente balance plus a buffer), or your own between the shown min and max.</li>
+        <li><b>Make the invoice,</b> then pay it within the hour from any Lightning wallet: scan the QR, copy it, or press <i>Open in wallet</i>.</li>
+        <li><b>Watch this page:</b> it flips to “Paid ✓” and the numbers reload. Sending power rises by the amount; receiving room shrinks by the same amount.</li>
+        <li><b>If it expires unpaid,</b> nothing moved — just make a new one.</li>
+        <li><b>If the button errors or max shows 0,</b> receiving room is empty: a top-up arrives over Lightning, so it needs inbound first. Open a channel with inbound (Channels tab advice), then retry.</li>
+      </ol>
       <p class="sm" id="spNote"></p>
       <label for="spSats" class="sm"><b>Top up the node (sats)</b></label>
       <input id="spSats" type="number" inputmode="numeric" aria-describedby="spKsh">
@@ -244,6 +268,45 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
         <p>On-chain fees are paid per size of transaction, in <b>sat/vB</b>. Open or close channels when fees are low.</p>
       </div>
       <div class="kpis" id="chainKpis"></div>
+      <h3 class="sub">Your coins, and where each one sits</h3>
+      <div id="coinList" class="scroll sm"><p class="muted sm">Loading…</p></div>
+    </section>
+  </div>
+  <div class="grid2">
+    <section class="panel" aria-labelledby="hClose">
+      <h2 id="hClose">If you liquidate: getting your sats back</h2>
+      <p class="see sm">Verify on the Mac: <code>lncli pendingchannels</code> · <code>lncli walletbalance</code> (see Learn → Verify)</p>
+      <div class="learn"><p>Liquidating means closing every channel and pulling all sats back into the on-chain wallet, then to a wallet you alone hold. It takes days, not minutes.</p></div>
+      <ol class="flow">
+        <li><b>Cover Ye₿ente wallets first.</b> Those balances are users' money, owed in real sats. Let users withdraw (or pay them out) before you touch channels.</li>
+        <li><b>Close each channel cooperatively:</b> <code>lncli closechannel &lt;channel_point&gt;</code>. Your side arrives on-chain after a few blocks. Find each ID with the “close ID” row in Learn → Verify.</li>
+        <li><b>Stuck or offline peer?</b> Add <code>--force</code>. It costs more, and your funds wait out a delay of up to about two weeks before they unlock.</li>
+        <li><b>Watch the closes land.</b> Track them with <code>lncli pendingchannels</code>; the on-chain balance grows as each one confirms.</li>
+        <li><b>Sweep everything to your own wallet:</b> <code>lncli sendcoins --sweepall &lt;YOUR_ADDRESS&gt; --sat_per_vbyte &lt;FEE&gt;</code>. Check the fee rate on mempool.space first, and double-check the address: on-chain sends can't be undone.</li>
+        <li><b>Verify zero.</b> <code>lncli listchannels</code> and <code>lncli pendingchannels</code> show nothing left, and <code>lncli walletbalance</code> holds everything.</li>
+      </ol>
+      <ul class="warn">
+        <li>Never delete the seed or <span class="mono">channel.backup</span> until every sat is confirmed on-chain.</li>
+        <li>Keep the node online until the last close confirms, so it sees every closing transaction.</li>
+        <li>Closing when fees are high costs more. If nothing is urgent, wait for a quiet mempool.</li>
+      </ul>
+    </section>
+    <section class="panel" aria-labelledby="hAddr">
+      <h2 id="hAddr">Your wallet address, and how to use it</h2>
+      <p class="see sm">Verify on the Mac: <code>lncli newaddress p2wkh</code> · <code>lncli listunspent</code></p>
+      <div class="learn">
+        <p>Your node makes a <b>new address every time</b> you ask. Each one starts with <span class="mono">bc1q</span>. Use each address once: reusing one lets anyone link your payments together.</p>
+        <p>This dashboard never shows you a spare address on purpose: every address displayed would burn a fresh one.</p>
+      </div>
+      <ol class="flow">
+        <li><b>Make one</b> on the Mac: <code>lncli newaddress p2wkh</code>.</li>
+        <li><b>Use it</b> to fund the on-chain wallet from an exchange or another wallet, or to receive any on-chain payment.</li>
+        <li><b>Verify it:</b> compare the first and last 6 characters on the Mac's own screen. Never trust an address pasted from a chat or email. After the sender pays, the coin appears in the list above and in <code>lncli listunspent</code>.</li>
+      </ol>
+      <ul class="warn">
+        <li>Don't generate dozens of addresses without using them: past about 20 unused ones the wallet can stop seeing them (the “gap limit”).</li>
+        <li>An invoice (<span class="mono">lnbc…</span>) is for Lightning; an address (<span class="mono">bc1q…</span>) is for on-chain. They are not interchangeable.</li>
+      </ul>
     </section>
   </div>
   <section class="panel" aria-labelledby="hRoute">
@@ -462,7 +525,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="pane" data-pane="learn">
   <section class="panel" aria-labelledby="hVerify">
     <h2 id="hVerify">Verify every number on the Mac</h2>
-    <div class="learn"><p>Make a safe shortcut once (it can only read): <code>alias ln-ro='lncli --lnddir=$HOME/.lnd-altradits --macaroonpath=$HOME/.lnd-altradits/data/chain/bitcoin/mainnet/readonly.macaroon'</code></p><p>Then compare each dashboard number with the command beside it.</p></div>
+    <div class="learn"><p>Make a safe shortcut once (it can only read): <code>alias ln-ro='lncli --lnddir=$HOME/.lnd-altradits --macaroonpath=$HOME/.lnd-altradits/data/chain/bitcoin/mainnet/readonly.macaroon'</code></p><p>Then compare each dashboard number with the command beside it.</p><p>Rows starting with <code>lncli</code> instead of <code>ln-ro</code> can move money, so they need the full <code>lncli</code> (admin macaroon), not the read-only shortcut.</p></div>
     <div id="verify" class="scroll"></div>
   </section>
 

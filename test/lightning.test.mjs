@@ -182,7 +182,7 @@ test("node dashboard: needs the admin token; shows block height against the tip,
   assert.deepEqual(X.peers[0], { pubkey: "03d6", inbound: false, pingMs: 329, flaps: 183, sync: "", satSent: 611, satRecv: 90740 });
   assert.deepEqual(X.payments, { count: 2, succeeded: 1, failed: 1, sats: 1000, feeSats: 2 });
   assert.deepEqual(X.invoices, { count: 2, settled: 1, expired: 1, sats: 2100 }, "only the last 30 days");
-  assert.deepEqual(X.utxos, { count: 0, sats: 0 });
+  assert.deepEqual(X.utxos, { count: 0, sats: 0, coins: [] });
   // Your wallets: only listed handles can receive from here; receiving makes a node invoice for that wallet.
   const store = await import(new URL("lib/store.js", root));
   await store.setJSON("yw:wa", { id: "wa", handle: "stan", balance: 0, createdAt: new Date().toISOString() }); await store.setJSON("yw:h:stan", "wa"); await store.pushId("ywallets", "wa");
