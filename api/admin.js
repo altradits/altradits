@@ -14,8 +14,8 @@
 //   GET  /api/admin?view=statement   -> money received through the website (&format=csv for the books)
 //   GET  /api/admin?view=activity&days=30 -> Ye₿ente deposits and transactions per wallet, most active first
 //   POST { action: "stan_report" } | { action: "node_topup", sats } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
-import { json, readBody, clean, safeEqual, clientIp } from "../lib/http.js";
-import { listIds, getMany, getJSON, setJSON, usingRedis, hit, peek, listArchives } from "../lib/store.js";
+import { json, readBody, clean, newId, safeEqual, clientIp, EMAIL_RE } from "../lib/http.js";
+import { listIds, getMany, getJSON, setJSON, pushId, usingRedis, hit, peek, listArchives } from "../lib/store.js";
 import { lightningMode } from "../lib/lightning.js";
 
 function authorized(request) {
@@ -168,7 +168,7 @@ async function buildChoumiView() {
   const view = deptPowerView();
   const ai = { ...view, incidentOverrideActive: Boolean(view.incidentOverride) };
   const deadman = { ...deadmanStatus(), lastDrill: await lastSecurityDrill().catch(() => null) };
-  const [tasks, ops, approvals, instructions, learning, lastReport, contact] = await Promise.all([
+  const [tasks, ops, approvals, instructions, learning, lastReport, contact, replies] = await Promise.all([
     allTasks(120).catch(() => []),
     opsSummary().catch(() => ({ total: 0, counts: {}, satisfaction: null, recent: [] })),
     pendingDrafts(50).catch(() => []),
@@ -176,6 +176,7 @@ async function buildChoumiView() {
     learningView().catch(() => ({ totalRules: 0, totalExemplars: 0, answerBankCount: 0, departments: [], byDepartment: {}, answers: [], recentTrajectories: [], digests: {} })),
     stanLast().catch(() => null),
     listIds("contact:inbox", 30).then((ids) => getMany("contact:msg", ids)).catch(() => []),
+    listIds("reply:inbox", 30).then((ids) => getMany("reply", ids)).catch(() => []),
   ]);
 
   const powerMap = Object.fromEntries((ai.departments || []).map((d) => [d.id, d]));
@@ -221,6 +222,7 @@ async function buildChoumiView() {
     ops,
     approvals,
     contact,
+    replies,
     instructions,
     learning,
     report: { last: lastReport, lesson: securityLessonOfTheDay() },
@@ -313,6 +315,32 @@ export async function POST(request) {
     m.ack = draft.id;
     await setJSON(`contact:msg:${m.id}`, m);
     return json({ ok: true, draft: draft.id });
+  }
+  if (body.action === "reply_screen") {
+    // A reply pasted from the mailbox: screened before anyone acts on it.
+    const from = clean(body.from, 120);
+    const text = clean(body.text, 4000);
+    if (!EMAIL_RE.test(from)) return json({ error: "Who is it from? Give their email address." }, 400);
+    if (text.length < 2) return json({ error: "Paste the reply text to screen it." }, 400);
+    const { screen, describe, defang } = await import("../lib/screen.js");
+    const s = screen(`${from}\n${text}`);
+    const held = s.flagged ? { at: new Date().toISOString(), reasons: s.reasons } : null;
+    const id = newId(8);
+    await setJSON(`reply:${id}`, { id, at: new Date().toISOString(), from, text, held, handled: false });
+    await pushId("reply:inbox", id);
+    if (held) {
+      const { recordAttack } = await import("../lib/attacks.js");
+      await recordAttack(s.reasons.includes("instructions") ? "prompt_injection" : "hidden_content",
+        { where: `email reply ${id}`, detail: `${describe(s.reasons)}: ${defang(text).slice(0, 160)}` }).catch(() => {});
+    }
+    return json({ ok: true, id, held });
+  }
+  if (body.action === "reply_read") {
+    const m = await getJSON(`reply:${clean(body.id, 80)}`);
+    if (!m) return json({ error: "No such reply." }, 404);
+    m.handled = true;
+    await setJSON(`reply:${m.id}`, m);
+    return json({ ok: true });
   }
   if (body.action === "draft_decide") {
     const { decideDraft } = await import("../lib/stan.js");
