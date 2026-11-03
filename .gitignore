@@ -25,5 +25,12 @@ node_modules/
 .data/
 .vercel/
 
+# Bitcoin secrets (never commit these)
+*.macaroon
+*.backup
+channel-backup-*
+*.key
+*.pem
+
 # Session handoff note (altradits-handoff mod); local only.
 HANDOFF.md

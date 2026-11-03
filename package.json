@@ -1,6 +1,16 @@
 {
   "name": "altradits-site",
   "private": true,
+  "version": "0.1.0",
+  "description": "altradits.com: free Bitcoin tools, learning, and the YeBente Lightning wallet",
+  "license": "MIT",
+  "author": "Stanley Chege Thuita",
+  "homepage": "https://altradits.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/altradits/altradits.git"
+  },
+  "bugs": "https://github.com/altradits/altradits/issues",
   "type": "module",
   "scripts": {
     "start": "node server.mjs",

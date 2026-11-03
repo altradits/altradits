@@ -2,6 +2,8 @@
   "name": "yebente",
   "private": true,
   "version": "0.1.0",
+  "description": "YeBente: a custodial Bitcoin Lightning wallet for everyday amounts",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite --port=5173",
