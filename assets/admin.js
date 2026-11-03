@@ -650,6 +650,18 @@ async function loadChoumi() {
       </div>`).join("")
     : '<p class="muted sm">No contact messages yet.</p>';
 
+  // 4c. Screened email replies
+  const replies = C.replies || [];
+  const heldReplies = replies.filter((m) => m.held && !m.handled);
+  issue("reply_inbox", heldReplies.length ? "warn" : null, `${heldReplies.length} email ${heldReplies.length === 1 ? "reply" : "replies"} on security hold.`, "choumi:hReplies");
+  $("#replyInbox").innerHTML = replies.length
+    ? replies.map((m) => `<div class="inside">
+        <h3>${esc(m.from)} <span class="muted sm">· ${esc(ago(m.at))}${m.handled ? " · handled" : ""}${m.held ? ` · <b>hold: ${(m.held.reasons || []).map(esc).join(", ")}</b>` : " · clean"}</span></h3>
+        <p class="sm" style="white-space:pre-wrap">${esc(m.text)}</p>
+        ${m.handled ? "" : `<div class="row"><button type="button" class="btn" data-reply-read="${esc(m.id)}">Mark handled</button></div>`}
+      </div>`).join("")
+    : '<p class="muted sm">No screened replies yet.</p>';
+
   // 5. Approvals waiting for Stanley
   const approvals = C.approvals || [];
   issue("choumi_approvals", approvals.length ? "warn" : null, `${approvals.length} draft(s) from Choumi's team waiting for your approval.`, "choumi:hApprovals");
@@ -806,6 +818,25 @@ $("#choumiApprovals").addEventListener("click", async (e) => {
   try {
     await api("", { action: "draft_decide", id, approve });
     toast(approve ? "Draft approved." : "Draft rejected.");
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#replyScreenBtn").addEventListener("click", async () => {
+  try {
+    const r = await api("", { action: "reply_screen", from: $("#replyFrom").value.trim(), text: $("#replyText").value });
+    toast(r.held ? `Held: ${(r.held.reasons || []).join(", ")}.` : "Clean. Safe to act on.");
+    $("#replyFrom").value = ""; $("#replyText").value = "";
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#replyInbox").addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-reply-read]");
+  if (!btn) return;
+  try {
+    await api("", { action: "reply_read", id: btn.dataset.replyRead });
+    toast("Marked handled.");
     loadChoumi();
   } catch (err) { toast(err.message, true, 6000); }
 });
