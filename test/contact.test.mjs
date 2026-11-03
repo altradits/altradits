@@ -105,7 +105,8 @@ test("paid send mints a receipt, joins the statement, emails the payer", async (
   const r = await contact.POST(req({ step: "send", hash: q.hash, name: "Ruth", email: "ruth@example.com", topic: "learn", message: "Where do I start learning with you?" }, "10.0.0.6"));
   assert.equal(r.status, 200);
   const { id, receipt } = await r.json();
-  assert.match(receipt, /^ALT-\d{4}$/);
+  assert.match(receipt, /^ALT-\d{4}-\d{4}$/);
+  assert.ok(receipt.startsWith(`ALT-${new Date().toISOString().slice(0, 4)}-`), "current year tags the receipt");
   assert.equal((await getJSON(`contact:msg:${id}`)).receipt, receipt);
   const { statement } = await import(`${ROOT}/lib/statement.js`);
   const row = (await statement()).payments.find((p) => p.type === "contact" && p.id === id);
@@ -126,7 +127,7 @@ test("hostile text is held: stored with reasons, logged in the Security watch, n
   const r = await contact.POST(req({ step: "send", hash: q.hash, name: "Mallory", email: "mallory@example.com", topic: "other", message: evil }, "10.0.0.7"));
   assert.equal(r.status, 200);
   const { id, receipt } = await r.json();
-  assert.match(receipt, /^ALT-\d{4}$/); // paid is paid: receipt stands
+  assert.match(receipt, /^ALT-\d{4}-\d{4}$/); // paid is paid: receipt stands
   const stored = await getJSON(`contact:msg:${id}`);
   assert.ok(stored.held && stored.held.reasons.includes("instructions"));
   const { securityView } = await import(`${ROOT}/lib/attacks.js`);
