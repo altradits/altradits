@@ -259,7 +259,7 @@ export async function POST(request) {
   if (body.action === "address_qr") {
     const { validDepositAddress, qrSvg } = await import("../lib/lightning.js");
     const address = String(body.address || "").trim();
-    if (!validDepositAddress(address)) return json({ error: "That isn't a bc1q address from your node. On the Mac run lncli newaddress p2wkh and paste the whole address." }, 400);
+    if (!validDepositAddress(address)) return json({ error: "That isn't a bc1q address from your node. On the Mac run lncli --lnddir=$HOME/.lnd-altradits --network=mainnet newaddress p2wkh and paste the whole address." }, 400);
     if ((await hit("rl:addrqr", 3600)) > 60) return json({ error: "Too many QR codes. Try again in an hour." }, 429);
     return json({ address, qr: await qrSvg(address) });
   }
