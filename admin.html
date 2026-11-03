@@ -209,7 +209,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <section class="panel" aria-labelledby="hLiq">
     <h2 id="hLiq">Liquidity, plainly</h2>
     <div class="learn">
-      <p>Every channel is a seesaw: your side is what you can <b>send</b>, the peer's side is what you can <b>receive</b>. The total never moves — each payment just shifts sats from one side to the other.</p>
+      <p>Every channel is a seesaw: your side is what you can <b>send</b>, the peer's side is what you can <b>receive</b>. The total never moves. Each payment just shifts sats from one side to the other.</p>
       <p>Receiving needs <b>room</b>: inbound is all peer sides added up, minus the 1% reserves. A top-up or a buy fills <i>your</i> side (more to send, less room to receive). A send does the reverse.</p>
       <p>A lopsided channel needs no closing: nearly all yours → spend or send out to reopen receiving room; nearly all theirs → receive in (a top-up) to rebuild sending power. Close and reopen only when a peer is dead or the channel is tiny.</p>
     </div>
@@ -261,7 +261,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
         <li><b>Pick an amount:</b> a preset, the suggested figure (covers every Ye₿ente balance plus a buffer), or your own between the shown min and max.</li>
         <li><b>Make the invoice,</b> then pay it within the hour from any Lightning wallet: scan the QR, copy it, or press <i>Open in wallet</i>.</li>
         <li><b>Watch this page:</b> it flips to “Paid ✓” and the numbers reload. Sending power rises by the amount; receiving room shrinks by the same amount.</li>
-        <li><b>If it expires unpaid,</b> nothing moved — just make a new one.</li>
+        <li><b>If it expires unpaid,</b> nothing moved. Just make a new one.</li>
         <li><b>If the button errors or max shows 0,</b> receiving room is empty: a top-up arrives over Lightning, so it needs inbound first. Open a channel with inbound (Channels tab advice), then retry.</li>
       </ol>
       <p class="sm" id="spNote"></p>
@@ -575,7 +575,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </div>
   <div class="rcpt-titlerow"><h2 id="rcptTitle">Receipt</h2><div id="rcptNo" class="rcpt-no"></div></div>
   <dl id="rcptBody"></dl>
-  <p class="rcpt-foot">Thank you — every payment supports open-source Bitcoin &amp; Lightning work in Kenya.<br>Keep this receipt for your records.</p>
+  <p class="rcpt-foot">Thank you. Every payment supports open-source Bitcoin &amp; Lightning work in Kenya.<br>Keep this receipt for your records.</p>
   <div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn primary" id="rcptClose">Close</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
