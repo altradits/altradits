@@ -183,3 +183,18 @@ test("no secrets committed: keys, tokens, macaroons or private keys in any track
   }
   assert.ok(!tracked.some((f) => /(^|\/)\.env(\..*)?$/.test(f) && !f.endsWith(".example")), "no .env file is tracked");
 });
+
+test("site copy uses no em-dashes (house style: a full stop, comma or colon reads plainer)", () => {
+  const walk = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`]);
+  const targets = [
+    ...fs.readdirSync(root).filter((x) => x.endsWith(".html")),
+    "server.mjs",
+    ...walk("lib").filter((f) => f.endsWith(".js")),
+    ...walk("api").filter((f) => f.endsWith(".js")),
+    ...walk("data").filter((f) => f.endsWith(".js")),
+    "yebente/index.html",
+    ...walk("yebente/src").filter((f) => /\.(tsx?|css)$/.test(f)),
+  ];
+  for (const f of targets) assert.doesNotMatch(read(f), /—/, `${f}: replace the em-dash with a full stop, comma or colon`);
+});
