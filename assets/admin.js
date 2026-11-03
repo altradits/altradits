@@ -656,9 +656,9 @@ async function loadChoumi() {
   issue("reply_inbox", heldReplies.length ? "warn" : null, `${heldReplies.length} email ${heldReplies.length === 1 ? "reply" : "replies"} on security hold.`, "choumi:hReplies");
   $("#replyInbox").innerHTML = replies.length
     ? replies.map((m) => `<div class="inside">
-        <h3>${esc(m.from)} <span class="muted sm">· ${esc(ago(m.at))}${m.handled ? " · handled" : ""}${m.held ? ` · <b>hold: ${(m.held.reasons || []).map(esc).join(", ")}</b>` : " · clean"}</span></h3>
+        <h3>${esc(m.from)} <span class="muted sm">· ${esc(m.dept || "office")} · ${esc(ago(m.at))}${m.handled ? " · handled" : ""}${m.rejected ? ` · rejected (${esc(m.rejected.dept)})` : ""}${m.held ? ` · <b>hold: ${(m.held.reasons || []).map(esc).join(", ")}</b>` : " · clean"}</span></h3>
         <p class="sm" style="white-space:pre-wrap">${esc(m.text)}</p>
-        ${m.handled ? "" : `<div class="row"><button type="button" class="btn" data-reply-read="${esc(m.id)}">Mark handled</button></div>`}
+        ${m.handled ? "" : `<div class="row"><button type="button" class="btn primary" data-reply-reject="${esc(m.id)}">Reject with ${esc(m.dept || "office")} message</button><button type="button" class="btn" data-reply-read="${esc(m.id)}">Mark handled</button></div>`}
       </div>`).join("")
     : '<p class="muted sm">No screened replies yet.</p>';
 
@@ -670,7 +670,7 @@ async function loadChoumi() {
         <h3>${esc(a.subject || a.title || "Draft")} <span class="muted sm">· ${esc(a.dept)} ${a.to ? `→ ${esc(a.to)}` : ""} · ${esc(ago(a.at || a.createdAt))}</span></h3>
         <p class="sm" style="white-space:pre-wrap">${esc(a.body || a.text || "")}</p>
         <div class="row">
-          <button type="button" class="btn primary" data-draft-decide="${esc(a.id)}" data-approve="1">${String(a.to || "").toLowerCase() === "altradits@gmail.com" ? "Approve &amp; send to me" : "Approve (held: external email is off)"}</button>
+          <button type="button" class="btn primary" data-draft-decide="${esc(a.id)}" data-approve="1">${String(a.to || "").toLowerCase() === "altradits@gmail.com" ? "Approve &amp; send to me" : "Approve &amp; send"}</button>
           <button type="button" class="btn" data-draft-decide="${esc(a.id)}" data-approve="0">Reject</button>
         </div>
       </div>`).join("")
@@ -824,7 +824,7 @@ $("#choumiApprovals").addEventListener("click", async (e) => {
 
 $("#replyScreenBtn").addEventListener("click", async () => {
   try {
-    const r = await api("", { action: "reply_screen", from: $("#replyFrom").value.trim(), text: $("#replyText").value });
+    const r = await api("", { action: "reply_screen", from: $("#replyFrom").value.trim(), dept: $("#replyDept").value, text: $("#replyText").value });
     toast(r.held ? `Held: ${(r.held.reasons || []).join(", ")}.` : "Clean. Safe to act on.");
     $("#replyFrom").value = ""; $("#replyText").value = "";
     loadChoumi();
@@ -832,6 +832,16 @@ $("#replyScreenBtn").addEventListener("click", async () => {
 });
 
 $("#replyInbox").addEventListener("click", async (e) => {
+  const rej = e.target.closest("[data-reply-reject]");
+  if (rej) {
+    if (!confirm("Send this department's fixed rejection message? Replies are never answered any other way.")) return;
+    try {
+      await api("", { action: "reply_reject", id: rej.dataset.replyReject });
+      toast("Rejection sent. The writer was pointed to the contact form.");
+      loadChoumi();
+    } catch (err) { toast(err.message, true, 6000); }
+    return;
+  }
   const btn = e.target.closest("[data-reply-read]");
   if (!btn) return;
   try {

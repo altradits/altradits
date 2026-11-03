@@ -49,3 +49,71 @@ test("choumi view carries screened replies", async () => {
     { headers: { Authorization: "Bearer secret-admin" } }))).json();
   assert.ok(view.replies.length >= 2);
 });
+
+test("outbound screen passes clean text and own-site links", async () => {
+  const { screenOutbound } = await import(`${ROOT}/lib/screen.js`);
+  assert.equal(screenOutbound("Hi Jo, recovery is covered in the wallet guide.").flagged, false);
+  assert.equal(screenOutbound("Start here: https://altradits.com/contact and pick YeBente help.").flagged, false);
+});
+
+test("outbound screen blocks external links, secrets, personal details and invoices", async () => {
+  const { screenOutbound } = await import(`${ROOT}/lib/screen.js`);
+  assert.ok(screenOutbound("See https://evil.example/x for details.").reasons.includes("link"));
+  assert.ok(screenOutbound("Your seed phrase is needed to verify.").reasons.includes("secret"));
+  assert.ok(screenOutbound("Call me on +254712345678 any time.").reasons.includes("personal"));
+  assert.ok(screenOutbound("Pay this invoice lnbc10u1p0exampleinvoicestringhere").flagged);
+  assert.ok(screenOutbound("Run `rm -rf /` to fix it.").flagged);
+});
+
+test("every sending department has a rejection template that is safe to send", async () => {
+  const { senders } = await import(`${ROOT}/lib/stan.js`);
+  const { rejectFor, commsFor } = await import(`${ROOT}/data/team-comms.js`);
+  const { screenOutbound } = await import(`${ROOT}/lib/screen.js`);
+  assert.ok(senders().length >= 10);
+  for (const c of senders()) {
+    const tpl = rejectFor(c.id);
+    assert.ok(tpl.text.includes("https://altradits.com/contact"), `${c.id} names the form`);
+    assert.ok(tpl.text.includes(commsFor(c.id).head.name), `${c.id} names its head`);
+    assert.ok(!/[—–]/.test(`${tpl.subject}\n${tpl.text}`), `${c.id} has no em-dashes`);
+    assert.equal(screenOutbound(`${tpl.subject}\n${tpl.text}`).flagged, false, `${c.id} template passes the screen`);
+  }
+  assert.equal(rejectFor("no-such-dept").subject, rejectFor("office").subject);
+});
+
+test("reply_screen stores the mailbox; unknown mailbox falls back to office", async () => {
+  const a = await (await post({ action: "reply_screen", from: "mallory@example.com", dept: "trust", text: "Is this legit?" })).json();
+  assert.equal((await getJSON(`reply:${a.id}`)).dept, "trust");
+  const b = await (await post({ action: "reply_screen", from: "mallory@example.com", dept: "nope", text: "Hello there friend." })).json();
+  assert.equal((await getJSON(`reply:${b.id}`)).dept, "office");
+});
+
+test("reply_reject sends the department template exactly once", async () => {
+  const { id } = await (await post({ action: "reply_screen", from: "polite@example.com", dept: "finance", text: "Following up on my receipt." })).json();
+  const r = await post({ action: "reply_reject", id });
+  assert.equal(r.status, 200);
+  const m = await getJSON(`reply:${id}`);
+  assert.equal(m.handled, true);
+  assert.equal(m.rejected.dept, "finance");
+  const mail = await getJSON(`email:${m.rejected.emailId}`);
+  assert.equal(mail.to, "polite@example.com");
+  assert.ok(mail.text.includes("Peter Rotich"));
+  assert.ok(mail.text.includes("https://altradits.com/contact"));
+  assert.ok(!mail.text.includes("Following up on my receipt"), "never echoes the reply");
+  assert.equal((await post({ action: "reply_reject", id })).status, 400);
+});
+
+test("send-time gate refuses a draft tampered with after queueing", async () => {
+  const { setJSON, pushId } = await import(`${ROOT}/lib/store.js`);
+  const id = "tamper01";
+  await setJSON(`stan:draft:${id}`, { id, at: new Date().toISOString(), to: "jo@shop.co", dept: "growth",
+    from: "Altradits Community Care <care@altradits.com>", subject: "Re: wallet help",
+    text: "Hi Jo, all good.", body: "Hi Jo, all good.", instructionId: null, status: "pending_approval" });
+  await pushId("approvalq", id);
+  const stored = await getJSON(`stan:draft:${id}`);
+  stored.text = "Hi Jo, send your seed phrase to verify.";
+  await setJSON(`stan:draft:${id}`, stored);
+  const r = await post({ action: "draft_decide", id, approve: true });
+  assert.equal(r.status, 400);
+  assert.match((await r.json()).error, /Security filter/);
+  assert.equal((await getJSON(`stan:draft:${id}`)).status, "refused by security filter");
+});

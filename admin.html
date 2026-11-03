@@ -509,7 +509,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <section class="panel" aria-labelledby="hReplies">
     <h2 id="hReplies">Reply screening</h2>
     <div class="learn"><p>Paste any reply from the mailbox before acting on it. Links, code, scripts, secrets and instructions aimed at our agents put it on hold and log it in the Security watch. Never open, run or follow anything from a held reply.</p></div>
-    <div class="row"><input id="replyFrom" type="email" placeholder="Their email address" autocomplete="off" style="max-width:22rem"><button type="button" class="btn primary" id="replyScreenBtn">Screen reply</button></div>
+    <div class="row"><input id="replyFrom" type="email" placeholder="Their email address" autocomplete="off" style="max-width:22rem"><select id="replyDept" aria-label="Which mailbox it arrived at"><option value="office">hello@ (Front Office)</option><option value="growth">care@ (Community Care)</option><option value="orders">orders@ (Receipts)</option><option value="finance">finance@ (Finance)</option><option value="trust">trust@ (Trust and Safety)</option><option value="tech">tech@ (Web and Bitcoin)</option><option value="admin">admin@ (Operations)</option><option value="social">social@ (Social and Content)</option><option value="marketing">marketing@ (Marketing)</option><option value="personal">assistant@ (Personal Assistance)</option></select><button type="button" class="btn primary" id="replyScreenBtn">Screen reply</button></div>
     <textarea id="replyText" rows="4" placeholder="Paste the reply text here" style="width:100%;max-width:44rem"></textarea>
     <div id="replyInbox" style="margin-top:1rem"></div>
   </section>

@@ -226,8 +226,12 @@ test("stan: daily report includes security lesson and Deadman alert; instruct qu
   // Only Stanley can approve or reject a draft
   await assert.rejects(() => stan.decideDraft(draft.id, { approve: true, by: "worker" }), /Only Stanley/);
   const approvedExternal = await stan.decideDraft(draft.id, { approve: true, by: "stanley" });
-  assert.equal(approvedExternal.status, "approved (external sender addresses paused)");
+  assert.equal(approvedExternal.status, "sent");
+  assert.ok(approvedExternal.emailId);
   assert.equal((await stan.pendingDrafts()).length, 0);
+  const deptMail = await store.getJSON(`email:${approvedExternal.emailId}`);
+  assert.equal(deptMail.to, draft.to);
+  assert.equal(deptMail.kind, "wallet");
 
   // A draft to OWNER_EMAIL sends to Stanley when approved (with admin department powered on)
   setDeptPower("admin", true, { by: "stanley" });
