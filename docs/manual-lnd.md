@@ -66,27 +66,27 @@ lncli --lnddir=$HOME/.lnd-altradits --network=mainnet create
 LND creates admin.macaroon (everything), readonly.macaroon and invoice.macaroon (and router.macaroon). Use the least each job needs, and bake each with its own root key so it can be revoked alone:
 ```
 # The website: receive only (invoices, addresses, reads). It must never be able to send.
-lncli bakemacaroon --root_key_id=1 --save_to=website.macaroon \
+lncli --lnddir=$HOME/.lnd-altradits --network=mainnet bakemacaroon --root_key_id=1 --save_to=website.macaroon \
   invoices:read invoices:write address:read address:write onchain:read offchain:read info:read
 # Ye₿ente sending: Lightning payments and their status.
-lncli bakemacaroon --root_key_id=2 --save_to=yebente-pay.macaroon offchain:read offchain:write
+lncli --lnddir=$HOME/.lnd-altradits --network=mainnet bakemacaroon --root_key_id=2 --save_to=yebente-pay.macaroon offchain:read offchain:write
 # Hex for the server's settings:
 xxd -p -c 100000 website.macaroon
 # Revoke every key baked with root key 1:
-lncli listmacaroonids
-lncli deletemacaroonid 1
+lncli --lnddir=$HOME/.lnd-altradits --network=mainnet listmacaroonids
+lncli --lnddir=$HOME/.lnd-altradits --network=mainnet deletemacaroonid 1
 ```
 Rules:
-- Day to day, use readonly.macaroon (an alias such as lncli-ro).
+- Day to day, use readonly.macaroon (an alias such as ln-ro).
 - Delete admin.macaroon and router.macaroon after any use; LND recreates them at restart.
 - The admin Finance tab checks the website key really is receive-only (it asks the node to send nothing and expects "permission denied").
 
 ## 5. Channels and liquidity
 ```
-lncli-ro getinfo
-lncli-ro channelbalance            # local = can send, remote = can receive
-lncli-ro listchannels
-lncli openchannel --node_key=<peer pubkey> --local_amt=<sats>
+ln-ro getinfo
+ln-ro channelbalance            # local = can send, remote = can receive
+ln-ro listchannels
+lncli --lnddir=$HOME/.lnd-altradits --network=mainnet openchannel --node_key=<peer pubkey> --local_amt=<sats>
 ```
 - A shop mostly receives: it needs inbound liquidity (remote balance). Buy a channel (Magma by Amboss) or ask a well-connected peer to open one.
 - Ye₿ente also sends, so it needs outbound liquidity (local balance). The hourly solvency check compares wallet balances with it.
@@ -95,7 +95,7 @@ lncli openchannel --node_key=<peer pubkey> --local_amt=<sats>
 ## 6. Backups
 - channel.backup (static channel backup) updates on every channel change; copy it offline after each change. Export manually:
 ```
-lncli exportchanbackup --all --output_file=$HOME/channel-backup-$(date +%F).backup
+lncli --lnddir=$HOME/.lnd-altradits --network=mainnet exportchanbackup --all --output_file=$HOME/channel-backup-$(date +%F).backup
 ```
 - Seed (paper) + channel.backup = funds recoverable (channels are force-closed in recovery).
 

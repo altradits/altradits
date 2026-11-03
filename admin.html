@@ -174,7 +174,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="pane" data-pane="node">
   <section class="panel" aria-labelledby="hNode">
     <h2 id="hNode">1. Your node and the blockchain</h2>
-    <p class="see sm">See it yourself on the Mac: <code>lncli getinfo</code></p>
+    <p class="see sm">See it yourself on the Mac: <code>ln-ro getinfo</code></p>
     <div class="learn">
       <p>Your node is two programs. <b>Bitcoin Core</b> downloads and checks every block. <b>LND</b> runs Lightning on top of it.</p>
       <p>A new block arrives about every 10 minutes. Your node must keep up, or it can't safely pay or get paid.</p>
@@ -184,7 +184,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </section>
   <section class="panel" aria-labelledby="hNet">
     <h2 id="hNet">Your node, its peer and the network</h2>
-    <p class="see sm">See it yourself on the Mac: <code>lncli getnetworkinfo</code> · <code>lncli listpeers</code></p>
+    <p class="see sm">See it yourself on the Mac: <code>ln-ro getnetworkinfo</code> · <code>ln-ro listpeers</code></p>
     <div class="learn"><p>Your node has a public key: its address on the Lightning Network. It learns the <b>network graph</b> (every public node and channel) from its peers, and uses it to find routes.</p></div>
     <div class="kpis" id="exInfo"></div>
     <div class="kpis" id="exGraph"></div>
@@ -197,7 +197,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="pane" data-pane="channels">
   <section class="panel" aria-labelledby="hChan">
     <h2 id="hChan">2. Channels: where your Lightning money sits</h2>
-    <p class="see sm">See it yourself on the Mac: <code>lncli listchannels</code></p>
+    <p class="see sm">See it yourself on the Mac: <code>ln-ro listchannels</code></p>
     <div class="learn">
       <p>A channel is Bitcoin locked between you and one peer. The total never changes. Paying moves sats to their side. Getting paid moves sats to your side.</p>
       <p>Each side keeps about 1% it can't spend: the <b>reserve</b>. It lets a cheater be punished.</p>
@@ -209,6 +209,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </section>
   <section class="panel" aria-labelledby="hLiq">
     <h2 id="hLiq">Liquidity, plainly</h2>
+    <p class="see sm">See it yourself on the Mac: <code>ln-ro channelbalance</code> · <code>ln-ro listchannels</code></p>
     <div class="learn">
       <p>Every channel is a seesaw: your side is what you can <b>send</b>, the peer's side is what you can <b>receive</b>. The total never moves. Each payment just shifts sats from one side to the other.</p>
       <p>Receiving needs <b>room</b>: inbound is all peer sides added up, minus the 1% reserves. A top-up or a buy fills <i>your</i> side (more to send, less room to receive). A send does the reverse.</p>
@@ -219,7 +220,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </section>
   <section class="panel" aria-labelledby="hInside">
     <h2 id="hInside">Inside each channel</h2>
-    <p class="see sm">See it yourself on the Mac: <code>lncli listchannels</code> · <code>lncli closedchannels</code></p>
+    <p class="see sm">See it yourself on the Mac: <code>ln-ro listchannels</code> · <code>ln-ro closedchannels</code></p>
     <div class="learn"><p>A channel starts as one on-chain transaction (the <b>funding transaction</b>). Its <b>short channel ID</b> says where: block × transaction × output. Every payment through it is an <b>update</b> to a shared balance sheet both sides sign.</p></div>
     <div id="exChans"></div>
     <h3 class="sub">Closed channels</h3>
@@ -236,12 +237,12 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="pane" data-pane="money">
   <section class="panel" aria-labelledby="hMap">
     <h2 id="hMap">Where your money is</h2>
-    <p class="see sm">Verify on the Mac: <code>lncli walletbalance</code> · <code>lncli channelbalance</code> (see Learn → Verify)</p>
+    <p class="see sm">Verify on the Mac: <code>ln-ro walletbalance</code> · <code>ln-ro channelbalance</code> (see Learn → Verify)</p>
     <div id="mapBody"><p class="muted sm">Loading…</p></div>
   </section>
   <section class="panel" aria-labelledby="hPnl">
     <h2 id="hPnl">Profit and loss</h2>
-    <p class="see sm">Verify on the Mac: <code>lncli fwdinghistory</code> · <code>lncli listpayments</code> · <code>lncli listchaintxns</code> (see Learn → Verify)</p>
+    <p class="see sm">Verify on the Mac: <code>ln-ro fwdinghistory</code> · <code>ln-ro listpayments</code> · <code>ln-ro listchaintxns</code> (see Learn → Verify)</p>
     <div class="learn">
       <p><b>You earn</b> from routing other people's payments, the spread on M-Pesa buys (if you set one), and support payments.</p>
       <p><b>You spend</b> on routing fees for your own payments, and on-chain fees to open or close channels. Ye₿ente users pay their own routing fees, so those cancel out.</p>
@@ -277,8 +278,8 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       <h3 class="sub">On the Mac: verify, deposit, withdraw</h3>
       <div class="learn">
         <p><b>Verify this top-up landed.</b> <code>ln-ro listinvoices --max_invoices 5</code> shows your recent invoices with the memo “Altradits node top-up”; paid ones read SETTLED. <code>ln-ro channelbalance</code> shows your side grew by the amount.</p>
-        <p><b>Deposit more.</b> Press the button again, or run <code>lncli addinvoice --value &lt;sats&gt;</code> and pay the invoice from another wallet. A top-up arrives over Lightning, so it needs receiving room first, which is why the button has a max.</p>
-        <p><b>Withdraw.</b> The dashboard can never spend: the spending key stays on the Mac. Over Lightning, get an invoice from the wallet you are sending to, then <code>lncli payinvoice &lt;invoice&gt;</code>. On-chain, <code>lncli sendcoins &lt;address&gt; &lt;sats&gt; --sat_per_vbyte &lt;fee&gt;</code>, then wait for confirmations.</p>
+        <p><b>Deposit more.</b> Press the button again, or run <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet addinvoice --value &lt;sats&gt;</code> and pay the invoice from another wallet. A top-up arrives over Lightning, so it needs receiving room first, which is why the button has a max.</p>
+        <p><b>Withdraw.</b> The dashboard can never spend: the spending key stays on the Mac. Over Lightning, get an invoice from the wallet you are sending to, then <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet payinvoice &lt;invoice&gt;</code>. On-chain, <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet sendcoins &lt;address&gt; &lt;sats&gt; --sat_per_vbyte &lt;fee&gt;</code>, then wait for confirmations.</p>
         <p><b>In between.</b> Lightning top-ups settle in seconds with no confirmations to wait for, and the paying wallet covers a small routing fee. You can never send the locked 1% reserve or more than “Can send now”. If an invoice expires unpaid, nothing moved: just make a new one. Keep the Mac awake with LND running until a payment lands. Every command above, plus more, sits in Learn → Verify.</p>
       </div>
     </section>
@@ -309,15 +310,15 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="grid2">
     <section class="panel" aria-labelledby="hClose">
       <h2 id="hClose">If you liquidate: getting your sats back</h2>
-      <p class="see sm">Verify on the Mac: <code>lncli pendingchannels</code> · <code>lncli walletbalance</code> (see Learn → Verify)</p>
+      <p class="see sm">Verify on the Mac: <code>ln-ro pendingchannels</code> · <code>ln-ro walletbalance</code> (see Learn → Verify)</p>
       <div class="learn"><p>Liquidating means closing every channel and pulling all sats back into the on-chain wallet, then to a wallet you alone hold. It takes days, not minutes.</p></div>
       <ol class="flow">
         <li><b>Cover Ye₿ente wallets first.</b> Those balances are users' money, owed in real sats. Let users withdraw (or pay them out) before you touch channels.</li>
-        <li><b>Close each channel cooperatively:</b> <code>lncli closechannel &lt;channel_point&gt;</code>. Your side arrives on-chain after a few blocks. Find each ID with the “close ID” row in Learn → Verify.</li>
+        <li><b>Close each channel cooperatively:</b> <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet closechannel &lt;channel_point&gt;</code>. Your side arrives on-chain after a few blocks. Find each ID with the “close ID” row in Learn → Verify.</li>
         <li><b>Stuck or offline peer?</b> Add <code>--force</code>. It costs more, and your funds wait out a delay of up to about two weeks before they unlock.</li>
-        <li><b>Watch the closes land.</b> Track them with <code>lncli pendingchannels</code>; the on-chain balance grows as each one confirms.</li>
-        <li><b>Sweep everything to your own wallet:</b> <code>lncli sendcoins --sweepall &lt;YOUR_ADDRESS&gt; --sat_per_vbyte &lt;FEE&gt;</code>. Check the fee rate on mempool.space first, and double-check the address: on-chain sends can't be undone.</li>
-        <li><b>Verify zero.</b> <code>lncli listchannels</code> and <code>lncli pendingchannels</code> show nothing left, and <code>lncli walletbalance</code> holds everything.</li>
+        <li><b>Watch the closes land.</b> Track them with <code>ln-ro pendingchannels</code>; the on-chain balance grows as each one confirms.</li>
+        <li><b>Sweep everything to your own wallet:</b> <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet sendcoins --sweepall &lt;YOUR_ADDRESS&gt; --sat_per_vbyte &lt;FEE&gt;</code>. Check the fee rate on mempool.space first, and double-check the address: on-chain sends can't be undone.</li>
+        <li><b>Verify zero.</b> <code>ln-ro listchannels</code> and <code>ln-ro pendingchannels</code> show nothing left, and <code>ln-ro walletbalance</code> holds everything.</li>
       </ol>
       <ul class="warn">
         <li>Never delete the seed or <span class="mono">channel.backup</span> until every sat is confirmed on-chain.</li>
@@ -335,7 +336,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       <ol class="flow">
         <li><b>Make one</b> on the Mac: <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet newaddress p2wkh</code>, then paste it in the <i>Fund it</i> box above for a QR code.</li>
         <li><b>Use it</b> to fund the on-chain wallet from an exchange or another wallet, or to receive any on-chain payment.</li>
-        <li><b>Verify it:</b> compare the first and last 6 characters on the Mac's own screen. Never trust an address pasted from a chat or email. After the sender pays, the coin appears in the list above and in <code>lncli listunspent</code>.</li>
+        <li><b>Verify it:</b> compare the first and last 6 characters on the Mac's own screen. Never trust an address pasted from a chat or email. After the sender pays, the coin appears in the list above and in <code>ln-ro listunspent</code>.</li>
       </ol>
       <ul class="warn">
         <li>Don't generate dozens of addresses without using them: past about 20 unused ones the wallet can stop seeing them (the “gap limit”).</li>
@@ -345,7 +346,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </div>
   <section class="panel" aria-labelledby="hRoute">
     <h2 id="hRoute">5. Routing and fees</h2>
-    <p class="see sm">See it yourself on the Mac: <code>lncli feereport</code></p>
+    <p class="see sm">See it yourself on the Mac: <code>ln-ro feereport</code></p>
     <div class="learn">
       <p>Nodes pass payments for each other and charge a small fee: a <b>base fee</b> per payment plus a <b>rate</b> in parts per million (ppm).</p>
       <p>Example: base 1 sat + 1 ppm on 100,000 sats = 1.1 sats.</p>
@@ -356,13 +357,14 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </section>
   <section class="panel" aria-labelledby="hFlow">
     <h2 id="hFlow">Payments and invoices, last 30 days</h2>
-    <p class="see sm">See it yourself on the Mac: <code>lncli listpayments</code> · <code>lncli listinvoices</code></p>
+    <p class="see sm">See it yourself on the Mac: <code>ln-ro listpayments</code> · <code>ln-ro listinvoices</code></p>
     <div class="learn"><p><b>Payments</b> are what your node sent; each paid a small routing fee to the nodes on the way. <b>Invoices</b> are requests your node made; settled ones were paid, cancelled ones expired unpaid.</p></div>
     <div class="kpis" id="exPays"></div>
     <div class="kpis" id="exInvs"></div>
   </section>
   <section class="panel" aria-labelledby="hMoney">
     <h2 id="hMoney">Money received through the website</h2>
+    <p class="see sm">Verify on the Mac: the “Money received” row in Learn → Verify (set ADMIN_TOKEN from the server's settings first). Each payment also links its receipt.</p>
     <div class="learn"><p>Every payment the website took, in sats: orders and donations before the agency moved out, and support payments since. Ye₿ente deposits aren't here; they belong to wallet holders.</p></div>
     <div class="kpis" id="moneyKpis"></div>
     <div class="row"><button type="button" class="btn" id="moneyCsv">Download for the books (CSV)</button></div>
@@ -406,6 +408,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 
   <section class="panel" aria-labelledby="hAll">
     <h2 id="hAll">All wallet balances</h2>
+    <p class="see sm">Verify on the Mac: the “Wallets owed” row in Learn → Verify (set ADMIN_TOKEN from the server's settings first). These balances live on the server, not the node.</p>
     <div class="learn"><p>What each wallet holds. Together this is <b>Owed to wallets</b>: sats on your node that belong to other people.</p></div>
     <div class="kpis" id="allKpis"></div>
     <div id="allList" class="scroll"></div>
@@ -435,6 +438,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </section>
   <section class="panel" aria-labelledby="hAct">
     <h2 id="hAct">Most active Ye₿ente wallets</h2>
+    <p class="see sm">Verify on the Mac: the “Most active wallets” row in Learn → Verify (set ADMIN_TOKEN from the server's settings first).</p>
     <div class="learn"><p>Deposits and completed transactions per wallet, most active first. Use it to reward your most active users, for example with a transfer from your own Ye₿ente wallet.</p></div>
     <div class="row"><label for="actDays" class="sm"><b>Period</b></label><select id="actDays" style="width:auto;padding:.4rem .6rem;border:2px solid var(--line);border-radius:.6rem;font:inherit"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="0">All time</option></select></div>
     <div class="kpis" id="actKpis" style="margin-top:.8rem"></div>
@@ -585,18 +589,18 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 
   <section class="panel" aria-labelledby="hCmds">
     <h2 id="hCmds">Practise with read-only commands</h2>
-    <div class="learn"><p>Each command reads your node and changes nothing. Add <code>--macaroonpath=~/.lnd-altradits/data/chain/bitcoin/mainnet/readonly.macaroon</code> so you can't spend by mistake.</p></div>
+    <div class="learn"><p>Each command uses the <code>ln-ro</code> shortcut from above, so it reads your node and changes nothing: spending by mistake is impossible.</p></div>
     <dl class="cmds">
-      <dt><code>lncli getinfo</code></dt><dd>Your node: public key, block height, sync, channel and peer counts.</dd>
-      <dt><code>lncli getnetworkinfo</code></dt><dd>The Lightning Network as your node sees it.</dd>
-      <dt><code>lncli listpeers</code></dt><dd>Who you're connected to, ping and reconnections.</dd>
-      <dt><code>lncli listchannels</code></dt><dd>Each channel: balances, reserve, updates, type, uptime.</dd>
-      <dt><code>lncli channelbalance</code></dt><dd>Totals: what you can send and receive.</dd>
-      <dt><code>lncli walletbalance</code></dt><dd>The on-chain wallet.</dd>
-      <dt><code>lncli feereport</code></dt><dd>Your routing fee on each channel.</dd>
-      <dt><code>lncli listinvoices --max_invoices 5</code></dt><dd>The last invoices your node made.</dd>
-      <dt><code>lncli listpayments --max_payments 5</code></dt><dd>The last payments your node sent, with fees.</dd>
-      <dt><code>lncli fwdinghistory --start_time=-30d</code></dt><dd>Payments routed through you for others.</dd>
+      <dt><code>ln-ro getinfo</code></dt><dd>Your node: public key, block height, sync, channel and peer counts.</dd>
+      <dt><code>ln-ro getnetworkinfo</code></dt><dd>The Lightning Network as your node sees it.</dd>
+      <dt><code>ln-ro listpeers</code></dt><dd>Who you're connected to, ping and reconnections.</dd>
+      <dt><code>ln-ro listchannels</code></dt><dd>Each channel: balances, reserve, updates, type, uptime.</dd>
+      <dt><code>ln-ro channelbalance</code></dt><dd>Totals: what you can send and receive.</dd>
+      <dt><code>ln-ro walletbalance</code></dt><dd>The on-chain wallet.</dd>
+      <dt><code>ln-ro feereport</code></dt><dd>Your routing fee on each channel.</dd>
+      <dt><code>ln-ro listinvoices --max_invoices 5</code></dt><dd>The last invoices your node made.</dd>
+      <dt><code>ln-ro listpayments --max_payments 5</code></dt><dd>The last payments your node sent, with fees.</dd>
+      <dt><code>ln-ro fwdinghistory --start_time=-30d</code></dt><dd>Payments routed through you for others.</dd>
     </dl>
   </section>
   <section class="panel gloss" aria-labelledby="hGloss">
