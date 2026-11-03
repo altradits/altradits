@@ -70,7 +70,8 @@ async function send(request, body) {
     if (!paid) return json({ error: "We have not received your $1 yet. Pay the invoice, then send." }, 402);
     const id = newId(8);
     const t = TOPICS[topic];
-    const receipt = `ALT-${String(await increment("receipt:no")).padStart(4, "0")}`;
+    const year = new Date().toISOString().slice(0, 4);
+    const receipt = `ALT-${year}-${String(await increment(`receipt:no:${year}`)).padStart(4, "0")}`;
     const at = new Date().toISOString();
     // The security screen reads every paid message before the team does: links,
     // code, scripts or instructions aimed at our agents put it on hold, and the
