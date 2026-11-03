@@ -42,6 +42,13 @@ One secret for people: the 6-digit PIN (or fingerprint once it's on). The app op
 - Off unless YEBENTE_MPESA_BUY=on with Daraja credentials. A quote checks the wallet limit, the daily KES limit (including pending buys), and that the node could pay out everything wallets would then hold.
 - Safaricom's result arrives at a callback whose path carries YEBENTE_CALLBACK_SECRET; status checks go through the signed-in wallet only.
 
+## Card and bank deposits (Pesapal)
+- Off unless YEBENTE_CARD_BUY=on with PESAPAL_CONSUMER_KEY, PESAPAL_CONSUMER_SECRET and PESAPAL_IPN_ID. PESAPAL_ENVIRONMENT=sandbox talks to the test provider, production to the live one. The buyer pays on Pesapal's own page: card and bank details never touch this server.
+- POST /api/yebente/wallet/card/order {kes, email} (signed in): the shared fiat quote, then a provider order whose reference and amount are the server's, never the buyer's words. Answers with the provider's checkout page.
+- The provider sends the buyer back to GET /api/yebente/wallet/card/return, which shows only the state (received, still processing, didn't go through), never amounts.
+- GET /api/yebente/wallet/card/status/<trackingId> (signed in, own wallet only) and POST /api/yebente/card/ipn/<PESAPAL_CALLBACK_SECRET> both settle through one server-to-server status query: Completed credits once (keyed by the order, only for the exact quoted shillings), Failed closes the order, and anything unclear stays pending. A forged notice credits nothing.
+- Card and M-Pesa buys share the daily KES limit and count together against the wallet limit and the node's payout check. Register the IPN address (SITE_URL + /api/yebente/card/ipn/PESAPAL_CALLBACK_SECRET) in Pesapal before switching on; the returned notification id is PESAPAL_IPN_ID.
+
 ## Sending power (the channel reserve)
 Each Lightning channel keeps a reserve on our side, 1% of the channel, that can never be spent. The node can send only what is above it: with a 2,943,434-sat channel, the first 29,434 sats on our side are locked. Below that, every send out of Ye₿ente (to other wallets, and M-Pesa through Tando) is refused before anything is taken, with "Sending out of Ye₿ente is paused"; payments between Ye₿ente handles still work.
 To add sending power, pay a node invoice: admin → Finance → Sending power suggests an amount (enough for every wallet balance plus 20,000 sats) and shows a QR to pay from any Lightning wallet; it updates when the node records the payment. Donations at /donate add sending power the same way.

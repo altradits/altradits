@@ -49,6 +49,7 @@ const FIXED_FETCH = {
   "lib/email.js": ['"https://api.resend.com/emails"'],
   "lib/tracker.js": ["`https://api.github.com${path}`"], // GitHub's public API, a constant host
   "api/yebente.js": ["`${DARAJA()}/oauth/v1/generate?grant_type=client_credentials`", "`${DARAJA()}${path}`"], // Safaricom
+  "lib/pesapal.js": ["`${BASE()}/api/Auth/RequestToken`", "`${BASE()}/api/Transactions/SubmitOrderRequest`", "`${BASE()}/api/Transactions/GetTransactionStatus?orderTrackingId=${encodeURIComponent(trackingId)}`"], // Pesapal, sandbox or live by setting
 };
 // The first argument of a call, brackets and template braces balanced.
 function firstArg(src, i) {
@@ -277,4 +278,17 @@ test("every wallet read that can ask the node or confirm an email is rate-limite
   assert.match(yb, /rl:yb:emailcf/, "api/yebente.js confirmEmailPost: limit confirmation attempts per network");
   assert.match(yb, /rl:yb:me:/, "api/yebente.js wallet/me: limit balance checks per wallet");
   assert.match(yb, /rl:yb:invq:/, "api/yebente.js wallet/invoice: limit settlement checks per wallet");
+});
+
+test("card deposits: credited only on the provider's explicit Completed, for the quoted amount", () => {
+  const pp = read("lib/pesapal.js");
+  assert.match(pp, /desc === "Completed"\) return \{ state: "paid"/, "lib/pesapal.js: only Completed pays; anything else stays pending or failed");
+  assert.match(pp, /card and bank details never touch this server/, "lib/pesapal.js: buyers always pay on the provider's page");
+  const yw = read("lib/ywallet.js");
+  assert.match(yw, /Number\(kes\) !== b\.kes\) return "pending"/, "lib/ywallet.js finishCardBuy: a different amount than quoted never credits");
+  assert.match(yw, /ref: `CARD-\$\{trackingId\}`/, "lib/ywallet.js finishCardBuy: one credit per order, however often confirmed");
+  const yb = read("api/yebente.js");
+  assert.match(yb, /rl:yb:cardo:/, "api/yebente.js wallet/card/order: limit orders per wallet");
+  assert.match(yb, /rl:yb:cardq:/, "api/yebente.js wallet/card/status: limit status checks per wallet");
+  assert.match(yb, /wrong card IPN secret/, "api/yebente.js card/ipn: refuse a wrong path secret and record it");
 });

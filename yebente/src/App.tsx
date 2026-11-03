@@ -18,6 +18,7 @@ import { BalanceCard } from './components/BalanceCard';
 import { ActionGrid } from './components/ActionGrid';
 import { TransactionHistory } from './components/TransactionHistory';
 import { BuyBtcModal } from './components/BuyBtcModal';
+import { CardTopupModal } from './components/CardTopupModal';
 import { ReceiveBtcModal } from './components/ReceiveBtcModal';
 import { SendBtcModal } from './components/SendBtcModal';
 import { SendMpesaModal } from './components/SendMpesaModal';
@@ -50,7 +51,7 @@ export default function App() {
 
   // Modals
   const [activeModal, setActiveModal] = useState<
-    'none' | 'buy_btc' | 'receive_btc' | 'send_btc' | 'send_mpesa' | 'wallet_settings'
+    'none' | 'buy_btc' | 'receive_btc' | 'send_btc' | 'send_mpesa' | 'card_topup' | 'wallet_settings'
   >('none');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
@@ -265,6 +266,7 @@ export default function App() {
             onSendMpesa={() => handleRequireWalletAction(() => setActiveModal('send_mpesa'))}
             onReceiveBtc={() => handleRequireWalletAction(() => setActiveModal('receive_btc'))}
             onSendBtc={() => handleRequireWalletAction(() => setActiveModal('send_btc'))}
+            onCardTopup={() => setActiveModal(hasServerWallet() ? 'card_topup' : 'wallet_settings')}
           />
 
           {/* 3. Secure Transaction History */}
@@ -284,6 +286,13 @@ export default function App() {
         onClose={() => setActiveModal('none')}
         wallet={wallet}
         rates={rates}
+        onSuccess={handleTransactionSuccess}
+      />
+
+      <CardTopupModal
+        key={activeModal === 'card_topup' ? 'card_topup-open' : 'card_topup'}
+        isOpen={activeModal === 'card_topup'}
+        onClose={() => setActiveModal('none')}
         onSuccess={handleTransactionSuccess}
       />
 

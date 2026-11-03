@@ -32,6 +32,10 @@
 //   POST wallet/recover-email/finish {token, pin, device}  new PIN, other phones signed out, 24 h hold
 //   POST wallet/buy {kes, phone}          M-Pesa STK Push for sats into this wallet (YEBENTE_MPESA_BUY=on)
 //   GET  wallet/buy/<checkoutRequestId>   credited once Safaricom confirms
+//   POST wallet/card/order {kes, email}   card or bank checkout page for this wallet (YEBENTE_CARD_BUY=on)
+//   GET  wallet/card/status/<trackingId>  credited once Pesapal confirms the exact shillings
+//   GET  wallet/card/return?OrderTrackingId=  where Pesapal sends the buyer back (state only)
+//   POST card/ipn/<secret>                Pesapal's payment notice (secret: PESAPAL_CALLBACK_SECRET)
 //   GET  lnurlp/<handle> (= /.well-known/lnurlp/<handle>) and lnurl/<handle>?amount=
 //                                          handle@altradits.com as a Lightning address
 // Every payout path (Lightning or on-chain disbursement, M-Pesa B2C/B2B,
@@ -132,6 +136,43 @@ async function stkQuery(request) {
 
 // Safaricom posts the STK result here. Only the result is kept (no phone number),
 // and only when the secret in the path matches, so nobody can fake a payment.
+const isoOrNull = (v) => { const t = Date.parse(v || ""); return Number.isFinite(t) ? new Date(t).toISOString() : null; };
+
+// Starts a card or bank deposit for a signed-in wallet: quoted like M-Pesa,
+// so the same limits and node checks apply, but only 3 orders an hour.
+async function cardOrder(request, w, body) {
+  const yw = await import("../lib/ywallet.js");
+  const pp = await import("../lib/pesapal.js");
+  if (!pp.pesapalOn()) return off(NOT_CONFIGURED);
+  if ((await hit(`rl:yb:cardo:${w.id}`, 3600)) > 3) return json({ success: false, error: "Only a few card orders an hour. Try again later." }, 429);
+  const quote = await yw.quoteBuy(w, body.kes);
+  const order = await pp.submitOrder({ kes: quote.kes, email: body.email || w.email, handle: w.handle, site: site() });
+  await yw.startCardBuy(w, quote, order.trackingId, order.merchantRef, String(body.email || w.email || "").trim().toLowerCase(), isoOrNull(quote.expiresAt));
+  return json({ success: true, trackingId: order.trackingId, redirectUrl: order.redirectUrl, satsAmount: quote.sats, kes: quote.kes, rate: quote.rate });
+}
+
+// Pesapal's server-to-server payment notice: only a Completed answer for the
+// exact shillings quoted credits the wallet. Anything else stays pending.
+async function cardIpn(request, secret) {
+  const want = env("PESAPAL_CALLBACK_SECRET");
+  if (!want || secret.length !== want.length || !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(want))) {
+    if (want && secret) {
+      const { recordAttack } = await import("../lib/attacks.js");
+      await recordAttack("secret_guess", { where: "/api/yebente/card/ipn", detail: "wrong card IPN secret" }).catch(() => {});
+    }
+    return json({ success: false, error: "Rejected" }, 403);
+  }
+  if ((await hit(`rl:yb:ipn:${ipKey(request)}`, 3600)) > 200) return json({ success: false, error: "Too many notices." }, 429);
+  const pp = await import("../lib/pesapal.js");
+  const { finishCardBuy } = await import("../lib/ywallet.js");
+  const body = await readBody(request);
+  const q = new URL(request.url).searchParams;
+  const id = safeId(body.OrderTrackingId || body.orderTrackingId || body.OrderMerchantReference || q.get("OrderTrackingId") || q.get("orderTrackingId"));
+  if (!id) return json({ success: false, error: "No order given." }, 400);
+  try { await finishCardBuy(id, await pp.orderStatus(id)); } catch { /* unclear: stays pending */ }
+  return json({ success: true });
+}
+
 async function callback(request, secret) {
   const want = env("YEBENTE_CALLBACK_SECRET");
   if (!want || secret.length !== want.length || !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(want))) {
@@ -257,6 +298,10 @@ async function walletPost(request, action) {
     if ((await hit(`rl:yb:inv:${w.id}`, 3600)) > 60) return json({ success: false, error: "Too many invoices. Try again later." }, 429);
     return json({ success: true, ...(await yw.invoiceFor(w, body.sats)) });
   }
+  if (action === "card/order") {
+    const w = await me(request);
+    return await cardOrder(request, w, body);
+  }
   if (action === "send") {
     const w = await me(request);
     if ((await hit(`rl:yb:send:${w.id}`, 3600)) > 60) return json({ success: false, error: "Too many payments. Try again later." }, 429);
@@ -331,6 +376,17 @@ async function walletGet(request, action) {
     const now = await getJSON(`ywbuy:${buy[1]}`);
     return json({ success: true, state: now.state, resultCode: now.state === "paid" ? 0 : now.state === "failed" ? 1 : 49, mpesaReceiptNumber: now.receipt || null, satsAmount: now.sats, inProgress: now.state === "pending" });
   }
+  const card = action.match(/^card\/status\/([\w-]{8,80})$/);
+  if (card) {
+    const rec = await getJSON(`ywcard:${card[1]}`);
+    if (!rec || rec.walletId !== w.id) return json({ success: false, error: "Not found" }, 404);
+    if ((await hit(`rl:yb:cardq:${w.id}`, 600)) > 60) return json({ success: false, error: "Too many checks. Try again later." }, 429);
+    const pp = await import("../lib/pesapal.js");
+    let st = { state: "pending", kes: null };
+    try { st = await pp.orderStatus(card[1]); } catch { /* unclear answer: stays pending */ }
+    const state = await yw.finishCardBuy(card[1], st);
+    return json({ success: true, state, paid: state === "paid", satsAmount: rec.sats });
+  }
   const inv = action.match(/^invoice\/([0-9a-f]{64})$/);
   if (inv) {
     const rec = await getJSON(`ywinv:${inv[1]}`);
@@ -379,9 +435,25 @@ export async function GET(request) {
   }
   // Send Mobile's switched-on payout options (lib/rails.js): the app draws one button each.
   if (path === "rails") return json({ success: true, rails: (await import("../lib/rails.js")).railsOn() });
+  // Where the card provider sends the buyer back: the state only, never amounts.
+  if (path === "wallet/card/return") {
+    if ((await hit(`rl:yb:cardr:${ipKey(request)}`, 3600)) > 60)
+      return emailPage(429, "Too many tries", "Try again in an hour.");
+    const t = String(new URL(request.url).searchParams.get("OrderTrackingId") || new URL(request.url).searchParams.get("orderTrackingId") || "").replace(/[^\w-]/g, "").slice(0, 80);
+    let state = null;
+    if (t && await getJSON(`ywcard:${t}`)) {
+      const pp = await import("../lib/pesapal.js");
+      const { finishCardBuy } = await import("../lib/ywallet.js");
+      try { state = await finishCardBuy(t, await pp.orderStatus(t)); } catch { state = "pending"; }
+    }
+    return state === "paid" ? emailPage(200, "Payment received", "Open the app to see your new balance.")
+      : state === "failed" ? emailPage(200, "Payment didn't go through", "No money left your wallet. Try again from the app.")
+      : state === "pending" ? emailPage(200, "Still processing", "Card payments can take a minute. Open the app to see your new balance.")
+      : emailPage(200, "Link not recognised", "Open the app to check your balance.");
+  }
   const lp = path.match(/^lnurlp\/([a-z0-9._-]{3,20})$/) || path.match(/^lnurl\/([a-z0-9._-]{3,20})$/);
   if (lp) return lnurlPay(request, lp[1], path.startsWith("lnurl/"));
-  const wg = path.match(/^wallet\/(me|history|security|invoice\/[0-9a-f]{64}|buy\/[\w-]{6,80})$/);
+  const wg = path.match(/^wallet\/(me|history|security|invoice\/[0-9a-f]{64}|buy\/[\w-]{6,80}|card\/status\/[\w-]{8,80})$/);
   if (wg) { try { return await walletGet(request, wg[1]); } catch (e) { return json({ success: false, error: e.message }, e.status || 500); } }
   if (PAYOUTS.test(path)) return off(NO_NODE);
   return json({ success: false, error: "Not found" }, 404);
@@ -395,10 +467,12 @@ export async function POST(request) {
     if (path === "mpesa/hakikisha/c2b") return await hakikisha(request);
     if (path === "lightning/create-invoice") return off("Create a Ye₿ente wallet first.");
     if (path === "wallet/email-confirm") return await confirmEmailPost(request);
-    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy|email|recover-email|recover-email\/finish|passkey\/(?:options|add|off)|unlock\/options|unlock|login\/start|login\/finish|device\/register|device\/remove|lock)$/);
+    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy|card\/order|email|recover-email|recover-email\/finish|passkey\/(?:options|add|off)|unlock\/options|unlock|login\/start|login\/finish|device\/register|device\/remove|lock)$/);
     if (wp) return await walletPost(request, wp[1]);
     const cb = path.match(/^mpesa\/callback\/([\w-]{16,128})$/);
     if (cb) return await callback(request, cb[1]);
+    const ipn = path.match(/^card\/ipn\/([\w-]{16,128})$/);
+    if (ipn) return await cardIpn(request, ipn[1]);
     if (path.startsWith("lightning/") || path.startsWith("bitcoin/")) return off(NO_NODE);
     if (PAYOUTS.test(path)) return off(NOT_CONFIGURED);
     return json({ success: false, error: "Not found" }, 404);

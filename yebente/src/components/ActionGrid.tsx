@@ -1,11 +1,12 @@
 import React from 'react';
-import { ArrowDownLeft, ArrowUpRight, Banknote, Smartphone } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Banknote, CreditCard, Smartphone } from 'lucide-react';
 
 interface ActionGridProps {
   onBuyBtc: () => void;
   onSendMpesa: () => void;
   onReceiveBtc: () => void;
   onSendBtc: () => void;
+  onCardTopup: () => void;
 }
 
 // Material 3 tonal tiles: an icon in a primary container above the label.
@@ -20,6 +21,7 @@ export const ActionGrid: React.FC<ActionGridProps> = ({
   onSendMpesa,
   onReceiveBtc,
   onSendBtc,
+  onCardTopup,
 }) => {
   return (
     <div className="grid grid-cols-2 gap-3">
@@ -43,6 +45,11 @@ export const ActionGrid: React.FC<ActionGridProps> = ({
       <button type="button" onClick={onSendBtc} className={tile}>
         <span className={badge} aria-hidden="true"><ArrowUpRight className="w-6 h-6" /></span>
         <span className={label}>Send Sats</span>
+      </button>
+
+      <button type="button" onClick={onCardTopup} className="group col-span-2 flex flex-row items-center justify-start gap-4 p-4 px-5 rounded-[24px] bg-[var(--yb-surface-container)] hover:bg-[var(--yb-surface-container-high)] border border-[var(--yb-outline-variant)]/60 text-left">
+        <span className={badge} aria-hidden="true"><CreditCard className="w-6 h-6" /></span>
+        <span><span className={label}>Top up with card</span><br /><span className="text-[13px] text-[var(--yb-on-surface-variant)]">Bank or card, on a secure page</span></span>
       </button>
     </div>
   );
