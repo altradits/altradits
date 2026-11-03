@@ -61,6 +61,15 @@ test("old addresses: agency pages and every old task order redirect, in Node and
   assert.match(ht, /RewriteRule \^cv\(\\\.html\)\?\/\?\$ \/journey \[R=301,L\]/);
 });
 
+test("retired /wallet: gone from disk, redirects home in Node and in Apache", () => {
+  const root = new URL("..", import.meta.url).pathname;
+  const srv = fs.readFileSync(path.join(root, "server.mjs"), "utf8"), ht = fs.readFileSync(path.join(root, ".htaccess"), "utf8");
+  assert.ok(!fs.existsSync(path.join(root, "wallet.html")), "page deleted");
+  assert.ok(srv.includes('wallet: ""'), "server GONE map sends it home");
+  assert.ok(!srv.includes("bitcoin-core|wallet)"), "server no longer serves it");
+  assert.match(ht, /\|wallet\)\(\\.html\)\?\/\?\$ \/ \[R=301,L\]/, "Apache sends it home too");
+});
+
 test("pages are revalidated on every visit, so updates show at once (Apache serves them directly)", () => {
   const root = new URL("..", import.meta.url).pathname;
   for (const f of [".htaccess", "yebente/public/.htaccess", "yebente/app/.htaccess"]) {

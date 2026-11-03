@@ -18,7 +18,7 @@ The front end is built and stays as it is. Choumi improves how it runs; he does 
 | Part | Where | Choumi's place |
 |---|---|---|
 | Open-source and Bitcoin-learning home | `index.html`, `library.html`, `bitcoin-core.html`, `bitcoin.html` | Background only |
-| Ye₿ente wallet | `yebente/`, `api/yebente.js`, `lib/ywallet.js`, `/wallet` | Support and safety, never custody decisions |
+| Ye₿ente wallet | `yebente/`, `api/yebente.js`, `lib/ywallet.js`, `/` | Support and safety, never custody decisions |
 | Players, Friends, Journey, Plan | `players.html`, `friends.html`, `journey.html`, `plan.html` | Keeps facts current, with sources |
 | Open-source tracker | `/tracker`, `lib/tracker.js`, `data/tracker.js` (focus: `lightningnetwork/lnd`) | Drives the daily task |
 | Support my work | `/donate`, `api/tip.js`, `lib/statement.js` | Books only; never asks anyone for money |
