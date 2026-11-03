@@ -4,7 +4,7 @@ altradits.com is Stanley Chege Thuita's open-source Bitcoin home: free tools, a 
 library, and his journey towards full-time open-source work. Nothing is sold.
 
 **Pages**
-- `/` home · `/wallet` Ye₿ente manual · `/yebente` the wallet app · `/library` free resources in reading order
+- `/` home and Ye₿ente manual · `/yebente` the wallet app · `/library` free resources in reading order
 - `/bitcoin-core` setup guide · `/bitcoin` learning in Kisumu · `/players` people and projects to learn from
 - `/journey` contributions and the Btrust starter-grant bar · `/donate` support in sats · `/admin` node dashboard
 

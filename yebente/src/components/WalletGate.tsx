@@ -155,7 +155,7 @@ export const WalletGate: React.FC<Props> = ({ locked, recoveryToken, onOpen, onR
       {mode === 'create' && (
         <>
           <div className="flex items-center gap-2">{back()}<h1 className="text-lg font-bold">Create a wallet</h1></div>
-          <p className="text-xs text-[var(--yb-on-surface-variant)]">Already have one? <button type="button" className={link} onClick={() => go('login')}>Log in</button> · New to Bitcoin? <a className={link} href="/wallet">See the 1-minute guide</a></p>
+          <p className="text-xs text-[var(--yb-on-surface-variant)]">Already have one? <button type="button" className={link} onClick={() => go('login')}>Log in</button> · New to Bitcoin? <a className={link} href="/">See the 1-minute guide</a></p>
           <PinInput value={pin} onChange={setPin} label="Choose a 6-digit PIN (avoid 123456 or 112233)" name="yb-new-pin" autoFocus />
           <PinInput value={pin2} onChange={setPin2} label="The same PIN again" name="yb-new-pin2" />
           <label className="block">

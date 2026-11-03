@@ -144,15 +144,15 @@ const server = http.createServer(async (req, res) => {
     // Clean addresses: /library, /journey… for pages. Old *.html addresses
     // redirect to the clean ones; pages that sold tasks and kits (the agency
     // moved to altradits/chouMi) redirect to their nearest page here.
-    const GONE = { cv: "journey", products: "library", templates: "library", va: "", hunt: "", join: "", team: "", portal: "", proposal: "", collect: "", hourly: "", "bitcoin-setup": "bitcoin", lightning: "bitcoin",
+    const GONE = { cv: "journey", products: "library", templates: "library", va: "", hunt: "", join: "", team: "", portal: "", proposal: "", collect: "", hourly: "", "bitcoin-setup": "bitcoin", lightning: "bitcoin", wallet: "",
       // Old order links (one per task), shared in posts and emails: home.
       ...Object.fromEntries(OLD_ORDERS.map((s) => [s, ""])) };
     const old = url.pathname.match(/^\/([a-z-]+)(?:\.html|\/)?$/);
     if (old && req.method === "GET" && old[1] in GONE) { res.writeHead(301, { Location: `/${GONE[old[1]]}` }).end(); return; }
     if (/^\/(?:r|h)\/[a-z0-9]{4,12}\/?$/.test(url.pathname) && req.method === "GET") { res.writeHead(301, { Location: "/" }).end(); return; }
-    const oldPage = url.pathname.match(/^\/(journey|library|players|friends|plan|tracker|admin|donate|bitcoin|bitcoin-core|wallet)\.html$/);
+    const oldPage = url.pathname.match(/^\/(journey|library|players|friends|plan|tracker|admin|donate|bitcoin|bitcoin-core)\.html$/);
     if (oldPage && req.method === "GET") { res.writeHead(301, { Location: `/${oldPage[1]}${url.search}` }).end(); return; }
-    const page = url.pathname.match(/^\/(journey|library|players|friends|plan|tracker|admin|donate|bitcoin|bitcoin-core|wallet)\/?$/);
+    const page = url.pathname.match(/^\/(journey|library|players|friends|plan|tracker|admin|donate|bitcoin|bitcoin-core)\/?$/);
     // Ye₿ente: the built app in yebente/app, served at /yebente.
     const yb = url.pathname.match(/^\/yebente(?:\/(?:index\.html)?)?$/) ? "/yebente/app/index.html" : url.pathname.match(/^\/yebente\/((?:assets|fonts)\/[\w.-]+)$/)?.[1];
     const rel = yb ? (yb.startsWith("/") ? yb : `/yebente/app/${yb}`) : page ? `/${page[1]}.html` : url.pathname === "/" ? "/index.html" : url.pathname;
