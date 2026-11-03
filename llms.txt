@@ -1,0 +1,29 @@
+# Altradits
+
+Altradits teaches anyone to use Bitcoin, starting with a free wallet called
+YeBente. Start here: https://altradits.com/
+
+## YeBente: the free Bitcoin wallet
+
+- Open a wallet in about a minute, nothing to install: https://altradits.com/yebente#create
+- Opening is free. Payments between YeBente wallets are free. Payments out over
+  Lightning pay the network's small routing fee. M-Pesa payouts add the payout
+  partner's 1 percent fee.
+- YeBente is a starter wallet: Altradits holds small amounts for you on its own
+  Lightning node, so balances are capped for everyday amounts. When ready, we
+  help you move to a wallet only you control, free.
+- One 6-digit PIN opens the app and approves every payment. Five wrong PINs
+  lock payments. A recovery email plus PIN, or 12 recovery words, bring the
+  wallet back on a new phone.
+
+## Questions, answered
+
+- Quick answers on the homepage: https://altradits.com/
+- Full questions page: https://altradits.com/bitcoin
+- Free library in reading order: https://altradits.com/library
+- The teams behind the wallet: https://altradits.com/friends
+
+## Contact
+
+- hello@altradits.com
+- https://github.com/altradits

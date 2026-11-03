@@ -198,3 +198,45 @@ test("site copy uses no em-dashes (house style: a full stop, comma or colon read
   ];
   for (const f of targets) assert.doesNotMatch(read(f), /—/, `${f}: replace the em-dash with a full stop, comma or colon`);
 });
+
+test("publicity: money keywords in the homepage title, large-image cards with the wallet screenshot, honest app schema", () => {
+  const home = read("index.html");
+  for (const w of ["wallet", "bitcoin", "free"]) {
+    assert.match(home, new RegExp(`<title>[^<]*${w}`, "i"), `homepage title names ${w}`);
+    assert.match(home, new RegExp(`og:title" content="[^"]*${w}`, "i"), `homepage og:title names ${w}`);
+  }
+  const pages = fs.readdirSync(root).filter((x) => x.endsWith(".html") && x !== "admin.html");
+  for (const f of pages) {
+    const html = read(f);
+    assert.match(html, /og:image" content="https:\/\/altradits\.com\/assets\/social-card\.png"/, `${f}: shares the wallet social card`);
+    assert.match(html, /og:image:width" content="1200"/, `${f}: card width declared`);
+    assert.match(html, /twitter:card" content="summary_large_image"/, `${f}: large-image card`);
+    assert.match(html, /theme-color" content="#EEF2F6"/, `${f}: theme color set`);
+  }
+  const app = JSON.parse(home.match(/<script type="application\/ld\+json">(\{"@context":"https:\/\/schema\.org","@type":"SoftwareApplication".*?\})<\/script>/)[1]);
+  assert.ok(app.screenshot && app.featureList && app.sameAs.includes("https://github.com/altradits/yebente"), "app schema carries screenshot, featureList and the repo");
+  const sm = read("sitemap.xml");
+  assert.match(sm, /<loc>https:\/\/altradits\.com\/yebente<\/loc>/, "sitemap lists the wallet");
+  for (const loc of [...sm.matchAll(/<loc>([^<]*)<\/loc>/g)].map((m) => m[1])) {
+    assert.match(sm, new RegExp(`<loc>${loc}<\\/loc><lastmod>20\\d\\d-\\d\\d-\\d\\d<\\/lastmod>`), `sitemap dates ${loc}`);
+  }
+  const llms = read("llms.txt");
+  assert.match(llms, /yebente#create/, "llms.txt points AI answers at wallet creation");
+});
+
+test("YeBente installs as an app: manifest linked and served with icons on both stacks", () => {
+  const head = read("yebente/index.html");
+  assert.match(head, /rel="manifest" href="\/yebente\/manifest\.webmanifest"/, "app links its manifest");
+  assert.match(head, /theme-color" content="#141117"/, "app theme color matches its surface");
+  assert.match(head, /apple-touch-icon" href="\/yebente\/icons\/icon-192\.png"/, "app has an iOS icon");
+  const man = JSON.parse(read("yebente/public/manifest.webmanifest"));
+  assert.equal(man.start_url, "/yebente/");
+  for (const icon of man.icons) assert.ok(fs.existsSync(path.join(root, "yebente/public", icon.src)), `manifest icon ships: ${icon.src}`);
+  assert.ok(fs.existsSync(path.join(root, "yebente/app/manifest.webmanifest")), "rebuilt app ships the manifest (rebuild: cd yebente && npm run build)");
+  const srv = read("server.mjs"), ht = read(".htaccess");
+  assert.match(srv, /yebente\\\/app\\\/\(\?:[^)]*manifest\\.webmanifest[^)]*icons\\\/\[\\w\.-\]\+/, "Node serves the manifest and icons");
+  assert.match(srv, /manifest\\.webmanifest\|\(\?:assets\|fonts\|icons\)/, "Node maps the manifest and icons paths");
+  assert.match(ht, /\^yebente\/\(\(assets\|fonts\|icons\)\//, "Apache maps the icons path too");
+  assert.match(ht, /\^yebente\/manifest\\.webmanifest\$/, "Apache maps the manifest too");
+  assert.match(read("yebente/public/.htaccess"), /AddType application\/manifest\+json \.webmanifest/, "Apache serves the manifest MIME type");
+});

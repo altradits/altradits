@@ -33,9 +33,9 @@ if (!SERVER) {
   if (process.env.ADMIN_TOKEN && process.env.ADMIN_TOKEN.length < 24) console.error("ADMIN_TOKEN is short: use a long random one (openssl rand -hex 32).");
 }
 
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf", ".webmanifest": "application/manifest+json" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|friends\.html|plan\.html|donate\.html|bitcoin\.html|wallet\.html|bitcoin-core\.html|robots\.txt|sitemap\.xml|yebente\/app\/(?:index\.html|assets\/[\w.-]+|fonts\/[\w.-]+)|assets\/[\w.-]+|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|friends\.html|plan\.html|donate\.html|bitcoin\.html|wallet\.html|bitcoin-core\.html|robots\.txt|sitemap\.xml|llms\.txt|yebente\/app\/(?:index\.html|manifest\.webmanifest|assets\/[\w.-]+|fonts\/[\w.-]+|icons\/[\w.-]+)|assets\/[\w.-]+|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
 // HSTS: browsers that have visited once only ever use HTTPS here (no includeSubDomains,
 // so other subdomains such as mail are unaffected). COOP: no other site keeps a handle
 // on our windows.
@@ -154,7 +154,7 @@ const server = http.createServer(async (req, res) => {
     if (oldPage && req.method === "GET") { res.writeHead(301, { Location: `/${oldPage[1]}${url.search}` }).end(); return; }
     const page = url.pathname.match(/^\/(journey|library|players|friends|plan|tracker|admin|donate|bitcoin|bitcoin-core)\/?$/);
     // Ye₿ente: the built app in yebente/app, served at /yebente.
-    const yb = url.pathname.match(/^\/yebente(?:\/(?:index\.html)?)?$/) ? "/yebente/app/index.html" : url.pathname.match(/^\/yebente\/((?:assets|fonts)\/[\w.-]+)$/)?.[1];
+    const yb = url.pathname.match(/^\/yebente(?:\/(?:index\.html)?)?$/) ? "/yebente/app/index.html" : url.pathname.match(/^\/yebente\/(manifest\.webmanifest|(?:assets|fonts|icons)\/[\w.-]+)$/)?.[1];
     const rel = yb ? (yb.startsWith("/") ? yb : `/yebente/app/${yb}`) : page ? `/${page[1]}.html` : url.pathname === "/" ? "/index.html" : url.pathname;
     if (!PUBLIC.test(rel)) { res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found"); return; }
     const file = path.join(ROOT, rel);
@@ -163,7 +163,7 @@ const server = http.createServer(async (req, res) => {
     // Ye₿ente: the same policy as yebente/public/.htaccess (Apache serves it in production).
     if (rel === "/yebente/app/index.html") Object.assign(headers, { "Content-Security-Policy": YEBENTE_CSP, "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer" });
     // Font files never change under the same name: keep them a year.
-    headers["Cache-Control"] = rel.endsWith(".woff2") || rel.startsWith("/yebente/app/assets/") ? "public, max-age=31536000, immutable" : rel.startsWith("/assets/") || rel.startsWith("/yebente/app/fonts/") ? "public, max-age=86400" : "no-cache";
+    headers["Cache-Control"] = rel.endsWith(".woff2") || rel.startsWith("/yebente/app/assets/") ? "public, max-age=31536000, immutable" : rel.startsWith("/assets/") || rel.startsWith("/yebente/app/fonts/") || rel.startsWith("/yebente/app/icons/") ? "public, max-age=86400" : "no-cache";
     if (rel.endsWith(".html")) import("./lib/visits.js").then((v) => v.recordVisit(req, url, rel)).catch(() => {});
     sendStatic(req, res, file, headers);
   } catch (err) {

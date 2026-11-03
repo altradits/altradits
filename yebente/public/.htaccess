@@ -7,6 +7,11 @@
   Allow from all
 </IfModule>
 
+# The install manifest needs its own content type.
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
 # Browser security: only this app's own scripts run; it may call HTTPS APIs
 # (rates, Blink, Tando and any Lightning address's own server) and nothing frames it.
 <IfModule mod_headers.c>
