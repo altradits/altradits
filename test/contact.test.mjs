@@ -13,7 +13,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "altradits-contact-"));
 process.chdir(tmp);
 for (const k of ["ANTHROPIC_API_KEY", "RESEND_API_KEY", "UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "LND_REST_URL", "LND_INVOICE_MACAROON", "SMTP_HOST"]) delete process.env[k];
 process.env.ADMIN_TOKEN = "secret-admin";
-const ROOT = "/Users/mac/altradits";
+const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
 const contact = await import(`${ROOT}/api/contact.js`);
 const { getJSON } = await import(`${ROOT}/lib/store.js`);
 
