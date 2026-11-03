@@ -293,12 +293,13 @@ test("card deposits: credited only on the provider's explicit Completed, for the
   assert.match(yb, /wrong card IPN secret/, "api/yebente.js card/ipn: refuse a wrong path secret and record it");
 });
 
-test("deposit addresses: dedicated key only, bc1q shape checked, a few a day", () => {
+test("address QR: pasted text only, bc1q checked, capped, and no address-making key anywhere", () => {
   const ln = read("lib/lightning.js");
-  assert.match(ln, /process\.env\.LND_ADDRESS_MACAROON \|\| ""/, "lib/lightning.js: the address key never falls back to another key");
-  assert.match(ln, /\^bc1q\[02-9ac-hj-np-z\]/, "lib/lightning.js: only a bc1q-shaped address is ever shown");
+  assert.match(ln, /\^bc1q\[02-9ac-hj-np-z\]/, "lib/lightning.js: only bc1q-shaped text is encoded");
   const ad = read("api/admin.js");
-  assert.match(ad, /body\.action === "node_address"/, "api/admin.js: the address action exists behind the admin gate");
-  assert.match(ad, /rl:nodeaddr/, "api/admin.js node_address: only a few addresses a day");
-  assert.match(ad, /depositAddressOn\(\)\) return json\(\{ error: DEPOSIT_SETUP \}, 501\)/, "api/admin.js node_address: off with setup steps unless the key is set");
+  assert.match(ad, /body\.action === "address_qr"/, "api/admin.js: the QR action exists behind the admin gate");
+  assert.match(ad, /rl:addrqr/, "api/admin.js address_qr: QR codes are capped per hour");
+  for (const f of ["api/admin.js", "lib/lightning.js", "assets/admin.js", "admin.html", ".env.example"]) {
+    assert.doesNotMatch(read(f), /LND_ADDRESS_MACAROON|node_address|newDepositAddress/, `${f}: no address-making key or action remains`);
+  }
 });

@@ -159,13 +159,17 @@ function renderChain(D) {
   if (lastUtxos) $("#chainKpis").insertAdjacentHTML("beforeend", kpi("Coins (UTXOs)", num(lastUtxos.count), "", "Separate pieces of bitcoin in the on-chain wallet. Each one costs fees to spend."));
 }
 // end renderChain
-// Deposit addresses: made on the node, shown once each, and a recheck.
-$("#chAddrGo").addEventListener("click", async () => {
+// Deposit QR: paste an address made on the Mac, get a scannable code back.
+// The page checks the shape first for instant feedback; the server checks again.
+const BC1Q = /^bc1q[02-9ac-hj-np-z]{38,58}$/;
+$("#chAddrShow").addEventListener("click", async () => {
+  const pasted = $("#chAddrPaste").value.trim();
+  if (!BC1Q.test(pasted)) { $("#chAddrErr").textContent = "That isn't a bc1q address. On the Mac run lncli newaddress p2wkh and paste the whole address."; return; }
   $("#chAddrErr").textContent = "";
-  const btn = $("#chAddrGo"); btn.disabled = true;
+  const btn = $("#chAddrShow"); btn.disabled = true;
   try {
-    const r = await api("", { action: "node_address" });
-    $("#chAddrOut").innerHTML = `<p class="sm"><b>Send to this address.</b> First time: send a tiny test amount, press Check again, and only then send the rest.</p>
+    const r = await api("", { action: "address_qr", address: pasted });
+    $("#chAddrOut").innerHTML = `<p class="sm"><b>Send to this address.</b> Check the first and last 6 characters match your Mac's screen. First time: send a tiny test amount, press Check again, and only then send the rest.</p>
       <div class="qr">${r.qr}</div>
       <textarea readonly rows="2" class="mono">${esc(r.address)}</textarea>
       <div class="row"><button type="button" class="btn" id="chAddrCopy">Copy address</button><a class="btn" href="https://mempool.space/address/${esc(r.address)}" target="_blank" rel="noopener">Watch on mempool.space</a></div>`;
