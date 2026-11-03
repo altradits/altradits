@@ -342,7 +342,8 @@ async function loadMoney() {
   let S; try { S = await api("?view=statement"); } catch (err) { $("#moneyList").textContent = err.message; return; }
   $("#moneyKpis").innerHTML = kpi("Total received", satsF(S.total.sats), "", `${S.total.count} payment${S.total.count === 1 ? "" : "s"}.`)
     + kpi("Orders", satsF(S.orders.sats), "", `${S.orders.count}, before the agency moved out.`) + kpi("Donations", satsF(S.donations.sats), "", `${S.donations.count}.`)
-    + kpi("Support (/donate)", satsF(S.support.sats), "", `${S.support.count}, paid to your node.`);
+    + kpi("Support (/donate)", satsF(S.support.sats), "", `${S.support.count}, paid to your node.`)
+    + kpi("Contact ($1)", satsF((S.contact || {}).sats || 0), "", `${(S.contact || {}).count || 0}, each with a receipt.`);
   PAYMENTS = S.payments;
   $("#moneyList").innerHTML = S.payments.length ? `<table><thead><tr><th>Date</th><th>What</th><th>Sats</th><th>Via</th><th>Receipt</th></tr></thead><tbody>${S.payments.map((x, i) =>
     `<tr><td>${esc(String(x.at).slice(0, 10))}</td><td>${esc(x.what)}${x.payer ? `<br><span class="muted sm">${esc(x.payer)}</span>` : ""}</td><td>${esc(num(x.sats))}</td><td>${esc(x.channel)}</td><td><button type="button" class="linkbtn" data-receipt="${i}">${esc(x.receipt || "View")}</button></td></tr>`).join("")}</tbody></table>`

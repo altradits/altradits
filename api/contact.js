@@ -6,7 +6,7 @@
 // GET  /api/contact?hash=      -> {paid}
 // POST /api/contact {step:"send", hash, name, email, topic, message} -> {ok, id}
 import { json, readBody, clean, newId, clientIp, EMAIL_RE } from "../lib/http.js";
-import { hit, getJSON, setJSON, pushId, acquireLock } from "../lib/store.js";
+import { hit, getJSON, setJSON, pushId, acquireLock, increment } from "../lib/store.js";
 import { createInvoice, invoicePaid, qrSvg } from "../lib/lightning.js";
 
 export const CONTACT = { usd: 1, nameMax: 80, emailMax: 120, messageMin: 10, messageMax: 2000, quoteTtl: 1800 };
@@ -69,14 +69,20 @@ async function send(request, body) {
     if (!paid) return json({ error: "We have not received your $1 yet. Pay the invoice, then send." }, 402);
     const id = newId(8);
     const t = TOPICS[topic];
+    const receipt = `ALT-${String(await increment("receipt:no")).padStart(4, "0")}`;
+    const at = new Date().toISOString();
     await setJSON(`contact:quote:${hash}`, { ...rec, used: true });
-    await setJSON(`contact:msg:${id}`, { id, at: new Date().toISOString(), name, email, topic, dept: t.dept, label: t.label, message, sats: rec.inv.sats, hash, handled: false });
+    await setJSON(`contact:msg:${id}`, { id, at, paidAt: at, name, email, topic, dept: t.dept, label: t.label, message, sats: rec.inv.sats, hash, receipt, handled: false });
     await pushId("contact:inbox", id);
+    const { sendEmail, OWNER_EMAIL } = await import("../lib/email.js");
     try {
-      const { sendEmail, OWNER_EMAIL } = await import("../lib/email.js");
       await sendEmail({ to: OWNER_EMAIL, subject: `Contact: ${t.label} from ${name}`, kind: "owner",
-        text: `A paid ($1) contact message arrived for ${t.dept}.\n\nFrom: ${name} <${email}>\nAbout: ${t.label}\n\n${message}\n\nRead and queue a reply from the dashboard: Choumi tab, contact inbox.`, replyTo: email });
+        text: `A paid ($1) contact message arrived for ${t.dept}.\n\nFrom: ${name} <${email}>\nAbout: ${t.label}\nReceipt: ${receipt}\n\n${message}\n\nRead and queue a reply from the dashboard: Choumi tab, contact inbox.`, replyTo: email });
     } catch (err) { console.error("contact notify", err.message); }
-    return json({ ok: true, id });
+    try {
+      await sendEmail({ to: email, subject: `Receipt ${receipt}: thank you for your $1`, kind: "wallet",
+        text: `Hi ${name},\n\nThank you. Your $1 (${rec.inv.sats.toLocaleString("en-US")} sats) is with us, and your message about ${t.label.toLowerCase()} is with the right team.\n\nReceipt: ${receipt}\nDate: ${at.slice(0, 10)}\nFor: contact message (${t.label})\nAmount: ${rec.inv.sats.toLocaleString("en-US")} sats ($1)\nPaid by: ${name}\nReceived by: Altradits, altradits.com\n\nYour dollar also funds our Lightning node: the always-on computer that carries every YeBente payment. Running it takes real money and locked-up bitcoin, so every dollar keeps payments fast and nearly free for everyone.\n\nChoumi's team reads every message, and Stanley approves every reply.` });
+    } catch (err) { console.error("contact receipt", err.message); }
+    return json({ ok: true, id, receipt });
   } finally { await release(); }
 }
