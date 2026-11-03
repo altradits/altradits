@@ -58,11 +58,12 @@ async function send(request, body) {
   if (message.length < CONTACT.messageMin) return json({ error: "Write a little more so the team can help." }, 400);
   if (!hash) return json({ error: "Pay the $1 invoice first, then send." }, 402);
   if ((await hit(`rl:contact:${clientIp(request)}`, 3600)) > 10) return json({ error: "Too many messages. Try again in an hour." }, 429);
+  if ((await hit(`rl:contact:all:${new Date().toISOString().slice(0, 13)}`, 3600)) > 100) return json({ error: "Busy right now. Please try again in a few minutes." }, 429);
   const release = await acquireLock(`contact:pay:${hash}`, 60);
   if (!release) return json({ error: "Already sending. Wait a moment and try again." }, 429);
   try {
     const rec = await getJSON(`contact:quote:${hash}`);
-    if (!rec || rec.used) return json({ error: "That invoice was already used. Start a new message for a fresh one." }, 402);
+    if (!rec || rec.used || rec.inv?.paymentHash !== hash) return json({ error: "That invoice was already used. Start a new message for a fresh one." }, 402);
     if (Date.parse(rec.inv.expiresAt) < Date.now()) return json({ error: "That invoice expired. Start a new message for a fresh one." }, 402);
     let paid = false;
     try { paid = (await invoicePaid(rec.inv)) === true; } catch { paid = false; }
@@ -71,13 +72,24 @@ async function send(request, body) {
     const t = TOPICS[topic];
     const receipt = `ALT-${String(await increment("receipt:no")).padStart(4, "0")}`;
     const at = new Date().toISOString();
+    // The security screen reads every paid message before the team does: links,
+    // code, scripts or instructions aimed at our agents put it on hold, and the
+    // hold is recorded in the Security watch. Held messages still get receipts.
+    const { screen, describe, defang } = await import("../lib/screen.js");
+    const s = screen(`${name}\n${message}`);
+    const held = s.flagged ? { at, reasons: s.reasons } : null;
     await setJSON(`contact:quote:${hash}`, { ...rec, used: true });
-    await setJSON(`contact:msg:${id}`, { id, at, paidAt: at, name, email, topic, dept: t.dept, label: t.label, message, sats: rec.inv.sats, hash, receipt, handled: false });
+    await setJSON(`contact:msg:${id}`, { id, at, paidAt: at, name, email, topic, dept: t.dept, label: t.label, message, sats: rec.inv.sats, hash, receipt, handled: false, held });
     await pushId("contact:inbox", id);
+    if (held) {
+      const { recordAttack } = await import("../lib/attacks.js");
+      await recordAttack(s.reasons.includes("instructions") ? "prompt_injection" : "hidden_content",
+        { where: `contact message ${id}`, ip: clientIp(request), detail: `${describe(s.reasons)}: ${defang(message).slice(0, 160)}` }).catch(() => {});
+    }
     const { sendEmail, OWNER_EMAIL } = await import("../lib/email.js");
     try {
       await sendEmail({ to: OWNER_EMAIL, subject: `Contact: ${t.label} from ${name}`, kind: "owner",
-        text: `A paid ($1) contact message arrived for ${t.dept}.\n\nFrom: ${name} <${email}>\nAbout: ${t.label}\nReceipt: ${receipt}\n\n${message}\n\nRead and queue a reply from the dashboard: Choumi tab, contact inbox.`, replyTo: email });
+        text: `A paid ($1) contact message arrived for ${t.dept}.${held ? ` SECURITY HOLD: it contains ${describe(held.reasons)}, so no AI agent may read it until you decide. The text below is defanged.` : ""}\n\nFrom: ${name} <${email}>\nAbout: ${t.label}\nReceipt: ${receipt}\n\n${held ? defang(message) : message}\n\nRead and queue a reply from the dashboard: Choumi tab, contact inbox.`, replyTo: email });
     } catch (err) { console.error("contact notify", err.message); }
     try {
       await sendEmail({ to: email, subject: `Receipt ${receipt}: thank you for your $1`, kind: "wallet",

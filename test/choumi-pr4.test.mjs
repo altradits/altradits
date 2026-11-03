@@ -270,7 +270,7 @@ test("POST /api/admin Choumi actions: power buttons, task queue, worker run, QA 
     const blocked = await postAdmin({
       action: "learning_rule",
       dept: "tech",
-      note: "Always include the ln-ro read-only verification command next to node metrics.",
+      note: "Always run node server.mjs --check next to node metrics.",
     });
     assert.equal(blocked.status, 400, "a rule that looks like a command is refused, not silently dropped");
     const ruleRes = await postAdmin({
