@@ -15,7 +15,7 @@ for (const k of ["ANTHROPIC_API_KEY", "RESEND_API_KEY", "UPSTASH_REDIS_REST_URL"
 process.env.ADMIN_TOKEN = "secret-admin";
 const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
 const contact = await import(`${ROOT}/api/contact.js`);
-const { getJSON } = await import(`${ROOT}/lib/store.js`);
+const { getJSON, keysWithPrefix } = await import(`${ROOT}/lib/store.js`);
 
 // --- fake LND: invoices only ------------------------------------------------
 execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-subj", "/CN=localhost",
@@ -97,6 +97,26 @@ test("validation refuses bad email, short message, bad topic, missing name", asy
     const r = await contact.POST(req({ ...base, [k]: v }, `10.0.1.${k.length}`));
     assert.equal(r.status, 400, k);
   }
+});
+
+test("paid send mints a receipt, joins the statement, emails the payer", async () => {
+  const q = await (await contact.POST(req({ step: "quote" }, "10.0.0.6"))).json();
+  settle(q.hash);
+  const r = await contact.POST(req({ step: "send", hash: q.hash, name: "Ruth", email: "ruth@example.com", topic: "learn", message: "Where do I start learning with you?" }, "10.0.0.6"));
+  assert.equal(r.status, 200);
+  const { id, receipt } = await r.json();
+  assert.match(receipt, /^ALT-\d{4}$/);
+  assert.equal((await getJSON(`contact:msg:${id}`)).receipt, receipt);
+  const { statement } = await import(`${ROOT}/lib/statement.js`);
+  const row = (await statement()).payments.find((p) => p.type === "contact" && p.id === id);
+  assert.equal(row.receipt, receipt);
+  assert.equal(row.payer, "Ruth");
+  const mails = [];
+  for (const k of await keysWithPrefix("email:")) mails.push(await getJSON(k));
+  const rcpt = mails.find((m) => m.to === "ruth@example.com");
+  assert.ok(rcpt, "payer emailed");
+  assert.match(rcpt.subject, new RegExp(receipt));
+  assert.match(rcpt.text, /Lightning node/);
 });
 
 test("unknown invoice hashes 404", async () => {
