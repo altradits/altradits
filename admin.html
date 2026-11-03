@@ -293,14 +293,15 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       <div id="coinList" class="scroll sm"><p class="muted sm">Loading…</p></div>
       <h3 class="sub">Fund it, step by step</h3>
       <div class="learn">
-        <p><b>1. Make an address</b> with the button below, or on the Mac with <code>lncli newaddress p2wkh</code>.</p>
-        <p><b>2. Send bitcoin to it</b> from an exchange or another wallet.</p>
-        <p><b>3. Wait for 1 confirmation</b> (about 10 minutes), then press <i>Check again</i>. The coin appears above.</p>
-        <p><b>Verify:</b> <code>ln-ro walletbalance</code> shows the sats, <code>ln-ro listunspent</code> shows the coin, and each coin above links to its mempool.space page. First time with a new address, send a tiny test amount and confirm it arrives before the rest.</p>
-        <p><b>Use each address once,</b> and only press the button when you are about to fund: every address shown burns a fresh one, and the wallet watches only the newest 20 unused ones.</p>
-        <p><b>One setup step for the button:</b> it needs a key that can only make addresses and nothing else. On the Mac run <code>lncli bakemacaroon uri:/lnrpc.Lightning/NewAddress</code>, then set <code>LND_ADDRESS_MACAROON</code> on the server to the hex it prints. Until then the button explains this and the Mac command still works.</p>
+        <p><b>1. On the Mac, make an address:</b> <code>lncli newaddress p2wkh</code>. It prints a bc1q address. Making stays on the Mac, so this server holds no key that touches addresses: there is nothing here to steal that can make them or spend them.</p>
+        <p><b>2. Paste it below</b> and press <i>Show QR code</i>. The dashboard only turns your pasted text into a code. It never makes addresses and never moves money.</p>
+        <p><b>3. Send bitcoin to it</b> from an exchange or another wallet, scanning the code or copying the address.</p>
+        <p><b>4. Wait for 1 confirmation</b> (about 10 minutes), then press <i>Check again</i>. The coin appears above, and the balance moves.</p>
+        <p><b>Verify:</b> <code>ln-ro walletbalance</code> shows the sats, <code>ln-ro listunspent</code> shows the coin, and each coin above links to its mempool.space page.</p>
+        <p><b>Stay safe:</b> compare the first and last 6 characters with your Mac's screen before sending, since the screen is the truth. Use each address once, and only make one when you are about to fund (the wallet watches only the newest 20 unused ones). First time with a new address, send a tiny test amount and confirm it arrives before the rest. Never trust an address pasted from a chat or email.</p>
       </div>
-      <div class="row"><button type="button" class="btn primary" id="chAddrGo">Make a deposit address</button><button type="button" class="btn" id="chRefresh">Check again</button></div>
+      <div class="row"><input id="chAddrPaste" class="mono" placeholder="Paste your bc1q address here" autocomplete="off" spellcheck="false" aria-label="Paste your bc1q address"></div>
+      <div class="row"><button type="button" class="btn primary" id="chAddrShow">Show QR code</button><button type="button" class="btn" id="chRefresh">Check again</button></div>
       <p class="err sm" id="chAddrErr" role="alert"></p>
       <div id="chAddrOut"></div>
     </section>
@@ -332,7 +333,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
         <p>Only make an address when you are about to fund: every address shown burns a fresh one, and the wallet watches only the newest 20 unused ones.</p>
       </div>
       <ol class="flow">
-        <li><b>Make one</b> with the <i>Make a deposit address</i> button above, or on the Mac: <code>lncli newaddress p2wkh</code>.</li>
+        <li><b>Make one</b> on the Mac: <code>lncli newaddress p2wkh</code>, then paste it in the <i>Fund it</i> box above for a QR code.</li>
         <li><b>Use it</b> to fund the on-chain wallet from an exchange or another wallet, or to receive any on-chain payment.</li>
         <li><b>Verify it:</b> compare the first and last 6 characters on the Mac's own screen. Never trust an address pasted from a chat or email. After the sender pays, the coin appears in the list above and in <code>lncli listunspent</code>.</li>
       </ol>
