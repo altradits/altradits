@@ -323,6 +323,13 @@ async function loadSecurity() {
   $("#secEvents").innerHTML = W.events.length ? W.events.slice(0, 40).map((e) => `<div class="sm ev"><b>${esc(T[e.kind]?.name || e.kind)}</b> <span class="muted">${esc(ago(e.at))}</span><br>${esc(e.where)}${e.detail ? `<br><span class="muted">${esc(e.detail)}</span>` : ""}</div>`).join("") : '<p class="muted sm">Nothing turned away yet.</p>';
   $("#secHistory").innerHTML = W.history.slice().sort((a, b) => a.year - b.year).map((a) => `<div class="sm ev"><b>${esc(a.year)}: ${esc(a.name)}</b><br>${esc(a.what)}<br><b>Lesson:</b> ${esc(a.lesson)}<br><b>Our guard:</b> ${esc(a.guard)}</div>`).join("");
 }
+$("#eraseGo").addEventListener("click", async () => {
+  try {
+    const r = await api("", { action: "erase_person", email: $("#eraseEmail").value.trim(), confirm: $("#eraseConfirm").value.trim() });
+    $("#eraseMsg").textContent = `Erased: ${r.anonymized} message${r.anonymized === 1 ? "" : "s"} anonymized, ${r.deleted} record${r.deleted === 1 ? "" : "s"} deleted, ${r.kept} kept for the books.`;
+    $("#eraseEmail").value = ""; $("#eraseConfirm").value = "";
+  } catch (err) { $("#eraseMsg").textContent = err.message; }
+});
 
 // Ye₿ente activity: deposits and transactions per wallet, most active first.
 async function loadActivity() {

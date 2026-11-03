@@ -436,6 +436,12 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       <div class="learn"><p>Real attacks from Bitcoin's history, the lesson each taught, and how this site guards against it.</p></div>
       <div class="events" id="secHistory"></div>
     </section>
+    <section class="panel" aria-labelledby="hErase">
+      <h2 id="hErase">Erase a person (privacy request)</h2>
+      <div class="learn"><p>Deletes for good everything about one email address: their contact words, pasted replies, and notes to them. Receipts and payment records stay for the books; wallet owners are refused until the wallet is handed over.</p></div>
+      <div class="row"><input id="eraseEmail" type="email" placeholder="their@email.com" autocomplete="off" style="max-width:16rem"><input id="eraseConfirm" placeholder="Type ERASE" autocomplete="off" style="max-width:9rem"><button type="button" class="btn" id="eraseGo">Erase</button></div>
+      <p class="sm muted" id="eraseMsg" role="status"></p>
+    </section>
   </div>
   </div>
 

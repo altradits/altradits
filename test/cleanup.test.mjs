@@ -82,3 +82,38 @@ test("daily backup: compressed, encrypted with BACKUP_KEY, owner-only, rotated, 
   assert.ok(left.filter((f) => !f.includes("weekly")).length <= 14 && left.filter((f) => f.includes("weekly")).length <= 8);
   delete process.env.BACKUP_KEY;
 });
+
+test("erase a person: messages anonymized with the books kept, replies and notes deleted, receipts kept", async () => {
+  const { erasePerson } = await import("../lib/cleanup.js");
+  await store.setJSON("contact:msg:e1", { id: "e1", at: "2026-11-01T10:00:00.000Z", paidAt: "2026-11-01T10:00:00.000Z",
+    name: "Nia", email: "nia@example.com", topic: "other", label: "Other", dept: "office", sats: 1000, hash: "c".repeat(64),
+    receipt: "ALT-2026-0001", handled: true, message: "Hello there." });
+  await store.pushId("contact:inbox", "e1");
+  await store.setJSON("reply:r1", { id: "r1", at: "2026-11-02T10:00:00.000Z", from: "nia@example.com", dept: "office", text: "Thanks!", handled: false });
+  await store.pushId("reply:inbox", "r1");
+  await store.setJSON("email:rcpt", { id: "rcpt", to: "nia@example.com", from: "Altradits", subject: "Receipt ALT-2026-0001: thank you", kind: "wallet", status: "logged" });
+  await store.pushId("emails", "rcpt");
+  await store.setJSON("email:note", { id: "note", to: "nia@example.com", from: "Altradits", subject: "Re: hello", text: "Hello there.", kind: "wallet", status: "logged" });
+  await store.pushId("emails", "note");
+  const r = await erasePerson("Nia@Example.COM");
+  assert.deepEqual(r, { anonymized: 1, deleted: 2, kept: 1 });
+  const m = await store.getJSON("contact:msg:e1");
+  assert.equal(m.name, "[erased]");
+  assert.equal(m.email, "");
+  assert.equal(m.message, "[erased on request]");
+  assert.equal(m.receipt, "ALT-2026-0001"); // the books keep the payment
+  assert.equal(m.sats, 1000);
+  assert.equal(await has("reply:r1"), false);
+  assert.ok(!(await store.listIds("reply:inbox", 10)).includes("r1"));
+  assert.equal(await has("email:rcpt"), true); // receipt email kept for the books
+  assert.equal(await has("email:note"), false);
+  assert.ok(!(await store.listIds("emails", 10)).includes("note"));
+});
+
+test("erase a person: bad address rejected, wallet owners refused", async () => {
+  const { erasePerson } = await import("../lib/cleanup.js");
+  await assert.rejects(() => erasePerson("not-an-email"), /email address/);
+  await store.setJSON("yw:w9", { id: "w9", handle: "nia9", email: "nia@example.com", balance: 0 });
+  await assert.rejects(() => erasePerson("nia@example.com"), /wallet/);
+  assert.equal((await store.getJSON("contact:msg:e1")).receipt, "ALT-2026-0001"); // nothing half-erased
+});
