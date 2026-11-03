@@ -9,15 +9,22 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/">
-<title>Altradits · Learning Bitcoin in the open</title>
-<meta name="description" content="Stanley's open-source Bitcoin journey from Kisumu, Kenya: free tools like the Ye₿ente wallet, a free Bitcoin library in reading order, and help for anyone starting out.">
+<title>Send money anywhere. Keep all of it. · Altradits</title>
+<meta name="description" content="Ye₿ente is a free Bitcoin wallet: cents to send, seconds to arrive, and no one can freeze or inflate it. Open yours in a minute, with guides at every step.">
 <link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
-<meta property="og:title" content="Altradits · Learning Bitcoin in the open">
-<meta property="og:description" content="Stanley's open-source Bitcoin journey from Kisumu, Kenya: free tools like the Ye₿ente wallet, a free Bitcoin library in reading order, and help for anyone starting out.">
+<meta property="og:title" content="Send money anywhere. Keep all of it. · Altradits">
+<meta property="og:description" content="Ye₿ente is a free Bitcoin wallet: cents to send, seconds to arrive, and no one can freeze or inflate it. Open yours in a minute, with guides at every step.">
 <meta property="og:url" content="https://altradits.com/">
 <meta property="og:type" content="website">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Person","name":"Stanley Chege Thuita","url":"https://altradits.com","homeLocation":"Kisumu, Kenya","sameAs":["https://github.com/altradits","https://www.linkedin.com/in/stanmobitech/"],"knowsAbout":["Bitcoin","Lightning Network","Bitcoin Core","Open source"]}</script>
+<meta property="og:image" content="https://altradits.com/assets/logo.png">
+<meta property="og:image:alt" content="Altradits">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Send money anywhere. Keep all of it. · Altradits">
+<meta name="twitter:description" content="Ye₿ente is a free Bitcoin wallet: cents to send, seconds to arrive, and no one can freeze or inflate it. Open yours in a minute, with guides at every step.">
+<meta name="twitter:image" content="https://altradits.com/assets/logo.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Ye₿ente","applicationCategory":"FinanceApplication","operatingSystem":"Web","url":"https://altradits.com/yebente#create","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does it cost anything?","acceptedAnswer":{"@type":"Answer","text":"Opening a wallet is free, and payments between Ye₿ente wallets are free. Payments out over Lightning pay the network's small routing fee; M-Pesa payouts add the payout partner's 1% fee."}},{"@type":"Question","name":"What if someone takes my phone?","acceptedAnswer":{"@type":"Answer","text":"They still can't send: every payment needs your PIN or fingerprint, and five wrong PINs lock payments. If your email is on the wallet, log in from another phone and remove the lost one."}},{"@type":"Question","name":"What if I lose my phone?","acceptedAnswer":{"@type":"Answer","text":"Log in on a new phone with your email (if you added one) and PIN. Forgot the PIN, or no email? Your 12 words or your email bring the wallet back with a new PIN; for 24 hours after that, at most 1,000 sats can leave, in case it isn't you."}},{"@type":"Question","name":"Who holds my money?","acceptedAnswer":{"@type":"Answer","text":"To start, we do. Ye₿ente is a starter wallet: Altradits holds small amounts for you on its own Lightning node, so your wallet opens in a minute and is easy to recover — which is why balances are capped for everyday amounts. When you're ready, we help you move to a wallet only you control, free."}}]}</script>
 <style>
 /* Brand fonts, served from this site: Bricolage Grotesque and Figtree (SIL Open Font License 1.1, https://openfontlicense.org), latin and latin-ext (₿), variable weight */
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
@@ -141,6 +148,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
     <details><summary>Does it cost anything?</summary><p>Opening a wallet is free, and payments between Ye₿ente wallets are free. Payments out over Lightning pay the network's small routing fee; M-Pesa payouts add the payout partner's 1% fee.</p></details>
     <details><summary>What if someone takes my phone?</summary><p>They still can't send: every payment needs your PIN or fingerprint, and five wrong PINs lock payments. If your email is on the wallet, log in from another phone and remove the lost one.</p></details>
     <details><summary>What if I lose my phone?</summary><p>Log in on a new phone with your email (if you added one) and PIN. Forgot the PIN, or no email? Your 12 words or your email bring the wallet back with a new PIN; for 24 hours after that, at most 1,000 sats can leave, in case it isn't you.</p></details>
+    <details><summary>Who holds my money?</summary><p>To start, we do. Ye₿ente is a starter wallet: Altradits holds small amounts for you on its own Lightning node, so your wallet opens in a minute and is easy to recover — which is why balances are capped for everyday amounts. When you're ready, we help you move to a wallet only you control, free.</p></details>
   </div>
   <p class="more"><a href="/bitcoin">More answers →</a></p>
   </div>
@@ -151,7 +159,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 
 </div>
 
-<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/yebente">Open Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin in Kisumu</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/donate">Support my work</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/yebente">Open Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin questions</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/donate">Support my work</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="mailto:hello@altradits.com">hello@altradits.com</a></div></footer>
 <script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 </script>
