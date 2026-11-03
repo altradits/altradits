@@ -60,9 +60,16 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .setupshots img{width:100%;height:auto;border:2px solid var(--ink);border-radius:.9rem;display:block;background:#000;box-shadow:0 18px 40px -18px rgba(15,27,45,.35)}
 .setupshots figcaption{font-size:.92rem;color:var(--muted);margin-top:.6rem;text-align:center}
 .setupshots figcaption b{color:var(--ink)}
-.scan{display:flex;gap:1rem;align-items:center;margin:1.4rem 0 0}
-.scan img{width:6.5rem;height:auto;border:2px solid var(--ink);border-radius:.75rem;background:#fff}
-.scan figcaption{font-size:.92rem;color:var(--muted);max-width:15rem}
+.close{text-align:center}
+.close .ctas{justify-content:center}
+.close h2{margin-left:auto;margin-right:auto}
+.scan{display:flex;gap:1.2rem;align-items:center;margin:1.8rem 0 0;flex-wrap:wrap}
+.close .scan{justify-content:center;text-align:left}
+.scan img{width:9rem;height:auto;border:2px solid var(--ink);border-radius:.75rem;background:#fff;box-shadow:0 14px 30px -16px rgba(15,27,45,.35)}
+.scan figcaption{font-size:1rem;color:var(--muted);max-width:13rem}
+.faq details{border-bottom:1px solid var(--line);padding:.9rem 0}
+.faq summary{font-weight:700;cursor:pointer}
+.more{font-weight:600;margin:.9rem 0 0}
 .cardshot{margin:.6rem 0 0}
 .cardshot img{width:100%;height:auto;border:2px solid var(--ink);border-radius:.9rem;display:block;background:#000;box-shadow:0 14px 30px -16px rgba(15,27,45,.35)}
 .sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
@@ -124,9 +131,24 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
     <li><span class="tag">3</span><h3>Safe habits</h3><p>Good habits from day one.</p><div class="links"><a href="/library#privacy">Read on</a></div></li>
   </ul>
 
+  <div class="close">
   <h2>Your first wallet is a minute away.</h2>
   <div class="ctas"><a class="btn" href="/yebente#create">Open your free wallet</a></div>
   <figure class="scan"><img src="/assets/yebente-open-qr.png" alt="QR code that opens YeBente's wallet creation" width="240" height="240"><figcaption>On a computer? Scan to open on your phone.</figcaption></figure>
+  </div>
+
+  <h2>Quick answers</h2>
+  <div class="faq">
+    <details><summary>Does it cost anything?</summary><p>Opening a wallet is free, and payments between Ye₿ente wallets are free. Payments out over Lightning pay the network's small routing fee; M-Pesa payouts add the payout partner's 1% fee.</p></details>
+    <details><summary>What if someone takes my phone?</summary><p>They still can't send: every payment needs your PIN or fingerprint, and five wrong PINs lock payments. If your email is on the wallet, log in from another phone and remove the lost one.</p></details>
+    <details><summary>What if I lose my phone?</summary><p>Log in on a new phone with your email (if you added one) and PIN. Forgot the PIN, or no email? Your 12 words or your email bring the wallet back with a new PIN; for 24 hours after that, at most 1,000 sats can leave, in case it isn't you.</p></details>
+  </div>
+  <p class="more"><a href="/bitcoin">More answers →</a></p>
+
+  <div class="close">
+  <h2>Ready when you are.</h2>
+  <div class="ctas"><a class="btn" href="/yebente#create">Open your free wallet</a></div>
+  </div>
 
 </div>
 
