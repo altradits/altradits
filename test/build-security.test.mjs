@@ -292,3 +292,13 @@ test("card deposits: credited only on the provider's explicit Completed, for the
   assert.match(yb, /rl:yb:cardq:/, "api/yebente.js wallet/card/status: limit status checks per wallet");
   assert.match(yb, /wrong card IPN secret/, "api/yebente.js card/ipn: refuse a wrong path secret and record it");
 });
+
+test("deposit addresses: dedicated key only, bc1q shape checked, a few a day", () => {
+  const ln = read("lib/lightning.js");
+  assert.match(ln, /process\.env\.LND_ADDRESS_MACAROON \|\| ""/, "lib/lightning.js: the address key never falls back to another key");
+  assert.match(ln, /\^bc1q\[02-9ac-hj-np-z\]/, "lib/lightning.js: only a bc1q-shaped address is ever shown");
+  const ad = read("api/admin.js");
+  assert.match(ad, /body\.action === "node_address"/, "api/admin.js: the address action exists behind the admin gate");
+  assert.match(ad, /rl:nodeaddr/, "api/admin.js node_address: only a few addresses a day");
+  assert.match(ad, /depositAddressOn\(\)\) return json\(\{ error: DEPOSIT_SETUP \}, 501\)/, "api/admin.js node_address: off with setup steps unless the key is set");
+});
