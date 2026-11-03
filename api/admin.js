@@ -358,7 +358,7 @@ export async function POST(request) {
     const s = screenOutbound(`${tpl.subject}\n${tpl.text}`);
     if (s.flagged) return json({ error: `Security filter refused the rejection message: ${describe(s.reasons)}.` }, 400);
     const { sendEmail } = await import("../lib/email.js");
-    const sent = await sendEmail({ to: m.from, subject: tpl.subject, text: tpl.text, kind: "wallet", sender: commsFor(dept).signature });
+    const sent = await sendEmail({ to: m.from, subject: tpl.subject, text: tpl.text, kind: "wallet", fromDept: dept, sender: commsFor(dept).signature });
     m.handled = true;
     m.rejected = { at: new Date().toISOString(), dept, emailId: sent.id };
     await setJSON(`reply:${m.id}`, m);

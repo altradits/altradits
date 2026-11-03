@@ -96,6 +96,7 @@ test("reply_reject sends the department template exactly once", async () => {
   assert.equal(m.rejected.dept, "finance");
   const mail = await getJSON(`email:${m.rejected.emailId}`);
   assert.equal(mail.to, "polite@example.com");
+  assert.ok(mail.from.includes("finance@altradits.com"), "rejection comes from the finance address");
   assert.ok(mail.text.includes("Peter Rotich"));
   assert.ok(mail.text.includes("https://altradits.com/contact"));
   assert.ok(!mail.text.includes("Following up on my receipt"), "never echoes the reply");
