@@ -356,8 +356,18 @@ async function loadSecurity() {
   const s = W.solvency;
   $("#secSolvency").innerHTML = s ? `<b>Ye₿ente solvency</b> (${esc(ago(s.at))}): owed ${esc(satsF(s.owedSats))} across ${esc(s.wallets)} wallets; the node can send ${esc(satsF(s.outboundSats))}. ${s.covered === false ? '<b class="err">Short.</b>' : s.covered ? "Covered." : ""}` : "";
   $("#secEvents").innerHTML = W.events.length ? W.events.slice(0, 40).map((e) => `<div class="sm ev"><b>${esc(T[e.kind]?.name || e.kind)}</b> <span class="muted">${esc(ago(e.at))}</span><br>${esc(e.where)}${e.detail ? `<br><span class="muted">${esc(e.detail)}</span>` : ""}</div>`).join("") : '<p class="muted sm">Nothing turned away yet.</p>';
-  $("#secHistory").innerHTML = W.history.slice().sort((a, b) => a.year - b.year).map((a) => `<div class="sm ev"><b>${esc(a.year)}: ${esc(a.name)}</b><br>${esc(a.what)}<br><b>Lesson:</b> ${esc(a.lesson)}<br><b>Our guard:</b> ${esc(a.guard)}</div>`).join("");
+  $("#secHistory").innerHTML = attackHistoryHtml(W.history);
 }
+// Attack history: one closed accordion per attack, oldest first, each with its guard status.
+const HIST_STATUS = { guarded: ["ok", "Guarded"], watch: ["warn", "Watch"], action: ["err", "Needs you"] };
+function attackHistoryHtml(list) {
+  return list.slice().sort((a, b) => a.year - b.year).map((a) => {
+    const [cls, word] = HIST_STATUS[a.status] || ["", ""];
+    return `<details><summary>${esc(a.year)}: ${esc(a.name)}${word ? ` <b class="${cls}">${word}</b>` : ""}</summary>`
+      + `<p><b>What happened:</b> ${esc(a.what)}</p><p><b>Lesson:</b> ${esc(a.lesson)}</p><p><b>Our guard:</b> ${esc(a.guard)}</p></details>`;
+  }).join("");
+}
+// end attackHistoryHtml
 $("#eraseGo").addEventListener("click", async () => {
   try {
     const r = await api("", { action: "erase_person", email: $("#eraseEmail").value.trim(), confirm: $("#eraseConfirm").value.trim() });
