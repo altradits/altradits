@@ -449,6 +449,7 @@ const VERIFY = [
   ["Payments sent and fees paid, 30 days", "ln-ro listpayments --max_payments 2000 | jq '[.payments[] | select(.status==\"SUCCEEDED\")] | {count: length, fees: (map(.fee_sat|tonumber)|add)}'"],
   ["Invoices made and paid", "ln-ro listinvoices --max_invoices 1000 | jq '[.invoices[].state] | group_by(.) | map({(.[0]): length}) | add'"],
   ["Latest top-ups: which settled", "ln-ro listinvoices --max_invoices 5 | jq '.invoices[] | {memo: .memo, sats: .value, state}'"],
+  ["Preview a route's fee before a node send (divide by 1000 for sats)", "lncli --lnddir=$HOME/.lnd-altradits --network=mainnet queryroutes --dest <NODE_PUBKEY> --amt <SATS> | jq '.routes[0] | {hops: (.hops | length), fee_msat: .total_fees_msat}'"],
   ["Send sats out over Lightning (withdraw)", "lncli --lnddir=$HOME/.lnd-altradits --network=mainnet payinvoice <BOLT11>"],
   ["Send sats out on-chain (withdraw)", "lncli --lnddir=$HOME/.lnd-altradits --network=mainnet sendcoins <ADDRESS> <SATS> --sat_per_vbyte <FEE>"],
   ["On-chain fees paid", "ln-ro listchaintxns | jq '[.transactions[].total_fees|tonumber] | add // 0'"],
