@@ -261,7 +261,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       <ol class="flow">
         <li><b>Pick an amount:</b> a preset, the suggested figure (covers every Ye₿ente balance plus a buffer), or your own between the shown min and max.</li>
         <li><b>Make the invoice,</b> then pay it within the hour from any Lightning wallet: scan the QR, copy it, or press <i>Open in wallet</i>.</li>
-        <li><b>Watch this page:</b> it flips to “Paid ✓” and the numbers reload. Sending power rises by the amount; receiving room shrinks by the same amount.</li>
+        <li><b>Watch this page:</b> it flips to “Paid ✓” with your new balance, and the numbers reload. Sending power rises by the amount; receiving room shrinks by the same amount.</li>
         <li><b>If it expires unpaid,</b> nothing moved. Just make a new one.</li>
         <li><b>If the button errors or max shows 0,</b> receiving room is empty: a top-up arrives over Lightning, so it needs inbound first. Open a channel with inbound (Channels tab advice), then retry.</li>
       </ol>
@@ -274,6 +274,13 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       <p class="err sm" id="spErr" role="alert"></p>
       <div id="spInvoice"></div>
       <div id="spList"></div>
+      <h3 class="sub">On the Mac: verify, deposit, withdraw</h3>
+      <div class="learn">
+        <p><b>Verify this top-up landed.</b> <code>ln-ro listinvoices --max_invoices 5</code> shows your recent invoices with the memo “Altradits node top-up”; paid ones read SETTLED. <code>ln-ro channelbalance</code> shows your side grew by the amount.</p>
+        <p><b>Deposit more.</b> Press the button again, or run <code>lncli addinvoice --value &lt;sats&gt;</code> and pay the invoice from another wallet. A top-up arrives over Lightning, so it needs receiving room first, which is why the button has a max.</p>
+        <p><b>Withdraw.</b> The dashboard can never spend: the spending key stays on the Mac. Over Lightning, get an invoice from the wallet you are sending to, then <code>lncli payinvoice &lt;invoice&gt;</code>. On-chain, <code>lncli sendcoins &lt;address&gt; &lt;sats&gt; --sat_per_vbyte &lt;fee&gt;</code>, then wait for confirmations.</p>
+        <p><b>In between.</b> Lightning top-ups settle in seconds with no confirmations to wait for, and the paying wallet covers a small routing fee. You can never send the locked 1% reserve or more than “Can send now”. If an invoice expires unpaid, nothing moved: just make a new one. Keep the Mac awake with LND running until a payment lands. Every command above, plus more, sits in Learn → Verify.</p>
+      </div>
     </section>
     <section class="panel" aria-labelledby="hChain">
       <h2 id="hChain">4. On-chain wallet and fees</h2>
