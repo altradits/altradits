@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#EEF2F6">
+<meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g=' 'sha256-lK5JLprFGAzZeXxxGqpkyaAW6V3f+ufNFKh/RmT7QmA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<link rel="canonical" href="https://altradits.com/receipt">
+<title>Receipt · Altradits</title>
+<meta name="description" content="Your Altradits payment receipt. Opened from the download link in your email.">
+<meta property="og:title" content="Receipt · Altradits">
+<meta property="og:description" content="Your Altradits payment receipt. Opened from the download link in your email.">
+<meta property="og:url" content="https://altradits.com/receipt">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://altradits.com/assets/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="YeBente wallet: send money anywhere, keep all of it">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Receipt · Altradits">
+<meta name="twitter:description" content="Your Altradits payment receipt. Opened from the download link in your email.">
+<meta name="twitter:image" content="https://altradits.com/assets/social-card.png">
+<style>
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--navy:#274C77;--red:#EA5158}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+.wrap{max-width:40rem;margin:0 auto;padding:2rem 1rem}
+.rcpt{background:#fff;border:2px solid var(--ink);border-radius:1rem;padding:1.6rem}
+.rcpt-head{display:flex;gap:1rem;align-items:center;border-bottom:3px solid var(--navy);padding-bottom:1rem;margin-bottom:1rem}
+.rcpt-head img{width:88px;height:auto}
+.rcpt-head .t b{color:var(--navy);font-size:1.3rem}
+.rcpt-head .t span{display:block;color:var(--muted);font-size:.9rem}
+.rcpt dl{display:grid;grid-template-columns:8rem 1fr;gap:.3rem 1rem;margin:0}
+.rcpt dt{color:var(--muted)}.rcpt dd{margin:0;font-weight:600}
+.rcpt-foot{margin:1.2rem 0 0;color:var(--muted);font-size:.92rem;border-top:1px solid var(--red);padding-top:.8rem}
+.btn{display:inline-flex;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer;margin-top:1.2rem;text-decoration:none}
+.err{color:#B42318}
+*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+@media print{.btn,.noprint{display:none!important}body{background:#fff}.wrap{padding:0}.rcpt{border:0;border-radius:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="rcpt" id="rcpt" hidden>
+    <div class="rcpt-head"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"><div class="t"><b>Altradits · Receipt</b><span>Kisumu, Kenya · altradits.com</span></div></div>
+    <dl>
+      <dt>No.</dt><dd id="rNo"></dd>
+      <dt>Date</dt><dd id="rDate"></dd>
+      <dt>For</dt><dd id="rFor"></dd>
+      <dt>Amount</dt><dd id="rSats"></dd>
+      <dt>Paid by</dt><dd id="rPayer"></dd>
+      <dt>Received by</dt><dd>Altradits, over Lightning</dd>
+    </dl>
+    <p class="rcpt-foot">Thank you. Every payment supports open-source Bitcoin and Lightning work, and funds the node that carries YeBente payments.</p>
+  </div>
+  <p class="err" id="err" role="alert"></p>
+  <button class="btn" id="print" type="button" hidden>Print / save as PDF</button>
+</div>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+</script>
+<script>
+(async () => {
+  const q = new URLSearchParams(location.search);
+  try {
+    const r = await (await fetch(`/api/receipt?no=${encodeURIComponent(q.get("no") || "")}&h=${encodeURIComponent(q.get("h") || "")}`)).json();
+    if (r.error || !r.no) throw new Error();
+    document.getElementById("rNo").textContent = r.no;
+    document.getElementById("rDate").textContent = r.date;
+    document.getElementById("rFor").textContent = r.for;
+    document.getElementById("rSats").textContent = `${Number(r.sats).toLocaleString("en-US")} sats ($1)`;
+    document.getElementById("rPayer").textContent = r.payer;
+    document.title = `Receipt ${r.no} · Altradits`;
+    document.getElementById("rcpt").hidden = false;
+    document.getElementById("print").hidden = false;
+  } catch { document.getElementById("err").textContent = "No such receipt. Check the link in your email."; }
+  document.getElementById("print").addEventListener("click", () => window.print());
+})();
+</script>
+</body>
+</html>

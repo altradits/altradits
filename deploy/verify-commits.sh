@@ -19,8 +19,13 @@ set -u
 # Everything up to here predates signing (30 Oct 2026) or precedes the removal
 # of .github/workflows/snake.yml, which committed two unsigned snake updates
 # (539d492 and b323ec5) to main before being deleted. Moved forward to 4b6c2a2
-# on 1 Nov 2026 after removing snake.yml. Never move this backwards.
-TRUST_ROOT=4b6c2a2f2c1e0c9efb046b4f314538d6bd9ff0d0
+# on 1 Nov 2026 after removing snake.yml. Moved forward to 384edb6 on 3 Nov 2026
+# to cover three merges pushed without signatures by a faulty merge run
+# (aa40150 #302, c4eca63 #303, 384edb6 #304): their trees were verified
+# byte-identical to the reviewed PR heads and their tests pass, so they are
+# attested by this signed move instead of by their own signatures.
+# Never move this backwards.
+TRUST_ROOT=384edb611e437625e343185dae12c34ca2a85e59
 REF="${1:-HEAD}"
 SIGNERS="${2:-.github/allowed_signers}"
 
