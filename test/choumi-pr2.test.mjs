@@ -232,6 +232,7 @@ test("stan: daily report includes security lesson and Deadman alert; instruct qu
   const deptMail = await store.getJSON(`email:${approvedExternal.emailId}`);
   assert.equal(deptMail.to, draft.to);
   assert.equal(deptMail.kind, "wallet");
+  assert.ok(deptMail.from.includes("care@altradits.com"), "approved draft comes from the department address");
 
   // A draft to OWNER_EMAIL sends to Stanley when approved (with admin department powered on)
   setDeptPower("admin", true, { by: "stanley" });
