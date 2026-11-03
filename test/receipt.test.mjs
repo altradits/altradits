@@ -31,10 +31,33 @@ test("year-tagged receipt resolves with the payer's own payment hash", async () 
   assert.equal(body.date, "2026-11-03");
 });
 
-test("pre-year receipt keeps resolving", async () => {
+test("pre-year receipt keeps resolving, but displays year-tagged", async () => {
   const r = await receiptApi.GET(get("ALT-0001", H2));
   assert.equal(r.status, 200);
+  const body = await r.json();
+  assert.equal(body.payer, "Nia");
+  assert.equal(body.no, "ALT-2026-0001");
+});
+
+test("the year-tagged form unlocks the pre-year record too", async () => {
+  const r = await receiptApi.GET(get("ALT-2026-0001", H2));
+  assert.equal(r.status, 200);
   assert.equal((await r.json()).payer, "Nia");
+});
+
+test("display derivation tags old numbers from the payment date", async () => {
+  const { displayReceipt } = await import(`${ROOT}/lib/receipts.js`);
+  assert.equal(displayReceipt("ALT-0001", "2026-10-30T10:00:00.000Z"), "ALT-2026-0001");
+  assert.equal(displayReceipt("ALT-2026-0007", "2026-11-03T10:00:00.000Z"), "ALT-2026-0007");
+  assert.equal(displayReceipt("ALT-0001", "garbage"), "ALT-0001");
+  assert.equal(displayReceipt(null, "2026-10-30T10:00:00.000Z"), null);
+});
+
+test("the statement shows the year-tagged number for pre-year receipts", async () => {
+  const { statement } = await import(`${ROOT}/lib/statement.js`);
+  const rows = (await statement()).payments.filter((p) => p.type === "contact");
+  assert.equal(rows.find((p) => p.payer === "Nia").receipt, "ALT-2026-0001");
+  assert.equal(rows.find((p) => p.payer === "Ruth").receipt, "ALT-2026-0007");
 });
 
 test("wrong hash, unknown number and malformed numbers 404", async () => {
