@@ -11,7 +11,7 @@ const ago = (iso) => { const m = (Date.now() - Date.parse(iso)) / 6e4; return m 
 const kpi = (label, v, state, why) => `<div class="kpi${state ? ` ${state}` : ""}"><small>${esc(label)}</small><div>${esc(v)}</div>${why ? `<span class="why">${esc(why)}</span>` : ""}</div>`;
 // Shillings beside sats, at the rate the dashboard last read (BTC price × USD/KES).
 let KES_PER_BTC = null;
-let OVERVIEW = null;
+let OVERVIEW = null, lastUtxos = null;
 const ksh = (sats) => (KES_PER_BTC && sats !== null && sats !== undefined ? `KSh ${Math.round((Number(sats) / 1e8) * KES_PER_BTC).toLocaleString("en-US")}` : "");
 const satsKsh = (sats) => `${satsF(sats)}${ksh(sats) ? ` (${ksh(sats)})` : ""}`;
 const judge = (ok) => (ok === null || ok === undefined ? "" : ok ? "good" : "warn");
@@ -155,7 +155,10 @@ function renderChain(D) {
     + kpi("Fee now: slow", F ? `${F.slow} sat/vB` : "–", "", F && F.fast === F.slow
       ? "Same price as fast: the network is quiet, so even the cheapest transaction confirms quickly. Best time to open channels."
       : "Within about an hour. Best for opening channels.");
+  // One synchronous replace-then-add: reloading never stacks duplicates.
+  if (lastUtxos) $("#chainKpis").insertAdjacentHTML("beforeend", kpi("Coins (UTXOs)", num(lastUtxos.count), "", "Separate pieces of bitcoin in the on-chain wallet. Each one costs fees to spend."));
 }
+// end renderChain
 // Deposit addresses: made on the node, shown once each, and a recheck.
 $("#chAddrGo").addEventListener("click", async () => {
   $("#chAddrErr").textContent = "";
@@ -171,8 +174,10 @@ $("#chAddrGo").addEventListener("click", async () => {
   btn.disabled = false;
 });
 $("#chRefresh").addEventListener("click", async () => {
+  const btn = $("#chRefresh"); btn.disabled = true;
   try { OVERVIEW = await api(""); renderChain(OVERVIEW); await loadExplorer(); toast("Balances rechecked."); }
   catch (err) { toast(err.message, true, 6000); }
+  btn.disabled = false;
 });
 
 // 5. Routing: fee policy per channel, and what passed through the node.
@@ -494,10 +499,11 @@ async function loadExplorer() {
       + kpi("Routing fees paid", satsF(P.feeSats), "", P.sats ? `About ${Math.round((P.feeSats / P.sats) * 1e6)} ppm of what you sent.` : "Paid to the nodes that carried your payments.") : "";
   $("#exInvs").innerHTML = V ? kpi("Invoices made", num(V.count), "", "Payment requests your node created.") + kpi("Paid", num(V.settled), "", `${satsF(V.sats)} received.`)
       + kpi("Expired unpaid", num(V.expired), "", "Normal: people open a QR and don't pay.") : "";
-  if (X.utxos) $("#chainKpis").insertAdjacentHTML("beforeend", kpi("Coins (UTXOs)", num(X.utxos.count), "", "Separate pieces of bitcoin in the on-chain wallet. Each one costs fees to spend."));
+  lastUtxos = X.utxos || null;
+  if (OVERVIEW) renderChain(OVERVIEW);
   if (X.utxos) $("#coinList").innerHTML = X.utxos.coins?.length ? `<table><thead><tr><th>Address holding it</th><th>Sats</th><th>Confirmations</th></tr></thead><tbody>${X.utxos.coins.map((c) =>
     `<tr><td><a href="https://mempool.space/address/${esc(c.address)}" target="_blank" rel="noopener"><code title="${esc(c.outpoint || c.address)}">${esc(c.address.slice(0, 14))}…${esc(c.address.slice(-6))}</code></a></td><td>${esc(satsF(c.sats))}</td><td>${c.confs > 0 ? esc(num(c.confs)) : '<b class="err">waiting</b>'}</td></tr>`).join("")}</tbody></table>
-    <p class="muted">Each address links to its page on mempool.space, where you can watch for confirmations.</p>` : '<p class="muted">No coins: the on-chain wallet is empty. Fund it from “Your wallet address” below.</p>';
+    <p class="muted">Each address links to its page on mempool.space, where you can watch for confirmations.</p>` : '<p class="muted">No coins: the on-chain wallet is empty. Fund it with the guide below.</p>';
 }
 
 // Ye₿ente wallets: your own (receive, history, send in the app), every balance, and where payments go.
