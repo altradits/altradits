@@ -14,7 +14,7 @@
 //   GET  /api/admin?view=statement   -> money received through the website (&format=csv for the books)
 //   GET  /api/admin?view=activity&days=30 -> Ye₿ente deposits and transactions per wallet, most active first
 //   POST { action: "stan_report" } | { action: "node_topup", sats } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
-import { json, readBody, clean, newId, safeEqual, clientIp, EMAIL_RE } from "../lib/http.js";
+import { json, readBody, clean, newId, safeEqual, clientIp, siteUrl, EMAIL_RE } from "../lib/http.js";
 import { listIds, getMany, getJSON, setJSON, pushId, usingRedis, hit, peek, listArchives } from "../lib/store.js";
 import { lightningMode } from "../lib/lightning.js";
 
@@ -315,6 +315,24 @@ export async function POST(request) {
     m.ack = draft.id;
     await setJSON(`contact:msg:${m.id}`, m);
     return json({ ok: true, draft: draft.id });
+  }
+  if (body.action === "contact_resend") {
+    // Re-send a payer's receipt email from finance with the current
+    // year-tagged number and link. Stanley's click is the approval; at most
+    // one resend per receipt per hour, so a double-click never spams.
+    const m = await getJSON(`contact:msg:${clean(body.id, 80)}`);
+    if (!m) return json({ error: "No such message." }, 404);
+    if (!EMAIL_RE.test(m.email || "")) return json({ error: "That message has no valid email address." }, 400);
+    const last = (m.resends || []).at(-1);
+    if (last && Date.now() - Date.parse(last) < 3600e3) return json({ error: "This receipt was already re-sent in the last hour." }, 429);
+    const { displayReceipt } = await import("../lib/receipts.js");
+    const { sendContactReceipt } = await import("./contact.js");
+    const sent = await sendContactReceipt({ to: m.email, name: m.name, sats: m.sats, label: m.label || m.topic,
+      dept: m.dept, receipt: displayReceipt(m.receipt, m.paidAt || m.at), hash: m.hash, site: siteUrl(request) });
+    if (String(sent?.status || "").startsWith("failed")) return json({ error: "The email did not go out. Check the mail setup and try again." }, 502);
+    m.resends = [...(m.resends || []), new Date().toISOString()].slice(-5);
+    await setJSON(`contact:msg:${m.id}`, m);
+    return json({ ok: true });
   }
   if (body.action === "reply_screen") {
     // A reply pasted from the mailbox: screened before anyone acts on it.
