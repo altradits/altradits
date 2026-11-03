@@ -55,6 +55,7 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
 .muted{color:var(--muted)}
 .err{color:var(--crit)}
 .ok{color:var(--ok)}
+.gloss summary .warn{color:var(--warn)}
 .alert{margin:0 0 .6rem;padding:.6rem .8rem;border-radius:.6rem;border:1px solid}
 .alert.crit{color:var(--crit);border-color:var(--crit)}.alert.warn{color:var(--warn);border-color:var(--warn)}
 .bar{display:block;background:#E4E9F0;border-radius:4px;height:8px;width:7rem}.bar i{display:block;background:var(--blue);border-radius:4px;height:8px}
@@ -465,8 +466,8 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     </section>
     <section class="panel" aria-labelledby="hHist">
       <h2 id="hHist">Bitcoin's attack history, and our guards</h2>
-      <div class="learn"><p>Real attacks from Bitcoin's history, the lesson each taught, and how this site guards against it.</p></div>
-      <div class="events" id="secHistory"></div>
+      <div class="learn"><p>Real attacks from Bitcoin's history, the lesson each taught, and how this site guards against it. Open one to read it.</p></div>
+      <div class="gloss" id="secHistory"></div>
     </section>
     <section class="panel" aria-labelledby="hErase">
       <h2 id="hErase">Erase a person (privacy request)</h2>
