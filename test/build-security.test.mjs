@@ -293,6 +293,21 @@ test("card deposits: credited only on the provider's explicit Completed, for the
   assert.match(yb, /wrong card IPN secret/, "api/yebente.js card/ipn: refuse a wrong path secret and record it");
 });
 
+test("dashboard commands work as printed: reads use ln-ro, writes carry the node directory", () => {
+  const html = read("admin.html"), js = read("assets/admin.js"), api = read("api/admin.js");
+  assert.match(html, /alias ln-ro='lncli --lnddir=\$HOME\/\.lnd-altradits --macaroonpath=/, "admin.html: the ln-ro shortcut carries the node directory and the read-only key");
+  assert.doesNotMatch(html, /<code>lncli (?!--lnddir)/, "admin.html: every printed lncli command carries --lnddir (reads use ln-ro)");
+  assert.doesNotMatch(js, /"lncli (?!--lnddir)/, "assets/admin.js: every lncli string carries --lnddir");
+  assert.doesNotMatch(api, /"lncli (?!--lnddir)/, "api/admin.js: every lncli string carries --lnddir");
+  for (const f of ["admin.html", "assets/admin.js", "api/admin.js", "docs/manual-lnd.md", "DEPLOY.md"]) {
+    assert.doesNotMatch(read(f), /--[a-z]+=~\//, `${f}: no flag path starts with ~/ (the shell never expands it there)`);
+  }
+  for (const f of ["docs/manual-lnd.md", "DEPLOY.md"]) {
+    assert.doesNotMatch(read(f), /^lncli (?!--lnddir)/m, `${f}: every lncli command carries --lnddir`);
+  }
+  assert.doesNotMatch(read("docs/manual-lnd.md"), /lncli-ro/, "docs/manual-lnd.md: the shortcut is called ln-ro, as on the dashboard");
+});
+
 test("address QR: pasted text only, bc1q checked, capped, and no address-making key anywhere", () => {
   const ln = read("lib/lightning.js");
   assert.match(ln, /\^bc1q\[02-9ac-hj-np-z\]/, "lib/lightning.js: only bc1q-shaped text is encoded");

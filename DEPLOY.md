@@ -38,9 +38,9 @@ admin dashboard. The site needs:
 | `YEBENTE_LND_PAY_MACAROON` | Ye₿ente payments out (see [docs/yebente.md](docs/yebente.md)) |
 
 ```
-lncli bakemacaroon invoices:read invoices:write   # prints the hex for LND_INVOICE_MACAROON
-xxd -p -c 1000 ~/.lnd/data/chain/bitcoin/mainnet/readonly.macaroon   # LND_READONLY_MACAROON
-base64 < ~/.lnd/tls.cert | tr -d '\n'               # only if self-signed: LND_TLS_CERT
+lncli --lnddir=$HOME/.lnd-altradits --network=mainnet bakemacaroon invoices:read invoices:write   # prints the hex for LND_INVOICE_MACAROON
+xxd -p -c 1000 ~/.lnd-altradits/data/chain/bitcoin/mainnet/readonly.macaroon   # LND_READONLY_MACAROON
+base64 < ~/.lnd-altradits/tls.cert | tr -d '\n'               # only if self-signed: LND_TLS_CERT
 ```
 
 The node's REST port (default 8080) must be reachable from the hosting server
