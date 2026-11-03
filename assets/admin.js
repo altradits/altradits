@@ -376,7 +376,7 @@ $("#moneyCsv").addEventListener("click", () => download("?view=statement&format=
 // Profit and loss: what the node earned and spent, and what is yours after Ye₿ente's wallet holders.
 async function loadPnl() {
   let L; try { L = await api(`?view=pnl&days=${encodeURIComponent($("#pnlDays").value)}`); } catch (err) { $("#pnlTable").textContent = err.message; return; }
-  const E = L.earned, S = L.spent, Y = L.yours;
+  const E = L.earned, S = L.spent;
   $("#pnlKpis").innerHTML = kpi("Earned", satsF(E.total), "", ksh(E.total)) + kpi("Spent", satsF(S.total), "", ksh(S.total))
     + kpi(L.net >= 0 ? "Profit" : "Loss", satsF(Math.abs(L.net)), L.net >= 0 ? "good" : "warn", ksh(Math.abs(L.net)));
   const row = (what, sats, why, sign = "") => `<tr><td>${esc(what)}<br><span class="muted sm">${esc(why)}</span></td><td>${sign}${esc(satsF(sats))}</td><td>${esc(ksh(sats))}</td></tr>`;
@@ -386,10 +386,19 @@ async function loadPnl() {
     ${row("Support payments", E.support, `${E.supportCount} on /donate.`, "+")}
     ${row("Routing fees you paid", S.routeFees, `Your own payments. Of ${num(S.routeFeesAll)} sats in fees, Ye₿ente users repaid ${num(S.routeFeesRepaid)}.`, "−")}
     ${row("On-chain fees", S.onchain, "Opening or closing channels, moving coins.", "−")}
-  </tbody></table>${L.nodeRead ? "" : '<p class="sm err">The node couldn\'t be read, so node figures show 0. Set LND_READONLY_MACAROON.</p>'}`;
-  $("#pnlYours").innerHTML = kpi("On the node", satsF(Y.assets), "", `${ksh(Y.assets)} · your side of channels ${num(Y.channelSats)} + on-chain ${num(Y.onchainSats)}`)
-    + kpi("Owed to Ye₿ente wallets", satsF(Y.owed), "", ksh(Y.owed)) + kpi("Yours", satsF(Y.net), judge(Y.net === null ? null : Y.net >= 0), `${ksh(Y.net)} · on the node minus what wallets hold. Below 0 means wallets hold more than the node has.`);
+  </tbody></table>${L.nodeRead ? "" : '<p class="sm err">The node couldn\'t be read, so node figures show 0. Wake the Mac, make sure LND is running, and check LND_READONLY_MACAROON on the server.</p>'}`;
+  $("#pnlYours").innerHTML = pnlYoursHtml(L);
 }
+// "What's yours right now": unknown (never a 0) when the node couldn't be read.
+function pnlYoursHtml(L) {
+  const Y = L.yours;
+  const nodeWhy = L.nodeRead ? `${ksh(Y.assets)} · your side of channels ${num(Y.channelSats)} + on-chain ${num(Y.onchainSats)}` : "Unknown: the node couldn't be read. See the red note above.";
+  const netWhy = (Y.net === null || Y.net === undefined) ? "Unknown until the node can be read." : `${ksh(Y.net)} · on the node minus what wallets hold. Below 0 means wallets hold more than the node has.`;
+  return kpi("On the node", satsF(Y.assets), L.nodeRead ? "" : "warn", nodeWhy)
+    + kpi("Owed to Ye₿ente wallets", satsF(Y.owed), "", ksh(Y.owed))
+    + kpi("Yours", satsF(Y.net), judge(Y.net === null ? null : Y.net >= 0), netWhy);
+}
+// end pnlYoursHtml
 $("#pnlDays").addEventListener("change", loadPnl);
 
 // Each dashboard number, the read-only command that shows it, and where to look.
