@@ -161,6 +161,7 @@ test("receipt email comes from finance with the department head stamp and a down
   for (const k of await keysWithPrefix("email:")) mails.push(await getJSON(k));
   const rcpt = mails.find((m) => m.to === "tom@example.com");
   assert.match(rcpt.from, /finance@altradits\.com/);
+  assert.equal(rcpt.replyTo, "finance@altradits.com");
   assert.equal(rcpt.cta.label, "Download receipt (PDF)");
   assert.ok(!rcpt.text.includes("Amount:"), "details live behind the button, not in the note");
   // AI is off in tests: the head accepts payment and refers the request onward.
