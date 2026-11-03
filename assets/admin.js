@@ -634,6 +634,21 @@ async function loadChoumi() {
       }).join("")}</tbody></table>`
     : '<p class="muted sm">No tasks in the queue right now.</p>';
 
+  // 4b. Paid contact messages waiting for the team
+  const inbox = C.contact || [];
+  const fresh = inbox.filter((m) => !m.handled);
+  issue("contact_inbox", fresh.length ? "warn" : null, `${fresh.length} paid contact message(s) waiting for the team.`, "choumi:hContact");
+  $("#contactInbox").innerHTML = inbox.length
+    ? inbox.map((m) => `<div class="inside">
+        <h3>${esc(m.label || m.topic)} <span class="muted sm">· ${esc(m.dept)} · ${esc(m.name)} &lt;${esc(m.email)}&gt; · ${esc(ago(m.at))} · ${esc(String(m.sats))} sats paid${m.handled ? " · handled" : ""}${m.ack ? ` · ack ${esc(m.ack)}` : ""}</span></h3>
+        <p class="sm" style="white-space:pre-wrap">${esc(m.message)}</p>
+        ${m.handled ? "" : `<div class="row">
+          <button type="button" class="btn primary" data-contact-ack="${esc(m.id)}">Queue acknowledgment</button>
+          <button type="button" class="btn" data-contact-read="${esc(m.id)}">Mark handled</button>
+        </div>`}
+      </div>`).join("")
+    : '<p class="muted sm">No contact messages yet.</p>';
+
   // 5. Approvals waiting for Stanley
   const approvals = C.approvals || [];
   issue("choumi_approvals", approvals.length ? "warn" : null, `${approvals.length} draft(s) from Choumi's team waiting for your approval.`, "choumi:hApprovals");
@@ -790,6 +805,16 @@ $("#choumiApprovals").addEventListener("click", async (e) => {
   try {
     await api("", { action: "draft_decide", id, approve });
     toast(approve ? "Draft approved." : "Draft rejected.");
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#contactInbox").addEventListener("click", async (e) => {
+  const ack = e.target.closest("[data-contact-ack]"), read = e.target.closest("[data-contact-read]");
+  if (!ack && !read) return;
+  try {
+    if (ack) { const r = await api("", { action: "contact_ack", id: ack.dataset.contactAck }); toast(`Acknowledgment queued for approval (${r.draft}).`); }
+    else { await api("", { action: "contact_read", id: read.dataset.contactRead }); toast("Marked handled."); }
     loadChoumi();
   } catch (err) { toast(err.message, true, 6000); }
 });
