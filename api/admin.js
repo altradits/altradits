@@ -304,6 +304,7 @@ export async function POST(request) {
   if (body.action === "contact_ack") {
     const m = await getJSON(`contact:msg:${clean(body.id, 80)}`);
     if (!m) return json({ error: "No such message." }, 404);
+    if (m.held) return json({ error: "Security hold: decide on this message yourself. Never draft from held text." }, 400);
     const { queueContactReply } = await import("../lib/stan.js");
     const draft = await queueContactReply({ to: m.email, dept: m.dept,
       subject: `Re: ${m.label}`,

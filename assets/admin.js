@@ -641,10 +641,10 @@ async function loadChoumi() {
   issue("contact_inbox", fresh.length ? "warn" : null, `${fresh.length} paid contact message(s) waiting for the team.`, "choumi:hContact");
   $("#contactInbox").innerHTML = inbox.length
     ? inbox.map((m) => `<div class="inside">
-        <h3>${esc(m.label || m.topic)} <span class="muted sm">· ${esc(m.dept)} · ${esc(m.name)} &lt;${esc(m.email)}&gt; · ${esc(ago(m.at))} · ${esc(String(m.sats))} sats paid${m.handled ? " · handled" : ""}${m.ack ? ` · ack ${esc(m.ack)}` : ""}</span></h3>
+        <h3>${esc(m.label || m.topic)} <span class="muted sm">· ${esc(m.dept)} · ${esc(m.name)} &lt;${esc(m.email)}&gt; · ${esc(ago(m.at))} · ${esc(String(m.sats))} sats paid${m.handled ? " · handled" : ""}${m.ack ? ` · ack ${esc(m.ack)}` : ""}${m.held ? ` · <b>hold: ${(m.held.reasons || []).map(esc).join(", ")}</b>` : ""}</span></h3>
         <p class="sm" style="white-space:pre-wrap">${esc(m.message)}</p>
         ${m.handled ? "" : `<div class="row">
-          <button type="button" class="btn primary" data-contact-ack="${esc(m.id)}">Queue acknowledgment</button>
+          ${m.held ? "" : `<button type="button" class="btn primary" data-contact-ack="${esc(m.id)}">Queue acknowledgment</button>`}
           <button type="button" class="btn" data-contact-read="${esc(m.id)}">Mark handled</button>
         </div>`}
       </div>`).join("")
