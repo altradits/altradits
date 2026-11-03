@@ -26,5 +26,4 @@ YeBente. Start here: https://altradits.com/
 ## Contact
 
 - Contact form (a $1 spam shield applies): https://altradits.com/contact
-- hello@altradits.com
 - https://github.com/altradits
