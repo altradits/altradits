@@ -307,6 +307,7 @@ export async function POST(request) {
     const m = await getJSON(`contact:msg:${clean(body.id, 80)}`);
     if (!m) return json({ error: "No such message." }, 404);
     if (m.held) return json({ error: "Security hold: decide on this message yourself. Never draft from held text." }, 400);
+    if (!m.email) return json({ error: "Erased: no address left to reply to." }, 400);
     const { queueContactReply } = await import("../lib/stan.js");
     const draft = await queueContactReply({ to: m.email, dept: m.dept,
       subject: `Re: ${m.label}`,
@@ -315,6 +316,12 @@ export async function POST(request) {
     m.ack = draft.id;
     await setJSON(`contact:msg:${m.id}`, m);
     return json({ ok: true, draft: draft.id });
+  }
+  if (body.action === "erase_person") {
+    if (body.confirm !== "ERASE") return json({ error: "Type ERASE to confirm." }, 400);
+    const { erasePerson } = await import("../lib/cleanup.js");
+    try { return json({ ok: true, ...(await erasePerson(clean(body.email, 200))) }); }
+    catch (err) { return json({ error: err.message }, 400); }
   }
   if (body.action === "contact_resend") {
     // Re-send a payer's receipt email from finance with the current

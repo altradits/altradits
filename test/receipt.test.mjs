@@ -79,6 +79,12 @@ test("resend re-sends the corrected finance email for a pre-year receipt", async
   assert.ok(sent.subject.includes("ALT-2026-0001"), "subject carries the year-tagged number");
 });
 
+test("ack refuses an erased message with no address left", async () => {
+  const { setJSON } = await import(`${ROOT}/lib/store.js`);
+  await setJSON("contact:msg:er1", { id: "er1", name: "[erased]", email: "", message: "[erased on request]", topic: "other", label: "Other", dept: "office" });
+  assert.equal((await postAdmin({ action: "contact_ack", id: "er1" })).status, 400);
+});
+
 test("resend refuses unknown messages and a second resend within the hour", async () => {
   assert.equal((await postAdmin({ action: "contact_resend", id: "nope" })).status, 404);
   assert.equal((await postAdmin({ action: "contact_resend", id: "m2" })).status, 429);
