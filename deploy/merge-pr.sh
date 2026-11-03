@@ -1,9 +1,10 @@
 #!/bin/sh
 # Merge a pull request the way Bitcoin Core maintainers do with
 # contrib/devtools/github-merge.py: fetch exactly the reviewed commit, refuse
-# if anything changed or the checks didn't pass, make a signed merge commit
-# with a one-line message (signed when this machine has the key), run the tests
-# on the merged result, and only push when told to.
+# if anything changed, the checks didn't pass, or a commit names an AI
+# co-author, make a signed merge commit with a one-line message (signed when
+# this machine has the key), run the tests on the merged result, and only
+# push when told to.
 #
 #   sh deploy/merge-pr.sh 177          prepare and check the merge locally
 #   sh deploy/merge-pr.sh 177 --push   ... and push it (this deploys)
@@ -29,6 +30,9 @@ gh pr checks "$PR" >/dev/null 2>&1 || die "PR #$PR's checks haven't all passed (
 # Exactly the commit that was reviewed: if the branch moved since, stop.
 git fetch -q origin "pull/$PR/head"
 [ "$(git rev-parse FETCH_HEAD)" = "$HEAD" ] || die "the PR branch changed while preparing the merge; review again."
+
+# No AI co-authors reach main: GitHub lists every Co-Authored-By as a contributor.
+sh deploy/no-ai-coauthor.sh "main..$HEAD" || die "the PR branch names an AI co-author; strip the trailer and review again."
 
 echo "== Merging #$PR: $TITLE"
 git log --oneline "main..$HEAD"
