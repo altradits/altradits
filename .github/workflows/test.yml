@@ -1,8 +1,9 @@
 name: Tests and security checks
 
 # Every pull request and every push to main: the full test suite (including the
-# build-stage security guard in test/build-security.test.mjs) and a dependency
-# audit. Actions are pinned by commit; the job can only read the repository.
+# build-stage security guard and the house-style rules in
+# test/build-security.test.mjs) and a dependency audit. Actions are pinned by
+# commit; the job can only read the repository.
 on:
   pull_request:
   push:
@@ -32,7 +33,7 @@ jobs:
         run: sh deploy/verify-commits.sh HEAD .github/allowed_signers
       - name: Install (no package scripts run)
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Tests and build-stage security guard
+      - name: Tests, security guard and house style
         run: npm test
       - name: Dependencies with known high or critical vulnerabilities
         run: npm audit --omit=dev --audit-level=high
