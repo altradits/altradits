@@ -168,13 +168,14 @@ async function buildChoumiView() {
   const view = deptPowerView();
   const ai = { ...view, incidentOverrideActive: Boolean(view.incidentOverride) };
   const deadman = { ...deadmanStatus(), lastDrill: await lastSecurityDrill().catch(() => null) };
-  const [tasks, ops, approvals, instructions, learning, lastReport] = await Promise.all([
+  const [tasks, ops, approvals, instructions, learning, lastReport, contact] = await Promise.all([
     allTasks(120).catch(() => []),
     opsSummary().catch(() => ({ total: 0, counts: {}, satisfaction: null, recent: [] })),
     pendingDrafts(50).catch(() => []),
     recentInstructions(20).catch(() => []),
     learningView().catch(() => ({ totalRules: 0, totalExemplars: 0, answerBankCount: 0, departments: [], byDepartment: {}, answers: [], recentTrajectories: [], digests: {} })),
     stanLast().catch(() => null),
+    listIds("contact:inbox", 30).then((ids) => getMany("contact:msg", ids)).catch(() => []),
   ]);
 
   const powerMap = Object.fromEntries((ai.departments || []).map((d) => [d.id, d]));
@@ -219,6 +220,7 @@ async function buildChoumiView() {
     departments,
     ops,
     approvals,
+    contact,
     instructions,
     learning,
     report: { last: lastReport, lesson: securityLessonOfTheDay() },
@@ -291,6 +293,25 @@ export async function POST(request) {
     const { recordNodeAction } = await import("../lib/deadman.js");
     try { return json(await recordNodeAction({ sats: body.sats, reason: clean(body.reason, 200), by: "stanley" })); }
     catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "contact_read") {
+    const m = await getJSON(`contact:msg:${clean(body.id, 80)}`);
+    if (!m) return json({ error: "No such message." }, 404);
+    m.handled = true;
+    await setJSON(`contact:msg:${m.id}`, m);
+    return json({ ok: true });
+  }
+  if (body.action === "contact_ack") {
+    const m = await getJSON(`contact:msg:${clean(body.id, 80)}`);
+    if (!m) return json({ error: "No such message." }, 404);
+    const { queueContactReply } = await import("../lib/stan.js");
+    const draft = await queueContactReply({ to: m.email, dept: m.dept,
+      subject: `Re: ${m.label}`,
+      text: `Hi ${m.name},\n\nYour message about ${m.label.toLowerCase()} reached the right team, and Choumi's team is reading it. Stanley approves every reply himself, so please give us a little time.\n\nIf you wrote about your YeBente wallet, help with it is already on the way.` });
+    m.handled = true;
+    m.ack = draft.id;
+    await setJSON(`contact:msg:${m.id}`, m);
+    return json({ ok: true, draft: draft.id });
   }
   if (body.action === "draft_decide") {
     const { decideDraft } = await import("../lib/stan.js");

@@ -20,7 +20,7 @@ Working memory issue: #253
 
 ## What Altradits is now
 
-- **altradits.com** is Stanley's open-source and Bitcoin-learning home: Library, Bitcoin Core guide, Players, Friends, Tracker (focus `lightningnetwork/lnd`), Journey, Plan, Support my work, and the Ye₿ente wallet (`yebente/`, `api/yebente.js`, `lib/ywallet.js`). No sales or agency pitches on the public site.
+- **altradits.com** is Stanley's open-source and Bitcoin-learning home: Library, Bitcoin Core guide, Players, Friends, Tracker (focus `lightningnetwork/lnd`), Journey, Plan, Support my work, Contact (paid form, `api/contact.js`), and the Ye₿ente wallet (`yebente/`, `api/yebente.js`, `lib/ywallet.js`). No sales or agency pitches on the public site.
 - **The old agency and Stan's team** live in the private repo `altradits/chouMi`. They are coming back as **Choumi Yakunte**, working in the background. The plan is `docs/choumi-return.md`; follow its phases in order.
 - **Done so far:** PR 1 (#250: AI circuit breaker, department power buttons, Deadman's Switch Step 1) and the signed-commits fix (#252). Next: PR 2 (unified `lib/stan.js`, playbooks with security sections, QA experts, team comms, `lib/screen.js`).
 
