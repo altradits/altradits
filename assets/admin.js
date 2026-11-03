@@ -156,6 +156,24 @@ function renderChain(D) {
       ? "Same price as fast: the network is quiet, so even the cheapest transaction confirms quickly. Best time to open channels."
       : "Within about an hour. Best for opening channels.");
 }
+// Deposit addresses: made on the node, shown once each, and a recheck.
+$("#chAddrGo").addEventListener("click", async () => {
+  $("#chAddrErr").textContent = "";
+  const btn = $("#chAddrGo"); btn.disabled = true;
+  try {
+    const r = await api("", { action: "node_address" });
+    $("#chAddrOut").innerHTML = `<p class="sm"><b>Send to this address.</b> First time: send a tiny test amount, press Check again, and only then send the rest.</p>
+      <div class="qr">${r.qr}</div>
+      <textarea readonly rows="2" class="mono">${esc(r.address)}</textarea>
+      <div class="row"><button type="button" class="btn" id="chAddrCopy">Copy address</button><a class="btn" href="https://mempool.space/address/${esc(r.address)}" target="_blank" rel="noopener">Watch on mempool.space</a></div>`;
+    $("#chAddrCopy").onclick = () => navigator.clipboard?.writeText(r.address).then(() => toast("Address copied."));
+  } catch (err) { $("#chAddrErr").textContent = err.message; }
+  btn.disabled = false;
+});
+$("#chRefresh").addEventListener("click", async () => {
+  try { OVERVIEW = await api(""); renderChain(OVERVIEW); await loadExplorer(); toast("Balances rechecked."); }
+  catch (err) { toast(err.message, true, 6000); }
+});
 
 // 5. Routing: fee policy per channel, and what passed through the node.
 function renderRouting(D) {

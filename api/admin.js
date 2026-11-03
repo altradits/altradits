@@ -13,7 +13,7 @@
 //   GET  /api/admin?view=emails      -> the email log (a wallet email's link is never stored)
 //   GET  /api/admin?view=statement   -> money received through the website (&format=csv for the books)
 //   GET  /api/admin?view=activity&days=30 -> Ye₿ente deposits and transactions per wallet, most active first
-//   POST { action: "stan_report" } | { action: "node_topup", sats } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
+//   POST { action: "stan_report" } | { action: "node_topup", sats } | { action: "node_address" } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
 import { json, readBody, clean, newId, safeEqual, clientIp, siteUrl, EMAIL_RE } from "../lib/http.js";
 import { listIds, getMany, getJSON, setJSON, pushId, usingRedis, hit, peek, listArchives } from "../lib/store.js";
 import { lightningMode } from "../lib/lightning.js";
@@ -255,6 +255,13 @@ export async function POST(request) {
     if (deadmanActive()) return json({ error: "Deadman's Switch is active: node top-ups are paused until you lift the lockdown." }, 503);
     const { startTopup } = await import("../lib/channels.js");
     try { return json(await startTopup(body.sats)); } catch (err) { return json({ error: err.message }, err.status || 502); }
+  }
+  if (body.action === "node_address") {
+    const { newDepositAddress, depositAddressOn, DEPOSIT_SETUP, qrSvg } = await import("../lib/lightning.js");
+    if (!depositAddressOn()) return json({ error: DEPOSIT_SETUP }, 501);
+    if ((await hit("rl:nodeaddr", 86400)) > 10) return json({ error: "Only a few addresses a day: every address shown burns a fresh one. Try again tomorrow." }, 429);
+    try { const address = await newDepositAddress(); return json({ address, qr: await qrSvg(address) }); }
+    catch (err) { return json({ error: err.message }, err.status || 502); }
   }
   if (body.action === "deadman_trip") {
     const { tripDeadman } = await import("../lib/deadman.js");
