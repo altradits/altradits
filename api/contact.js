@@ -5,7 +5,7 @@
 // POST /api/contact {step:"quote"} -> {bolt11, qr, hash, sats, expiresAt}
 // GET  /api/contact?hash=      -> {paid}
 // POST /api/contact {step:"send", hash, name, email, topic, message} -> {ok, id}
-import { json, readBody, clean, newId, clientIp, EMAIL_RE } from "../lib/http.js";
+import { json, readBody, clean, newId, clientIp, siteUrl, EMAIL_RE } from "../lib/http.js";
 import { hit, getJSON, setJSON, pushId, acquireLock, increment } from "../lib/store.js";
 import { createInvoice, invoicePaid, qrSvg } from "../lib/lightning.js";
 
@@ -92,8 +92,18 @@ async function send(request, body) {
         text: `A paid ($1) contact message arrived for ${t.dept}.${held ? ` SECURITY HOLD: it contains ${describe(held.reasons)}, so no AI agent may read it until you decide. The text below is defanged.` : ""}\n\nFrom: ${name} <${email}>\nAbout: ${t.label}\nReceipt: ${receipt}\n\n${held ? defang(message) : message}\n\nRead and queue a reply from the dashboard: Choumi tab, contact inbox.`, replyTo: email });
     } catch (err) { console.error("contact notify", err.message); }
     try {
-      await sendEmail({ to: email, subject: `Receipt ${receipt}: thank you for your $1`, kind: "wallet",
-        text: `Hi ${name},\n\nThank you. Your $1 (${rec.inv.sats.toLocaleString("en-US")} sats) is with us, and your message about ${t.label.toLowerCase()} is with the right team.\n\nReceipt: ${receipt}\nDate: ${at.slice(0, 10)}\nFor: contact message (${t.label})\nAmount: ${rec.inv.sats.toLocaleString("en-US")} sats ($1)\nPaid by: ${name}\nReceived by: Altradits, altradits.com\n\nYour dollar also funds our Lightning node: the always-on computer that carries every YeBente payment. Running it takes real money and locked-up bitcoin, so every dollar keeps payments fast and nearly free for everyone.\n\nChoumi's team reads every message, and Stanley approves every reply.` });
+      // Receipts come only from finance, only after the node confirms payment.
+      // The stamp below is the head of the department asked about. Short note;
+      // the full receipt lives behind the download button.
+      const { commsFor } = await import("../data/team-comms.js");
+      const { stanLive } = await import("../lib/stan.js");
+      const head = commsFor(t.dept).head;
+      const funds = "Your dollar also funds our Lightning node: the always-on computer that carries every YeBente payment. Running it takes real money and locked-up bitcoin, so every dollar keeps payments fast and nearly free for everyone.";
+      const body = stanLive()
+        ? `Hi ${name},\n\nThank you. Your $1 (${rec.inv.sats.toLocaleString("en-US")} sats) is with us, and your message about ${t.label.toLowerCase()} is with the right team.\n\n${funds}\n\nChoumi's team reads every message, and Stanley approves every reply.`
+        : `Hi ${name},\n\n${head.name}, ${head.title}, confirms your $1 (${rec.inv.sats.toLocaleString("en-US")} sats) is with us. Our AI team is off right now, so your message about ${t.label.toLowerCase()} is referred to the right department, who will read it with Stanley.\n\n${funds}`;
+      await sendEmail({ to: email, subject: `Receipt ${receipt}: thank you for your $1`, kind: "wallet", fromDept: "finance",
+        sender: commsFor(t.dept).signature, cta: { label: "Download receipt (PDF)", url: `${siteUrl(request)}/receipt?no=${receipt}&h=${hash}` }, text: body });
     } catch (err) { console.error("contact receipt", err.message); }
     return json({ ok: true, id, receipt });
   } finally { await release(); }
