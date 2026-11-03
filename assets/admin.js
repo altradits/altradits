@@ -226,7 +226,7 @@ $("#stanGo").addEventListener("click", async () => {
 });
 
 // 3. Sending power: spendable after channel reserves, what Ye₿ente owes, and node top-ups.
-let spPoll = null;
+let spPoll = null, lastPower = null;
 // Where your money is: on-chain, your side of channels, minus what wallets are owed.
 function renderMap(P) {
   const on = OVERVIEW?.details?.onchain || {};
@@ -249,7 +249,8 @@ function renderMap(P) {
 }
 
 async function loadPower() {
-  let P; try { P = await api("?view=liquidity"); } catch (err) { $("#spNote").textContent = err.message; return; }
+  let P; try { P = await api("?view=liquidity"); } catch (err) { $("#spNote").textContent = err.message; return null; }
+  lastPower = P;
   renderMap(P);
   $("#spNote").innerHTML = `<span class="kpis" style="display:grid;margin:0 0 .6rem">${kpi("Can send now", satsF(P.spendable), judge(P.spendable >= 1000), ksh(P.spendable))}${kpi("Owed to wallets", satsF(P.owedSats), "", ksh(P.owedSats))}${kpi("Can still receive", satsF(P.inbound), "", `${ksh(P.inbound)} · after the peer's reserve`)}</span>`
     + (P.spendable < 1000 ? `<b class="err">The node can't send anything right now.</b> Ye₿ente payments out fail until you top up.`
@@ -260,6 +261,7 @@ async function loadPower() {
   $("#spSats").min = P.min; $("#spSats").max = P.max;
   $("#spPresets").innerHTML = P.presets.map((n) => `<button type="button" class="btn${n === P.suggested ? " primary" : ""}" data-sp="${n}">${esc(satsF(n))}${ksh(n) ? ` · ${esc(ksh(n))}` : ""}${n === P.suggested ? " (suggested)" : ""}</button>`).join("");
   $("#spList").innerHTML = P.topups.length ? P.topups.map((t) => `<div class="sm">${esc(satsKsh(t.sats))} · ${esc(t.state)} <span class="muted">${esc(ago(t.at))}</span></div>`).join("") : '<p class="muted sm">No top-ups yet.</p>';
+  return P;
 }
 $("#spPresets").addEventListener("click", (e) => { const n = e.target.closest("[data-sp]")?.dataset.sp; if (n) { $("#spSats").value = n; spKsh(); } });
 // The amount typed, in shillings too.
@@ -277,7 +279,13 @@ $("#spGo").addEventListener("click", async () => {
   clearInterval(spPoll);
   spPoll = setInterval(async () => {
     let s; try { s = await api(`?view=topup&hash=${encodeURIComponent(T.hash)}`); } catch { return; }
-    if (s.state === "paid") { clearInterval(spPoll); $("#spState").innerHTML = `<b class="ok">Paid ✓</b> ${esc(satsF(s.sats))} landed on the node.`; loadPower(); loadChannels(); }
+    if (s.state === "paid") {
+      clearInterval(spPoll);
+      const before = s.spendableBefore ?? lastPower?.spendable ?? null;
+      const now = await loadPower(); loadChannels();
+      $("#spState").innerHTML = `<b class="ok">Paid ✓</b> ${esc(satsF(s.sats))} landed on the node.`
+        + (now && before !== null ? ` Can send now: <b>${esc(satsF(now.spendable))}</b> (was ${esc(satsF(before))}). Can still receive: ${esc(satsF(now.inbound))}.` : "");
+    }
     else if (s.state === "expired") { clearInterval(spPoll); $("#spState").textContent = "This invoice expired. Make a new one."; }
   }, 4000);
 });
@@ -404,6 +412,9 @@ const VERIFY = [
   ["Routing fees earned, 30 days", "ln-ro fwdinghistory --start_time=-30d | jq '[.forwarding_events[].fee|tonumber] | add // 0'"],
   ["Payments sent and fees paid, 30 days", "ln-ro listpayments --max_payments 2000 | jq '[.payments[] | select(.status==\"SUCCEEDED\")] | {count: length, fees: (map(.fee_sat|tonumber)|add)}'"],
   ["Invoices made and paid", "ln-ro listinvoices --max_invoices 1000 | jq '[.invoices[].state] | group_by(.) | map({(.[0]): length}) | add'"],
+  ["Latest top-ups: which settled", "ln-ro listinvoices --max_invoices 5 | jq '.invoices[] | {memo: .memo, sats: .value, state}'"],
+  ["Send sats out over Lightning (withdraw)", "lncli payinvoice <BOLT11>"],
+  ["Send sats out on-chain (withdraw)", "lncli sendcoins <ADDRESS> <SATS> --sat_per_vbyte <FEE>"],
   ["On-chain fees paid", "ln-ro listchaintxns | jq '[.transactions[].total_fees|tonumber] | add // 0'"],
   ["Each channel: updates, uptime, force-close wait", "ln-ro listchannels | jq '.channels[] | {peer_alias, num_updates, uptime, lifetime, csv_delay, commitment_type}'"],
   ["Each channel: your side vs peer's side", "ln-ro listchannels | jq '.channels[] | {peer: .peer_alias, ours: .local_balance, theirs: .remote_balance}'"],
