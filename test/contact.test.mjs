@@ -151,6 +151,57 @@ test("cleanup drops spent and long-expired quotes, keeps paid messages", async (
   assert.ok(msgs.length >= 2, "paid messages kept");
 });
 
+test("receipt email comes from finance with the department head stamp and a download button", async () => {
+  const q = await (await contact.POST(req({ step: "quote" }, "10.0.0.8"))).json();
+  settle(q.hash);
+  const r = await contact.POST(req({ step: "send", hash: q.hash, name: "Tom", email: "tom@example.com", topic: "yebente", message: "My wallet will not open on my new phone." }, "10.0.0.8"));
+  assert.equal(r.status, 200);
+  const { id, receipt } = await r.json();
+  const mails = [];
+  for (const k of await keysWithPrefix("email:")) mails.push(await getJSON(k));
+  const rcpt = mails.find((m) => m.to === "tom@example.com");
+  assert.match(rcpt.from, /finance@altradits\.com/);
+  assert.equal(rcpt.cta.label, "Download receipt (PDF)");
+  assert.ok(!rcpt.text.includes("Amount:"), "details live behind the button, not in the note");
+  // AI is off in tests: the head accepts payment and refers the request onward.
+  assert.match(rcpt.text, /Samuel Bekele, Head of Community Care, confirms/);
+  assert.match(rcpt.text, /referred to the right department/);
+  // The stamp names the head of the department asked about.
+  const { signatureHtml } = await import(`${ROOT}/lib/email.js`);
+  const { commsFor } = await import(`${ROOT}/data/team-comms.js`);
+  assert.match(signatureHtml(commsFor("growth").signature), /Samuel Bekele/);
+  // With AI on, the note hands over to Choumi's team instead.
+  process.env.ANTHROPIC_API_KEY = "test-key";
+  try {
+    const q2 = await (await contact.POST(req({ step: "quote" }, "10.0.0.9"))).json();
+    settle(q2.hash);
+    await contact.POST(req({ step: "send", hash: q2.hash, name: "Amy", email: "amy@example.com", topic: "safety", message: "Someone is phishing with your name on Telegram, please help." }, "10.0.0.9"));
+  } finally { delete process.env.ANTHROPIC_API_KEY; }
+  const mails2 = [];
+  for (const k of await keysWithPrefix("email:")) mails2.push(await getJSON(k));
+  const rcpt2 = mails2.find((m) => m.to === "amy@example.com");
+  assert.match(rcpt2.text, /Choumi's team reads every message/);
+  assert.ok(!rcpt2.text.includes("referred to the right department"));
+  return { id, receipt, hash: q.hash };
+});
+
+test("receipt download needs the number plus the payer's own payment hash", async () => {
+  const receiptApi = await import(`${ROOT}/api/receipt.js`);
+  const q = await (await contact.POST(req({ step: "quote" }, "10.0.0.10"))).json();
+  settle(q.hash);
+  const send = await contact.POST(req({ step: "send", hash: q.hash, name: "Nia", email: "nia@example.com", topic: "other", message: "Just saying hello and keep up the good work." }, "10.0.0.10"));
+  const { receipt } = await send.json();
+  const good = await receiptApi.GET(new Request(`https://altradits.test/api/receipt?no=${receipt}&h=${q.hash}`));
+  assert.equal(good.status, 200);
+  const body = await good.json();
+  assert.equal(body.no, receipt);
+  assert.equal(body.payer, "Nia");
+  const badHash = await receiptApi.GET(new Request(`https://altradits.test/api/receipt?no=${receipt}&h=${"1".repeat(64)}`));
+  assert.equal(badHash.status, 404);
+  const badNo = await receiptApi.GET(new Request(`https://altradits.test/api/receipt?no=ALT-9999&h=${q.hash}`));
+  assert.equal(badNo.status, 404);
+});
+
 test("unknown invoice hashes 404", async () => {
   const r = await contact.GET(get("0".repeat(64)));
   assert.equal(r.status, 404);
