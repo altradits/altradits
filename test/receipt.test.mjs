@@ -9,9 +9,14 @@ import path from "node:path";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "altradits-receipt-"));
 process.chdir(tmp);
+for (const k of ["ANTHROPIC_API_KEY", "RESEND_API_KEY", "UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "SMTP_HOST"]) delete process.env[k];
+process.env.ADMIN_TOKEN = "secret-admin";
 const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
 const receiptApi = await import(`${ROOT}/api/receipt.js`);
-const { setJSON } = await import(`${ROOT}/lib/store.js`);
+const admin = await import(`${ROOT}/api/admin.js`);
+const { setJSON, getJSON } = await import(`${ROOT}/lib/store.js`);
+const postAdmin = (body) => admin.POST(new Request("https://altradits.test/api/admin", { method: "POST",
+  headers: { Authorization: `Bearer ${process.env.ADMIN_TOKEN}`, "Content-Type": "application/json" }, body: JSON.stringify(body) }));
 
 const H1 = "a".repeat(64);
 const H2 = "b".repeat(64);
@@ -58,6 +63,25 @@ test("the statement shows the year-tagged number for pre-year receipts", async (
   const rows = (await statement()).payments.filter((p) => p.type === "contact");
   assert.equal(rows.find((p) => p.payer === "Nia").receipt, "ALT-2026-0001");
   assert.equal(rows.find((p) => p.payer === "Ruth").receipt, "ALT-2026-0007");
+});
+
+test("resend re-sends the corrected finance email for a pre-year receipt", async () => {
+  const r = await postAdmin({ action: "contact_resend", id: "m2" });
+  assert.equal(r.status, 200);
+  const m = await getJSON("contact:msg:m2");
+  assert.equal(m.resends.length, 1);
+  const { listIds } = await import(`${ROOT}/lib/store.js`);
+  const mails = [];
+  for (const id of await listIds("emails", 50)) mails.push(await getJSON(`email:${id}`));
+  const sent = mails.find((e) => e.to === "nia@example.com");
+  assert.ok(sent, "payer emailed");
+  assert.ok(sent.from.includes("finance@altradits.com"), "from finance");
+  assert.ok(sent.subject.includes("ALT-2026-0001"), "subject carries the year-tagged number");
+});
+
+test("resend refuses unknown messages and a second resend within the hour", async () => {
+  assert.equal((await postAdmin({ action: "contact_resend", id: "nope" })).status, 404);
+  assert.equal((await postAdmin({ action: "contact_resend", id: "m2" })).status, 429);
 });
 
 test("wrong hash, unknown number and malformed numbers 404", async () => {

@@ -509,10 +509,21 @@ function openReceipt(i) {
   const via = { onchain: "Bitcoin on-chain", lightning: "Lightning" }[x.channel] || String(x.channel || "—");
   $("#rcptBody").innerHTML = [["Date", String(x.at).replace("T", " ").slice(0, 16) + " UTC"], ["For", x.what], ["Amount", satsKsh(x.sats)], ["Paid by", x.payer || "—"], ["Via", via], ["Received by", "Altradits · altradits.com"]]
     .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
+  $("#rcptResend").hidden = x.type !== "contact";
+  $("#rcptResend").dataset.id = x.type === "contact" ? (x.id || "") : "";
   $("#rcpt").showModal();
 }
 $("#rcptClose").addEventListener("click", () => $("#rcpt").close());
 $("#rcptPrint").addEventListener("click", () => window.print());
+$("#rcptResend").addEventListener("click", async () => {
+  const id = $("#rcptResend").dataset.id;
+  if (!id) return;
+  if (!confirm("Re-send this receipt email from finance with the current receipt number and link?")) return;
+  try {
+    await api("", { action: "contact_resend", id });
+    toast("Receipt re-sent from finance.");
+  } catch (err) { toast(err.message, true, 6000); }
+});
 
 // Choumi Yakunte tab: Deadman's Switch, department power buttons, AI status,
 // the 5 departments, approvals waiting for Stanley, learning engine, and settling-in report.
