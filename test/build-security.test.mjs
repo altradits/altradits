@@ -199,6 +199,14 @@ test("site copy uses no em-dashes (house style: a full stop, comma or colon read
   for (const f of targets) assert.doesNotMatch(read(f), /—/, `${f}: replace the em-dash with a full stop, comma or colon`);
 });
 
+test("visitors reach us through /contact: no hello@ address on public pages", () => {
+  for (const f of fs.readdirSync(root).filter((x) => x.endsWith(".html") && x !== "admin.html")) {
+    assert.doesNotMatch(read(f), /hello@altradits\.com/, `${f}: link /contact (with ?topic=) instead of the email address`);
+  }
+  assert.equal((read("admin.html").match(/hello@altradits\.com/g) || []).length, 1, "only the receipt letterhead keeps the business address");
+  assert.match(read("llms.txt"), /altradits\.com\/contact/, "llms.txt points at the contact form");
+});
+
 test("publicity: money keywords in the homepage title, large-image cards with the wallet screenshot, honest app schema", () => {
   const home = read("index.html");
   for (const w of ["wallet", "bitcoin", "free"]) {
