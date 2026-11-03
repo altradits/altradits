@@ -164,7 +164,7 @@ function renderChain(D) {
 const BC1Q = /^bc1q[02-9ac-hj-np-z]{38,58}$/;
 $("#chAddrShow").addEventListener("click", async () => {
   const pasted = $("#chAddrPaste").value.trim();
-  if (!BC1Q.test(pasted)) { $("#chAddrErr").textContent = "That isn't a bc1q address. On the Mac run lncli newaddress p2wkh and paste the whole address."; return; }
+  if (!BC1Q.test(pasted)) { $("#chAddrErr").textContent = "That isn't a bc1q address. On the Mac run lncli --lnddir=$HOME/.lnd-altradits --network=mainnet newaddress p2wkh and paste the whole address."; return; }
   $("#chAddrErr").textContent = "";
   const btn = $("#chAddrShow"); btn.disabled = true;
   try {
@@ -439,7 +439,7 @@ const VERIFY = [
   ["On-chain balance", "ln-ro walletbalance | jq .confirmed_balance"],
   ["Coins (UTXOs)", "ln-ro listunspent | jq '.utxos | length'"],
   ["Each coin: address, size, confirmations", "ln-ro listunspent | jq '.utxos[] | {address, amount_sat, confirmations}'"],
-  ["Make a fresh receive address", "lncli newaddress p2wkh"],
+  ["Make a fresh receive address", "lncli --lnddir=$HOME/.lnd-altradits --network=mainnet newaddress p2wkh"],
   ["Find each channel's close ID", "ln-ro listchannels | jq -r '.channels[] | [.peer_alias, .channel_point] | @tsv'"],
   ["Close one channel (add --force if stuck)", "lncli closechannel <CHANNEL_POINT>"],
   ["Track closing channels and unlock waits", "ln-ro pendingchannels | jq '{limbo: .total_limbo_balance, closing: [.pending_closing_channels[].channel.channel_point], force: [.pending_force_closing_channels[] | {cp: .channel.channel_point, blocks_left: .blocks_til_maturity}]}'"],
