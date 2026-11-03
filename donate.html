@@ -36,12 +36,13 @@ body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtr
 a{color:var(--blue)}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
-.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0;padding:1.1rem 0;flex-wrap:wrap;row-gap:.35rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0 -1rem;padding:.8rem 1rem;flex-wrap:wrap;row-gap:.5rem;position:sticky;top:0;z-index:50;background:rgba(238,242,246,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .top img{height:2.5rem;width:auto;display:block}
-.topnav{display:flex;gap:1.1rem;flex-wrap:wrap;row-gap:.2rem}
-.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.35rem 0}
-.topnav a:hover,.topnav a[aria-current]{color:var(--ink)}
-@media (max-width:420px){.topnav{gap:.75rem}.topnav a{font-size:.9rem}.top img{height:1.9rem}}
+.topnav{display:flex;gap:.35rem;flex-wrap:wrap;row-gap:.35rem;align-items:center}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.45rem .95rem;border-radius:99px}
+.topnav a:hover{color:var(--ink);background:rgba(15,27,45,.08)}
+.topnav a[aria-current]{color:#fff;background:var(--ink)}
+@media (max-width:420px){.topnav{gap:.25rem}.topnav a{font-size:.9rem;padding:.4rem .7rem}.top img{height:1.9rem}}
 .hero{padding:2.25rem 0 1.5rem}
 .hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem}
 .hero h1 em{font-style:normal;color:var(--btc-text)}
@@ -72,7 +73,7 @@ textarea{font:12px ui-monospace,Menlo,monospace}
 .qr{max-width:16rem;background:#fff;padding:.5rem;border-radius:.6rem;margin:1rem 0 .5rem}.qr svg{display:block;width:100%;height:auto}
 .addr{font-family:ui-monospace,Menlo,monospace;overflow-wrap:anywhere}
 .err{color:#B42318}
-.topnav a.launch{background:var(--btc);color:var(--ink);padding:.35rem .9rem;border-radius:99px}
+.topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
 .topnav a.launch:hover{color:var(--ink);background:#ffa94d}
 </style>
 </head>
