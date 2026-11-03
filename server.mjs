@@ -11,6 +11,7 @@ import zlib from "node:zlib";
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
 const PORT = Number(process.env.PORT) || 3000;
 const PROD = process.env.NODE_ENV === "production";
+const ROOT_REAL = (() => { try { return fs.realpathSync(ROOT); } catch { return ROOT; } })();
 
 // Minimal .env loader (no dependency). In production prefer the panel's
 // environment variables; a .env here would sit inside public_html.
@@ -40,7 +41,7 @@ const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\
 // so other subdomains such as mail are unaffected). COOP: no other site keeps a handle
 // on our windows.
 const SECURITY = { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "SAMEORIGIN",
-  "Strict-Transport-Security": "max-age=31536000", "Cross-Origin-Opener-Policy": "same-origin" };
+  "Strict-Transport-Security": "max-age=31536000", "Cross-Origin-Opener-Policy": "same-origin", "Permissions-Policy": "camera=(), microphone=(), geolocation=()" };
 
 // Pages that show client or admin data get a Content Security Policy: only our
 // own scripts (and each page's inline script, by hash) can run, so even if some
@@ -64,6 +65,9 @@ function cspFor(file) {
 const COMPRESSIBLE = /\.(html|js|css|svg|json|xml|txt)$/;
 const packed = new Map();
 function sendStatic(req, res, file, headers) {
+  // A symlink inside a public folder must never reach outside the site.
+  try { if (!fs.realpathSync(file).startsWith(ROOT_REAL + path.sep)) { res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found"); return; } }
+  catch { /* missing: the stat below answers 404 */ }
   let st;
   try { st = fs.statSync(file); } catch { res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found"); return; }
   const etag = `W/"${st.size.toString(36)}-${Math.floor(st.mtimeMs).toString(36)}"`;
@@ -92,6 +96,13 @@ function sendStatic(req, res, file, headers) {
 const YEBENTE_CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 
 function publicUrl(req) {
+  // On the live server a visitor's Host headers must never decide the URL's
+  // host: routing only needs the path, and self-referral filtering uses our own
+  // host. Only a developer's machine trusts the request's headers.
+  if (SERVER) {
+    const host = (process.env.SITE_URL || "https://altradits.com").replace(/^https?:\/\//, "").replace(/\/.*$/, "").trim() || "altradits.com";
+    return new URL(req.url, `https://${host}`);
+  }
   const proto = (req.headers["x-forwarded-proto"] || (req.socket.encrypted ? "https" : "http")).split(",")[0].trim();
   const host = (req.headers["x-forwarded-host"] || req.headers.host || `localhost:${PORT}`).split(",")[0].trim();
   return new URL(req.url, `${proto}://${host}`);
@@ -117,7 +128,7 @@ const server = http.createServer(async (req, res) => {
       const limit = 100_000;
       for await (const c of req) { size += c.length; if (size > limit) { res.writeHead(413, { "Content-Type": "application/json" }).end('{"error":"That file is too large."}'); return; } chunks.push(c); }
       const request = new Request(url, {
-        method: req.method, headers: req.headers,
+        method: req.method, headers: { ...req.headers, "x-remote-addr": req.socket.remoteAddress || "" },
         body: ["GET", "HEAD"].includes(req.method) ? undefined : Buffer.concat(chunks),
       });
       const response = await handler(request);
@@ -133,11 +144,13 @@ const server = http.createServer(async (req, res) => {
       res.end(Buffer.from(await response.arrayBuffer()));
       return;
     }
+    // Static content answers only GET and HEAD; state changes live under /api/.
+    if (req.method !== "GET" && req.method !== "HEAD") { res.writeHead(405).end("Method not allowed"); return; }
     // handle@altradits.com: Lightning address lookups go to Ye₿ente's wallets.
     const lnaddr = url.pathname.match(/^\/\.well-known\/lnurlp\/([a-z0-9._-]{3,20})$/i);
     if (lnaddr && req.method === "GET") {
       const { GET } = await import("./api/yebente.js");
-      const r = await GET(new Request(new URL(`/api/yebente/lnurlp/${lnaddr[1].toLowerCase()}`, url), { headers: req.headers }));
+      const r = await GET(new Request(new URL(`/api/yebente/lnurlp/${lnaddr[1].toLowerCase()}`, url), { headers: { ...req.headers, "x-remote-addr": req.socket.remoteAddress || "" } }));
       res.writeHead(r.status, { ...SECURITY, ...Object.fromEntries(r.headers) }).end(Buffer.from(await r.arrayBuffer()));
       return;
     }
@@ -161,7 +174,7 @@ const server = http.createServer(async (req, res) => {
     const headers = { ...SECURITY, "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" };
     if (rel === "/admin.html") Object.assign(headers, { "X-Robots-Tag": "noindex", "Content-Security-Policy": cspFor(file) });
     // Ye₿ente: the same policy as yebente/public/.htaccess (Apache serves it in production).
-    if (rel === "/yebente/app/index.html") Object.assign(headers, { "Content-Security-Policy": YEBENTE_CSP, "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer" });
+    if (rel === "/yebente/app/index.html") Object.assign(headers, { "Content-Security-Policy": YEBENTE_CSP, "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer", "Permissions-Policy": "camera=(self), microphone=(), geolocation=()" });
     // Font files never change under the same name: keep them a year.
     headers["Cache-Control"] = rel.endsWith(".woff2") || rel.startsWith("/yebente/app/assets/") ? "public, max-age=31536000, immutable" : rel.startsWith("/assets/") || rel.startsWith("/yebente/app/fonts/") || rel.startsWith("/yebente/app/icons/") ? "public, max-age=86400" : "no-cache";
     if (rel.endsWith(".html")) import("./lib/visits.js").then((v) => v.recordVisit(req, url, rel)).catch(() => {});
