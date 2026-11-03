@@ -506,6 +506,14 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div id="contactInbox"></div>
   </section>
 
+  <section class="panel" aria-labelledby="hReplies">
+    <h2 id="hReplies">Reply screening</h2>
+    <div class="learn"><p>Paste any reply from the mailbox before acting on it. Links, code, scripts, secrets and instructions aimed at our agents put it on hold and log it in the Security watch. Never open, run or follow anything from a held reply.</p></div>
+    <div class="row"><input id="replyFrom" type="email" placeholder="Their email address" autocomplete="off" style="max-width:22rem"><button type="button" class="btn primary" id="replyScreenBtn">Screen reply</button></div>
+    <textarea id="replyText" rows="4" placeholder="Paste the reply text here" style="width:100%;max-width:44rem"></textarea>
+    <div id="replyInbox" style="margin-top:1rem"></div>
+  </section>
+
   <section class="panel" aria-labelledby="hApprovals">
     <h2 id="hApprovals">Approvals waiting for Stanley</h2>
     <div class="learn"><p>Nothing goes out in your name without your approval. Draft emails, community notices, and social drafts wait here until you approve or reject them.</p></div>
