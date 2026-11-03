@@ -5,9 +5,11 @@
 //   and staffed by 1-4 AI employees with a specific jurisdiction (what they
 //   own), so every thread has exactly one owner and nothing falls between
 //   departments. Stanley is the human backup on all of them.
-// - Only owner emails to altradits@gmail.com go out live until Stanley enables
-//   external department sender addresses; external drafts wait in the approval
-//   queue for Stanley's sign-off.
+// - External department mail is live: departments respond from their own address,
+//   but only after Stanley approves the draft, and every draft passes the
+//   outbound security filter twice (at queue time and at send time).
+// - Email replies are never acted on: each department below has one fixed
+//   rejection message that points the writer back to the contact form.
 // - stan@altradits.com is Choumi Yakunte (formerly Stan), Head of Quality and
 //   Internal Communications: the QA for every AI department.
 
@@ -306,6 +308,31 @@ export const COMMS = [
 ];
 
 export const commsFor = (id) => COMMS.find((c) => c.id === id) || COMMS.find((c) => c.id === "office");
+
+// Fixed rejection message per department for email replies. Every department
+// answers only through the contact form, so a reply to any department address
+// gets this message and nothing else: no quoted reply text, no free text, no
+// links except the form. Stanley sends it with one click from the reply inbox,
+// which is the approval; the security filter still screens it before it leaves.
+const FORM = "https://altradits.com/contact";
+const SHIELD = "Sending through the form costs $1 in sats, which keeps spam out and helps run our Bitcoin node.";
+const reject = (head, title, topic) => ({
+  subject: `Please write to us through the contact form`,
+  text: `Hi there,\n\nThis is ${head}, ${title} at Altradits. We do not read or act on replies to our emails, so your message about ${topic} did not reach the team.\n\nPlease send it again through our contact form at ${FORM} and choose the topic that fits best. ${SHIELD}\n\nThank you for understanding.`,
+});
+const REJECT = {
+  office: reject("Ruth Mwangi", "Head of Front Office", "a general enquiry"),
+  social: reject("Grace Wanjiru", "Head of Social and Content", "our stories or content"),
+  admin: reject("Daniel Tesfaye", "Head of Operations and Admin", "operations or admin"),
+  personal: reject("Faith Achieng", "Head of Personal Assistance", "scheduling or assistance"),
+  growth: reject("Samuel Bekele", "Head of Community Care", "your YeBente wallet or community help"),
+  tech: reject("Brian Otieno", "Head of Web, Automation and Bitcoin", "the node, the website or automation"),
+  orders: reject("Samuel Bekele", "Head of Receipts", "a receipt or payment confirmation"),
+  finance: reject("Peter Rotich", "Head of Finance and Books", "finance or the books"),
+  trust: reject("Catherine Haile", "Head of Trust, Privacy and Safety", "trust, privacy or safety"),
+  marketing: reject("Hannah Alemu", "Head of Marketing", "marketing"),
+};
+export const rejectFor = (id) => REJECT[id] || REJECT.office;
 
 // How information moves inside Altradits.
 export const INTERNAL = {

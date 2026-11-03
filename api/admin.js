@@ -320,13 +320,15 @@ export async function POST(request) {
     // A reply pasted from the mailbox: screened before anyone acts on it.
     const from = clean(body.from, 120);
     const text = clean(body.text, 4000);
+    const { commsFor } = await import("../data/team-comms.js");
+    const dept = commsFor(clean(body.dept, 40)).id;
     if (!EMAIL_RE.test(from)) return json({ error: "Who is it from? Give their email address." }, 400);
     if (text.length < 2) return json({ error: "Paste the reply text to screen it." }, 400);
     const { screen, describe, defang } = await import("../lib/screen.js");
     const s = screen(`${from}\n${text}`);
     const held = s.flagged ? { at: new Date().toISOString(), reasons: s.reasons } : null;
     const id = newId(8);
-    await setJSON(`reply:${id}`, { id, at: new Date().toISOString(), from, text, held, handled: false });
+    await setJSON(`reply:${id}`, { id, at: new Date().toISOString(), from, text, dept, held, handled: false });
     await pushId("reply:inbox", id);
     if (held) {
       const { recordAttack } = await import("../lib/attacks.js");
@@ -341,6 +343,26 @@ export async function POST(request) {
     m.handled = true;
     await setJSON(`reply:${m.id}`, m);
     return json({ ok: true });
+  }
+  if (body.action === "reply_reject") {
+    // Reject an email reply with the department's fixed message. The text is
+    // fixed (no quoted reply, no free text), Stanley's click is the approval,
+    // and the security filter still screens it before it leaves.
+    const m = await getJSON(`reply:${clean(body.id, 80)}`);
+    if (!m) return json({ error: "No such reply." }, 404);
+    if (m.rejected) return json({ error: "This reply was already rejected. Never send twice." }, 400);
+    const { commsFor, rejectFor } = await import("../data/team-comms.js");
+    const dept = commsFor(m.dept || "office").id;
+    const tpl = rejectFor(dept);
+    const { screenOutbound, describe } = await import("../lib/screen.js");
+    const s = screenOutbound(`${tpl.subject}\n${tpl.text}`);
+    if (s.flagged) return json({ error: `Security filter refused the rejection message: ${describe(s.reasons)}.` }, 400);
+    const { sendEmail } = await import("../lib/email.js");
+    const sent = await sendEmail({ to: m.from, subject: tpl.subject, text: tpl.text, kind: "wallet", fromDept: dept, sender: commsFor(dept).signature });
+    m.handled = true;
+    m.rejected = { at: new Date().toISOString(), dept, emailId: sent.id };
+    await setJSON(`reply:${m.id}`, m);
+    return json({ ok: true, emailId: sent.id });
   }
   if (body.action === "draft_decide") {
     const { decideDraft } = await import("../lib/stan.js");
