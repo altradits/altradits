@@ -140,11 +140,19 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 .inside h3{font-size:1rem;margin-bottom:.4rem}
 #toast{position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.6rem 1rem;border-radius:.6rem;font-weight:600;z-index:9}
 #toast.fail{background:var(--crit)}
-.mktPost{border-top:1px solid var(--line);padding:1rem 0}
-.mktPost:first-child{border-top:0;padding-top:0}
-.mktPost img{max-width:100%;height:auto;border-radius:.6rem;display:block;margin:.6rem 0}
-.mktPost .cap{background:var(--bg);border:1px solid var(--line);border-radius:.6rem;padding:.6rem .8rem;font-size:.93rem}
-.mktPost h3{margin:0 0 .2rem;font-size:1.02rem}
+.mktCal{border-collapse:collapse;margin:.6rem 0}
+.mktCal caption{text-align:left;padding-bottom:.3rem}
+.mktCal td,.mktCal th{border:1px solid var(--line);padding:.25rem .4rem;text-align:center;min-width:2.6rem}
+.mktCal td.muted{color:var(--muted)}
+.mktCal button{border:0;background:transparent;cursor:pointer;font:inherit;color:inherit;padding:.2rem .4rem;border-radius:.4rem}
+.mktCal button.mktSel{background:var(--ink);color:#fff;font-weight:700}
+.mktCal .dot{display:block;font-size:.65rem;color:var(--blue);line-height:1}
+.xpost{border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:.8rem 0;background:var(--paper)}
+.xpost .who{display:flex;gap:.6rem;align-items:center;margin-bottom:.4rem}
+.xpost .ava{width:2.2rem;height:2.2rem;border-radius:50%;background:var(--ink);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.xpost .cap{font-size:.95rem;margin:.4rem 0}
+.xpost img{max-width:100%;height:auto;border-radius:.6rem;display:block;margin:.6rem 0}
+.xpost .acts{color:var(--muted);font-size:.85rem}
 </style>
 </head>
 <body>
@@ -597,15 +605,16 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="pane" data-pane="marketing">
   <section class="panel" aria-labelledby="hMkt">
     <h2 id="hMkt">Marketing: the X schedule</h2>
-    <div class="learn"><p>One image plus one caption per post, drafted by the Growth team and approved by you. Pick a month, download each post's assets, and paste them into X. Nothing here posts anything by itself.</p></div>
-    <p class="sm"><label for="mktMonth">Month </label><select id="mktMonth"></select></p>
+    <div class="learn"><p>One image plus one caption per post, drafted by the Growth team and approved by you. Dotted days on the calendar carry a post: pick one to preview it as it will look on X, then download its assets and paste them in. Nothing here posts anything by itself.</p></div>
+    <p class="sm"><button type="button" class="btn" id="mktPrev">Prev</button> <label for="mktMonth">Month </label><select id="mktMonth"></select> <button type="button" class="btn" id="mktNext">Next</button></p>
+    <div id="mktCal" class="scroll"></div>
     <div id="mktPosts"></div>
   </section>
   <section class="panel" aria-labelledby="hMktTpl">
     <h2 id="hMktTpl">The reusable template</h2>
     <div class="learn"><p>Every month repeats this shape, so followers recognize an Altradits post on sight. A new month is a new data file plus images: the tab picks it up with no code change.</p></div>
     <ul class="sm">
-      <li><b>Image:</b> navy card, glowing coin left, white headline, red subline, altradits.com footer.</li>
+      <li><b>Image:</b> twelve unique layouts in one system: navy ground, white headline, red subline, altradits.com footer. Same family, never the same card twice.</li>
       <li><b>Caption:</b> two short sentences, the site link, then the tags. Never more than 280 characters.</li>
       <li><b>Tags:</b> standing <code>#Altradits</code> plus the month tag (<code>#YeBenteNovember</code>, <code>#YeBenteDecember</code>).</li>
       <li><b>Plain words:</b> no jargon, no em-dashes, written for people who have never used Bitcoin.</li>
@@ -657,6 +666,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn" id="rcptResend" hidden>Resend receipt email</button><button type="button" class="btn primary" id="rcptClose">Close</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=refresh2"></script>
+<script type="module" src="/assets/admin.js?v=refresh3"></script>
 </body>
 </html>
