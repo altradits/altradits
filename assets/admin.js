@@ -616,36 +616,74 @@ function usdF(n) { return `$${(Number(n) || 0).toFixed(4)}`; }
 
 // Marketing: the X schedule. Static data files (one manifest, one file per
 // month) rendered into downloadable posts. A new month needs no code change.
-let MKT_POSTS = [];
+let MKT_POSTS = [], MKT_MONTHS = [], MKT_MONTH = "", MKT_SEL = "";
 async function loadMarketing() {
-  const sel = $("#mktMonth"), box = $("#mktPosts");
-  let months;
+  const sel = $("#mktMonth");
   try {
-    months = await (await fetch("/assets/marketing/months.json")).json();
-  } catch (err) { box.innerHTML = `<p class="sm">Schedule unavailable: ${esc(err.message)}</p>`; return; }
-  sel.innerHTML = months.map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
-  sel.value = months[months.length - 1];
+    MKT_MONTHS = await (await fetch("/assets/marketing/months.json")).json();
+  } catch (err) { $("#mktPosts").innerHTML = `<p class="sm">Schedule unavailable: ${esc(err.message)}</p>`; return; }
+  sel.innerHTML = MKT_MONTHS.map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
+  sel.value = MKT_MONTHS[MKT_MONTHS.length - 1];
   sel.onchange = () => renderMarketing(sel.value);
-  await renderMarketing(sel.value);
+  $("#mktPrev").onclick = () => stepMonth(-1);
+  $("#mktNext").onclick = () => stepMonth(1);
+  await renderMarketing(MKT_MONTHS[MKT_MONTHS.length - 1]);
+}
+function stepMonth(d) {
+  const i = MKT_MONTHS.indexOf(MKT_MONTH) + d;
+  if (i < 0 || i >= MKT_MONTHS.length) return;
+  $("#mktMonth").value = MKT_MONTHS[i];
+  renderMarketing(MKT_MONTHS[i]);
 }
 async function renderMarketing(month) {
-  const box = $("#mktPosts");
+  MKT_MONTH = month;
   let data;
   try {
     data = await (await fetch(`/assets/marketing/${encodeURIComponent(month)}.json`)).json();
-  } catch (err) { box.innerHTML = `<p class="sm">Schedule unavailable: ${esc(err.message)}</p>`; return; }
+  } catch (err) { $("#mktPosts").innerHTML = `<p class="sm">Schedule unavailable: ${esc(err.message)}</p>`; return; }
   MKT_POSTS = data.posts || [];
-  box.innerHTML = MKT_POSTS.map((p, i) => {
-    const base = String(p.image).split("/").pop().replace(/\.jpg$/, "");
-    return `<div class="mktPost"><h3>${esc(p.date)}</h3>`
-      + `<img src="/${esc(p.image)}" alt="${esc(p.alt)}" loading="lazy">`
-      + `<p class="cap">${esc(p.caption)}</p>`
-      + `<p class="sm muted">${p.caption.length} / 280 characters</p>`
-      + `<div class="row"><a class="btn" href="/${esc(p.image)}" download="${esc(base)}.jpg">Download image</a>`
-      + `<button type="button" class="btn" data-mkt-copy="${i}">Copy caption</button>`
-      + `<button type="button" class="btn" data-mkt-txt="${i}">Download caption</button></div></div>`;
-  }).join("");
+  MKT_SEL = MKT_POSTS.length ? MKT_POSTS[0].date : "";
+  renderCalendar();
+  renderXPost();
 }
+function renderCalendar() {
+  const [y, m] = MKT_MONTH.split("-").map(Number);
+  const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+  const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const has = new Set(MKT_POSTS.map((p) => p.date));
+  let cells = "";
+  for (let i = 0; i < first; i++) cells += "<td></td>";
+  for (let d = 1; d <= days; d++) {
+    const iso = `${MKT_MONTH}-${String(d).padStart(2, "0")}`;
+    cells += has.has(iso)
+      ? `<td><button type="button" class="${iso === MKT_SEL ? "mktSel" : ""}" data-mkt-day="${iso}">${d}<span class="dot">●</span></button></td>`
+      : `<td class="muted">${d}</td>`;
+    if ((first + d) % 7 === 0) cells += "</tr><tr>";
+  }
+  $("#mktCal").innerHTML = `<table class="mktCal"><caption class="sm">${esc(MKT_MONTH)}: ${MKT_POSTS.length} posts</caption>`
+    + `<tr><th>Su</th><th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th></tr><tr>${cells}</tr></table>`;
+}
+function renderXPost() {
+  const box = $("#mktPosts");
+  const i = MKT_POSTS.findIndex((p) => p.date === MKT_SEL);
+  if (i < 0) { box.innerHTML = `<p class="sm muted">Pick a dotted day on the calendar to preview its post.</p>`; return; }
+  const p = MKT_POSTS[i];
+  const base = String(p.image).split("/").pop().replace(/\.jpg$/, "");
+  box.innerHTML = `<div class="xpost"><div class="who"><span class="ava">A</span><div><b>Altradits</b> <span class="muted">@altradits · ${esc(p.date)}</span></div></div>`
+    + `<p class="cap">${esc(p.caption)}</p>`
+    + `<img src="/${esc(p.image)}" alt="${esc(p.alt)}" loading="lazy">`
+    + `<p class="acts">Reply · Repost · Like &nbsp;·&nbsp; ${p.caption.length} / 280 characters</p>`
+    + `<div class="row"><a class="btn" href="/${esc(p.image)}" download="${esc(base)}.jpg">Download image</a>`
+    + `<button type="button" class="btn" data-mkt-copy="${i}">Copy caption</button>`
+    + `<button type="button" class="btn" data-mkt-txt="${i}">Download caption</button></div></div>`;
+}
+$("#mktCal").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-mkt-day]");
+  if (!b) return;
+  MKT_SEL = b.dataset.mktDay;
+  renderCalendar();
+  renderXPost();
+});
 $("#mktPosts").addEventListener("click", async (e) => {
   const c = e.target.closest("[data-mkt-copy]"), t = e.target.closest("[data-mkt-txt]");
   if (!c && !t) return;

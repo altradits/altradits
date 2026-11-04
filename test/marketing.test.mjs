@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -64,7 +65,25 @@ test("the Marketing tab, pane and renderer exist", () => {
   assert.match(html, /data-tab="marketing"/, "nav has the Marketing tab");
   assert.match(html, /data-pane="marketing"/, "page has the marketing pane");
   assert.match(html, /id="mktMonth"/, "pane has the month picker");
+  assert.match(html, /id="mktPrev"/, "pane has the previous-month button");
+  assert.match(html, /id="mktNext"/, "pane has the next-month button");
+  assert.match(html, /id="mktCal"/, "pane has the calendar grid");
   assert.match(html, /id="mktPosts"/, "pane has the posts container");
   const js = fs.readFileSync(path.join(ROOT, "assets", "admin.js"), "utf8");
   assert.match(js, /loadMarketing/, "renderer loads the schedule");
+  assert.match(js, /renderCalendar/, "renderer builds the calendar grid");
+  assert.match(js, /mktSel/, "renderer marks the selected day");
+  assert.match(js, /xpost/, "renderer shows posts as X cards");
+});
+
+test("every post template is unique", () => {
+  for (const m of months()) {
+    const data = monthFile(m);
+    const hashes = new Set();
+    for (const [i, p] of data.posts.entries()) {
+      const h = crypto.createHash("sha256").update(fs.readFileSync(path.join(ROOT, p.image))).digest("hex");
+      assert.ok(!hashes.has(h), `${m} post ${i + 1}: its template image differs from the rest`);
+      hashes.add(h);
+    }
+  }
 });
