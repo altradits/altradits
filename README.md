@@ -57,4 +57,6 @@ npm run build                         # rebuilds yebente/app (commit it too)
 
 MIT. See [LICENSE](LICENSE).
 
+Further reading: Nakamoto, S. (2008). Bitcoin: A Peer-to-Peer Electronic Cash System. https://bitcoin.org/bitcoin.pdf
+
 Built by Stanley Chege Thuita in Kisumu, Kenya: free tools, built in the open, for anyone online.
