@@ -148,6 +148,10 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 .mktCal button{border:0;background:transparent;cursor:pointer;font:inherit;color:inherit;padding:.2rem .4rem;border-radius:.4rem}
 .mktCal button.mktSel{background:var(--ink);color:#fff;font-weight:700}
 .mktCal .dot{display:block;font-size:.65rem;color:var(--blue);line-height:1}
+.mktTpl{display:grid;grid-template-columns:repeat(auto-fill,minmax(16rem,1fr));gap:1rem;margin-top:.6rem}
+.mktTpl figure{margin:0}
+.mktTpl img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:.6rem}
+.mktTpl figcaption{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin-top:.4rem;font-weight:600}
 .xpost{border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:.8rem 0;background:var(--paper)}
 .xpost .who{display:flex;gap:.6rem;align-items:center;margin-bottom:.4rem}
 .xpost .ava{width:2.2rem;height:2.2rem;border-radius:50%;background:var(--ink);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex:none}
@@ -630,6 +634,11 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <p class="sm"><button type="button" class="btn" id="mktPrev">Prev</button> <label for="mktMonth">Month </label><select id="mktMonth"></select> <button type="button" class="btn" id="mktNext">Next</button></p>
     <div id="mktCal" class="scroll"></div>
     <div id="mktPosts"></div>
+  </section>
+  <section class="panel" aria-labelledby="hMktBlank">
+    <h2 id="hMktBlank">Blank templates</h2>
+    <div class="learn"><p>Ten branded backgrounds with no words baked in, each one different. Download one, add the words when you post, reuse forever.</p></div>
+    <div id="mktTpl" class="scroll"></div>
   </section>
   <section class="panel" aria-labelledby="hMktTpl">
     <h2 id="hMktTpl">The reusable template</h2>
