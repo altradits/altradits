@@ -308,6 +308,14 @@ test("dashboard commands work as printed: reads use ln-ro, writes carry the node
   assert.doesNotMatch(read("docs/manual-lnd.md"), /lncli-ro/, "docs/manual-lnd.md: the shortcut is called ln-ro, as on the dashboard");
 });
 
+test("expressions stay safe: etags match without a regex, configured domains are fully quoted", () => {
+  const srv = read("server.mjs");
+  assert.match(srv, /etagMatches\(req\.headers\["if-none-match"\]/, "server.mjs: match etags with etagMatches from lib/http.js");
+  assert.doesNotMatch(srv, /split\(\/\\s/, "server.mjs: no regex split on a visitor header (a hostile one burns CPU)");
+  const yw = read("lib/ywallet.js");
+  assert.doesNotMatch(yw, /DOMAIN\(\)\.replace\(\/\\\./, "lib/ywallet.js: quote the domain with escapeRegExp, not a hand-rolled replace");
+});
+
 test("address QR: pasted text only, bc1q checked, capped, and no address-making key anywhere", () => {
   const ln = read("lib/lightning.js");
   assert.match(ln, /\^bc1q\[02-9ac-hj-np-z\]/, "lib/lightning.js: only bc1q-shaped text is encoded");

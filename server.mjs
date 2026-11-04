@@ -1,7 +1,7 @@
 // The whole site in one Node process: static pages + api/*.js handlers.
 // Production: HostAfrica "Setup Node.js App" (Passenger) starts it via app.cjs.
 // Local:      npm run dev, then open http://localhost:3000
-import { clientIp } from "./lib/http.js";
+import { clientIp, etagMatches } from "./lib/http.js";
 import http from "node:http";
 import fs from "node:fs";
 import crypto from "node:crypto";
@@ -75,7 +75,7 @@ function sendStatic(req, res, file, headers) {
   headers["Last-Modified"] = st.mtime.toUTCString();
   const compressible = COMPRESSIBLE.test(file) && st.size > 1024;
   if (compressible) headers.Vary = "Accept-Encoding";
-  if (String(req.headers["if-none-match"] || "").split(/\s*,\s*/).includes(etag)) { res.writeHead(304, headers).end(); return; }
+  if (etagMatches(req.headers["if-none-match"], etag)) { res.writeHead(304, headers).end(); return; }
   const accept = String(req.headers["accept-encoding"] || "");
   const enc = compressible ? (/\bbr\b/.test(accept) ? "br" : /\bgzip\b/.test(accept) ? "gzip" : null) : null;
   let body;
