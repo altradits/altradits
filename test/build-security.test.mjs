@@ -179,7 +179,7 @@ test("AI status names its provider and model", () => {
 
 test("no secrets committed: keys, tokens, macaroons or private keys in any tracked file", async () => {
   const { execFileSync } = await import("node:child_process");
-  const tracked = execFileSync("git", ["ls-files"], { cwd: root, encoding: "utf8" }).split("\n").filter((f) => f && !/\.(png|jpe?g|gif|ico|woff2?|ttf|pdf|zip)$/i.test(f) && !f.startsWith("yebente/app/assets/"));
+  const tracked = execFileSync("git", ["ls-files"], { cwd: root, encoding: "utf8" }).split("\n").filter((f) => f && !/\.(png|jpe?g|gif|ico|woff2?|ttf|pdf|zip|mp4|mov|webm|m4v)$/i.test(f) && !f.startsWith("yebente/app/assets/"));
   const PATTERNS = [
     ["Anthropic key", /sk-ant-[A-Za-z0-9_-]{20,}/],
     ["Resend key", /\bre_[A-Za-z0-9]{20,}/],

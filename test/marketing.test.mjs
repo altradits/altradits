@@ -74,6 +74,30 @@ test("the Marketing tab, pane and renderer exist", () => {
   assert.match(js, /renderCalendar/, "renderer builds the calendar grid");
   assert.match(js, /mktSel/, "renderer marks the selected day");
   assert.match(js, /xpost/, "renderer shows posts as X cards");
+  assert.match(js, /p\.video/, "renderer branches on the video key");
+  assert.match(js, /<video/, "video posts render a player, not a bare image");
+});
+
+test("every post video exists, and every month video is used", () => {
+  for (const m of months()) {
+    const data = monthFile(m);
+    const used = new Set();
+    for (const [i, p] of data.posts.entries()) {
+      if (!p.video) continue;
+      const who = `${m} post ${i + 1}`;
+      assert.match(p.video, /\.mp4$/, `${who}: video is an mp4`);
+      const full = path.join(ROOT, p.video);
+      assert.ok(fs.existsSync(full), `${who}: ${p.video} exists`);
+      assert.ok(fs.statSync(full).size > 10 * 1024, `${who}: video is not empty`);
+      used.add(path.basename(p.video));
+    }
+    const dir = path.join(DIR, m);
+    if (fs.existsSync(dir)) {
+      for (const f of fs.readdirSync(dir).filter((x) => x.endsWith(".mp4"))) {
+        assert.ok(used.has(f), `${m}: ${f} is referenced by a post`);
+      }
+    }
+  }
 });
 
 test("every post template is unique", () => {

@@ -762,11 +762,17 @@ function renderXPost() {
   if (i < 0) { box.innerHTML = `<p class="sm muted">Pick a dotted day on the calendar to preview its post.</p>`; return; }
   const p = MKT_POSTS[i];
   const base = String(p.image).split("/").pop().replace(/\.jpg$/, "");
+  const media = p.video
+    ? `<video src="/${esc(p.video)}" poster="/${esc(p.image)}" controls muted loop playsinline preload="metadata"></video>`
+    : `<img src="/${esc(p.image)}" alt="${esc(p.alt)}" loading="lazy">`;
+  const dl = p.video
+    ? `<a class="btn" href="/${esc(p.video)}" download="${esc(base)}.mp4">Download video</a>`
+    : `<a class="btn" href="/${esc(p.image)}" download="${esc(base)}.jpg">Download image</a>`;
   box.innerHTML = `<div class="xpost"><div class="who"><span class="ava">A</span><div><b>Altradits</b> <span class="muted">@altradits · ${esc(p.date)}</span></div></div>`
     + `<p class="cap">${esc(p.caption)}</p>`
-    + `<img src="/${esc(p.image)}" alt="${esc(p.alt)}" loading="lazy">`
+    + media
     + `<p class="acts">Reply · Repost · Like &nbsp;·&nbsp; ${p.caption.length} / 280 characters</p>`
-    + `<div class="row"><a class="btn" href="/${esc(p.image)}" download="${esc(base)}.jpg">Download image</a>`
+    + `<div class="row">${dl}`
     + `<button type="button" class="btn" data-mkt-copy="${i}">Copy caption</button>`
     + `<button type="button" class="btn" data-mkt-txt="${i}">Download caption</button></div></div>`;
 }
