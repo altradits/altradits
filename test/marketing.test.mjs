@@ -113,3 +113,24 @@ test("every post template is unique", () => {
     }
   }
 });
+
+test("the blank template gallery lists ten unique branded files", () => {
+  const list = JSON.parse(fs.readFileSync(path.join(DIR, "templates.json"), "utf8"));
+  assert.equal(list.length, 10, "ten reusable templates");
+  const hashes = new Set(), names = new Set();
+  for (const t of list) {
+    assert.match(t.file, /\.jpg$/, `${t.name}: template is a jpg`);
+    const full = path.join(ROOT, t.file);
+    assert.ok(fs.existsSync(full), `${t.name}: ${t.file} exists`);
+    assert.ok(fs.statSync(full).size > 10 * 1024, `${t.name}: template is not empty`);
+    const h = crypto.createHash("sha256").update(fs.readFileSync(full)).digest("hex");
+    assert.ok(!hashes.has(h), `${t.name}: differs from every other template`);
+    hashes.add(h);
+    assert.ok(!names.has(t.name), `${t.name}: name is used once`);
+    names.add(t.name);
+  }
+  const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
+  assert.match(html, /id="mktTpl"/, "pane has the templates gallery");
+  const js = fs.readFileSync(path.join(ROOT, "assets", "admin.js"), "utf8");
+  assert.match(js, /templates\.json", \{ cache: "no-store" \}/, "gallery loads fresh, never cached");
+});

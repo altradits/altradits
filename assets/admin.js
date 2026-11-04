@@ -721,6 +721,7 @@ async function loadMarketing() {
   $("#mktPrev").onclick = () => stepMonth(-1);
   $("#mktNext").onclick = () => stepMonth(1);
   await renderMarketing(MKT_MONTHS[MKT_MONTHS.length - 1]);
+  await loadTemplates();
 }
 function stepMonth(d) {
   const i = MKT_MONTHS.indexOf(MKT_MONTH) + d;
@@ -738,6 +739,20 @@ async function renderMarketing(month) {
   MKT_SEL = MKT_POSTS.length ? MKT_POSTS[0].date : "";
   renderCalendar();
   renderXPost();
+}
+// Blank templates: branded backgrounds with no words baked in. Download one,
+// add the words in the X composer or any editor, post. New files need only a
+// templates.json line: the gallery picks them up with no code change.
+async function loadTemplates() {
+  const box = $("#mktTpl");
+  let list;
+  try {
+    list = await (await fetch("/assets/marketing/templates.json", { cache: "no-store" })).json();
+  } catch (err) { box.innerHTML = `<p class="sm">Templates unavailable: ${esc(err.message)}</p>`; return; }
+  box.innerHTML = `<div class="mktTpl">` + list.map((t) =>
+    `<figure><img src="/${esc(t.file)}" alt="${esc(t.name)} blank template" loading="lazy">`
+    + `<figcaption>${esc(t.name)} <a class="btn" href="/${esc(t.file)}" download="${esc(String(t.file).split("/").pop())}">Download</a></figcaption></figure>`
+  ).join("") + `</div>`;
 }
 function renderCalendar() {
   const [y, m] = MKT_MONTH.split("-").map(Number);

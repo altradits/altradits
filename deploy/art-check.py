@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Marketing art check: every scheduled image is visible and the logo stands clear.
 
-Discovery follows assets/marketing/months.json, so new months, new folders and
-new file locations are picked up with no code change. Explicit paths may also
+Discovery follows assets/marketing/months.json plus templates.json, so new
+months, new templates and new file locations are picked up with no code
+change. Explicit paths may also
 be given to check new art before it ships:
   python3 deploy/art-check.py [FILE ...]
   python3 deploy/art-check.py --self-test   (prove the checker itself)
@@ -158,6 +159,11 @@ def discover():
             for key in ("image", "video"):
                 if p.get(key):
                     found.append((os.path.join(ROOT, p[key]), f"{m} post {i + 1} {key}"))
+    tpath = os.path.join(ROOT, "assets", "marketing", "templates.json")
+    if os.path.exists(tpath):
+        with open(tpath, encoding="utf-8") as f:
+            for t in json.load(f):
+                found.append((os.path.join(ROOT, t["file"]), f"template {t.get('name', '?')}"))
     return found
 
 
