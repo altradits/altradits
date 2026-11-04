@@ -8,7 +8,7 @@ Anthropic, behind the same budgets, power buttons and circuit breaker.
 - Built for the Meta Global AI Developer Hackathon, Oct 26 to Nov 4 2026.
 - Repo: https://github.com/altradits/altradits (this project).
 - Live site: https://altradits.com (the dashboard shows the active provider).
-- Demo video: link added at submission time (3 minutes, recorded Nov 4).
+- Demo video: https://youtu.be/3L0M9eW1qX4 (recorded Nov 4).
 
 ## Why this fits
 
@@ -83,7 +83,7 @@ Three PRs (#328, #329, #330), all committed Nov 4 2026:
 
 ## Submission checklist
 
-- [ ] Demo video recorded and linked above.
-- [ ] This PR merged (signed merge, CI green).
+- [x] Demo video recorded and linked above.
+- [x] Entry PRs merged (signed merges, CI green).
 - [ ] Submitted through the Cerebral Valley portal before Nov 4 9:00 PM ET.
-- [ ] Track: indie. Theme: Build for Your World.
+- [x] Track: indie. Theme: Build for Your World.
