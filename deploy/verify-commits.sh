@@ -23,8 +23,12 @@ set -u
 # 2026 past two more unsigned merges (ace037c, 0c85e9d): reviewed PRs with
 # green CI, but the sandboxed shell could not run ssh-keygen to sign them.
 # Signing now runs through deploy/ssh-sign.sh, so this should not recur.
+# Moved forward to f6d3936 on 4 Nov 2026 past one more unsigned merge
+# (91749cf): a reviewed PR with green CI, but merged with GitHub's
+# server-side merge button, which cannot carry the maintainer's SSH
+# signature. Reverted in f6d3936. Merges to main must use signed CLI merges.
 # Never move this backwards.
-TRUST_ROOT=0c85e9da6678adf2bfb84860f81420a70c8dd521
+TRUST_ROOT=f6d3936aa8f0c41a41f0c369c295343036caf70e
 REF="${1:-HEAD}"
 SIGNERS="${2:-.github/allowed_signers}"
 
