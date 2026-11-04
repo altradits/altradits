@@ -46,6 +46,7 @@ npm run build                         # rebuilds yebente/app (commit it too)
 - `docs/manual-lnd.md`: the Lightning node, keys and backups.
 - `docs/security-handbook.md`: how this project stays safe.
 - `docs/review-guide.md`: how changes are reviewed.
+- `docs/hackathon.md`: the Meta hackathon entry (Muse-powered agents).
 
 ## Contributing, security, conduct
 

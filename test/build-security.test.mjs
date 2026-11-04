@@ -165,6 +165,18 @@ test("every top-level folder is either public on purpose or denied to the web se
   assert.match(read("deploy/cron.sh"), /deny\.htaccess node_modules\/\.htaccess/, "dependencies stay unservable");
 });
 
+test("Meta client talks only to the configured Model API", () => {
+  const m = read("lib/meta.js");
+  assert.match(m, /https:\/\/api\.meta\.ai\/v1/, "default Model API base");
+  assert.match(m, /Authorization.*Bearer/, "Bearer key auth, never in the URL");
+  assert.doesNotMatch(m, /httpFetch\(`http/, "every call goes through BASE()");
+});
+
+test("AI status names its provider and model", () => {
+  assert.match(read("lib/ai.js"), /provider: aiProvider\(\), model: aiModel\(\)/, "aiStatus reports who is thinking");
+  assert.doesNotMatch(read("assets/admin.js"), /Anthropic key works/, "the dashboard shows the active provider, not a fixed name");
+});
+
 test("no secrets committed: keys, tokens, macaroons or private keys in any tracked file", async () => {
   const { execFileSync } = await import("node:child_process");
   const tracked = execFileSync("git", ["ls-files"], { cwd: root, encoding: "utf8" }).split("\n").filter((f) => f && !/\.(png|jpe?g|gif|ico|woff2?|ttf|pdf|zip)$/i.test(f) && !f.startsWith("yebente/app/assets/"));
