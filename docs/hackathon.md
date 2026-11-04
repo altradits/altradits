@@ -8,7 +8,7 @@ Anthropic, behind the same budgets, power buttons and circuit breaker.
 - Built for the Meta Global AI Developer Hackathon, Oct 26 to Nov 4 2026.
 - Repo: https://github.com/altradits/altradits (this project).
 - Live site: https://altradits.com (the dashboard shows the active provider).
-- Demo video: https://youtu.be/8K8YIr7vss0 (0:57, recorded Nov 4).
+- Demo video: https://youtu.be/3L0M9eW1qX4 (recorded Nov 4).
 
 ## Why this fits
 
