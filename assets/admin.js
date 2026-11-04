@@ -614,6 +614,60 @@ const FROZEN_LABELS = {
 
 function usdF(n) { return `$${(Number(n) || 0).toFixed(4)}`; }
 
+// Marketing: the X schedule. Static data files (one manifest, one file per
+// month) rendered into downloadable posts. A new month needs no code change.
+let MKT_POSTS = [];
+async function loadMarketing() {
+  const sel = $("#mktMonth"), box = $("#mktPosts");
+  let months;
+  try {
+    months = await (await fetch("/assets/marketing/months.json")).json();
+  } catch (err) { box.innerHTML = `<p class="sm">Schedule unavailable: ${esc(err.message)}</p>`; return; }
+  sel.innerHTML = months.map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
+  sel.value = months[months.length - 1];
+  sel.onchange = () => renderMarketing(sel.value);
+  await renderMarketing(sel.value);
+}
+async function renderMarketing(month) {
+  const box = $("#mktPosts");
+  let data;
+  try {
+    data = await (await fetch(`/assets/marketing/${encodeURIComponent(month)}.json`)).json();
+  } catch (err) { box.innerHTML = `<p class="sm">Schedule unavailable: ${esc(err.message)}</p>`; return; }
+  MKT_POSTS = data.posts || [];
+  box.innerHTML = MKT_POSTS.map((p, i) => {
+    const base = String(p.image).split("/").pop().replace(/\.jpg$/, "");
+    return `<div class="mktPost"><h3>${esc(p.date)}</h3>`
+      + `<img src="/${esc(p.image)}" alt="${esc(p.alt)}" loading="lazy">`
+      + `<p class="cap">${esc(p.caption)}</p>`
+      + `<p class="sm muted">${p.caption.length} / 280 characters</p>`
+      + `<div class="row"><a class="btn" href="/${esc(p.image)}" download="${esc(base)}.jpg">Download image</a>`
+      + `<button type="button" class="btn" data-mkt-copy="${i}">Copy caption</button>`
+      + `<button type="button" class="btn" data-mkt-txt="${i}">Download caption</button></div></div>`;
+  }).join("");
+}
+$("#mktPosts").addEventListener("click", async (e) => {
+  const c = e.target.closest("[data-mkt-copy]"), t = e.target.closest("[data-mkt-txt]");
+  if (!c && !t) return;
+  const p = MKT_POSTS[Number(c ? c.dataset.mktCopy : t.dataset.mktTxt)];
+  if (!p) return;
+  if (c) {
+    try { await navigator.clipboard.writeText(p.caption); }
+    catch {
+      const ta = document.createElement("textarea");
+      ta.value = p.caption; document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); ta.remove();
+    }
+    toast("Caption copied.");
+  } else {
+    const base = String(p.image).split("/").pop().replace(/\.jpg$/, "");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([p.caption], { type: "text/plain" }));
+    a.download = `${base}.txt`; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    toast("Caption downloaded.");
+  }
+});
 async function loadChoumi() {
   let C; try { C = await api("?view=choumi"); } catch (err) { $("#dmReason").textContent = err.message; return; }
   const dm = C.deadman || {}, ai = C.ai || {}, status = ai.status || {};
@@ -970,7 +1024,7 @@ async function load() {
   OVERVIEW = D;
   renderChecklist(D); renderStan(D.stan); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderGlossary();
   renderVerify();
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi()]);
+  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing()]);
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
 }
 token ? load() : showLogin();

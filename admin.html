@@ -140,6 +140,11 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 .inside h3{font-size:1rem;margin-bottom:.4rem}
 #toast{position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.6rem 1rem;border-radius:.6rem;font-weight:600;z-index:9}
 #toast.fail{background:var(--crit)}
+.mktPost{border-top:1px solid var(--line);padding:1rem 0}
+.mktPost:first-child{border-top:0;padding-top:0}
+.mktPost img{max-width:100%;height:auto;border-radius:.6rem;display:block;margin:.6rem 0}
+.mktPost .cap{background:var(--bg);border:1px solid var(--line);border-radius:.6rem;padding:.6rem .8rem;font-size:.93rem}
+.mktPost h3{margin:0 0 .2rem;font-size:1.02rem}
 </style>
 </head>
 <body>
@@ -157,7 +162,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div class="row"><label class="switch"><input type="checkbox" id="explain" checked> Explain everything</label><span class="sm muted" id="checked"></span><button type="button" class="btn" id="refresh"><span class="spin" aria-hidden="true">↻</span>Refresh</button><button type="button" class="btn" id="logout">Sign out</button></div>
   </header>
 
-  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="learn">Learn</button></nav>
+  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
   <div class="pane" data-pane="overview">
   <section class="panel" aria-labelledby="hCheck">
     <h2 id="hCheck">Today's checklist</h2>
@@ -587,6 +592,25 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       <div id="choumiSettling" class="sm"></div>
     </section>
   </div>
+  </div>
+
+  <div class="pane" data-pane="marketing">
+  <section class="panel" aria-labelledby="hMkt">
+    <h2 id="hMkt">Marketing: the X schedule</h2>
+    <div class="learn"><p>One image plus one caption per post, drafted by the Growth team and approved by you. Pick a month, download each post's assets, and paste them into X. Nothing here posts anything by itself.</p></div>
+    <p class="sm"><label for="mktMonth">Month </label><select id="mktMonth"></select></p>
+    <div id="mktPosts"></div>
+  </section>
+  <section class="panel" aria-labelledby="hMktTpl">
+    <h2 id="hMktTpl">The reusable template</h2>
+    <div class="learn"><p>Every month repeats this shape, so followers recognize an Altradits post on sight. A new month is a new data file plus images: the tab picks it up with no code change.</p></div>
+    <ul class="sm">
+      <li><b>Image:</b> navy card, glowing coin left, white headline, red subline, altradits.com footer.</li>
+      <li><b>Caption:</b> two short sentences, the site link, then the tags. Never more than 280 characters.</li>
+      <li><b>Tags:</b> standing <code>#Altradits</code> plus the month tag (<code>#YeBenteNovember</code>, <code>#YeBenteDecember</code>).</li>
+      <li><b>Plain words:</b> no jargon, no em-dashes, written for people who have never used Bitcoin.</li>
+    </ul>
+  </section>
   </div>
 
   <div class="pane" data-pane="learn">
