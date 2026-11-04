@@ -62,6 +62,57 @@ function toast(text, fail = false, ms = 2600) {
   el.textContent = text; el.className = fail ? "fail" : ""; el.hidden = false;
   clearTimeout(toastTimer); if (ms) toastTimer = setTimeout(() => { el.hidden = true; }, ms);
 }
+// "Updated 14:02:11" under a KPI group, so stale numbers never pass as fresh.
+function stamp(id) { const el = $(id); if (el) el.textContent = `Updated ${new Date().toLocaleTimeString()}`; }
+
+// Full-width banner when the node can't be read: stale numbers must shout.
+function nodeBannerHtml(err) {
+  return `<p style="margin:0"><b>The node can't be read${err ? `: ${esc(err)}` : ""}.</b> Balances below may be stale or missing. Wake the Mac, make sure LND is running, then press Refresh.</p>`;
+}
+// end nodeBannerHtml
+
+// Recent alerts and reports Stan emailed: subject, when, and whether it went out.
+function stanHistoryHtml(alerts) {
+  if (!alerts || !alerts.length) return '<p class="muted sm">No alerts or reports emailed yet.</p>';
+  return `<table><thead><tr><th>When</th><th>Subject</th><th>Status</th></tr></thead><tbody>${alerts.map((a) =>
+    `<tr><td>${esc(ago(a.at))}</td><td>${esc(a.subject)}</td><td>${/^sent/.test(a.status || "") ? "Sent" : esc(a.status || "–")}</td></tr>`).join("")}</tbody></table>`;
+}
+// end stanHistoryHtml
+
+// Is the off-machine copy of channel.backup fresh? Compares the marked copy
+// against today's channel set: any open or close since then makes it stale.
+function backupHtml(B) {
+  if (!B || (!B.markedAt && B.nodeRead === false)) return '<p class="muted sm">Unknown: the node could not be read, and no copy was ever marked.</p>';
+  if (!B.markedAt) return '<p class="sm">No copy marked yet. Copy the file, then press <i>I copied the backup</i> so the dashboard can watch it.</p>';
+  const head = B.nodeRead === false
+    ? `<p class="sm">Last copy ${esc(ago(B.markedAt))}. The node could not be read just now, so freshness is unknown.</p>`
+    : B.stale
+      ? `<p class="sm"><b class="err">Stale.</b> Last copy ${esc(ago(B.markedAt))}, but the channels changed since: `
+        + `${B.opened.length ? `${B.opened.length} opened` : ""}${B.opened.length && B.closed.length ? ", " : ""}${B.closed.length ? `${B.closed.length} closed` : ""}. Copy again.</p>`
+      : `<p class="sm">Fresh. Last copy ${esc(ago(B.markedAt))} covers all ${num(B.current)} open channel${B.current === 1 ? "" : "s"}.</p>`;
+  const det = (B.opened.length || B.closed.length) && B.nodeRead !== false
+    ? `<p class="sm muted">${B.opened.map((p) => `opened <code>${esc(p)}</code>`).join(", ")}${B.opened.length && B.closed.length ? "; " : ""}${B.closed.map((p) => `closed <code>${esc(p)}</code>`).join(", ")}</p>` : "";
+  return head + det;
+}
+// end backupHtml
+
+// Channels whose peer is offline right now: flagged inactive, or absent from the peer list.
+function offlineChannels(channels, peers) {
+  const on = new Set((peers || []).map((p) => p.pubkey).filter(Boolean));
+  return (channels || []).filter((c) => c.active === false || (c.pubkey && !on.has(c.pubkey)));
+}
+// end offlineChannels
+
+// Routing fees earned per day, oldest first: one bar per day.
+function trendHtml(trend) {
+  if (!trend || !trend.length) return '<p class="muted sm">No routing history: the node could not be read.</p>';
+  const max = Math.max(1, ...trend.map((d) => d.fees));
+  const bars = trend.map((d) => `<div style="flex:1;min-width:2px;background:${d.fees ? "var(--btc)" : "var(--line)"};height:${Math.max(3, Math.round((d.fees / max) * 100))}%" title="${esc(d.day)}: ${esc(num(d.fees))} sats (${d.count})"></div>`).join("");
+  const total = trend.reduce((t, d) => t + d.fees, 0);
+  return `<div style="display:flex;align-items:flex-end;gap:2px;height:90px" role="img" aria-label="Routing fees per day, ${esc(num(total))} sats total">${bars}</div>`
+    + `<p class="sm muted">${esc(num(total))} sats over ${trend.length} day${trend.length === 1 ? "" : "s"}. Hover a bar for its day.</p>`;
+}
+// end trendHtml
 async function api(path, body) {
   try {
     const res = await fetch("/api/admin" + path, { method: body ? "POST" : "GET",
@@ -102,25 +153,30 @@ $("#refresh").addEventListener("click", async () => {
 // Today's checklist: what an operator checks daily. true = fine, false = act, null = only Stanley can check.
 function renderChecklist(D, L) {
   const N = D.node && !D.node.error ? D.node : null, Y = D.yebente && !D.yebente.error ? D.yebente : null, chain = D.details?.onchain;
+  const B = D.backup, bkOk = !B || !B.markedAt ? null : B.nodeRead === false ? null : !B.stale;
+  const bkWhy = !B || !B.markedAt ? "Copy channel.backup to a safe place, then press “I copied the backup” so the dashboard can watch it."
+    : B.nodeRead === false ? `Last copy ${ago(B.markedAt)}; freshness unknown until the node can be read.`
+    : B.stale ? `Last copy ${ago(B.markedAt)}, but channels changed since. Copy again or new channels are unrecoverable.`
+    : `Last copy ${ago(B.markedAt)} covers all ${B.current} open channel${B.current === 1 ? "" : "s"}.`;
   const items = [
     [N ? N.synced && (N.behind ?? 0) <= 2 : false, "Node in step with the chain", N ? `Block ${num(N.blockHeight)}, ${N.behind ?? "?"} behind the tip.` : "The website can't read the node."],
     [N ? N.activeChannels > 0 : false, "At least one channel active", N ? `${N.activeChannels} active. With none, Lightning payments can't move.` : "Unknown until the node can be read."],
     [Y ? Y.covered : null, "Node can pay every Ye₿ente wallet", Y ? `Owed ${satsF(Y.owedSats)}; can send ${satsF(D.liquidity.outboundSats)}.` : "Wallets are off, or the balance can't be read."],
     [chain ? chain.confirmed >= 10_000 : null, "Some sats on-chain for emergencies", chain ? `${satsF(chain.confirmed)} on-chain. Keep about 10,000+ to pay fees if a channel ever closes by force.` : "Needs the read-only key to check."],
     [D.stan ? Date.now() - Date.parse(D.stan.at) < 36 * 3600e3 : null, "Stan's report arrived", D.stan ? `Last one ${ago(D.stan.at)}.` : "The first goes out tomorrow morning."],
-    [null, "Channel backup copied off this machine", "After every channel opens or closes, copy channel.backup to a safe place. With your 24 words, it gets your channel funds back."],
+    [bkOk, "Channel backup copy is fresh", bkWhy],
     [null, "24 recovery words safe on paper", "Never typed into a website or a phone. Only the node's own setup asks for them."],
   ];
-  const where = ["node:hNode", "channels:hChan", "money:hPower", "money:hChain", "overview:hStan"];
-  items.slice(0, 5).forEach(([ok, title, why], i) => issue(`check${i}`, ok === false ? (i < 3 ? "crit" : "warn") : null, `${title}: ${why}`, where[i]));
+  const where = ["node:hNode", "channels:hChan", "money:hPower", "money:hChain", "overview:hStan", "money:hBackup"];
+  items.slice(0, 6).forEach(([ok, title, why], i) => issue(`check${i}`, ok === false ? (i < 3 || i === 5 ? "crit" : "warn") : null, `${title}: ${why}`, where[i]));
   $("#checklist").innerHTML = items.map(([ok, title, why]) => `<li><span class="m ${ok === null ? "u" : ok ? "y" : "n"}" aria-label="${ok === null ? "check yourself" : ok ? "fine" : "needs attention"}">${ok === null ? "○" : ok ? "✓" : "✗"}</span><span><b>${esc(title)}</b><br><span class="sm muted">${esc(why)}</span></span></li>`).join("");
 }
 
 // 1. Node and chain: block height against the public tip, sync, peers and channels.
 function renderNode(D) {
   const N = D.node;
-  if (!N) { $("#nodeKpis").innerHTML = ""; $("#nodeNote").innerHTML = "The node isn't connected: set <code>LND_REST_URL</code> and the macaroons in DirectAdmin."; return; }
-  if (N.error) { $("#nodeKpis").innerHTML = D.chainTip ? kpi("Chain tip (mempool.space)", num(D.chainTip), "", "The newest block the rest of the world sees.") : ""; $("#nodeNote").textContent = N.error; return; }
+  if (!N) { $("#nodeKpis").innerHTML = ""; $("#nodeNote").innerHTML = "The node isn't connected: set <code>LND_REST_URL</code> and the macaroons in DirectAdmin."; stamp("#nodeAge"); return; }
+  if (N.error) { $("#nodeKpis").innerHTML = D.chainTip ? kpi("Chain tip (mempool.space)", num(D.chainTip), "", "The newest block the rest of the world sees.") : ""; $("#nodeNote").textContent = N.error; stamp("#nodeAge"); return; }
   $("#nodeKpis").innerHTML =
       kpi("Block height", num(N.blockHeight), "", "How many blocks your node has checked since 2009.")
     + kpi("Chain tip", D.chainTip ? num(D.chainTip) : "–", "", "The newest block, as mempool.space sees it.")
@@ -130,6 +186,14 @@ function renderNode(D) {
     + kpi("Channels active", `${N.activeChannels}${N.pendingChannels ? ` (+${N.pendingChannels} opening)` : ""}`, judge(N.activeChannels > 0), "Channels whose peer is online right now.")
     + kpi("Peers", N.peers, judge(N.peers > 0), "Nodes you're connected to. A channel works only while its peer is connected.");
   $("#nodeNote").textContent = `${N.alias || "Your node"} · LND ${N.version}${N.network ? ` · ${N.network}` : ""}`;
+  stamp("#nodeAge");
+}
+
+function renderBanner(D) {
+  const b = $("#nodeBanner"), err = !D.node ? "it isn't connected" : D.node.error;
+  if (!err) { b.hidden = true; return; }
+  b.hidden = false;
+  b.innerHTML = nodeBannerHtml(err);
 }
 
 // 2. Each channel drawn as one strip: their side, your locked reserve, what you can spend.
@@ -157,6 +221,7 @@ function renderChain(D) {
       : "Within about an hour. Best for opening channels.");
   // One synchronous replace-then-add: reloading never stacks duplicates.
   if (lastUtxos) $("#chainKpis").insertAdjacentHTML("beforeend", kpi("Coins (UTXOs)", num(lastUtxos.count), "", "Separate pieces of bitcoin in the on-chain wallet. Each one costs fees to spend."));
+  stamp("#chainAge");
 }
 // end renderChain
 // Deposit QR: paste an address made on the Mac, get a scannable code back.
@@ -179,7 +244,7 @@ $("#chAddrShow").addEventListener("click", async () => {
 });
 $("#chRefresh").addEventListener("click", async () => {
   const btn = $("#chRefresh"); btn.disabled = true;
-  try { OVERVIEW = await api(""); renderChain(OVERVIEW); await loadExplorer(); toast("Balances rechecked."); }
+  try { OVERVIEW = await api(""); renderBanner(OVERVIEW); renderChecklist(OVERVIEW); renderChain(OVERVIEW); await loadExplorer(); toast("Balances rechecked."); }
   catch (err) { toast(err.message, true, 6000); }
   btn.disabled = false;
 });
@@ -244,12 +309,32 @@ function renderGlossary() {
   $("#glossary").innerHTML = GLOSSARY.map(([t, d]) => `<details><summary>${esc(t)}</summary><p>${esc(d)}</p></details>`).join("");
 }
 
-function renderStan(S) {
+function renderStan(S, alerts) {
   $("#stanLast").textContent = S ? `Last report ${ago(S.at)}: “${S.subject}” (${S.status}).` : "No report sent yet. The first goes out tomorrow after 06:00 UTC.";
+  $("#stanHistory").innerHTML = stanHistoryHtml(alerts);
 }
 $("#stanGo").addEventListener("click", async () => {
-  try { const r = await api("", { action: "stan_report" }); toast(r.status === "sent" ? "Stan's report is on its way." : `Report ${r.status}.`, r.status !== "sent"); renderStan({ at: new Date().toISOString(), subject: r.subject, status: r.status }); }
+  try {
+    const r = await api("", { action: "stan_report" });
+    toast(r.status === "sent" ? "Stan's report is on its way." : `Report ${r.status}.`, r.status !== "sent");
+    const fresh = { at: new Date().toISOString(), subject: r.subject, status: r.status };
+    OVERVIEW.alerts = [fresh, ...(OVERVIEW?.alerts || [])].slice(0, 20);
+    renderStan(fresh, OVERVIEW.alerts);
+  }
   catch (err) { toast(err.message, true, 6000); }
+});
+
+// Channel backup freshness: the button confirms a fresh off-machine copy.
+function renderBackup(B) { $("#backupBody").innerHTML = backupHtml(B); }
+$("#backupMark").addEventListener("click", async () => {
+  $("#backupErr").textContent = "";
+  try {
+    const r = await api("", { action: "backup_marked" });
+    toast(`Copy marked: covers ${r.channels} open channel${r.channels === 1 ? "" : "s"}.`);
+    OVERVIEW = await api("");
+    renderChecklist(OVERVIEW); renderBackup(OVERVIEW.backup);
+  }
+  catch (err) { $("#backupErr").textContent = err.message; }
 });
 
 // 3. Sending power: spendable after channel reserves, what Ye₿ente owes, and node top-ups.
@@ -425,6 +510,8 @@ async function loadPnl() {
     ${row("On-chain fees", S.onchain, "Opening or closing channels, moving coins.", "−")}
   </tbody></table>${L.nodeRead ? "" : '<p class="sm err">The node couldn\'t be read, so node figures show 0. Wake the Mac, make sure LND is running, and check LND_READONLY_MACAROON on the server.</p>'}`;
   $("#pnlYours").innerHTML = pnlYoursHtml(L);
+  $("#pnlTrend").innerHTML = trendHtml(L.trend);
+  stamp("#pnlAge");
 }
 // "What's yours right now": unknown (never a 0) when the node couldn't be read.
 function pnlYoursHtml(L) {
@@ -450,6 +537,7 @@ const VERIFY = [
   ["Coins (UTXOs)", "ln-ro listunspent | jq '.utxos | length'"],
   ["Each coin: address, size, confirmations", "ln-ro listunspent | jq '.utxos[] | {address, amount_sat, confirmations}'"],
   ["Make a fresh receive address", "lncli --lnddir=$HOME/.lnd-altradits --network=mainnet newaddress p2wkh"],
+  ["Channel backup file date", "ls -l $HOME/.lnd-altradits/data/chain/bitcoin/mainnet/channel.backup"],
   ["Find each channel's close ID", "ln-ro listchannels | jq -r '.channels[] | [.peer_alias, .channel_point] | @tsv'"],
   ["Close one channel (add --force if stuck)", "lncli --lnddir=$HOME/.lnd-altradits --network=mainnet closechannel <CHANNEL_POINT>"],
   ["Track closing channels and unlock waits", "ln-ro pendingchannels | jq '{limbo: .total_limbo_balance, closing: [.pending_closing_channels[].channel.channel_point], force: [.pending_force_closing_channels[] | {cp: .channel.channel_point, blocks_left: .blocks_til_maturity}]}'"],
@@ -489,6 +577,8 @@ async function loadExplorer() {
   if (X.error) { $("#exInfo").textContent = X.error; $("#coinList").innerHTML = '<p class="muted">The node couldn\'t be read, so the coin list is unavailable.</p>'; return; }
   const flappy = (X.peers || []).filter((p) => p.flaps > 50);
   issue("peers", flappy.length ? "warn" : null, `Your peer connection keeps dropping (${flappy.map((p) => p.flaps).join(", ")} reconnections). Payments can fail during a drop: check the internet and tunnel.`, "node:hNet");
+  const off = offlineChannels(X.channels, X.peers);
+  issue("peer_off", off.length ? "crit" : null, off.length ? `Peer offline now on ${off.length} channel${off.length === 1 ? "" : "s"} (${off.map((c) => c.alias || "Channel").join(", ")}). Payments there can't move until the peer is back.` : "", "channels:hInside");
   const I = X.info, G = X.graph;
   $("#exInfo").innerHTML = I ? kpi("Last block seen", ago(I.lastBlockAt), judge(Date.now() - Date.parse(I.lastBlockAt) < 3600e3), "Blocks come about every 10 minutes. Over an hour may mean the node is stuck.")
       + kpi("Inactive channels", I.inactive, judge(I.inactive === 0), "Channels whose peer is offline. They can't move payments until it's back.")
@@ -500,8 +590,10 @@ async function loadExplorer() {
       + kpi("Channels per node", G.avgOutDegree, "", "On average. Well-connected nodes have many; yours has one private channel.") : "";
   $("#exPeers").innerHTML = X.peers?.length ? `<table><thead><tr><th>Peer</th><th>Ping</th><th>Reconnections</th><th>Sent</th><th>Received</th><th>Who connected</th></tr></thead><tbody>${X.peers.map((p) =>
     `<tr><td><code title="${esc(p.pubkey)}">${esc(p.pubkey.slice(0, 16))}…</code></td><td>${esc(num(p.pingMs))} ms${p.pingMs > 500 ? ' <span class="err">slow</span>' : ""}</td><td>${esc(num(p.flaps))}${p.flaps > 50 ? ' <span class="err">unstable</span>' : ""}</td><td>${esc(satsF(p.satSent))}</td><td>${esc(satsF(p.satRecv))}</td><td>${p.inbound ? "They did" : "You did"}</td></tr>`).join("")}</tbody></table>` : '<p class="muted sm">No peers connected.</p>';
+  const offPts = new Set(off.map((c) => c.point));
+  stamp("#exAge");
   $("#exChans").innerHTML = (X.channels || []).map((c) => { const txid = c.point.split(":")[0];
-    return `<div class="inside"><h3>${esc(c.alias || "Channel")}</h3><div class="kpis">`
+    return `<div class="inside"><h3>${esc(c.alias || "Channel")}${offPts.has(c.point) ? ' <span class="err">peer offline</span>' : ""}</h3><div class="kpis">`
       + kpi("Short channel ID", c.scid || "private alias", "", c.scid ? "Block × transaction × output of the funding transaction." : "Private channels can use an alias instead of their on-chain position.")
       + kpi("Updates", num(c.updates), "", "Every payment, sent or received, is one signed update.")
       + kpi("Sent through it", satsF(c.sent), "", "All-time, from your side.") + kpi("Received through it", satsF(c.received), "", "All-time, into your side.")
@@ -1060,7 +1152,7 @@ async function load() {
   $("#login").hidden = true; $("#app").hidden = false;
   KES_PER_BTC = D.kesPerBtc;
   OVERVIEW = D;
-  renderChecklist(D); renderStan(D.stan); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderGlossary();
+  renderChecklist(D); renderStan(D.stan, D.alerts); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderGlossary(); renderBanner(D); renderBackup(D.backup);
   renderVerify();
   await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing()]);
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;

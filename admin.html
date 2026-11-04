@@ -170,6 +170,8 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div class="row"><label class="switch"><input type="checkbox" id="explain" checked> Explain everything</label><span class="sm muted" id="checked"></span><button type="button" class="btn" id="refresh"><span class="spin" aria-hidden="true">↻</span>Refresh</button><button type="button" class="btn" id="logout">Sign out</button></div>
   </header>
 
+  <div class="panel" id="nodeBanner" role="alert" hidden style="border-color:var(--crit)"></div>
+
   <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
   <div class="pane" data-pane="overview">
   <section class="panel" aria-labelledby="hCheck">
@@ -182,6 +184,8 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <p class="sm">Stan watches the site and the node, and emails you every alert plus a short report each morning.</p>
     <p class="sm" id="stanLast"></p>
     <div class="row"><button type="button" class="btn primary" id="stanGo">Email me Stan's report now</button></div>
+    <h3 class="sub">Recent alerts and reports</h3>
+    <div id="stanHistory" class="scroll sm"><p class="muted sm">Loading…</p></div>
   </section>
   </div>
 
@@ -194,6 +198,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       <p>A new block arrives about every 10 minutes. Your node must keep up, or it can't safely pay or get paid.</p>
     </div>
     <div class="kpis" id="nodeKpis"></div>
+    <p class="sm muted" id="nodeAge"></p>
     <p class="sm muted" id="nodeNote"></p>
   </section>
   <section class="panel" aria-labelledby="hNet">
@@ -205,6 +210,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <h3 class="sub">Peers</h3>
     <div class="learn"><p><b>Ping</b> is how long a message takes to the peer and back. <b>Reconnections</b> count how often the link dropped: many means an unstable internet or tunnel, and payments can fail during a drop.</p></div>
     <div id="exPeers" class="scroll"></div>
+    <p class="sm muted" id="exAge"></p>
   </section>
   </div>
 
@@ -265,6 +271,9 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div class="row"><label for="pnlDays" class="sm"><b>Period</b></label><select id="pnlDays" class="sel"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last year</option></select></div>
     <div class="kpis" id="pnlKpis" style="margin-top:.8rem"></div>
     <div id="pnlTable" class="scroll"></div>
+    <h3 class="sub">Routing fees earned, day by day</h3>
+    <div id="pnlTrend" class="scroll"></div>
+    <p class="sm muted" id="pnlAge"></p>
     <h3 class="sub">What's yours right now</h3>
     <div class="kpis" id="pnlYours"></div>
   </section>
@@ -312,6 +321,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
         <p>On-chain fees are paid per size of transaction, in <b>sat/vB</b>. Open or close channels when fees are low.</p>
       </div>
       <div class="kpis" id="chainKpis"></div>
+      <p class="sm muted" id="chainAge"></p>
       <h3 class="sub">Your coins, and where each one sits</h3>
       <div id="coinList" class="scroll sm"><p class="muted sm">Loading…</p></div>
       <h3 class="sub">Fund it, step by step</h3>
@@ -366,6 +376,16 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       </ul>
     </section>
   </div>
+  <section class="panel" aria-labelledby="hBackup">
+    <h2 id="hBackup">Channel backup: is your copy fresh?</h2>
+    <p class="see sm">On the Mac: <code>ls -l $HOME/.lnd-altradits/data/chain/bitcoin/mainnet/channel.backup</code> shows the file's date.</p>
+    <div class="learn">
+      <p>After every channel opens or closes, copy <span class="mono">channel.backup</span> from the Mac to a safe place (a USB stick kept with your 24 words). With those two, your peers return your channel funds after a disaster. Then press the button so the dashboard remembers. It compares your last copy against today's channels.</p>
+    </div>
+    <div id="backupBody"><p class="muted sm">Loading…</p></div>
+    <div class="row"><button type="button" class="btn primary" id="backupMark">I copied the backup</button></div>
+    <p class="err sm" id="backupErr" role="alert"></p>
+  </section>
   <section class="panel" aria-labelledby="hRoute">
     <h2 id="hRoute">5. Routing and fees</h2>
     <p class="see sm">See it yourself on the Mac: <code>ln-ro feereport</code></p>

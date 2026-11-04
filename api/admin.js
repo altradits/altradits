@@ -118,17 +118,20 @@ export async function GET(request) {
   }
   if (view === "emails") return json({ emails: (await getMany("email", await listIds("emails", 100))).map(({ text, ...e }) => e) });
 
-  const { nodeInfo, nodeDetails, chainTip, outboundSats, inboundSats, onchainFeeRates } = await import("../lib/lightning.js");
+  const { nodeInfo, nodeDetails, chainTip, outboundSats, inboundSats, onchainFeeRates, openChannelPoints } = await import("../lib/lightning.js");
   const { btcKes } = await import("../lib/lightning.js");
-  const [node, details, tip, outbound, inbound, chainFees, kes] = await Promise.all([settle(nodeInfo()), settle(nodeDetails()), settle(chainTip()), settle(outboundSats()), settle(inboundSats()), settle(onchainFeeRates()), settle(btcKes())]);
-  try { return await overview(node, details, tip, outbound, inbound, chainFees, kes); }
+  const [node, details, tip, outbound, inbound, chainFees, kes, points] = await Promise.all([settle(nodeInfo()), settle(nodeDetails()), settle(chainTip()), settle(outboundSats()), settle(inboundSats()), settle(onchainFeeRates()), settle(btcKes()), settle(openChannelPoints())]);
+  try { return await overview(node, details, tip, outbound, inbound, chainFees, kes, points); }
   catch (err) { return json({ error: `The dashboard couldn't load: ${err.message}` }, 500); }
 }
 
-async function overview(node, details, tip, outbound, inbound, chainFees, kes) {
+async function overview(node, details, tip, outbound, inbound, chainFees, kes, points) {
   const { liabilities, walletsOn, switchOn } = await import("../lib/ywallet.js");
+  const { backupStatus } = await import("../lib/scb.js");
   const owed = walletsOn() ? await settle(liabilities()) : null;
   const openInvoices = (await listIds("ywinvopen", 500)).length;
+  const backup = points && !points.error ? await backupStatus(points) : { markedAt: (await getJSON("backup:scb"))?.at || null, stale: null, opened: [], closed: [], current: null, nodeRead: false };
+  const alerts = (await getMany("email", await listIds("emails", 200))).filter((e) => e.kind === "owner").slice(0, 20).map(({ at, subject, status }) => ({ at, subject, status }));
   return json({
     node: node && !node.error ? { ...node, behind: typeof tip === "number" && node.blockHeight ? Math.max(0, tip - node.blockHeight) : null } : node,
     chainTip: typeof tip === "number" ? tip : null,
@@ -147,6 +150,8 @@ async function overview(node, details, tip, outbound, inbound, chainFees, kes) {
     visits: await import("../lib/visits.js").then((v) => v.visitSummary()).catch(() => null),
     retired: await getJSON("retired:agency"),
     stan: await import("../lib/stan.js").then((s) => s.stanLast()).catch(() => null),
+    alerts,
+    backup,
     deadman: await import("../lib/deadman.js").then((d) => d.deadmanStatus()).catch(() => null),
     ai: await import("../lib/ai.js").then((a) => a.deptPowerView()).catch(() => null),
     archives: listArchives(),
@@ -255,6 +260,15 @@ export async function POST(request) {
     if (deadmanActive()) return json({ error: "Deadman's Switch is active: node top-ups are paused until you lift the lockdown." }, 503);
     const { startTopup } = await import("../lib/channels.js");
     try { return json(await startTopup(body.sats)); } catch (err) { return json({ error: err.message }, err.status || 502); }
+  }
+  if (body.action === "backup_marked") {
+    const { openChannelPoints } = await import("../lib/lightning.js");
+    const { markBackup } = await import("../lib/scb.js");
+    try {
+      const points = await openChannelPoints();
+      const record = await markBackup(points);
+      return json({ ok: true, markedAt: record.at, channels: points.length });
+    } catch (err) { return json({ error: `The node couldn't be read, so the copy can't be confirmed: ${err.message}` }, 502); }
   }
   if (body.action === "address_qr") {
     const { validDepositAddress, qrSvg } = await import("../lib/lightning.js");
