@@ -27,8 +27,13 @@ set -u
 # (91749cf): a reviewed PR with green CI, but merged with GitHub's
 # server-side merge button, which cannot carry the maintainer's SSH
 # signature. Reverted in f6d3936. Merges to main must use signed CLI merges.
+# Moved forward to ba04d09 on 4 Nov 2026 past one more unsigned merge
+# (#348): a reviewed PR with green CI, merged from a fresh clone that lacked
+# the repo's signing config, so merge-pr.sh fell back to --no-gpg-sign.
+# Signing config (user.signingkey, gpg.format) must travel with the merge
+# checkout; merges to main stay signed CLI merges.
 # Never move this backwards.
-TRUST_ROOT=f6d3936aa8f0c41a41f0c369c295343036caf70e
+TRUST_ROOT=ba04d09d79a47a959d6c0ef6a2dde7396746adb0
 REF="${1:-HEAD}"
 SIGNERS="${2:-.github/allowed_signers}"
 
