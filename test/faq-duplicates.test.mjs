@@ -8,9 +8,17 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 const read = (f) => fs.readFileSync(path.join(ROOT, f), "utf8");
-const strip = (s) => s.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+const textOf = (s) => {
+  let out = "", inTag = false; // drop <...> spans so link text compares with the JSON-LD words
+  for (const c of s) {
+    if (c === "<") inTag = true;
+    else if (c === ">") inTag = false;
+    else if (!inTag) out += c;
+  }
+  return out.replace(/\s+/g, " ").trim();
+};
 const faqs = (html) => [...html.matchAll(/<details><summary>(.*?)<\/summary><p>(.*?)<\/p><\/details>/g)]
-  .map((m) => ({ q: strip(m[1]), a: strip(m[2]) }));
+  .map((m) => ({ q: textOf(m[1]), a: textOf(m[2]) }));
 const ldFaq = (html) => {
   const m = html.match(/<script type="application\/ld\+json">(\{"@context":"https:\/\/schema\.org","@type":"FAQPage".*?)<\/script>/);
   assert.ok(m, "page carries an FAQPage block");
