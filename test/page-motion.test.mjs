@@ -37,11 +37,9 @@ test("every page marks scrolled state so the sticky nav gains its shadow", () =>
   assert.ok(read("assets/admin.js").includes('classList.toggle("scrolled"'), "assets/admin.js: missing the scrolled toggle");
 });
 
-test("the homepage hero carries the one floating coin, and only there", () => {
-  assert.ok(read("index.html").includes('class="coin"'), "index.html: missing the hero coin");
-  assert.ok(read("index.html").includes("@keyframes floaty"), "index.html: missing the float animation");
+test("no page carries the retired floating hero coin", () => {
   for (const f of pages) {
-    if (f === "index.html") continue;
-    assert.ok(!read(f).includes("@keyframes floaty"), `${f}: the float animation belongs only on the homepage`);
+    assert.ok(!read(f).includes("@keyframes floaty"), `${f}: the float animation was retired`);
+    assert.ok(!read(f).includes('class="coin"'), `${f}: the hero coin was retired`);
   }
 });
