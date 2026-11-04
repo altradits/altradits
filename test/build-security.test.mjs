@@ -138,7 +138,7 @@ test("every Markdown file at the top level is denied to the web server", () => {
 
 test("signing stays available: the trusted-keys file, the verify script and the server option stay in place", () => {
   assert.match(read(".github/allowed_signers"), /^altradits@gmail\.com namespaces="git" ssh-ed25519 /m, "a trusted signing key");
-  assert.match(read("deploy/verify-commits.sh"), /TRUST_ROOT=0c85e9da6678adf2bfb84860f81420a70c8dd521/, "the trust root never moves backwards");
+  assert.match(read("deploy/verify-commits.sh"), /TRUST_ROOT=f6d3936aa8f0c41a41f0c369c295343036caf70e/, "the trust root never moves backwards");
   assert.match(read("deploy/cron.sh"), /verify-commits\.sh origin\/main "\$SIGNERS"/, "the server refuses unsigned code");
   assert.match(read("deploy/verify-commits.sh"), /deploy\/verify-sshsig\.mjs" "\$c" "\$SIGNERS"/, "servers with old OpenSSH verify signatures in Node");
   assert.match(read(".github/workflows/test.yml"), /if:\s*github\.event_name == 'push'\s*\n\s*run:\s*sh deploy\/verify-commits\.sh HEAD \.github\/allowed_signers/, "CI verifies signed commits on push to main");
