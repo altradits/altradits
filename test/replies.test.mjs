@@ -53,7 +53,7 @@ test("choumi view carries screened replies", async () => {
 test("outbound screen passes clean text and own-site links", async () => {
   const { screenOutbound } = await import(`${ROOT}/lib/screen.js`);
   assert.equal(screenOutbound("Hi Jo, recovery is covered in the wallet guide.").flagged, false);
-  assert.equal(screenOutbound("Start here: https://altradits.com/contact and pick YeBente help.").flagged, false);
+  assert.equal(screenOutbound("Start here: https://altradits.com/contact and pick Ye₿ente help.").flagged, false);
 });
 
 test("outbound screen blocks external links, secrets, personal details and invoices", async () => {

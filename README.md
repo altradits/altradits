@@ -3,13 +3,13 @@
 [![Tests and security checks](https://github.com/altradits/altradits/actions/workflows/test.yml/badge.svg)](https://github.com/altradits/altradits/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-The code behind [altradits.com](https://altradits.com): free Bitcoin tools and learning for people new to Bitcoin, including **YeBente**, a custodial Bitcoin Lightning wallet for everyday amounts, and the admin dashboard that runs the Lightning node behind it.
+The code behind [altradits.com](https://altradits.com): free Bitcoin tools and learning for people new to Bitcoin, including **Ye₿ente**, a custodial Bitcoin Lightning wallet for everyday amounts, and the admin dashboard that runs the Lightning node behind it.
 
 ## What lives here
 
 - `server.mjs`, `api/`: the website and its API (Node.js, no framework).
 - `lib/`: shared code: wallets, Lightning, receipts, mail, security.
-- `yebente/`: the YeBente wallet app (React + Vite). The shipped build in `yebente/app` is committed with the source that produced it.
+- `yebente/`: the Ye₿ente wallet app (React + Vite). The shipped build in `yebente/app` is committed with the source that produced it.
 - `assets/admin.js`, `admin.html`: the node operator dashboard.
 - `test/`: the test suite, including the build-stage security guard.
 - `docs/`: manuals and guides (setup, Lightning, review process).
@@ -32,7 +32,7 @@ On a server, a missing `ADMIN_TOKEN` locks the admin instead.
 npm test   # full suite, including the security guard
 ```
 
-The YeBente app:
+The Ye₿ente app:
 
 ```sh
 cd yebente && npm ci && npm run dev   # http://localhost:5173

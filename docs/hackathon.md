@@ -13,7 +13,7 @@ Anthropic, behind the same budgets, power buttons and circuit breaker.
 ## Why this fits
 
 Stanley runs Altradits alone from Kenya: a Bitcoin Lightning wallet
-(YeBente) plus an AI agency that drafts mail, reviews work and reports.
+(Ye₿ente) plus an AI agency that drafts mail, reviews work and reports.
 Every word those agents write used to come from one provider. This entry
 plugs Meta's Model API in as a first-class brain: same agents, same tools,
 same safety rails, now running on `muse-spark-1.3`. It is his own world

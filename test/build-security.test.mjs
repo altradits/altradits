@@ -245,7 +245,7 @@ test("publicity: money keywords in the homepage title, large-image cards with th
   assert.match(llms, /yebente#create/, "llms.txt points AI answers at wallet creation");
 });
 
-test("YeBente installs as an app: manifest linked and served with icons on both stacks", () => {
+test("Ye₿ente installs as an app: manifest linked and served with icons on both stacks", () => {
   const head = read("yebente/index.html");
   assert.match(head, /rel="manifest" href="\/yebente\/manifest\.webmanifest"/, "app links its manifest");
   assert.match(head, /theme-color" content="#141117"/, "app theme color matches its surface");

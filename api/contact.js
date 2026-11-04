@@ -14,7 +14,7 @@ export const CONTACT = { usd: 1, nameMax: 80, emailMax: 120, messageMin: 10, mes
 // What the visitor picks -> which department owns it. Only active,
 // external-facing departments; paused and internal teams stay out.
 export const TOPICS = {
-  yebente: { dept: "growth", label: "YeBente wallet help" },
+  yebente: { dept: "growth", label: "Ye₿ente wallet help" },
   learn: { dept: "office", label: "Learning Bitcoin and students" },
   partner: { dept: "office", label: "Partnerships" },
   funding: { dept: "admin", label: "Grants, donations and funding" },
@@ -31,7 +31,7 @@ export async function sendContactReceipt({ to, name, sats, label, dept, receipt,
   const { commsFor } = await import("../data/team-comms.js");
   const { stanLive } = await import("../lib/stan.js");
   const head = commsFor(dept).head;
-  const funds = "Your dollar also funds our Lightning node: the always-on computer that carries every YeBente payment. Running it takes real money and locked-up bitcoin, so every dollar keeps payments fast and nearly free for everyone.";
+  const funds = "Your dollar also funds our Lightning node: the always-on computer that carries every Ye₿ente payment. Running it takes real money and locked-up bitcoin, so every dollar keeps payments fast and nearly free for everyone.";
   const body = stanLive()
     ? `Hi ${name},\n\nThank you. Your $1 (${Number(sats).toLocaleString("en-US")} sats) is with us, and your message about ${String(label).toLowerCase()} is with the right team.\n\n${funds}\n\nChoumi's team reads every message, and Stanley approves every reply.`
     : `Hi ${name},\n\n${head.name}, ${head.title}, confirms your $1 (${Number(sats).toLocaleString("en-US")} sats) is with us. Our AI team is off right now, so your message about ${String(label).toLowerCase()} is referred to the right department, who will read it with Stanley.\n\n${funds}`;
