@@ -47,7 +47,7 @@ a{color:var(--blue)}
 .topnav a[aria-current]{color:#fff;background:var(--ink)}
 @media (max-width:420px){.topnav{gap:.25rem}.topnav a{font-size:.9rem;padding:.4rem .7rem}.top img{height:1.9rem}}
 .hero{padding:2.25rem 0 1.5rem}
-.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem}
+.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem;text-wrap:balance}
 .hero h1 em{font-style:normal;color:var(--btc-text)}
 .lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:38rem}
 .ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
@@ -68,20 +68,24 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top,.tabs{transition:box-shadow .25s ease}body.scrolled .top,body.scrolled .tabs{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.cards .links a,.more a,.foot nav a,.pager a{transition:color .18s ease}.more a{display:inline-block;transition:transform .18s ease,color .18s ease}.more a:hover{transform:translateX(4px)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
 .photo{margin:0 0 1rem;max-width:56rem}
-.photo img{display:block;width:100%;height:auto;border-radius:1rem;border:2px solid var(--ink)}
+.photo img{display:block;width:100%;height:auto;border-radius:1rem;border:2px solid var(--ink);box-shadow:0 18px 40px -18px rgba(15,27,45,.35);background:var(--ink)}
 .photo .credit{white-space:nowrap}
-.photo figcaption{color:var(--muted);font-size:.92rem;margin-top:.5rem}
+.photo figcaption{color:var(--muted);font-size:.95rem;margin-top:.6rem;max-width:46rem}
+.photo.mid{margin-top:2rem}
 .friends{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:1rem}
-.friends>li{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.6rem}
+.friends>li{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.6rem;box-shadow:0 10px 24px -18px rgba(15,27,45,.35)}
+.friends>li:hover{box-shadow:5px 5px 0 var(--ink)}
 .friends .who{display:flex;align-items:center;gap:.8rem}
-.friends .who img{width:56px;height:56px;border-radius:.8rem;border:1px solid var(--line);background:#fff;flex:none;object-fit:contain}
+.friends .who img{width:56px;height:56px;border-radius:.8rem;border:1px solid var(--line);background:#fff;flex:none;object-fit:contain;padding:3px}
 .friends .role{font-size:.8rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.04em}
 .friends p{margin:0;color:var(--muted);font-size:.97rem}
 .links{display:flex;flex-wrap:wrap;gap:.3rem 1rem;font-weight:600;margin-top:auto}
 .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:1rem}
-.side{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem}
+.side{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem;box-shadow:0 10px 24px -18px rgba(15,27,45,.35)}
+.side:hover{box-shadow:5px 5px 0 var(--ink)}
+@media (prefers-reduced-motion:no-preference){.friends>li,.side{transition:box-shadow .18s ease}}
 .side h3{display:flex;align-items:center;gap:.5rem;font-size:1.25rem}
-.side h3 img{border-radius:.5rem;border:1px solid var(--line);background:#fff}
+.side h3 img{border-radius:.5rem;border:1px solid var(--line);background:#fff;padding:2px}
 .side p{margin:0;color:var(--muted)}
 .side .tag{align-self:flex-start}
 .sm{font-size:.92rem}
@@ -104,15 +108,15 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
   </header>
 
   <figure class="photo">
-    <img src="/assets/bitdevs-kisumu-btrust.jpg" alt="Four people stand smiling between a BitDevs Kisumu banner and a Btrust banner at LakeHub in Kisumu." width="1200" height="900">
+    <img src="/assets/bitdevs-kisumu-btrust.jpg" alt="Four people stand smiling between a BitDevs Kisumu banner and a Btrust banner at LakeHub in Kisumu." width="1200" height="900" fetchpriority="high" decoding="async">
     <figcaption>BitDevs Kisumu, sponsored by Btrust, at LakeHub. Co-founders to the left, with Carson, Val and Pau.</figcaption>
   </figure>
 
   <h2>Who makes your wallet work</h2>
   <ul class="friends"><li><div class="who"><img src="/assets/players/btrust.png" alt="Btrust logo" width="56" height="56" loading="lazy"><div><h3>Btrust</h3><span class="role">Backs the learning community</span></div></div><p>Btrust sponsors BitDevs Kisumu, where Ye₿ente's builder learns Bitcoin alongside other developers. Better builders, better wallet.</p><div class="links"><a href="https://www.btrust.tech/">Visit Btrust</a></div></li><li><div class="who"><img src="/assets/players/minmo.png" alt="Minmo logo" width="56" height="56" loading="lazy"><div><h3>Minmo</h3><span class="role">The person-to-person model</span></div></div><p>Minmo's agents help their own communities buy and sell bitcoin, person to person. That is the model for how Ye₿ente spreads. Their team also mentored Ye₿ente's builder into open source.</p><div class="links"><a href="https://minmo.to/">Visit Minmo</a></div></li><li><div class="who"><img src="/assets/players/tando.png" alt="Tando logo" width="56" height="56" loading="lazy"><div><h3>Tando</h3><span class="role">Turns your sats into M-Pesa</span></div></div><p>When you send sats to a phone number or till, Tando's rails carry them the last mile. Every M-Pesa number and till, reachable from your wallet.</p><div class="links"><a href="https://tando.me/">Visit Tando</a></div></li><li><div class="who"><img src="/assets/players/weventure.png" alt="weVenture Hub logo" width="56" height="56" loading="lazy"><div><h3>weVenture Hub</h3><span class="role">Trained your wallet's builder</span></div></div><p>This startup hub in Addis Ababa hosted the Lightning Developer Bootcamp where Ye₿ente's builder learned routing and channel management: the skills your payments run on.</p><div class="links"><a href="https://weventurehub.com/">Visit weVenture Hub</a></div></li><li><div class="who"><img src="/assets/players/wallet-of-satoshi.png" alt="Wallet of Satoshi logo" width="56" height="56" loading="lazy"><div><h3>Wallet of Satoshi</h3><span class="role">The simplicity bar, and the backup</span></div></div><p>The simplest Lightning wallet in the world. It is also Ye₿ente's fallback when our own node is down, so your payments still go through.</p><div class="links"><a href="https://www.walletofsatoshi.com/">Visit Wallet of Satoshi</a></div></li><li><div class="who"><img src="/assets/players/lakehub.png" alt="LakeHub logo" width="56" height="56" loading="lazy"><div><h3>LakeHub</h3><span class="role">Home of the learning community</span></div></div><p>BitDevs Kisumu meets at LakeHub, which also backs it. Ye₿ente keeps improving there, alongside more than 100 developers.</p><div class="links"><a href="https://lakehub.co.ke/">Visit LakeHub</a></div></li><li><div class="who"><img src="/assets/players/my-first-bitcoin.png" alt="My First Bitcoin logo" width="56" height="56" loading="lazy"><div><h3>My First Bitcoin</h3><span class="role">Free education, worldwide</span></div></div><p>Makers of free Bitcoin education used around the world. In conversation about growing it in Kisumu next, with developers from LakeHub.</p><div class="links"><a href="https://myfirstbitcoin.io/">Visit My First Bitcoin</a></div></li></ul>
 
-  <figure class="photo" style="margin-top:2rem">
-    <img src="/assets/addis-lightning-bootcamp.jpg" alt="Five developers with laptops talk on wooden steps at the Lightning Developer Bootcamp in Addis Ababa." width="1200" height="799" loading="lazy">
+  <figure class="photo mid">
+    <img src="/assets/addis-lightning-bootcamp.jpg" alt="Five developers with laptops talk on wooden steps at the Lightning Developer Bootcamp in Addis Ababa." width="1200" height="799" loading="lazy" decoding="async">
     <figcaption>The Lightning Developer Bootcamp at weVenture Hub, Addis Ababa. Sponsored by Btrust Builders, Africa Free Routing and the Human Rights Foundation. <span class="credit">Photo: shared on X.</span></figcaption>
   </figure>
 
