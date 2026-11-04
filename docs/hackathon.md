@@ -40,7 +40,8 @@ Without Meta settings the server behaves exactly as before (Anthropic).
 - `lib/meta.js` (new): a small client speaking the codebase's Messages
   shape over Chat Completions (`POST {base}/chat/completions`). It
   translates system prompts, multi-turn tool conversations and tool
-  definitions both ways, and drops Anthropic-only fields. No new
+  definitions both ways, and drops Anthropic-only fields. Tool choice
+  always rides as `auto` (all the API honours today). No new
   dependency: plain `fetch` with a 120 second cap.
 - `lib/ai.js`: provider selection (`AI_PROVIDER`), key and model
   resolution, Muse cost math, provider-aware pause reasons, and one

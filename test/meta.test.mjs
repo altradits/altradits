@@ -34,8 +34,16 @@ test("request: system, tools and tool_choice translate; server tools and Anthrop
     messages: [{ role: "system", content: "You draft mail." }, { role: "user", content: "Write it." }],
     max_tokens: 8000,
     tools: [{ type: "function", function: { name: "draft", description: "Draft it.", parameters: FN_TOOL.input_schema } }],
-    tool_choice: { type: "function", function: { name: "draft" } },
+    tool_choice: "auto",
   });
+});
+
+test("request: every tool choice rides as auto, and none without tools", () => {
+  const base = { tools: [FN_TOOL], messages: [{ role: "user", content: "Hi." }] };
+  assert.equal(toChatBody({ ...base, tool_choice: { type: "tool", name: "draft" } }).tool_choice, "auto");
+  assert.equal(toChatBody({ ...base, tool_choice: { type: "any" } }).tool_choice, "auto");
+  assert.equal(toChatBody({ ...base, tool_choice: { type: "auto" } }).tool_choice, "auto");
+  assert.equal("tool_choice" in toChatBody({ messages: base.messages }), false);
 });
 
 test("request: an assistant turn with tool calls echoes back as tool_calls", () => {
