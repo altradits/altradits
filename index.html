@@ -74,12 +74,10 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .scan{display:flex;gap:1.4rem;align-items:center;margin:2rem 0 0;flex-wrap:wrap}
 .scan img{width:12rem;height:auto;border:2px solid var(--ink);border-radius:.75rem;background:#fff;box-shadow:0 14px 30px -16px rgba(15,27,45,.35)}
 .scan figcaption{font-size:1.05rem;color:var(--muted);max-width:14rem}
-.faqwrap{display:grid;grid-template-columns:minmax(12rem,22rem) 1fr;gap:1rem 3rem;margin-top:3.5rem}
-.faqwrap h2{margin:0;font-size:clamp(2rem,5vw,2.9rem)}
+.faq{margin-top:3.5rem}
 .faq details{border-bottom:1px solid var(--line);padding:.9rem 0}
 .faq summary{font-weight:700;cursor:pointer}
 .more{font-weight:600;margin:.9rem 0 0}
-@media (max-width:640px){.faqwrap{grid-template-columns:1fr;gap:.5rem}}
 .cardshot{margin:.6rem 0 0}
 .cardshot img{width:100%;height:auto;border:2px solid var(--ink);border-radius:.9rem;display:block;background:#000;box-shadow:0 14px 30px -16px rgba(15,27,45,.35)}
 .sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
@@ -143,19 +141,15 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
     <li><span class="tag">3</span><h3>Safe habits</h3><p>Good habits from day one.</p><div class="links"><a href="/library#privacy">Read on</a></div></li>
   </ul>
 
-  <div class="faqwrap">
-  <h2>Quick answers</h2>
-  <div>
   <div class="faq">
+  <h2>Quick answers</h2>
     <details><summary>Does it cost anything?</summary><p>Opening a wallet is free, and payments between Ye₿ente wallets are free. Payments out over Lightning pay the network's small routing fee; M-Pesa payouts add the payout partner's 1% fee.</p></details>
     <details><summary>How much do I need to start?</summary><p>Almost nothing. Start with a few cents to learn the ropes, and add more only when it feels easy.</p></details>
     <details><summary>What if someone takes my phone?</summary><p>They still can't send: every payment needs your PIN or fingerprint, and five wrong PINs lock payments. If your email is on the wallet, log in from another phone and remove the lost one.</p></details>
     <details><summary>What if I lose my phone?</summary><p>Log in on a new phone with your email (if you added one) and PIN. Forgot the PIN, or no email? Your 12 words or your email bring the wallet back with a new PIN; for 24 hours after that, at most 1,000 sats can leave, in case it isn't you.</p></details>
     <details><summary>What if I send to the wrong address?</summary><p>The app shows the address and amount, then asks for your PIN before anything moves. Check those two, and start small: sent payments can't come back.</p></details>
     <details><summary>Who holds my money?</summary><p>To start, we do. Ye₿ente is a starter wallet: Altradits holds small amounts for you on its own Lightning node, so your wallet opens in a minute and is easy to recover. That is why balances are capped for everyday amounts. When you're ready, we help you move to a wallet only you control, free.</p></details>
-  </div>
   <p class="more"><a href="/bitcoin">More answers →</a></p>
-  </div>
   </div>
 
   <h2>Ready to keep all of it?</h2>
