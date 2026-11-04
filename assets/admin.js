@@ -649,7 +649,7 @@ async function loadChoumi() {
   const anyOn = (ai.departments || []).some((d) => d.on);
   issue("ai_paused", status.paused && anyOn ? "warn" : null, `AI is paused (${status.kind || "unavailable"}) while departments are switched on: their tasks wait.`, "choumi:hAiStatus");
     $("#aiKpis").innerHTML =
-      kpi("AI status", status.paused ? "Paused" : "Running", status.paused ? "warn" : "good", status.paused ? (status.reason || status.kind || "paused") : "The Anthropic key works and every budget has room.")
+      kpi("AI status", status.paused ? "Paused" : "Running", status.paused ? "warn" : "good", status.paused ? (status.reason || status.kind || "paused") : `The ${(status.provider === "meta" ? "Meta" : "Anthropic")} key (${status.model || "default model"}) works and every budget has room.`)
     + kpi("Calls today", `${num(status.todayCalls)} / ${num(status.dailyCallLimit)}`, "", `${usdF(status.todayUsd)} today`)
     + kpi("Month spend", `${usdF(status.monthUsd)} / $${Number(status.monthlyUsdCap || 0).toFixed(2)}`, (status.monthUsd || 0) < (status.monthlyUsdCap || 0) ? "good" : "warn", `${num(status.monthCalls)} calls this month`)
     + kpi("Incident spend", inc ? `${usdF(inc.usd)} / $${Number(status.incidentUsdCap || 0).toFixed(2)}` : "No incident", inc ? "warn" : "", inc ? `${num(inc.calls)} calls in incident ${inc.incidentId}` : `Cap per incident: $${Number(status.incidentUsdCap || 0).toFixed(2)}.`);
