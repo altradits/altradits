@@ -20,20 +20,21 @@ const kpi = (label, v, state, why) => `<div class="kpi${state ? ` ${state}` : ""
 const judge = (ok) => (ok === null || ok === undefined ? "" : ok ? "good" : "warn");
 const els = {};
 const $ = (sel) => (els[sel] ||= { innerHTML: "", insertAdjacentHTML(pos, html) { this.innerHTML += html; } });
-const render = new Function("D", "$", "kpi", "satsF", "num", "judge", "esc", "lastUtxos",
+const stamp = () => {};
+const render = new Function("D", "$", "kpi", "satsF", "num", "judge", "esc", "lastUtxos", "stamp",
   `${src.slice(start, end)}\nreturn renderChain(D);`);
 const D = { details: { onchain: { confirmed: 0, unconfirmed: 0 } }, chainFees: { fast: 3, slow: 3 } };
 const coins = () => els["#chainKpis"].innerHTML.split("Coins (UTXOs)").length - 1;
 
 test("reloading twice shows the Coins reading exactly once", () => {
-  render(D, $, kpi, satsF, num, judge, esc, { count: 0 });
-  render(D, $, kpi, satsF, num, judge, esc, { count: 0 });
+  render(D, $, kpi, satsF, num, judge, esc, { count: 0 }, stamp);
+  render(D, $, kpi, satsF, num, judge, esc, { count: 0 }, stamp);
   assert.equal(coins(), 1);
 });
 
 test("no coins known yet: no Coins reading, and no blind appends outside the renderer", () => {
   els["#chainKpis"].innerHTML = "";
-  render(D, $, kpi, satsF, num, judge, esc, null);
+  render(D, $, kpi, satsF, num, judge, esc, null, stamp);
   assert.equal(coins(), 0);
   const explorer = src.slice(src.indexOf("async function loadExplorer() {"), src.indexOf("// Ye₿ente wallets"));
   assert.ok(!explorer.includes("insertAdjacentHTML"), "loadExplorer never appends to the panel itself");
