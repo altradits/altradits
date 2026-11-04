@@ -25,6 +25,11 @@ node_modules/
 .data/
 .vercel/
 
+# Python toolchain (video build, art-check)
+.venv/
+__pycache__/
+*.pyc
+
 # Bitcoin secrets (never commit these)
 *.macaroon
 *.backup
