@@ -76,6 +76,8 @@ test("the Marketing tab, pane and renderer exist", () => {
   assert.match(js, /xpost/, "renderer shows posts as X cards");
   assert.match(js, /p\.video/, "renderer branches on the video key");
   assert.match(js, /<video/, "video posts render a player, not a bare image");
+  assert.match(js, /months\.json", \{ cache: "no-store" \}/, "month list is always fetched fresh, never cached");
+  assert.match(js, /encodeURIComponent\(month\)\}\.json`, \{ cache: "no-store" \}/, "month data is always fetched fresh, never cached");
 });
 
 test("every post video exists, and every month video is used", () => {

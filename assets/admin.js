@@ -713,7 +713,7 @@ let MKT_POSTS = [], MKT_MONTHS = [], MKT_MONTH = "", MKT_SEL = "";
 async function loadMarketing() {
   const sel = $("#mktMonth");
   try {
-    MKT_MONTHS = await (await fetch("/assets/marketing/months.json")).json();
+    MKT_MONTHS = await (await fetch("/assets/marketing/months.json", { cache: "no-store" })).json();
   } catch (err) { $("#mktPosts").innerHTML = `<p class="sm">Schedule unavailable: ${esc(err.message)}</p>`; return; }
   sel.innerHTML = MKT_MONTHS.map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
   sel.value = MKT_MONTHS[MKT_MONTHS.length - 1];
@@ -732,7 +732,7 @@ async function renderMarketing(month) {
   MKT_MONTH = month;
   let data;
   try {
-    data = await (await fetch(`/assets/marketing/${encodeURIComponent(month)}.json`)).json();
+    data = await (await fetch(`/assets/marketing/${encodeURIComponent(month)}.json`, { cache: "no-store" })).json();
   } catch (err) { $("#mktPosts").innerHTML = `<p class="sm">Schedule unavailable: ${esc(err.message)}</p>`; return; }
   MKT_POSTS = data.posts || [];
   MKT_SEL = MKT_POSTS.length ? MKT_POSTS[0].date : "";
