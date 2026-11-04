@@ -32,7 +32,7 @@ console.log("founder: on");
 
 say("Beat 3: one instruction becomes queued drafts.");
 const rec = await stan.instruct({
-  text: "Thank Bright Kiptoo for trying the YeBente wallet and invite one reply with any question.",
+  text: "Thank Bright Kiptoo for trying the Ye₿ente wallet and invite one reply with any question.",
   dept: "founder",
   to: "client@example.com",
 });

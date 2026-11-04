@@ -121,7 +121,7 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
         const externalInvoice = await createLightningInvoice(
           details.callbackUrl,
           numericSats,
-          'YeBente Sats Deposit'
+          'Ye₿ente Sats Deposit'
         );
         res = {
           success: externalInvoice.success,
@@ -130,7 +130,7 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
         };
       } else if (hasServerWallet()) {
         // The Altradits wallet: an invoice on the Altradits node, credited to this wallet.
-        res = await createDepositInvoice(numericSats, 'YeBente Lightning Deposit');
+        res = await createDepositInvoice(numericSats, 'Ye₿ente Lightning Deposit');
       } else {
         // No wallet yet: log in or create one first.
         setIsGenerating(false);

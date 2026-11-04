@@ -318,7 +318,7 @@ export async function POST(request) {
     const { queueContactReply } = await import("../lib/stan.js");
     const draft = await queueContactReply({ to: m.email, dept: m.dept,
       subject: `Re: ${m.label}`,
-      text: `Hi ${m.name},\n\nYour message about ${m.label.toLowerCase()} reached the right team, and Choumi's team is reading it. Stanley approves every reply himself, so please give us a little time.\n\nIf you wrote about your YeBente wallet, help with it is already on the way.` });
+      text: `Hi ${m.name},\n\nYour message about ${m.label.toLowerCase()} reached the right team, and Choumi's team is reading it. Stanley approves every reply himself, so please give us a little time.\n\nIf you wrote about your Ye₿ente wallet, help with it is already on the way.` });
     m.handled = true;
     m.ack = draft.id;
     await setJSON(`contact:msg:${m.id}`, m);

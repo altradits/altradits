@@ -325,7 +325,7 @@ const REJECT = {
   social: reject("Grace Wanjiru", "Head of Social and Content", "our stories or content"),
   admin: reject("Daniel Tesfaye", "Head of Operations and Admin", "operations or admin"),
   personal: reject("Faith Achieng", "Head of Personal Assistance", "scheduling or assistance"),
-  growth: reject("Samuel Bekele", "Head of Community Care", "your YeBente wallet or community help"),
+  growth: reject("Samuel Bekele", "Head of Community Care", "your Ye₿ente wallet or community help"),
   tech: reject("Brian Otieno", "Head of Web, Automation and Bitcoin", "the node, the website or automation"),
   orders: reject("Samuel Bekele", "Head of Receipts", "a receipt or payment confirmation"),
   finance: reject("Peter Rotich", "Head of Finance and Books", "finance or the books"),

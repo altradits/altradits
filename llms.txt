@@ -1,15 +1,15 @@
 # Altradits
 
 Altradits teaches anyone to use Bitcoin, starting with a free wallet called
-YeBente. Start here: https://altradits.com/
+Ye₿ente. Start here: https://altradits.com/
 
-## YeBente: the free Bitcoin wallet
+## Ye₿ente: the free Bitcoin wallet
 
 - Open a wallet in about a minute, nothing to install: https://altradits.com/yebente#create
-- Opening is free. Payments between YeBente wallets are free. Payments out over
+- Opening is free. Payments between Ye₿ente wallets are free. Payments out over
   Lightning pay the network's small routing fee. M-Pesa payouts add the payout
   partner's 1 percent fee.
-- YeBente is a starter wallet: Altradits holds small amounts for you on its own
+- Ye₿ente is a starter wallet: Altradits holds small amounts for you on its own
   Lightning node, so balances are capped for everyday amounts. When ready, we
   help you move to a wallet only you control, free.
 - One 6-digit PIN opens the app and approves every payment. Five wrong PINs
