@@ -55,9 +55,9 @@ Without Meta settings the server behaves exactly as before (Anthropic).
 
 ## New work (all inside the event window)
 
-Three PRs (#328, #329, #330), all committed Nov 4 2026:
+This PR only, branch `hack/meta-agents`, committed Nov 4 2026:
 
-- `lib/meta.js`, `test/meta.test.mjs` (11 tests), `demo/meta.mjs`,
+- `lib/meta.js`, `test/meta.test.mjs` (10 tests), `demo/meta.mjs`,
   `docs/hackathon.md`, plus the provider edits in `lib/ai.js`,
   `lib/stan.js`, `lib/workers.js`, `assets/admin.js`, `.env.example`,
   `test/build-security.test.mjs` and this README pointer.
