@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
 <meta name="robots" content="noindex">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g=' 'sha256-lK5JLprFGAzZeXxxGqpkyaAW6V3f+ufNFKh/RmT7QmA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-lK5JLprFGAzZeXxxGqpkyaAW6V3f+ufNFKh/RmT7QmA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/receipt">
 <title>Receipt · Altradits</title>
@@ -39,7 +39,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtr
 .rcpt-foot{margin:1.2rem 0 0;color:var(--muted);font-size:.92rem;border-top:1px solid var(--red);padding-top:.8rem}
 .btn{display:inline-flex;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer;margin-top:1.2rem;text-decoration:none}
 .err{color:#B42318}
-*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top,.tabs{transition:box-shadow .25s ease}body.scrolled .top,body.scrolled .tabs{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.cards .links a,.more a,.foot nav a,.pager a{transition:color .18s ease}.more a{display:inline-block;transition:transform .18s ease,color .18s ease}.more a:hover{transform:translateX(4px)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
 @media print{.btn,.noprint{display:none!important}body{background:#fff}.wrap{padding:0}.rcpt{border:0;border-radius:0}}
 </style>
 </head>
@@ -62,6 +63,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtr
 </div>
 <script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY>24)},{passive:true});document.body.classList.toggle("scrolled",scrollY>24); // nav shadow on scroll
 </script>
 <script>
 (async () => {

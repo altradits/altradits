@@ -2,6 +2,7 @@
 // reading says what it means and what good looks like ("Explain everything").
 // Kept out of the HTML so the page's Content Security Policy allows only our own script files.
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY>24)},{passive:true});document.body.classList.toggle("scrolled",scrollY>24); // nav shadow on scroll
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const num = (n) => Math.round(Number(n) || 0).toLocaleString("en-US");

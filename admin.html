@@ -98,6 +98,7 @@ button.pill{cursor:pointer;font-family:inherit}
 #refresh.busy .spin{animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){#refresh.busy .spin{animation:none}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top,.tabs{transition:box-shadow .25s ease}body.scrolled .top,body.scrolled .tabs{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.cards .links a,.more a,.foot nav a,.pager a{transition:color .18s ease}.more a{display:inline-block;transition:transform .18s ease,color .18s ease}.more a:hover{transform:translateX(4px)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
 .pill{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .8rem;border-radius:99px;font-weight:700;font-size:.88rem;background:color-mix(in srgb,var(--ok) 15%,white);color:var(--ok);border:2px solid color-mix(in srgb,var(--ok) 45%,white)}
 .pill.bad{background:color-mix(in srgb,var(--crit) 12%,white);color:var(--crit);border-color:color-mix(in srgb,var(--crit) 40%,white)}
 .see{margin:-.2rem 0 .6rem;color:var(--muted)}
