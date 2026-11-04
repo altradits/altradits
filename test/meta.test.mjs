@@ -18,6 +18,11 @@ afterEach(() => {
 const meta = await import("../lib/meta.js");
 const { toChatBody, fromChatReply, createMetaClient, setMetaFetcher, resetMetaFetcher, META_MODEL } = meta;
 const ai = await import("../lib/ai.js");
+// Freeze the worker model on Muse, as a server started with AI_PROVIDER=meta would.
+process.env.AI_PROVIDER = "meta";
+const workers = await import("../lib/workers.js");
+const ops = await import("../lib/ops.js");
+delete process.env.AI_PROVIDER;
 
 const FN_TOOL = { name: "draft", description: "Draft it.", input_schema: { type: "object", properties: { to: { type: "string" } }, required: ["to"] } };
 const SRV_TOOL = { type: "web_search_20260209", name: "web_search", max_uses: 6 };
@@ -157,4 +162,84 @@ test("a guarded Meta call records budgets and clears pauses", async () => {
   const s = ai.aiStatus();
   assert.equal(s.todayCalls, 1);
   assert.ok(s.todayUsd > 0 && s.todayUsd < 0.01);
+});
+
+test("all five departments complete a task on Muse: agent, 4-step QA and handover, no Anthropic-only fields sent", async () => {
+  process.env.AI_PROVIDER = "meta";
+  process.env.META_MODEL_API_KEY = "test-meta-key";
+  process.env.WORKER_CALLS_PER_DAY = "200";
+  const seen = [];
+  const reply = (name, input) => ({
+    ok: true,
+    json: async () => ({
+      model: "muse-spark-1.3",
+      choices: [{ finish_reason: "tool_calls", message: { content: "", tool_calls: [{ id: `c_${seen.length}`, type: "function", function: { name, arguments: JSON.stringify(input) } }] } }],
+      usage: { prompt_tokens: 200, completion_tokens: 100 },
+    }),
+  });
+  setMetaFetcher(async (url, opts) => {
+    const body = JSON.parse(opts.body);
+    seen.push(body);
+    const names = (body.tools || []).map((t) => t.function?.name);
+    const userText = (body.messages || []).filter((m) => m.role === "user").map((m) => m.content).join("\n");
+    if (names.includes("qa_plan")) {
+      const ids = [...userText.matchAll(/^- ([a-z-]+): /gm)].map((m) => m[1]);
+      return reply("qa_plan", { areas: ids.map((id) => ({ id, criteria: [`${id} criterion`] })) });
+    }
+    if (names.includes("area_verdict")) {
+      const crits = [...userText.matchAll(/^\d+\. (.+ criterion)$/gm)].map((m) => m[1]);
+      return reply("area_verdict", { items: crits.map((c, i) => ({ index: i + 1, criterion: `Re: ${c}`, pass: true, evidence: "line 1" })) });
+    }
+    if (names.includes("stan_decision")) {
+      return reply("stan_decision", { approve: true, reason: "All areas approved", issues: [], subject: "Your draft is ready", body: "The draft passed every check and is ready for review." });
+    }
+    const dept = (body.messages || []).find((m) => m.role === "system")?.content?.match(/background work for tasks in the (.+?) department/)?.[1] || "department";
+    return reply("submit_deliverable", {
+      title: `Draft for ${dept}`,
+      summary_for_client: "A short plain draft written for review.",
+      files: [{ name: "draft.md", format: "md", content: `# Draft\nPlain notes for Stanley to review.` }],
+      hours_saved: 1,
+      human_steps: [],
+      sources: ["https://altradits.com/library"],
+    });
+  });
+
+  const briefs = {
+    tech: ["Check node sync and sending power", "Read-only summary of block height sync and outbound capacity for the daily report"],
+    admin: ["Reconcile the weekly statement", "Match receipts to the ledger for the past week and list any exceptions"],
+    growth: ["Draft Ye₿ente wallet help notes", "Plain-language answers to three common wallet questions for review"],
+    personal: ["Plan the BitDevs Kisumu seminar", "Run-of-show draft with reading list and reminder times in EAT"],
+    social: ["Draft journey update posts", "Two short posts about the latest open-source milestone for review"],
+  };
+  for (const dept of Object.keys(briefs)) ai.setDeptPower(dept, true, { by: "stanley" });
+  for (const [dept, [title, details]] of Object.entries(briefs)) {
+    const t = await ops.createTask({ title, details, department: dept });
+    assert.equal(t.status, "queued");
+    await workers.processTask(t.id).catch(() => {});
+    let done = null;
+    for (let i = 0; i < 200; i++) {
+      const cur = await ops.getTask(t.id);
+      if (!["queued", "working"].includes(cur.status)) { done = cur; break; }
+      await new Promise((r) => setTimeout(r, 15));
+    }
+    assert.ok(done, `${dept}: task settled`);
+    assert.equal(done.status, "review", `${dept}: reached review, got ${done?.status}`);
+    assert.equal(done.qa.final.approve, true, `${dept}: Choumi approved`);
+    assert.ok(done.qa.rounds.length >= 1, `${dept}: QA ran`);
+  }
+
+  assert.ok(seen.length >= 5 * 8, `every call went through the Meta fetcher (saw ${seen.length})`);
+  for (const b of seen) {
+    assert.equal(b.model, "muse-spark-1.3");
+    assert.ok((b.tools || []).every((t) => t.type === "function"), "no Anthropic server tools leak to Meta");
+    assert.ok(!("output_config" in b), "no Anthropic-only output_config sent");
+    assert.ok(b.tool_choice === undefined || b.tool_choice === "auto", "tool choice rides as auto");
+  }
+  const view = ai.deptPowerView();
+  for (const dept of Object.keys(briefs)) {
+    const row = view.departments.find((d) => d.id === dept);
+    assert.ok(row.on && row.today.calls > 0, `${dept}: power on and spend tracked`);
+  }
+  assert.equal(view.status.provider, "meta");
+  delete process.env.WORKER_CALLS_PER_DAY;
 });
