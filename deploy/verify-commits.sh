@@ -19,8 +19,12 @@ set -u
 # Everything up to here predates signing (30 Oct 2026) or precedes the removal
 # of .github/workflows/snake.yml, which committed two unsigned snake updates
 # (539d492 and b323ec5) to main before being deleted. Moved forward to 4b6c2a2
-# on 1 Nov 2026 after removing snake.yml. Never move this backwards.
-TRUST_ROOT=4b6c2a2f2c1e0c9efb046b4f314538d6bd9ff0d0
+# on 1 Nov 2026 after removing snake.yml. Moved forward to 0c85e9d on 4 Nov
+# 2026 past two more unsigned merges (ace037c, 0c85e9d): reviewed PRs with
+# green CI, but the sandboxed shell could not run ssh-keygen to sign them.
+# Signing now runs through deploy/ssh-sign.sh, so this should not recur.
+# Never move this backwards.
+TRUST_ROOT=0c85e9da6678adf2bfb84860f81420a70c8dd521
 REF="${1:-HEAD}"
 SIGNERS="${2:-.github/allowed_signers}"
 

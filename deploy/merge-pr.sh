@@ -12,6 +12,7 @@ set -eu
 PR="${1:?usage: sh deploy/merge-pr.sh <pr-number> [--push]}"
 PUSH="${2:-}"
 ID="-c user.name=altradits -c user.email=altradits@gmail.com"
+HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 die() { echo "merge-pr: $*" >&2; exit 1; }
 
 [ -z "$(git status --porcelain)" ] || die "the working tree has changes; commit or stash them first."
@@ -39,10 +40,15 @@ git log --oneline "main..$HEAD"
 git diff --stat "main...$HEAD" | tail -1
 
 # Signed when this machine has the signing key; unsigned otherwise (allowed for now).
+# Signing runs through deploy/ssh-sign.sh when present: plain ssh-keygen needs
+# a login user, which sandboxed shells don't have, and an unsigned merge fails
+# the signed-commits check on main.
 KEY=$(git config --get user.signingkey || true)
+SIGNC=""
 if [ -n "$KEY" ] && [ -f "$KEY" ]; then SIGN="-S"; else SIGN="--no-gpg-sign"; fi
+if [ "$SIGN" = "-S" ] && command -v node >/dev/null 2>&1 && [ -x "$HERE/ssh-sign.sh" ]; then SIGNC="-c gpg.ssh.program=$HERE/ssh-sign.sh"; fi
 # shellcheck disable=SC2086
-git $ID merge -q --no-ff $SIGN "$HEAD" -m "Merge #$PR: $TITLE" || { git merge --abort 2>/dev/null; die "the merge didn't apply cleanly; rebase the PR and review again."; }
+git $ID $SIGNC merge -q --no-ff $SIGN "$HEAD" -m "Merge #$PR: $TITLE" || { git merge --abort 2>/dev/null; die "the merge didn't apply cleanly; rebase the PR and review again."; }
 echo "== Tests on the merged result"
 if ! npm test --silent >/tmp/merge-pr-$PR.log 2>&1; then
   git reset -q --merge ORIG_HEAD
