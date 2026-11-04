@@ -37,7 +37,11 @@ const rec = await stan.instruct({
   to: "client@example.com",
 });
 console.log(`status=${rec.status} plan=${rec.plan || "(none)"}`);
-for (const d of rec.drafts || []) console.log(`queued: [${d.dept}] to ${d.to}: ${d.subject}`);
+const drafts = await stan.pendingDrafts();
+for (const id of rec.drafts || []) {
+  const d = drafts.find((x) => x && x.id === id);
+  console.log(d ? `queued: [${d.dept}] to ${d.to}: ${d.subject}` : `queued: ${id} (missing)`);
+}
 for (const q of rec.questions || []) console.log(`question: ${q}`);
 if (rec.status === "error") {
   console.error(`instruction failed: ${rec.error}`);
