@@ -108,8 +108,9 @@ Object.assign(process.env, { LND_REST_URL: `https://localhost:${lnd.address().po
 const ok = (body) => ({ ok: true, json: async () => body });
 globalThis.fetch = async (url) => {
   const u = String(url);
-  if (u.includes("open.er-api.com")) return ok({ rates: { KES: 129 } });
-  if (u.includes("api.coinbase.com")) return ok({ data: { amount: "100000" } });
+  const host = new URL(u).hostname; // exact hosts: no substring matching
+  if (host === "open.er-api.com") return ok({ rates: { KES: 129 } });
+  if (host === "api.coinbase.com") return ok({ data: { amount: "100000" } });
   throw new Error(`unexpected fetch: ${u}`);
 };
 
