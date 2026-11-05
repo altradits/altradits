@@ -724,7 +724,7 @@ async function loadMarketing() {
   $("#mktNext").onclick = () => stepMonth(1);
   await renderMarketing(MKT_MONTHS[MKT_MONTHS.length - 1]);
   await loadTemplates();
-  drawCustom();
+  if (MKT_TPL.length) editTemplate(0, false);
 }
 function stepMonth(d) {
   const i = MKT_MONTHS.indexOf(MKT_MONTH) + d;
@@ -766,16 +766,40 @@ async function loadTemplates() {
   ).join("") + `</div>`;
 }
 let MKT_TPL = [];
-let MKT_EDIT = { file: "assets/marketing/templates/tpl-01.jpg", name: "Ember", img: null };
-// The words editor: headline plus one smaller line, drawn on the template in
-// the browser. Nothing leaves the page until Download or Place is pressed.
-function editTemplate(i) {
+// The words editor: headline plus one smaller line, drawn on the template's
+// clean background in the browser, with the logo as a third layer. All three
+// drag with the pointer and nudge with the arrow keys; the layout is kept
+// per template while the page is open. Nothing leaves the page until
+// Download or Place is pressed.
+const MKT_LOGO_W = 290, MKT_LOGO_H = Math.round(MKT_LOGO_W * 119 / 325);
+const MKT_FONTS = {
+  hbrand: { f: '"Bricolage Grotesque", Figtree, sans-serif', w: 800 },
+  hsoft: { f: '"Bricolage Grotesque", Figtree, sans-serif', w: 600 },
+  hplain: { f: 'Figtree, sans-serif', w: 700 },
+  hserif: { f: 'Georgia, "Times New Roman", serif', w: 700 },
+  sbrand: { f: 'Figtree, sans-serif', w: 600 },
+  ssoft: { f: '"Bricolage Grotesque", Figtree, sans-serif', w: 500 },
+  sserif: { f: 'Georgia, "Times New Roman", serif', w: 400, st: 'italic ' },
+  smono: { f: 'ui-monospace, Menlo, Consolas, monospace', w: 600 },
+};
+function mktLayout() { return { head: { x: 120, y: 270 }, sub: null, logo: { x: 96, y: 1085 } }; }
+let MKT_EDIT = { file: "", bg: "", name: "", img: null, logoImg: null, logoWhite: null, sel: null, ...mktLayout() };
+let MKT_HIT = [];
+let MKT_SUBFLOW = { x: 120, y: 306 };
+const MKT_LAYOUTS = {};
+function loadImg(src) {
+  return new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = src; });
+}
+function editTemplate(i, scroll = true) {
   const t = MKT_TPL[i];
   if (!t) return;
-  MKT_EDIT = { file: t.file, name: t.name, img: null };
+  if (MKT_EDIT.file) MKT_LAYOUTS[MKT_EDIT.file] = { head: MKT_EDIT.head, sub: MKT_EDIT.sub, logo: MKT_EDIT.logo };
+  MKT_EDIT = { file: t.file, bg: t.bg, name: t.name, img: null, logoImg: null, logoWhite: null, sel: null, ...(MKT_LAYOUTS[t.file] || mktLayout()) };
   const lbl = $("#mktEditName");
   if (lbl) lbl.textContent = t.name;
-  drawCustom().then(() => $("#hMktEdit")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  if ($("#mktLight")) $("#mktLight").checked = t.light === true;
+  if ($("#mktLogoWhite")) $("#mktLogoWhite").checked = t.ink === "white";
+  drawCustom().then(() => { if (scroll) $("#hMktEdit")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
 }
 function paintLine(ctx, line, x, y, halo) {
   if (halo) { ctx.save(); ctx.lineWidth = 10; ctx.strokeStyle = "rgba(15,27,45,.55)"; ctx.strokeText(line, x, y); ctx.restore(); }
@@ -783,50 +807,137 @@ function paintLine(ctx, line, x, y, halo) {
 }
 function wrapPaint(ctx, text, x, y, maxW, lh, maxLines, halo) {
   const words = String(text).split(/\s+/).filter(Boolean);
-  let line = "", yy = y, n = 0;
-  for (const w of words) {
+  let line = "", yy = y, n = 0, w = 0;
+  const paint = (s, py) => { paintLine(ctx, s, x, py, halo); w = Math.max(w, ctx.measureText(s).width); };
+  for (const wd of words) {
     if (n >= maxLines) break;
-    const t = line ? line + " " + w : w;
-    if (ctx.measureText(t).width > maxW && line) { paintLine(ctx, line, x, yy, halo); line = w; yy += lh; n++; }
+    const t = line ? line + " " + wd : wd;
+    if (ctx.measureText(t).width > maxW && line) { paint(line, yy); line = wd; yy += lh; n++; }
     else line = t;
   }
-  if (line && n < maxLines) { paintLine(ctx, line, x, yy, halo); yy += lh; }
-  return yy;
+  if (line && n < maxLines) { paint(line, yy); yy += lh; }
+  return { y: yy, w };
 }
-function fitFont(ctx, text, maxW, start, min, weight, family) {
+function fitFont(ctx, text, maxW, start, min, spec) {
   let size = start;
-  ctx.font = `${weight} ${size}px ${family}`;
-  while (size > min && String(text).split(/\s+/).some((w) => ctx.measureText(w).width > maxW)) {
+  ctx.font = `${spec.st || ""}${spec.w} ${size}px ${spec.f}`;
+  while (size > min && String(text).split(/\s+/).some((wd) => ctx.measureText(wd).width > maxW)) {
     size -= 10;
-    ctx.font = `${weight} ${size}px ${family}`;
+    ctx.font = `${spec.st || ""}${spec.w} ${size}px ${spec.f}`;
   }
   return size;
 }
-async function drawCustom() {
+async function drawCustom(outline = true) {
   const cv = $("#mktCanvas");
   if (!cv) return; // older cached page without the editor panel
   const ctx = cv.getContext("2d");
   if (!MKT_EDIT.img) {
-    try { MKT_EDIT.img = await new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = "/" + MKT_EDIT.file; }); }
+    try { MKT_EDIT.img = await loadImg("/" + MKT_EDIT.bg); }
     catch { cv.parentElement.innerHTML = `<p class="sm">Template picture unavailable. Reload and try again.</p>`; return; }
   }
   ctx.drawImage(MKT_EDIT.img, 0, 0, 1920, 1280);
-  try { await Promise.all([document.fonts.load('800 170px "Bricolage Grotesque"'), document.fonts.load('600 76px Figtree')]); } catch { /* system fonts stand in */ }
+  try { await Promise.all([document.fonts.load('800 170px "Bricolage Grotesque"'), document.fonts.load('600 76px Figtree'), document.fonts.load('700 76px Figtree')]); } catch { /* system fonts stand in */ }
   const light = $("#mktLight")?.checked;
+  const whiteLogo = $("#mktLogoWhite")?.checked;
   const head = $("#mktHead")?.value.trim() || "", sub = $("#mktSub")?.value.trim() || "";
+  const hs = MKT_FONTS[$("#mktHFont")?.value] || MKT_FONTS.hbrand;
+  const ss = MKT_FONTS[$("#mktSFont")?.value] || MKT_FONTS.sbrand;
   ctx.textBaseline = "top";
-  let y = 270;
+  MKT_HIT = [];
+  const lp = MKT_EDIT.logo;
+  let logoOk = false;
+  try {
+    if (!MKT_EDIT.logoImg || MKT_EDIT.logoWhite !== whiteLogo) {
+      MKT_EDIT.logoImg = await loadImg(whiteLogo ? "/assets/logo-white.png" : "/assets/logo.png");
+      MKT_EDIT.logoWhite = whiteLogo;
+    }
+    ctx.drawImage(MKT_EDIT.logoImg, lp.x, lp.y, MKT_LOGO_W, MKT_LOGO_H);
+    logoOk = true;
+  } catch { /* the wordmark below stands in */ }
+  if (!logoOk) {
+    ctx.font = '800 64px "Bricolage Grotesque", Figtree, sans-serif';
+    ctx.fillStyle = whiteLogo ? "#ffffff" : "#0f1b2d";
+    ctx.fillText("Altradits", lp.x, lp.y);
+  }
+  MKT_HIT.push({ id: "logo", x: lp.x, y: lp.y, w: MKT_LOGO_W, h: MKT_LOGO_H });
+  const hp = MKT_EDIT.head;
+  let hy = hp.y;
   if (head) {
-    const size = fitFont(ctx, head, 1680, 170, 80, 800, '"Bricolage Grotesque", Figtree, sans-serif');
+    const size = fitFont(ctx, head, 1680, 170, 80, hs);
     ctx.fillStyle = light ? "#ffffff" : "#0f1b2d";
-    y = wrapPaint(ctx, head, 120, y, 1680, Math.round(size * 1.08), 3, light);
+    const r = wrapPaint(ctx, head, hp.x, hp.y, 1680, Math.round(size * 1.08), 3, light);
+    hy = r.y;
+    MKT_HIT.push({ id: "head", x: hp.x, y: hp.y, w: Math.max(r.w, 40), h: Math.max(hy - hp.y, 40) });
   }
   if (sub) {
-    ctx.font = '600 76px Figtree, sans-serif';
+    ctx.font = `${ss.st || ""}${ss.w} 76px ${ss.f}`;
     ctx.fillStyle = "#ea5158";
-    wrapPaint(ctx, sub, 120, y + 36, 1680, 92, 2, false);
+    const sp = MKT_EDIT.sub || { x: hp.x, y: hy + 36 };
+    const r = wrapPaint(ctx, sub, sp.x, sp.y, 1680, 92, 2, false);
+    MKT_SUBFLOW = { x: hp.x, y: hy + 36 };
+    MKT_HIT.push({ id: "sub", x: sp.x, y: sp.y, w: Math.max(r.w, 40), h: Math.max(r.y - sp.y, 40) });
+  }
+  if (outline && MKT_EDIT.sel) {
+    const h = MKT_HIT.find((b) => b.id === MKT_EDIT.sel);
+    if (h) {
+      ctx.save();
+      ctx.setLineDash([16, 12]);
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = "#0f1b2d";
+      ctx.strokeRect(h.x - 8, h.y - 8, h.w + 16, h.h + 16);
+      ctx.lineDashOffset = 16;
+      ctx.strokeStyle = "#ffffff";
+      ctx.strokeRect(h.x - 8, h.y - 8, h.w + 16, h.h + 16);
+      ctx.restore();
+    }
   }
 }
+let MKT_DRAG = null;
+function mktPos(e) {
+  const r = $("#mktCanvas").getBoundingClientRect();
+  return { x: (e.clientX - r.left) * 1920 / r.width, y: (e.clientY - r.top) * 1280 / r.height };
+}
+function mktHit(p) {
+  return [...MKT_HIT].reverse().find((h) => p.x >= h.x && p.x <= h.x + h.w && p.y >= h.y && p.y <= h.y + h.h) || null;
+}
+function mktPlaceOf(id) {
+  if (id === "head") return MKT_EDIT.head;
+  if (id === "logo") return MKT_EDIT.logo;
+  if (!MKT_EDIT.sub) MKT_EDIT.sub = { ...MKT_SUBFLOW };
+  return MKT_EDIT.sub;
+}
+$("#mktCanvas")?.addEventListener("pointerdown", (e) => {
+  const h = mktHit(mktPos(e));
+  MKT_EDIT.sel = h ? h.id : null;
+  if (h) {
+    const p = mktPos(e), o = mktPlaceOf(h.id);
+    MKT_DRAG = { w: h.w, h: h.h, dx: p.x - o.x, dy: p.y - o.y };
+    e.target.setPointerCapture?.(e.pointerId);
+  }
+  drawCustom();
+});
+$("#mktCanvas")?.addEventListener("pointermove", (e) => {
+  const cv = $("#mktCanvas"), p = mktPos(e);
+  if (!MKT_DRAG || !MKT_EDIT.sel) { cv.style.cursor = mktHit(p) ? "grab" : "default"; return; }
+  const o = mktPlaceOf(MKT_EDIT.sel);
+  o.x = Math.round(Math.min(Math.max(p.x - MKT_DRAG.dx, 0), 1920 - MKT_DRAG.w));
+  o.y = Math.round(Math.min(Math.max(p.y - MKT_DRAG.dy, 0), 1280 - MKT_DRAG.h));
+  cv.style.cursor = "grabbing";
+  drawCustom();
+});
+for (const ev of ["pointerup", "pointercancel"]) $("#mktCanvas")?.addEventListener(ev, () => { MKT_DRAG = null; const cv = $("#mktCanvas"); if (cv) cv.style.cursor = "default"; });
+$("#mktCanvas")?.addEventListener("keydown", (e) => {
+  if (!MKT_EDIT.sel) return;
+  const step = e.shiftKey ? 20 : 4;
+  const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+  if (!d) return;
+  e.preventDefault();
+  const h = MKT_HIT.find((b) => b.id === MKT_EDIT.sel), o = mktPlaceOf(MKT_EDIT.sel);
+  const w = h ? h.w : 200, hh = h ? h.h : 100;
+  o.x = Math.round(Math.min(Math.max(o.x + d[0], 0), 1920 - w));
+  o.y = Math.round(Math.min(Math.max(o.y + d[1], 0), 1280 - hh));
+  drawCustom();
+});
 function renderCalendar() {
   const [y, m] = MKT_MONTH.split("-").map(Number);
   const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
@@ -880,24 +991,40 @@ $("#mktTpl").addEventListener("click", (e) => {
   editTemplate(Number(b.dataset.mktEdit));
 });
 for (const id of ["mktHead", "mktSub"]) $(`#${id}`)?.addEventListener("input", () => drawCustom());
-$("#mktLight")?.addEventListener("change", () => drawCustom());
-$("#mktDl")?.addEventListener("click", () => {
+for (const id of ["mktLight", "mktLogoWhite"]) $(`#${id}`)?.addEventListener("change", () => drawCustom());
+for (const id of ["mktHFont", "mktSFont"]) $(`#${id}`)?.addEventListener("change", () => drawCustom());
+$("#mktReset")?.addEventListener("click", () => {
+  if (MKT_EDIT.file) delete MKT_LAYOUTS[MKT_EDIT.file];
+  Object.assign(MKT_EDIT, mktLayout(), { sel: null });
+  drawCustom();
+});
+$("#mktDl")?.addEventListener("click", async () => {
+  const keep = MKT_EDIT.sel;
+  MKT_EDIT.sel = null;
+  await drawCustom(false);
   const a = document.createElement("a");
   a.href = $("#mktCanvas").toDataURL("image/jpeg", 0.9);
   a.download = `altradits-${MKT_EDIT.name.toLowerCase()}-custom.jpg`;
   a.click();
+  MKT_EDIT.sel = keep;
+  drawCustom();
 });
 $("#mktPlace")?.addEventListener("click", async () => {
   const st = $("#mktIStatus");
   st.textContent = "Placing…";
   const month = $("#mktIMonth").value, day = String($("#mktIDay").value).padStart(2, "0");
+  const keep = MKT_EDIT.sel;
+  MKT_EDIT.sel = null;
   try {
+    await drawCustom(false);
     const r = await api("", { action: "mkt_place", month, date: `${month}-${day}`,
       caption: $("#mktICap").value, alt: `${MKT_EDIT.name} template with custom words`,
       imageData: $("#mktCanvas").toDataURL("image/jpeg", 0.88) });
     st.textContent = `Placed on ${r.placed}.`;
     await renderMarketing(month);
   } catch (err) { st.textContent = err.message; }
+  MKT_EDIT.sel = keep;
+  drawCustom();
 });
 $("#mktUnplace")?.addEventListener("click", async () => {
   const st = $("#mktIStatus");

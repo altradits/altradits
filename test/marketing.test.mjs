@@ -134,3 +134,15 @@ test("the blank template gallery lists ten unique branded files", () => {
   const js = fs.readFileSync(path.join(ROOT, "assets", "admin.js"), "utf8");
   assert.match(js, /templates\.json", \{ cache: "no-store" \}/, "gallery loads fresh, never cached");
 });
+
+test("templates carry clean backgrounds and light-or-dark defaults", () => {
+  const list = JSON.parse(fs.readFileSync(path.join(DIR, "templates.json"), "utf8"));
+  for (const t of list) {
+    assert.match(t.bg, /\.jpg$/, `${t.name}: editor background is a jpg`);
+    const full = path.join(ROOT, t.bg);
+    assert.ok(fs.existsSync(full), `${t.name}: ${t.bg} exists`);
+    assert.ok(fs.statSync(full).size > 10 * 1024, `${t.name}: background is not empty`);
+    assert.ok(t.ink === "white" || t.ink === "navy", `${t.name}: logo ink is white or navy`);
+    assert.equal(typeof t.light, "boolean", `${t.name}: light-words default is a yes/no`);
+  }
+});
