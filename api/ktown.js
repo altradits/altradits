@@ -14,7 +14,7 @@
 //   POST lock                        sign out on this phone (signed in)
 //   GET  lnurlp/<id> (= /.well-known/lnurlp/k-<id>)  the merchant as LNURL-pay
 //   GET  lnurlp/<id>/cb?amount=&currency=  Tando's invoice for exactly that amount
-//   GET  receipt/<hash>              Tando's public payment status (nothing private)
+//   GET  receipt/<hash>              Tando's status for a kTown-recorded payment only
 import { json, readBody, clientIp } from "../lib/http.js";
 import { hit } from "../lib/store.js";
 import crypto from "node:crypto";

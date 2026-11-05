@@ -440,6 +440,12 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
   assert.match(srv, /api\[1\] !== "yebente" && api\[1\] !== "ktown"/, "server.mjs: kTown's API takes a sub-path");
   assert.ok(srv.indexOf("k-[A-Za-z0-9_-]{6,64}") !== -1 && srv.indexOf("k-[A-Za-z0-9_-]{6,64}") < srv.indexOf("handle@altradits.com"),
     "server.mjs: the kTown well-known route runs before Ye₿ente's, which would also match the name");
+  assert.ok(kt.indexOf("kt:pay:${h}") !== -1 && kt.indexOf("kt:pay:${h}") < kt.indexOf("fetchReceipt(h)"),
+    "lib/ktown.js: unknown payment hashes are refused before Tando is ever asked");
+  assert.match(kt, /merchantName: nameMatch \? rc\.merchantName : null/, "lib/ktown.js: the registered name is answered only when it matches the merchant");
+  assert.match(kt, /if \(nameMatch && !merchant\.claimed\)/, "lib/ktown.js: a matched receipt claims the number, and nothing unclaims it");
+  assert.match(kt, /takeoverEligible/, "lib/ktown.js: a stale unclaimed number with no paid receipt can be taken over");
+  assert.match(kt, /deleteKeys\(\[`kt:\$\{old\.id\}`\]\)/, "lib/ktown.js: a takeover ends the old record, so its sessions and QR die with it");
 });
 
 test("admin bodies over 100 KB need the token up front: strangers hit 413, the token passes 700 KB", async () => {

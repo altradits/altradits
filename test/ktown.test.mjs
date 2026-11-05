@@ -31,6 +31,7 @@ const MULT = 10000; // msat per KES
 const tando = {
   mode: "ok", // ok | invoice_error | wrong_converted | wrong_msats | off_host | no_kes | redirect | html
   receipts: new Map(), // hash -> transaction (or "missing")
+  receiptCalls: 0, // GETs to /api/payment/ (unknown hashes must never cause one)
   freezeInvoice: false, // answer every invoice call with the last invoice (dedup test)
 };
 let lastInvoice = null;
@@ -71,6 +72,7 @@ const mockTando = async (raw) => {
   }
   const rc = u.pathname.match(/^\/api\/payment\/([0-9a-f]{64})$/i);
   if (rc) {
+    tando.receiptCalls++;
     const tx = tando.receipts.get(rc[1].toLowerCase());
     if (tx === undefined || tx === "missing") return J({ success: false, error: { errorCode: "transaction-not-found", message: "Transaction not found" } }, 404);
     return J({ success: true, transaction: tx });
@@ -136,6 +138,7 @@ test("register: activation proves the number's Tando address works; then login, 
   assert.equal(r.body.success, true);
   assert.equal(r.body.merchant.shop, "Ada Shop");
   assert.equal(r.body.merchant.verified, false, "typed names wait for the first receipt");
+  assert.equal(r.body.merchant.claimed, false, "the number is not proven yet");
   assert.equal(r.body.merchant.currency, "KES");
   assert.match(r.body.merchant.payUrl, /^https:\/\/altradits\.test\/k\/[A-Za-z0-9_-]{12}$/);
   assert.match(r.body.merchant.lnurl, /^LNURL1[QPZRY9X8GF2TVDW0S3JN54KHCE6MUA7L]+$/);
@@ -296,6 +299,7 @@ test("receipt: a completed payment lands in history and verifies the typed M-Pes
   assert.equal(done.kesReceived, 100);
   assert.ok(done.confirmedAt);
   assert.equal((await get("me", { token: ada.session })).body.merchant.verified, true, "Tando's registered name matches the typed one");
+  assert.equal((await get("me", { token: ada.session })).body.merchant.claimed, true, "the first matched receipt proves the number");
   // A second confirmation changes nothing (one record per payment hash).
   await get(`receipt/${hash}`);
   assert.equal((await get("history", { token: ada.session })).body.entries.filter((e) => e.mpesaCode === "TIA7QK4M2P").length, 1);
@@ -304,6 +308,7 @@ test("receipt: a completed payment lands in history and verifies the typed M-Pes
   assert.equal((await get("me", { token: ada.session })).body.merchant.verified, true);
   await post("settings", { mpesaName: "JANE MWANGI" }, { token: ada.session });
   assert.equal((await get("me", { token: ada.session })).body.merchant.verified, false);
+  assert.equal((await get("me", { token: ada.session })).body.merchant.claimed, true, "a rename unchecks the name, never the proven number");
   await post("settings", { mpesaName: "JANE W MWANGI" }, { token: ada.session });
 });
 
@@ -315,6 +320,7 @@ test("receipt: a name that does not match stays unverified, and a failed payout 
   tando.receipts.set(hash, receiptTx({ payToAccount: "254744000003", merchantName: "RIGHT NAME", currencyAmountSent: 50 }));
   const rc = await get(`receipt/${hash}`);
   assert.equal(rc.body.paid, true);
+  assert.equal(rc.body.merchantName, null, "the true registered name is not revealed to a wrong guess");
   assert.equal((await get("me", { token: c.body.session })).body.merchant.verified, false, "WRONG NAME is not what M-Pesa shows");
   const inv2 = await get(`lnurlp/${c.body.merchant.id}/cb?amount=60&currency=KES`);
   const hash2 = inv2.body.successAction.url.split("/").pop();
@@ -325,17 +331,25 @@ test("receipt: a name that does not match stays unverified, and a failed payout 
   assert.equal(rc2.body.status, "failed");
   const hist = (await get("history", { token: c.body.session })).body.entries;
   assert.equal(hist.find((e) => e.kesExpected === 60).status, "failed");
+  assert.equal(hist.find((e) => e.kesExpected === 50).merchantName, null, "history keeps no name the merchant did not already type");
 });
 
-test("receipt: unknown hashes, bad hashes, and receipts for another number", async () => {
+test("receipt: only hashes kTown recorded are answered, and Tando is never asked otherwise", async () => {
+  const before = tando.receiptCalls;
   const missing = await get(`receipt/${"00".repeat(32)}`);
-  assert.deepEqual(missing.body, { success: true, status: "unknown", paid: false, kes: null, mpesaCode: null, merchantName: null });
+  assert.equal(missing.status, 404);
+  assert.equal(missing.body.error, "That payment isn't known.");
   assert.equal((await get("receipt/notahash")).status, 404);
+  assert.equal(tando.receiptCalls, before, "no lookup of anyone else's payment happens");
+});
+
+test("receipt: a receipt for another number moves nothing and names no name", async () => {
   const inv = await get(`lnurlp/${adaId}/cb?amount=70&currency=KES`);
   const hash = inv.body.successAction.url.split("/").pop();
   tando.receipts.set(hash, receiptTx({ payToAccount: "254799999999", merchantName: "SOMEONE ELSE", currencyAmountSent: 70 }));
   const rc = await get(`receipt/${hash}`);
-  assert.equal(rc.body.paid, true, "Tando's public status is answered");
+  assert.equal(rc.body.paid, true, "our own payment's status is answered");
+  assert.equal(rc.body.merchantName, null, "a name that is not the merchant's is not returned");
   const hist = (await get("history", { token: ada.session })).body.entries;
   assert.equal(hist.find((e) => e.kesExpected === 70).status, "pending", "but our record does not move");
 });
@@ -425,6 +439,66 @@ test("two sign-ups racing for one number: one wins, the other hears it is taken"
   assert.deepEqual([a.status, b.status].sort(), [200, 409]);
   const winner = a.status === 200 ? a.body : b.body;
   assert.equal((await get("me", { token: winner.session })).status, 200);
+});
+
+test("takeover: a stale unclaimed number with no paid receipt goes to the new sign-up", async () => {
+  // A squatter registers someone else's number.
+  const sq = await post("register", { phone: "0777000077", shop: "Squat Shop", mpesaName: "SQUATTER", pin: "715293" });
+  assert.equal(sq.status, 200, JSON.stringify(sq.body));
+  const squat = sq.body;
+  assert.equal(squat.merchant.claimed, false);
+  // A payment started on the old QR is still in flight.
+  const sqInv = await get(`lnurlp/${squat.merchant.id}/cb?amount=90&currency=KES`);
+  const sqHash = sqInv.body.successAction.url.split("/").pop();
+  // A fresh registration holds: the owner hears it is taken.
+  assert.equal((await post("register", { phone: "0777000077", shop: "Real Duka", mpesaName: "REAL OWNER", pin: "482916" })).status, 409);
+  // 48 hours pass with no paid receipt. The owner signs up again and takes it over.
+  const rec = await store.getJSON(`kt:${squat.merchant.id}`);
+  rec.createdAt = new Date(Date.now() - 3 * 864e5).toISOString();
+  await store.setJSON(`kt:${squat.merchant.id}`, rec);
+  const own = await post("register", { phone: "0777000077", shop: "Real Duka", mpesaName: "REAL OWNER", pin: "482916" });
+  assert.equal(own.status, 200, JSON.stringify(own.body));
+  assert.notEqual(own.body.merchant.id, squat.merchant.id);
+  assert.equal((await get("me", { token: squat.session })).status, 401, "the old sessions ended");
+  assert.equal((await get(`lnurlp/${squat.merchant.id}`)).status, 404, "the old QR is dead");
+  assert.equal(await store.getJSON(`kt:${squat.merchant.id}`), null, "the old record is gone");
+  assert.equal((await store.listIds(`kt:tx:${squat.merchant.id}`, 10)).length, 1, "but its payment record is kept, not deleted");
+  // The in-flight payment still reports its status, but names no name.
+  tando.receipts.set(sqHash, receiptTx({ payToAccount: "254777000077", merchantName: "REAL OWNER", currencyAmountSent: 90 }));
+  const late = await get(`receipt/${sqHash}`);
+  assert.equal(late.body.paid, true);
+  assert.equal(late.body.merchantName, null, "no merchant stands behind this record any more");
+  // The new owner claims the number with a first real payment.
+  const inv = await get(`lnurlp/${own.body.merchant.id}/cb?amount=100&currency=KES`);
+  const hash = inv.body.successAction.url.split("/").pop();
+  tando.receipts.set(hash, receiptTx({ payToAccount: "254777000077", merchantName: "REAL OWNER", currencyAmountSent: 100 }));
+  await get(`receipt/${hash}`);
+  assert.equal((await get("me", { token: own.body.session })).body.merchant.claimed, true);
+});
+
+test("takeover: a claimed number, or one with a paid receipt, cannot be taken", async () => {
+  // Claimed: a matched receipt proves it, however old it gets.
+  const a = await post("register", { phone: "0788000088", shop: "A Shop", mpesaName: "ALICE A", pin: "715293" });
+  assert.equal(a.status, 200, JSON.stringify(a.body));
+  const inv = await get(`lnurlp/${a.body.merchant.id}/cb?amount=100&currency=KES`);
+  const hash = inv.body.successAction.url.split("/").pop();
+  tando.receipts.set(hash, receiptTx({ payToAccount: "254788000088", merchantName: "ALICE A", currencyAmountSent: 100 }));
+  await get(`receipt/${hash}`);
+  const recA = await store.getJSON(`kt:${a.body.merchant.id}`);
+  recA.createdAt = new Date(Date.now() - 30 * 864e5).toISOString();
+  await store.setJSON(`kt:${a.body.merchant.id}`, recA);
+  assert.equal((await post("register", { phone: "0788000088", shop: "Intruder", mpesaName: "X", pin: "482916" })).status, 409);
+  // Unclaimed but paid (the name never matched): a working till is not disturbed.
+  const b = await post("register", { phone: "0799000099", shop: "B Shop", mpesaName: "WRONG B", pin: "715293" });
+  assert.equal(b.status, 200, JSON.stringify(b.body));
+  const invB = await get(`lnurlp/${b.body.merchant.id}/cb?amount=100&currency=KES`);
+  const hashB = invB.body.successAction.url.split("/").pop();
+  tando.receipts.set(hashB, receiptTx({ payToAccount: "254799000099", merchantName: "RIGHT B", currencyAmountSent: 100 }));
+  await get(`receipt/${hashB}`);
+  const recB = await store.getJSON(`kt:${b.body.merchant.id}`);
+  recB.createdAt = new Date(Date.now() - 30 * 864e5).toISOString();
+  await store.setJSON(`kt:${b.body.merchant.id}`, recB);
+  assert.equal((await post("register", { phone: "0799000099", shop: "Intruder", mpesaName: "X", pin: "482916" })).status, 409);
 });
 
 test("rate limits: registration and LNURL per network and per merchant", async () => {
