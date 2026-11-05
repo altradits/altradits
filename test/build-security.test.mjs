@@ -457,6 +457,33 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
   assert.doesNotMatch(read(`ktown/${qrLib}`), /<script/i, "ktown/: the QR library emits no scripts");
   assert.ok(srv.includes('"/ktown/index.html"') && srv.includes('"/ktown/pay.html"'), "server.mjs: /ktown serves the app, /k/<id> the pay page");
   assert.ok(ht.includes("ktown/index.html") && ht.includes("ktown/pay.html"), ".htaccess: the same two routes on the Apache stack");
+  const mani = JSON.parse(read("ktown/manifest.webmanifest"));
+  assert.equal(mani.start_url, "/ktown", "ktown/: the app installs at /ktown");
+  assert.equal(mani.scope, "/ktown", "ktown/: installed scope stays inside the app");
+  assert.equal(mani.display, "standalone", "ktown/: the app installs standalone");
+  assert.ok(mani.icons.length >= 2, "ktown/: install icons are declared");
+  for (const icon of mani.icons)
+    assert.ok(fs.existsSync(path.join(root, icon.src.replace(/^\//, ""))), `ktown/: ${icon.src} exists on disk`);
+  const sw = read("ktown/sw.js"), app = read("ktown/app.js"), css = read("ktown/style.css");
+  assert.match(sw, /const CACHE = "ktown-v\d+"/, "ktown/sw.js: a versioned cache (bump it when cached files change)");
+  for (const f of ["/ktown/index.html", "/ktown/style.css", "/ktown/app.js", "/ktown/qrcode-generator-1.4.4.js", "figtree-latin.woff2"])
+    assert.ok(sw.includes(f), `ktown/sw.js: the offline shell precaches ${f}`);
+  for (const m of sw.match(/const SHELL = \[([\s\S]*?)\];/)[1].matchAll(/"([^"]+)"/g)) {
+    const p = m[1] === "/ktown" ? "ktown/index.html" : m[1].replace(/^\//, "");
+    assert.ok(fs.existsSync(path.join(root, p)), `ktown/sw.js: precached ${m[1]} exists (one 404 breaks the whole install)`);
+  }
+  assert.match(sw, /u\.origin !== self\.location\.origin/, "ktown/sw.js: same-site reads only");
+  assert.match(sw, /startsWith\("\/api\/"/, "ktown/sw.js: live API data is never cached");
+  assert.match(sw, /caches\.match\("\/ktown\/index\.html"\)/, "ktown/sw.js: failed reads fall back to the app");
+  assert.match(app, /navigator\.serviceWorker\.register\("\/ktown\/sw\.js"\)/, "ktown/app.js: the app installs its worker");
+  assert.match(app, /e\.status === 401/, "ktown/app.js: only a dead session signs out; a failed network runs on saved data");
+  assert.match(css, /@page card\{size:A6/, "ktown/style.css: the counter card prints at A6");
+  assert.match(css, /@page sheet\{size:A4/, "ktown/style.css: the cut-out sheet prints at A4");
+  assert.match(app, /toBlob\(res, "image\/png"\)/, "ktown/app.js: the PNG renders locally");
+  assert.match(app, /a\.download = /, "ktown/app.js: the PNG downloads as a file");
+  assert.match(app, /afterprint/, "ktown/app.js: the print sheet is removed after printing");
+  for (const page of ["ktown/index.html", "ktown/pay.html"])
+    assert.match(read(page), /name="theme-color" content="#0f1b2d"/, `${page}: the install theme color is set`);
   assert.match(srv, /api\[1\] !== "yebente" && api\[1\] !== "ktown"/, "server.mjs: kTown's API takes a sub-path");
   assert.ok(srv.indexOf("k-[A-Za-z0-9_-]{6,64}") !== -1 && srv.indexOf("k-[A-Za-z0-9_-]{6,64}") < srv.indexOf("handle@altradits.com"),
     "server.mjs: the kTown well-known route runs before Ye₿ente's, which would also match the name");

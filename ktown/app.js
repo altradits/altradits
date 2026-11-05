@@ -6,7 +6,7 @@ const $ = (id) => document.getElementById(id);
 
 const STR = {
   en: {
-    qr: "QR", settings: "Settings", print: "Print",
+    qr: "QR", settings: "Settings", printCard: "Print card", printSheet: "Print sheet", savePng: "Save PNG",
     honest: "kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.",
     register: "Register", phone: "M-Pesa number", shop: "Shop name",
     mpesaName: "M-Pesa name, exactly as M-Pesa shows it", pin: "6-digit PIN",
@@ -21,9 +21,11 @@ const STR = {
     received: "Received", waiting: "Waiting", failed: "Failed",
     noConn: "No connection. Try again.",
     tryAgain: "Something went wrong. Try again.",
+    offlineNote: "Offline. Showing saved data.",
+    pngFail: "PNG failed. Try again.",
   },
   sw: {
-    qr: "QR", settings: "Mipangilio", print: "Chapisha",
+    qr: "QR", settings: "Mipangilio", printCard: "Chapisha kadi", printSheet: "Chapisha karatasi", savePng: "Hifadhi PNG",
     honest: "kTown haishiki pesa. Tando hubadilisha sats kuwa M-Pesa kwa asilimia 1.",
     register: "Jisajili", phone: "Nambari ya M-Pesa", shop: "Jina la duka",
     mpesaName: "Jina la M-Pesa, kama M-Pesa inavyoonyesha", pin: "PIN ya tarakimu 6",
@@ -38,10 +40,13 @@ const STR = {
     received: "Imepokelewa", waiting: "Inasubiri", failed: "Imeshindikana",
     noConn: "Hakuna mtandao. Jaribu tena.",
     tryAgain: "Kuna tatizo. Jaribu tena.",
+    offlineNote: "Nje ya mtandao. Inaonyesha data iliyohifadhiwa.",
+    pngFail: "PNG imeshindikana. Jaribu tena.",
   },
 };
 let lang = "en";
 const t = (k) => (STR[lang] && STR[lang][k]) || STR.en[k] || k;
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/ktown/sw.js").catch(() => {});
 const SYM = { KES: "KSh ", USD: "$", EUR: "€", UGX: "USh ", TZS: "TSh " };
 const money = (n, code) => `${SYM[code] || `${code} `}${Number(n).toLocaleString("en-US")}`;
 
@@ -214,7 +219,24 @@ async function boot() {
   lang = localStorage.getItem("kt.lang") || "en";
   $("tab-qr").addEventListener("click", () => showScreen("qr"));
   $("tab-settings").addEventListener("click", () => showScreen("settings"));
-  $("btn-print").addEventListener("click", () => { showScreen("qr"); setTimeout(() => window.print(), 50); });
+  $("btn-print-card").addEventListener("click", () => {
+    showScreen("qr");
+    document.body.dataset.print = "a6";
+    setTimeout(() => window.print(), 50);
+  });
+  $("btn-print-sheet").addEventListener("click", () => {
+    showScreen("qr");
+    buildSheet();
+    document.body.dataset.print = "a4";
+    setTimeout(() => window.print(), 50);
+  });
+  window.addEventListener("afterprint", () => {
+    delete document.body.dataset.print;
+    const sheet = $("print-sheet");
+    sheet.innerHTML = "";
+    sheet.hidden = true;
+  });
+  $("btn-png").addEventListener("click", savePng);
   $("link-login").addEventListener("click", () => { $("f-login").hidden = false; $("link-login").hidden = true; });
   const setLang = (l) => {
     lang = l;
@@ -273,6 +295,7 @@ async function boot() {
       setMerchant(d.merchant);
     } catch (e) {
       if (e.status === 401) return signOut();
+      $("offline-note").hidden = false;
       renderSettings();
     }
   };
@@ -302,16 +325,46 @@ async function boot() {
     signOut();
   });
 
+  window.addEventListener("online", () => refresh());
+  window.addEventListener("offline", () => { $("offline-note").hidden = false; });
+
   applyLang();
   if (!localStorage.getItem("kt.session")) {
     showScreen("settings");
     return;
   }
+  if (!navigator.onLine) return bootOffline();
+  try {
+    const d = await api("me", { auth: true });
+    setMerchant(d.merchant);
+  } catch (e) {
+    if (e.status === 401) return signOut();
+    bootOffline(); // the network failed, not the session: run on saved data
+  }
+}
+
+// No internet, no SIM: the QR and the card render locally from the saved
+// account, history comes from its cache. Payments still land, because the
+// customer's wallet and the M-Pesa SMS do the work.
+function bootOffline() {
+  try {
+    const m = JSON.parse(localStorage.getItem("kt.merchant") || "null");
+    if (!m) return signOut();
+    setMerchant(m);
+    $("offline-note").hidden = false;
+  } catch {
+    signOut();
+  }
+}
+
+async function refresh() {
+  $("offline-note").hidden = true;
+  if (!localStorage.getItem("kt.session")) return;
   try {
     const d = await api("me", { auth: true });
     setMerchant(d.merchant);
   } catch {
-    signOut();
+    $("offline-note").hidden = false;
   }
 }
 
@@ -321,6 +374,80 @@ async function signOut() {
   // Keep the merchant's words, forget the account.
   setMerchant(null);
   showScreen("settings");
+}
+
+// The A4 sheet: the card four times (A6 is a quarter of A4), cut along the
+// dashed guides. Built on demand for printing, removed afterwards.
+function buildSheet() {
+  const sheet = $("print-sheet");
+  sheet.innerHTML = "";
+  if (!merchant) return;
+  const svg = $("qr").querySelector("svg");
+  for (let i = 0; i < 4; i++) {
+    const card = document.createElement("div");
+    card.className = "sheet-card";
+    const shop = document.createElement("div");
+    shop.className = "shop";
+    shop.textContent = merchant.shop;
+    const mp = document.createElement("div");
+    mp.className = "mpesa-name";
+    mp.textContent = merchant.mpesaName;
+    const box = document.createElement("div");
+    box.className = "qr-card";
+    if (svg) box.append(svg.cloneNode(true));
+    const line = document.createElement("p");
+    line.className = "print-line";
+    line.textContent = "Pay with Bitcoin Lightning ⚡";
+    card.append(shop, mp, box, line);
+    sheet.append(card);
+  }
+  sheet.hidden = false;
+}
+
+// The QR as a PNG file, rendered locally: no network, nothing uploaded.
+async function savePng() {
+  const svg = $("qr").querySelector("svg");
+  const err = $("qr-err");
+  err.hidden = true;
+  if (!svg || !merchant) return;
+  const btn = $("btn-png");
+  btn.disabled = true;
+  try {
+    const S = 2048, Q = 1600, M = (S - Q) / 2; // wide quiet margin, crisp in print
+    const clone = svg.cloneNode(true);
+    clone.setAttribute("width", String(Q));
+    clone.setAttribute("height", String(Q));
+    const img = new Image();
+    const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(clone));
+    await new Promise((res, rej) => {
+      img.onload = res;
+      img.onerror = rej;
+      img.src = url;
+    });
+    const cv = document.createElement("canvas");
+    cv.width = S;
+    cv.height = S;
+    const cx = cv.getContext("2d");
+    cx.fillStyle = "#fff";
+    cx.fillRect(0, 0, S, S);
+    cx.drawImage(img, M, M, Q, Q);
+    const blob = await new Promise((res) => cv.toBlob(res, "image/png"));
+    if (!blob) throw new Error("png");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    const slug = merchant.shop.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "ktown-qr";
+    a.download = `${slug}-qr.png`;
+    document.body.append(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 1000);
+  } catch {
+    err.textContent = t("pngFail");
+    err.hidden = false;
+  }
+  btn.disabled = false;
 }
 
 boot();

@@ -8,6 +8,9 @@
 <title>kTown: Bitcoin payments that land as M-Pesa</title>
 <meta name="description" content="kTown: one QR on the counter. Customers pay in sats, the merchant in Kenya receives M-Pesa.">
 <link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/ktown/icons/icon-192.png">
+<link rel="manifest" href="/ktown/manifest.webmanifest">
+<meta name="theme-color" content="#0f1b2d">
 <link rel="stylesheet" href="/ktown/style.css">
 </head>
 <body>
@@ -24,10 +27,15 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
     <p class="mpesa-name" id="qr-mpesa"></p>
     <p style="text-align:center;margin:0"><span class="mark" id="qr-mark"></span></p>
     <p class="secure-note" id="qr-secure" hidden></p>
+    <p class="offline-note" id="offline-note" role="status" data-i18n="offlineNote" hidden></p>
     <div class="qr-card" id="qr" role="img" aria-label="Shop QR code"></div>
     <p class="print-line">Pay with Bitcoin Lightning <b>⚡</b></p>
     <p class="err" id="qr-err" role="alert" hidden></p>
-    <button type="button" class="btn" id="btn-print" data-i18n="print">Print</button>
+    <div class="row no-print">
+      <button type="button" class="btn" id="btn-print-card" data-i18n="printCard">Print card</button>
+      <button type="button" class="btn" id="btn-print-sheet" data-i18n="printSheet">Print sheet</button>
+    </div>
+    <button type="button" class="btn ghost no-print" id="btn-png" data-i18n="savePng">Save PNG</button>
     <p class="foot" data-i18n="honest">kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.</p>
   </section>
   <section id="screen-settings" aria-labelledby="set-title" hidden>
@@ -98,6 +106,7 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
       <p class="foot" data-i18n="honest">kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.</p>
     </div>
   </section>
+  <div id="print-sheet" aria-hidden="true" hidden></div>
 </main>
 <nav class="tabs" aria-label="kTown">
   <button type="button" id="tab-qr" aria-selected="true" data-i18n="qr">QR</button>
