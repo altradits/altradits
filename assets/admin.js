@@ -774,11 +774,18 @@ async function loadTemplates() {
     list = await (await fetch("/assets/marketing/templates.json", { cache: "no-store" })).json();
   } catch (err) { box.innerHTML = `<p class="sm">Templates unavailable: ${esc(err.message)}</p>`; return; }
   MKT_TPL = list;
-  box.innerHTML = `<div class="mktTpl">` + list.map((t, i) =>
+  const fig = (t, i) =>
     `<figure data-mkt-edit="${i}"><span class="thumb"><img src="/${esc(t.file)}" alt="${esc(t.name)} blank template" title="Use ${esc(t.name)}" loading="lazy">`
     + `<a class="mktDl" href="/${esc(t.file)}" download="${esc(String(t.file).split("/").pop())}" aria-label="Download ${esc(t.name)}">↓</a></span>`
-    + `<figcaption>${esc(t.name)}</figcaption></figure>`
-  ).join("") + `</div>`;
+    + `<figcaption>${esc(t.name)}</figcaption></figure>`;
+  const grid = (arr) => `<div class="mktTpl">` + arr.map(([t, i]) => fig(t, i)).join("") + `</div>`;
+  const photos = [], posts = [];
+  list.forEach((t, i) => (t.month ? posts : photos).push([t, i]));
+  const months = [...new Set(posts.map(([t]) => t.month))].sort();
+  const mname = (m) => new Date(`${m}-02T00:00:00Z`).toLocaleString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+  box.innerHTML = `<h4>Photo backgrounds</h4>` + grid(photos)
+    + (posts.length ? `<h4>From our posts</h4>` + months.map((m) =>
+      `<h5>${esc(mname(m))}</h5>` + grid(posts.filter(([t]) => t.month === m))).join("") : "");
 }
 let MKT_TPL = [];
 // The studio editor: an ordered element list (words plus the logo) drawn on

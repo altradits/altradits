@@ -176,6 +176,8 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 .mktSide{flex:none;width:19rem;max-width:40vw;max-height:46rem;overflow-y:auto;background:var(--paper);border:2px solid var(--line);border-radius:.8rem;padding:.8rem}
 .mktSide h3{font-size:1rem;margin:.4rem 0 .5rem}
 .mktSide h3:first-child{margin-top:0}
+.mktSide h4{font-size:.9rem;margin:.7rem 0 .4rem}
+.mktSide h5{font-size:.78rem;font-weight:600;color:var(--muted);margin:.6rem 0 .3rem}
 .mktSide .mktTpl{grid-template-columns:1fr 1fr;gap:.6rem}
 .mktSide .mktTpl figcaption{font-size:.8rem}
 .mktTpl .thumb{position:relative;display:block}
@@ -743,7 +745,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       <div class="mktSide">
         <div data-mkt-pane="templates" role="region" aria-label="Backgrounds">
           <h3>Backgrounds</h3>
-          <p class="sm muted">Ten branded pictures with no words baked in. Pick one: your words stay put.</p>
+          <p class="sm muted">Branded pictures with no words baked in. Pick one: your words stay put.</p>
           <div id="mktTpl"></div>
         </div>
         <div data-mkt-pane="text" role="region" aria-label="Text" hidden>
@@ -916,6 +918,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn" id="rcptResend" hidden>Resend receipt email</button><button type="button" class="btn primary" id="rcptClose">Close</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=refresh17"></script>
+<script type="module" src="/assets/admin.js?v=refresh18"></script>
 </body>
 </html>

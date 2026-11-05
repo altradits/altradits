@@ -114,10 +114,10 @@ test("every post template is unique", () => {
   }
 });
 
-test("the blank template gallery lists ten unique branded files", () => {
+test("the blank template gallery lists unique branded files", () => {
   const list = JSON.parse(fs.readFileSync(path.join(DIR, "templates.json"), "utf8"));
-  assert.equal(list.length, 10, "ten reusable templates");
-  const hashes = new Set(), names = new Set();
+  assert.ok(list.length >= 10, "at least ten reusable templates");
+  const hashes = new Set(), names = new Set(), bgs = new Set();
   for (const t of list) {
     assert.match(t.file, /\.jpg$/, `${t.name}: template is a jpg`);
     const full = path.join(ROOT, t.file);
@@ -128,6 +128,8 @@ test("the blank template gallery lists ten unique branded files", () => {
     hashes.add(h);
     assert.ok(!names.has(t.name), `${t.name}: name is used once`);
     names.add(t.name);
+    assert.ok(!bgs.has(t.bg), `${t.name}: background file is used once`);
+    bgs.add(t.bg);
   }
   const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
   assert.match(html, /id="mktTpl"/, "pane has the templates gallery");
