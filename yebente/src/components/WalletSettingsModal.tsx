@@ -20,6 +20,7 @@ import {
 interface WalletSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  externalEnabled: boolean; // the server's features: offer "my own Lightning wallet"
   wallet: UserWallet;
   onUpdateWallet: (updated: UserWallet) => void;
   onServerWalletChange?: () => void;
@@ -31,6 +32,7 @@ interface WalletSettingsModalProps {
 export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   isOpen,
   onClose,
+  externalEnabled,
   wallet,
   onUpdateWallet,
   onServerWalletChange,
@@ -243,8 +245,10 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
 
         {/* Content */}
         <div className="p-5 overflow-y-auto space-y-4 text-xs">
-          {/* Custody Switcher: Pure Lightning Rails */}
-          <div className="grid grid-cols-2 gap-2">
+          {/* Custody Switcher: hidden while there is nothing to switch between.
+              A wallet already on "my own" keeps its section below, with a way back. */}
+          {(externalEnabled || selectedType === 'non-custodial') && (
+          <div className={`grid gap-2 ${externalEnabled ? 'grid-cols-2' : 'grid-cols-1'}`}>
             <button
               type="button"
               onClick={() => {
@@ -259,6 +263,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
             >
               Ye₿ente wallet
             </button>
+            {externalEnabled && (
             <button
               type="button"
               onClick={() => {
@@ -273,7 +278,9 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
             >
               My own Lightning wallet
             </button>
+            )}
           </div>
+          )}
 
           {/* In-App Lightning Section */}
           {selectedType === 'custodial' && (

@@ -14,6 +14,7 @@ type Mode = 'start' | 'unlock' | 'login' | 'create' | 'words' | 'recover' | 'new
 
 interface Props {
   locked: boolean; // this phone is trusted: unlock instead of log in
+  externalEnabled: boolean; // the server's features: offer "my own Lightning wallet"
   recoveryToken?: string;
   onOpen: () => void;
   onRecoveryDone?: () => void;
@@ -41,7 +42,7 @@ const PinInput: React.FC<{ value: string; onChange: (v: string) => void; label: 
   </label>
 );
 
-export const WalletGate: React.FC<Props> = ({ locked, recoveryToken, onOpen, onRecoveryDone, onUseExternal, onHold }) => {
+export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryToken, onOpen, onRecoveryDone, onUseExternal, onHold }) => {
   const [mode, setMode] = useState<Mode>(recoveryToken ? 'newpin' : locked ? 'unlock' : linked() || 'start');
   const [pin, setPin] = useState('');
   const [pin2, setPin2] = useState('');
@@ -130,7 +131,9 @@ export const WalletGate: React.FC<Props> = ({ locked, recoveryToken, onOpen, onR
           <button type="button" className={secondary} onClick={() => go('create')}>Create a wallet</button>
           <div className="text-center space-y-3 pt-2">
             <button type="button" className={link} onClick={() => go('recover')}>Lost your phone or forgot your PIN?</button>
-            <div><button type="button" className="text-[11px] text-[var(--yb-on-surface-variant)] hover:underline" onClick={onUseExternal}>Use my own Lightning wallet instead</button></div>
+            {externalEnabled && (
+              <div><button type="button" className="text-[11px] text-[var(--yb-on-surface-variant)] hover:underline" onClick={onUseExternal}>Use my own Lightning wallet instead</button></div>
+            )}
           </div>
         </>
       )}

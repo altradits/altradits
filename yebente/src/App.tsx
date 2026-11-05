@@ -26,6 +26,7 @@ import { TransactionDetailModal } from './components/TransactionDetailModal';
 import { WalletSettingsModal } from './components/WalletSettingsModal';
 import { WalletGate } from './components/WalletGate';
 import { access, Access, hasServerWallet, fetchServerWallet, fetchServerHistory, forgetServerWallet, lockServerWallet } from './services/altraditsWallet';
+import { CORE_FEATURES, FeatureFlags, fetchFeatures, visibleActions } from './services/features';
 
 export default function App() {
   const [wallet, setWallet] = useState<UserWallet>(getStoredWallet);
@@ -48,6 +49,18 @@ export default function App() {
   const [ratesError, setRatesError] = useState<string | null>(null);
 
   const [isOnline, setIsOnline] = useState<boolean>(isNetworkOnline);
+
+  // Which controls are shown: the server's features, read once at start and
+  // on resume. Until it answers (or if it fails), the core only.
+  const [features, setFeatures] = useState<FeatureFlags>(CORE_FEATURES);
+  useEffect(() => {
+    fetchFeatures().then(setFeatures);
+    const onShow = () => { if (document.visibilityState === 'visible') fetchFeatures().then(setFeatures); };
+    const onOnline = () => fetchFeatures().then(setFeatures);
+    document.addEventListener('visibilitychange', onShow);
+    window.addEventListener('online', onOnline);
+    return () => { document.removeEventListener('visibilitychange', onShow); window.removeEventListener('online', onOnline); };
+  }, []);
 
   // Modals
   const [activeModal, setActiveModal] = useState<
@@ -238,6 +251,7 @@ export default function App() {
           <WalletGate
             key={recoveryToken ? 'recover' : 'gate'}
             locked={walletAccess === 'locked'}
+            externalEnabled={features.external}
             recoveryToken={recoveryToken}
             onOpen={() => { setGateOpen(false); setExternalSetup(false); setWalletAccess(access()); firstSync.current = true; syncServerWallet(); }}
             onRecoveryDone={() => setRecoveryToken('')}
@@ -281,8 +295,9 @@ export default function App() {
             />
           )}
 
-          {/* Core wallet and payment actions */}
+          {/* Core wallet and payment actions: only the server-enabled ones */}
           <ActionGrid
+            actions={visibleActions(features)}
             onBuyBtc={() => setActiveModal(hasServerWallet() ? 'buy_btc' : 'wallet_settings')}
             onSendMpesa={() => handleRequireWalletAction(() => setActiveModal('send_mpesa'))}
             onReceiveBtc={() => handleRequireWalletAction(() => setActiveModal('receive_btc'))}
@@ -354,6 +369,7 @@ export default function App() {
       <WalletSettingsModal
         isOpen={activeModal === 'wallet_settings'}
         onClose={() => setActiveModal('none')}
+        externalEnabled={features.external}
         wallet={wallet}
         onUpdateWallet={handleUpdateWallet}
         onServerWalletChange={syncServerWallet}
