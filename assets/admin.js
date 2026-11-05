@@ -90,7 +90,7 @@ function nodeBannerHtml(err) {
 function stanHistoryHtml(alerts) {
   if (!alerts || !alerts.length) return '<p class="muted sm">No alerts or reports emailed yet.</p>';
   return `<table><thead><tr><th>When</th><th>Subject</th><th>Status</th></tr></thead><tbody>${alerts.map((a) =>
-    `<tr><td>${esc(ago(a.at))}</td><td>${esc(a.subject)}</td><td>${/^sent/.test(a.status || "") ? "Sent" : esc(a.status || "–")}</td></tr>`).join("")}</tbody></table>`;
+    `<tr><td>${esc(ago(a.at))}</td><td>${esc(a.subject)}</td><td${/^(bounced|failed)/.test(a.status || "") ? ' class="err"' : ""}>${/^sent/.test(a.status || "") ? "Sent" : esc(a.status || "–")}</td></tr>`).join("")}</tbody></table>`;
 }
 // end stanHistoryHtml
 

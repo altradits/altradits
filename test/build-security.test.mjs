@@ -290,6 +290,39 @@ test("every wallet read that can ask the node or confirm an email is rate-limite
   assert.match(yb, /rl:yb:emailcf/, "api/yebente.js confirmEmailPost: limit confirmation attempts per network");
   assert.match(yb, /rl:yb:me:/, "api/yebente.js wallet/me: limit balance checks per wallet");
   assert.match(yb, /rl:yb:invq:/, "api/yebente.js wallet/invoice: limit settlement checks per wallet");
+  assert.match(yb, /rl:yb:freeze:/, "api/yebente.js freezePost: limit freeze-link guesses per network");
+});
+
+test("email changes wait 48 hours, cancellable from the old address or a phone", () => {
+  const yw = read("lib/ywallet.js");
+  const confirm = yw.slice(yw.indexOf("export async function confirmEmail"));
+  assert.match(confirm, /emailChange: \{ newEmail: rec\.email, effectiveAt/, "lib/ywallet.js confirmEmail: a change waits instead of swapping at once");
+  assert.match(confirm, /48 \* 3600e3/, "lib/ywallet.js confirmEmail: the wait is 48 hours");
+  assert.match(yw, /export async function effectiveEmailChanges/, "lib/ywallet.js: a sweeper flips due changes");
+  const cancel = yw.slice(yw.indexOf("export async function cancelPendingEmailChange"));
+  assert.match(cancel, /await checkPin\(cur, pin\)/, "lib/ywallet.js cancelPendingEmailChange: cancelling from a phone needs the PIN");
+  const yb = read("api/yebente.js");
+  assert.match(yb, /rl:yb:emailcx:/, "api/yebente.js emailChangeCancelPost: limit cancel-link guesses per network");
+  assert.match(yb, /rl:yb:emailc:/, "api/yebente.js email/cancel: limit phone cancels per wallet");
+});
+
+test("cancelling a pending recovery: rate-limited, PIN-checked, and every live link dies", () => {
+  const yb = read("api/yebente.js");
+  assert.match(yb, /rl:yb:recc:/, "api/yebente.js recovery/cancel: limit cancel attempts per wallet");
+  const yw = read("lib/ywallet.js");
+  const cancel = yw.slice(yw.indexOf("export async function cancelEmailRecovery"));
+  assert.match(cancel, /await checkPin\(cur, pin\)/, "lib/ywallet.js cancelEmailRecovery: cancelling needs the PIN");
+  assert.match(cancel, /deleteKeys\(live\.map\(\(p\) => `ywrt:\$\{p\.h\}`\)\)/, "lib/ywallet.js cancelEmailRecovery: every live recovery link dies at once");
+});
+
+test("the one-tap freeze link: hashed token, constant-time compare, frozen sends refused, links never logged", () => {
+  const yw = read("lib/ywallet.js");
+  assert.match(yw, /ywft:\$\{sha\(token\)\}/, "lib/ywallet.js: freeze tokens are stored hashed");
+  assert.match(yw, /timingSafeEqual\(Buffer\.from\(rec\.fh, "hex"\), Buffer\.from\(h, "hex"\)\)/, "lib/ywallet.js freezeWallet: the stored freeze hash is compared in constant time");
+  assert.match(yw, /if \(w\.frozen\) throw err\("Sending is frozen/, "lib/ywallet.js spendable: a frozen wallet sends nothing");
+  assert.match(yw, /Date\.parse\(d\.at \|\| 0\) < Date\.parse\(w\.frozen\.at\)/, "lib/ywallet.js unlock: only a phone trusted before the freeze lifts it");
+  const em = read("lib/email.js");
+  assert.match(em, /\(\[\?&\]t=\)\[\\w-\]\{20,\}.*\(redacted\)/, "lib/email.js: one-tap tokens in wallet mail are redacted from the stored log");
 });
 
 test("Bitika stays server-side: no Bitika host in any page CSP, no API key in built assets", () => {

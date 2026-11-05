@@ -157,6 +157,9 @@ export default function App() {
         blinkUsername: w.handle,
         blinkAddress: w.address,
         recoveryEmail: w.email || (w.emailPending ? `${w.emailPending} (unconfirmed)` : ''),
+        frozen: w.frozen === true,
+        pendingRecovery: w.pendingRecovery || null,
+        emailChange: w.emailChange || null,
       }));
       // Sats that came in since the last look: the receiver's show.
       if (firstSync.current) markCelebrated(txs.map((t) => t.referenceNumber));
@@ -246,6 +249,23 @@ export default function App() {
             <div className="p-3 rounded-2xl bg-amber-950/40 border border-amber-500/30 text-amber-300 text-xs font-mono">
               <p className="font-semibold">Exchange Rates Offline</p>
               <p className="text-[11px] text-amber-400/90 mt-0.5">{ratesError}</p>
+            </div>
+          )}
+
+          {/* Sending was frozen from an email link. A phone trusted before the
+              freeze lifts it by logging in again; otherwise recover by email. */}
+          {wallet.type === 'custodial' && wallet.frozen && (
+            <div className="p-3 rounded-2xl bg-red-950/40 border border-red-500/30 text-red-200 text-xs">
+              <p className="font-semibold">Sending is frozen</p>
+              <p className="text-[11px] text-red-300/90 mt-0.5">Receiving still works. Log in again on your old phone, or recover by email to unfreeze it.</p>
+            </div>
+          )}
+
+          {/* A recovery link is live. The Cancel button is in Settings. */}
+          {wallet.type === 'custodial' && wallet.pendingRecovery && (
+            <div className="p-3 rounded-2xl bg-red-950/40 border border-red-500/30 text-red-200 text-xs">
+              <p className="font-semibold">Recovery in progress</p>
+              <p className="text-[11px] text-red-300/90 mt-0.5">A link was sent to your email. Cancel it in Settings if that wasn't you.</p>
             </div>
           )}
 
