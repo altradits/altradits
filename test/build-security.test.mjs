@@ -280,6 +280,10 @@ test("live-server URLs never come from visitor headers, static answers only GET/
 
 test("links rendered as href come only from trusted hosts, and QR pictures carry no scripts", () => {
   assert.match(read("lib/tracker.js"), /typeof i\.html_url === "string"[\s\S]{0,80}github\\.com\\/, "lib/tracker.js: only GitHub's own addresses become links");
+  assert.match(read("lib/tracker.js"), /typeof r\.html_url === "string"[\s\S]{0,80}github\\.com\\/, "lib/tracker.js: review addresses are checked too, with the pull request as fallback");
+  assert.match(read("lib/tracker.js"), /`https:\/\/github\.com\/\$\{LEARNING_REPO\}/, "lib/tracker.js: log proof links are built from a constant, never API text");
+  assert.match(read("tracker.html"), /href="\$\{esc\(c\.proof\.url\)\}"/, "tracker.html: calendar proof links go through esc()");
+  assert.match(read("tracker.html"), /href="\$\{esc\(y\.proof\.url\)\}"/, "tracker.html: yesterday's proof link goes through esc()");
   const qr = read("lib/lightning.js").slice(read("lib/lightning.js").indexOf("export async function qrSvg"));
   assert.match(qr, /startsWith\("<svg"\)/, "lib/lightning.js qrSvg: check the picture starts with <svg");
   assert.match(qr, /<script\|on\\w\+/, "lib/lightning.js qrSvg: refuse scripts and event handlers in the SVG");
