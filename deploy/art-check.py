@@ -15,6 +15,9 @@ dec-17 (both failed before their fix, pass after):
 - a sub-12px gap to a foreign neighbour across 15+ rows.
 Warns (exit 0) on tight spacing a human should eyeball: gaps under 40px,
 clearance above the logo under 12px, videos ffmpeg cannot inspect.
+Navy grounds (the Minimal 2027 Ink family and navy-left splits) run the
+same geometry on a bright mask: the white logo must stand clear of light
+neighbours. Ground darkness comes from the image median, not the filename.
 """
 import json
 import os
@@ -43,6 +46,19 @@ def masks(rgb):
     return navy | red
 
 
+def bright(rgb):
+    a = np.array(rgb).astype(int)
+    R, G, B = a[:, :, 0], a[:, :, 1], a[:, :, 2]
+    return (R > 150) & (G > 150) & (B > 150)
+
+
+def dark_ground(img):
+    small = np.array(img.resize((192, 128))).astype(int)
+    med = np.median(small.reshape(-1, 3), axis=0)
+    lum = 0.2126 * med[0] + 0.7152 * med[1] + 0.0722 * med[2]
+    return lum < 90
+
+
 def check_image(path, label):
     """Returns (fails, warns) as message lists."""
     fails, warns = [], []
@@ -53,17 +69,20 @@ def check_image(path, label):
         return [f"{label}: unreadable image ({e})"], []
     if min(img.size) < 200:
         return [f"{label}: {img.size[0]}x{img.size[1]}px is too small to post"], []
-    ink = masks(img)
+    dark = dark_ground(img)
+    ink = bright(img) if dark else masks(img)
     H, W = ink.shape
     if W <= 700:
         return [f"{label}: {img.size[0]}px wide, too narrow for the logo lockup"], []
     # November's template carries a full-height red bar at the left edge
     # (~170px); it is intentional design, not an intruder: find where it
-    # ends and measure right of it. (December dropped the bar; x0 stays 0.)
-    colfill = ink[100:1200, :210].sum(axis=0)
+    # ends and measure right of it. (December dropped the bar; x0 stays 0.
+    # Navy grounds never carry the bar.)
     x0 = 0
-    while x0 < 200 and colfill[x0] > 800:
-        x0 += 1
+    if not dark:
+        colfill = ink[100:1200, :210].sum(axis=0)
+        while x0 < 200 and colfill[x0] > 800:
+            x0 += 1
     # Logo rows carry the logo's fixed left edge: a substantial ink run
     # starting there ("Al": x95 December; x140 November, tucked to its
     # bar). Thin fringe and far-left headlines never qualify, and rows
@@ -180,6 +199,15 @@ def self_test():
             a[ny[0]:ny[1], x0:x1] = (15, 30, 80)
         return Image.fromarray(a)
 
+    def make_dark(logo=True, neighbour=None, ny=(1050, 1160)):
+        a = np.full((1280, 1920, 3), (15, 27, 45), np.uint8)
+        if logo:
+            a[1084:1131, 95:387] = (245, 245, 245)
+        if neighbour:
+            x0, x1 = neighbour
+            a[ny[0]:ny[1], x0:x1] = (250, 250, 250)
+        return Image.fromarray(a)
+
     with tempfile.TemporaryDirectory() as tmp:
         clean = os.path.join(tmp, "clean.png")
         make(neighbour=(500, 700)).save(clean)
@@ -193,6 +221,18 @@ def self_test():
         tight = os.path.join(tmp, "tight.png")
         make(neighbour=(407, 600)).save(tight)
         cases.append((tight, 0, 1))
+        dclean = os.path.join(tmp, "dclean.png")
+        make_dark(neighbour=(500, 700)).save(dclean)
+        cases.append((dclean, 0, 0))
+        dbridge = os.path.join(tmp, "dbridge.png")
+        make_dark(neighbour=(300, 700), ny=(1084, 1194)).save(dbridge)
+        cases.append((dbridge, 1, 0))
+        dnarrow = os.path.join(tmp, "dnarrow.png")
+        make_dark(neighbour=(393, 600)).save(dnarrow)
+        cases.append((dnarrow, 1, 0))
+        dtight = os.path.join(tmp, "dtight.png")
+        make_dark(neighbour=(407, 600)).save(dtight)
+        cases.append((dtight, 0, 1))
         blank = os.path.join(tmp, "blank.png")
         make(logo=False).save(blank)
         cases.append((blank, 1, 0))

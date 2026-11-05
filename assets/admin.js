@@ -779,13 +779,17 @@ async function loadTemplates() {
     + `<a class="mktDl" href="/${esc(t.file)}" download="${esc(String(t.file).split("/").pop())}" aria-label="Download ${esc(t.name)}">↓</a></span>`
     + `<figcaption>${esc(t.name)}</figcaption></figure>`;
   const grid = (arr) => `<div class="mktTpl">` + arr.map(([t, i]) => fig(t, i)).join("") + `</div>`;
-  const photos = [], posts = [];
-  list.forEach((t, i) => (t.month ? posts : photos).push([t, i]));
+  const photos = [], posts = [], minimal = [];
+  list.forEach((t, i) => (t.month ? posts : t.family ? minimal : photos).push([t, i]));
   const months = [...new Set(posts.map(([t]) => t.month))].sort();
   const mname = (m) => new Date(`${m}-02T00:00:00Z`).toLocaleString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+  const fams = ["paper", "ink", "split", "frame"];
+  const fname = (f) => f[0].toUpperCase() + f.slice(1);
   box.innerHTML = `<h4>Photo backgrounds</h4>` + grid(photos)
     + (posts.length ? `<h4>From our posts</h4>` + months.map((m) =>
-      `<h5>${esc(mname(m))}</h5>` + grid(posts.filter(([t]) => t.month === m))).join("") : "");
+      `<h5>${esc(mname(m))}</h5>` + grid(posts.filter(([t]) => t.month === m))).join("") : "")
+    + (minimal.length ? `<h4>Minimal 2027</h4>` + fams.filter((f) => minimal.some(([t]) => t.family === f)).map((f) =>
+      `<h5>${fname(f)}</h5>` + grid(minimal.filter(([t]) => t.family === f))).join("") : "");
 }
 let MKT_TPL = [];
 // The studio editor: an ordered element list (words plus the logo) drawn on
