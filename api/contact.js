@@ -5,7 +5,7 @@
 // POST /api/contact {step:"quote"} -> {bolt11, qr, hash, sats, expiresAt}
 // GET  /api/contact?hash=      -> {paid}
 // POST /api/contact {step:"send", hash, name, email, topic, message} -> {ok, id}
-import { json, readBody, clean, newId, clientIp, siteUrl, EMAIL_RE } from "../lib/http.js";
+import { json, readBody, clean, newId, clientIp, siteUrl, EMAIL_RE, emailTypo, typoMessage } from "../lib/http.js";
 import { hit, getJSON, setJSON, pushId, acquireLock, increment } from "../lib/store.js";
 import { createInvoice, invoicePaid, qrSvg } from "../lib/lightning.js";
 
@@ -71,6 +71,8 @@ async function send(request, body) {
   const hash = /^[0-9a-f]{64}$/.test(String(body.hash || "")) ? body.hash : null;
   if (!name) return json({ error: "Tell us your name." }, 400);
   if (!EMAIL_RE.test(email)) return json({ error: "That email address does not look right." }, 400);
+  const fix = emailTypo(email);
+  if (fix) return json({ error: typoMessage(fix) }, 400); // hint only: the visitor retypes, nothing is auto-corrected
   if (!topic) return json({ error: "Pick what your message is about." }, 400);
   if (message.length < CONTACT.messageMin) return json({ error: "Write a little more so the team can help." }, 400);
   if (!hash) return json({ error: "Pay the $1 invoice first, then send." }, 402);

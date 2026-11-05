@@ -100,6 +100,18 @@ test("banner shows the node error; history lists alerts newest first", () => {
   assert.match(html, /suppressed-quiet/);
 });
 
+test("Stan history marks bounced and failed mail in red", () => {
+  const stanHistoryHtml = shipped("stanHistoryHtml", ["alerts"], { esc, ago });
+  const html = stanHistoryHtml([
+    { at: "2026-11-02T00:00:00Z", subject: "Stan: all quiet", status: "sent" },
+    { at: "2026-11-02T00:00:00Z", subject: "1 email bounced", status: "bounced: 550 5.7.1 [CS] Message blocked" },
+    { at: "2026-11-02T00:00:00Z", subject: "Receipt ALT-2026-0001", status: "failed: timeout" },
+  ]);
+  assert.match(html, /<td class="err">bounced: 550 5\.7\.1 \[CS\] Message blocked<\/td>/);
+  assert.match(html, /<td class="err">failed: timeout<\/td>/);
+  assert.doesNotMatch(html, /<td class="err">Sent<\/td>/);
+});
+
 test("new UI hooks exist in page and script", () => {
   for (const id of ["nodeBanner", "nodeAge", "chainAge", "pnlAge", "exAge", "hBackup", "backupBody", "backupMark", "backupErr", "pnlTrend", "stanHistory"]) {
     assert.ok(page.includes(`id="${id}"`), `admin.html has #${id}`);
