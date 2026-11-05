@@ -31,6 +31,7 @@
 //   GET  wallet/freeze?t=                 the freeze link in every security email (a button; POST freezes, no login)
 //   POST wallet/recover-email {email}     a one-time recovery link (#recover=) to each wallet confirmed with it
 //   POST wallet/recover-email/finish {token, pin, device}  new PIN, other phones signed out, 24 h hold
+//   POST wallet/recovery/cancel {pin}    a trusted phone cancels the pending email recovery (its links die)
 //   POST wallet/buy {kes, phone}          M-Pesa STK Push for sats into this wallet (YEBENTE_MPESA_BUY=on)
 //   GET  wallet/buy/<checkoutRequestId>   credited once Safaricom confirms
 //   POST wallet/card/order {kes, email}   card or bank checkout page for this wallet (YEBENTE_CARD_BUY=on)
@@ -284,6 +285,11 @@ async function walletPost(request, action) {
     if ((await hit(`rl:yb:recf:${ipKey(request)}`, 3600)) > 30) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
     return json({ success: true, ...(await yw.finishEmailRecovery({ token: String(body.token || ""), pin: body.pin, device: body.device })) });
   }
+  if (action === "recovery/cancel") {
+    const w = await me(request);
+    if ((await hit(`rl:yb:recc:${w.id}`, 3600)) > 20) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
+    return json({ success: true, ...(await yw.cancelEmailRecovery(w, body.pin)) });
+  }
   if (action === "buy") {
     const w = await me(request);
     if (!buyOn()) return off(NOT_CONFIGURED);
@@ -486,7 +492,7 @@ export async function POST(request) {
     if (path === "lightning/create-invoice") return off("Create a Ye₿ente wallet first.");
     if (path === "wallet/email-confirm") return await confirmEmailPost(request);
     if (path === "wallet/freeze") return await freezePost(request);
-    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy|card\/order|email|recover-email|recover-email\/finish|passkey\/(?:options|add|off)|unlock\/options|unlock|login\/start|login\/finish|device\/register|device\/remove|lock)$/);
+    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy|card\/order|email|recover-email|recover-email\/finish|recovery\/cancel|passkey\/(?:options|add|off)|unlock\/options|unlock|login\/start|login\/finish|device\/register|device\/remove|lock)$/);
     if (wp) return await walletPost(request, wp[1]);
     const cb = path.match(/^mpesa\/callback\/([\w-]{16,128})$/);
     if (cb) return await callback(request, cb[1]);

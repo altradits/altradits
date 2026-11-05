@@ -293,6 +293,15 @@ test("every wallet read that can ask the node or confirm an email is rate-limite
   assert.match(yb, /rl:yb:freeze:/, "api/yebente.js freezePost: limit freeze-link guesses per network");
 });
 
+test("cancelling a pending recovery: rate-limited, PIN-checked, and every live link dies", () => {
+  const yb = read("api/yebente.js");
+  assert.match(yb, /rl:yb:recc:/, "api/yebente.js recovery/cancel: limit cancel attempts per wallet");
+  const yw = read("lib/ywallet.js");
+  const cancel = yw.slice(yw.indexOf("export async function cancelEmailRecovery"));
+  assert.match(cancel, /await checkPin\(cur, pin\)/, "lib/ywallet.js cancelEmailRecovery: cancelling needs the PIN");
+  assert.match(cancel, /deleteKeys\(live\.map\(\(p\) => `ywrt:\$\{p\.h\}`\)\)/, "lib/ywallet.js cancelEmailRecovery: every live recovery link dies at once");
+});
+
 test("the one-tap freeze link: hashed token, constant-time compare, frozen sends refused, links never logged", () => {
   const yw = read("lib/ywallet.js");
   assert.match(yw, /ywft:\$\{sha\(token\)\}/, "lib/ywallet.js: freeze tokens are stored hashed");
