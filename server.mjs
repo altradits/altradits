@@ -193,10 +193,8 @@ server.listen(PORT, () => console.log(`Altradits running on port ${PORT}${PROD ?
 // every 5 minutes, which keeps this process (and timer) alive.
 async function maybeRunDaily() {
   if (new Date().getUTCHours() < 6) return;
-  const { getJSON, setJSON } = await import("./lib/store.js");
-  const today = new Date().toISOString().slice(0, 10);
-  if ((await getJSON("daily:last")) === today) return;
-  await setJSON("daily:last", today);
+  const { claimDaily } = await import("./lib/jobs.js");
+  if (!(await claimDaily())) return; // one run a day, however many pings arrive
   const { backupNow } = await import("./lib/backup.js");
   console.log("daily backup", await backupNow().catch((e) => `failed: ${e.message}`));
   const { autoClean } = await import("./lib/cleanup.js");
@@ -210,18 +208,22 @@ setInterval(() => maybeRunDaily().catch((e) => console.error("daily", e)), 10 * 
 // pay every Ye₿ente wallet. The last run is kept in the store, so a restarted
 // app neither skips nor repeats it.
 async function maybeRunHourly() {
-  const { getJSON, setJSON } = await import("./lib/store.js");
-  const last = await getJSON("hourly:last");
-  if (last && Date.now() - Date.parse(last) < 3600e3) return;
-  await setJSON("hourly:last", new Date().toISOString());
+  const { claimHourly } = await import("./lib/jobs.js");
+  if (!(await claimHourly())) return; // one run an hour, however many pings arrive
   if (process.env.LND_REST_URL) {
     import("./lib/channels.js").then((c) => c.watchChannels()).catch((e) => console.error("channels", e.message));
     import("./lib/attacks.js").then((a) => a.checkSolvency()).catch((e) => console.error("solvency", e.message));
   }
+  import("./lib/bounces.js").then((b) => b.checkBounces()).then((r) => r.bounced && console.log("bounces", r)).catch((e) => console.error("bounces", e.message));
 }
 setInterval(() => maybeRunHourly().catch((e) => console.error("hourly", e)), 10 * 60 * 1000).unref();
-// Ye₿ente wallets: credit invoices paid while the app was closed (every 2 minutes).
-setInterval(() => { if (["on", "true", "yes", "1"].includes(String(process.env.YEBENTE_WALLETS || "").trim().replace(/^["']|["']$/g, "").toLowerCase()) && process.env.LND_REST_URL) import("./lib/ywallet.js").then((y) => Promise.all([y.settleOpen(), y.reconcilePayments()])).catch((e) => console.error("yebente settle", e.message)); }, 2 * 60 * 1000).unref();
+// Ye₿ente wallets: credit invoices paid while the app was closed, and flip email
+// changes whose 48 hours are up (every 2 minutes). The email flip needs no node.
+setInterval(() => {
+  if (!["on", "true", "yes", "1"].includes(String(process.env.YEBENTE_WALLETS || "").trim().replace(/^["']|["']$/g, "").toLowerCase())) return;
+  import("./lib/ywallet.js").then((y) => y.effectiveEmailChanges()).catch((e) => console.error("yebente email changes", e.message));
+  if (process.env.LND_REST_URL) import("./lib/ywallet.js").then((y) => Promise.all([y.settleOpen(), y.reconcilePayments()])).catch((e) => console.error("yebente settle", e.message));
+}, 2 * 60 * 1000).unref();
 // Every 5 minutes (and on every /healthz ping from deploy/cron.sh): Deadman's
 // Switch file/.htaccess integrity check and node total balance check.
 async function maybeRunDeadmanChecks() {

@@ -28,12 +28,20 @@
 //   POST wallet/invoice {sats}            an invoice on the node for this wallet
 //   POST wallet/passkey/options|add|off   fingerprint / face approval instead of the PIN (send {passkey})
 //   GET  wallet/invoice/<hash>            credited once paid
-//   POST wallet/email {email, pin}       a recovery email (confirmed by a link)
+//   POST wallet/email {email, pin}       a recovery email (confirmed by a link; a change takes 48 h)
+//   POST wallet/email/cancel {pin}       a trusted phone cancels the pending email change
 //   GET  wallet/email-confirm?t=          the link in that email (a button; POST confirms)
+//   GET  wallet/email-change-cancel?t=    the old address cancels the pending change (a button; POST cancels, no login)
+//   GET  wallet/freeze?t=                 the freeze link in every security email (a button; POST freezes, no login)
 //   POST wallet/recover-email {email}     a one-time recovery link (#recover=) to each wallet confirmed with it
 //   POST wallet/recover-email/finish {token, pin, device}  new PIN, other phones signed out, 24 h hold
+//   POST wallet/recovery/cancel {pin}    a trusted phone cancels the pending email recovery (its links die)
 //   POST wallet/buy {kes, phone}          M-Pesa STK Push for sats into this wallet (YEBENTE_MPESA_BUY=on)
 //   GET  wallet/buy/<checkoutRequestId>   credited once Safaricom confirms
+//   POST wallet/buy/bitika {kes, phone}   M-Pesa or Airtel Money through Bitika (YEBENTE_BITIKA_BUY=on):
+//                                          quote + start, answers {code, sats, feeKes}
+//   GET  wallet/buy/bitika/<code>         Bitika status, display only (sats arrive through the Lightning address)
+//   POST bitika/webhook/<secret>          Bitika's signed payment notice (secret: YEBENTE_BITIKA_HOOK_PATH)
 //   POST wallet/card/order {kes, email}   card or bank checkout page for this wallet (YEBENTE_CARD_BUY=on)
 //   GET  wallet/card/status/<trackingId>  credited once Pesapal confirms the exact shillings
 //   GET  wallet/card/return?OrderTrackingId=  where Pesapal sends the buyer back (state only)
@@ -53,6 +61,15 @@ const DARAJA = () => (env("MPESA_ENVIRONMENT") === "production" ? "https://api.s
 const darajaReady = () => Boolean(env("MPESA_CONSUMER_KEY") && env("MPESA_CONSUMER_SECRET"));
 const switchOn = (k) => ["on", "true", "yes", "1"].includes(env(k).replace(/^["']|["']$/g, "").toLowerCase());
 const buyOn = () => switchOn("YEBENTE_MPESA_BUY") && darajaReady() && Boolean(env("MPESA_SHORTCODE") && env("MPESA_PASSKEY") && env("YEBENTE_CALLBACK_SECRET"));
+// Which Buy provider the app offers. YEBENTE_BUY_PROVIDER pins one (bitika or
+// mpesa); unset, Bitika wins while it is on, else Daraja STK, else none.
+const pickProvider = (bitika, mpesa) => {
+  const want = env("YEBENTE_BUY_PROVIDER").trim().replace(/^["']|["']$/g, "").toLowerCase();
+  if (want === "bitika") return bitika ? "bitika" : null;
+  if (want === "mpesa") return mpesa ? "mpesa" : null;
+  if (bitika) return "bitika";
+  return mpesa ? "mpesa" : null;
+};
 const site = () => (env("SITE_URL") || "https://altradits.com").replace(/\/$/, "");
 
 const NOT_CONFIGURED = "M-Pesa credentials not configured. Set MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET.";
@@ -172,6 +189,91 @@ async function cardIpn(request, secret) {
   const id = safeId(body.OrderTrackingId || body.orderTrackingId || body.OrderMerchantReference || q.get("OrderTrackingId") || q.get("orderTrackingId"));
   if (!id) return json({ success: false, error: "No order given." }, 400);
   try { await finishCardBuy(id, await pp.orderStatus(id)); } catch { /* unclear: stays pending */ }
+  return json({ success: true });
+}
+
+// ---- buying sats with M-Pesa or Airtel Money through Bitika (lib/bitika.js)
+//
+// A quote plus a collect call: Bitika charges the phone and pays the wallet's
+// own Lightning address. The record only carries the display status; sats are
+// credited when the invoice settles, never by a Bitika answer.
+async function bitikaBuy(request, w, body) {
+  const bk = await import("../lib/bitika.js");
+  const yw = await import("../lib/ywallet.js");
+  if (!bk.bitikaOn()) return json({ success: false, settled: false, configured: false, error: "Buying with M-Pesa is paused right now." }, 501);
+  const kes = Number(body.kes);
+  if (!Number.isInteger(kes) || kes < bk.MIN_KES || kes > bk.MAX_KES) return json({ success: false, error: `Buy between ${bk.MIN_KES} and ${bk.MAX_KES.toLocaleString("en-US")} KES with Bitika.` }, 400);
+  const phone = formatKenyanPhone(body.phone);
+  if (!/^254[71]\d{8}$/.test(phone)) return json({ success: false, error: "Enter a Kenyan M-Pesa or Airtel Money number." }, 400);
+  // A payment prompt lands on someone's phone: at most 5 an hour to one
+  // number, 10 an hour per wallet, and a generous cap per connection.
+  if ((await hit(`rl:yb:bitp:${phone}`, 3600)) > 5) return json({ success: false, error: "Too many M-Pesa prompts to this number. Try again in an hour." }, 429);
+  if ((await hit(`rl:yb:bitw:${w.id}`, 3600)) > 10) return json({ success: false, error: "Too many buys. Try again in an hour." }, 429);
+  if ((await hit(`rl:yb:biti:${ipKey(request)}`, 3600)) > 60) return json({ success: false, error: "Too many M-Pesa prompts from this network. Try again later." }, 429);
+  const quote = await yw.quoteBuy(w, kes); // wallet cap, daily limit (Bitika buys count too), node check
+  const sats = (await bk.quoteSats(kes)) || quote.sats; // Bitika's own figure when it answers, else the wallet quote
+  const phoneHash = crypto.createHash("sha256").update(phone).digest("hex");
+  // One record per tap burst, made under the ledger lock: a double tap finds
+  // the first tap's record and reuses its Idempotency-Key (same key and same
+  // payload answers from the first request, never a second charge).
+  const rec = await yw._internal.withLedger(() => bk.claimOrCreate({ walletId: w.id, kes, sats, feeKes: bk.feeKes(kes), phoneHash }));
+  if (rec.code) return json({ success: true, code: rec.code, sats: rec.sats, feeKes: rec.feeKes, kes: rec.kes });
+  try {
+    const r = await bk.collect({ kes, phone, lightningAddress: `${w.handle}@${yw.DOMAIN()}`, idem: rec.idem });
+    const done = await bk.attachCode(rec.id, r.code, r.status);
+    return json({ success: true, code: done.code, sats: done.sats, feeKes: done.feeKes, kes: done.kes });
+  } catch (e) {
+    // A definitive answer means nothing started: the record closes, and the
+    // next try starts fresh. Anything else stays open, so a retry reuses the
+    // same key instead of risking a second charge.
+    if (e.definitive) await bk.setStatus(rec.id, "failed");
+    return json({ success: false, starting: !e.definitive, error: e.message }, e.status || 500);
+  }
+}
+
+// One Bitika buy's display status, for its own wallet only. Asks Bitika and
+// stores the answer; the browser never sees the key and never calls Bitika.
+async function bitikaStatus(request, w, code) {
+  const bk = await import("../lib/bitika.js");
+  const rec = await bk.recordByCode(code);
+  if (!rec || rec.walletId !== w.id) return json({ success: false, error: "Not found" }, 404);
+  if ((await hit(`rl:yb:bitq:${w.id}`, 600)) > 60) return json({ success: false, error: "Too many checks. Try again later." }, 429);
+  if (bk.isOpenState(rec.state) && bk.bitikaOn()) {
+    try {
+      const s = await bk.txStatus(code);
+      await bk.applyRemoteStatus(code, s.status);
+    } catch { /* unclear answer: the stored status stands */ }
+  }
+  const now = (await bk.getRecord(rec.id)) || rec;
+  return json({ success: true, code: now.code, state: now.state, sats: now.sats, kes: now.kes, feeKes: now.feeKes,
+    inProgress: bk.isOpenState(now.state), message: bk.stateMessage(now.state, now.code) });
+}
+
+// Bitika's signed payment notice. Verified exactly as documented, answered
+// fast, and only the display status moves. Unknown codes are ignored.
+async function bitikaWebhook(request, secret) {
+  const want = env("YEBENTE_BITIKA_HOOK_PATH");
+  if (!want || secret.length !== want.length || !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(want))) {
+    if (want && secret) {
+      const { recordAttack } = await import("../lib/attacks.js");
+      await recordAttack("secret_guess", { where: "/api/yebente/bitika/webhook", detail: "wrong bitika webhook secret" }).catch(() => {});
+    }
+    return json({ success: false, error: "Rejected" }, 403);
+  }
+  const bk = await import("../lib/bitika.js");
+  if (!bk.bitikaOn()) return json({ success: false, error: "Not found" }, 404);
+  if ((await hit(`rl:yb:bitwh:${ipKey(request)}`, 3600)) > 200) return json({ success: false, error: "Too many notices." }, 429);
+  const raw = await request.text(); // raw first: the signature covers the exact bytes
+  if (!bk.verifyWebhook(raw, request.headers.get("x-bitika-signature"), env("BITIKA_WEBHOOK_SECRET"))) {
+    const { recordAttack } = await import("../lib/attacks.js");
+    await recordAttack("secret_guess", { where: "/api/yebente/bitika/webhook", detail: "bad bitika webhook signature" }).catch(() => {});
+    return json({ success: false, error: "Rejected" }, 403);
+  }
+  let body = {};
+  try { body = JSON.parse(raw); } catch { return json({ success: false, error: "No payment given." }, 400); }
+  const code = String(body?.data?.transaction_code || "");
+  const state = bk.webhookStatus(body);
+  if (code && state) await bk.applyRemoteStatus(code, state);
   return json({ success: true });
 }
 
@@ -298,18 +400,28 @@ async function walletPost(request, action) {
     const w = await me(request);
     await yw._internal.withLedger(() => yw._internal.checkPin(w, body.pin));
     if ((await hit(`rl:yb:email:${w.id}`, 3600)) > 5) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
-    return json({ success: true, ...(await yw.setEmail(w, body.email, site())) });
+    return json({ success: true, ...(await yw.setEmail(w, body.email, site(), { confirmTypo: body.confirmTypo === true })) });
+  }
+  if (action === "email/cancel") {
+    const w = await me(request);
+    if ((await hit(`rl:yb:emailc:${w.id}`, 3600)) > 20) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
+    return json({ success: true, ...(await yw.cancelPendingEmailChange(w, body.pin)) });
   }
   if (action === "recover-email") {
     const email = String(body.email || "").trim().toLowerCase();
     if ((await hit(`rl:yb:rec:${ipKey(request)}`, 3600)) > 20 || (await hit(`rl:yb:rece:${crypto.createHash("sha256").update(email).digest("hex").slice(0, 16)}`, 3600)) > 3)
       return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
-    await sameTime(() => yw.requestEmailRecovery(email, site()));
+    await sameTime(() => yw.requestEmailRecovery(email, site(), { confirmTypo: body.confirmTypo === true }));
     return json({ success: true, message: "If that email is confirmed for a Ye₿ente wallet, a recovery link is on its way." });
   }
   if (action === "recover-email/finish") {
     if ((await hit(`rl:yb:recf:${ipKey(request)}`, 3600)) > 30) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
     return json({ success: true, ...(await yw.finishEmailRecovery({ token: String(body.token || ""), pin: body.pin, device: body.device })) });
+  }
+  if (action === "recovery/cancel") {
+    const w = await me(request);
+    if ((await hit(`rl:yb:recc:${w.id}`, 3600)) > 20) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
+    return json({ success: true, ...(await yw.cancelEmailRecovery(w, body.pin)) });
   }
   if (action === "buy") {
     const w = await me(request);
@@ -320,6 +432,10 @@ async function walletPost(request, action) {
     if (!d.success) return json(d, r.status);
     await yw.startBuy(w, quote, d.checkoutRequestId);
     return json({ ...d, satsAmount: quote.sats, kes: quote.kes, rate: quote.rate });
+  }
+  if (action === "buy/bitika") {
+    const w = await me(request);
+    return await bitikaBuy(request, w, body);
   }
   if (action === "invoice") {
     const w = await me(request);
@@ -350,7 +466,7 @@ async function walletPost(request, action) {
     const email = String(body.email || "").trim().toLowerCase();
     if ((await hit(`rl:yb:ls:${ipKey(request)}`, 3600)) > 10 || (await hit(`rl:yb:lse:${crypto.createHash("sha256").update(email).digest("hex").slice(0, 16)}`, 3600)) > 3)
       return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
-    await sameTime(() => yw.startLogin(email));
+    await sameTime(() => yw.startLogin(email, { confirmTypo: body.confirmTypo === true }));
     return json({ success: true, message: "If that email belongs to a Ye₿ente wallet, a login code is on its way." });
   }
   if (action === "login/finish") {
@@ -404,6 +520,8 @@ async function walletGet(request, action) {
     const now = await getJSON(`ywbuy:${buy[1]}`);
     return json({ success: true, state: now.state, resultCode: now.state === "paid" ? 0 : now.state === "failed" ? 1 : 49, mpesaReceiptNumber: now.receipt || null, satsAmount: now.sats, inProgress: now.state === "pending" });
   }
+  const bitika = action.match(/^buy\/bitika\/([\w-]{3,80})$/);
+  if (bitika) return await bitikaStatus(request, w, bitika[1]);
   const card = action.match(/^card\/status\/([\w-]{8,80})$/);
   if (card) {
     const rec = await getJSON(`ywcard:${card[1]}`);
@@ -440,6 +558,28 @@ async function confirmEmailPost(request) {
   return ok ? emailPage(200, "Email confirmed", "You can now log in with this email on a new phone, or recover your wallet if you lose yours.")
     : emailPage(410, "Link not recognised", "This link has expired or was already used. Add the email again in Settings.");
 }
+// The old address cancels a pending email change: no login, and the pages name
+// nothing about the account. Guessing is pointless (256-bit tokens, 30 tries an hour).
+async function emailChangeCancelPost(request) {
+  if ((await hit(`rl:yb:emailcx:${ipKey(request)}`, 3600)) > 30)
+    return emailPage(429, "Too many attempts", "Try again in an hour.");
+  const { cancelEmailChangeToken } = await import("../lib/ywallet.js");
+  const form = await request.formData().catch(() => null);
+  const ok = await cancelEmailChangeToken(String(form?.get("t") || ""));
+  return ok ? emailPage(200, "Email change cancelled", "Your email stays as it is. Nothing else changed.")
+    : emailPage(410, "Link not recognised", "This link has expired, was already used, or the change already took effect.");
+}
+// The freeze link's button: no login, idempotent, and the pages name nothing
+// about the account. Guessing is pointless (256-bit tokens, 30 tries an hour).
+async function freezePost(request) {
+  if ((await hit(`rl:yb:freeze:${ipKey(request)}`, 3600)) > 30)
+    return emailPage(429, "Too many attempts", "Try again in an hour.");
+  const { freezeWallet } = await import("../lib/ywallet.js");
+  const form = await request.formData().catch(() => null);
+  const ok = await freezeWallet(String(form?.get("t") || ""));
+  return ok ? emailPage(200, "Sending is frozen", "Every phone is signed out. Receiving still works. Log in again on your phone to unfreeze it. If you already logged in again, sending is back on.")
+    : emailPage(410, "Link not recognised", "This link has expired. Use the link in your newest security email.");
+}
 // Replies about an email address take the same time whether or not it has a wallet.
 async function sameTime(fn, ms = 1200) {
   const t = Date.now();
@@ -453,13 +593,29 @@ const sub = (request) => decodeURIComponent(new URL(request.url).pathname.replac
 
 export async function GET(request) {
   const path = sub(request);
-  if (path === "health") return json({ status: "ok", service: "yebente", wallets: switchOn("YEBENTE_WALLETS"), environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), deposits: false, node: await nodeUp(), proxy: proxyShape(request), timestamp: Date.now() });
+  if (path === "health") {
+    const bk = await import("../lib/bitika.js");
+    const provider = pickProvider(bk.bitikaOn(), buyOn());
+    return json({ status: "ok", service: "yebente", wallets: switchOn("YEBENTE_WALLETS"), environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), buyProvider: provider, bitikaSandbox: provider === "bitika" ? bk.bitikaSandbox() : false, deposits: false, node: await nodeUp(), proxy: proxyShape(request), timestamp: Date.now() });
+  }
   if (path.startsWith("lightning/invoice-status/")) return off("Create a Ye₿ente wallet first.");
   if (path === "wallet/email-confirm") {
     // Opening the link only shows a button: mail scanners open every link, and must not confirm for the owner.
     const t = String(new URL(request.url).searchParams.get("t") || "").replace(/[^\w-]/g, "").slice(0, 64);
     return emailPage(200, "Confirm your email", "Press the button to confirm this email for your Ye₿ente wallet.",
       `<form method="post" action="/api/yebente/wallet/email-confirm"><input type="hidden" name="t" value="${t}"><button style="font:600 1rem system-ui;padding:.7rem 1.2rem;border-radius:999px;border:0;background:#DDB8FF;color:#141117;cursor:pointer">Confirm my email</button></form>`);
+  }
+  if (path === "wallet/email-change-cancel") {
+    // Opening the link only shows a button: mail scanners open every link, and must not cancel for the owner.
+    const t = String(new URL(request.url).searchParams.get("t") || "").replace(/[^\w-]/g, "").slice(0, 128);
+    return emailPage(200, "Cancel email change", "Press the button to cancel the pending email change. Your email stays as it is.",
+      `<form method="post" action="/api/yebente/wallet/email-change-cancel"><input type="hidden" name="t" value="${t}"><button style="font:600 1rem system-ui;padding:.7rem 1.2rem;border-radius:999px;border:0;background:#DDB8FF;color:#141117;cursor:pointer">Cancel the change</button></form>`);
+  }
+  if (path === "wallet/freeze") {
+    // Opening the link only shows a button: mail scanners open every link, and must not freeze for the owner.
+    const t = String(new URL(request.url).searchParams.get("t") || "").replace(/[^\w-]/g, "").slice(0, 128);
+    return emailPage(200, "Freeze sending", "Press the button to freeze sending from this wallet. Every phone will be signed out. Receiving still works.",
+      `<form method="post" action="/api/yebente/wallet/freeze"><input type="hidden" name="t" value="${t}"><button style="font:600 1rem system-ui;padding:.7rem 1.2rem;border-radius:999px;border:0;background:#DDB8FF;color:#141117;cursor:pointer">Freeze sending</button></form>`);
   }
   // Send Mobile's switched-on payout options (lib/rails.js): the app draws one button each.
   if (path === "rails") return json({ success: true, rails: (await import("../lib/rails.js")).railsOn() });
@@ -481,7 +637,7 @@ export async function GET(request) {
   }
   const lp = path.match(/^lnurlp\/([a-z0-9._-]{3,20})$/) || path.match(/^lnurl\/([a-z0-9._-]{3,20})$/);
   if (lp) return lnurlPay(request, lp[1], path.startsWith("lnurl/"));
-  const wg = path.match(/^wallet\/(me|history|security|invoice\/[0-9a-f]{64}|buy\/[\w-]{6,80}|card\/status\/[\w-]{8,80})$/);
+  const wg = path.match(/^wallet\/(me|history|security|invoice\/[0-9a-f]{64}|buy\/bitika\/[\w-]{3,80}|buy\/[\w-]{6,80}|card\/status\/[\w-]{8,80})$/);
   if (wg) { try { return await walletGet(request, wg[1]); } catch (e) { return json({ success: false, error: e.message }, e.status || 500); } }
   if (PAYOUTS.test(path)) return off(NO_NODE);
   return json({ success: false, error: "Not found" }, 404);
@@ -497,17 +653,21 @@ export async function POST(request) {
     if (path === "wallet/email-confirm") return await confirmEmailPost(request);
     if (path === "address/resolve") return await addressResolve(request);
     if (path === "address/invoice") return await addressInvoice(request);
-    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy|card\/order|email|recover-email|recover-email\/finish|passkey\/(?:options|add|off)|unlock\/options|unlock|login\/start|login\/finish|device\/register|device\/remove|lock)$/);
+    if (path === "wallet/email-change-cancel") return await emailChangeCancelPost(request);
+    if (path === "wallet/freeze") return await freezePost(request);
+    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy\/bitika|buy|card\/order|email|email\/cancel|recover-email|recover-email\/finish|recovery\/cancel|passkey\/(?:options|add|off)|unlock\/options|unlock|login\/start|login\/finish|device\/register|device\/remove|lock)$/);
     if (wp) return await walletPost(request, wp[1]);
     const cb = path.match(/^mpesa\/callback\/([\w-]{16,128})$/);
     if (cb) return await callback(request, cb[1]);
+    const bwh = path.match(/^bitika\/webhook\/([\w-]{16,128})$/);
+    if (bwh) return await bitikaWebhook(request, bwh[1]);
     const ipn = path.match(/^card\/ipn\/([\w-]{16,128})$/);
     if (ipn) return await cardIpn(request, ipn[1]);
     if (path.startsWith("lightning/") || path.startsWith("bitcoin/")) return off(NO_NODE);
     if (PAYOUTS.test(path)) return off(NOT_CONFIGURED);
     return json({ success: false, error: "Not found" }, 404);
   } catch (err) {
-    if (err.status) return json({ success: false, error: err.message }, err.status);
+    if (err.status) return json({ success: false, error: err.message, ...(err.typoHint ? { typoHint: err.typoHint } : {}) }, err.status);
     console.error("yebente", path, err.message);
     return json({ success: false, error: "Internal server error." }, 500);
   }

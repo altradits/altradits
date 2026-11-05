@@ -6,7 +6,7 @@ import {
   queryWebLNBalance,
   LightningAddressDetails,
 } from '../services/lightningService';
-import { hasServerWallet, setRecoveryEmail, lockServerWallet, forgetServerWallet } from '../services/altraditsWallet';
+import { hasServerWallet, setRecoveryEmail, cancelPendingEmailChange, lockServerWallet, forgetServerWallet } from '../services/altraditsWallet';
 import { PhonesAndSecurity } from './PhonesAndSecurity';
 import { biometricSupported, biometricOn, enableBiometric, disableBiometric } from '../services/biometric';
 import { Fingerprint } from 'lucide-react';
@@ -347,6 +347,26 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                     <span className="font-semibold">Recovery email</span>
                     <span className="font-mono text-[10px] text-[var(--yb-on-surface-variant)]">{serverEmail}</span>
                   </div>
+                  <p className="text-[11px] text-[var(--yb-on-surface-variant)]">A change takes 48 hours after you confirm the new address. Recovery keeps using the old address until then.</p>
+                  {wallet.emailChange && (
+                    <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/30 space-y-2">
+                      <p className="text-xs font-semibold text-amber-200">Changing to {wallet.emailChange.newEmail}</p>
+                      <p className="text-[11px] text-amber-300/90">Takes effect {(() => { try { return new Date(wallet.emailChange!.effectiveAt).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch { return 'in 48 hours'; } })()}. Enter your PIN, then cancel.</p>
+                      <button
+                        type="button"
+                        disabled={walletBusy || !/^\d{6}$/.test(emailPin)}
+                        onClick={async () => {
+                          setWalletBusy(true); setValidationError(''); setWalletMsg('');
+                          try { await cancelPendingEmailChange(emailPin); setWalletMsg('Email change cancelled.'); setEmailPin(''); onServerWalletChange?.(); }
+                          catch (err: unknown) { setValidationError(err instanceof Error ? err.message : 'Wallet service unavailable.'); }
+                          finally { setWalletBusy(false); }
+                        }}
+                        className="w-full h-10 rounded-full border border-amber-500/60 text-amber-100 font-semibold text-xs flex items-center justify-center disabled:opacity-50"
+                      >
+                        Cancel change
+                      </button>
+                    </div>
+                  )}
                   <div className="grid grid-cols-[1fr_7rem] gap-2">
                     <input
                       type="email"

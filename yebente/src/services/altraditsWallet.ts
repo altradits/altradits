@@ -61,6 +61,9 @@ export interface ServerWallet {
   email?: string | null;
   emailPending?: string | null;
   holdUntil?: string | null;
+  frozen?: boolean;
+  pendingRecovery?: PendingRecovery | null;
+  emailChange?: { newEmail: string; effectiveAt: string } | null;
   passkeys?: number;
 }
 
@@ -134,8 +137,10 @@ export async function lockServerWallet() {
   lockLocally();
 }
 
-export interface SecurityInfo { devices: { id: string; at: string; lastSeen: string; current: boolean }[]; olderDevices: number; log: { at: string; kind: string; text: string }[] }
+export interface PendingRecovery { requestedAt: string; expiresAt: string }
+export interface SecurityInfo { devices: { id: string; at: string; lastSeen: string; current: boolean }[]; olderDevices: number; log: { at: string; kind: string; text: string }[]; pendingRecovery: PendingRecovery | null }
 export const fetchSecurity = () => api<SecurityInfo & { success: boolean }>('GET', 'security');
+export const cancelEmailRecovery = (pin: string) => api<{ cancelled: boolean }>('POST', 'recovery/cancel', { pin });
 export async function removeDevice(id: string, pin: string) {
   await api('POST', 'device/remove', { deviceId: id, pin });
   if (id === deviceId()) await forgetServerWallet();
@@ -181,6 +186,9 @@ function entryToTransaction(e: ServerEntry): Transaction {
 // ---- recovery by email
 export const setRecoveryEmail = (email: string, pin: string) =>
   api<{ emailPending: string }>('POST', 'email', { email, pin });
+
+export const cancelPendingEmailChange = (pin: string) =>
+  api<{ cancelled: boolean }>('POST', 'email/cancel', { pin });
 
 export const requestEmailRecovery = (email: string) =>
   api<{ message: string }>('POST', 'recover-email', { email });
