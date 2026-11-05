@@ -1038,13 +1038,14 @@ function renderCalendar() {
     const p = byDate.get(iso);
     if (p) {
       const typed = MKT_TYPES[p.type] ? p.type : "Post";
+      const cls = MKT_TYPES[p.type] || "mkt-t-none";
       const src = p.imageData || `/${p.image}`;
-      cells += `<td><button type="button" class="mktTile ${MKT_TYPES[p.type] || "mkt-t-none"}${iso === MKT_SEL ? " mktSel" : ""}" data-mkt-day="${iso}"`
+      cells += `<td><button type="button" class="mktTile ${esc(cls)}${iso === MKT_SEL ? " mktSel" : ""}" data-mkt-day="${esc(iso)}"`
         + ` aria-label="${esc(MKT_DAY_NAME(iso))}: ${esc(typed)}${p.custom ? ", custom" : ""}">`
-        + `<span class="d">${d}</span><img src="${p.imageData ? p.imageData : esc(src)}" alt="" loading="lazy">`
+        + `<span class="d">${d}</span><img src="${esc(src)}" alt="" loading="lazy">`
         + `<span class="lb">${esc(typed)}</span>${p.custom ? `<span class="cu">Custom</span>` : ""}</button></td>`;
     } else {
-      cells += `<td><button type="button" class="mktEmptyDay" data-mkt-new="${iso}" aria-label="Design a post for ${esc(MKT_DAY_NAME(iso))}">`
+      cells += `<td><button type="button" class="mktEmptyDay" data-mkt-new="${esc(iso)}" aria-label="Design a post for ${esc(MKT_DAY_NAME(iso))}">`
         + `<span class="d">${d}</span><span class="plus" aria-hidden="true">+</span></button></td>`;
     }
     if ((first + d) % 7 === 0) cells += "</tr><tr>";
@@ -1059,16 +1060,16 @@ function renderCalendar() {
 function renderXPost() {
   const box = $("#mktPosts");
   const i = MKT_POSTS.findIndex((p) => p.date === MKT_SEL);
-  if (i < 0) { box.innerHTML = `<p class="sm muted">Pick a dotted day on the calendar to preview its post.</p>`; return; }
+  if (i < 0) { box.innerHTML = `<p class="sm muted">Pick a day with a tile on the calendar to preview its post.</p>`; return; }
   const p = MKT_POSTS[i];
   const src = p.imageData || `/${p.image}`;
   const base = p.imageData ? `custom-${p.date}` : String(p.image).split("/").pop().replace(/\.jpg$/, "");
   const media = p.video
     ? `<video src="/${esc(p.video)}" poster="/${esc(p.image)}" controls muted loop playsinline preload="metadata"></video>`
-    : `<img src="${p.imageData ? p.imageData : esc(src)}" alt="${esc(p.alt)}" loading="lazy">`;
+    : `<img src="${esc(src)}" alt="${esc(p.alt)}" loading="lazy">`;
   const dl = p.video
     ? `<a class="btn" href="/${esc(p.video)}" download="${esc(base)}.mp4">Download video</a>`
-    : `<a class="btn" href="${p.imageData ? p.imageData : esc(src)}" download="${esc(base)}.jpg">Download image</a>`;
+    : `<a class="btn" href="${esc(src)}" download="${esc(base)}.jpg">Download image</a>`;
   const custom = p.custom ? ` <span class="muted">· Custom</span>` : ``;
   box.innerHTML = `<div class="xpost"><div class="who"><span class="ava">A</span><div><b>Altradits</b> <span class="muted">@altradits · ${esc(p.date)}</span>${custom}</div></div>`
     + `<p class="cap">${esc(p.caption)}</p>`
