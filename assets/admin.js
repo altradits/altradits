@@ -783,7 +783,7 @@ const MKT_FONTS = {
   smono: { f: 'ui-monospace, Menlo, Consolas, monospace', w: 600 },
 };
 function mktLayout() { return { head: { x: 120, y: 270 }, sub: null, logo: { x: 96, y: 1085 } }; }
-let MKT_EDIT = { file: "", bg: "", name: "", img: null, logoImg: null, logoWhite: null, sel: null, ...mktLayout() };
+let MKT_EDIT = { file: "", bg: "", name: "", img: null, logoImg: null, logoWhite: null, sel: null, caret: null, caretOn: true, ...mktLayout() };
 let MKT_HIT = [];
 let MKT_SUBFLOW = { x: 120, y: 306 };
 const MKT_LAYOUTS = {};
@@ -794,7 +794,8 @@ function editTemplate(i, scroll = true) {
   const t = MKT_TPL[i];
   if (!t) return;
   if (MKT_EDIT.file) MKT_LAYOUTS[MKT_EDIT.file] = { head: MKT_EDIT.head, sub: MKT_EDIT.sub, logo: MKT_EDIT.logo };
-  MKT_EDIT = { file: t.file, bg: t.bg, name: t.name, img: null, logoImg: null, logoWhite: null, sel: null, ...(MKT_LAYOUTS[t.file] || mktLayout()) };
+  const keepCaret = MKT_EDIT.caret;
+  MKT_EDIT = { file: t.file, bg: t.bg, name: t.name, img: null, logoImg: null, logoWhite: null, sel: null, caret: keepCaret, caretOn: true, ...(MKT_LAYOUTS[t.file] || mktLayout()) };
   const lbl = $("#mktEditName");
   if (lbl) lbl.textContent = t.name;
   if ($("#mktLight")) $("#mktLight").checked = t.light === true;
@@ -808,7 +809,8 @@ function paintLine(ctx, line, x, y, halo) {
 function wrapPaint(ctx, text, x, y, maxW, lh, maxLines, halo) {
   const words = String(text).split(/\s+/).filter(Boolean);
   let line = "", yy = y, n = 0, w = 0;
-  const paint = (s, py) => { paintLine(ctx, s, x, py, halo); w = Math.max(w, ctx.measureText(s).width); };
+  const lines = [];
+  const paint = (s, py) => { paintLine(ctx, s, x, py, halo); const lw = ctx.measureText(s).width; w = Math.max(w, lw); lines.push({ x, y: py, w: lw }); };
   for (const wd of words) {
     if (n >= maxLines) break;
     const t = line ? line + " " + wd : wd;
@@ -816,7 +818,7 @@ function wrapPaint(ctx, text, x, y, maxW, lh, maxLines, halo) {
     else line = t;
   }
   if (line && n < maxLines) { paint(line, yy); yy += lh; }
-  return { y: yy, w };
+  return { y: yy, w, lines };
 }
 function fitFont(ctx, text, maxW, start, min, spec) {
   let size = start;
@@ -867,7 +869,7 @@ async function drawCustom(outline = true) {
     ctx.fillStyle = light ? "#ffffff" : "#0f1b2d";
     const r = wrapPaint(ctx, head, hp.x, hp.y, 1680, Math.round(size * 1.08), 3, light);
     hy = r.y;
-    MKT_HIT.push({ id: "head", x: hp.x, y: hp.y, w: Math.max(r.w, 40), h: Math.max(hy - hp.y, 40) });
+    MKT_HIT.push({ id: "head", x: hp.x, y: hp.y, w: Math.max(r.w, 40), h: Math.max(hy - hp.y, 40), lh: Math.round(size * 1.08), lines: r.lines });
   }
   if (sub) {
     ctx.font = `${ss.st || ""}${ss.w} 76px ${ss.f}`;
@@ -875,7 +877,7 @@ async function drawCustom(outline = true) {
     const sp = MKT_EDIT.sub || { x: hp.x, y: hy + 36 };
     const r = wrapPaint(ctx, sub, sp.x, sp.y, 1680, 92, 2, false);
     MKT_SUBFLOW = { x: hp.x, y: hy + 36 };
-    MKT_HIT.push({ id: "sub", x: sp.x, y: sp.y, w: Math.max(r.w, 40), h: Math.max(r.y - sp.y, 40) });
+    MKT_HIT.push({ id: "sub", x: sp.x, y: sp.y, w: Math.max(r.w, 40), h: Math.max(r.y - sp.y, 40), lh: 92, lines: r.lines });
   }
   if (outline && MKT_EDIT.sel) {
     const h = MKT_HIT.find((b) => b.id === MKT_EDIT.sel);
@@ -888,6 +890,16 @@ async function drawCustom(outline = true) {
       ctx.lineDashOffset = 16;
       ctx.strokeStyle = "#ffffff";
       ctx.strokeRect(h.x - 8, h.y - 8, h.w + 16, h.h + 16);
+      ctx.restore();
+    }
+  }
+  if (outline && MKT_EDIT.caret && MKT_EDIT.caretOn) {
+    const h = MKT_HIT.find((b) => b.id === MKT_EDIT.caret);
+    const last = h?.lines?.[h.lines.length - 1];
+    if (h && last) {
+      ctx.save();
+      ctx.fillStyle = MKT_EDIT.caret === "sub" ? "#ea5158" : light ? "#ffffff" : "#0f1b2d";
+      ctx.fillRect(last.x + last.w + 8, last.y, 7, h.lh);
       ctx.restore();
     }
   }
@@ -946,6 +958,20 @@ $("#mktCanvas")?.addEventListener("dblclick", (e) => {
   box.focus();
   box.select();
 });
+let mktCaretTimer = null;
+function mktCaret(on) {
+  MKT_EDIT.caret = on;
+  MKT_EDIT.caretOn = true;
+  if (mktCaretTimer) { clearInterval(mktCaretTimer); mktCaretTimer = null; }
+  let still = false;
+  try { still = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { /* blink */ }
+  if (on && !still) mktCaretTimer = setInterval(() => { MKT_EDIT.caretOn = !MKT_EDIT.caretOn; drawCustom(); }, 530);
+  drawCustom();
+}
+for (const [id, which] of [["mktHead", "head"], ["mktSub", "sub"]]) {
+  $(`#${id}`)?.addEventListener("focus", () => mktCaret(which));
+  $(`#${id}`)?.addEventListener("blur", () => mktCaret(null));
+}
 function renderCalendar() {
   const [y, m] = MKT_MONTH.split("-").map(Number);
   const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
