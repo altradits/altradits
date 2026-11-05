@@ -17,6 +17,9 @@ const admin = await import(`${ROOT}/api/admin.js`);
 const jpeg = "data:image/jpeg;base64," + Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]).toString("base64");
 const png = "data:image/png;base64," + Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]).toString("base64");
 const good = { id: "idea1", column: "ideas", title: "Morning sats", caption: "Save a little daily.", imageData: jpeg };
+const layoutEl = { kind: "text", role: "head", text: "Hi", x: 120, y: 270, w: 1680, size: 170, style: "hbrand", color: "#0f1b2d", align: "left", weight: null, italic: false, upper: false, lines: 3 };
+const layoutLogo = { kind: "logo", x: 96, y: 1085, w: 290, white: false };
+const layout = { template: "assets/marketing/templates/tpl-01.jpg", elements: [layoutEl, layoutLogo] };
 
 test("a good idea is accepted and cleaned", () => {
   const idea = validateIdea({ ...good, title: "  Spaced  ", caption: "x".repeat(280), placedDate: null }, []);
@@ -54,6 +57,27 @@ test("only real JPEGs pass, and the board caps at 200", () => {
   assert.equal(validateIdea({ ...good, id: "full7" }, full).id, "full7", "updating a card on a full board still works");
 });
 
+test("a good layout is accepted and cleaned", () => {
+  const idea = validateIdea({ ...good, layout }, []);
+  assert.equal(idea.layout.template, layout.template);
+  assert.equal(idea.layout.elements.length, 2);
+  assert.deepEqual(Object.keys(idea.layout.elements[0]).sort(), ["align", "color", "italic", "kind", "lines", "role", "size", "style", "text", "upper", "w", "weight", "x", "y"]);
+  assert.equal(validateIdea({ ...good }, []).layout, null, "no layout stays null");
+});
+
+test("bad layouts are refused with plain words", () => {
+  assert.throws(() => validateIdea({ ...good, layout: { ...layout, elements: [{ ...layoutEl, extra: 1 }] } }, []), /unknown detail/i, "unknown key");
+  assert.throws(() => validateIdea({ ...good, layout: { ...layout, elements: Array(13).fill(layoutEl) } }, []), /12/i, "too many");
+  assert.throws(() => validateIdea({ ...good, layout: { ...layout, elements: [{ ...layoutEl, text: "x".repeat(201) }] } }, []), /200/i, "long text");
+  assert.throws(() => validateIdea({ ...good, layout: { ...layout, elements: [{ ...layoutEl, x: 2000 }] } }, []), /canvas/i, "off canvas");
+  assert.throws(() => validateIdea({ ...good, layout: { ...layout, elements: [{ ...layoutEl, style: "nope" }] } }, []), /style/i, "bad style");
+  assert.throws(() => validateIdea({ ...good, layout: { ...layout, elements: [{ ...layoutEl, color: "#123456" }] } }, []), /colour/i, "bad colour");
+  assert.throws(() => validateIdea({ ...good, layout: { ...layout, template: "evil.jpg" } }, []), /background/i, "bad template");
+  const big = { ...layout, elements: Array.from({ length: 30 }, () => ({ ...layoutEl, text: "x".repeat(200) })) };
+  assert.ok(JSON.stringify(big).length > 8 * 1024, "the fixture really exceeds 8 KB");
+  assert.throws(() => validateIdea({ ...good, layout: big }, []), /too big/i, "oversize");
+});
+
 test("idea pictures cap at 60 KB, and the board caps at 8 MB", () => {
   const mk = (n) => { const b = Buffer.alloc(n); b[0] = 0xff; b[1] = 0xd8; b[2] = 0xff; return "data:image/jpeg;base64," + b.toString("base64"); };
   assert.equal(validIdeaImage(mk(46062)), true, "a 60 KB thumbnail passes");
@@ -86,6 +110,9 @@ test("save, list and delete round-trip through the API", async () => {
   const moved = await admin.POST(post({ action: "mkt_idea_save", ...good, column: "approved" }));
   assert.equal(moved.status, 200);
   assert.equal((await getJSON(IDEAS_KEY))[0].column, "approved");
+  const withLayout = await admin.POST(post({ action: "mkt_idea_save", ...good, column: "approved", layout }));
+  assert.equal(withLayout.status, 200);
+  assert.equal((await withLayout.json()).idea.layout.template, layout.template);
   const gone = await admin.POST(post({ action: "mkt_idea_delete", id: "idea1" }));
   assert.equal(gone.status, 200);
   assert.deepEqual(await getJSON(IDEAS_KEY), []);
@@ -109,7 +136,7 @@ test("the API refuses bad columns, long captions, non-JPEGs and a full board", a
 test("the dashboard is wired: board, form, editor and place paths", () => {
   const js = fs.readFileSync(path.join(ROOT, "assets", "admin.js"), "utf8");
   for (const s of ["view=mktideas", "mkt_idea_save", "mkt_idea_delete", "mktIdeas", "mktIdeaForm", "mktIdeaNew",
-    "mktIdeaTitle", "mktIdeaCap", "data-mkt-ie", "data-mkt-col", "mktIdeaOpen", "mktIdeaPlace", "mktIdeaShot", "mktRenderClean", "mktRenderCapped", "MKT_EDIT.ideaId", "press Place again", "drafting", "approved"]) {
+    "mktIdeaTitle", "mktIdeaCap", "data-mkt-ie", "data-mkt-col", "mktIdeaOpen", "mktIdeaPlace", "mktIdeaShot", "mktIdeaLayout", "mktRenderClean", "mktRenderCapped", "MKT_EDIT.ideaId", "press Place again", 'name="type"', "drafting", "approved"]) {
     assert.ok(js.includes(s), `admin.js mentions ${s}`);
   }
   const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");

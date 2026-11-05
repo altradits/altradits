@@ -101,5 +101,5 @@ test("the marketing schedule and templates are served locally, and nothing else 
 test("the admin API accepts full-size pictures, other APIs stay capped", () => {
   const root = new URL("..", import.meta.url).pathname;
   const src = fs.readFileSync(path.join(root, "server.mjs"), "utf8");
-  assert.match(src, /const limit = api\[1\] === "admin" \? 1_000_000 : 100_000;/, "admin takes ~1 MB for pictures, the rest stay at 100 KB");
+  assert.match(src, /const limit = api\[1\] === "admin" && adminAuthed\(req\.headers\.authorization\) \? 1_000_000 : 100_000;/, "admin takes ~1 MB for pictures once the token checks out, the rest stay at 100 KB");
 });

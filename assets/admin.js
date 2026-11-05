@@ -1204,18 +1204,6 @@ function mktInlineCommit() {
   mktSyncTools();
   $("#mktCanvas")?.focus({ preventScroll: true });
 }
-function mktRoleEnsure(role) {
-  let el = mktRoleEl(role);
-  if (el) return el;
-  mktPush();
-  el = role === "head"
-    ? { id: "head", kind: "text", role: "head", text: "Your headline", x: 120, y: 270, w: 1680, size: 170, style: "hbrand", color: $("#mktLight")?.checked ? "#ffffff" : "#0f1b2d", align: "left", weight: null, italic: false, upper: false, lines: 3, moved: false, locked: false }
-    : { id: "sub", kind: "text", role: "sub", text: "Your smaller line", x: 120, y: 880, w: 1680, size: 76, style: "sbrand", color: "#ea5158", align: "left", weight: null, italic: false, upper: false, lines: 2, moved: false, locked: false };
-  const at = MKT_ELS.findIndex((e) => e.kind === "text");
-  if (at < 0) MKT_ELS.push(el);
-  else MKT_ELS.splice(role === "head" ? at : at + 1, 0, el);
-  return el;
-}
 function mktAddText(kind) {
   mktPush();
   const n = MKT_ELS.filter((e) => e.kind === "text").length;
@@ -1687,7 +1675,7 @@ $("#mktPlace")?.addEventListener("click", async () => {
   try {
     const r = await api("", { action: "mkt_place", month, date: `${month}-${day}`,
       caption: $("#mktICap").value, alt: `${MKT_EDIT.name} template with custom words`,
-      imageData: await mktRenderCapped() });
+      type: $("#mktIType").value, imageData: await mktRenderCapped() });
     st.textContent = `Placed on ${r.placed}.`;
     await renderMarketing(month);
   } catch (err) { st.textContent = err.message; }
@@ -1731,7 +1719,7 @@ const MKT_MAX_IMAGE = 60 * 1024; // mirrors lib/marketing.js MAX_IDEA_IMAGE_CHAR
 const MKT_MAX_IDEAS = 200; // mirrors lib/marketing.js MAX_IDEAS
 let MKT_IDEAS = [];
 let MKT_IDEA_VIEW = "board";
-let MKT_IDEA_EDIT = null, MKT_IDEA_PIC = null, MKT_IDEAC = 0;
+let MKT_IDEA_EDIT = null, MKT_IDEA_PIC = null, MKT_IDEA_LAYOUT = null, MKT_IDEAC = 0;
 let MKT_IDEA_DEL = null, MKT_IDEA_PLACE = null;
 async function loadIdeas() {
   try {
@@ -1759,9 +1747,11 @@ function mktIdeaCard(idea) {
 }
 function mktPlaceMini(idea) {
   const opts = MKT_MONTHS.map((m) => `<option value="${esc(m)}"${m === MKT_MONTH ? " selected" : ""}>${esc(m)}</option>`).join("");
+  const types = `<option value="">None</option>` + Object.keys(MKT_TYPES).map((t) => `<option>${esc(t)}</option>`).join("");
   return `<form class="mktPlaceMini" data-mkt-placeform="${esc(idea.id)}">`
     + `<label>Month <select name="month" class="sel">${opts}</select></label> `
     + `<label>Day <input name="day" inputmode="numeric" size="2" style="width:4rem" placeholder="25"></label> `
+    + `<label>Type <select name="type" class="sel">${types}</select></label> `
     + `<button type="submit">Place</button> <button type="button" data-mkt-ie="placeNo">Cancel</button> `
     + `<span class="sm" data-mkt-placestatus role="status"></span><br><span class="sm muted">The full-size picture comes from the editor.</span></form>`;
 }
@@ -1791,9 +1781,16 @@ function mktIdeaCount() {
 function mktIdeaPicShow() {
   $("#mktIdeaPic").innerHTML = MKT_IDEA_PIC ? `<img src="${esc(MKT_IDEA_PIC)}" alt="Idea picture preview">` : "";
 }
+function mktIdeaLayout() {
+  if (MKT_ELS.length > 12) return { error: "Too many elements (12 max). Delete some first." };
+  return { layout: { template: MKT_EDIT.file, elements: MKT_ELS.map((el) => el.kind === "logo"
+    ? { kind: "logo", x: el.x, y: el.y, w: el.w, white: el.white === true }
+    : { kind: "text", role: el.role || null, text: String(el.text).slice(0, 200), x: el.x, y: el.y, w: el.w, size: el.size, style: el.style, color: el.color, align: el.align, weight: el.weight, italic: el.italic === true, upper: el.upper === true, lines: el.lines }) } };
+}
 function mktIdeaFormOpen(idea, column) {
   MKT_IDEA_EDIT = idea ? idea.id : null;
   MKT_IDEA_PIC = idea?.imageData || null;
+  MKT_IDEA_LAYOUT = idea?.layout || null;
   $("#mktIdeaFormT").textContent = idea ? "Edit idea" : "New idea";
   $("#mktIdeaTitle").value = idea?.title || "";
   $("#mktIdeaCap").value = idea?.caption || "";
@@ -1808,18 +1805,40 @@ function mktIdeaOpen(idea) {
   MKT_EDIT.ideaId = idea.id;
   mktInlineCommit();
   mktPush();
-  const head = mktRoleEnsure("head"), sub = mktRoleEnsure("sub");
-  head.text = idea.title;
-  const first = String(idea.caption).split(/[.?!]\s/)[0] || "";
-  sub.text = first.slice(0, 90);
-  MKT_EDIT.sel = "head";
+  if (idea.layout && Array.isArray(idea.layout.elements)) {
+    const t = MKT_TPL.find((x) => x.file === idea.layout.template);
+    if (t) {
+      if (MKT_EDIT.file) MKT_LAYOUTS[MKT_EDIT.file] = mktSnap();
+      MKT_EDIT.file = t.file; MKT_EDIT.bg = t.bg; MKT_EDIT.name = t.name; MKT_EDIT.img = null;
+      const lbl = $("#mktEditName");
+      if (lbl) lbl.textContent = t.name;
+      if ($("#mktLight")) $("#mktLight").checked = t.light === true;
+      if ($("#mktLogoWhite")) $("#mktLogoWhite").checked = t.ink === "white";
+    }
+    MKT_ELS = idea.layout.elements.map((s) => {
+      const el = JSON.parse(JSON.stringify(s));
+      el.id = el.role === "head" ? "head" : el.role === "sub" ? "sub" : `${el.kind === "logo" ? "logo" : "t"}${++MKT_IDC}`;
+      el.locked = false;
+      if (el.kind === "text") el.moved = true;
+      return el;
+    });
+    const head = mktRoleEl("head") || MKT_ELS.find((e) => e.kind === "text");
+    MKT_EDIT.sel = head ? head.id : (MKT_ELS[0]?.id || null);
+  } else {
+    MKT_ELS = mktDefaultEls();
+    const head = mktRoleEl("head"), sub = mktRoleEl("sub");
+    head.text = idea.title;
+    const first = String(idea.caption).split(/[.?!]\s/)[0] || "";
+    sub.text = first.slice(0, 90);
+    MKT_EDIT.sel = "head";
+  }
   mktSyncSelText();
   drawCustom();
   mktSyncTools();
   $("#mkt-edit")?.scrollIntoView();
   toast("Idea loaded in the editor.");
 }
-async function mktIdeaPlace(idea, month, day) {
+async function mktIdeaPlace(idea, month, day, type) {
   // The picture comes from the canvas, so the canvas must hold this idea:
   // otherwise card B would go out under card A's picture.
   if (MKT_EDIT.ideaId !== idea.id) {
@@ -1829,7 +1848,7 @@ async function mktIdeaPlace(idea, month, day) {
   const date = `${month}-${day}`;
   const full = await mktRenderCapped();
   await api("", { action: "mkt_place", month, date, caption: idea.caption,
-    alt: `${idea.title} (from the ideas board)`.slice(0, 200), imageData: full });
+    alt: `${idea.title} (from the ideas board)`.slice(0, 200), type: type || "", imageData: full });
   const r = await api("", { action: "mkt_idea_save", ...idea, column: "placed", placedDate: date });
   MKT_IDEAS[MKT_IDEAS.findIndex((x) => x.id === idea.id)] = r.idea;
   if (month === MKT_MONTH) { MKT_SEL = date; await renderMarketing(month); }
@@ -1878,7 +1897,7 @@ $("#mktIdeas").addEventListener("submit", async (e) => {
   const month = f.month.value, day = String(f.day.value).padStart(2, "0");
   st.textContent = "Placing…";
   try {
-    await mktIdeaPlace(idea, month, day);
+    await mktIdeaPlace(idea, month, day, f.type.value);
     MKT_IDEA_PLACE = null;
     renderIdeas();
     toast(`Placed on ${month}-${day}.`);
@@ -1921,7 +1940,7 @@ $("#mktIdeaForm")?.addEventListener("submit", async (e) => {
   st.textContent = "Saving…";
   const body = { action: "mkt_idea_save", id: MKT_IDEA_EDIT || ("i" + Date.now().toString(36) + (++MKT_IDEAC).toString(36)),
     column: $("#mktIdeaCol").value, title: $("#mktIdeaTitle").value, caption: $("#mktIdeaCap").value, imageData: MKT_IDEA_PIC,
-    placedDate: (MKT_IDEAS.find((x) => x.id === MKT_IDEA_EDIT) || {}).placedDate || null };
+    layout: MKT_IDEA_LAYOUT, placedDate: (MKT_IDEAS.find((x) => x.id === MKT_IDEA_EDIT) || {}).placedDate || null };
   try {
     const r = await api("", body);
     const at = MKT_IDEAS.findIndex((x) => x.id === r.idea.id);
@@ -1949,11 +1968,14 @@ $("#mktIdeaShot")?.addEventListener("click", async () => {
     if (url.length <= MKT_MAX_IMAGE) break;
   }
   if (url.length > MKT_MAX_IMAGE) { st.textContent = "That picture is too big. Simplify the design and try again."; return; }
+  const built = mktIdeaLayout();
+  if (built.error) { st.textContent = built.error; return; }
   MKT_IDEA_PIC = url;
+  MKT_IDEA_LAYOUT = built.layout;
   mktIdeaPicShow();
   st.textContent = "Picture attached.";
 });
-$("#mktIdeaNoPic")?.addEventListener("click", () => { MKT_IDEA_PIC = null; mktIdeaPicShow(); });
+$("#mktIdeaNoPic")?.addEventListener("click", () => { MKT_IDEA_PIC = null; MKT_IDEA_LAYOUT = null; mktIdeaPicShow(); });
 $("#mktIdeaCancel")?.addEventListener("click", () => { $("#mktIdeaForm").hidden = true; });
 $("#mktIdeaTitle")?.addEventListener("input", mktIdeaCount);
 $("#mktIdeaCap")?.addEventListener("input", mktIdeaCount);

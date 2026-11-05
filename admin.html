@@ -839,7 +839,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
         <p class="sm muted">Drag to move. Corners resize. Double-click words to edit them. Delete removes. Command or Control Z undoes.</p>
         <p><button type="button" class="btn" id="mktDl">Download picture</button></p>
     <h3>Place on the calendar</h3>
-    <p class="sm"><label for="mktIMonth">Month </label><select id="mktIMonth"></select> <label for="mktIDay">Day </label><input id="mktIDay" inputmode="numeric" size="2" style="width:4rem" placeholder="25"></p>
+    <p class="sm"><label for="mktIMonth">Month </label><select id="mktIMonth"></select> <label for="mktIDay">Day </label><input id="mktIDay" inputmode="numeric" size="2" style="width:4rem" placeholder="25"> <label for="mktIType">Type </label><select id="mktIType" class="sel"><option value="">None</option><option>Lesson</option><option>Ye₿ente</option><option>Myth vs fact</option><option>Story</option><option>Tip</option><option>Question</option></select></p>
     <p><label for="mktICap">Caption</label><br><input id="mktICap" maxlength="280" style="max-width:44rem" placeholder="Two short sentences, the site link, then the tags"></p>
     <p><button type="button" class="btn" id="mktPlace">Place on that day</button> <button type="button" class="btn" id="mktUnplace">Remove that day</button> <span class="sm" id="mktIStatus"></span></p>
   </section>
@@ -916,6 +916,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn" id="rcptResend" hidden>Resend receipt email</button><button type="button" class="btn primary" id="rcptClose">Close</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=refresh16"></script>
+<script type="module" src="/assets/admin.js?v=refresh17"></script>
 </body>
 </html>

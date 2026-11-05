@@ -14,14 +14,12 @@
 //   GET  /api/admin?view=statement   -> money received through the website (&format=csv for the books)
 //   GET  /api/admin?view=activity&days=30 -> Ye₿ente deposits and transactions per wallet, most active first
 //   POST { action: "stan_report" } | { action: "node_topup", sats } | { action: "address_qr", address } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
-import { json, readBody, clean, newId, safeEqual, clientIp, siteUrl, EMAIL_RE } from "../lib/http.js";
+import { json, readBody, clean, newId, adminAuthed, clientIp, siteUrl, EMAIL_RE } from "../lib/http.js";
 import { listIds, getMany, getJSON, setJSON, pushId, usingRedis, hit, peek, listArchives } from "../lib/store.js";
 import { lightningMode } from "../lib/lightning.js";
 
 function authorized(request) {
-  const token = process.env.ADMIN_TOKEN;
-  const given = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
-  return Boolean(token) && safeEqual(token, given);
+  return adminAuthed(request.headers.get("authorization"));
 }
 
 const deny = () => json({ error: process.env.ADMIN_TOKEN ? "Wrong admin token." : "Set ADMIN_TOKEN in your environment first." }, 401);

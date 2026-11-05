@@ -19,6 +19,12 @@ test("a good custom post is accepted and cleaned", () => {
   assert.equal(p.imageData, jpeg);
 });
 
+test("custom post types come from the fixed list", () => {
+  assert.equal(validateCustomPost({ ...good, type: "Tip" }, MONTHS).type, "Tip");
+  assert.equal(validateCustomPost({ ...good }, MONTHS).type, null, "no type stays neutral");
+  assert.throws(() => validateCustomPost({ ...good, type: "nope" }, MONTHS), /type/i, "off-list type");
+});
+
 test("bad months and days are refused with plain words", () => {
   for (const bad of ["12", "2026-13", "2026-1", "../x"]) {
     assert.throws(() => validateCustomPost({ ...good, month: bad }, MONTHS), /month/i, bad);
@@ -57,14 +63,14 @@ test("the dashboard is wired: editor, place, remove, overlay", () => {
   assert.match(js, /<figure data-mkt-edit/, "the whole card opens the editor, not just the button");
   assert.match(js, /closest\("a"\)\) return/, "download links are spared from the editor click");
   const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
-  for (const s of ['id="mktCanvas"', 'id="mktSelText"', 'id="mktPlace"', 'id="mktUnplace"', 'id="mktICap"']) {
+  for (const s of ['id="mktCanvas"', 'id="mktSelText"', 'id="mktPlace"', 'id="mktUnplace"', 'id="mktICap"', 'id="mktIType"']) {
     assert.ok(html.includes(s), `admin.html has ${s}`);
   }
 });
 
 test("the editor moves parts, swaps the logo ink, and offers fonts", () => {
   const js = fs.readFileSync(path.join(ROOT, "assets/admin.js"), "utf8");
-  for (const s of ["pointerdown", "keydown", "dblclick", "caret", "selectionStart", "MKT_FONTS", "mktSelText", "mktTStyle", "mktLogoWhite", "mktReset", "logo-white.png", "drawCustom(false)", "toDataURL", '? "grab" : "text"']) {
+  for (const s of ["pointerdown", "keydown", "dblclick", "caret", "selectionStart", "MKT_FONTS", "mktSelText", "mktTStyle", "mktIType", "mktLogoWhite", "mktReset", "logo-white.png", "drawCustom(false)", "toDataURL", '? "grab" : "text"']) {
     assert.ok(js.includes(s), `admin.js mentions ${s}`);
   }
   const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
