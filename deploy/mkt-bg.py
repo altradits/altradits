@@ -644,6 +644,69 @@ def paint_frame_q3(month, variant="A"):
 PAINTERS["frame"] = paint_frame_q3
 
 
+# Variant B for Q4 (months 10-12): October waves, November triangles,
+# December zigzag. Same one-block style as Q3, for the same reason.
+B_QUARTERS.update({4: [10, 11, 12]})
+B_BASE_NUMS.update({4: 212})
+
+NAMES_B.update({
+    ("paper", 10): "Waves low", ("ink", 10): "Night waves low",
+    ("split", 10): "Wave split wide", ("frame", 10): "Low wave rule",
+    ("paper", 11): "Play low", ("ink", 11): "Night play low",
+    ("split", 11): "Play split wide", ("frame", 11): "Play edges",
+    ("paper", 12): "Pulse low", ("ink", 12): "Night pulse low",
+    ("split", 12): "Pulse split wide", ("frame", 12): "High pulse rule",
+})
+
+# Paper/Ink B: the same motif lower and smaller, like Q1's.
+ANCHORS_B.update({10: (1620, 800, 0.8), 11: (1620, 800, 0.8),
+                  12: (1620, 800, 0.8)})
+
+# Split B: same fields, edge moved right, curve flipped, like Q1's.
+SPLITS_B.update({10: (CREAM, NAVY, 1520, False),
+                 11: (NAVY, WHITE, 1480, True),
+                 12: (WHITE, BLACK, 1580, False)})
+SPLIT_ANCHORS_B.update({10: (1730, 700, 0.62), 11: (1720, 700, 0.62),
+                        12: (1740, 700, 0.62)})
+
+
+def paint_frame_b_q4(month):
+    # Second frame arrangements for October, November and December.
+    m = MOTIFS[month]
+    ground, accent = m["ground"], m["accent"]
+    img = blank(ground)
+    d = SSDraw(ImageDraw.Draw(img))
+    if month == 10:  # the wave rule, low instead of high
+        pts = [(24 + t * 1666, 1242 + np.sin(t * 22 * np.pi) * 7)
+               for t in np.linspace(0, 1, 380)]
+        d.line(pts, fill=accent, width=8, joint="curve")
+    elif month == 11:  # play marks at the edge midpoints, pointing in
+        d.polygon([(947, 24), (973, 24), (960, 49)], fill=accent)
+        d.polygon([(24, 627), (24, 653), (49, 640)], fill=accent)
+        d.polygon([(1896, 627), (1896, 653), (1871, 640)], fill=accent)
+        d.polygon([(947, 1256), (973, 1256), (960, 1231)], fill=accent)
+    elif month == 12:  # the pulse rule, high instead of low
+        pts = [(24 + i * 1872 / 26,
+                31 + (8 if i % 2 else -8) * (0 if i in (0, 26) else 1))
+               for i in range(27)]
+        d.line(pts, fill=accent, width=8, joint="curve")
+    else:
+        raise KeyError(f"no Q4 variant-B frame for month {month}")
+    return img, [ground]
+
+
+_paint_frame_q3chain = PAINTERS["frame"]
+
+
+def paint_frame_q4(month, variant="A"):
+    if variant == "B" and month in (10, 11, 12):
+        return paint_frame_b_q4(month)
+    return _paint_frame_q3chain(month, variant)
+
+
+PAINTERS["frame"] = paint_frame_q4
+
+
 def main(argv):
     outdir = os.path.join(ROOT, "assets", "marketing", "templates")
     if "--json" in argv:
