@@ -177,10 +177,15 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 .mktSide h3{font-size:1rem;margin:.4rem 0 .5rem}
 .mktSide h3:first-child{margin-top:0}
 .mktSide .mktTpl{grid-template-columns:1fr 1fr;gap:.6rem}
-.mktSide .mktTpl figcaption{flex-direction:column;align-items:flex-start;font-size:.8rem}
+.mktSide .mktTpl figcaption{font-size:.8rem}
+.mktTpl .thumb{position:relative;display:block}
+.mktTpl a.mktDl{position:absolute;top:.3rem;right:.3rem;display:inline-flex;align-items:center;justify-content:center;width:2rem;height:2rem;border-radius:.5rem;background:rgba(255,255,255,.94);border:2px solid var(--ink);color:var(--ink);font:700 1rem/1 Figtree,sans-serif;text-decoration:none}
 .mktSide .btn{min-height:2.2rem;padding:.3rem .7rem;font-size:.85rem}
 .mktStage{flex:1;min-width:0}
-.mktTools{background:var(--paper);border:2px solid var(--ink);border-radius:.8rem;padding:.5rem .7rem;margin-bottom:.6rem}
+.mktTools{background:var(--paper);border:2px solid var(--ink);border-radius:.8rem;padding:.5rem .7rem;margin-bottom:.6rem;min-height:7rem}
+.mktTools #mktToolsHint{margin:.4rem 0}
+.mktTools button:disabled,.mktTools input:disabled,.mktTools select:disabled{opacity:.45;cursor:default}
+@media (max-width:700px){.mktTools{min-height:3.6rem}.mktTools .trow{flex-wrap:nowrap;overflow-x:auto;padding-bottom:.2rem}}
 .mktTools .trow{display:flex;flex-wrap:wrap;gap:.4rem .6rem;align-items:center}
 .mktTools button{min-height:2.2rem;padding:.25rem .6rem;border:2px solid var(--line);border-radius:.5rem;background:var(--paper);font:600 .85rem Figtree,sans-serif;cursor:pointer;color:var(--ink)}
 .mktTools button[aria-pressed=true]{border-color:var(--ink);background:var(--bg)}
@@ -715,11 +720,9 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
           <p><button type="button" class="btn" id="mktAddHead">Add a heading</button></p>
           <p><button type="button" class="btn" id="mktAddSub">Add a subheading</button></p>
           <p><button type="button" class="btn" id="mktAddBody">Add body text</button></p>
-          <h3>Type here instead</h3>
-          <p><label for="mktHead">Headline</label><br><input id="mktHead" maxlength="60" placeholder="Your big line"></p>
-          <p><label for="mktSub">Smaller line</label><br><input id="mktSub" maxlength="90" placeholder="One supporting line (optional)"></p>
-          <p><label for="mktHFont">Headline style</label><br><select id="mktHFont" class="sel"><option value="hbrand">Altradits headline</option><option value="hsoft">Altradits soft</option><option value="hplain">Plain bold</option><option value="hserif">Newspaper</option></select></p>
-          <p><label for="mktSFont">Smaller-line style</label><br><select id="mktSFont" class="sel"><option value="sbrand">Altradits red line</option><option value="ssoft">Altradits soft</option><option value="sserif">Newspaper italic</option><option value="smono">Typewriter</option></select></p>
+          <h3>Selected text</h3>
+          <p><label for="mktSelText">Words</label><br><input id="mktSelText" maxlength="120" placeholder="Select words on the picture"></p>
+          <p class="sm muted">Type here, or double-click the words on the picture.</p>
         </div>
         <div data-mkt-pane="brand" role="region" aria-label="Brand" hidden>
           <h3>Brand</h3>
@@ -746,6 +749,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       </div>
       <div class="mktStage">
         <div id="mktTools" class="mktTools" hidden>
+          <p class="sm muted" id="mktToolsHint">Select words or the logo to style them.</p>
           <div id="mktToolsText" class="trow" hidden>
             <label for="mktTStyle">Style</label>
             <select id="mktTStyle" class="sel"><option value="hbrand">Altradits headline</option><option value="hsoft">Altradits soft</option><option value="hplain">Plain bold</option><option value="hserif">Newspaper</option><option value="sbrand">Altradits red line</option><option value="ssoft">Altradits soft</option><option value="sserif">Newspaper italic</option><option value="smono">Typewriter</option></select>
@@ -866,6 +870,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn" id="rcptResend" hidden>Resend receipt email</button><button type="button" class="btn primary" id="rcptClose">Close</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=refresh13"></script>
+<script type="module" src="/assets/admin.js?v=refresh15"></script>
 </body>
 </html>
