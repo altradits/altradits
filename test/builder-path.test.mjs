@@ -125,9 +125,26 @@ test("today's deliverable, the phase and the distance to the Btrust bar", async 
   assert.ok(b.deliverable.what.length > 20 && b.deliverable.resources.length > 0 && b.deliverable.verify.includes("2026-11-18"));
   assert.equal(b.phase.name, "Foundations");
   assert.ok(b.phase.goal.length > 0 && b.phase.exit.length > 0);
-  assert.deepEqual(b.bar, { merged: 1, need: 5, listing: "https://btrust.homerun.co/starter-grants/en" });
+  assert.deepEqual(b.bar, { merged: 0, need: 5, listing: "https://btrust.homerun.co/starter-grants/en",
+    project: "lightningnetwork/lnd", short: "LND" }, "past-work merges never move the focus bar");
   assert.equal(b.dayNo, 13);
   assert.equal(b.first.title, "Create the learning repo");
+});
+
+test("a merged pull request on the focus project moves the Btrust bar", async () => {
+  t.setGitHubFetcher(async (p) => {
+    if (p.startsWith("/users/")) return [];
+    if (p.startsWith("/repos/")) return { private: false, visibility: "public" };
+    const q = decodeURIComponent(p.split("q=")[1] || "");
+    if (q.startsWith("author:altradits type:pr")) return { items: [
+      item("lightningnetwork/lnd", 101, "an lnd fix", { created_at: "2026-11-16T10:00:00Z", state: "closed",
+        pull_request: { merged_at: "2026-11-17T10:00:00Z" } }),
+    ] };
+    return { items: [] };
+  });
+  const b = (await t.computeTracker(NOW)).builder;
+  assert.equal(b.bar.merged, 1);
+  assert.equal(b.bar.project, "lightningnetwork/lnd");
 });
 
 test("late work counts for the day it happened on, never the day it was due", async () => {

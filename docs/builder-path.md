@@ -162,6 +162,9 @@ Rules:
   only real reviews.
 - Rest days (Sundays) need no proof. They keep the streak alive but never
   extend it.
+- The Btrust bar counts merged pull requests on the focus project
+  (lightningnetwork/lnd) only. Past work and practice repositories never
+  move it.
 - The streak counts back from today over done and rest days. A missed day
   ends it. Today, while still open, never ends it.
 - Tracked repositories are the six projects plus past work in
@@ -223,7 +226,7 @@ calls on 2026-11-05:
 4. The starter bar label said only "five merged pull requests". Btrust asks
    for five merged code-based PRs, excluding docs, none a good first issue,
    plus reviews and community work. The page now says the full ask, with a
-   link to the listing.
+   link to the listing, and the bar counts the focus project only.
 
 Kept as found, verified working: the 24 h cache became a 30 min cache with a
 single shared refresh. The morning refresh before the report. The stale cache
