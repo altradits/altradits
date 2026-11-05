@@ -918,7 +918,7 @@ $("#mktCanvas")?.addEventListener("pointerdown", (e) => {
 });
 $("#mktCanvas")?.addEventListener("pointermove", (e) => {
   const cv = $("#mktCanvas"), p = mktPos(e);
-  if (!MKT_DRAG || !MKT_EDIT.sel) { cv.style.cursor = mktHit(p) ? "grab" : "default"; return; }
+  if (!MKT_DRAG || !MKT_EDIT.sel) { const h = mktHit(p); cv.style.cursor = !h ? "default" : h.id === "logo" ? "grab" : "text"; return; }
   const o = mktPlaceOf(MKT_EDIT.sel);
   o.x = Math.round(Math.min(Math.max(p.x - MKT_DRAG.dx, 0), 1920 - MKT_DRAG.w));
   o.y = Math.round(Math.min(Math.max(p.y - MKT_DRAG.dy, 0), 1280 - MKT_DRAG.h));
