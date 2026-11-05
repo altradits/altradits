@@ -567,8 +567,27 @@ export async function GET(request) {
   const path = sub(request);
   if (path === "health") {
     const bk = await import("../lib/bitika.js");
+    const pp = await import("../lib/pesapal.js");
+    const { railsOn } = await import("../lib/rails.js");
     const provider = pickProvider(bk.bitikaOn(), buyOn());
-    return json({ status: "ok", service: "yebente", wallets: switchOn("YEBENTE_WALLETS"), environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), buyProvider: provider, bitikaSandbox: provider === "bitika" ? bk.bitikaSandbox() : false, deposits: false, node: await nodeUp(), proxy: proxyShape(request), timestamp: Date.now() });
+    // Which controls the app shows: the same switches that gate the
+    // endpoints, so a button is shown only when its feature can complete
+    // for a real user right now. Sandbox and test providers count only
+    // with YEBENTE_SHOW_TEST_FEATURES=on (for Stanley's own testing).
+    // Only booleans leave here: never which keys exist, never their values.
+    const node = await nodeUp(), connected = node === true, wallets = switchOn("YEBENTE_WALLETS");
+    const showTest = switchOn("YEBENTE_SHOW_TEST_FEATURES");
+    const realBuy = bk.bitikaLive() || (buyOn() && env("MPESA_ENVIRONMENT") === "production");
+    const realCard = pp.pesapalLive();
+    const features = {
+      buy: realBuy || (showTest && (bk.bitikaOn() || buyOn())),
+      cardTopup: realCard || (showTest && pp.pesapalOn()),
+      sendMobile: railsOn().length > 0 && connected,
+      receive: wallets && connected,
+      send: wallets && connected,
+      external: switchOn("YEBENTE_EXTERNAL_WALLETS"),
+    };
+    return json({ status: "ok", service: "yebente", wallets, environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), buyProvider: provider, bitikaSandbox: provider === "bitika" ? bk.bitikaSandbox() : false, deposits: false, node, features, proxy: proxyShape(request), timestamp: Date.now() });
   }
   if (path.startsWith("lightning/invoice-status/")) return off("Create a Ye₿ente wallet first.");
   if (path === "wallet/email-confirm") {
