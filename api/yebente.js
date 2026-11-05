@@ -28,6 +28,7 @@
 //   GET  wallet/invoice/<hash>            credited once paid
 //   POST wallet/email {email, pin}       a recovery email (confirmed by a link)
 //   GET  wallet/email-confirm?t=          the link in that email (a button; POST confirms)
+//   GET  wallet/freeze?t=                 the freeze link in every security email (a button; POST freezes, no login)
 //   POST wallet/recover-email {email}     a one-time recovery link (#recover=) to each wallet confirmed with it
 //   POST wallet/recover-email/finish {token, pin, device}  new PIN, other phones signed out, 24 h hold
 //   POST wallet/buy {kes, phone}          M-Pesa STK Push for sats into this wallet (YEBENTE_MPESA_BUY=on)
@@ -412,6 +413,17 @@ async function confirmEmailPost(request) {
   return ok ? emailPage(200, "Email confirmed", "You can now log in with this email on a new phone, or recover your wallet if you lose yours.")
     : emailPage(410, "Link not recognised", "This link has expired or was already used. Add the email again in Settings.");
 }
+// The freeze link's button: no login, idempotent, and the pages name nothing
+// about the account. Guessing is pointless (256-bit tokens, 30 tries an hour).
+async function freezePost(request) {
+  if ((await hit(`rl:yb:freeze:${ipKey(request)}`, 3600)) > 30)
+    return emailPage(429, "Too many attempts", "Try again in an hour.");
+  const { freezeWallet } = await import("../lib/ywallet.js");
+  const form = await request.formData().catch(() => null);
+  const ok = await freezeWallet(String(form?.get("t") || ""));
+  return ok ? emailPage(200, "Sending is frozen", "Every phone is signed out. Receiving still works. Log in again on your phone to unfreeze it. If you already logged in again, sending is back on.")
+    : emailPage(410, "Link not recognised", "This link has expired. Use the link in your newest security email.");
+}
 // Replies about an email address take the same time whether or not it has a wallet.
 async function sameTime(fn, ms = 1200) {
   const t = Date.now();
@@ -432,6 +444,12 @@ export async function GET(request) {
     const t = String(new URL(request.url).searchParams.get("t") || "").replace(/[^\w-]/g, "").slice(0, 64);
     return emailPage(200, "Confirm your email", "Press the button to confirm this email for your Ye₿ente wallet.",
       `<form method="post" action="/api/yebente/wallet/email-confirm"><input type="hidden" name="t" value="${t}"><button style="font:600 1rem system-ui;padding:.7rem 1.2rem;border-radius:999px;border:0;background:#DDB8FF;color:#141117;cursor:pointer">Confirm my email</button></form>`);
+  }
+  if (path === "wallet/freeze") {
+    // Opening the link only shows a button: mail scanners open every link, and must not freeze for the owner.
+    const t = String(new URL(request.url).searchParams.get("t") || "").replace(/[^\w-]/g, "").slice(0, 128);
+    return emailPage(200, "Freeze sending", "Press the button to freeze sending from this wallet. Every phone will be signed out. Receiving still works.",
+      `<form method="post" action="/api/yebente/wallet/freeze"><input type="hidden" name="t" value="${t}"><button style="font:600 1rem system-ui;padding:.7rem 1.2rem;border-radius:999px;border:0;background:#DDB8FF;color:#141117;cursor:pointer">Freeze sending</button></form>`);
   }
   // Send Mobile's switched-on payout options (lib/rails.js): the app draws one button each.
   if (path === "rails") return json({ success: true, rails: (await import("../lib/rails.js")).railsOn() });
@@ -467,6 +485,7 @@ export async function POST(request) {
     if (path === "mpesa/hakikisha/c2b") return await hakikisha(request);
     if (path === "lightning/create-invoice") return off("Create a Ye₿ente wallet first.");
     if (path === "wallet/email-confirm") return await confirmEmailPost(request);
+    if (path === "wallet/freeze") return await freezePost(request);
     const wp = path.match(/^wallet\/(create|restore|send|invoice|buy|card\/order|email|recover-email|recover-email\/finish|passkey\/(?:options|add|off)|unlock\/options|unlock|login\/start|login\/finish|device\/register|device\/remove|lock)$/);
     if (wp) return await walletPost(request, wp[1]);
     const cb = path.match(/^mpesa\/callback\/([\w-]{16,128})$/);
