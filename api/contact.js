@@ -72,7 +72,7 @@ async function send(request, body) {
   if (!name) return json({ error: "Tell us your name." }, 400);
   if (!EMAIL_RE.test(email)) return json({ error: "That email address does not look right." }, 400);
   const fix = emailTypo(email);
-  if (fix) return json({ error: typoMessage(fix) }, 400); // hint only: the visitor retypes, nothing is auto-corrected
+  if (fix && body.confirmTypo !== true) return json({ error: typoMessage(fix), typoHint: fix }, 400); // hint once; the visitor confirms a real lookalike
   if (!topic) return json({ error: "Pick what your message is about." }, 400);
   if (message.length < CONTACT.messageMin) return json({ error: "Write a little more so the team can help." }, 400);
   if (!hash) return json({ error: "Pay the $1 invoice first, then send." }, 402);
