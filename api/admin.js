@@ -95,6 +95,12 @@ export async function GET(request) {
     const t = await topupStatus(clean(new URL(request.url).searchParams.get("hash"), 64));
     return t ? json(t) : json({ error: "No such top-up." }, 404);
   }
+  if (view === "mktcustom") {
+    const { CUSTOM_KEY } = await import("../lib/marketing.js");
+    const month = clean(new URL(request.url).searchParams.get("month"), 7);
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return json({ error: "Pick a month from the schedule." }, 400);
+    return json({ posts: (await getJSON(CUSTOM_KEY(month))) || [] });
+  }
   if (view === "security") {
     const { securityView } = await import("../lib/attacks.js");
     const { deadmanStatus } = await import("../lib/deadman.js");
@@ -512,6 +518,25 @@ export async function POST(request) {
     if (body.confirm !== "DELETE") return json({ error: "Type DELETE to confirm." }, 400);
     const { deleteArchive } = await import("../lib/store.js");
     try { return json(deleteArchive(clean(body.name, 80))); } catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "mkt_place" || body.action === "mkt_remove") {
+    const { CUSTOM_KEY, validateCustomPost } = await import("../lib/marketing.js");
+    const { readFileSync } = await import("node:fs");
+    let months = [];
+    try { months = JSON.parse(readFileSync(new URL("../assets/marketing/months.json", import.meta.url), "utf8")); } catch { months = []; }
+    const month = String(body.month || "");
+    if (!months.includes(month)) return json({ error: "Pick a month from the schedule." }, 400);
+    const list = ((await getJSON(CUSTOM_KEY(month))) || []).filter((p) => p && p.date);
+    if (body.action === "mkt_remove") {
+      const date = String(body.date || "");
+      await setJSON(CUSTOM_KEY(month), list.filter((p) => p.date !== date));
+      return json({ removed: date });
+    }
+    try {
+      const post = validateCustomPost(body, months);
+      await setJSON(CUSTOM_KEY(month), [...list.filter((p) => p.date !== post.date), post]);
+      return json({ placed: post.date });
+    } catch (err) { return json({ error: err.message }, 400); }
   }
   return json({ error: "Unknown action." }, 400);
 }
