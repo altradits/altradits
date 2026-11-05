@@ -95,7 +95,7 @@ test("the element model, history keys and inline editing exist", () => {
     "MKT_UNDO", "mktDuplicate", "mktDelete", "mktInlineOpen", "mktInlineCommit", "MKT_HANDLES",
     "mktHandleHit", "MKT_ZOOM", "mktReorder", "mktAlign", "mktAddText", "mktSyncTools",
     "mktPositionActions", "data-mkt-panel", "data-mkt-zoom", "data-mkt-color",
-    "snapX", "MKT_COLORS", "mktInlineFit", "mktSyncSelText", "mktToolsHint", "Your headline", "Your smaller line"]) {
+    "snapX", "MKT_COLORS", "mktInlineFit", "mktSyncSelText", "mktToolsHint", "Your headline", "Your smaller line", "preventScroll", "offsetWidth"]) {
     assert.ok(js.includes(s), `admin.js mentions ${s}`);
   }
 });
