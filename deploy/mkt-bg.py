@@ -105,7 +105,7 @@ def num_of(family, month):
 
 
 # Variant B ships per quarter so each quarterly PR stays reviewable.
-B_QUARTERS = {1: [1, 2, 3]}
+B_QUARTERS = {1: [1, 2, 3], 2: [4, 5, 6]}
 B_FIRST_NUM = 120
 
 NAMES_B = {
@@ -115,6 +115,12 @@ NAMES_B = {
     ("split", 2): "Route split wide", ("frame", 2): "Side rules",
     ("paper", 3): "Blocks low", ("ink", 3): "Night blocks",
     ("split", 3): "Block split wide", ("frame", 3): "Single frame",
+    ("paper", 4): "Arcs low", ("ink", 4): "Night arcs low",
+    ("split", 4): "Arc split wide", ("frame", 4): "Arc edges",
+    ("paper", 5): "Dots low", ("ink", 5): "Night dots low",
+    ("split", 5): "Dot split wide", ("frame", 5): "Dot rules",
+    ("paper", 6): "Crosses low", ("ink", 6): "Night plus low",
+    ("split", 6): "Cross split wide", ("frame", 6): "Plus edges",
 }
 
 
@@ -272,7 +278,8 @@ class SSDraw:
 
 
 # Variant-B anchors: the same motif lower and smaller.
-ANCHORS_B = {1: (1620, 780, 0.8), 2: (1600, 640, 0.8), 3: (1600, 600, 0.8)}
+ANCHORS_B = {1: (1620, 780, 0.8), 2: (1600, 640, 0.8), 3: (1600, 600, 0.8),
+            4: (1700, 1080, 0.8), 5: (1620, 800, 0.8), 6: (1650, 850, 0.75)}
 
 
 def paint_paper(month, variant="A"):
@@ -313,9 +320,11 @@ SPLIT_ANCHORS = {1: (1730, 560, 0.62), 2: (1700, 580, 0.62),
 
 # Variant-B splits: same fields, edge moved and curve flipped.
 SPLITS_B = {1: (WHITE, NAVY, 1540, True), 2: (WHITE, RED, 1540, False),
-            3: (NAVY, WHITE, 1500, True)}
+            3: (NAVY, WHITE, 1500, True), 4: (CREAM, BLACK, 1540, False),
+            5: (WHITE, NAVY, 1520, False), 6: (CREAM, RED, 1500, True)}
 SPLIT_ANCHORS_B = {1: (1730, 680, 0.62), 2: (1710, 660, 0.62),
-                   3: (1700, 700, 0.62)}
+                   3: (1700, 700, 0.62), 4: (1860, 1010, 0.62),
+                   5: (1720, 680, 0.62), 6: (1700, 700, 0.62)}
 
 
 def paint_split(month, variant="A"):
@@ -436,6 +445,23 @@ def paint_frame_b(month):
         d.rectangle([1882, 24, 1892, 1256], fill=accent)
     elif month == 3:  # one thin border instead of two
         d.rectangle([28, 28, 1892, 1256], outline=accent, width=6)
+    elif month == 4:  # quarter arcs at the edge midpoints
+        for (x, y), (a0, a1) in zip([(960, 34), (34, 640), (1886, 640),
+                                    (960, 1246)],
+                                   [(0, 180), (270, 90),
+                                    (90, 270), (180, 360)]):
+            d.arc([x - 16, y - 16, x + 16, y + 16], start=a0, end=a1,
+                  fill=accent, width=6)
+    elif month == 5:  # dotted rules on two edges, not four
+        for x in range(32, 1890, 44):
+            d.ellipse([x - 7, 25, x + 7, 39], fill=accent)
+        for y in range(76, 1240, 44):
+            d.ellipse([25, y - 7, 39, y + 7], fill=accent)
+    elif month == 6:  # plus marks at the edge midpoints
+        for x, y in [(960, 34), (34, 640), (1886, 640), (960, 1246)]:
+            arm, w = 20, 7
+            d.rectangle([x - w / 2, y - arm, x + w / 2, y + arm], fill=accent)
+            d.rectangle([x - arm, y - w / 2, x + arm, y + w / 2], fill=accent)
     else:
         raise KeyError(f"no variant-B frame for month {month}")
     return img, [ground]
