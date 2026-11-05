@@ -76,3 +76,11 @@ Every hour the server compares the total of all Ye₿ente balances with what the
 
 ## Turned off on purpose
 Sign-in-free invoices on the node, public M-Pesa status queries and every payout path that would pay on request (M-Pesa B2C, on-chain disbursement) answer 501.
+
+## Only working features are shown
+The app shows a control only when its feature can complete for a real user right now. GET /api/yebente/health carries a `features` object of booleans, computed on the server from the same switches that gate the endpoints; the app reads it at start and on resume and renders only enabled controls (test/yebente-features.test.mjs). If the call fails, only Receive and Send show. Nothing is deleted: each feature reappears by configuration alone, with a restart, no rebuild.
+- Buy Sats: Bitika with a bk_live_ key plus YEBENTE_BITIKA_BUY=on, or Daraja with MPESA_ENVIRONMENT=production, all its credentials and YEBENTE_MPESA_BUY=on. Sandbox and bk_test_ keys stay hidden unless YEBENTE_SHOW_TEST_FEATURES=on (for testing the flow before going live).
+- Top up with card: YEBENTE_CARD_BUY=on, the Pesapal credentials and PESAPAL_ENVIRONMENT=production (same test override).
+- Send Mobile: a payout option listed (M-Pesa through Tando is always on) and the node connected.
+- Receive, Send: YEBENTE_WALLETS=on and the node connected.
+- My own Lightning wallet (start screen and Settings): YEBENTE_EXTERNAL_WALLETS=on. Hidden by default: without a WebLN wallet in the browser, its sends always fail, and it can never buy or top up.
