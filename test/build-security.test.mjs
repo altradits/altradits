@@ -24,15 +24,15 @@ test("every page carries its own up-to-date Content-Security-Policy (nginx sends
 });
 
 test("every page refuses to load inside another site's frame (a meta policy can't forbid framing)", () => {
-  for (const f of fs.readdirSync(root).filter((x) => x.endsWith(".html"))) {
-    const html = read(f), srcs = [...html.matchAll(/<script[^>]*\bsrc="\/(assets\/[\w.-]+\.js)(?:\?[\w=.-]*)?"/g)].map((m) => read(m[1])).join("\n");
+  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html"]) {
+    const html = read(f), srcs = [...html.matchAll(/<script[^>]*\bsrc="\/((?:assets|ktown)\/[\w.-]+\.js)(?:\?[\w=.-]*)?"/g)].map((m) => read(m[1])).join("\n");
     assert.match(html + srcs, /window\.top !== window\.self/, `${f}: add the frame check at the top of its script`);
     assert.match(html, /<script src="\/assets\/report\.js"><\/script>/, `${f}: the Security watch reporter is missing (run: node deploy/page-csp.mjs)`);
   }
 });
 
 test("pages have no inline event handlers or javascript: links (the policy would block them, and they invite injection)", () => {
-  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "yebente/app/index.html"]) {
+  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "yebente/app/index.html"]) {
     const html = read(f);
     assert.doesNotMatch(html, /<[^>]+\son[a-z]+\s*=\s*["']/i, `${f}: move the inline handler into the page script`);
     assert.doesNotMatch(html, /href\s*=\s*["']\s*javascript:/i, `${f}: no javascript: links`);
@@ -155,7 +155,7 @@ test("no AI co-authors: the check runs in CI, before every push and on every com
 });
 
 test("every top-level folder is either public on purpose or denied to the web server", () => {
-  const PUBLIC = new Set(["assets"]); // pages' own scripts, styles and images
+  const PUBLIC = new Set(["assets", "ktown"]); // pages' own scripts, styles and images; kTown holds only web content
   const DOT = /^\./; // nginx refuses dot-folders (.git, .github, .claude); .htaccess adds 404s
   for (const d of fs.readdirSync(root, { withFileTypes: true }).filter((x) => x.isDirectory()).map((x) => x.name)) {
     if (PUBLIC.has(d) || DOT.test(d) || d === "node_modules" || d === "tmp") continue; // node_modules gets deploy/deny.htaccess on the server
@@ -208,6 +208,7 @@ test("site copy uses no em-dashes (house style: a full stop, comma or colon read
     ...walk("data").filter((f) => f.endsWith(".js")),
     "yebente/index.html",
     ...walk("yebente/src").filter((f) => /\.(tsx?|css)$/.test(f)),
+    ...walk("ktown").filter((f) => /\.(html|js|css)$/.test(f) && !f.includes("qrcode-generator-")),
   ];
   for (const f of targets) assert.doesNotMatch(read(f), /—/, `${f}: replace the em-dash with a full stop, comma or colon`);
 });
@@ -280,6 +281,10 @@ test("live-server URLs never come from visitor headers, static answers only GET/
 
 test("links rendered as href come only from trusted hosts, and QR pictures carry no scripts", () => {
   assert.match(read("lib/tracker.js"), /typeof i\.html_url === "string"[\s\S]{0,80}github\\.com\\/, "lib/tracker.js: only GitHub's own addresses become links");
+  assert.match(read("lib/tracker.js"), /typeof r\.html_url === "string"[\s\S]{0,80}github\\.com\\/, "lib/tracker.js: review addresses are checked too, with the pull request as fallback");
+  assert.match(read("lib/tracker.js"), /`https:\/\/github\.com\/\$\{LEARNING_REPO\}/, "lib/tracker.js: log proof links are built from a constant, never API text");
+  assert.match(read("tracker.html"), /href="\$\{esc\(c\.proof\.url\)\}"/, "tracker.html: calendar proof links go through esc()");
+  assert.match(read("tracker.html"), /href="\$\{esc\(y\.proof\.url\)\}"/, "tracker.html: yesterday's proof link goes through esc()");
   const qr = read("lib/lightning.js").slice(read("lib/lightning.js").indexOf("export async function qrSvg"));
   assert.match(qr, /startsWith\("<svg"\)/, "lib/lightning.js qrSvg: check the picture starts with <svg");
   assert.match(qr, /<script\|on\\w\+/, "lib/lightning.js qrSvg: refuse scripts and event handlers in the SVG");
@@ -435,8 +440,54 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
   assert.match(kt, /invoice_substitution/, "lib/ktown.js: a wrong-amount invoice is refused and recorded");
   assert.match(kt, /kesReceived: null, mpesaCode: null, merchantName: null, confirmedAt: null/, "lib/ktown.js: a history entry carries only the merchant's own payment facts");
   assert.doesNotMatch(kt, /clientIp\(/, "lib/ktown.js: never sees the network address, so no record can carry it");
-  for (const k of ["rl:kt:reg:", "rl:kt:login:", "rl:kt:lnurl:", "rl:kt:cb:", "rl:kt:rc:", "rl:kt:me:", "rl:kt:set:"])
+  for (const k of ["rl:kt:reg:", "rl:kt:login:", "rl:kt:lnurl:", "rl:kt:cb:", "rl:kt:rc:", "rl:kt:me:", "rl:kt:set:", "rl:kt:rates:"])
     assert.ok(api.includes(k), `api/ktown.js: rate limit ${k}... is in place`);
+  assert.match(kt, /verified: Boolean\(merchant\.verified\)/, "lib/ktown.js: the pay page reads the verified mark from the LNURL answer");
+  const ht = read(".htaccess");
+  for (const [page, js] of [["ktown/index.html", "ktown/app.js"], ["ktown/pay.html", "ktown/pay.js"]]) {
+    const html = read(page), src = read(js);
+    assert.match(html, /connect-src 'self'/, `${page}: the app calls only this site's API`);
+    assert.doesNotMatch(html, /connect-src 'self' https?:/, `${page}: no API host beside this site`);
+    assert.doesNotMatch(html, /(src|href)="http/, `${page}: no outside scripts, styles or images (store assets in the repo)`);
+    assert.doesNotMatch(src, /fetch\(\s*["'`]https?:/, `${js}: fetch() takes same-site paths only`);
+    for (const [, key] of html.matchAll(/data-i18n="([a-zA-Z]+)"/g))
+      assert.ok(src.includes(`${key}:`), `${page}: label "${key}" has no wording in ${js}`);
+    for (const [, id] of src.matchAll(/\$\("([a-z-]+)"\)/g))
+      assert.ok(html.includes(`id="${id}"`), `${js}: #${id} is missing from ${page}`);
+  }
+  const qrLib = fs.readdirSync(path.join(root, "ktown")).find((f) => f.startsWith("qrcode-generator-") && f.endsWith(".js"));
+  assert.ok(qrLib && /\d+\.\d+\.\d+/.test(qrLib), "ktown/: the QR library is vendored with its version in the name, never hotlinked");
+  assert.match(read(`ktown/${qrLib}`), /Licensed under the MIT license/, "ktown/: the QR library keeps its licence header");
+  assert.doesNotMatch(read(`ktown/${qrLib}`), /<script/i, "ktown/: the QR library emits no scripts");
+  assert.ok(srv.includes('"/ktown/index.html"') && srv.includes('"/ktown/pay.html"'), "server.mjs: /ktown serves the app, /k/<id> the pay page");
+  assert.ok(ht.includes("ktown/index.html") && ht.includes("ktown/pay.html"), ".htaccess: the same two routes on the Apache stack");
+  const mani = JSON.parse(read("ktown/manifest.webmanifest"));
+  assert.equal(mani.start_url, "/ktown", "ktown/: the app installs at /ktown");
+  assert.equal(mani.scope, "/ktown", "ktown/: installed scope stays inside the app");
+  assert.equal(mani.display, "standalone", "ktown/: the app installs standalone");
+  assert.ok(mani.icons.length >= 2, "ktown/: install icons are declared");
+  for (const icon of mani.icons)
+    assert.ok(fs.existsSync(path.join(root, icon.src.replace(/^\//, ""))), `ktown/: ${icon.src} exists on disk`);
+  const sw = read("ktown/sw.js"), app = read("ktown/app.js"), css = read("ktown/style.css");
+  assert.match(sw, /const CACHE = "ktown-v\d+"/, "ktown/sw.js: a versioned cache (bump it when cached files change)");
+  for (const f of ["/ktown/index.html", "/ktown/style.css", "/ktown/app.js", "/ktown/qrcode-generator-1.4.4.js", "figtree-latin.woff2"])
+    assert.ok(sw.includes(f), `ktown/sw.js: the offline shell precaches ${f}`);
+  for (const m of sw.match(/const SHELL = \[([\s\S]*?)\];/)[1].matchAll(/"([^"]+)"/g)) {
+    const p = m[1] === "/ktown" ? "ktown/index.html" : m[1].replace(/^\//, "");
+    assert.ok(fs.existsSync(path.join(root, p)), `ktown/sw.js: precached ${m[1]} exists (one 404 breaks the whole install)`);
+  }
+  assert.match(sw, /u\.origin !== self\.location\.origin/, "ktown/sw.js: same-site reads only");
+  assert.match(sw, /startsWith\("\/api\/"/, "ktown/sw.js: live API data is never cached");
+  assert.match(sw, /caches\.match\("\/ktown\/index\.html"\)/, "ktown/sw.js: failed reads fall back to the app");
+  assert.match(app, /navigator\.serviceWorker\.register\("\/ktown\/sw\.js"\)/, "ktown/app.js: the app installs its worker");
+  assert.match(app, /e\.status === 401/, "ktown/app.js: only a dead session signs out; a failed network runs on saved data");
+  assert.match(css, /@page card\{size:A6/, "ktown/style.css: the counter card prints at A6");
+  assert.match(css, /@page sheet\{size:A4/, "ktown/style.css: the cut-out sheet prints at A4");
+  assert.match(app, /toBlob\(res, "image\/png"\)/, "ktown/app.js: the PNG renders locally");
+  assert.match(app, /a\.download = /, "ktown/app.js: the PNG downloads as a file");
+  assert.match(app, /afterprint/, "ktown/app.js: the print sheet is removed after printing");
+  for (const page of ["ktown/index.html", "ktown/pay.html"])
+    assert.match(read(page), /name="theme-color" content="#0f1b2d"/, `${page}: the install theme color is set`);
   assert.match(srv, /api\[1\] !== "yebente" && api\[1\] !== "ktown"/, "server.mjs: kTown's API takes a sub-path");
   assert.ok(srv.indexOf("k-[A-Za-z0-9_-]{6,64}") !== -1 && srv.indexOf("k-[A-Za-z0-9_-]{6,64}") < srv.indexOf("handle@altradits.com"),
     "server.mjs: the kTown well-known route runs before Ye₿ente's, which would also match the name");

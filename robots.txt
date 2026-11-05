@@ -2,5 +2,6 @@ User-agent: *
 Disallow: /admin.html
 Disallow: /admin
 Disallow: /api/
+Disallow: /k/
 
 Sitemap: https://altradits.com/sitemap.xml
