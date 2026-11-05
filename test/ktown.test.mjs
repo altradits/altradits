@@ -1,0 +1,444 @@
+// kTown server (lib/ktown.js, api/ktown.js): merchants, the LNURL-pay front for
+// their Tando address, exact-amount invoices, receipts and name verification.
+// Tando is mocked here, never called for real: the mock mirrors the live API
+// (payRequest with LUD-21 KES terms, KES/msat invoices, /api/payment receipts).
+// Run: npm test
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import crypto from "node:crypto";
+
+process.chdir(fs.mkdtempSync(path.join(os.tmpdir(), "altradits-ktown-")));
+for (const k of ["UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "DATA_DIR", "JOBS_ALLOW_LOCAL", "PASSENGER_APP_ENV", "NODE_ENV", "KTOWN"]) delete process.env[k];
+Object.assign(process.env, { KTOWN: "on", SITE_URL: "https://altradits.test" });
+
+const kt = await import("../lib/ktown.js");
+const api = await import("../api/ktown.js");
+const store = await import("../lib/store.js");
+
+// --- a BOLT11-shaped invoice with an exact amount and payment hash (signature unchecked)
+const BECH = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+const w5 = (hex) => [...Buffer.from(hex, "hex")].map((b) => b.toString(2).padStart(8, "0")).join("").padEnd(260, "0").match(/.{5}/g).map((b) => parseInt(b, 2));
+const invoice = (msats, hashHex = crypto.randomBytes(32).toString("hex")) => {
+  const words = [...Array(7).fill(0), 1, 1, 20, ...w5(hashHex), ...Array(104).fill(0)];
+  return { pr: `lnbc${msats / 100}n1` + words.map((w) => BECH[w]).join("") + "qqqqqq", hash: hashHex };
+};
+
+// --- mocked Tando -----------------------------------------------------------
+const MULT = 10000; // msat per KES
+const tando = {
+  mode: "ok", // ok | invoice_error | wrong_converted | wrong_msats | off_host | no_kes | redirect | html
+  receipts: new Map(), // hash -> transaction (or "missing")
+  freezeInvoice: false, // answer every invoice call with the last invoice (dedup test)
+};
+let lastInvoice = null;
+const TANDO_META = (phone) => JSON.stringify([["text/plain", `Payment to Kenyan phone ${phone}@bitcoin.co.ke`], ["text/identifier", `${phone}@bitcoin.co.ke`]]);
+const tandoPay = (phone) => ({ tag: "payRequest", callback: `https://bitcoin.co.ke/.well-known/lnurlp/${phone}`,
+  minSendable: 150000, maxSendable: 500000000, metadata: TANDO_META(phone),
+  currency: { code: "KES", name: "Kenyan Shillings", symbol: "KSh", decimals: 0, minSendable: 15, maxSendable: 50000, multiplier: MULT } });
+const J = (obj, status = 200, type = "application/json") =>
+  new Response(JSON.stringify(obj), { status, headers: { "Content-Type": type } });
+const mockTando = async (raw) => {
+  const u = new URL(String(raw));
+  assert.equal(u.hostname, "bitcoin.co.ke", "kTown only ever calls Tando");
+  assert.equal(u.protocol, "https:", "kTown only ever calls over https");
+  const pay = u.pathname.match(/^\/\.well-known\/lnurlp\/(\d+)$/);
+  if (pay) {
+    if (tando.mode === "redirect") return new Response("", { status: 302, headers: { Location: "https://bitcoin.co.ke/x" } });
+    if (tando.mode === "html") return new Response("<h1>no</h1>", { status: 200, headers: { "Content-Type": "text/html" } });
+    if (!/^254(7\d{8}|11\d{6}|14\d{6})$/.test(pay[1])) return J({ status: "ERROR", reason: "Not a phone number." }, 404);
+    if (tando.mode === "no_kes") { const p = tandoPay(pay[1]); delete p.currency; return J(p); }
+    if (tando.mode === "off_host") { const p = tandoPay(pay[1]); p.callback = "https://evil.test/cb"; return J(p); }
+    const amount = u.searchParams.get("amount"), currency = u.searchParams.get("currency");
+    if (amount === null) return J(tandoPay(pay[1]));
+    if (tando.mode === "invoice_error") return J({ status: "ERROR", reason: "Till closed." });
+    if (tando.freezeInvoice && lastInvoice) return J(lastInvoice);
+    const hash = crypto.randomBytes(32).toString("hex");
+    if (currency === "KES") {
+      const kes = Number(amount);
+      const msats = Math.ceil((kes * MULT * 1.01) / 1000) * 1000; // KES value plus the 1%, whole sats
+      const { pr } = invoice(tando.mode === "wrong_msats" ? msats + 50000 : msats, hash);
+      lastInvoice = { pr, routes: [], converted: tando.mode === "wrong_converted" ? kes + 1 : kes,
+        successAction: { tag: "url", description: "View your M-Pesa receipt", url: `https://bitcoin.co.ke/receipt/${hash}` } };
+      return J(lastInvoice);
+    }
+    const { pr } = invoice(tando.mode === "wrong_msats" ? Number(amount) + 1000 : Number(amount), hash);
+    lastInvoice = { pr, routes: [],
+      successAction: { tag: "url", description: "View your M-Pesa receipt", url: `https://bitcoin.co.ke/receipt/${hash}` } };
+    return J(lastInvoice);
+  }
+  const rc = u.pathname.match(/^\/api\/payment\/([0-9a-f]{64})$/i);
+  if (rc) {
+    const tx = tando.receipts.get(rc[1].toLowerCase());
+    if (tx === undefined || tx === "missing") return J({ success: false, error: { errorCode: "transaction-not-found", message: "Transaction not found" } }, 404);
+    return J({ success: true, transaction: tx });
+  }
+  return J({ status: "ERROR", reason: "Unknown." }, 404);
+};
+kt.setKtownFetcher(mockTando);
+const receiptTx = (over = {}) => ({ status: "completed", isPaid: true, paymentNetworkReceipt: "TIA7QK4M2P",
+  payToAccount: "254712345678", merchantName: "JANE W MWANGI", currencyAmount: 100, currencyAmountSent: 100,
+  baseCurrency: "KES", satsAmount: 990, tandoFees: 9.9, totalSatsAmount: 999.9, paymentHash: "x".repeat(64),
+  dateTime: new Date().toISOString(), completedAt: new Date().toISOString(), ...over });
+
+// --- API calls (a fresh network address each time, unless a limit is the test)
+let n = 0;
+const call = (method, p, body, { ip = null, token = null } = {}) => api[method](new Request(`https://altradits.test/api/ktown/${p}`, {
+  method, headers: { "Content-Type": "application/json", "x-forwarded-for": ip || `9.9.${Math.floor(n / 250)}.${(n++ % 250) + 1}`, ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  body: body ? JSON.stringify(body) : undefined,
+}));
+const get = async (p, opts) => { const r = await call("GET", p, null, opts); return { status: r.status, body: await r.json(), headers: r.headers }; };
+const post = async (p, body, opts) => { const r = await call("POST", p, body, opts); return { status: r.status, body: await r.json() }; };
+
+test("health names the switch; everything refuses while KTOWN is off", async () => {
+  assert.deepEqual((await get("health")).body, { ok: true, on: true });
+  delete process.env.KTOWN;
+  try {
+    assert.deepEqual((await get("health")).body, { ok: true, on: false });
+    assert.equal((await post("register", { phone: "0712345678", shop: "S", mpesaName: "M", pin: "715293" })).status, 501);
+    assert.equal((await post("login", { phone: "0712345678", pin: "715293" })).status, 501);
+    assert.equal((await get("me", { token: "x".repeat(32) })).status, 501);
+    assert.equal((await get("receipt/" + "ab".repeat(32))).status, 501);
+    const ln = await get("lnurlp/aaaaaaaaaaaa");
+    assert.equal(ln.body.status, "ERROR");
+    assert.match(ln.body.reason, /isn't open yet/);
+  } finally {
+    process.env.KTOWN = "on";
+  }
+});
+
+test("phone numbers: local, plus and full forms become 254 plus 9 Safaricom digits", () => {
+  for (const [in_, want] of [["0712345678", "254712345678"], ["+254712345678", "254712345678"], ["254712345678", "254712345678"],
+    ["254111234567", "254111234567"], ["254141234567", "254141234567"], [" 0712 345 678 ", "254712345678"]])
+    assert.equal(kt.normalizePhone(in_), want, in_);
+  for (const bad of ["", "0712", "2547123456789", "254812345678", "25410123456", "25471234567a", "+2547123456789", "123456789"])
+    assert.throws(() => kt.normalizePhone(bad), /M-Pesa number/, bad);
+});
+
+let ada, adaId;
+test("register: activation proves the number's Tando address works; then login, me, settings", async () => {
+  const bad = await post("register", { phone: "0712345678", shop: "", mpesaName: "JANE W MWANGI", pin: "715293" });
+  assert.equal(bad.status, 400);
+  for (const pin of ["123456", "111111", "121212", "123", "abcdef"])
+    assert.equal((await post("register", { phone: "0712345679", shop: "S", mpesaName: "M", pin })).status, 400, pin);
+  tando.mode = "no_kes"; // a number that answers without KES terms (claimed for a BTC wallet)
+  try {
+    const r = await post("register", { phone: "0712345678", shop: "Ada Shop", mpesaName: "JANE W MWANGI", pin: "715293" });
+    assert.equal(r.status, 502, JSON.stringify(r.body));
+    assert.match(r.body.error, /M-Pesa delivery/);
+  } finally {
+    tando.mode = "ok"; kt.clearQuoteCache();
+  }
+  const r = await post("register", { phone: "0712345678", shop: "Ada Shop", mpesaName: "JANE W MWANGI", pin: "715293" });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.success, true);
+  assert.equal(r.body.merchant.shop, "Ada Shop");
+  assert.equal(r.body.merchant.verified, false, "typed names wait for the first receipt");
+  assert.equal(r.body.merchant.currency, "KES");
+  assert.match(r.body.merchant.payUrl, /^https:\/\/altradits\.test\/k\/[A-Za-z0-9_-]{12}$/);
+  assert.match(r.body.merchant.lnurl, /^LNURL1[QPZRY9X8GF2TVDW0S3JN54KHCE6MUA7L]+$/);
+  assert.ok(r.body.session.length >= 32);
+  ada = r.body;
+  adaId = ada.merchant.id;
+  // The number is taken now; the secret parts are stored hashed.
+  assert.equal((await post("register", { phone: "254712345678", shop: "Other", mpesaName: "X", pin: "482916" })).status, 409);
+  const raw = fs.readFileSync(path.join(".data", "db.json"), "utf8");
+  assert.doesNotMatch(raw, /715293/);
+  assert.doesNotMatch(raw, new RegExp(ada.session));
+  // Login with the wrong PIN fails like an unknown number; the right one opens.
+  assert.equal((await post("login", { phone: "0712345678", pin: "000000" })).status, 403);
+  assert.equal((await post("login", { phone: "0799999999", pin: "000000" })).status, 403);
+  const login = await post("login", { phone: "+254712345678", pin: "715293" });
+  assert.equal(login.status, 200, JSON.stringify(login.body));
+  assert.equal(login.body.merchant.id, adaId);
+  // Signed-in reads and settings.
+  assert.equal((await get("me")).status, 401);
+  assert.equal((await get("me", { token: ada.session })).body.merchant.shop, "Ada Shop");
+  const set = await post("settings", { shop: "Ada Duka", currency: "usd", lang: "sw" }, { token: ada.session });
+  assert.equal(set.status, 200, JSON.stringify(set.body));
+  assert.equal(set.body.merchant.shop, "Ada Duka");
+  assert.equal(set.body.merchant.currency, "USD");
+  assert.equal(set.body.merchant.lang, "sw");
+  assert.equal((await post("settings", { currency: "GBP" }, { token: ada.session })).status, 400);
+  assert.equal((await post("settings", { lang: "fr" }, { token: ada.session })).status, 400);
+  // A new PIN on the signed-in phone; the old one stops working.
+  assert.equal((await post("pin", { pin: "123456" }, { token: ada.session })).status, 400);
+  assert.equal((await post("pin", { pin: "482916" }, { token: ada.session })).status, 200);
+  assert.equal((await post("login", { phone: "0712345678", pin: "715293" })).status, 403);
+  assert.equal((await post("login", { phone: "0712345678", pin: "482916" })).status, 200);
+});
+
+test("five wrong PINs lock logins for 15 minutes", async () => {
+  const r = await post("register", { phone: "0722000001", shop: "Lock Shop", mpesaName: "LOCK TEST", pin: "604391" });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  for (let i = 0; i < 4; i++)
+    assert.equal((await post("login", { phone: "0722000001", pin: "000000" }, { ip: "8.8.8.8" })).status, 403, `try ${i}`);
+  const locked = await post("login", { phone: "0722000001", pin: "000000" }, { ip: "8.8.8.8" });
+  assert.equal(locked.status, 429);
+  assert.match(locked.body.error, /15 minutes/);
+  assert.equal((await post("login", { phone: "0722000001", pin: "604391" }, { ip: "8.8.8.9" })).status, 429, "the right PIN waits too");
+});
+
+test("a merchant can only read and change their own settings and history", async () => {
+  const b = await post("register", { phone: "0733000002", shop: "B Shop", mpesaName: "B NAME", pin: "284731" });
+  assert.equal(b.status, 200, JSON.stringify(b.body));
+  const changed = await post("settings", { shop: "B Shop New" }, { token: b.body.session });
+  assert.equal(changed.body.merchant.shop, "B Shop New");
+  assert.equal((await get("me", { token: ada.session })).body.merchant.shop, "Ada Duka", "Ada's shop is untouched");
+  assert.deepEqual((await get("history", { token: ada.session })).body.entries, [], "no entries yet");
+  assert.equal((await get("history")).status, 401);
+});
+
+test("LNURL payRequest: the merchant's names, Tando's limits and rate", async () => {
+  const r = await get(`lnurlp/${adaId}`);
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.headers.get("access-control-allow-origin"), "*");
+  const b = r.body;
+  assert.equal(b.tag, "payRequest");
+  assert.equal(b.callback, `https://altradits.test/api/ktown/lnurlp/${adaId}/cb`);
+  assert.equal(b.minSendable, 150000);
+  assert.equal(b.maxSendable, 500000000);
+  assert.equal(b.commentAllowed, 0);
+  assert.deepEqual(b.currency, { code: "KES", minSendable: 15, maxSendable: 50000, multiplier: MULT });
+  const meta = JSON.parse(b.metadata);
+  assert.ok(meta.find((m) => m[0] === "text/plain")[1].includes("JANE W MWANGI"), "the M-Pesa name, exactly as typed");
+  assert.ok(meta.find((m) => m[0] === "text/plain")[1].includes("Ada Duka"), "and the shop name");
+  assert.equal(meta.find((m) => m[0] === "text/identifier")[1], `k-${adaId}@altradits.test`);
+  const unknown = await get("lnurlp/zzzzzzzzzzzz");
+  assert.equal(unknown.status, 404);
+  assert.equal(unknown.body.status, "ERROR");
+  const bad = await get("lnurlp/!!");
+  assert.equal(bad.status, 404);
+});
+
+test("callback in KES mode: Tando's invoice unchanged, merchant receives exactly the KES", async () => {
+  const r = await get(`lnurlp/${adaId}/cb?amount=100&currency=KES`, { ip: "203.0.113.9" });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.ok(r.body.pr.startsWith("lnbc"), "a BOLT11 invoice");
+  assert.deepEqual(r.body.routes, []);
+  assert.match(r.body.successAction.url, /^https:\/\/bitcoin\.co\.ke\/receipt\/[0-9a-f]{64}$/);
+  // The record: the merchant's own facts only, nothing about who paid.
+  const hist = (await get("history", { token: ada.session })).body.entries;
+  assert.equal(hist.length, 1);
+  assert.equal(hist[0].status, "pending");
+  assert.equal(hist[0].kesExpected, 100);
+  assert.equal(hist[0].kesReceived, null);
+  assert.ok(hist[0].sats > 1000 && hist[0].sats < 1100, `${hist[0].sats} sats for KES 100 plus 1%`);
+  const ids = await store.listIds(`kt:tx:${adaId}`, 10);
+  const entry = await store.getJSON(`kte:${ids[0]}`);
+  assert.deepEqual(Object.keys(entry).sort(), ["at", "confirmedAt", "hash", "id", "kesExpected", "kesReceived",
+    "merchantId", "merchantName", "mpesaCode", "msats", "sats", "status"]);
+  assert.ok(!fs.readFileSync(path.join(".data", "db.json"), "utf8").includes("203.0.113.9"), "no network address is stored");
+  assert.equal((await get(`lnurlp/${adaId}/cb?amount=5&currency=KES`)).body.reason, "Send between 15 and 50,000 KES.");
+  assert.equal((await get(`lnurlp/${adaId}/cb?amount=60000&currency=KES`)).status, 200);
+  assert.match((await get(`lnurlp/${adaId}/cb?amount=60000&currency=KES`)).body.reason, /50,000 KES/);
+  assert.equal((await get(`lnurlp/${adaId}/cb?amount=100&currency=USD`)).body.reason, "Only KES amounts.");
+});
+
+test("callback in msat mode: the invoice must match the millisats exactly", async () => {
+  const r = await get(`lnurlp/${adaId}/cb?amount=500000`);
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  const { bolt11Msats } = await import("../lib/lightning.js");
+  assert.equal(bolt11Msats(r.body.pr), 500000);
+  const hist = (await get("history", { token: ada.session })).body.entries;
+  assert.equal(hist[0].kesExpected, Math.floor((500000 / MULT) * 0.99), "KES value of the sats minus the 1%");
+  tando.mode = "wrong_msats";
+  try {
+    const bad = await get(`lnurlp/${adaId}/cb?amount=500000`);
+    assert.equal(bad.body.status, "ERROR");
+    assert.match(bad.body.reason, /different amount/);
+    assert.equal((await get("history", { token: ada.session })).body.entries.length, 2, "no record for a refused invoice");
+  } finally {
+    tando.mode = "ok"; kt.clearQuoteCache();
+  }
+});
+
+test("callback in KES mode refuses a wrong converted figure or sats outside the band", async () => {
+  tando.mode = "wrong_converted";
+  try {
+    const bad = await get(`lnurlp/${adaId}/cb?amount=100&currency=KES`);
+    assert.equal(bad.body.status, "ERROR");
+    assert.match(bad.body.reason, /different amount/);
+  } finally {
+    tando.mode = "ok"; kt.clearQuoteCache();
+  }
+  tando.mode = "wrong_msats";
+  try {
+    const bad = await get(`lnurlp/${adaId}/cb?amount=100&currency=KES`);
+    assert.equal(bad.body.status, "ERROR");
+    assert.match(bad.body.reason, /different amount/);
+  } finally {
+    tando.mode = "ok"; kt.clearQuoteCache();
+  }
+  tando.mode = "invoice_error";
+  try {
+    const down = await get(`lnurlp/${adaId}/cb?amount=100&currency=KES`);
+    assert.equal(down.body.status, "ERROR");
+    assert.equal(down.body.reason, "Till closed.");
+  } finally {
+    tando.mode = "ok"; kt.clearQuoteCache();
+  }
+});
+
+test("receipt: a completed payment lands in history and verifies the typed M-Pesa name", async () => {
+  const inv = await get(`lnurlp/${adaId}/cb?amount=100&currency=KES`);
+  const hash = inv.body.successAction.url.split("/").pop();
+  tando.receipts.set(hash, receiptTx({ payToAccount: "254712345678", merchantName: "JANE W MWANGI", currencyAmountSent: 100 }));
+  const rc = await get(`receipt/${hash}`);
+  assert.equal(rc.status, 200, JSON.stringify(rc.body));
+  assert.deepEqual(rc.body, { success: true, status: "completed", paid: true, kes: 100,
+    mpesaCode: "TIA7QK4M2P", merchantName: "JANE W MWANGI" });
+  const hist = (await get("history", { token: ada.session })).body.entries;
+  const done = hist.find((e) => e.mpesaCode === "TIA7QK4M2P");
+  assert.equal(done.status, "completed");
+  assert.equal(done.kesReceived, 100);
+  assert.ok(done.confirmedAt);
+  assert.equal((await get("me", { token: ada.session })).body.merchant.verified, true, "Tando's registered name matches the typed one");
+  // A second confirmation changes nothing (one record per payment hash).
+  await get(`receipt/${hash}`);
+  assert.equal((await get("history", { token: ada.session })).body.entries.filter((e) => e.mpesaCode === "TIA7QK4M2P").length, 1);
+  // Renaming the shop name keeps the verified mark; renaming the M-Pesa name drops it.
+  await post("settings", { shop: "Ada Duka New" }, { token: ada.session });
+  assert.equal((await get("me", { token: ada.session })).body.merchant.verified, true);
+  await post("settings", { mpesaName: "JANE MWANGI" }, { token: ada.session });
+  assert.equal((await get("me", { token: ada.session })).body.merchant.verified, false);
+  await post("settings", { mpesaName: "JANE W MWANGI" }, { token: ada.session });
+});
+
+test("receipt: a name that does not match stays unverified, and a failed payout shows as failed", async () => {
+  const c = await post("register", { phone: "0744000003", shop: "C Shop", mpesaName: "WRONG NAME", pin: "390517" });
+  assert.equal(c.status, 200, JSON.stringify(c.body));
+  const inv = await get(`lnurlp/${c.body.merchant.id}/cb?amount=50&currency=KES`);
+  const hash = inv.body.successAction.url.split("/").pop();
+  tando.receipts.set(hash, receiptTx({ payToAccount: "254744000003", merchantName: "RIGHT NAME", currencyAmountSent: 50 }));
+  const rc = await get(`receipt/${hash}`);
+  assert.equal(rc.body.paid, true);
+  assert.equal((await get("me", { token: c.body.session })).body.merchant.verified, false, "WRONG NAME is not what M-Pesa shows");
+  const inv2 = await get(`lnurlp/${c.body.merchant.id}/cb?amount=60&currency=KES`);
+  const hash2 = inv2.body.successAction.url.split("/").pop();
+  tando.receipts.set(hash2, receiptTx({ status: "failed", isPaid: false, paymentNetworkReceipt: null,
+    payToAccount: "254744000003", merchantName: "RIGHT NAME", currencyAmountSent: null, failureReason: "declined" }));
+  const rc2 = await get(`receipt/${hash2}`);
+  assert.equal(rc2.body.paid, false);
+  assert.equal(rc2.body.status, "failed");
+  const hist = (await get("history", { token: c.body.session })).body.entries;
+  assert.equal(hist.find((e) => e.kesExpected === 60).status, "failed");
+});
+
+test("receipt: unknown hashes, bad hashes, and receipts for another number", async () => {
+  const missing = await get(`receipt/${"00".repeat(32)}`);
+  assert.deepEqual(missing.body, { success: true, status: "unknown", paid: false, kes: null, mpesaCode: null, merchantName: null });
+  assert.equal((await get("receipt/notahash")).status, 404);
+  const inv = await get(`lnurlp/${adaId}/cb?amount=70&currency=KES`);
+  const hash = inv.body.successAction.url.split("/").pop();
+  tando.receipts.set(hash, receiptTx({ payToAccount: "254799999999", merchantName: "SOMEONE ELSE", currencyAmountSent: 70 }));
+  const rc = await get(`receipt/${hash}`);
+  assert.equal(rc.body.paid, true, "Tando's public status is answered");
+  const hist = (await get("history", { token: ada.session })).body.entries;
+  assert.equal(hist.find((e) => e.kesExpected === 70).status, "pending", "but our record does not move");
+});
+
+test("Tando's odd answers fail closed: off-host callback, redirect, HTML, no KES terms", async () => {
+  for (const mode of ["off_host", "redirect", "html"]) {
+    tando.mode = mode;
+    try {
+      const r = await get(`lnurlp/${adaId}/cb?amount=100&currency=KES`);
+      assert.equal(r.body.status, "ERROR", mode);
+      assert.match(r.body.reason, /reachable/, mode);
+    } finally {
+      tando.mode = "ok"; kt.clearQuoteCache();
+    }
+  }
+  tando.mode = "no_kes";
+  try {
+    const r = await get(`lnurlp/${adaId}`);
+    assert.equal(r.body.status, "ERROR");
+    assert.match(r.body.reason, /M-Pesa delivery/);
+  } finally {
+    tando.mode = "ok"; kt.clearQuoteCache();
+  }
+});
+
+test("SSRF: the default Tando path refuses private addresses before connecting", async () => {
+  // The real publicFetch, no mock, in a child with no proxy in its
+  // environment: Node snapshots proxy settings at startup, so only a fresh
+  // process proves the guarded lookup runs on the default path.
+  const root = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
+  fs.writeFileSync("ssrf-child.mjs", `const netsafe = await import(${JSON.stringify(path.join(root, "lib", "netsafe.js"))});
+const kt = await import(${JSON.stringify(path.join(root, "lib", "ktown.js"))});
+let lookups = 0;
+netsafe.setDnsLookup((host, opts, cb) => { lookups++; cb(null, [{ address: "10.9.9.9", family: 4 }]); });
+try {
+  await kt.tandoQuote("254712345678", { fresh: true });
+  console.log("RESOLVED (bad) lookups=" + lookups);
+  process.exit(1);
+} catch (e) {
+  console.log("error=" + e.message + " lookups=" + lookups);
+  process.exit(/isn't reachable/.test(e.message) && lookups === 1 ? 0 : 2);
+}`);
+  const env = { ...process.env };
+  for (const k of Object.keys(env)) if (/proxy/i.test(k)) delete env[k];
+  for (const k of ["JOBS_ALLOW_LOCAL", "PASSENGER_APP_ENV", "NODE_ENV"] ) delete env[k];
+  const { execFileSync } = await import("node:child_process");
+  let out;
+  try {
+    out = execFileSync(process.execPath, ["ssrf-child.mjs"], { env, timeout: 30000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  } catch (e) {
+    assert.fail(`the guarded Tando path did not refuse a private address: ${(e.stdout || "") + (e.stderr || "")}`.slice(0, 500));
+  }
+  assert.match(out, /lookups=1/, "refused on the one resolution, before connecting");
+});
+
+test("lock signs one phone out; a stranger's token signs nothing out", async () => {
+  const login = await post("login", { phone: "0712345678", pin: "482916" });
+  assert.equal(login.status, 200, JSON.stringify(login.body));
+  assert.equal((await post("lock", {}, { token: login.body.session })).status, 200);
+  assert.equal((await get("me", { token: login.body.session })).status, 401, "the token stopped working");
+  assert.equal((await get("me", { token: ada.session })).status, 200, "other phones stay signed in");
+  assert.equal((await post("lock", {}, { token: "z".repeat(32) })).status, 401);
+});
+
+test("a repeated invoice reuses its first record; history carries the payment hash", async () => {
+  const before = (await get("history", { token: ada.session })).body.entries.length;
+  const first = await get(`lnurlp/${adaId}/cb?amount=80&currency=KES`);
+  assert.equal(first.status, 200, JSON.stringify(first.body));
+  tando.freezeInvoice = true;
+  try {
+    const again = await get(`lnurlp/${adaId}/cb?amount=80&currency=KES`);
+    assert.equal(again.body.pr, first.body.pr, "Tando answered the same invoice twice");
+  } finally {
+    tando.freezeInvoice = false;
+  }
+  const hist = (await get("history", { token: ada.session })).body.entries;
+  assert.equal(hist.length, before + 1, "one record for the one payment hash");
+  assert.match(hist[0].hash, /^[0-9a-f]{64}$/);
+  assert.equal(hist[0].hash, first.body.successAction.url.split("/").pop());
+});
+
+test("two sign-ups racing for one number: one wins, the other hears it is taken", async () => {
+  const [a, b] = await Promise.all([
+    post("register", { phone: "0766000011", shop: "Race A", mpesaName: "RACE", pin: "715293" }, { ip: "7.7.7.1" }),
+    post("register", { phone: "0766000011", shop: "Race B", mpesaName: "RACE", pin: "715293" }, { ip: "7.7.7.2" }),
+  ]);
+  assert.deepEqual([a.status, b.status].sort(), [200, 409]);
+  const winner = a.status === 200 ? a.body : b.body;
+  assert.equal((await get("me", { token: winner.session })).status, 200);
+});
+
+test("rate limits: registration and LNURL per network and per merchant", async () => {
+  for (let i = 0; i < 10; i++) {
+    const r = await post("register", { phone: `07550000${10 + i}`, shop: `S${i}`, mpesaName: "N", pin: "715293" }, { ip: "6.6.6.6" });
+    assert.equal(r.status, 200, `signup ${i}: ${JSON.stringify(r.body)}`);
+  }
+  const capped = await post("register", { phone: "0755000099", shop: "SX", mpesaName: "N", pin: "715293" }, { ip: "6.6.6.6" });
+  assert.equal(capped.status, 429);
+  for (let i = 0; i < 60; i++) {
+    const r = await get(`lnurlp/${adaId}`, { ip: "6.6.6.7" });
+    assert.equal(r.status, 200, `lnurl ${i}`);
+  }
+  const cappedLn = await get(`lnurlp/${adaId}`, { ip: "6.6.6.7" });
+  assert.equal(cappedLn.status, 200);
+  assert.match(cappedLn.body.reason, /Too many requests/);
+});

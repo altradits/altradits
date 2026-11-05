@@ -426,6 +426,22 @@ test("Ye₿ente calls only its fixed services: Lightning lookups go through the 
     "yebente/app/assets: rebuild the app (cd yebente && npm run build) so the shipped page uses the proxy");
 });
 
+test("kTown: Tando through the public-address guard, exact-amount invoices, no payer data, limits on every route", () => {
+  const kt = read("lib/ktown.js"), api = read("api/ktown.js"), srv = read("server.mjs");
+  assert.match(kt, /switchOn\("KTOWN"\)/, "lib/ktown.js: everything waits on the KTOWN switch");
+  assert.match(kt, /publicFetch\(/, "lib/ktown.js: Tando calls go through the public-address guard");
+  assert.doesNotMatch(kt, /(?<![\w.])fetch\(/, "lib/ktown.js: no direct fetch() to an address others can influence");
+  assert.match(kt, /bolt11Msats\(pr\)/, "lib/ktown.js: every Tando invoice is measured before it is handed out");
+  assert.match(kt, /invoice_substitution/, "lib/ktown.js: a wrong-amount invoice is refused and recorded");
+  assert.match(kt, /kesReceived: null, mpesaCode: null, merchantName: null, confirmedAt: null/, "lib/ktown.js: a history entry carries only the merchant's own payment facts");
+  assert.doesNotMatch(kt, /clientIp\(/, "lib/ktown.js: never sees the network address, so no record can carry it");
+  for (const k of ["rl:kt:reg:", "rl:kt:login:", "rl:kt:lnurl:", "rl:kt:cb:", "rl:kt:rc:", "rl:kt:me:", "rl:kt:set:"])
+    assert.ok(api.includes(k), `api/ktown.js: rate limit ${k}... is in place`);
+  assert.match(srv, /api\[1\] !== "yebente" && api\[1\] !== "ktown"/, "server.mjs: kTown's API takes a sub-path");
+  assert.ok(srv.indexOf("k-[A-Za-z0-9_-]{6,64}") !== -1 && srv.indexOf("k-[A-Za-z0-9_-]{6,64}") < srv.indexOf("handle@altradits.com"),
+    "server.mjs: the kTown well-known route runs before Ye₿ente's, which would also match the name");
+});
+
 test("admin bodies over 100 KB need the token up front: strangers hit 413, the token passes 700 KB", async () => {
   const { adminAuthed } = await import("../lib/http.js");
   assert.match(read("server.mjs"), /const limit = api\[1\] === "admin" && adminAuthed\(req\.headers\.authorization\) \? 1_000_000 : 100_000;/, "server.mjs: the ~1 MB body budget needs a valid admin token first");
