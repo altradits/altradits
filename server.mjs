@@ -93,7 +93,7 @@ function sendStatic(req, res, file, headers) {
   res.writeHead(200, headers).end(req.method === "HEAD" ? undefined : body);
 }
 
-const YEBENTE_CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+const YEBENTE_CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.blink.sv https://api.coinbase.com https://open.er-api.com https://bitcoin.co.ke; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 
 function publicUrl(req) {
   // On the live server a visitor's Host headers must never decide the URL's

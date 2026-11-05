@@ -21,6 +21,8 @@
 //   POST wallet/lock, wallet/device/remove {deviceId, pin}
 //   GET  wallet/me, wallet/history, wallet/security  (Authorization: Bearer <session>)
 //   GET  rails                           Send Mobile's switched-on payout options (lib/rails.js)
+//   POST address/resolve {to}          a Lightning address's limits, looked up server-side (open, rate-limited)
+//   POST address/invoice {to, sats, comment?}  an exact-amount invoice from the address (open, rate-limited)
 //   POST wallet/send {to, sats, pin}      a Ye₿ente handle (free), a Lightning address
 //                                          (incl. phone@bitcoin.co.ke = M-Pesa) or an invoice
 //   POST wallet/invoice {sats}            an invoice on the node for this wallet
@@ -242,6 +244,32 @@ async function lnurlPay(request, handle, callback) {
   } catch {
     return REFUSED;
   }
+}
+
+// ---- the app's Lightning-address lookups (lib/lnaddr.js): the wallet page
+// never calls outside hosts itself, so its policy stays narrow. Open (Send
+// Sats works before any wallet exists), with per-network and per-wallet quotas.
+async function addressSession(request) {
+  const t = bearer(request);
+  if (!t) return null;
+  try { return await (await import("../lib/ywallet.js")).walletForToken(t); } catch { return null; }
+}
+async function addressResolve(request) {
+  const body = await readBody(request);
+  const w = await addressSession(request);
+  if (w && (await hit(`rl:yb:lnrs:${w.id}`, 600)) > 120) return json({ success: false, error: "Too many lookups. Try again later." }, 429);
+  if ((await hit(`rl:yb:lnrsi:${ipKey(request)}`, 600)) > 60) return json({ success: false, error: "Too many lookups from this network. Try again later." }, 429);
+  const { resolveLnAddress } = await import("../lib/lnaddr.js");
+  return json({ success: true, ...(await resolveLnAddress(body.to)) });
+}
+async function addressInvoice(request) {
+  const body = await readBody(request);
+  const w = await addressSession(request);
+  if (w && (await hit(`rl:yb:lnis:${w.id}`, 600)) > 60) return json({ success: false, error: "Too many invoices. Try again later." }, 429);
+  if ((await hit(`rl:yb:lnisi:${ipKey(request)}`, 600)) > 30) return json({ success: false, error: "Too many invoices from this network. Try again later." }, 429);
+  const { lnAddressInvoice } = await import("../lib/lnaddr.js");
+  const { pr } = await lnAddressInvoice(body.to, body.sats, body.comment);
+  return json({ success: true, invoice: pr });
 }
 
 // ---- wallets
@@ -467,6 +495,8 @@ export async function POST(request) {
     if (path === "mpesa/hakikisha/c2b") return await hakikisha(request);
     if (path === "lightning/create-invoice") return off("Create a Ye₿ente wallet first.");
     if (path === "wallet/email-confirm") return await confirmEmailPost(request);
+    if (path === "address/resolve") return await addressResolve(request);
+    if (path === "address/invoice") return await addressInvoice(request);
     const wp = path.match(/^wallet\/(create|restore|send|invoice|buy|card\/order|email|recover-email|recover-email\/finish|passkey\/(?:options|add|off)|unlock\/options|unlock|login\/start|login\/finish|device\/register|device\/remove|lock)$/);
     if (wp) return await walletPost(request, wp[1]);
     const cb = path.match(/^mpesa\/callback\/([\w-]{16,128})$/);
