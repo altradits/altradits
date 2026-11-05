@@ -717,11 +717,14 @@ async function loadMarketing() {
   } catch (err) { $("#mktPosts").innerHTML = `<p class="sm">Schedule unavailable: ${esc(err.message)}</p>`; return; }
   sel.innerHTML = MKT_MONTHS.map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
   sel.value = MKT_MONTHS[MKT_MONTHS.length - 1];
+  const isel = $("mktIMonth");
+  if (isel) { isel.innerHTML = sel.innerHTML; isel.value = sel.value; }
   sel.onchange = () => renderMarketing(sel.value);
   $("#mktPrev").onclick = () => stepMonth(-1);
   $("#mktNext").onclick = () => stepMonth(1);
   await renderMarketing(MKT_MONTHS[MKT_MONTHS.length - 1]);
   await loadTemplates();
+  drawCustom();
 }
 function stepMonth(d) {
   const i = MKT_MONTHS.indexOf(MKT_MONTH) + d;
@@ -736,7 +739,13 @@ async function renderMarketing(month) {
     data = await (await fetch(`/assets/marketing/${encodeURIComponent(month)}.json`, { cache: "no-store" })).json();
   } catch (err) { $("#mktPosts").innerHTML = `<p class="sm">Schedule unavailable: ${esc(err.message)}</p>`; return; }
   MKT_POSTS = data.posts || [];
-  MKT_SEL = MKT_POSTS.length ? MKT_POSTS[0].date : "";
+  try {
+    const extra = await api(`?view=mktcustom&month=${encodeURIComponent(month)}`);
+    const byDate = new Map(MKT_POSTS.map((p) => [p.date, p]));
+    for (const c of extra.posts || []) byDate.set(c.date, { ...c, custom: true });
+    MKT_POSTS = [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
+  } catch { /* the schedule still shows without custom posts */ }
+  if (!MKT_POSTS.some((p) => p.date === MKT_SEL)) MKT_SEL = MKT_POSTS.length ? MKT_POSTS[0].date : "";
   renderCalendar();
   renderXPost();
 }
@@ -749,10 +758,74 @@ async function loadTemplates() {
   try {
     list = await (await fetch("/assets/marketing/templates.json", { cache: "no-store" })).json();
   } catch (err) { box.innerHTML = `<p class="sm">Templates unavailable: ${esc(err.message)}</p>`; return; }
-  box.innerHTML = `<div class="mktTpl">` + list.map((t) =>
+  MKT_TPL = list;
+  box.innerHTML = `<div class="mktTpl">` + list.map((t, i) =>
     `<figure><img src="/${esc(t.file)}" alt="${esc(t.name)} blank template" loading="lazy">`
-    + `<figcaption>${esc(t.name)} <a class="btn" href="/${esc(t.file)}" download="${esc(String(t.file).split("/").pop())}">Download</a></figcaption></figure>`
+    + `<figcaption>${esc(t.name)} <span><a class="btn" href="/${esc(t.file)}" download="${esc(String(t.file).split("/").pop())}">Download</a> `
+    + `<button type="button" class="btn" data-mkt-edit="${i}">Customize</button></span></figcaption></figure>`
   ).join("") + `</div>`;
+}
+let MKT_TPL = [];
+let MKT_EDIT = { file: "assets/marketing/templates/tpl-01.jpg", name: "Ember", img: null };
+// The words editor: headline plus one smaller line, drawn on the template in
+// the browser. Nothing leaves the page until Download or Place is pressed.
+function editTemplate(i) {
+  const t = MKT_TPL[i];
+  if (!t) return;
+  MKT_EDIT = { file: t.file, name: t.name, img: null };
+  const lbl = $("mktEditName");
+  if (lbl) lbl.textContent = t.name;
+  drawCustom().then(() => $("hMktEdit")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+}
+function paintLine(ctx, line, x, y, halo) {
+  if (halo) { ctx.save(); ctx.lineWidth = 10; ctx.strokeStyle = "rgba(15,27,45,.55)"; ctx.strokeText(line, x, y); ctx.restore(); }
+  ctx.fillText(line, x, y);
+}
+function wrapPaint(ctx, text, x, y, maxW, lh, maxLines, halo) {
+  const words = String(text).split(/\s+/).filter(Boolean);
+  let line = "", yy = y, n = 0;
+  for (const w of words) {
+    if (n >= maxLines) break;
+    const t = line ? line + " " + w : w;
+    if (ctx.measureText(t).width > maxW && line) { paintLine(ctx, line, x, yy, halo); line = w; yy += lh; n++; }
+    else line = t;
+  }
+  if (line && n < maxLines) { paintLine(ctx, line, x, yy, halo); yy += lh; }
+  return yy;
+}
+function fitFont(ctx, text, maxW, start, min, weight, family) {
+  let size = start;
+  ctx.font = `${weight} ${size}px ${family}`;
+  while (size > min && String(text).split(/\s+/).some((w) => ctx.measureText(w).width > maxW)) {
+    size -= 10;
+    ctx.font = `${weight} ${size}px ${family}`;
+  }
+  return size;
+}
+async function drawCustom() {
+  const cv = $("mktCanvas");
+  if (!cv) return; // older cached page without the editor panel
+  const ctx = cv.getContext("2d");
+  if (!MKT_EDIT.img) {
+    try { MKT_EDIT.img = await new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = "/" + MKT_EDIT.file; }); }
+    catch { cv.parentElement.innerHTML = `<p class="sm">Template picture unavailable. Reload and try again.</p>`; return; }
+  }
+  ctx.drawImage(MKT_EDIT.img, 0, 0, 1920, 1280);
+  try { await Promise.all([document.fonts.load('800 170px "Bricolage Grotesque"'), document.fonts.load('600 76px Figtree')]); } catch { /* system fonts stand in */ }
+  const light = $("mktLight")?.checked;
+  const head = $("mktHead")?.value.trim() || "", sub = $("mktSub")?.value.trim() || "";
+  ctx.textBaseline = "top";
+  let y = 270;
+  if (head) {
+    const size = fitFont(ctx, head, 1680, 170, 80, 800, '"Bricolage Grotesque", Figtree, sans-serif');
+    ctx.fillStyle = light ? "#ffffff" : "#0f1b2d";
+    y = wrapPaint(ctx, head, 120, y, 1680, Math.round(size * 1.08), 3, light);
+  }
+  if (sub) {
+    ctx.font = '600 76px Figtree, sans-serif';
+    ctx.fillStyle = "#ea5158";
+    wrapPaint(ctx, sub, 120, y + 36, 1680, 92, 2, false);
+  }
 }
 function renderCalendar() {
   const [y, m] = MKT_MONTH.split("-").map(Number);
@@ -776,14 +849,16 @@ function renderXPost() {
   const i = MKT_POSTS.findIndex((p) => p.date === MKT_SEL);
   if (i < 0) { box.innerHTML = `<p class="sm muted">Pick a dotted day on the calendar to preview its post.</p>`; return; }
   const p = MKT_POSTS[i];
-  const base = String(p.image).split("/").pop().replace(/\.jpg$/, "");
+  const src = p.imageData || `/${p.image}`;
+  const base = p.imageData ? `custom-${p.date}` : String(p.image).split("/").pop().replace(/\.jpg$/, "");
   const media = p.video
     ? `<video src="/${esc(p.video)}" poster="/${esc(p.image)}" controls muted loop playsinline preload="metadata"></video>`
-    : `<img src="/${esc(p.image)}" alt="${esc(p.alt)}" loading="lazy">`;
+    : `<img src="${p.imageData ? p.imageData : esc(src)}" alt="${esc(p.alt)}" loading="lazy">`;
   const dl = p.video
     ? `<a class="btn" href="/${esc(p.video)}" download="${esc(base)}.mp4">Download video</a>`
-    : `<a class="btn" href="/${esc(p.image)}" download="${esc(base)}.jpg">Download image</a>`;
-  box.innerHTML = `<div class="xpost"><div class="who"><span class="ava">A</span><div><b>Altradits</b> <span class="muted">@altradits · ${esc(p.date)}</span></div></div>`
+    : `<a class="btn" href="${p.imageData ? p.imageData : esc(src)}" download="${esc(base)}.jpg">Download image</a>`;
+  const custom = p.custom ? ` <span class="muted">· Custom</span>` : ``;
+  box.innerHTML = `<div class="xpost"><div class="who"><span class="ava">A</span><div><b>Altradits</b> <span class="muted">@altradits · ${esc(p.date)}</span>${custom}</div></div>`
     + `<p class="cap">${esc(p.caption)}</p>`
     + media
     + `<p class="acts">Reply · Repost · Like &nbsp;·&nbsp; ${p.caption.length} / 280 characters</p>`
@@ -797,6 +872,41 @@ $("#mktCal").addEventListener("click", (e) => {
   MKT_SEL = b.dataset.mktDay;
   renderCalendar();
   renderXPost();
+});
+$("#mktTpl").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-mkt-edit]");
+  if (!b) return;
+  editTemplate(Number(b.dataset.mktEdit));
+});
+for (const id of ["mktHead", "mktSub"]) $(`#${id}`)?.addEventListener("input", () => drawCustom());
+$("mktLight")?.addEventListener("change", () => drawCustom());
+$("mktDl")?.addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = $("mktCanvas").toDataURL("image/jpeg", 0.9);
+  a.download = `altradits-${MKT_EDIT.name.toLowerCase()}-custom.jpg`;
+  a.click();
+});
+$("mktPlace")?.addEventListener("click", async () => {
+  const st = $("mktIStatus");
+  st.textContent = "Placing…";
+  const month = $("mktIMonth").value, day = String($("mktIDay").value).padStart(2, "0");
+  try {
+    const r = await api("", { action: "mkt_place", month, date: `${month}-${day}`,
+      caption: $("mktICap").value, alt: `${MKT_EDIT.name} template with custom words`,
+      imageData: $("mktCanvas").toDataURL("image/jpeg", 0.88) });
+    st.textContent = `Placed on ${r.placed}.`;
+    await renderMarketing(month);
+  } catch (err) { st.textContent = err.message; }
+});
+$("mktUnplace")?.addEventListener("click", async () => {
+  const st = $("mktIStatus");
+  st.textContent = "Removing…";
+  const month = $("mktIMonth").value, day = String($("mktIDay").value).padStart(2, "0");
+  try {
+    await api("", { action: "mkt_remove", month, date: `${month}-${day}` });
+    st.textContent = `Removed ${month}-${day}.`;
+    await renderMarketing(month);
+  } catch (err) { st.textContent = err.message; }
 });
 $("#mktPosts").addEventListener("click", async (e) => {
   const c = e.target.closest("[data-mkt-copy]"), t = e.target.closest("[data-mkt-txt]");

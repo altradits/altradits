@@ -152,6 +152,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 .mktTpl figure{margin:0}
 .mktTpl img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:.6rem}
 .mktTpl figcaption{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin-top:.4rem;font-weight:600}
+#mktCanvas{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:.6rem}
 .xpost{border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:.8rem 0;background:var(--paper)}
 .xpost .who{display:flex;gap:.6rem;align-items:center;margin-bottom:.4rem}
 .xpost .ava{width:2.2rem;height:2.2rem;border-radius:50%;background:var(--ink);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex:none}
@@ -640,6 +641,20 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div class="learn"><p>Ten branded backgrounds with no words baked in, each one different. Download one, add the words when you post, reuse forever.</p></div>
     <div id="mktTpl" class="scroll"></div>
   </section>
+  <section class="panel" aria-labelledby="hMktEdit">
+    <h2 id="hMktEdit">Write on a template</h2>
+    <div class="learn"><p>Press Customize on any blank above, write your words, and see them on the picture. Download it, or place it on a calendar day. Placed pictures survive deploys; remove one any time from here.</p></div>
+    <p class="sm">Template: <b id="mktEditName">Ember</b></p>
+    <p><label for="mktHead">Headline</label><br><input id="mktHead" maxlength="60" style="max-width:44rem" placeholder="Your big line"></p>
+    <p><label for="mktSub">Smaller line</label><br><input id="mktSub" maxlength="90" style="max-width:44rem" placeholder="One supporting line (optional)"></p>
+    <p class="sm"><label><input type="checkbox" id="mktLight" style="width:auto"> Light words (for dark pictures)</label></p>
+    <div class="scroll"><canvas id="mktCanvas" width="1920" height="1280"></canvas></div>
+    <p><button type="button" class="btn" id="mktDl">Download picture</button></p>
+    <h3>Place on the calendar</h3>
+    <p class="sm"><label for="mktIMonth">Month </label><select id="mktIMonth"></select> <label for="mktIDay">Day </label><input id="mktIDay" inputmode="numeric" size="2" style="width:4rem" placeholder="25"></p>
+    <p><label for="mktICap">Caption</label><br><input id="mktICap" maxlength="280" style="max-width:44rem" placeholder="Two short sentences, the site link, then the tags"></p>
+    <p><button type="button" class="btn" id="mktPlace">Place on that day</button> <button type="button" class="btn" id="mktUnplace">Remove that day</button> <span class="sm" id="mktIStatus"></span></p>
+  </section>
   <section class="panel" aria-labelledby="hMktTpl">
     <h2 id="hMktTpl">The reusable template</h2>
     <div class="learn"><p>Every month repeats this shape, so followers recognize an Altradits post on sight. A new month is a new data file plus images: the tab picks it up with no code change.</p></div>
@@ -696,6 +711,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn" id="rcptResend" hidden>Resend receipt email</button><button type="button" class="btn primary" id="rcptClose">Close</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=refresh4"></script>
+<script type="module" src="/assets/admin.js?v=refresh5"></script>
 </body>
 </html>
