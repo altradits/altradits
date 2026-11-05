@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-pbhqP7lFZLDfb4SrxmEmgMf+JVWz2vl5RZaiY+zeHXI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-OwhqLqQlQfkEyTt3yF+tMhb6BglK91KhtJzRnyHKKpc='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/contact">
 <title>Write to the team · Altradits</title>
@@ -124,6 +124,7 @@ textarea{min-height:8rem;resize:vertical}
         <p><span class="okflag">Paid</span></p>
         <p class="intro" id="review"></p>
         <button class="btn" type="button" id="sendBtn">Send message</button>
+        <button class="btn ghost" type="button" id="typoBtn" hidden></button>
         <p class="err" id="err2" role="alert"></p>
       </fieldset>
     </form>
@@ -176,16 +177,22 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
     }, 4000);
   });
   $("#copy").addEventListener("click", () => navigator.clipboard?.writeText($("#bolt").value).then(() => { $("#copy").textContent = "Copied"; }));
-  $("#sendBtn").addEventListener("click", async () => {
-    $("#err2").textContent = ""; $("#sendBtn").disabled = true;
+  async function sendMessage(confirmed) {
+    $("#err2").textContent = ""; $("#typoBtn").hidden = true; $("#sendBtn").disabled = true;
     let r;
     try {
       r = await (await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ step: "send", hash: quote.hash, ...fields }) })).json();
+        body: JSON.stringify({ step: "send", hash: quote.hash, ...fields, ...(confirmed ? { confirmTypo: true } : {}) }) })).json();
     } catch { $("#err2").textContent = "No connection. Your payment is safe; try sending again."; $("#sendBtn").disabled = false; return; }
-    if (!r.ok) { $("#err2").textContent = r.error || "Could not send."; $("#sendBtn").disabled = false; return; }
+    if (!r.ok) {
+      $("#err2").textContent = r.error || "Could not send.";
+      if (r.typoHint) { $("#typoBtn").textContent = `Use ${fields.email} anyway`; $("#typoBtn").hidden = false; }
+      $("#sendBtn").disabled = false; return;
+    }
     $("#msgForm").hidden = true; $("#done").hidden = false;
-  });
+  }
+  $("#sendBtn").addEventListener("click", () => sendMessage(false));
+  $("#typoBtn").addEventListener("click", () => sendMessage(true));
 })();
 </script>
 </body>

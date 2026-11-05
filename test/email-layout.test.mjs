@@ -58,6 +58,21 @@ test("owner mail is signed by default, wallet mail is not", async () => {
   setMailer(undefined);
 });
 
+test("every send carries the plain-text twin and only the inline logo (the kit PDF+CSV tripped the relay filter, #119)", async () => {
+  let sent = null;
+  setMailer({ sendMail: async (m) => { sent = m; } });
+  await liftDeadman({ by: "stanley", force: true, note: "test isolation" });
+  await sendEmail({ to: "w@example.com", subject: "Confirm your Ye₿ente email", text: "Hi,\n\nConfirm this address.",
+    cta: { label: "Confirm my email", url: "https://altradits.com/api/yebente/wallet/email-confirm?t=x" }, kind: "wallet" });
+  assert.ok(sent.text.includes("Confirm this address."), "plain-text part carries the words");
+  assert.ok(sent.text.includes("Confirm my email: https://altradits.com/api/yebente/wallet/email-confirm?t=x"), "plain-text part carries the link");
+  for (const a of sent.attachments || []) {
+    assert.equal(a.contentDisposition, "inline", "no file attachments, only the inline logo");
+    assert.ok(a.cid, "inline parts carry a content id");
+  }
+  setMailer(undefined);
+});
+
 test("plain-text twin: same words plus sign-off footer", () => {
   const body = emailText("See [the site](https://altradits.com/x).", { label: "Open", url: "https://altradits.com/y" });
   assert.ok(body.includes("See the site: https://altradits.com/x."), "link flattened");
