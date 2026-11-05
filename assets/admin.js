@@ -808,17 +808,41 @@ function paintLine(ctx, line, x, y, halo) {
 }
 function wrapPaint(ctx, text, x, y, maxW, lh, maxLines, halo) {
   const words = String(text).split(/\s+/).filter(Boolean);
-  let line = "", yy = y, n = 0, w = 0;
+  let line = "", yy = y, n = 0, w = 0, wi = 0;
   const lines = [];
-  const paint = (s, py) => { paintLine(ctx, s, x, py, halo); const lw = ctx.measureText(s).width; w = Math.max(w, lw); lines.push({ x, y: py, w: lw }); };
-  for (const wd of words) {
+  const paint = (s, py, w0, w1) => { paintLine(ctx, s, x, py, halo); const lw = ctx.measureText(s).width; w = Math.max(w, lw); lines.push({ x, y: py, w: lw, t: s, w0, w1 }); };
+  for (let k = 0; k < words.length; k++) {
+    const wd = words[k];
     if (n >= maxLines) break;
     const t = line ? line + " " + wd : wd;
-    if (ctx.measureText(t).width > maxW && line) { paint(line, yy); line = wd; yy += lh; n++; }
+    if (ctx.measureText(t).width > maxW && line) { paint(line, yy, wi, k); line = wd; wi = k; yy += lh; n++; }
     else line = t;
   }
-  if (line && n < maxLines) { paint(line, yy); yy += lh; }
+  if (line && n < maxLines) { paint(line, yy, wi, words.length); yy += lh; }
   return { y: yy, w, lines };
+}
+// Where the text box's cursor sits on the picture: the painted word holding
+// the caret, measured with the block's own font. Past the end clamps to it.
+function caretXY(ctx, hit, raw, index) {
+  const words = [];
+  const re = /\S+/g;
+  let m;
+  while ((m = re.exec(raw))) words.push({ s: m.index, e: m.index + m[0].length, t: m[0] });
+  let k = words.length, j = 0;
+  for (let i = 0; i < words.length; i++) {
+    if (index <= words[i].e) { k = i; j = Math.max(0, Math.min(index - words[i].s, words[i].e - words[i].s)); break; }
+  }
+  const lines = hit.lines || [];
+  let line = lines[lines.length - 1], prefix = line ? line.t : "";
+  for (const ln of lines) {
+    if (k >= ln.w0 && k < ln.w1) {
+      line = ln;
+      prefix = words.slice(ln.w0, k).map((x) => x.t).join(" ") + (k > ln.w0 ? " " : "") + (words[k] ? words[k].t.slice(0, j) : "");
+      break;
+    }
+  }
+  ctx.font = hit.font;
+  return { x: line.x + ctx.measureText(prefix).width, y: line.y };
 }
 function fitFont(ctx, text, maxW, start, min, spec) {
   let size = start;
@@ -869,7 +893,7 @@ async function drawCustom(outline = true) {
     ctx.fillStyle = light ? "#ffffff" : "#0f1b2d";
     const r = wrapPaint(ctx, head, hp.x, hp.y, 1680, Math.round(size * 1.08), 3, light);
     hy = r.y;
-    MKT_HIT.push({ id: "head", x: hp.x, y: hp.y, w: Math.max(r.w, 40), h: Math.max(hy - hp.y, 40), lh: Math.round(size * 1.08), lines: r.lines });
+    MKT_HIT.push({ id: "head", x: hp.x, y: hp.y, w: Math.max(r.w, 40), h: Math.max(hy - hp.y, 40), lh: Math.round(size * 1.08), lines: r.lines, font: ctx.font });
   }
   if (sub) {
     ctx.font = `${ss.st || ""}${ss.w} 76px ${ss.f}`;
@@ -877,7 +901,7 @@ async function drawCustom(outline = true) {
     const sp = MKT_EDIT.sub || { x: hp.x, y: hy + 36 };
     const r = wrapPaint(ctx, sub, sp.x, sp.y, 1680, 92, 2, false);
     MKT_SUBFLOW = { x: hp.x, y: hy + 36 };
-    MKT_HIT.push({ id: "sub", x: sp.x, y: sp.y, w: Math.max(r.w, 40), h: Math.max(r.y - sp.y, 40), lh: 92, lines: r.lines });
+    MKT_HIT.push({ id: "sub", x: sp.x, y: sp.y, w: Math.max(r.w, 40), h: Math.max(r.y - sp.y, 40), lh: 92, lines: r.lines, font: ctx.font });
   }
   if (outline && MKT_EDIT.sel) {
     const h = MKT_HIT.find((b) => b.id === MKT_EDIT.sel);
@@ -895,11 +919,14 @@ async function drawCustom(outline = true) {
   }
   if (outline && MKT_EDIT.caret && MKT_EDIT.caretOn) {
     const h = MKT_HIT.find((b) => b.id === MKT_EDIT.caret);
-    const last = h?.lines?.[h.lines.length - 1];
-    if (h && last) {
+    const box = MKT_EDIT.caret === "head" ? $("#mktHead") : $("#mktSub");
+    if (h && box && h.lines?.length) {
+      const raw = MKT_EDIT.caret === "head" ? head : sub;
+      const at = box.selectionDirection === "backward" ? box.selectionStart : box.selectionEnd;
+      const c = caretXY(ctx, h, raw, at ?? raw.length);
       ctx.save();
       ctx.fillStyle = MKT_EDIT.caret === "sub" ? "#ea5158" : light ? "#ffffff" : "#0f1b2d";
-      ctx.fillRect(last.x + last.w + 8, last.y, 7, h.lh);
+      ctx.fillRect(c.x, c.y, 7, h.lh);
       ctx.restore();
     }
   }
@@ -1025,6 +1052,7 @@ $("#mktTpl").addEventListener("click", (e) => {
   editTemplate(Number(b.dataset.mktEdit));
 });
 for (const id of ["mktHead", "mktSub"]) $(`#${id}`)?.addEventListener("input", () => drawCustom());
+for (const id of ["mktHead", "mktSub"]) for (const ev of ["keyup", "click", "select"]) $(`#${id}`)?.addEventListener(ev, () => drawCustom());
 for (const id of ["mktLight", "mktLogoWhite"]) $(`#${id}`)?.addEventListener("change", () => drawCustom());
 for (const id of ["mktHFont", "mktSFont"]) $(`#${id}`)?.addEventListener("change", () => drawCustom());
 $("#mktReset")?.addEventListener("click", () => {
