@@ -33,6 +33,7 @@ export interface UserWallet {
   onChainVerified?: boolean;
   recoveryEmail?: string;
   frozen?: boolean;
+  pendingRecovery?: { requestedAt: string; expiresAt: string } | null;
 }
 
 export interface Transaction {

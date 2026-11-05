@@ -158,6 +158,7 @@ export default function App() {
         blinkAddress: w.address,
         recoveryEmail: w.email || (w.emailPending ? `${w.emailPending} (unconfirmed)` : ''),
         frozen: w.frozen === true,
+        pendingRecovery: w.pendingRecovery || null,
       }));
       // Sats that came in since the last look: the receiver's show.
       if (firstSync.current) markCelebrated(txs.map((t) => t.referenceNumber));
@@ -256,6 +257,14 @@ export default function App() {
             <div className="p-3 rounded-2xl bg-red-950/40 border border-red-500/30 text-red-200 text-xs">
               <p className="font-semibold">Sending is frozen</p>
               <p className="text-[11px] text-red-300/90 mt-0.5">Receiving still works. Log in again on your old phone, or recover by email to unfreeze it.</p>
+            </div>
+          )}
+
+          {/* A recovery link is live. The Cancel button is in Settings. */}
+          {wallet.type === 'custodial' && wallet.pendingRecovery && (
+            <div className="p-3 rounded-2xl bg-red-950/40 border border-red-500/30 text-red-200 text-xs">
+              <p className="font-semibold">Recovery in progress</p>
+              <p className="text-[11px] text-red-300/90 mt-0.5">A link was sent to your email. Cancel it in Settings if that wasn't you.</p>
             </div>
           )}
 
