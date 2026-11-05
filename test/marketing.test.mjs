@@ -135,6 +135,46 @@ test("the blank template gallery lists ten unique branded files", () => {
   assert.match(js, /templates\.json", \{ cache: "no-store" \}/, "gallery loads fresh, never cached");
 });
 
+test("post types come from the fixed list of six", () => {
+  const fixed = new Set(["Lesson", "Ye₿ente", "Myth vs fact", "Story", "Tip", "Question"]);
+  for (const m of months()) {
+    const data = monthFile(m);
+    for (const [i, p] of data.posts.entries()) {
+      const who = `${m} post ${i + 1}`;
+      if (p.type === undefined) continue; // untyped posts get the neutral tile
+      assert.ok(fixed.has(p.type), `${who}: type is one of the six, got ${JSON.stringify(p.type)}`);
+      assert.ok(p.type.split(" ").length <= 3, `${who}: label fits a tile`);
+    }
+  }
+});
+
+test("the studio header, sub-nav and sections exist", () => {
+  const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
+  assert.match(html, /id="hMktStudio"/, "studio header names the tab");
+  assert.match(html, /Plan, design and place X posts\. Nothing here posts anything by itself\./, "header says what it is");
+  assert.match(html, /href="#mkt-cal"/, "sub-nav jumps to the calendar");
+  assert.match(html, /href="#mkt-edit"/, "sub-nav jumps to the editor");
+  assert.match(html, /id="mkt-cal"/, "calendar section is an anchor target");
+  assert.match(html, /id="mkt-edit"/, "editor section is an anchor target");
+  assert.match(html, /<details class="mktRules">/, "the house rules fold into a details element");
+  const cal = html.indexOf('data-pane="marketing"');
+  assert.ok(html.indexOf('id="mkt-cal"', cal) < html.indexOf('id="mkt-edit"', cal), "calendar comes before the editor");
+  assert.ok(html.indexOf('id="mkt-edit"', cal) < html.indexOf('<details class="mktRules">', cal), "the rules sit last");
+});
+
+test("the calendar renders tiles, a legend, counts and keyboard days", () => {
+  const js = fs.readFileSync(path.join(ROOT, "assets", "admin.js"), "utf8");
+  for (const s of ["MKT_TYPES", "mktTile", "mkt-t-none", "mktLegend", "mktMonthName", "data-mkt-new", "aria-label", "scope=\"col\"", "ArrowDown", "mkt-edit", "tabFromHash"]) {
+    assert.ok(js.includes(s), `admin.js mentions ${s}`);
+  }
+  assert.match(js, /Myth vs fact/, "the six fixed types are listed");
+  assert.match(js, /custom} custom/, "the header counts custom posts");
+  const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
+  for (const s of [".mktTile", ".mktEmptyDay", ".mktLegend", ".mktMonthName", ".mktWrap", "mkt-t-lesson", "mkt-t-yebente", "mkt-t-myth", "mkt-t-story", "mkt-t-tip", "mkt-t-question"]) {
+    assert.ok(html.includes(s), `admin.html styles ${s}`);
+  }
+});
+
 test("templates carry clean backgrounds and light-or-dark defaults", () => {
   const list = JSON.parse(fs.readFileSync(path.join(DIR, "templates.json"), "utf8"));
   for (const t of list) {

@@ -35,8 +35,22 @@ function tab(name) {
   if (location.hash.slice(1) !== name) history.replaceState(null, "", `#${name}`);
 }
 document.querySelector(".tabs").addEventListener("click", (e) => { const t = e.target.closest("[data-tab]")?.dataset.tab; if (t) { tab(t); window.scrollTo(0, 0); } });
-window.addEventListener("hashchange", () => tab(location.hash.slice(1)));
-tab(location.hash.slice(1));
+// In-page anchors (the studio's Calendar and Editor links) scroll without
+// switching panes; unknown hashes still fall back to the overview.
+function tabFromHash() {
+  const h = location.hash.slice(1);
+  if (TABS.includes(h)) { tab(h); return; }
+  const el = h && document.getElementById(h);
+  if (el) {
+    const pane = el.closest("[data-pane]");
+    if (pane && !pane.classList.contains("on")) tab(pane.dataset.pane);
+    el.scrollIntoView();
+    return;
+  }
+  tab(h);
+}
+window.addEventListener("hashchange", tabFromHash);
+tabFromHash();
 
 // What needs attention, from every part of the dashboard: { key: { level, text, go: "tab:sectionId" } }.
 const ISSUES = {};
@@ -999,36 +1013,63 @@ for (const [id, which] of [["mktHead", "head"], ["mktSub", "sub"]]) {
   $(`#${id}`)?.addEventListener("focus", () => mktCaret(which));
   $(`#${id}`)?.addEventListener("blur", () => mktCaret(null));
 }
+// Content types colour the calendar tiles. Fixed list: a month file may only
+// use these, and posts without one get the neutral tile with a "Post" label.
+const MKT_TYPES = {
+  "Lesson": "mkt-t-lesson",
+  "Ye₿ente": "mkt-t-yebente",
+  "Myth vs fact": "mkt-t-myth",
+  "Story": "mkt-t-story",
+  "Tip": "mkt-t-tip",
+  "Question": "mkt-t-question",
+};
+const MKT_MONTH_NAME = (ym) => new Date(`${ym}-01T00:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+const MKT_DAY_NAME = (iso) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 function renderCalendar() {
   const [y, m] = MKT_MONTH.split("-").map(Number);
   const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
   const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const has = new Set(MKT_POSTS.map((p) => p.date));
+  const byDate = new Map(MKT_POSTS.map((p) => [p.date, p]));
+  const custom = MKT_POSTS.filter((p) => p.custom).length;
   let cells = "";
   for (let i = 0; i < first; i++) cells += "<td></td>";
   for (let d = 1; d <= days; d++) {
     const iso = `${MKT_MONTH}-${String(d).padStart(2, "0")}`;
-    cells += has.has(iso)
-      ? `<td><button type="button" class="${iso === MKT_SEL ? "mktSel" : ""}" data-mkt-day="${iso}">${d}<span class="dot">●</span></button></td>`
-      : `<td class="muted">${d}</td>`;
+    const p = byDate.get(iso);
+    if (p) {
+      const typed = MKT_TYPES[p.type] ? p.type : "Post";
+      const cls = MKT_TYPES[p.type] || "mkt-t-none";
+      const src = p.imageData || `/${p.image}`;
+      cells += `<td><button type="button" class="mktTile ${esc(cls)}${iso === MKT_SEL ? " mktSel" : ""}" data-mkt-day="${esc(iso)}"`
+        + ` aria-label="${esc(MKT_DAY_NAME(iso))}: ${esc(typed)}${p.custom ? ", custom" : ""}">`
+        + `<span class="d">${d}</span><img src="${esc(src)}" alt="" loading="lazy">`
+        + `<span class="lb">${esc(typed)}</span>${p.custom ? `<span class="cu">Custom</span>` : ""}</button></td>`;
+    } else {
+      cells += `<td><button type="button" class="mktEmptyDay" data-mkt-new="${esc(iso)}" aria-label="Design a post for ${esc(MKT_DAY_NAME(iso))}">`
+        + `<span class="d">${d}</span><span class="plus" aria-hidden="true">+</span></button></td>`;
+    }
     if ((first + d) % 7 === 0) cells += "</tr><tr>";
   }
-  $("#mktCal").innerHTML = `<table class="mktCal"><caption class="sm">${esc(MKT_MONTH)}: ${MKT_POSTS.length} posts</caption>`
-    + `<tr><th>Su</th><th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th></tr><tr>${cells}</tr></table>`;
+  const legend = `<ul class="mktLegend" aria-label="Content types">` + Object.keys(MKT_TYPES).map((t) =>
+    `<li><span class="sw ${MKT_TYPES[t]}" aria-hidden="true"></span>${esc(t)}</li>`).join("") + `</ul>`;
+  $("#mktCal").innerHTML = `<table class="mktCal"><caption><span class="mktMonthName">${esc(MKT_MONTH_NAME(MKT_MONTH))}</span> `
+    + `<span class="sm">${MKT_POSTS.length} post${MKT_POSTS.length === 1 ? "" : "s"} · ${custom} custom</span></caption>`
+    + `<thead><tr><th scope="col">Su</th><th scope="col">Mo</th><th scope="col">Tu</th><th scope="col">We</th><th scope="col">Th</th><th scope="col">Fr</th><th scope="col">Sa</th></tr></thead>`
+    + `<tbody><tr>${cells}</tr></tbody></table>` + legend;
 }
 function renderXPost() {
   const box = $("#mktPosts");
   const i = MKT_POSTS.findIndex((p) => p.date === MKT_SEL);
-  if (i < 0) { box.innerHTML = `<p class="sm muted">Pick a dotted day on the calendar to preview its post.</p>`; return; }
+  if (i < 0) { box.innerHTML = `<p class="sm muted">Pick a day with a tile on the calendar to preview its post.</p>`; return; }
   const p = MKT_POSTS[i];
   const src = p.imageData || `/${p.image}`;
   const base = p.imageData ? `custom-${p.date}` : String(p.image).split("/").pop().replace(/\.jpg$/, "");
   const media = p.video
     ? `<video src="/${esc(p.video)}" poster="/${esc(p.image)}" controls muted loop playsinline preload="metadata"></video>`
-    : `<img src="${p.imageData ? p.imageData : esc(src)}" alt="${esc(p.alt)}" loading="lazy">`;
+    : `<img src="${esc(src)}" alt="${esc(p.alt)}" loading="lazy">`;
   const dl = p.video
     ? `<a class="btn" href="/${esc(p.video)}" download="${esc(base)}.mp4">Download video</a>`
-    : `<a class="btn" href="${p.imageData ? p.imageData : esc(src)}" download="${esc(base)}.jpg">Download image</a>`;
+    : `<a class="btn" href="${esc(src)}" download="${esc(base)}.jpg">Download image</a>`;
   const custom = p.custom ? ` <span class="muted">· Custom</span>` : ``;
   box.innerHTML = `<div class="xpost"><div class="who"><span class="ava">A</span><div><b>Altradits</b> <span class="muted">@altradits · ${esc(p.date)}</span>${custom}</div></div>`
     + `<p class="cap">${esc(p.caption)}</p>`
@@ -1040,10 +1081,36 @@ function renderXPost() {
 }
 $("#mktCal").addEventListener("click", (e) => {
   const b = e.target.closest("[data-mkt-day]");
-  if (!b) return;
-  MKT_SEL = b.dataset.mktDay;
-  renderCalendar();
-  renderXPost();
+  if (b) {
+    MKT_SEL = b.dataset.mktDay;
+    renderCalendar();
+    renderXPost();
+    return;
+  }
+  // An empty day's plus: pre-fill Place with that day and open the editor.
+  const n = e.target.closest("[data-mkt-new]");
+  if (!n) return;
+  const iso = n.dataset.mktNew;
+  if ($("#mktIMonth")) $("#mktIMonth").value = iso.slice(0, 7);
+  if ($("#mktIDay")) $("#mktIDay").value = String(Number(iso.slice(8)));
+  $("#mkt-edit")?.scrollIntoView();
+  toast(`Day pre-filled: ${iso}. Design the picture, then press Place.`);
+});
+$("#mktCal").addEventListener("keydown", (e) => {
+  const btn = e.target.closest("[data-mkt-day],[data-mkt-new]");
+  if (!btn) return;
+  const all = [...$("#mktCal").querySelectorAll("[data-mkt-day],[data-mkt-new]")];
+  const i = all.indexOf(btn);
+  let j = null;
+  if (e.key === "ArrowRight") j = i + 1;
+  else if (e.key === "ArrowLeft") j = i - 1;
+  else if (e.key === "ArrowDown") j = i + 7;
+  else if (e.key === "ArrowUp") j = i - 7;
+  else if (e.key === "Home") j = 0;
+  else if (e.key === "End") j = all.length - 1;
+  else return;
+  e.preventDefault();
+  if (j >= 0 && j < all.length) all[j].focus();
 });
 $("#mktTpl").addEventListener("click", (e) => {
   if (e.target.closest("a")) return; // downloads stay downloads

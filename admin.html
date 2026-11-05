@@ -142,13 +142,32 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 .inside h3{font-size:1rem;margin-bottom:.4rem}
 #toast{position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.6rem 1rem;border-radius:.6rem;font-weight:600;z-index:9}
 #toast.fail{background:var(--crit)}
-.mktCal{border-collapse:collapse;margin:.6rem 0}
-.mktCal caption{text-align:left;padding-bottom:.3rem}
-.mktCal td,.mktCal th{border:1px solid var(--line);padding:.25rem .4rem;text-align:center;min-width:2.6rem}
-.mktCal td.muted{color:var(--muted)}
-.mktCal button{border:0;background:transparent;cursor:pointer;font:inherit;color:inherit;padding:.2rem .4rem;border-radius:.4rem}
-.mktCal button.mktSel{background:var(--ink);color:#fff;font-weight:700}
-.mktCal .dot{display:block;font-size:.65rem;color:var(--blue);line-height:1}
+.mktNav{font-weight:600}
+.mktNav a{margin:0 .2rem}
+#mkt-cal,#mkt-edit,#mkt-ideas{scroll-margin-top:4.5rem}
+.mktWrap{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:1.1rem;align-items:start}
+@media (max-width:900px){.mktWrap{grid-template-columns:1fr}}
+.mktCal{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:.35rem;margin:.6rem 0}
+.mktCal caption{text-align:left;padding:0 .35rem .3rem}
+.mktMonthName{display:block;font:800 1.4rem/1.2 'Bricolage Grotesque',Figtree,sans-serif}
+.mktCal th{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:center;padding:.1rem}
+.mktCal td{padding:0;vertical-align:top}
+.mktTile{display:flex;flex-direction:column;gap:.15rem;width:100%;min-height:4.4rem;margin:0;border:2px solid transparent;border-radius:.6rem;padding:.25rem;cursor:pointer;font:inherit;color:var(--ink);background:#F1F3F6;text-align:left}
+.mktTile .d{font-weight:800;font-size:.9rem;line-height:1.1}
+.mktTile img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:.3rem;display:block}
+.mktTile .lb{font-size:.7rem;font-weight:700;line-height:1.15;overflow-wrap:anywhere}
+.mktTile .cu{font-size:.62rem;font-weight:700;color:var(--muted);line-height:1.1}
+.mktTile.mktSel{border-color:var(--ink)}
+.mkt-t-lesson{background:#D9E6F8}.mkt-t-yebente{background:#FFE3C2}.mkt-t-myth{background:#D2ECEA}.mkt-t-story{background:#F7D7DC}.mkt-t-tip{background:#DDEFD8}.mkt-t-question{background:#E7E3F8}.mkt-t-none{background:#F1F3F6}
+.mktEmptyDay{display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;width:100%;min-height:4.4rem;margin:0;border:2px solid transparent;border-radius:.6rem;padding:.25rem;cursor:pointer;font:inherit;color:var(--muted);background:transparent}
+.mktEmptyDay .d{font-size:.9rem;line-height:1.1}
+.mktEmptyDay .plus{font-size:1.2rem;font-weight:700;line-height:1;color:var(--blue);opacity:0}
+.mktEmptyDay:hover,.mktEmptyDay:focus-visible{background:#F1F3F6}
+.mktEmptyDay:hover .plus,.mktEmptyDay:focus-visible .plus{opacity:1}
+.mktLegend{list-style:none;display:flex;flex-wrap:wrap;gap:.35rem 1rem;padding:0 .35rem;margin:.4rem 0 0;font-size:.85rem}
+.mktLegend .sw{display:inline-block;width:.9rem;height:.9rem;border-radius:.25rem;vertical-align:-.12rem;margin-right:.3rem;border:1px solid rgba(15,27,45,.2)}
+.mktRules summary{font:800 1.15rem 'Bricolage Grotesque',Figtree,sans-serif;cursor:pointer;min-height:2.6rem;display:flex;align-items:center}
+.mktRules summary:hover{color:var(--blue)}
 .mktTpl{display:grid;grid-template-columns:repeat(auto-fill,minmax(16rem,1fr));gap:1rem;margin-top:.6rem}
 .mktTpl figure{margin:0}
 .mktTpl img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:.6rem;cursor:pointer}
@@ -630,19 +649,26 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </div>
 
   <div class="pane" data-pane="marketing">
-  <section class="panel" aria-labelledby="hMkt">
-    <h2 id="hMkt">Marketing: the X schedule</h2>
-    <div class="learn"><p>One image plus one caption per post, drafted by the Growth team and approved by you. Dotted days on the calendar carry a post: pick one to preview it as it will look on X, then download its assets and paste them in. Nothing here posts anything by itself.</p></div>
+  <section class="panel" aria-labelledby="hMktStudio">
+    <h2 id="hMktStudio">Marketing studio</h2>
+    <div class="learn"><p>Plan, design and place X posts. Nothing here posts anything by itself.</p></div>
+    <p class="mktNav"><a href="#mkt-cal">Calendar</a> · <a href="#mkt-edit">Editor</a></p>
+  </section>
+  <section class="panel" id="mkt-cal" aria-labelledby="hMkt">
+    <h2 id="hMkt">Calendar</h2>
+    <div class="learn"><p>One image plus one caption per post, drafted by the Growth team and approved by you. Days with a tile carry a post: pick one to preview it as it will look on X, then download its assets and paste them in. Nothing here posts anything by itself.</p></div>
     <p class="sm"><button type="button" class="btn" id="mktPrev">Prev</button> <label for="mktMonth">Month </label><select id="mktMonth"></select> <button type="button" class="btn" id="mktNext">Next</button></p>
-    <div id="mktCal" class="scroll"></div>
-    <div id="mktPosts"></div>
+    <div class="mktWrap">
+      <div id="mktCal" class="scroll"></div>
+      <div id="mktPosts"></div>
+    </div>
   </section>
   <section class="panel" aria-labelledby="hMktBlank">
     <h2 id="hMktBlank">Blank templates</h2>
     <div class="learn"><p>Ten branded backgrounds with no words baked in, each one different. Download one, add the words when you post, reuse forever.</p></div>
     <div id="mktTpl" class="scroll"></div>
   </section>
-  <section class="panel" aria-labelledby="hMktEdit">
+  <section class="panel" id="mkt-edit" aria-labelledby="hMktEdit">
     <h2 id="hMktEdit">Write on a template</h2>
     <div class="learn"><p>Press Customize on any blank above, write your words, and see them on the picture. Download it, or place it on a calendar day. Placed pictures survive deploys; remove one any time from here.</p></div>
     <p class="sm">Template: <b id="mktEditName">Ember</b></p>
@@ -661,14 +687,16 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <p><button type="button" class="btn" id="mktPlace">Place on that day</button> <button type="button" class="btn" id="mktUnplace">Remove that day</button> <span class="sm" id="mktIStatus"></span></p>
   </section>
   <section class="panel" aria-labelledby="hMktTpl">
-    <h2 id="hMktTpl">The reusable template</h2>
-    <div class="learn"><p>Every month repeats this shape, so followers recognize an Altradits post on sight. A new month is a new data file plus images: the tab picks it up with no code change.</p></div>
-    <ul class="sm">
-      <li><b>Image:</b> November holds thirty unique minimalist layouts; December answers with thirty-one art cards. Both keep one system: white ground, navy headline, red subline, the Altradits logo bottom-left, altradits.com footer. One concept per card, never the same card twice, and no concept repeated across months.</li>
-      <li><b>Caption:</b> two short sentences, the site link, then the tags. Never more than 280 characters.</li>
-      <li><b>Tags:</b> standing <code>#Altradits</code> plus the month tag (<code>#YeBenteNovember</code>, <code>#YeBenteDecember</code>).</li>
-      <li><b>Plain words:</b> no jargon, no em-dashes, written for people who have never used Bitcoin.</li>
-    </ul>
+    <details class="mktRules">
+      <summary id="hMktTpl">The reusable template</summary>
+      <div class="learn"><p>Every month repeats this shape, so followers recognize an Altradits post on sight. A new month is a new data file plus images: the tab picks it up with no code change.</p></div>
+      <ul class="sm">
+        <li><b>Image:</b> November holds thirty unique minimalist layouts; December answers with thirty-one art cards. Both keep one system: white ground, navy headline, red subline, the Altradits logo bottom-left, altradits.com footer. One concept per card, never the same card twice, and no concept repeated across months.</li>
+        <li><b>Caption:</b> two short sentences, the site link, then the tags. Never more than 280 characters.</li>
+        <li><b>Tags:</b> standing <code>#Altradits</code> plus the month tag (<code>#YeBenteNovember</code>, <code>#YeBenteDecember</code>).</li>
+        <li><b>Plain words:</b> no jargon, no em-dashes, written for people who have never used Bitcoin.</li>
+      </ul>
+    </details>
   </section>
   </div>
 
@@ -716,6 +744,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn" id="rcptResend" hidden>Resend receipt email</button><button type="button" class="btn primary" id="rcptClose">Close</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=refresh11"></script>
+<script type="module" src="/assets/admin.js?v=refresh12"></script>
 </body>
 </html>
