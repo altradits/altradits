@@ -73,11 +73,20 @@ Verified, with sources. Copy angles keep the day's rhythm type.
   posts Christmas copy from this repo.
 - 31 Dec (Fri, Story): New Year's Eve. Precedent: same, 2026 schedule.
 
-No halving is claimed for 2027. The next halving is expected in 2028.
+Kenyan public holidays (confirmed by Stanley 5 Nov 2026; copy lands in
+the Q2 and Q4 PRs). Plain respectful copy on national days: no hard
+sell, no "buy bitcoin", honest custody as ever.
 
-To confirm with Stanley: Kenyan public holidays worth marking (Madaraka
-Day 1 Jun, Utamaduni Day 10 Oct, Mashujaa Day 20 Oct, Jamhuri Day 12 Dec,
-and any others he keeps). None are in the copy until he confirms.
+- 1 Jun (Tue, Tip, Q2): Madaraka Day. Self-governance: the freedom to
+  choose, including your money.
+- 10 Oct (Sun, Ye₿ente, Q4): Utamaduni Day. Culture carries value.
+  A respectful nod, not a pitch. (Ye₿ente day: keep it gentle.)
+- 20 Oct (Wed, Ye₿ente, Q4): Mashujaa Day. Honour the heroes and
+  builders, past and present. (Ye₿ente day: keep it gentle.)
+- 12 Dec (Sun, Ye₿ente, Q4): Jamhuri Day. The republic: money that
+  serves everyone, quietly stated. (Ye₿ente day: keep it gentle.)
+
+No halving is claimed for 2027. The next halving is expected in 2028.
 
 ## Card rules
 
@@ -156,6 +165,7 @@ never sit in a Ye₿ente-type post or suggest Ye₿ente is self-custody. The
 marketing suite fails a Ye₿ente-type post that contains: freeze, froze,
 frozen, own keys, own money, hold your own, holding your own, nobody
 can, self-custody, 12 words, twelve words, seed, ownership, owning.
+Confirmed 5 Nov 2026: this rule stands for every quarter.
 
 ## Background library (Minimal 2027)
 
