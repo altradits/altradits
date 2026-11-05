@@ -1190,6 +1190,8 @@ function mktInlineFit() {
   ta.style.width = Math.min(maxW, Math.max(60, longest * sx + 24)) + "px";
   ta.style.height = "auto";
   ta.style.height = Math.min(maxH, Math.max(30, ta.scrollHeight + 8)) + "px";
+  const box = $("#mktSelText");
+  if (box && box.value !== ta.value) box.value = ta.value;
 }
 function mktInlineCommit() {
   const ta = $("#mktInline");
@@ -1200,6 +1202,7 @@ function mktInlineCommit() {
   if (el && ta.value !== el.text) { mktPush(); el.text = ta.value; mktSyncSelText(); }
   drawCustom();
   mktSyncTools();
+  $("#mktCanvas")?.focus({ preventScroll: true });
 }
 function mktRoleEnsure(role) {
   let el = mktRoleEl(role);
@@ -1224,7 +1227,10 @@ function mktAddText(kind) {
   const p = presets[kind] || presets.body;
   const t = MKT_TPL.find((x) => x.file === MKT_EDIT.file);
   const ink = t && (t.light || t.ink === "white") ? "#ffffff" : "#0f1b2d";
-  const el = { id: `t${++MKT_IDC}`, kind: "text", role: null, x: 200 + (n % 4) * 60, y: 420 + (n % 5) * 70, align: "left", weight: null, italic: false, upper: false, moved: true, locked: false, ...p, color: ink };
+  const lowest = MKT_HIT.filter((h) => mktEl(h.id)?.kind === "text").reduce((m, h) => Math.max(m, h.y + h.h), 0);
+  const x = Math.max(0, Math.min(1920 - p.w, 200 + (n % 4) * 60));
+  const y = Math.max(0, Math.min(1280 - 160, lowest + 60));
+  const el = { id: `t${++MKT_IDC}`, kind: "text", role: null, x, y, align: "left", weight: null, italic: false, upper: false, moved: true, locked: false, ...p, color: ink };
   MKT_ELS.push(el);
   MKT_EDIT.sel = el.id;
   drawCustom();
@@ -1321,8 +1327,15 @@ function mktPositionActions() {
   bar.hidden = false;
   const lock = $("#mktLock");
   if (lock) { lock.setAttribute("aria-pressed", String(el.locked)); lock.textContent = el.locked ? "Unlock" : "Lock"; }
-  bar.style.left = Math.max(0, cv.offsetLeft + h.x * sx) + "px";
-  bar.style.top = Math.max(0, cv.offsetTop + h.y * sy - bar.offsetHeight - 8) + "px";
+  const bw = bar.offsetWidth / sx, bh = bar.offsetHeight / sy;
+  let top = h.y - bh - 8 / sy, left = h.x;
+  // Below the selection when above would cover words or leave the canvas.
+  const covers = (t) => t < 0 || MKT_HIT.some((o) => o.id !== el.id && left < o.x + o.w && left + bw > o.x && t < o.y + o.h && t + bh > o.y);
+  if (covers(top)) top = h.y + h.h + 8 / sy;
+  left = Math.max(0, Math.min(1920 - bw, left));
+  top = Math.max(0, Math.min(1280 - bh, top));
+  bar.style.left = (cv.offsetLeft + left * sx) + "px";
+  bar.style.top = (cv.offsetTop + top * sy) + "px";
 }
 let mktCaretTimer = null;
 function mktCaret(on) {
