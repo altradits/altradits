@@ -30,6 +30,9 @@ One secret for people: the 6-digit PIN (or fingerprint once it's on). The app op
 
 ## Recovery (lost phone or forgotten PIN)
 - By email (the confirmed address) or with the 12 recovery words, always with a NEW PIN. This is a reset: every other phone, older token and fingerprint key is signed out, and for 24 hours at most 1,000 sats in total can leave the wallet (YEBENTE_RECOVERY_HOLD_SATS), in case it isn't the owner. The owner's email is told.
+- A new PIN is never the current one or one of the last 3 (their salted hashes only). The same rule holds when the PIN is changed on a trusted phone (wallet/pin/change, in Settings → Phones and security): the current PIN is needed, older sign-ins end, and the owner is emailed.
+- The app shows the hold on the Send screens and in Settings → Phones and security: what can still leave, and when it ends.
+- A recovery or login email that never goes out is logged with its status and raises one Stan alert; the requester's reply stays the same either way.
 - A recovery email counts only after its confirmation link is opened, with a button (a link preview or mail scanner opening the page confirms nothing).
 - The recovery link works once for 30 minutes and carries its token after # (never sent to a server log). Requests answer the same, in the same time, for any address.
 - The email can't be changed during a hold; a change tells the old address.

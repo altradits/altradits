@@ -36,6 +36,7 @@
 //   POST wallet/recover-email {email}     a one-time recovery link (#recover=) to each wallet confirmed with it
 //   POST wallet/recover-email/finish {token, pin, device}  new PIN, other phones signed out, 24 h hold
 //   POST wallet/recovery/cancel {pin}    a trusted phone cancels the pending email recovery (its links die)
+//   POST wallet/pin/change {pin, newPin}  a new PIN on a trusted phone (never the current one or the last 3)
 //   POST wallet/buy {kes, phone}          M-Pesa STK Push for sats into this wallet (YEBENTE_MPESA_BUY=on)
 //   GET  wallet/buy/<checkoutRequestId>   credited once Safaricom confirms
 //   POST wallet/buy/bitika {kes, phone}   M-Pesa or Airtel Money through Bitika (YEBENTE_BITIKA_BUY=on):
@@ -423,6 +424,11 @@ async function walletPost(request, action) {
     if ((await hit(`rl:yb:recc:${w.id}`, 3600)) > 20) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
     return json({ success: true, ...(await yw.cancelEmailRecovery(w, body.pin)) });
   }
+  if (action === "pin/change") {
+    const w = await me(request);
+    if ((await hit(`rl:yb:pinc:${w.id}`, 3600)) > 20) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
+    return json({ success: true, ...(await yw.changePin(w, body.pin, body.newPin)) });
+  }
   if (action === "buy") {
     const w = await me(request);
     if (!buyOn()) return off(NOT_CONFIGURED);
@@ -505,7 +511,8 @@ async function walletGet(request, action) {
     // Each check can ask the node: 120 an hour per wallet is plenty for an app.
     if ((await hit(`rl:yb:me:${w.id}`, 3600)) > 120) return json({ success: false, error: "Too many requests. Try again later." }, 429);
     for (const h of await listIds("ywinvopen", 200)) { const inv = await getJSON(`ywinv:${h}`); if (inv?.walletId === w.id) await yw.settleInvoice(h).catch(() => {}); }
-    return json({ success: true, wallet: yw.publicWallet((await yw.walletForToken(bearer(request))) || w) });
+    const current = (await yw.walletForToken(bearer(request))) || w;
+    return json({ success: true, wallet: { ...yw.publicWallet(current), hold: await yw.holdInfo(current.id) } });
   }
   const buy = action.match(/^buy\/([\w-]{6,80})$/);
   if (buy) {
@@ -542,7 +549,7 @@ async function walletGet(request, action) {
     return json({ success: true, settled: state === "settled", paid: state === "settled", state, satsAmount: rec.sats });
   }
   if (action === "history") return json({ success: true, entries: await yw.history(w.id) });
-  if (action === "security") return json({ success: true, ...yw.securityInfo(w, yw.sessionOf(w)?.deviceId) });
+  if (action === "security") return json({ success: true, ...yw.securityInfo(w, yw.sessionOf(w)?.deviceId), hold: await yw.holdInfo(w.id) });
   return json({ success: false, error: "Not found" }, 404);
 }
 
@@ -674,7 +681,7 @@ export async function POST(request) {
     if (path === "address/invoice") return await addressInvoice(request);
     if (path === "wallet/email-change-cancel") return await emailChangeCancelPost(request);
     if (path === "wallet/freeze") return await freezePost(request);
-    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy\/bitika|buy|card\/order|email|email\/cancel|recover-email|recover-email\/finish|recovery\/cancel|passkey\/(?:options|add|off)|unlock\/options|unlock|login\/start|login\/finish|device\/register|device\/remove|lock)$/);
+    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy\/bitika|buy|card\/order|email|email\/cancel|recover-email|recover-email\/finish|recovery\/cancel|pin\/change|passkey\/(?:options|add|off)|unlock\/options|unlock|login\/start|login\/finish|device\/register|device\/remove|lock)$/);
     if (wp) return await walletPost(request, wp[1]);
     const cb = path.match(/^mpesa\/callback\/([\w-]{16,128})$/);
     if (cb) return await callback(request, cb[1]);

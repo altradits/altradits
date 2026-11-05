@@ -1,6 +1,7 @@
 import { payInvoiceWithWebLN } from '../services/lightningService';
 import { hasServerWallet, sendFromServerWallet } from '../services/altraditsWallet';
 import { biometricOn, approveWithBiometric } from '../services/biometric';
+import { HoldNotice } from './HoldNotice';
 import { SatsMotion, CountUp } from './SatsMotion';
 import { celebrate } from '../services/celebrate';
 import React, { useState, useEffect } from 'react';
@@ -372,6 +373,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                   {availableSats.toLocaleString()} Sats (~{Math.round((availableSats / 100_000_000) * currentRate).toLocaleString()} {currencyCode})
                 </span>
               </div>
+              {server && wallet.hold && <HoldNotice hold={wallet.hold} />}
 
               {/* Phone Input */}
               <div>

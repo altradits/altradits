@@ -10,6 +10,7 @@ import { isNetworkOnline } from '../services/offlineService';
 import { hasServerWallet, sendFromServerWallet } from '../services/altraditsWallet';
 import { parsePaymentText, bolt11Sats } from '../services/paymentQr';
 import { QrScanner } from './QrScanner';
+import { HoldNotice } from './HoldNotice';
 import { SatsMotion, CountUp } from './SatsMotion';
 import { celebrate } from '../services/celebrate';
 import { biometricOn, approveWithBiometric } from '../services/biometric';
@@ -329,6 +330,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                   {availableSats.toLocaleString()} Sats
                 </span>
               </div>
+              {server && wallet.hold && <HoldNotice hold={wallet.hold} />}
 
               {/* Recipient Input */}
               <div>

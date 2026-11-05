@@ -35,6 +35,7 @@ export interface UserWallet {
   frozen?: boolean;
   pendingRecovery?: { requestedAt: string; expiresAt: string } | null;
   emailChange?: { newEmail: string; effectiveAt: string } | null;
+  hold?: { until: string; total: number; left: number } | null;
 }
 
 export interface Transaction {
