@@ -64,7 +64,7 @@ test("the dashboard is wired: editor, place, remove, overlay", () => {
 
 test("the editor moves parts, swaps the logo ink, and offers fonts", () => {
   const js = fs.readFileSync(path.join(ROOT, "assets/admin.js"), "utf8");
-  for (const s of ["pointerdown", "keydown", "dblclick", "MKT_FONTS", "mktHFont", "mktSFont", "mktLogoWhite", "mktReset", "logo-white.png", "drawCustom(false)", "toDataURL"]) {
+  for (const s of ["pointerdown", "keydown", "dblclick", "MKT_FONTS", "mktHFont", "mktSFont", "mktLogoWhite", "mktReset", "logo-white.png", "drawCustom(false)", "toDataURL", '? "grab" : "text"']) {
     assert.ok(js.includes(s), `admin.js mentions ${s}`);
   }
   const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
