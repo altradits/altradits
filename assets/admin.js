@@ -775,9 +775,9 @@ async function loadTemplates() {
   } catch (err) { box.innerHTML = `<p class="sm">Templates unavailable: ${esc(err.message)}</p>`; return; }
   MKT_TPL = list;
   box.innerHTML = `<div class="mktTpl">` + list.map((t, i) =>
-    `<figure data-mkt-edit="${i}"><img src="/${esc(t.file)}" alt="${esc(t.name)} blank template" title="Customize ${esc(t.name)}" loading="lazy">`
-    + `<figcaption>${esc(t.name)} <span><a class="btn" href="/${esc(t.file)}" download="${esc(String(t.file).split("/").pop())}">Download</a> `
-    + `<button type="button" class="btn">Customize</button></span></figcaption></figure>`
+    `<figure data-mkt-edit="${i}"><span class="thumb"><img src="/${esc(t.file)}" alt="${esc(t.name)} blank template" title="Use ${esc(t.name)}" loading="lazy">`
+    + `<a class="mktDl" href="/${esc(t.file)}" download="${esc(String(t.file).split("/").pop())}" aria-label="Download ${esc(t.name)}">↓</a></span>`
+    + `<figcaption>${esc(t.name)}</figcaption></figure>`
   ).join("") + `</div>`;
 }
 let MKT_TPL = [];
@@ -805,8 +805,8 @@ let MKT_IDC = 0;
 function mktDefaultEls() {
   return [
     { id: "logo", kind: "logo", x: 96, y: 1085, w: MKT_LOGO_W, white: false, locked: false },
-    { id: "head", kind: "text", role: "head", text: "", x: 120, y: 270, w: 1680, size: 170, style: "hbrand", color: "#0f1b2d", align: "left", weight: null, italic: false, upper: false, lines: 3, moved: false, locked: false },
-    { id: "sub", kind: "text", role: "sub", text: "", x: 120, y: 880, w: 1680, size: 76, style: "sbrand", color: "#ea5158", align: "left", weight: null, italic: false, upper: false, lines: 2, moved: false, locked: false },
+    { id: "head", kind: "text", role: "head", text: "Your headline", x: 120, y: 270, w: 1680, size: 170, style: "hbrand", color: "#0f1b2d", align: "left", weight: null, italic: false, upper: false, lines: 3, moved: false, locked: false },
+    { id: "sub", kind: "text", role: "sub", text: "Your smaller line", x: 120, y: 880, w: 1680, size: 76, style: "sbrand", color: "#ea5158", align: "left", weight: null, italic: false, upper: false, lines: 2, moved: false, locked: false },
   ];
 }
 let MKT_ELS = mktDefaultEls();
@@ -825,14 +825,14 @@ function mktUndo() {
   MKT_REDO.push(mktSnap());
   MKT_ELS = JSON.parse(MKT_UNDO.pop());
   if (!mktEl(MKT_EDIT.sel)) MKT_EDIT.sel = null;
-  mktSyncInputs(); drawCustom(); mktSyncTools();
+  mktSyncSelText(); drawCustom(); mktSyncTools();
 }
 function mktRedo() {
   if (!MKT_REDO.length) return;
   MKT_UNDO.push(mktSnap());
   MKT_ELS = JSON.parse(MKT_REDO.pop());
   if (!mktEl(MKT_EDIT.sel)) MKT_EDIT.sel = null;
-  mktSyncInputs(); drawCustom(); mktSyncTools();
+  mktSyncSelText(); drawCustom(); mktSyncTools();
 }
 function loadImg(src) {
   return new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = src; });
@@ -856,7 +856,7 @@ function editTemplate(i, scroll = true) {
   if (head) head.color = t.light === true ? "#ffffff" : "#0f1b2d";
   for (const l of MKT_ELS.filter((e) => e.kind === "logo")) l.white = t.ink === "white";
   MKT_UNDO = []; MKT_REDO = [];
-  mktSyncInputs();
+  mktSyncSelText();
   drawCustom().then(() => { mktSyncTools(); if (scroll) $("#hMktEdit")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
 }
 function paintLine(ctx, line, x, y, halo) {
@@ -1007,9 +1007,9 @@ async function drawCustom(outline = true) {
   }
   if (outline && MKT_EDIT.caret && MKT_EDIT.caretOn && !MKT_INEDIT) {
     const h = MKT_HIT.find((b) => b.id === MKT_EDIT.caret);
-    const box = MKT_EDIT.caret === "head" ? $("#mktHead") : $("#mktSub");
+    const box = $("#mktSelText");
     const el = mktEl(MKT_EDIT.caret);
-    if (h && box && el && h.lines?.length) {
+    if (h && box && el && el.kind === "text" && h.lines?.length) {
       const raw = el.upper ? el.text.toUpperCase() : el.text;
       const at = box.selectionDirection === "backward" ? box.selectionStart : box.selectionEnd;
       const c = caretXY(ctx, h, raw, at ?? raw.length);
@@ -1147,6 +1147,7 @@ $("#mktCanvas")?.addEventListener("dblclick", (e) => {
 // In-place words: a transparent box over the element, matching its font and
 // size. Escape or click-away commits.
 let MKT_INEDIT = null;
+let MKT_INSIZE = 0;
 function mktInlineOpen(el, hit) {
   const cv = $("#mktCanvas"), ta = $("#mktInline");
   if (!cv || !ta) return;
@@ -1154,21 +1155,41 @@ function mktInlineOpen(el, hit) {
   const sx = r.width / 1920, sy = r.height / 1280;
   const spec = mktSpec(el);
   MKT_INEDIT = el.id;
+  MKT_INSIZE = hit.size || el.size;
   ta.hidden = false;
   ta.value = el.text;
   ta.style.left = (cv.offsetLeft + hit.x * sx) + "px";
   ta.style.top = (cv.offsetTop + hit.y * sy) + "px";
-  ta.style.width = Math.max(60, hit.w * sx + 8) + "px";
-  ta.style.height = Math.max(30, hit.h * sy + 8) + "px";
-  ta.style.font = `${spec.st || ""}${spec.w} ${Math.max(8, (hit.size || el.size) * sx)}px ${spec.f}`;
+  ta.style.font = `${spec.st || ""}${spec.w} ${Math.max(8, MKT_INSIZE * sx)}px ${spec.f}`;
   ta.style.lineHeight = (hit.lh * sy) + "px";
   ta.style.color = el.color;
   ta.style.textAlign = el.align;
   ta.style.textTransform = el.upper ? "uppercase" : "none";
+  mktInlineFit();
   $("#mktActions").hidden = true;
   ta.focus();
   ta.select();
   drawCustom();
+}
+// The edit box fits its words: width from the measured lines, then height
+// from the wrapped content, both clamped to the canvas.
+function mktInlineFit() {
+  const cv = $("#mktCanvas"), ta = $("#mktInline");
+  const el = mktEl(MKT_INEDIT);
+  if (!cv || !ta || !el) return;
+  const r = cv.getBoundingClientRect();
+  const sx = r.width / 1920;
+  const spec = mktSpec(el);
+  const ctx = cv.getContext("2d");
+  ctx.font = `${spec.st || ""}${spec.w} ${MKT_INSIZE}px ${spec.f}`;
+  const display = el.upper ? ta.value.toUpperCase() : ta.value;
+  const longest = display.split("\n").reduce((m, ln) => Math.max(m, ctx.measureText(ln || " ").width), 0);
+  const left = parseFloat(ta.style.left) || 0, top = parseFloat(ta.style.top) || 0;
+  const maxW = Math.max(60, cv.offsetLeft + r.width - left - 4);
+  const maxH = Math.max(30, cv.offsetTop + r.height - top - 4);
+  ta.style.width = Math.min(maxW, Math.max(60, longest * sx + 24)) + "px";
+  ta.style.height = "auto";
+  ta.style.height = Math.min(maxH, Math.max(30, ta.scrollHeight + 8)) + "px";
 }
 function mktInlineCommit() {
   const ta = $("#mktInline");
@@ -1176,7 +1197,7 @@ function mktInlineCommit() {
   const el = mktEl(MKT_INEDIT);
   MKT_INEDIT = null;
   ta.hidden = true;
-  if (el && ta.value !== el.text) { mktPush(); el.text = ta.value; mktSyncInputs(); }
+  if (el && ta.value !== el.text) { mktPush(); el.text = ta.value; mktSyncSelText(); }
   drawCustom();
   mktSyncTools();
 }
@@ -1185,8 +1206,8 @@ function mktRoleEnsure(role) {
   if (el) return el;
   mktPush();
   el = role === "head"
-    ? { id: "head", kind: "text", role: "head", text: "", x: 120, y: 270, w: 1680, size: 170, style: "hbrand", color: $("#mktLight")?.checked ? "#ffffff" : "#0f1b2d", align: "left", weight: null, italic: false, upper: false, lines: 3, moved: false, locked: false }
-    : { id: "sub", kind: "text", role: "sub", text: "", x: 120, y: 880, w: 1680, size: 76, style: "sbrand", color: "#ea5158", align: "left", weight: null, italic: false, upper: false, lines: 2, moved: false, locked: false };
+    ? { id: "head", kind: "text", role: "head", text: "Your headline", x: 120, y: 270, w: 1680, size: 170, style: "hbrand", color: $("#mktLight")?.checked ? "#ffffff" : "#0f1b2d", align: "left", weight: null, italic: false, upper: false, lines: 3, moved: false, locked: false }
+    : { id: "sub", kind: "text", role: "sub", text: "Your smaller line", x: 120, y: 880, w: 1680, size: 76, style: "sbrand", color: "#ea5158", align: "left", weight: null, italic: false, upper: false, lines: 2, moved: false, locked: false };
   const at = MKT_ELS.findIndex((e) => e.kind === "text");
   if (at < 0) MKT_ELS.push(el);
   else MKT_ELS.splice(role === "head" ? at : at + 1, 0, el);
@@ -1201,7 +1222,9 @@ function mktAddText(kind) {
     body: { text: "Body text", size: 64, w: 1100, style: "ssoft", color: "#0f1b2d", lines: 4 },
   };
   const p = presets[kind] || presets.body;
-  const el = { id: `t${++MKT_IDC}`, kind: "text", role: null, x: 200 + (n % 4) * 60, y: 420 + (n % 5) * 70, align: "left", weight: null, italic: false, upper: false, moved: true, locked: false, ...p };
+  const t = MKT_TPL.find((x) => x.file === MKT_EDIT.file);
+  const ink = t && (t.light || t.ink === "white") ? "#ffffff" : "#0f1b2d";
+  const el = { id: `t${++MKT_IDC}`, kind: "text", role: null, x: 200 + (n % 4) * 60, y: 420 + (n % 5) * 70, align: "left", weight: null, italic: false, upper: false, moved: true, locked: false, ...p, color: ink };
   MKT_ELS.push(el);
   MKT_EDIT.sel = el.id;
   drawCustom();
@@ -1232,25 +1255,32 @@ function mktDelete() {
   mktPush();
   MKT_ELS = MKT_ELS.filter((e) => e.id !== el.id);
   MKT_EDIT.sel = null;
-  mktSyncInputs();
+  mktSyncSelText();
   drawCustom();
   mktSyncTools();
 }
-// The side panel mirrors the headline and smaller line, whichever way the
-// words were written. A box being typed in is left alone.
-function mktSyncInputs() {
-  const head = mktRoleEl("head"), sub = mktRoleEl("sub");
-  const hb = $("#mktHead"), sb = $("#mktSub");
-  if (hb && head && hb.value !== head.text && document.activeElement !== hb) hb.value = head.text;
-  if (sb && sub && sb.value !== sub.text && document.activeElement !== sb) sb.value = sub.text;
-  const hf = $("#mktHFont"), sf = $("#mktSFont");
-  if (hf && head) hf.value = head.style;
-  if (sf && sub) sf.value = sub.style;
+// The side panel mirrors the selected words, whichever way they were
+// written. A box being typed in is left alone.
+function mktSyncSelText() {
+  const box = $("#mktSelText");
+  if (!box) return;
+  const el = mktEl(MKT_EDIT.sel);
+  box.disabled = !(el && el.kind === "text");
+  if (el?.kind === "text") {
+    if (document.activeElement !== box && box.value !== el.text) box.value = el.text;
+  } else {
+    box.value = "";
+  }
 }
 function mktSyncTools() {
   const el = mktEl(MKT_EDIT.sel);
-  const tools = $("#mktTools"), tt = $("#mktToolsText"), tl = $("#mktToolsLogo");
-  if (tools) tools.hidden = !el;
+  const tools = $("#mktTools"), tt = $("#mktToolsText"), tl = $("#mktToolsLogo"), hint = $("#mktToolsHint");
+  // The bar keeps its space so the canvas never jumps; empty, it idles.
+  if (tools) {
+    tools.hidden = false;
+    tools.querySelectorAll("button, input, select").forEach((c) => { c.disabled = !el; });
+  }
+  if (hint) hint.hidden = !!el;
   if (tt) tt.hidden = !(el && el.kind === "text");
   if (tl) tl.hidden = !(el && el.kind === "logo");
   if (el?.kind === "text") {
@@ -1277,6 +1307,7 @@ function mktSyncTools() {
   }
   const addLogo = $("#mktAddLogo");
   if (addLogo) addLogo.hidden = MKT_ELS.some((e) => e.kind === "logo");
+  mktSyncSelText();
   mktPositionActions();
 }
 function mktPositionActions() {
@@ -1303,10 +1334,11 @@ function mktCaret(on) {
   if (on && !still) mktCaretTimer = setInterval(() => { MKT_EDIT.caretOn = !MKT_EDIT.caretOn; drawCustom(); }, 530);
   drawCustom();
 }
-for (const [id, which] of [["mktHead", "head"], ["mktSub", "sub"]]) {
-  $(`#${id}`)?.addEventListener("focus", () => mktCaret(which));
-  $(`#${id}`)?.addEventListener("blur", () => mktCaret(null));
-}
+$("#mktSelText")?.addEventListener("focus", () => {
+  const el = mktEl(MKT_EDIT.sel);
+  mktCaret(el?.kind === "text" ? el.id : null);
+});
+$("#mktSelText")?.addEventListener("blur", () => mktCaret(null));
 // Content types colour the calendar tiles. Fixed list: a month file may only
 // use these, and posts without one get the neutral tile with a "Post" label.
 const MKT_TYPES = {
@@ -1412,23 +1444,22 @@ $("#mktTpl").addEventListener("click", (e) => {
   if (!b) return;
   editTemplate(Number(b.dataset.mktEdit));
 });
-// Side-panel fallback boxes: typing writes straight into the headline and
-// smaller-line elements, recreating them if they were deleted.
+// Side-panel fallback box: typing writes straight into the selected words.
 let MKT_TYPE_BEFORE = null;
-for (const [id, role] of [["mktHead", "head"], ["mktSub", "sub"]]) {
-  const box = $(`#${id}`);
-  box?.addEventListener("focus", () => { MKT_TYPE_BEFORE = mktSnap(); });
-  box?.addEventListener("input", () => { mktRoleEnsure(role).text = box.value; drawCustom(); });
-  box?.addEventListener("blur", () => {
-    if (MKT_TYPE_BEFORE !== null && MKT_TYPE_BEFORE !== mktSnap()) {
-      MKT_UNDO.push(MKT_TYPE_BEFORE);
-      if (MKT_UNDO.length > 50) MKT_UNDO.shift();
-      MKT_REDO = [];
-    }
-    MKT_TYPE_BEFORE = null;
-  });
-}
-for (const id of ["mktHead", "mktSub"]) for (const ev of ["keyup", "click", "select"]) $(`#${id}`)?.addEventListener(ev, () => drawCustom());
+$("#mktSelText")?.addEventListener("focus", () => { MKT_TYPE_BEFORE = mktSnap(); });
+$("#mktSelText")?.addEventListener("input", (e) => {
+  const el = mktEl(MKT_EDIT.sel);
+  if (el?.kind === "text" && !el.locked) { el.text = e.target.value; drawCustom(); }
+});
+$("#mktSelText")?.addEventListener("blur", () => {
+  if (MKT_TYPE_BEFORE !== null && MKT_TYPE_BEFORE !== mktSnap()) {
+    MKT_UNDO.push(MKT_TYPE_BEFORE);
+    if (MKT_UNDO.length > 50) MKT_UNDO.shift();
+    MKT_REDO = [];
+  }
+  MKT_TYPE_BEFORE = null;
+});
+for (const ev of ["keyup", "click", "select"]) $("#mktSelText")?.addEventListener(ev, () => drawCustom());
 $("#mktLight")?.addEventListener("change", (e) => {
   const head = mktRoleEl("head");
   if (!head) return;
@@ -1443,8 +1474,6 @@ $("#mktLogoWhite")?.addEventListener("change", (e) => {
   for (const l of logos) l.white = e.target.checked;
   drawCustom(); mktSyncTools();
 });
-$("#mktHFont")?.addEventListener("change", (e) => { if (!MKT_FONTS[e.target.value]) return; mktPush(); mktRoleEnsure("head").style = e.target.value; drawCustom(); mktSyncTools(); });
-$("#mktSFont")?.addEventListener("change", (e) => { if (!MKT_FONTS[e.target.value]) return; mktPush(); mktRoleEnsure("sub").style = e.target.value; drawCustom(); mktSyncTools(); });
 $("#mktReset")?.addEventListener("click", () => {
   mktInlineCommit();
   mktPush();
@@ -1456,7 +1485,7 @@ $("#mktReset")?.addEventListener("click", () => {
   mktRoleEl("head").color = $("#mktLight")?.checked ? "#ffffff" : "#0f1b2d";
   mktEl("logo").white = $("#mktLogoWhite")?.checked === true;
   MKT_EDIT.sel = null;
-  mktSyncInputs();
+  mktSyncSelText();
   drawCustom();
   mktSyncTools();
 });
@@ -1596,6 +1625,7 @@ $("#mktLMinus")?.addEventListener("click", () => { const el = mktEl(MKT_EDIT.sel
 $("#mktLPlus")?.addEventListener("click", () => { const el = mktEl(MKT_EDIT.sel); if (el?.kind === "logo") mktLogoSize(el.w + 10); });
 $("#mktLSize")?.addEventListener("change", (e) => mktLogoSize(Number(e.target.value)));
 // The inline editor commits on click-away and on Escape.
+$("#mktInline")?.addEventListener("input", mktInlineFit);
 $("#mktInline")?.addEventListener("blur", mktInlineCommit);
 $("#mktInline")?.addEventListener("keydown", (e) => {
   e.stopPropagation();
