@@ -270,7 +270,7 @@ test("2027 copy fits the card rules", () => {
 });
 
 test("honest custody: Ye₿ente posts never claim self-custody", () => {
-  // Ye₿ente is custodial: no recovery words, with freeze and pause.
+  // Ye₿ente is custodial: Altradits holds the bitcoin, with freeze and pause. Its 12 words restore access, not keys, so Ye₿ente posts still never name them.
   const banned = [/freez/, /froze/, /own keys/, /own money/, /hold your own/,
     /holding your own/, /nobody can/, /self.custody/, /12.words?/, /twelve.words?/, /\bseed\b/,
     /ownership/, /owning/];

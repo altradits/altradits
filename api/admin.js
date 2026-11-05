@@ -14,6 +14,7 @@
 //   GET  /api/admin?view=statement   -> money received through the website (&format=csv for the books)
 //   GET  /api/admin?view=activity&days=30 -> Ye₿ente deposits and transactions per wallet, most active first
 //   POST { action: "stan_report" } | { action: "node_topup", sats } | { action: "address_qr", address } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
+//   POST { action: "ktown_block" | "ktown_unblock" | "ktown_release", phone } (kTown squatter tools, docs/ktown.md)
 import { json, readBody, clean, newId, adminAuthed, clientIp, siteUrl, EMAIL_RE } from "../lib/http.js";
 import { listIds, getMany, getJSON, setJSON, pushId, usingRedis, hit, peek, listArchives } from "../lib/store.js";
 import { lightningMode } from "../lib/lightning.js";
@@ -520,6 +521,18 @@ export async function POST(request) {
     if (body.confirm !== "DELETE") return json({ error: "Type DELETE to confirm." }, 400);
     const { deleteArchive } = await import("../lib/store.js");
     try { return json(deleteArchive(clean(body.name, 80))); } catch (err) { return json({ error: err.message }, 400); }
+  }
+  // kTown squatter tools: block a phone number from registering (or lift
+  // the block), or release a merchant record so its number can sign up
+  // again. Every one is logged in the Security watch. Payment entries are
+  // never touched. Docs: docs/ktown.md.
+  if (body.action === "ktown_block" || body.action === "ktown_unblock" || body.action === "ktown_release") {
+    const kt = await import("../lib/ktown.js");
+    try {
+      if (body.action === "ktown_block") return json({ ok: true, phone: await kt.blockPhone(body.phone) });
+      if (body.action === "ktown_unblock") return json({ ok: true, phone: await kt.unblockPhone(body.phone) });
+      return json({ ok: true, ...(await kt.releaseMerchantByPhone(body.phone)) });
+    } catch (err) { return json({ error: err.message }, err.status || 400); }
   }
   if (body.action === "mkt_idea_save" || body.action === "mkt_idea_delete") {
     const { IDEAS_KEY, validateIdea } = await import("../lib/marketing.js");

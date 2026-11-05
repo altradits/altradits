@@ -154,9 +154,10 @@ unreleased features. No headline or caption repeats across 2026-11,
 
 ## Honest custody
 
-Ye₿ente is a custodial wallet: Altradits holds the bitcoin, there are no
-recovery words, and it has freeze and pause features. Never say or imply
-that Ye₿ente users hold their own keys, that their Ye₿ente money "can't
+Ye₿ente is a custodial wallet: Altradits holds the bitcoin, and it has
+freeze and pause features. Its 12-word recovery phrase restores access
+to the wallet; it is not self-custody keys. Never say or imply that
+Ye₿ente users hold their own keys, that their Ye₿ente money "can't
 be frozen", or that they "hold their own money" in Ye₿ente. Self-custody
 lessons (keys, 12 words, "their keys, their coins") are fine as general
 education in Lesson, Tip, Myth vs fact, Story or Question posts, framed
@@ -165,7 +166,9 @@ never sit in a Ye₿ente-type post or suggest Ye₿ente is self-custody. The
 marketing suite fails a Ye₿ente-type post that contains: freeze, froze,
 frozen, own keys, own money, hold your own, holding your own, nobody
 can, self-custody, 12 words, twelve words, seed, ownership, owning.
-Confirmed 5 Nov 2026: this rule stands for every quarter.
+The ban stands even though recovery exists: naming the words in a
+Ye₿ente post reads as self-custody. Confirmed 5 Nov 2026: this rule
+stands for every quarter.
 
 ## Background library (Minimal 2027)
 

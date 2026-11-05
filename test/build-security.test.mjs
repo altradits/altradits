@@ -24,7 +24,7 @@ test("every page carries its own up-to-date Content-Security-Policy (nginx sends
 });
 
 test("every page refuses to load inside another site's frame (a meta policy can't forbid framing)", () => {
-  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html"]) {
+  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "ktown/terms.html"]) {
     const html = read(f), srcs = [...html.matchAll(/<script[^>]*\bsrc="\/((?:assets|ktown)\/[\w.-]+\.js)(?:\?[\w=.-]*)?"/g)].map((m) => read(m[1])).join("\n");
     assert.match(html + srcs, /window\.top !== window\.self/, `${f}: add the frame check at the top of its script`);
     assert.match(html, /<script src="\/assets\/report\.js"><\/script>/, `${f}: the Security watch reporter is missing (run: node deploy/page-csp.mjs)`);
@@ -32,7 +32,7 @@ test("every page refuses to load inside another site's frame (a meta policy can'
 });
 
 test("pages have no inline event handlers or javascript: links (the policy would block them, and they invite injection)", () => {
-  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "yebente/app/index.html"]) {
+  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "ktown/terms.html", "yebente/app/index.html"]) {
     const html = read(f);
     assert.doesNotMatch(html, /<[^>]+\son[a-z]+\s*=\s*["']/i, `${f}: move the inline handler into the page script`);
     assert.doesNotMatch(html, /href\s*=\s*["']\s*javascript:/i, `${f}: no javascript: links`);
@@ -455,8 +455,8 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
   assert.ok(qrLib && /\d+\.\d+\.\d+/.test(qrLib), "ktown/: the QR library is vendored with its version in the name, never hotlinked");
   assert.match(read(`ktown/${qrLib}`), /Licensed under the MIT license/, "ktown/: the QR library keeps its licence header");
   assert.doesNotMatch(read(`ktown/${qrLib}`), /<script/i, "ktown/: the QR library emits no scripts");
-  assert.ok(srv.includes('"/ktown/index.html"') && srv.includes('"/ktown/pay.html"'), "server.mjs: /ktown serves the app, /k/<id> the pay page");
-  assert.ok(ht.includes("ktown/index.html") && ht.includes("ktown/pay.html"), ".htaccess: the same two routes on the Apache stack");
+  assert.ok(srv.includes('"/ktown/index.html"') && srv.includes('"/ktown/pay.html"') && srv.includes('"/ktown/terms.html"'), "server.mjs: /ktown serves the app, /k/<id> the pay page, /ktown/terms the terms");
+  assert.ok(ht.includes("ktown/index.html") && ht.includes("ktown/pay.html") && ht.includes("ktown/terms.html"), ".htaccess: the same three routes on the Apache stack");
   const mani = JSON.parse(read("ktown/manifest.webmanifest"));
   assert.equal(mani.start_url, "/ktown", "ktown/: the app installs at /ktown");
   assert.equal(mani.scope, "/ktown", "ktown/: installed scope stays inside the app");
@@ -482,7 +482,7 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
   assert.match(app, /toBlob\(res, "image\/png"\)/, "ktown/app.js: the PNG renders locally");
   assert.match(app, /a\.download = /, "ktown/app.js: the PNG downloads as a file");
   assert.match(app, /afterprint/, "ktown/app.js: the print sheet is removed after printing");
-  for (const page of ["ktown/index.html", "ktown/pay.html"])
+  for (const page of ["ktown/index.html", "ktown/pay.html", "ktown/terms.html"])
     assert.match(read(page), /name="theme-color" content="#0f1b2d"/, `${page}: the install theme color is set`);
   assert.match(srv, /api\[1\] !== "yebente" && api\[1\] !== "ktown"/, "server.mjs: kTown's API takes a sub-path");
   assert.ok(srv.indexOf("k-[A-Za-z0-9_-]{6,64}") !== -1 && srv.indexOf("k-[A-Za-z0-9_-]{6,64}") < srv.indexOf("handle@altradits.com"),

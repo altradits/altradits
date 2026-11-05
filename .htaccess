@@ -27,8 +27,9 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
   RewriteRule ^yebente/index\.html$ yebente/app/index.html [L]
   RewriteRule ^yebente/((assets|fonts|icons)/[A-Za-z0-9._-]+)$ yebente/app/$1 [L]
   RewriteRule ^yebente/manifest\.webmanifest$ yebente/app/manifest.webmanifest [L]
-  # kTown: the app at /ktown, the pay page at /k/<id> (query strings pass through).
+  # kTown: the app at /ktown, the terms at /ktown/terms, the pay page at /k/<id> (query strings pass through).
   RewriteRule ^ktown/?$ ktown/index.html [L]
+  RewriteRule ^ktown/terms/?$ ktown/terms.html [L]
   RewriteRule ^k/([A-Za-z0-9_-]+)/?$ ktown/pay.html [L]
 </IfModule>
 
