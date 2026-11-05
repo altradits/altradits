@@ -41,6 +41,7 @@ body.quiet .learn,body.quiet .why{display:none}
 @media (max-width:760px){.grid2{grid-template-columns:1fr}}
 table{width:100%;border-collapse:collapse;font-size:.92rem}
 .scroll{overflow-x:auto}
+#mktCanvas{touch-action:none}
 th,td{text-align:left;padding:.5rem .4rem;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 dl{display:grid;grid-template-columns:minmax(8rem,14rem) 1fr;gap:.3rem .8rem;margin:0;font-size:.93rem}
@@ -647,8 +648,12 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <p class="sm">Template: <b id="mktEditName">Ember</b></p>
     <p><label for="mktHead">Headline</label><br><input id="mktHead" maxlength="60" style="max-width:44rem" placeholder="Your big line"></p>
     <p><label for="mktSub">Smaller line</label><br><input id="mktSub" maxlength="90" style="max-width:44rem" placeholder="One supporting line (optional)"></p>
-    <p class="sm"><label><input type="checkbox" id="mktLight" style="width:auto"> Light words (for dark pictures)</label></p>
-    <div class="scroll"><canvas id="mktCanvas" width="1920" height="1280"></canvas></div>
+    <p class="sm"><label><input type="checkbox" id="mktLight" style="width:auto"> Light words (for dark pictures)</label>
+    <label><input type="checkbox" id="mktLogoWhite" style="width:auto"> White logo (for dark pictures)</label></p>
+    <p class="sm"><label for="mktHFont">Headline style </label><select id="mktHFont" class="sel"><option value="hbrand">Altradits headline</option><option value="hsoft">Altradits soft</option><option value="hplain">Plain bold</option><option value="hserif">Newspaper</option></select>
+    <label for="mktSFont">Smaller-line style </label><select id="mktSFont" class="sel"><option value="sbrand">Altradits red line</option><option value="ssoft">Altradits soft</option><option value="sserif">Newspaper italic</option><option value="smono">Typewriter</option></select></p>
+    <div class="scroll"><canvas id="mktCanvas" width="1920" height="1280" tabindex="0"></canvas></div>
+    <p class="sm muted">Drag the words or the logo to move them. Click one, then nudge it with the arrow keys (Shift for bigger steps). <button type="button" class="btn" id="mktReset">Reset layout</button></p>
     <p><button type="button" class="btn" id="mktDl">Download picture</button></p>
     <h3>Place on the calendar</h3>
     <p class="sm"><label for="mktIMonth">Month </label><select id="mktIMonth"></select> <label for="mktIDay">Day </label><input id="mktIDay" inputmode="numeric" size="2" style="width:4rem" placeholder="25"></p>
@@ -711,6 +716,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn" id="rcptResend" hidden>Resend receipt email</button><button type="button" class="btn primary" id="rcptClose">Close</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=refresh6"></script>
+<script type="module" src="/assets/admin.js?v=refresh7"></script>
 </body>
 </html>

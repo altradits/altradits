@@ -62,6 +62,17 @@ test("the dashboard is wired: editor, place, remove, overlay", () => {
   }
 });
 
+test("the editor moves parts, swaps the logo ink, and offers fonts", () => {
+  const js = fs.readFileSync(path.join(ROOT, "assets/admin.js"), "utf8");
+  for (const s of ["pointerdown", "keydown", "MKT_FONTS", "mktHFont", "mktSFont", "mktLogoWhite", "mktReset", "logo-white.png", "drawCustom(false)", "toDataURL"]) {
+    assert.ok(js.includes(s), `admin.js mentions ${s}`);
+  }
+  const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
+  for (const s of ['id="mktHFont"', 'id="mktSFont"', 'id="mktLogoWhite"', 'id="mktReset"', 'tabindex="0"']) {
+    assert.ok(html.includes(s), `admin.html has ${s}`);
+  }
+});
+
 test("every dashboard selector starts with # and its element exists", () => {
   const js = fs.readFileSync(path.join(ROOT, "assets/admin.js"), "utf8");
   const bare = [...js.matchAll(/\$\(\s*["'`]([^"'`#}][^"'`]*?)["'`]/g)].map((m) => m[1]);
