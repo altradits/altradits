@@ -385,10 +385,14 @@ async function loadHelp() {
   try {
     const d = await api("help");
     const contact = d && typeof d.help === "string" && d.help ? d.help : null;
-    if (contact) localStorage.setItem("kt.help", contact);
-    showHelp(contact || localStorage.getItem("kt.help"));
+    if (contact) {
+      localStorage.setItem("kt.help", contact);
+      showHelp(contact);
+    } else {
+      localStorage.removeItem("kt.help"); // Stanley removed it: forget it everywhere
+    }
   } catch {
-    showHelp(localStorage.getItem("kt.help"));
+    showHelp(localStorage.getItem("kt.help")); // offline: the last known contact, if any
   }
 }
 function showHelp(contact) {
