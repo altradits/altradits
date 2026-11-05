@@ -32,6 +32,10 @@
 //   POST wallet/recover-email/finish {token, pin, device}  new PIN, other phones signed out, 24 h hold
 //   POST wallet/buy {kes, phone}          M-Pesa STK Push for sats into this wallet (YEBENTE_MPESA_BUY=on)
 //   GET  wallet/buy/<checkoutRequestId>   credited once Safaricom confirms
+//   POST wallet/buy/bitika {kes, phone}   M-Pesa or Airtel Money through Bitika (YEBENTE_BITIKA_BUY=on):
+//                                          quote + start, answers {code, sats, feeKes}
+//   GET  wallet/buy/bitika/<code>         Bitika status, display only (sats arrive through the Lightning address)
+//   POST bitika/webhook/<secret>          Bitika's signed payment notice (secret: YEBENTE_BITIKA_HOOK_PATH)
 //   POST wallet/card/order {kes, email}   card or bank checkout page for this wallet (YEBENTE_CARD_BUY=on)
 //   GET  wallet/card/status/<trackingId>  credited once Pesapal confirms the exact shillings
 //   GET  wallet/card/return?OrderTrackingId=  where Pesapal sends the buyer back (state only)
@@ -51,6 +55,15 @@ const DARAJA = () => (env("MPESA_ENVIRONMENT") === "production" ? "https://api.s
 const darajaReady = () => Boolean(env("MPESA_CONSUMER_KEY") && env("MPESA_CONSUMER_SECRET"));
 const switchOn = (k) => ["on", "true", "yes", "1"].includes(env(k).replace(/^["']|["']$/g, "").toLowerCase());
 const buyOn = () => switchOn("YEBENTE_MPESA_BUY") && darajaReady() && Boolean(env("MPESA_SHORTCODE") && env("MPESA_PASSKEY") && env("YEBENTE_CALLBACK_SECRET"));
+// Which Buy provider the app offers. YEBENTE_BUY_PROVIDER pins one (bitika or
+// mpesa); unset, Bitika wins while it is on, else Daraja STK, else none.
+const pickProvider = (bitika, mpesa) => {
+  const want = env("YEBENTE_BUY_PROVIDER").trim().replace(/^["']|["']$/g, "").toLowerCase();
+  if (want === "bitika") return bitika ? "bitika" : null;
+  if (want === "mpesa") return mpesa ? "mpesa" : null;
+  if (bitika) return "bitika";
+  return mpesa ? "mpesa" : null;
+};
 const site = () => (env("SITE_URL") || "https://altradits.com").replace(/\/$/, "");
 
 const NOT_CONFIGURED = "M-Pesa credentials not configured. Set MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET.";
@@ -170,6 +183,91 @@ async function cardIpn(request, secret) {
   const id = safeId(body.OrderTrackingId || body.orderTrackingId || body.OrderMerchantReference || q.get("OrderTrackingId") || q.get("orderTrackingId"));
   if (!id) return json({ success: false, error: "No order given." }, 400);
   try { await finishCardBuy(id, await pp.orderStatus(id)); } catch { /* unclear: stays pending */ }
+  return json({ success: true });
+}
+
+// ---- buying sats with M-Pesa or Airtel Money through Bitika (lib/bitika.js)
+//
+// A quote plus a collect call: Bitika charges the phone and pays the wallet's
+// own Lightning address. The record only carries the display status; sats are
+// credited when the invoice settles, never by a Bitika answer.
+async function bitikaBuy(request, w, body) {
+  const bk = await import("../lib/bitika.js");
+  const yw = await import("../lib/ywallet.js");
+  if (!bk.bitikaOn()) return json({ success: false, settled: false, configured: false, error: "Buying with M-Pesa is paused right now." }, 501);
+  const kes = Number(body.kes);
+  if (!Number.isInteger(kes) || kes < bk.MIN_KES || kes > bk.MAX_KES) return json({ success: false, error: `Buy between ${bk.MIN_KES} and ${bk.MAX_KES.toLocaleString("en-US")} KES with Bitika.` }, 400);
+  const phone = formatKenyanPhone(body.phone);
+  if (!/^254[71]\d{8}$/.test(phone)) return json({ success: false, error: "Enter a Kenyan M-Pesa or Airtel Money number." }, 400);
+  // A payment prompt lands on someone's phone: at most 5 an hour to one
+  // number, 10 an hour per wallet, and a generous cap per connection.
+  if ((await hit(`rl:yb:bitp:${phone}`, 3600)) > 5) return json({ success: false, error: "Too many M-Pesa prompts to this number. Try again in an hour." }, 429);
+  if ((await hit(`rl:yb:bitw:${w.id}`, 3600)) > 10) return json({ success: false, error: "Too many buys. Try again in an hour." }, 429);
+  if ((await hit(`rl:yb:biti:${ipKey(request)}`, 3600)) > 60) return json({ success: false, error: "Too many M-Pesa prompts from this network. Try again later." }, 429);
+  const quote = await yw.quoteBuy(w, kes); // wallet cap, daily limit (Bitika buys count too), node check
+  const sats = (await bk.quoteSats(kes)) || quote.sats; // Bitika's own figure when it answers, else the wallet quote
+  const phoneHash = crypto.createHash("sha256").update(phone).digest("hex");
+  // One record per tap burst, made under the ledger lock: a double tap finds
+  // the first tap's record and reuses its Idempotency-Key (same key and same
+  // payload answers from the first request, never a second charge).
+  const rec = await yw._internal.withLedger(() => bk.claimOrCreate({ walletId: w.id, kes, sats, feeKes: bk.feeKes(kes), phoneHash }));
+  if (rec.code) return json({ success: true, code: rec.code, sats: rec.sats, feeKes: rec.feeKes, kes: rec.kes });
+  try {
+    const r = await bk.collect({ kes, phone, lightningAddress: `${w.handle}@${yw.DOMAIN()}`, idem: rec.idem });
+    const done = await bk.attachCode(rec.id, r.code, r.status);
+    return json({ success: true, code: done.code, sats: done.sats, feeKes: done.feeKes, kes: done.kes });
+  } catch (e) {
+    // A definitive answer means nothing started: the record closes, and the
+    // next try starts fresh. Anything else stays open, so a retry reuses the
+    // same key instead of risking a second charge.
+    if (e.definitive) await bk.setStatus(rec.id, "failed");
+    return json({ success: false, starting: !e.definitive, error: e.message }, e.status || 500);
+  }
+}
+
+// One Bitika buy's display status, for its own wallet only. Asks Bitika and
+// stores the answer; the browser never sees the key and never calls Bitika.
+async function bitikaStatus(request, w, code) {
+  const bk = await import("../lib/bitika.js");
+  const rec = await bk.recordByCode(code);
+  if (!rec || rec.walletId !== w.id) return json({ success: false, error: "Not found" }, 404);
+  if ((await hit(`rl:yb:bitq:${w.id}`, 600)) > 60) return json({ success: false, error: "Too many checks. Try again later." }, 429);
+  if (bk.isOpenState(rec.state) && bk.bitikaOn()) {
+    try {
+      const s = await bk.txStatus(code);
+      await bk.applyRemoteStatus(code, s.status);
+    } catch { /* unclear answer: the stored status stands */ }
+  }
+  const now = (await bk.getRecord(rec.id)) || rec;
+  return json({ success: true, code: now.code, state: now.state, sats: now.sats, kes: now.kes, feeKes: now.feeKes,
+    inProgress: bk.isOpenState(now.state), message: bk.stateMessage(now.state, now.code) });
+}
+
+// Bitika's signed payment notice. Verified exactly as documented, answered
+// fast, and only the display status moves. Unknown codes are ignored.
+async function bitikaWebhook(request, secret) {
+  const want = env("YEBENTE_BITIKA_HOOK_PATH");
+  if (!want || secret.length !== want.length || !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(want))) {
+    if (want && secret) {
+      const { recordAttack } = await import("../lib/attacks.js");
+      await recordAttack("secret_guess", { where: "/api/yebente/bitika/webhook", detail: "wrong bitika webhook secret" }).catch(() => {});
+    }
+    return json({ success: false, error: "Rejected" }, 403);
+  }
+  const bk = await import("../lib/bitika.js");
+  if (!bk.bitikaOn()) return json({ success: false, error: "Not found" }, 404);
+  if ((await hit(`rl:yb:bitwh:${ipKey(request)}`, 3600)) > 200) return json({ success: false, error: "Too many notices." }, 429);
+  const raw = await request.text(); // raw first: the signature covers the exact bytes
+  if (!bk.verifyWebhook(raw, request.headers.get("x-bitika-signature"), env("BITIKA_WEBHOOK_SECRET"))) {
+    const { recordAttack } = await import("../lib/attacks.js");
+    await recordAttack("secret_guess", { where: "/api/yebente/bitika/webhook", detail: "bad bitika webhook signature" }).catch(() => {});
+    return json({ success: false, error: "Rejected" }, 403);
+  }
+  let body = {};
+  try { body = JSON.parse(raw); } catch { return json({ success: false, error: "No payment given." }, 400); }
+  const code = String(body?.data?.transaction_code || "");
+  const state = bk.webhookStatus(body);
+  if (code && state) await bk.applyRemoteStatus(code, state);
   return json({ success: true });
 }
 
@@ -293,6 +391,10 @@ async function walletPost(request, action) {
     await yw.startBuy(w, quote, d.checkoutRequestId);
     return json({ ...d, satsAmount: quote.sats, kes: quote.kes, rate: quote.rate });
   }
+  if (action === "buy/bitika") {
+    const w = await me(request);
+    return await bitikaBuy(request, w, body);
+  }
   if (action === "invoice") {
     const w = await me(request);
     if ((await hit(`rl:yb:inv:${w.id}`, 3600)) > 60) return json({ success: false, error: "Too many invoices. Try again later." }, 429);
@@ -376,6 +478,8 @@ async function walletGet(request, action) {
     const now = await getJSON(`ywbuy:${buy[1]}`);
     return json({ success: true, state: now.state, resultCode: now.state === "paid" ? 0 : now.state === "failed" ? 1 : 49, mpesaReceiptNumber: now.receipt || null, satsAmount: now.sats, inProgress: now.state === "pending" });
   }
+  const bitika = action.match(/^buy\/bitika\/([\w-]{3,80})$/);
+  if (bitika) return await bitikaStatus(request, w, bitika[1]);
   const card = action.match(/^card\/status\/([\w-]{8,80})$/);
   if (card) {
     const rec = await getJSON(`ywcard:${card[1]}`);
@@ -425,7 +529,11 @@ const sub = (request) => decodeURIComponent(new URL(request.url).pathname.replac
 
 export async function GET(request) {
   const path = sub(request);
-  if (path === "health") return json({ status: "ok", service: "yebente", wallets: switchOn("YEBENTE_WALLETS"), environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), deposits: false, node: await nodeUp(), proxy: proxyShape(request), timestamp: Date.now() });
+  if (path === "health") {
+    const bk = await import("../lib/bitika.js");
+    const provider = pickProvider(bk.bitikaOn(), buyOn());
+    return json({ status: "ok", service: "yebente", wallets: switchOn("YEBENTE_WALLETS"), environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), buyProvider: provider, bitikaSandbox: provider === "bitika" ? bk.bitikaSandbox() : false, deposits: false, node: await nodeUp(), proxy: proxyShape(request), timestamp: Date.now() });
+  }
   if (path.startsWith("lightning/invoice-status/")) return off("Create a Ye₿ente wallet first.");
   if (path === "wallet/email-confirm") {
     // Opening the link only shows a button: mail scanners open every link, and must not confirm for the owner.
@@ -453,7 +561,7 @@ export async function GET(request) {
   }
   const lp = path.match(/^lnurlp\/([a-z0-9._-]{3,20})$/) || path.match(/^lnurl\/([a-z0-9._-]{3,20})$/);
   if (lp) return lnurlPay(request, lp[1], path.startsWith("lnurl/"));
-  const wg = path.match(/^wallet\/(me|history|security|invoice\/[0-9a-f]{64}|buy\/[\w-]{6,80}|card\/status\/[\w-]{8,80})$/);
+  const wg = path.match(/^wallet\/(me|history|security|invoice\/[0-9a-f]{64}|buy\/bitika\/[\w-]{3,80}|buy\/[\w-]{6,80}|card\/status\/[\w-]{8,80})$/);
   if (wg) { try { return await walletGet(request, wg[1]); } catch (e) { return json({ success: false, error: e.message }, e.status || 500); } }
   if (PAYOUTS.test(path)) return off(NO_NODE);
   return json({ success: false, error: "Not found" }, 404);
@@ -467,10 +575,12 @@ export async function POST(request) {
     if (path === "mpesa/hakikisha/c2b") return await hakikisha(request);
     if (path === "lightning/create-invoice") return off("Create a Ye₿ente wallet first.");
     if (path === "wallet/email-confirm") return await confirmEmailPost(request);
-    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy|card\/order|email|recover-email|recover-email\/finish|passkey\/(?:options|add|off)|unlock\/options|unlock|login\/start|login\/finish|device\/register|device\/remove|lock)$/);
+    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy\/bitika|buy|card\/order|email|recover-email|recover-email\/finish|passkey\/(?:options|add|off)|unlock\/options|unlock|login\/start|login\/finish|device\/register|device\/remove|lock)$/);
     if (wp) return await walletPost(request, wp[1]);
     const cb = path.match(/^mpesa\/callback\/([\w-]{16,128})$/);
     if (cb) return await callback(request, cb[1]);
+    const bwh = path.match(/^bitika\/webhook\/([\w-]{16,128})$/);
+    if (bwh) return await bitikaWebhook(request, bwh[1]);
     const ipn = path.match(/^card\/ipn\/([\w-]{16,128})$/);
     if (ipn) return await cardIpn(request, ipn[1]);
     if (path.startsWith("lightning/") || path.startsWith("bitcoin/")) return off(NO_NODE);

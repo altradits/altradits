@@ -42,6 +42,14 @@ One secret for people: the 6-digit PIN (or fingerprint once it's on). The app op
 - Off unless YEBENTE_MPESA_BUY=on with Daraja credentials. A quote checks the wallet limit, the daily KES limit (including pending buys), and that the node could pay out everything wallets would then hold.
 - Safaricom's result arrives at a callback whose path carries YEBENTE_CALLBACK_SECRET; status checks go through the signed-in wallet only.
 
+## Buying sats with M-Pesa or Airtel Money via Bitika
+- The Buy provider until Daraja production access lands. Off unless YEBENTE_BITIKA_BUY=on with BITIKA_API_KEY (bk_test_ for the sandbox, bk_live_ after Bitika approves). Register at https://bitika.xyz/developers/portal for a test key, then request a live one. YEBENTE_BUY_PROVIDER pins the provider (bitika or mpesa); unset, Bitika wins while it is on. The Daraja STK flow stays in the code, untouched, for when Safaricom goes live.
+- Bitika charges the buyer's phone and pays sats to the buyer's own handle@altradits.com Lightning address (the LNURL-pay receive path). Altradits never touches shillings and never sells its own sats. Sats are credited only when the Lightning payment arrives and the invoice settles; a Bitika answer or webhook only updates the display status, never a balance. The app shows "Sats received" only when the wallet balance actually rises.
+- POST /api/yebente/wallet/buy/bitika {kes, phone} (signed in): the shared fiat quote (10 to 10,000 KES per payment, wallet and daily limits apply, Bitika's 3% fee shown), then a collect call with a fresh UUID Idempotency-Key kept with the record, so a double tap or retry never charges twice. Answers {code, sats, feeKes}.
+- GET /api/yebente/wallet/buy/bitika/:code (signed in, own wallet only): the display status, asked from Bitika by the server. The browser never sees the key and never calls Bitika; the page policy names no Bitika host.
+- Optional webhook POST /api/yebente/bitika/webhook/YEBENTE_BITIKA_HOOK_PATH: registered in the Bitika portal, verified with BITIKA_WEBHOOK_SECRET (HMAC-SHA256 over "<timestamp>.<raw body>", 5-minute window, constant-time compare), answered fast, display status only. Without it the app polls every 3 s for up to 3 minutes while the Buy screen is open.
+- payment_failed (paid, but the Lightning payout failed) tells the buyer: "Bitika will refund or retry: contact them with code X."
+
 ## Card and bank deposits (Pesapal)
 - Off unless YEBENTE_CARD_BUY=on with PESAPAL_CONSUMER_KEY, PESAPAL_CONSUMER_SECRET and PESAPAL_IPN_ID. PESAPAL_ENVIRONMENT=sandbox talks to the test provider, production to the live one. The buyer pays on Pesapal's own page: card and bank details never touch this server.
 - POST /api/yebente/wallet/card/order {kes, email} (signed in): the shared fiat quote, then a provider order whose reference and amount are the server's, never the buyer's words. Answers with the provider's checkout page.
