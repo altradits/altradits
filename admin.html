@@ -168,11 +168,46 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 .mktLegend .sw{display:inline-block;width:.9rem;height:.9rem;border-radius:.25rem;vertical-align:-.12rem;margin-right:.3rem;border:1px solid rgba(15,27,45,.2)}
 .mktRules summary{font:800 1.15rem 'Bricolage Grotesque',Figtree,sans-serif;cursor:pointer;min-height:2.6rem;display:flex;align-items:center}
 .mktRules summary:hover{color:var(--blue)}
+.mktStudio{display:flex;gap:.8rem;align-items:flex-start;margin:.6rem 0}
+.mktRail{display:flex;flex-direction:column;gap:.4rem;flex:none;width:4.4rem}
+.mktRail button{display:flex;flex-direction:column;align-items:center;gap:.15rem;min-height:3.8rem;padding:.5rem .2rem;border:2px solid var(--line);border-radius:.6rem;background:var(--paper);cursor:pointer;font:600 .68rem/1.1 Figtree,sans-serif;color:var(--ink)}
+.mktRail button .g{font-size:1.3rem;line-height:1}
+.mktRail button[aria-pressed=true]{border-color:var(--ink);background:var(--bg)}
+.mktSide{flex:none;width:19rem;max-width:40vw;max-height:46rem;overflow-y:auto;background:var(--paper);border:2px solid var(--line);border-radius:.8rem;padding:.8rem}
+.mktSide h3{font-size:1rem;margin:.4rem 0 .5rem}
+.mktSide h3:first-child{margin-top:0}
+.mktSide .mktTpl{grid-template-columns:1fr 1fr;gap:.6rem}
+.mktSide .mktTpl figcaption{font-size:.8rem}
+.mktTpl .thumb{position:relative;display:block}
+.mktTpl a.mktDl{position:absolute;top:.3rem;right:.3rem;display:inline-flex;align-items:center;justify-content:center;width:2rem;height:2rem;border-radius:.5rem;background:rgba(255,255,255,.94);border:2px solid var(--ink);color:var(--ink);font:700 1rem/1 Figtree,sans-serif;text-decoration:none}
+.mktSide .btn{min-height:2.2rem;padding:.3rem .7rem;font-size:.85rem}
+.mktStage{flex:1;min-width:0}
+.mktTools{background:var(--paper);border:2px solid var(--ink);border-radius:.8rem;padding:.5rem .7rem;margin-bottom:.6rem;min-height:7rem}
+.mktTools #mktToolsHint{margin:.4rem 0}
+.mktTools button:disabled,.mktTools input:disabled,.mktTools select:disabled{opacity:.45;cursor:default}
+@media (max-width:700px){.mktTools{min-height:3.6rem}.mktTools .trow{flex-wrap:nowrap;overflow-x:auto;padding-bottom:.2rem}}
+.mktTools .trow{display:flex;flex-wrap:wrap;gap:.4rem .6rem;align-items:center}
+.mktTools button{min-height:2.2rem;padding:.25rem .6rem;border:2px solid var(--line);border-radius:.5rem;background:var(--paper);font:600 .85rem Figtree,sans-serif;cursor:pointer;color:var(--ink)}
+.mktTools button[aria-pressed=true]{border-color:var(--ink);background:var(--bg)}
+.mktTools .mktSize{display:flex;align-items:center;gap:.2rem}
+.mktTools .mktSize input{width:3.4rem;padding:.3rem .4rem;text-align:center}
+.mktSwatches{display:flex;gap:.3rem;align-items:center}
+.mktSwatches button{width:2rem;height:2rem;min-height:0;padding:0;border-radius:.4rem}
+.mktSwatches button[aria-pressed=true]{outline:2px solid var(--ink);outline-offset:1px;border-color:var(--ink)}
+.mktCanvasWrap{position:relative;overflow:auto;border:1px solid var(--line);border-radius:.6rem;background:#fff}
+#mktInline{position:absolute;z-index:2;background:transparent;border:2px dashed var(--blue);border-radius:.3rem;padding:0;margin:0;resize:none;overflow:auto;white-space:pre-wrap}
+.mktActions{position:absolute;z-index:3;display:flex;gap:.2rem;background:var(--ink);border-radius:.6rem;padding:.25rem}
+.mktActions button{border:0;background:transparent;color:#fff;font:600 .8rem Figtree,sans-serif;cursor:pointer;padding:.3rem .55rem;border-radius:.4rem;min-height:2rem}
+.mktActions button:hover{background:rgba(255,255,255,.2)}
+.mktZoom{position:absolute;z-index:3;right:.5rem;bottom:.5rem;display:flex;gap:.25rem;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:.6rem;padding:.25rem}
+.mktZoom button{min-width:2.4rem;min-height:2rem;border:1px solid var(--line);background:var(--paper);border-radius:.4rem;font:600 .8rem Figtree,sans-serif;cursor:pointer;color:var(--ink)}
+.mktZoom button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+@media (max-width:700px){.mktStudio{flex-direction:column}.mktStage{order:1}.mktSide{order:2;width:auto;max-width:none;max-height:24rem}.mktRail{order:3;flex-direction:row;width:auto}.mktRail button{flex:1;min-height:3.4rem}}
 .mktTpl{display:grid;grid-template-columns:repeat(auto-fill,minmax(16rem,1fr));gap:1rem;margin-top:.6rem}
 .mktTpl figure{margin:0}
 .mktTpl img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:.6rem;cursor:pointer}
 .mktTpl figcaption{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin-top:.4rem;font-weight:600}
-#mktCanvas{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:.6rem}
+#mktCanvas{width:100%;height:auto;display:block}
 .xpost{border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:.8rem 0;background:var(--paper)}
 .xpost .who{display:flex;gap:.6rem;align-items:center;margin-bottom:.4rem}
 .xpost .ava{width:2.2rem;height:2.2rem;border-radius:50%;background:var(--ink);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex:none}
@@ -663,24 +698,115 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       <div id="mktPosts"></div>
     </div>
   </section>
-  <section class="panel" aria-labelledby="hMktBlank">
-    <h2 id="hMktBlank">Blank templates</h2>
-    <div class="learn"><p>Ten branded backgrounds with no words baked in, each one different. Download one, add the words when you post, reuse forever.</p></div>
-    <div id="mktTpl" class="scroll"></div>
-  </section>
   <section class="panel" id="mkt-edit" aria-labelledby="hMktEdit">
-    <h2 id="hMktEdit">Write on a template</h2>
-    <div class="learn"><p>Press Customize on any blank above, write your words, and see them on the picture. Download it, or place it on a calendar day. Placed pictures survive deploys; remove one any time from here.</p></div>
+    <h2 id="hMktEdit">Editor</h2>
+    <div class="learn"><p>Pick a background on the left, add words, move them on the picture. Download it, or place it on a calendar day. Placed pictures survive deploys; remove one any time from here.</p></div>
     <p class="sm">Template: <b id="mktEditName">Ember</b></p>
-    <p><label for="mktHead">Headline</label><br><input id="mktHead" maxlength="60" style="max-width:44rem" placeholder="Your big line"></p>
-    <p><label for="mktSub">Smaller line</label><br><input id="mktSub" maxlength="90" style="max-width:44rem" placeholder="One supporting line (optional)"></p>
-    <p class="sm"><label><input type="checkbox" id="mktLight" style="width:auto"> Light words (for dark pictures)</label>
-    <label><input type="checkbox" id="mktLogoWhite" style="width:auto"> White logo (for dark pictures)</label></p>
-    <p class="sm"><label for="mktHFont">Headline style </label><select id="mktHFont" class="sel"><option value="hbrand">Altradits headline</option><option value="hsoft">Altradits soft</option><option value="hplain">Plain bold</option><option value="hserif">Newspaper</option></select>
-    <label for="mktSFont">Smaller-line style </label><select id="mktSFont" class="sel"><option value="sbrand">Altradits red line</option><option value="ssoft">Altradits soft</option><option value="sserif">Newspaper italic</option><option value="smono">Typewriter</option></select></p>
-    <div class="scroll"><canvas id="mktCanvas" width="1920" height="1280" tabindex="0"></canvas></div>
-    <p class="sm muted">Drag the words or the logo to move them. Click one, then nudge it with the arrow keys (Shift for bigger steps). Double-click words to edit them. A blinking bar follows your typing. <button type="button" class="btn" id="mktReset">Reset layout</button></p>
-    <p><button type="button" class="btn" id="mktDl">Download picture</button></p>
+    <div class="mktStudio">
+      <div class="mktRail" role="group" aria-label="Editor panels">
+        <button type="button" data-mkt-panel="templates" aria-pressed="true"><span class="g" aria-hidden="true">▦</span>Templates</button>
+        <button type="button" data-mkt-panel="text" aria-pressed="false"><span class="g" aria-hidden="true">T</span>Text</button>
+        <button type="button" data-mkt-panel="brand" aria-pressed="false"><span class="g" aria-hidden="true" style="color:#ea5158">●</span>Brand</button>
+        <button type="button" data-mkt-panel="layout" aria-pressed="false"><span class="g" aria-hidden="true">▤</span>Layout</button>
+      </div>
+      <div class="mktSide">
+        <div data-mkt-pane="templates" role="region" aria-label="Backgrounds">
+          <h3>Backgrounds</h3>
+          <p class="sm muted">Ten branded pictures with no words baked in. Pick one: your words stay put.</p>
+          <div id="mktTpl"></div>
+        </div>
+        <div data-mkt-pane="text" role="region" aria-label="Text" hidden>
+          <h3>Add words</h3>
+          <p><button type="button" class="btn" id="mktAddHead">Add a heading</button></p>
+          <p><button type="button" class="btn" id="mktAddSub">Add a subheading</button></p>
+          <p><button type="button" class="btn" id="mktAddBody">Add body text</button></p>
+          <h3>Selected text</h3>
+          <p><label for="mktSelText">Words</label><br><input id="mktSelText" maxlength="120" placeholder="Select words on the picture"></p>
+          <p class="sm muted">Type here, or double-click the words on the picture.</p>
+        </div>
+        <div data-mkt-pane="brand" role="region" aria-label="Brand" hidden>
+          <h3>Brand</h3>
+          <p class="sm"><label><input type="checkbox" id="mktLight" style="width:auto"> Light words (for dark pictures)</label></p>
+          <p class="sm"><label><input type="checkbox" id="mktLogoWhite" style="width:auto"> White logo (for dark pictures)</label></p>
+          <h3>Word colour</h3>
+          <p class="sm muted">Select words on the picture first.</p>
+          <div class="mktSwatches" id="mktBrandSw" role="group" aria-label="Brand colours">
+            <button type="button" data-mkt-color="#0f1b2d" style="background:#0f1b2d" aria-label="Navy" aria-pressed="false"></button>
+            <button type="button" data-mkt-color="#ffffff" style="background:#ffffff" aria-label="White" aria-pressed="false"></button>
+            <button type="button" data-mkt-color="#ea5158" style="background:#ea5158" aria-label="Red" aria-pressed="false"></button>
+            <button type="button" data-mkt-color="#FFF7EC" style="background:#FFF7EC" aria-label="Cream" aria-pressed="false"></button>
+            <button type="button" data-mkt-color="#000000" style="background:#000000" aria-label="Black" aria-pressed="false"></button>
+          </div>
+          <p><button type="button" class="btn" id="mktAddLogo" hidden>Add the logo back</button></p>
+        </div>
+        <div data-mkt-pane="layout" role="region" aria-label="Layout" hidden>
+          <h3>Layout</h3>
+          <p><button type="button" class="btn" id="mktReset">Reset layout</button></p>
+          <p><button type="button" class="btn" id="mktCentre">Centre the selection</button></p>
+          <p class="sm"><label><input type="checkbox" id="mktSnap" style="width:auto" checked> Snap guides</label></p>
+          <p><button type="button" class="btn" id="mktUndo">Undo</button> <button type="button" class="btn" id="mktRedo">Redo</button></p>
+        </div>
+      </div>
+      <div class="mktStage">
+        <div id="mktTools" class="mktTools" hidden>
+          <p class="sm muted" id="mktToolsHint">Select words or the logo to style them.</p>
+          <div id="mktToolsText" class="trow" hidden>
+            <label for="mktTStyle">Style</label>
+            <select id="mktTStyle" class="sel"><option value="hbrand">Altradits headline</option><option value="hsoft">Altradits soft</option><option value="hplain">Plain bold</option><option value="hserif">Newspaper</option><option value="sbrand">Altradits red line</option><option value="ssoft">Altradits soft</option><option value="sserif">Newspaper italic</option><option value="smono">Typewriter</option></select>
+            <div class="mktSize" role="group" aria-label="Text size">
+              <button type="button" id="mktTMinus" aria-label="Smaller text">−</button>
+              <input id="mktTSize" inputmode="numeric" aria-label="Text size in pixels" size="3">
+              <button type="button" id="mktTPlus" aria-label="Bigger text">+</button>
+            </div>
+            <div class="mktSwatches" id="mktTSw" role="group" aria-label="Text colour">
+              <button type="button" data-mkt-color="#0f1b2d" style="background:#0f1b2d" aria-label="Navy" aria-pressed="false"></button>
+              <button type="button" data-mkt-color="#ffffff" style="background:#ffffff" aria-label="White" aria-pressed="false"></button>
+              <button type="button" data-mkt-color="#ea5158" style="background:#ea5158" aria-label="Red" aria-pressed="false"></button>
+              <button type="button" data-mkt-color="#FFF7EC" style="background:#FFF7EC" aria-label="Cream" aria-pressed="false"></button>
+              <button type="button" data-mkt-color="#000000" style="background:#000000" aria-label="Black" aria-pressed="false"></button>
+            </div>
+            <button type="button" id="mktTBold" aria-label="Bold" aria-pressed="false"><b aria-hidden="true">B</b></button>
+            <button type="button" id="mktTItalic" aria-label="Italic" aria-pressed="false"><i aria-hidden="true">I</i></button>
+            <div role="group" aria-label="Align">
+              <button type="button" id="mktTAl" aria-label="Align left" aria-pressed="false">Left</button>
+              <button type="button" id="mktTAc" aria-label="Align centre" aria-pressed="false">Centre</button>
+              <button type="button" id="mktTAr" aria-label="Align right" aria-pressed="false">Right</button>
+            </div>
+            <button type="button" id="mktTCase" aria-label="Uppercase" aria-pressed="false">Aa</button>
+            <div role="group" aria-label="Position">
+              <button type="button" id="mktTFwd">Bring forward</button>
+              <button type="button" id="mktTBack">Send back</button>
+            </div>
+          </div>
+          <div id="mktToolsLogo" class="trow" hidden>
+            <div role="group" aria-label="Logo variant">
+              <button type="button" id="mktLBlue" aria-pressed="false">Navy logo</button>
+              <button type="button" id="mktLWhite" aria-pressed="false">White logo</button>
+            </div>
+            <div class="mktSize" role="group" aria-label="Logo size">
+              <button type="button" id="mktLMinus" aria-label="Smaller logo">−</button>
+              <input id="mktLSize" inputmode="numeric" aria-label="Logo width in pixels" size="3">
+              <button type="button" id="mktLPlus" aria-label="Bigger logo">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="mktCanvasWrap">
+          <canvas id="mktCanvas" width="1920" height="1280" tabindex="0" aria-label="Design canvas. Click the words or the logo, then drag or nudge with the arrow keys."></canvas>
+          <textarea id="mktInline" hidden aria-label="Edit the selected words" rows="2"></textarea>
+          <div id="mktActions" class="mktActions" hidden>
+            <button type="button" id="mktDup">Duplicate</button>
+            <button type="button" id="mktLock" aria-pressed="false">Lock</button>
+            <button type="button" id="mktDel">Delete</button>
+          </div>
+          <div class="mktZoom" role="group" aria-label="Canvas zoom">
+            <button type="button" data-mkt-zoom="fit" aria-pressed="true">Fit</button>
+            <button type="button" data-mkt-zoom="50" aria-pressed="false">50</button>
+            <button type="button" data-mkt-zoom="75" aria-pressed="false">75</button>
+            <button type="button" data-mkt-zoom="100" aria-pressed="false">100</button>
+          </div>
+        </div>
+        <p class="sm muted">Drag to move. Corners resize. Double-click words to edit them. Delete removes. Command or Control Z undoes.</p>
+        <p><button type="button" class="btn" id="mktDl">Download picture</button></p>
     <h3>Place on the calendar</h3>
     <p class="sm"><label for="mktIMonth">Month </label><select id="mktIMonth"></select> <label for="mktIDay">Day </label><input id="mktIDay" inputmode="numeric" size="2" style="width:4rem" placeholder="25"></p>
     <p><label for="mktICap">Caption</label><br><input id="mktICap" maxlength="280" style="max-width:44rem" placeholder="Two short sentences, the site link, then the tags"></p>
@@ -744,6 +870,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn" id="rcptResend" hidden>Resend receipt email</button><button type="button" class="btn primary" id="rcptClose">Close</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=refresh12"></script>
+<script type="module" src="/assets/admin.js?v=refresh16"></script>
 </body>
 </html>

@@ -57,19 +57,46 @@ test("the dashboard is wired: editor, place, remove, overlay", () => {
   assert.match(js, /<figure data-mkt-edit/, "the whole card opens the editor, not just the button");
   assert.match(js, /closest\("a"\)\) return/, "download links are spared from the editor click");
   const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
-  for (const s of ['id="mktCanvas"', 'id="mktHead"', 'id="mktPlace"', 'id="mktUnplace"', 'id="mktICap"']) {
+  for (const s of ['id="mktCanvas"', 'id="mktSelText"', 'id="mktPlace"', 'id="mktUnplace"', 'id="mktICap"']) {
     assert.ok(html.includes(s), `admin.html has ${s}`);
   }
 });
 
 test("the editor moves parts, swaps the logo ink, and offers fonts", () => {
   const js = fs.readFileSync(path.join(ROOT, "assets/admin.js"), "utf8");
-  for (const s of ["pointerdown", "keydown", "dblclick", "caret", "selectionStart", "MKT_FONTS", "mktHFont", "mktSFont", "mktLogoWhite", "mktReset", "logo-white.png", "drawCustom(false)", "toDataURL", '? "grab" : "text"']) {
+  for (const s of ["pointerdown", "keydown", "dblclick", "caret", "selectionStart", "MKT_FONTS", "mktSelText", "mktTStyle", "mktLogoWhite", "mktReset", "logo-white.png", "drawCustom(false)", "toDataURL", '? "grab" : "text"']) {
     assert.ok(js.includes(s), `admin.js mentions ${s}`);
   }
   const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
-  for (const s of ['id="mktHFont"', 'id="mktSFont"', 'id="mktLogoWhite"', 'id="mktReset"', 'tabindex="0"']) {
+  for (const s of ['id="mktSelText"', 'id="mktTStyle"', 'id="mktLogoWhite"', 'id="mktReset"', 'tabindex="0"']) {
     assert.ok(html.includes(s), `admin.html has ${s}`);
+  }
+});
+
+test("the studio rail, side panels, toolbar and zoom exist", () => {
+  const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
+  for (const s of ['data-mkt-panel="templates"', 'data-mkt-panel="text"', 'data-mkt-panel="brand"', 'data-mkt-panel="layout"',
+    'data-mkt-pane="templates"', 'data-mkt-pane="text"', 'data-mkt-pane="brand"', 'data-mkt-pane="layout"',
+    'id="mktTools"', 'id="mktToolsText"', 'id="mktToolsLogo"', 'id="mktTStyle"', 'id="mktTSize"',
+    'id="mktTBold"', 'id="mktTItalic"', 'id="mktTAl"', 'id="mktTAc"', 'id="mktTAr"', 'id="mktTCase"',
+    'id="mktTFwd"', 'id="mktTBack"', 'id="mktLBlue"', 'id="mktLWhite"', 'id="mktLSize"',
+    'id="mktActions"', 'id="mktDup"', 'id="mktLock"', 'id="mktDel"', 'id="mktInline"',
+    'id="mktAddHead"', 'id="mktAddSub"', 'id="mktAddBody"', 'id="mktAddLogo"',
+    'data-mkt-zoom="fit"', 'data-mkt-zoom="50"', 'data-mkt-zoom="75"', 'data-mkt-zoom="100"',
+    'id="mktSnap"', 'id="mktUndo"', 'id="mktRedo"', 'id="mktCentre"', 'id="mktToolsHint"', "mktDl", "aria-pressed"]) {
+    assert.ok(html.includes(s), `admin.html has ${s}`);
+  }
+  assert.ok(!html.includes("hMktBlank"), "the standalone blank gallery is gone; backgrounds live in the side panel");
+});
+
+test("the element model, history keys and inline editing exist", () => {
+  const js = fs.readFileSync(path.join(ROOT, "assets/admin.js"), "utf8");
+  for (const s of ["MKT_ELS", "mktDefaultEls", 'role: "head"', 'role: "sub"', "mktUndo", "mktRedo",
+    "MKT_UNDO", "mktDuplicate", "mktDelete", "mktInlineOpen", "mktInlineCommit", "MKT_HANDLES",
+    "mktHandleHit", "MKT_ZOOM", "mktReorder", "mktAlign", "mktAddText", "mktSyncTools",
+    "mktPositionActions", "data-mkt-panel", "data-mkt-zoom", "data-mkt-color",
+    "snapX", "MKT_COLORS", "mktInlineFit", "mktSyncSelText", "mktToolsHint", "Your headline", "Your smaller line", "preventScroll", "offsetWidth"]) {
+    assert.ok(js.includes(s), `admin.js mentions ${s}`);
   }
 });
 
