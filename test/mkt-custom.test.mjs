@@ -54,6 +54,8 @@ test("the dashboard is wired: editor, place, remove, overlay", () => {
   for (const s of ["drawCustom", "mkt_place", "mkt_remove", "view=mktcustom", "data-mkt-edit", "toDataURL"]) {
     assert.ok(js.includes(s), `admin.js mentions ${s}`);
   }
+  assert.match(js, /<figure data-mkt-edit/, "the whole card opens the editor, not just the button");
+  assert.match(js, /closest\("a"\)\) return/, "download links are spared from the editor click");
   const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
   for (const s of ['id="mktCanvas"', 'id="mktHead"', 'id="mktPlace"', 'id="mktUnplace"', 'id="mktICap"']) {
     assert.ok(html.includes(s), `admin.html has ${s}`);
