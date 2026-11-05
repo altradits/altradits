@@ -115,9 +115,9 @@ const server = http.createServer(async (req, res) => {
   const url = publicUrl(req);
   try {
     if (url.pathname === "/healthz") { res.writeHead(200, { "Content-Type": "text/plain" }).end("ok"); dueJobs(); return; }
-    // /api/<name>; only Ye₿ente's API takes a sub-path (/api/yebente/mpesa/stkpush…).
+    // /api/<name>; only Ye₿ente's and kTown's APIs take a sub-path (/api/yebente/mpesa/stkpush…).
     const api = url.pathname.match(/^\/api\/([a-z]+)(\/[\w.\/-]+)?$/);
-    if (api && api[2] && api[1] !== "yebente") { res.writeHead(404).end("Not found"); return; }
+    if (api && api[2] && api[1] !== "yebente" && api[1] !== "ktown") { res.writeHead(404).end("Not found"); return; }
     if (api) {
       const file = path.join(ROOT, "api", `${api[1]}.js`);
       if (!fs.existsSync(file)) { res.writeHead(404).end("Not found"); return; }
@@ -149,6 +149,15 @@ const server = http.createServer(async (req, res) => {
     }
     // Static content answers only GET and HEAD; state changes live under /api/.
     if (req.method !== "GET" && req.method !== "HEAD") { res.writeHead(405).end("Method not allowed"); return; }
+    // kTown QR codes: k-<id> is a merchant's LNURL-pay front for their Tando
+    // address. Before Ye₿ente's rule below, which would also match the name.
+    const ktown = url.pathname.match(/^\/\.well-known\/lnurlp\/(k-[A-Za-z0-9_-]{6,64})$/);
+    if (ktown && req.method === "GET") {
+      const { GET } = await import("./api/ktown.js");
+      const r = await GET(new Request(new URL(`/api/ktown/lnurlp/${ktown[1].slice(2)}`, url), { headers: { ...req.headers, "x-remote-addr": req.socket.remoteAddress || "" } }));
+      res.writeHead(r.status, { ...SECURITY, ...Object.fromEntries(r.headers) }).end(Buffer.from(await r.arrayBuffer()));
+      return;
+    }
     // handle@altradits.com: Lightning address lookups go to Ye₿ente's wallets.
     const lnaddr = url.pathname.match(/^\/\.well-known\/lnurlp\/([a-z0-9._-]{3,20})$/i);
     if (lnaddr && req.method === "GET") {
