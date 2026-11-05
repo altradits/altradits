@@ -172,7 +172,8 @@ Confirmed 5 Nov 2026: this rule stands for every quarter.
 96 backgrounds in the end: 12 monthly motifs times 4 families times 2
 variants (A: the main arrangement, B: a second arrangement of the same
 motif). Variant A ships as bg-72 to bg-119 in Q1; variant B ships per
-quarter (Q1 motifs as bg-120 to bg-131, then 12 per quarter). Each has a
+quarter (Q1 motifs as bg-120 to bg-131, Q2 motifs as bg-132 to bg-143,
+then 12 per quarter). Each has a
 matching tpl-NN thumbnail (logo composited, as before). Made from code
 with deploy/mkt-bg.py (Python, Pillow and numpy, 2x supersample then
 downscale, JPEG quality 85, each file under 150 KB, deterministic: every
