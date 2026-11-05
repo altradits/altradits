@@ -938,6 +938,14 @@ $("#mktCanvas")?.addEventListener("keydown", (e) => {
   o.y = Math.round(Math.min(Math.max(o.y + d[1], 0), 1280 - hh));
   drawCustom();
 });
+$("#mktCanvas")?.addEventListener("dblclick", (e) => {
+  const h = mktHit(mktPos(e));
+  if (!h || h.id === "logo") return;
+  const box = h.id === "head" ? $("#mktHead") : $("#mktSub");
+  if (!box) return;
+  box.focus();
+  box.select();
+});
 function renderCalendar() {
   const [y, m] = MKT_MONTH.split("-").map(Number);
   const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
