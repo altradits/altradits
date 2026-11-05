@@ -32,6 +32,7 @@ export interface UserWallet {
   blinkAddress?: string;
   onChainVerified?: boolean;
   recoveryEmail?: string;
+  frozen?: boolean;
 }
 
 export interface Transaction {

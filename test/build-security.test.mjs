@@ -290,6 +290,17 @@ test("every wallet read that can ask the node or confirm an email is rate-limite
   assert.match(yb, /rl:yb:emailcf/, "api/yebente.js confirmEmailPost: limit confirmation attempts per network");
   assert.match(yb, /rl:yb:me:/, "api/yebente.js wallet/me: limit balance checks per wallet");
   assert.match(yb, /rl:yb:invq:/, "api/yebente.js wallet/invoice: limit settlement checks per wallet");
+  assert.match(yb, /rl:yb:freeze:/, "api/yebente.js freezePost: limit freeze-link guesses per network");
+});
+
+test("the one-tap freeze link: hashed token, constant-time compare, frozen sends refused, links never logged", () => {
+  const yw = read("lib/ywallet.js");
+  assert.match(yw, /ywft:\$\{sha\(token\)\}/, "lib/ywallet.js: freeze tokens are stored hashed");
+  assert.match(yw, /timingSafeEqual\(Buffer\.from\(rec\.fh, "hex"\), Buffer\.from\(h, "hex"\)\)/, "lib/ywallet.js freezeWallet: the stored freeze hash is compared in constant time");
+  assert.match(yw, /if \(w\.frozen\) throw err\("Sending is frozen/, "lib/ywallet.js spendable: a frozen wallet sends nothing");
+  assert.match(yw, /Date\.parse\(d\.at \|\| 0\) < Date\.parse\(w\.frozen\.at\)/, "lib/ywallet.js unlock: only a phone trusted before the freeze lifts it");
+  const em = read("lib/email.js");
+  assert.match(em, /\(\[\?&\]t=\)\[\\w-\]\{20,\}.*\(redacted\)/, "lib/email.js: one-tap tokens in wallet mail are redacted from the stored log");
 });
 
 test("card deposits: credited only on the provider's explicit Completed, for the quoted amount", () => {

@@ -61,6 +61,7 @@ export interface ServerWallet {
   email?: string | null;
   emailPending?: string | null;
   holdUntil?: string | null;
+  frozen?: boolean;
   passkeys?: number;
 }
 
