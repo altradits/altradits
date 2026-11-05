@@ -73,6 +73,33 @@ test("the editor moves parts, swaps the logo ink, and offers fonts", () => {
   }
 });
 
+test("the studio rail, side panels, toolbar and zoom exist", () => {
+  const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
+  for (const s of ['data-mkt-panel="templates"', 'data-mkt-panel="text"', 'data-mkt-panel="brand"', 'data-mkt-panel="layout"',
+    'data-mkt-pane="templates"', 'data-mkt-pane="text"', 'data-mkt-pane="brand"', 'data-mkt-pane="layout"',
+    'id="mktTools"', 'id="mktToolsText"', 'id="mktToolsLogo"', 'id="mktTStyle"', 'id="mktTSize"',
+    'id="mktTBold"', 'id="mktTItalic"', 'id="mktTAl"', 'id="mktTAc"', 'id="mktTAr"', 'id="mktTCase"',
+    'id="mktTFwd"', 'id="mktTBack"', 'id="mktLBlue"', 'id="mktLWhite"', 'id="mktLSize"',
+    'id="mktActions"', 'id="mktDup"', 'id="mktLock"', 'id="mktDel"', 'id="mktInline"',
+    'id="mktAddHead"', 'id="mktAddSub"', 'id="mktAddBody"', 'id="mktAddLogo"',
+    'data-mkt-zoom="fit"', 'data-mkt-zoom="50"', 'data-mkt-zoom="75"', 'data-mkt-zoom="100"',
+    'id="mktSnap"', 'id="mktUndo"', 'id="mktRedo"', 'id="mktCentre"', "aria-pressed"]) {
+    assert.ok(html.includes(s), `admin.html has ${s}`);
+  }
+  assert.ok(!html.includes("hMktBlank"), "the standalone blank gallery is gone; backgrounds live in the side panel");
+});
+
+test("the element model, history keys and inline editing exist", () => {
+  const js = fs.readFileSync(path.join(ROOT, "assets/admin.js"), "utf8");
+  for (const s of ["MKT_ELS", "mktDefaultEls", 'role: "head"', 'role: "sub"', "mktUndo", "mktRedo",
+    "MKT_UNDO", "mktDuplicate", "mktDelete", "mktInlineOpen", "mktInlineCommit", "MKT_HANDLES",
+    "mktHandleHit", "MKT_ZOOM", "mktReorder", "mktAlign", "mktAddText", "mktSyncTools",
+    "mktSyncInputs", "mktPositionActions", "data-mkt-panel", "data-mkt-zoom", "data-mkt-color",
+    "snapX", "MKT_COLORS"]) {
+    assert.ok(js.includes(s), `admin.js mentions ${s}`);
+  }
+});
+
 test("every dashboard selector starts with # and its element exists", () => {
   const js = fs.readFileSync(path.join(ROOT, "assets/admin.js"), "utf8");
   const bare = [...js.matchAll(/\$\(\s*["'`]([^"'`#}][^"'`]*?)["'`]/g)].map((m) => m[1]);
