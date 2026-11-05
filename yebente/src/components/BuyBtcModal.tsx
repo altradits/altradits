@@ -7,6 +7,8 @@ import {
   isValidKenyanPhone,
   formatKenyanDisplayPhone,
 } from '../services/mpesaService';
+import { fetchBuyProvider, startBitikaBuy, bitikaStatus, BuyProvider } from '../services/bitikaService';
+import { fetchServerWallet } from '../services/altraditsWallet';
 import { isLightningAddress, resolveLightningAddress, createLightningInvoice } from '../services/lightningService';
 import { PhoneInput } from './PhoneInput';
 import { SatsMotion } from './SatsMotion';
@@ -29,7 +31,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
 }) => {
   const [amountFiat, setAmountFiat] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
-  const [step, setStep] = useState<'input' | 'processing' | 'awaiting_pin' | 'success' | 'error'>('input');
+  const [step, setStep] = useState<'input' | 'processing' | 'awaiting_pin' | 'waiting_sats' | 'success' | 'error'>('input');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [realReference, setRealReference] = useState<string>('');
   const [activeCheckoutId, setActiveCheckoutId] = useState<string>('');
@@ -38,22 +40,42 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
   const [inFlightStatus, setInFlightStatus] = useState<string>('Safaricom has dispatched a payment prompt to your phone.');
   const [lightningInvoice, setLightningInvoice] = useState<string>('');
   const [copiedInvoice, setCopiedInvoice] = useState(false);
+  // Bitika (M-Pesa or Airtel Money through a partner) while the server offers
+  // it; otherwise the Daraja STK flow below runs unchanged.
+  const [provider, setProvider] = useState<BuyProvider | 'loading'>('loading');
+  const [bitikaCode, setBitikaCode] = useState<string>('');
+  const [bitikaSats, setBitikaSats] = useState<number>(0);
+  const [bitikaFeeKes, setBitikaFeeKes] = useState<number>(0);
+  const [satsReceived, setSatsReceived] = useState<number>(0);
+  const [paidTimedOut, setPaidTimedOut] = useState<boolean>(false);
   const isCustodialWallet = wallet.type === 'custodial';
   const configuredDestination = isCustodialWallet
     ? 'In-App Vault'
     : wallet.nonCustodialAddress;
 
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const balancePollRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
+      if (balancePollRef.current) {
+        clearInterval(balancePollRef.current);
+      }
     };
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setProvider('loading');
+    fetchBuyProvider().then((p) => setProvider(p || 'mpesa'));
+  }, [isOpen]);
+
   if (!isOpen) return null;
+
+  const viaBitika = provider === 'bitika';
 
   // Only the live rate: with none, the amount in sats isn't shown or bought.
   const currentRate = rates.btcKes;
@@ -61,6 +83,8 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
   const numericFiat = parseFloat(amountFiat) || 0;
   const satsAmount = currentRate > 0 ? Math.round((numericFiat / currentRate) * 100_000_000) : 0;
   const estimatedFee = 0; // Lipa Na M-Pesa STK push has no receiving fee
+  // Bitika celebrates only the rise actually seen on the balance.
+  const successSats = viaBitika ? satsReceived : satsAmount;
 
   const displayPhone = formatKenyanDisplayPhone(phone);
 
@@ -73,6 +97,17 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
   };
 
   const handleManualVerify = async () => {
+    if (viaBitika) {
+      if (!bitikaCode || isVerifyingStatus) return;
+      setIsVerifyingStatus(true);
+      try {
+        const st = await bitikaStatus(bitikaCode);
+        processBitikaResponse(st);
+      } finally {
+        setIsVerifyingStatus(false);
+      }
+      return;
+    }
     if (!activeCheckoutId || isVerifyingStatus) return;
     setIsVerifyingStatus(true);
     try {
@@ -81,6 +116,138 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
     } finally {
       setIsVerifyingStatus(false);
     }
+  };
+
+  const stopPolling = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    if (balancePollRef.current) {
+      clearInterval(balancePollRef.current);
+      balancePollRef.current = null;
+    }
+  };
+
+  // A Bitika status answer: paid means the phone money moved, not that sats
+  // arrived. "Sats received" shows only when the wallet balance actually rises.
+  const processBitikaResponse = (st: any) => {
+    if (!st?.success) return; // unclear answer: keep polling
+    if (st.inProgress) {
+      setInFlightStatus(st.message || 'Check your phone for the M-Pesa prompt.');
+      return;
+    }
+    if (st.state === 'fulfilled') {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      setInFlightStatus('Paid. Waiting for your sats to arrive.');
+      setStep('waiting_sats');
+      watchBalance();
+      return;
+    }
+    stopPolling();
+    setErrorMessage(st.message || 'The payment did not go through. No sats were sent.');
+    setStep('error');
+  };
+
+  // The balance is the only proof sats arrived: watch it rise above what it
+  // was before the buy, then celebrate the actual rise.
+  const watchBalance = async () => {
+    let before = wallet.satsBalance || 0;
+    try {
+      before = (await fetchServerWallet()).balance ?? before;
+    } catch {
+      // Keep the last known balance.
+    }
+    let remaining = 180;
+    if (balancePollRef.current) clearInterval(balancePollRef.current);
+    balancePollRef.current = setInterval(async () => {
+      remaining -= 3;
+      try {
+        const w = await fetchServerWallet();
+        if (w.balance > before) {
+          const received = w.balance - before;
+          stopPolling();
+          setSatsReceived(received);
+          onSuccess({
+            type: 'buy_btc',
+            title: 'Buy Sats via M-Pesa',
+            status: 'completed',
+            fromCurrency: 'KES',
+            fromAmount: numericFiat,
+            toCurrency: 'SATS',
+            toAmount: received,
+            rateUsed: currentRate,
+            fee: bitikaFeeKes,
+            feeCurrency: 'KES',
+            realFeeSats: 0,
+            realFeeFiat: bitikaFeeKes,
+            realFeeCurrency: 'KES',
+            recipient: 'Your Ye₿ente wallet',
+            referenceNumber: bitikaCode,
+            walletType: 'custodial',
+            note: 'Bitika purchase to In-App Vault',
+          });
+          celebrate({ kind: 'receive', sats: received, label: 'M-Pesa', ref: bitikaCode });
+          setStep('success');
+          return;
+        }
+      } catch {
+        // Offline or locked: keep watching until the window ends.
+      }
+      if (remaining <= 0) {
+        stopPolling();
+        setPaidTimedOut(true); // paid, but the sats are still on their way
+      }
+    }, 3000);
+  };
+
+  const handleBitikaConfirm = async () => {
+    setStep('processing');
+    setErrorMessage('');
+    setPaidTimedOut(false);
+    const res = await startBitikaBuy(numericFiat, phone);
+    if (!res.success || !res.code) {
+      setErrorMessage(res.error || 'Bitika did not start the payment.');
+      setStep('error');
+      return;
+    }
+    setBitikaCode(res.code);
+    setRealReference(res.code);
+    setBitikaSats(res.sats || 0);
+    setBitikaFeeKes(res.feeKes || 0);
+    setPinSecondsLeft(180);
+    setInFlightStatus('Check your phone for the M-Pesa prompt.');
+    setStep('awaiting_pin');
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+    let remaining = 180;
+    pollIntervalRef.current = setInterval(async () => {
+      remaining -= 3;
+      setPinSecondsLeft(Math.max(0, remaining));
+      try {
+        const st = await bitikaStatus(res.code as string);
+        processBitikaResponse(st);
+      } catch {
+        // Continue polling until timeout
+      }
+      if (remaining <= 0) {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        try {
+          const finalRes = await bitikaStatus(res.code as string);
+          processBitikaResponse(finalRes);
+        } catch {
+          // Keep window accessible for manual verification
+        }
+        setInFlightStatus('Verification window paused. If you entered your PIN, click "Check Status Now".');
+      }
+    }, 3000);
   };
 
   const processQueryResponse = (queryRes: any) => {
@@ -181,8 +348,15 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
     }
 
     if (!isValidKenyanPhone(phone)) {
-      setErrorMessage('Please enter a valid Safaricom number: 07XXXXXXXX or 01XXXXXXXX');
+      setErrorMessage(viaBitika
+        ? 'Please enter a valid Kenyan number: 07XXXXXXXX or 01XXXXXXXX'
+        : 'Please enter a valid Safaricom number: 07XXXXXXXX or 01XXXXXXXX');
       setStep('error');
+      return;
+    }
+
+    if (viaBitika) {
+      await handleBitikaConfirm();
       return;
     }
 
@@ -257,26 +431,23 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
   };
 
   const handleResetAndClose = () => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
+    stopPolling();
     setStep('input');
     setErrorMessage('');
     setLightningInvoice('');
     setActiveCheckoutId('');
+    setBitikaCode('');
     setCopiedInvoice(false);
+    setPaidTimedOut(false);
     onClose();
   };
 
   const handleBack = () => {
-    if (step === 'awaiting_pin' || step === 'error' || step === 'success') {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
-      }
+    if (step === 'awaiting_pin' || step === 'waiting_sats' || step === 'error' || step === 'success') {
+      stopPolling();
       setStep('input');
       setErrorMessage('');
+      setPaidTimedOut(false);
       return;
     }
     handleResetAndClose();
@@ -308,6 +479,17 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
         <div className="p-5 overflow-y-auto space-y-4">
           {step === 'input' && (
             <>
+              {viaBitika && (
+                <div className="px-1">
+                  <p className="text-sm font-bold text-[var(--yb-on-surface)]">Pay with M-Pesa or Airtel Money</p>
+                  <p className="text-[11px] text-[var(--yb-on-surface-variant)] mt-0.5">
+                    Through Bitika. Read their{' '}
+                    <a href="https://bitika.xyz/terms" target="_blank" rel="noreferrer" className="underline text-[var(--yb-secondary)]">
+                      terms
+                    </a>.
+                  </p>
+                </div>
+              )}
               {/* Amount to spend */}
               <div>
                 <label className="block text-xs font-semibold text-[var(--yb-secondary)] mb-1.5">
@@ -330,7 +512,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
 
               {/* Sats preview */}
               <div className="flex justify-between items-center px-1 text-xs">
-                <span className="text-[var(--yb-on-surface-variant)]">You Receive</span>
+                <span className="text-[var(--yb-on-surface-variant)]">You Receive{viaBitika ? ' (estimate)' : ''}</span>
                 <span className="font-mono font-bold text-[var(--yb-on-surface)]">
                   +{satsAmount.toLocaleString()} Sats
                 </span>
@@ -343,21 +525,25 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
                 example="712 345 678"
                 value={phone}
                 onChange={(full) => setPhone(full)}
-                label="M-Pesa Phone Number"
-                ariaLabel="M-Pesa phone number"
+                label={viaBitika ? 'M-Pesa or Airtel Money Number' : 'M-Pesa Phone Number'}
+                ariaLabel={viaBitika ? 'M-Pesa or Airtel Money number' : 'M-Pesa phone number'}
               />
 
               {/* Receiving fee summary */}
               <div className="flex justify-between items-center text-xs text-[var(--yb-on-surface-variant)] px-1 font-mono">
                 <span>Receiving Fee</span>
-                <span className="text-emerald-400 font-semibold">0 {currencyCode} (Free)</span>
+                {viaBitika ? (
+                  <span className="text-[var(--yb-secondary)] font-semibold">3% Bitika fee</span>
+                ) : (
+                  <span className="text-emerald-400 font-semibold">0 {currencyCode} (Free)</span>
+                )}
               </div>
 
               {/* Action button */}
               <button
                 type="button"
                 onClick={handleConfirm}
-                disabled={!isFormValid}
+                disabled={!isFormValid || provider === 'loading'}
                 className="w-full h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center disabled:opacity-50 mt-2"
               >
                 {currentRate <= 0 ? 'Rates Unavailable' : 'Buy Sats'}
@@ -375,7 +561,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
                   Dispatching M-Pesa Prompt
                 </h3>
                 <p className="text-xs text-[var(--yb-on-surface-variant)] font-mono mt-1">
-                  Connecting to Safaricom...
+                  {viaBitika ? 'Connecting to Bitika...' : 'Connecting to Safaricom...'}
                 </p>
               </div>
             </div>
@@ -393,9 +579,12 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
               </div>
 
               <div>
-                <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">Enter M-Pesa PIN on Phone</h3>
+                <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">
+                  {viaBitika ? 'Check your phone for the M-Pesa prompt' : 'Enter M-Pesa PIN on Phone'}
+                </h3>
                 <p className="text-xs text-[var(--yb-secondary)] mt-1 max-w-xs">
-                  Safaricom prompt dispatched to <span className="font-mono font-bold text-[var(--yb-on-surface)]">{formatKenyanDisplayPhone(phone)}</span>.
+                  {viaBitika ? 'Bitika prompt sent to ' : 'Safaricom prompt dispatched to '}
+                  <span className="font-mono font-bold text-[var(--yb-on-surface)]">{formatKenyanDisplayPhone(phone)}</span>.
                 </p>
                 <p className="text-[11px] text-[var(--yb-secondary)] mt-0.5">
                   {inFlightStatus}
@@ -408,16 +597,20 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
                   <span className="text-[var(--yb-on-surface)] font-bold">{numericFiat.toLocaleString()} KES</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[var(--yb-on-surface-variant)]">Sats to Receive</span>
-                  <span className="text-[var(--yb-secondary)] font-bold">+{satsAmount.toLocaleString()} Sats</span>
+                  <span className="text-[var(--yb-on-surface-variant)]">Sats to Receive{viaBitika ? ' (estimate)' : ''}</span>
+                  <span className="text-[var(--yb-secondary)] font-bold">+{(viaBitika && bitikaSats > 0 ? bitikaSats : satsAmount).toLocaleString()} Sats</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--yb-on-surface-variant)]">Receiving Fee</span>
-                  <span className="text-emerald-400 font-semibold">0 KES (Free)</span>
+                  {viaBitika ? (
+                    <span className="text-[var(--yb-secondary)] font-semibold">3% Bitika fee ({bitikaFeeKes.toLocaleString()} KES)</span>
+                  ) : (
+                    <span className="text-emerald-400 font-semibold">0 KES (Free)</span>
+                  )}
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[var(--yb-on-surface-variant)]">Checkout Request ID</span>
-                  <span className="text-[var(--yb-on-surface-variant)] text-[10px] truncate max-w-[170px]">{activeCheckoutId}</span>
+                  <span className="text-[var(--yb-on-surface-variant)]">{viaBitika ? 'Bitika Code' : 'Checkout Request ID'}</span>
+                  <span className="text-[var(--yb-on-surface-variant)] text-[10px] truncate max-w-[170px]">{viaBitika ? bitikaCode : activeCheckoutId}</span>
                 </div>
                 <div className="flex justify-between items-center pt-1 border-t border-[var(--yb-outline-variant)]/60">
                   <span className="text-[var(--yb-on-surface-variant)]">Verification Window</span>
@@ -449,24 +642,61 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
             </div>
           )}
 
+          {step === 'waiting_sats' && (
+            <div className="py-6 flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-[var(--yb-primary-container)]/25 border border-[var(--yb-primary)]/50 flex items-center justify-center text-[var(--yb-secondary)]">
+                <Loader2 className="w-8 h-8 animate-spin" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">Paid. Waiting for your sats.</h3>
+                <p className="text-xs text-[var(--yb-on-surface-variant)] font-mono mt-1 max-w-xs">
+                  {paidTimedOut
+                    ? 'Paid. Your sats are still on their way. They will appear in your balance.'
+                    : 'Bitika is paying your wallet over Lightning. This usually takes seconds.'}
+                </p>
+              </div>
+              <div className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl p-3.5 text-left font-mono text-xs space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-[var(--yb-on-surface-variant)]">Paid Amount</span>
+                  <span className="text-[var(--yb-on-surface)]">{numericFiat.toLocaleString()} {currencyCode}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--yb-on-surface-variant)]">Bitika Code</span>
+                  <span className="text-[var(--yb-secondary)] font-mono text-[10px] truncate max-w-[180px]">{bitikaCode}</span>
+                </div>
+              </div>
+              {paidTimedOut && (
+                <button
+                  type="button"
+                  onClick={handleResetAndClose}
+                  className="w-full h-11 rounded-2xl bg-[var(--yb-surface-container)] hover:bg-[var(--yb-surface-container-high)] text-[var(--yb-on-surface)] font-medium text-sm"
+                >
+                  Done
+                </button>
+              )}
+            </div>
+          )}
+
           {step === 'success' && (
             <div className="py-6 flex flex-col items-center text-center space-y-4">
               <SatsMotion mode="received" />
               <div>
-                <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">Payment Verified & Sats Credited</h3>
+                <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">
+                  {viaBitika ? 'Sats received' : 'Payment Verified & Sats Credited'}
+                </h3>
                 <p className="text-xs text-emerald-400 font-mono mt-0.5">
-                  Safaricom confirmed the payment
+                  {viaBitika ? 'Bitika paid your wallet' : 'Safaricom confirmed the payment'}
                 </p>
               </div>
 
               <div className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl p-3.5 text-left font-mono text-xs space-y-2">
                 <div className="flex justify-between">
                   <span className="text-[var(--yb-on-surface-variant)]">Sats Acquired</span>
-                  <span className="text-[var(--yb-secondary)] font-bold">+{satsAmount.toLocaleString()} Sats</span>
+                  <span className="text-[var(--yb-secondary)] font-bold">+{successSats.toLocaleString()} Sats</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--yb-on-surface-variant)]">Credited To</span>
-                  <span className="text-emerald-400 font-semibold">Ye₿ente Portfolio (+{satsAmount.toLocaleString()} Sats)</span>
+                  <span className="text-emerald-400 font-semibold">Ye₿ente Portfolio (+{successSats.toLocaleString()} Sats)</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--yb-on-surface-variant)]">Paid Amount</span>
@@ -474,7 +704,11 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--yb-on-surface-variant)]">Receiving Fee</span>
-                  <span className="text-emerald-400 font-semibold">0 {currencyCode} (Free)</span>
+                  {viaBitika ? (
+                    <span className="text-[var(--yb-secondary)] font-semibold">3% Bitika fee ({bitikaFeeKes.toLocaleString()} KES)</span>
+                  ) : (
+                    <span className="text-emerald-400 font-semibold">0 {currencyCode} (Free)</span>
+                  )}
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--yb-on-surface-variant)]">Phone Number</span>
@@ -488,7 +722,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
                 </div>
                 {realReference && (
                   <div className="flex justify-between">
-                    <span className="text-[var(--yb-on-surface-variant)]">Safaricom Reference</span>
+                    <span className="text-[var(--yb-on-surface-variant)]">{viaBitika ? 'Bitika Code' : 'Safaricom Reference'}</span>
                     <span className="text-[var(--yb-secondary)] font-mono text-[10px] truncate max-w-[180px]">{realReference}</span>
                   </div>
                 )}
@@ -520,7 +754,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
               ) : (
                 <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-emerald-300 text-xs w-full text-left">
                   <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
-                  <span>{satsAmount.toLocaleString()} Sats added to your Ye₿ente balance.</span>
+                  <span>{successSats.toLocaleString()} Sats added to your Ye₿ente balance.</span>
                 </div>
               )}
 

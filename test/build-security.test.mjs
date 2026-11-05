@@ -325,6 +325,39 @@ test("the one-tap freeze link: hashed token, constant-time compare, frozen sends
   assert.match(em, /\(\[\?&\]t=\)\[\\w-\]\{20,\}.*\(redacted\)/, "lib/email.js: one-tap tokens in wallet mail are redacted from the stored log");
 });
 
+test("Bitika stays server-side: no Bitika host in any page CSP, no API key in built assets", () => {
+  // The browser never calls Bitika: the policy must not gain its hosts.
+  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "yebente/app/index.html"]) {
+    const csp = read(f).match(/http-equiv="Content-Security-Policy" content="([^"]*)"/)?.[1] || "";
+    assert.doesNotMatch(csp, /bitika/i, `${f}: the page policy names a Bitika host (the server calls Bitika, never the browser)`);
+  }
+  // The key lives in the environment, not in anything shipped to the browser.
+  const walk = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`]);
+  for (const f of [...walk("yebente/app").filter((x) => !/\.(png|jpe?g|gif|ico|woff2?|ttf)$/i.test(x)), "yebente/index.html",
+    ...walk("yebente/src").filter((x) => /\.(tsx?|css)$/.test(x))]) {
+    assert.doesNotMatch(read(f), /BITIKA_API_KEY/, `${f}: the Bitika API key must never ship to the browser`);
+    assert.doesNotMatch(read(f), /bitikaserver/i, `${f}: the Bitika API host must never ship to the browser`);
+  }
+});
+
+test("Bitika buys: credited only by the Lightning payment arriving, status is display only", () => {
+  const bk = read("lib/bitika.js");
+  assert.doesNotMatch(bk, /\bcredit\(/, "lib/bitika.js: never credits a wallet (the invoice path does that)");
+  assert.doesNotMatch(bk, /ywe:|ywtx:|record\(/, "lib/bitika.js: writes no history entries");
+  assert.match(bk, /crypto\.randomUUID\(\)/, "lib/bitika.js: one fresh UUID Idempotency-Key per buy");
+  assert.match(bk, /RANK\[state\] < RANK\[b\.state\]\) return b\.state/, "lib/bitika.js: a status never moves backward");
+  assert.match(bk, /timingSafeEqual/, "lib/bitika.js: the webhook signature is compared in constant time");
+  assert.match(bk, /Math\.abs\(nowSec - Number\(m\[1\]\)\) > 300/, "lib/bitika.js: webhooks older than 5 minutes are rejected");
+  assert.match(bk, /publicFetch/, "lib/bitika.js: outside calls go through the public-address guard");
+  const yb = read("api/yebente.js");
+  assert.match(yb, /rl:yb:bitp:/, "api/yebente.js wallet/buy/bitika: limit prompts per number");
+  assert.match(yb, /rl:yb:bitw:/, "api/yebente.js wallet/buy/bitika: limit buys per wallet");
+  assert.match(yb, /rl:yb:bitq:/, "api/yebente.js wallet/buy/bitika: limit status checks per wallet");
+  assert.match(yb, /wrong bitika webhook secret/, "api/yebente.js bitika/webhook: refuse a wrong path secret and record it");
+  assert.match(yb, /buyProvider/, "api/yebente.js health: names the Buy provider");
+});
+
 test("card deposits: credited only on the provider's explicit Completed, for the quoted amount", () => {
   const pp = read("lib/pesapal.js");
   assert.match(pp, /desc === "Completed"\) return \{ state: "paid"/, "lib/pesapal.js: only Completed pays; anything else stays pending or failed");
