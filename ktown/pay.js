@@ -66,8 +66,11 @@ function fatal(msg) {
 }
 
 function kesOfInput() {
-  const raw = $("amount").value.replace(/,/g, ".").replace(/[^0-9.]/g, "");
-  const val = Number(raw);
+  // "1,000" is a thousand, "10,50" is ten and a half: a comma beside a dot,
+  // or with three digits after it, groups thousands; otherwise it is decimal.
+  let v = $("amount").value.replace(/\s/g, "");
+  v = v.includes(".") || /,\d{3}([^0-9]|$)/.test(v) ? v.replace(/,/g, "") : v.replace(/,/g, ".");
+  const val = Number(v.replace(/[^0-9.]/g, ""));
   if (!Number.isFinite(val) || val <= 0) return null;
   const cur = $("pay-currency").value;
   if (cur === "KES" || !rates || !rates[cur]) return Math.round(val);

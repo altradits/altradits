@@ -61,8 +61,21 @@ frame check, Security watch reporter) applies unchanged.
   script. Server error lines stay in English.
 - History converts into the merchant's currency with ≈ (display only; the KES
   figure is exact). Without rates, both pages fall back to KES silently.
-- Print in PR 2 is one clean card via window.print; exact A6/A4 sheets and
-  the PNG download land in PR 3 with the offline service worker.
+
+## Print and offline (PR 3)
+
+- One button prints the counter card cropped to A6; a second button builds
+  four cards and prints an A4 cut-out sheet. A third renders the card as PNG
+  (about 500 by 700) entirely in the browser and downloads it. All three run
+  on the same saved merchant data as the screen QR, so card, sheet, app and
+  pay page can never disagree.
+- `ktown/sw.js` installs the app as a PWA: it precaches the shell (HTML, CSS,
+  scripts, fonts), answers same-site GET reads from the cache for offline
+  use, never caches /api/ responses, and falls back to the app on a failed
+  read. Only a 401 signs the merchant out, so a failed network keeps the
+  saved QR and settings on screen instead of dropping to login.
+- `ktown/manifest.webmanifest` with two PNG install icons under
+  `ktown/icons/` (192 and 512, plus the SVG they were drawn from).
 
 Serving mirrors Ye₿ente on both stacks (server.mjs and .htaccess). Where
 nginx sends pages straight from disk, /ktown and /k/<id> need the same
@@ -71,6 +84,5 @@ treatment Ye₿ente's app already has: /ktown serves ktown/index.html and
 
 ## Still open
 
-- Print sheets and PNG, the offline service worker, final polish (PR 3).
 - Lost-phone recovery without Stanley (today: he deletes two keys by hand).
 - If the live server ever sets proxy variables, Node sends `https.request` through the proxy and `lib/netsafe.js` can no longer pin DNS. Keep proxy variables off the live server, or teach the guard to refuse proxied requests.

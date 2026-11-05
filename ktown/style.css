@@ -23,6 +23,8 @@ h1,h2{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;line-height
 .mark.ok{color:var(--navy)}
 .mark.no{color:var(--err)}
 .secure-note{text-align:center;color:var(--muted);font-size:.92rem;margin:.4rem 0 0}
+.offline-note{text-align:center;font-weight:700;font-size:.92rem;margin:.4rem 0 0}
+#print-sheet{display:none}
 .qr-card{background:var(--paper);border:1px solid var(--line);border-radius:1rem;
   padding:1.1rem;margin:1.1rem auto 0;max-width:24rem}
 .qr-card svg{display:block;width:100%;height:auto}
@@ -86,14 +88,27 @@ input::placeholder{color:var(--muted);opacity:.8}
 .lang button[aria-pressed="true"]{color:var(--navy);text-decoration:underline}
 .foot{margin:2rem 0 0;color:var(--muted);font-size:.88rem;text-align:center}
 [hidden]{display:none!important}
-/* PR2 print: the card only. Exact A6/A4 sheets and PNG land in PR3. */
+/* Print: an A6 counter card, or an A4 sheet of four (A6 is a quarter of A4).
+Named pages give capable browsers the exact size; the rest print the same
+content on the default paper. Pure black on white throughout. */
+@page card{size:A6;margin:6mm}
+@page sheet{size:A4;margin:8mm}
 @media print{
   body{background:#fff}
   .wrap{max-width:none;padding:0}
-  .tabs,.btn,.lang,.foot,.secure-note,.no-print{display:none!important}
-  .qr-card{border:0;margin:0 auto;max-width:9cm;padding:0}
-  .shop{font-size:22pt}
-  .mpesa-name{font-size:15pt}
+  .tabs,.btn,.lang,.foot,.secure-note,.offline-note,.no-print,.mark,.err{display:none!important}
+  #screen-qr{page:card}
+  #screen-settings{display:none!important}
+  .qr-card{border:0;margin:0 auto;max-width:88mm;padding:0}
+  .shop{font-size:22pt;color:#000}
+  .mpesa-name{font-size:15pt;color:#000}
   .print-line{font-size:11pt;color:#000}
   .print-line b{color:#000}
+  body[data-print="a4"] #screen-qr{display:none!important}
+  body[data-print="a4"] #print-sheet{display:grid!important;grid-template-columns:1fr 1fr;gap:6mm;page:sheet}
+  .sheet-card{border:1pt dashed #666;padding:4mm;text-align:center;break-inside:avoid}
+  .sheet-card .shop{font-size:16pt}
+  .sheet-card .mpesa-name{font-size:12pt}
+  .sheet-card .qr-card{max-width:68mm}
+  .sheet-card .print-line{font-size:9pt}
 }
