@@ -198,6 +198,36 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 .mktZoom button{min-width:2.4rem;min-height:2rem;border:1px solid var(--line);background:var(--paper);border-radius:.4rem;font:600 .8rem Figtree,sans-serif;cursor:pointer;color:var(--ink)}
 .mktZoom button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
 @media (max-width:700px){.mktStudio{flex-direction:column}.mktStage{order:1}.mktSide{order:2;width:auto;max-width:none;max-height:24rem}.mktRail{order:3;flex-direction:row;width:auto}.mktRail button{flex:1;min-height:3.4rem}}
+.mktCols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem;align-items:start}
+@media (max-width:1100px){.mktCols{grid-template-columns:1fr 1fr}}
+@media (max-width:640px){.mktCols{grid-template-columns:1fr}}
+.mktCol{background:var(--bg);border:2px solid var(--line);border-radius:.8rem;padding:.6rem;min-height:8rem}
+.mktCol.over{border-color:var(--blue)}
+.mktCol h3{font-size:.95rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin:0 0 .5rem}
+.mktCol h3 .n{color:var(--muted);font-weight:600}
+.mktCol h3 button{min-height:2rem;padding:.1rem .6rem;border:2px solid var(--line);border-radius:.5rem;background:var(--paper);font:700 1rem/1 Figtree,sans-serif;cursor:pointer;color:var(--ink)}
+.mktGallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));gap:.8rem}
+.mktCard{position:relative;background:#fff;border:1px solid var(--line);border-radius:.6rem;padding:.6rem;margin-bottom:.5rem}
+.mktGallery .mktCard{margin-bottom:0}
+.mktCard .cap{font-size:.85rem;margin:.3rem 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.mktCard img{width:100%;height:auto;border-radius:.4rem;margin:.3rem 0;display:block}
+.mktCard .ops{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem;align-items:center}
+.mktCard .ops>button{min-height:2rem;padding:.2rem .6rem;border:2px solid var(--line);border-radius:.5rem;background:var(--paper);font:600 .8rem Figtree,sans-serif;cursor:pointer;color:var(--ink)}
+.mktMove{position:relative;display:inline-block}
+.mktMove summary{list-style:none;cursor:pointer;min-height:2rem;padding:.2rem .6rem;border:2px solid var(--line);border-radius:.5rem;background:var(--paper);font:600 .8rem/1.6 Figtree,sans-serif;color:var(--ink)}
+.mktMove summary::-webkit-details-marker{display:none}
+.mktMove .menu{position:absolute;z-index:4;left:0;top:calc(100% + .2rem);background:#fff;border:2px solid var(--ink);border-radius:.6rem;padding:.3rem;display:flex;flex-direction:column;gap:.2rem;min-width:9rem}
+.mktMove .menu button{border:0;background:transparent;text-align:left;font:600 .85rem Figtree,sans-serif;cursor:pointer;padding:.35rem .5rem;border-radius:.4rem;color:var(--ink)}
+.mktMove .menu button:hover{background:var(--bg)}
+.mktNewCard{width:100%;border:2px dashed var(--line);background:transparent;border-radius:.6rem;padding:.7rem;cursor:pointer;font:600 .9rem Figtree,sans-serif;color:var(--muted);margin-top:.2rem}
+.mktNewCard:hover{border-color:var(--blue);color:var(--blue)}
+.mktIdeaForm{border:2px solid var(--ink);border-radius:.8rem;padding:.8rem 1rem;margin-bottom:.8rem;background:var(--paper)}
+.mktIdeaForm h3{font-size:1.05rem;margin:0 0 .4rem}
+.mktIdeaForm img{max-width:12rem;height:auto;border-radius:.4rem;display:block;margin:.3rem 0}
+.mktPlaceMini{margin-top:.5rem;border-top:1px solid var(--line);padding-top:.5rem}
+.mktPlaceMini select,.mktPlaceMini input{width:auto;padding:.3rem .5rem}
+.mktDelAsk{margin-top:.5rem;font-size:.85rem;font-weight:600}
+.mktDelAsk button,.mktPlaceMini button{min-height:2rem;padding:.2rem .6rem;border:2px solid var(--line);border-radius:.5rem;background:var(--paper);font:600 .8rem Figtree,sans-serif;cursor:pointer;color:var(--ink)}
 .mktTpl{display:grid;grid-template-columns:repeat(auto-fill,minmax(16rem,1fr));gap:1rem;margin-top:.6rem}
 .mktTpl figure{margin:0}
 .mktTpl img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:.6rem;cursor:pointer}
@@ -682,7 +712,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <section class="panel" aria-labelledby="hMktStudio">
     <h2 id="hMktStudio">Marketing studio</h2>
     <div class="learn"><p>Plan, design and place X posts. Nothing here posts anything by itself.</p></div>
-    <p class="mktNav"><a href="#mkt-cal">Calendar</a> · <a href="#mkt-edit">Editor</a></p>
+    <p class="mktNav"><a href="#mkt-cal">Calendar</a> · <a href="#mkt-edit">Editor</a> · <a href="#mkt-ideas">Ideas</a></p>
   </section>
   <section class="panel" id="mkt-cal" aria-labelledby="hMkt">
     <h2 id="hMkt">Calendar</h2>
@@ -808,6 +838,21 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <p><label for="mktICap">Caption</label><br><input id="mktICap" maxlength="280" style="max-width:44rem" placeholder="Two short sentences, the site link, then the tags"></p>
     <p><button type="button" class="btn" id="mktPlace">Place on that day</button> <button type="button" class="btn" id="mktUnplace">Remove that day</button> <span class="sm" id="mktIStatus"></span></p>
   </section>
+  <section class="panel" id="mkt-ideas" aria-labelledby="hMktIdeas">
+    <h2 id="hMktIdeas">Ideas</h2>
+    <div class="learn"><p>Rough cuts for future posts. Draft the words, move cards across, place the approved ones. Nothing here posts anything by itself.</p></div>
+    <p class="sm"><span role="group" aria-label="Ideas view"><button type="button" class="btn" id="mktBoardBtn" aria-pressed="true">Board</button> <button type="button" class="btn" id="mktGalleryBtn" aria-pressed="false">Gallery</button></span> <button type="button" class="btn" id="mktIdeaNew">New idea</button></p>
+    <form id="mktIdeaForm" class="mktIdeaForm" hidden>
+      <h3 id="mktIdeaFormT">New idea</h3>
+      <p><label for="mktIdeaTitle">Title</label><br><input id="mktIdeaTitle" maxlength="80" placeholder="A few words"><br><span class="sm muted" id="mktIdeaTitleN"></span></p>
+      <p><label for="mktIdeaCap">Caption draft</label><br><textarea id="mktIdeaCap" maxlength="280" rows="3" placeholder="Two short sentences, the site link, then the tags"></textarea><br><span class="sm muted" id="mktIdeaCapN"></span></p>
+      <p><label for="mktIdeaCol">Column</label><br><select id="mktIdeaCol" class="sel"><option value="ideas">Ideas</option><option value="drafting">Drafting</option><option value="approved">Approved</option><option value="placed">Placed</option></select></p>
+      <div id="mktIdeaPic"></div>
+      <p><button type="button" class="btn" id="mktIdeaShot">Use the current picture</button> <button type="button" class="btn" id="mktIdeaNoPic">Remove picture</button></p>
+      <p><button type="submit" class="btn primary" id="mktIdeaSave">Save idea</button> <button type="button" class="btn" id="mktIdeaCancel">Cancel</button> <span class="sm" id="mktIdeaStatus" role="status"></span></p>
+    </form>
+    <div id="mktIdeas"></div>
+  </section>
   <section class="panel" aria-labelledby="hMktTpl">
     <details class="mktRules">
       <summary id="hMktTpl">The reusable template</summary>
@@ -866,6 +911,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn" id="rcptResend" hidden>Resend receipt email</button><button type="button" class="btn primary" id="rcptClose">Close</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=refresh13"></script>
+<script type="module" src="/assets/admin.js?v=refresh14"></script>
 </body>
 </html>
