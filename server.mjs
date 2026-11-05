@@ -220,8 +220,13 @@ async function maybeRunHourly() {
   }
 }
 setInterval(() => maybeRunHourly().catch((e) => console.error("hourly", e)), 10 * 60 * 1000).unref();
-// Ye₿ente wallets: credit invoices paid while the app was closed (every 2 minutes).
-setInterval(() => { if (["on", "true", "yes", "1"].includes(String(process.env.YEBENTE_WALLETS || "").trim().replace(/^["']|["']$/g, "").toLowerCase()) && process.env.LND_REST_URL) import("./lib/ywallet.js").then((y) => Promise.all([y.settleOpen(), y.reconcilePayments()])).catch((e) => console.error("yebente settle", e.message)); }, 2 * 60 * 1000).unref();
+// Ye₿ente wallets: credit invoices paid while the app was closed, and flip email
+// changes whose 48 hours are up (every 2 minutes). The email flip needs no node.
+setInterval(() => {
+  if (!["on", "true", "yes", "1"].includes(String(process.env.YEBENTE_WALLETS || "").trim().replace(/^["']|["']$/g, "").toLowerCase())) return;
+  import("./lib/ywallet.js").then((y) => y.effectiveEmailChanges()).catch((e) => console.error("yebente email changes", e.message));
+  if (process.env.LND_REST_URL) import("./lib/ywallet.js").then((y) => Promise.all([y.settleOpen(), y.reconcilePayments()])).catch((e) => console.error("yebente settle", e.message));
+}, 2 * 60 * 1000).unref();
 // Every 5 minutes (and on every /healthz ping from deploy/cron.sh): Deadman's
 // Switch file/.htaccess integrity check and node total balance check.
 async function maybeRunDeadmanChecks() {

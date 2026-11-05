@@ -293,6 +293,19 @@ test("every wallet read that can ask the node or confirm an email is rate-limite
   assert.match(yb, /rl:yb:freeze:/, "api/yebente.js freezePost: limit freeze-link guesses per network");
 });
 
+test("email changes wait 48 hours, cancellable from the old address or a phone", () => {
+  const yw = read("lib/ywallet.js");
+  const confirm = yw.slice(yw.indexOf("export async function confirmEmail"));
+  assert.match(confirm, /emailChange: \{ newEmail: rec\.email, effectiveAt/, "lib/ywallet.js confirmEmail: a change waits instead of swapping at once");
+  assert.match(confirm, /48 \* 3600e3/, "lib/ywallet.js confirmEmail: the wait is 48 hours");
+  assert.match(yw, /export async function effectiveEmailChanges/, "lib/ywallet.js: a sweeper flips due changes");
+  const cancel = yw.slice(yw.indexOf("export async function cancelPendingEmailChange"));
+  assert.match(cancel, /await checkPin\(cur, pin\)/, "lib/ywallet.js cancelPendingEmailChange: cancelling from a phone needs the PIN");
+  const yb = read("api/yebente.js");
+  assert.match(yb, /rl:yb:emailcx:/, "api/yebente.js emailChangeCancelPost: limit cancel-link guesses per network");
+  assert.match(yb, /rl:yb:emailc:/, "api/yebente.js email/cancel: limit phone cancels per wallet");
+});
+
 test("cancelling a pending recovery: rate-limited, PIN-checked, and every live link dies", () => {
   const yb = read("api/yebente.js");
   assert.match(yb, /rl:yb:recc:/, "api/yebente.js recovery/cancel: limit cancel attempts per wallet");

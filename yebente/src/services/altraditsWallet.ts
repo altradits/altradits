@@ -63,6 +63,7 @@ export interface ServerWallet {
   holdUntil?: string | null;
   frozen?: boolean;
   pendingRecovery?: PendingRecovery | null;
+  emailChange?: { newEmail: string; effectiveAt: string } | null;
   passkeys?: number;
 }
 
@@ -185,6 +186,9 @@ function entryToTransaction(e: ServerEntry): Transaction {
 // ---- recovery by email
 export const setRecoveryEmail = (email: string, pin: string) =>
   api<{ emailPending: string }>('POST', 'email', { email, pin });
+
+export const cancelPendingEmailChange = (pin: string) =>
+  api<{ cancelled: boolean }>('POST', 'email/cancel', { pin });
 
 export const requestEmailRecovery = (email: string) =>
   api<{ message: string }>('POST', 'recover-email', { email });
