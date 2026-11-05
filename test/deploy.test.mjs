@@ -86,3 +86,20 @@ test("player logos are served from assets/players, and nothing else under assets
   const html = fs.readFileSync(path.join(root, "players.html"), "utf8");
   for (const [, slug] of html.matchAll(/src="\/assets\/players\/([\w-]+)\.png"/g)) assert.ok(fs.existsSync(path.join(root, "assets/players", `${slug}.png`)), `${slug}.png`);
 });
+
+test("the marketing schedule and templates are served locally, and nothing else under assets/marketing", () => {
+  const root = new URL("..", import.meta.url).pathname;
+  const src = fs.readFileSync(path.join(root, "server.mjs"), "utf8");
+  const PUBLIC = eval(src.match(/const PUBLIC = (\/.*\/);/)[1]);
+  for (const good of ["/assets/marketing/months.json", "/assets/marketing/templates.json", "/assets/marketing/2026-11.json",
+    "/assets/marketing/2026-11/min-13.jpg", "/assets/marketing/2026-12/dec-01.jpg", "/assets/marketing/templates/tpl-01.jpg"]) assert.ok(PUBLIC.test(good), good);
+  for (const m of JSON.parse(fs.readFileSync(path.join(root, "assets/marketing/months.json"), "utf8"))) assert.ok(PUBLIC.test(`/assets/marketing/${m}.json`), m);
+  for (const bad of ["/assets/marketing/../server.mjs", "/assets/marketing/2026-11/../../server.mjs", "/assets/marketing/a/b/c.jpg",
+    "/assets/marketing/", "/assets/other/x.png"]) assert.equal(PUBLIC.test(bad), false, bad);
+});
+
+test("the admin API accepts full-size pictures, other APIs stay capped", () => {
+  const root = new URL("..", import.meta.url).pathname;
+  const src = fs.readFileSync(path.join(root, "server.mjs"), "utf8");
+  assert.match(src, /const limit = api\[1\] === "admin" && adminAuthed\(req\.headers\.authorization\) \? 1_000_000 : 100_000;/, "admin takes ~1 MB for pictures once the token checks out, the rest stay at 100 KB");
+});

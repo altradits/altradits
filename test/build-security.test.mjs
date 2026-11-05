@@ -338,3 +338,22 @@ test("address QR: pasted text only, bc1q checked, capped, and no address-making 
     assert.doesNotMatch(read(f), /LND_ADDRESS_MACAROON|node_address|newDepositAddress/, `${f}: no address-making key or action remains`);
   }
 });
+
+test("admin bodies over 100 KB need the token up front: strangers hit 413, the token passes 700 KB", async () => {
+  const { adminAuthed } = await import("../lib/http.js");
+  assert.match(read("server.mjs"), /const limit = api\[1\] === "admin" && adminAuthed\(req\.headers\.authorization\) \? 1_000_000 : 100_000;/, "server.mjs: the ~1 MB body budget needs a valid admin token first");
+  assert.match(read("server.mjs"), /if \(size > limit\) \{ res\.writeHead\(413/, "server.mjs: over-budget bodies still get 413");
+  assert.match(read("lib/http.js"), /safeEqual\(token, given\)/, "lib/http.js: the token check stays timing-safe");
+  const keep = process.env.ADMIN_TOKEN;
+  process.env.ADMIN_TOKEN = "secret-admin";
+  try {
+    const limitFor = (api, auth) => (api === "admin" && adminAuthed(auth) ? 1_000_000 : 100_000);
+    assert.ok(limitFor("admin", "Bearer wrong") < 200_000, "a wrong token holds /api/admin at 100 KB: a 200 KB POST gets 413");
+    assert.ok(limitFor("admin", undefined) < 200_000, "no token holds /api/admin at 100 KB: a 200 KB POST gets 413");
+    assert.ok(limitFor("admin", "Bearer secret-admin") >= 700_000, "the valid token opens ~1 MB: a 700 KB picture is accepted");
+    assert.ok(limitFor("contact", "Bearer secret-admin") < 200_000, "other APIs stay at 100 KB even with the token");
+  } finally {
+    if (keep === undefined) delete process.env.ADMIN_TOKEN; else process.env.ADMIN_TOKEN = keep;
+  }
+  assert.equal(adminAuthed("Bearer x"), false, "no token configured: nobody is authed");
+});

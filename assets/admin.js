@@ -739,6 +739,7 @@ async function loadMarketing() {
   await renderMarketing(MKT_MONTHS[MKT_MONTHS.length - 1]);
   await loadTemplates();
   if (MKT_TPL.length) editTemplate(0, false);
+  await loadIdeas();
 }
 function stepMonth(d) {
   const i = MKT_MONTHS.indexOf(MKT_MONTH) + d;
@@ -809,7 +810,7 @@ function mktDefaultEls() {
   ];
 }
 let MKT_ELS = mktDefaultEls();
-let MKT_EDIT = { file: "", bg: "", name: "", img: null, logoImg: null, logoWhite: null, sel: null, caret: null, caretOn: true };
+let MKT_EDIT = { file: "", bg: "", name: "", img: null, logoImg: null, logoWhite: null, sel: null, caret: null, caretOn: true, ideaId: null };
 let MKT_HIT = [];
 let MKT_HANDLES = [];
 const MKT_LAYOUTS = {};
@@ -842,8 +843,8 @@ function editTemplate(i, scroll = true) {
   mktInlineCommit();
   if (MKT_EDIT.file) MKT_LAYOUTS[MKT_EDIT.file] = mktSnap();
   const keepHead = mktRoleEl("head")?.text || "", keepSub = mktRoleEl("sub")?.text || "";
-  const keepCaret = MKT_EDIT.caret;
-  MKT_EDIT = { file: t.file, bg: t.bg, name: t.name, img: null, logoImg: null, logoWhite: null, sel: null, caret: keepCaret, caretOn: true };
+  const keepCaret = MKT_EDIT.caret, keepIdea = MKT_EDIT.ideaId;
+  MKT_EDIT = { file: t.file, bg: t.bg, name: t.name, img: null, logoImg: null, logoWhite: null, sel: null, caret: keepCaret, caretOn: true, ideaId: keepIdea };
   MKT_ELS = MKT_LAYOUTS[t.file] ? JSON.parse(MKT_LAYOUTS[t.file]) : mktDefaultEls();
   const head = mktRoleEl("head"), sub = mktRoleEl("sub");
   if (head) head.text = keepHead;
@@ -1202,18 +1203,6 @@ function mktInlineCommit() {
   drawCustom();
   mktSyncTools();
   $("#mktCanvas")?.focus({ preventScroll: true });
-}
-function mktRoleEnsure(role) {
-  let el = mktRoleEl(role);
-  if (el) return el;
-  mktPush();
-  el = role === "head"
-    ? { id: "head", kind: "text", role: "head", text: "Your headline", x: 120, y: 270, w: 1680, size: 170, style: "hbrand", color: $("#mktLight")?.checked ? "#ffffff" : "#0f1b2d", align: "left", weight: null, italic: false, upper: false, lines: 3, moved: false, locked: false }
-    : { id: "sub", kind: "text", role: "sub", text: "Your smaller line", x: 120, y: 880, w: 1680, size: 76, style: "sbrand", color: "#ea5158", align: "left", weight: null, italic: false, upper: false, lines: 2, moved: false, locked: false };
-  const at = MKT_ELS.findIndex((e) => e.kind === "text");
-  if (at < 0) MKT_ELS.push(el);
-  else MKT_ELS.splice(role === "head" ? at : at + 1, 0, el);
-  return el;
 }
 function mktAddText(kind) {
   mktPush();
@@ -1644,33 +1633,52 @@ $("#mktInline")?.addEventListener("keydown", (e) => {
   if (e.key === "Escape") mktInlineCommit();
 });
 addEventListener("resize", () => mktPositionActions());
-$("#mktDl")?.addEventListener("click", async () => {
+// A clean full-size render: outlines, handles and carets never reach it.
+async function mktRenderClean(quality) {
+  mktInlineCommit();
   const keep = MKT_EDIT.sel;
   MKT_EDIT.sel = null;
   await drawCustom(false);
-  const a = document.createElement("a");
-  a.href = $("#mktCanvas").toDataURL("image/jpeg", 0.9);
-  a.download = `altradits-${MKT_EDIT.name.toLowerCase()}-custom.jpg`;
-  a.click();
+  const url = $("#mktCanvas").toDataURL("image/jpeg", quality);
   MKT_EDIT.sel = keep;
   drawCustom();
+  return url;
+}
+// A clean render sized for the server: quality steps down until the picture
+// fits the custom-post cap, so Place works on every template.
+const MKT_PLACE_MAX = 700 * 1024; // mirrors lib/marketing.js MAX_IMAGE_CHARS
+async function mktRenderCapped() {
+  mktInlineCommit();
+  const keep = MKT_EDIT.sel;
+  MKT_EDIT.sel = null;
+  await drawCustom(false);
+  const cv = $("#mktCanvas");
+  let url = "";
+  for (const q of [0.88, 0.8, 0.75, 0.7, 0.65, 0.6]) {
+    url = cv.toDataURL("image/jpeg", q);
+    if (url.length <= MKT_PLACE_MAX) break;
+  }
+  MKT_EDIT.sel = keep;
+  drawCustom();
+  return url;
+}
+$("#mktDl")?.addEventListener("click", async () => {
+  const a = document.createElement("a");
+  a.href = await mktRenderClean(0.9);
+  a.download = `altradits-${MKT_EDIT.name.toLowerCase()}-custom.jpg`;
+  a.click();
 });
 $("#mktPlace")?.addEventListener("click", async () => {
   const st = $("#mktIStatus");
   st.textContent = "Placing…";
   const month = $("#mktIMonth").value, day = String($("#mktIDay").value).padStart(2, "0");
-  const keep = MKT_EDIT.sel;
-  MKT_EDIT.sel = null;
   try {
-    await drawCustom(false);
     const r = await api("", { action: "mkt_place", month, date: `${month}-${day}`,
       caption: $("#mktICap").value, alt: `${MKT_EDIT.name} template with custom words`,
-      imageData: $("#mktCanvas").toDataURL("image/jpeg", 0.88) });
+      type: $("#mktIType").value, imageData: await mktRenderCapped() });
     st.textContent = `Placed on ${r.placed}.`;
     await renderMarketing(month);
   } catch (err) { st.textContent = err.message; }
-  MKT_EDIT.sel = keep;
-  drawCustom();
 });
 $("#mktUnplace")?.addEventListener("click", async () => {
   const st = $("#mktIStatus");
@@ -1704,6 +1712,279 @@ $("#mktPosts").addEventListener("click", async (e) => {
     toast("Caption downloaded.");
   }
 });
+// Ideas board: rough cuts for future posts, stored server-side. Board and
+// gallery views, four columns, drag and drop plus a keyboard Move to menu.
+const MKT_IDEA_COLS = [["ideas", "Ideas"], ["drafting", "Drafting"], ["approved", "Approved"], ["placed", "Placed"]];
+const MKT_MAX_IMAGE = 60 * 1024; // mirrors lib/marketing.js MAX_IDEA_IMAGE_CHARS
+const MKT_MAX_IDEAS = 200; // mirrors lib/marketing.js MAX_IDEAS
+let MKT_IDEAS = [];
+let MKT_IDEA_VIEW = "board";
+let MKT_IDEA_EDIT = null, MKT_IDEA_PIC = null, MKT_IDEA_LAYOUT = null, MKT_IDEAC = 0;
+let MKT_IDEA_DEL = null, MKT_IDEA_PLACE = null;
+async function loadIdeas() {
+  try {
+    const d = await api("?view=mktideas");
+    MKT_IDEAS = d.ideas || [];
+  } catch (err) { $("#mktIdeas").innerHTML = `<p class="sm">Ideas unavailable: ${esc(err.message)}</p>`; return; }
+  renderIdeas();
+}
+function mktIdeaCard(idea) {
+  const placing = MKT_IDEA_PLACE === idea.id, del = MKT_IDEA_DEL === idea.id;
+  const move = `<details class="mktMove"><summary>Move to</summary><div class="menu">`
+    + MKT_IDEA_COLS.filter(([c]) => c !== idea.column).map(([c, label]) =>
+      `<button type="button" data-mkt-ie="move" data-to="${c}">Move to ${esc(label)}</button>`).join("") + `</div></details>`;
+  const placeBtn = idea.column === "approved" ? `<button type="button" data-mkt-ie="place">Place on calendar</button>` : "";
+  const placed = idea.column === "placed" && idea.placedDate ? ` <span class="sm muted">Placed ${esc(idea.placedDate)}</span>` : "";
+  return `<article class="mktCard" draggable="true" data-mkt-idea="${esc(idea.id)}">`
+    + `<b>${esc(idea.title)}</b>${placed}`
+    + (idea.caption ? `<p class="cap">${esc(idea.caption)}</p>` : `<p class="cap muted">No draft yet.</p>`)
+    + (idea.imageData ? `<img src="${esc(idea.imageData)}" alt="" loading="lazy">` : "")
+    + `<div class="ops"><button type="button" data-mkt-ie="open">Open in editor</button>${placeBtn}${move}`
+    + `<button type="button" data-mkt-ie="edit">Edit</button><button type="button" data-mkt-ie="del">Delete</button></div>`
+    + (placing ? mktPlaceMini(idea) : "")
+    + (del ? `<p class="mktDelAsk">Delete this idea? <button type="button" data-mkt-ie="delYes">Yes, delete</button> <button type="button" data-mkt-ie="delNo">Keep</button></p>` : "")
+    + `</article>`;
+}
+function mktPlaceMini(idea) {
+  const opts = MKT_MONTHS.map((m) => `<option value="${esc(m)}"${m === MKT_MONTH ? " selected" : ""}>${esc(m)}</option>`).join("");
+  const types = `<option value="">None</option>` + Object.keys(MKT_TYPES).map((t) => `<option>${esc(t)}</option>`).join("");
+  return `<form class="mktPlaceMini" data-mkt-placeform="${esc(idea.id)}">`
+    + `<label>Month <select name="month" class="sel">${opts}</select></label> `
+    + `<label>Day <input name="day" inputmode="numeric" size="2" style="width:4rem" placeholder="25"></label> `
+    + `<label>Type <select name="type" class="sel">${types}</select></label> `
+    + `<button type="submit">Place</button> <button type="button" data-mkt-ie="placeNo">Cancel</button> `
+    + `<span class="sm" data-mkt-placestatus role="status"></span><br><span class="sm muted">The full-size picture comes from the editor.</span></form>`;
+}
+function renderIdeas() {
+  const box = $("#mktIdeas");
+  if (!box) return;
+  $("#mktBoardBtn")?.setAttribute("aria-pressed", String(MKT_IDEA_VIEW === "board"));
+  $("#mktGalleryBtn")?.setAttribute("aria-pressed", String(MKT_IDEA_VIEW === "gallery"));
+  if (MKT_IDEA_VIEW === "gallery") {
+    box.innerHTML = MKT_IDEAS.length
+      ? `<div class="mktGallery">${MKT_IDEAS.map(mktIdeaCard).join("")}</div>`
+      : `<p class="sm muted">No ideas yet. Press New idea to draft one.</p>`;
+    return;
+  }
+  box.innerHTML = `<div class="mktCols">` + MKT_IDEA_COLS.map(([col, label]) => {
+    const cards = MKT_IDEAS.filter((e) => e.column === col);
+    return `<section class="mktCol" data-mkt-col="${col}" aria-label="${esc(label)}">`
+      + `<h3>${esc(label)} <span><span class="n">${cards.length}</span> <button type="button" data-mkt-ie="newcol" data-to="${col}" aria-label="New idea in ${esc(label)}">+</button></span></h3>`
+      + cards.map(mktIdeaCard).join("")
+      + `<button type="button" class="mktNewCard" data-mkt-ie="newcol" data-to="${col}">+ New idea</button></section>`;
+  }).join("") + `</div>`;
+}
+function mktIdeaCount() {
+  $("#mktIdeaTitleN").textContent = `${$("#mktIdeaTitle").value.length} / 80`;
+  $("#mktIdeaCapN").textContent = `${$("#mktIdeaCap").value.length} / 280`;
+}
+function mktIdeaPicShow() {
+  $("#mktIdeaPic").innerHTML = MKT_IDEA_PIC ? `<img src="${esc(MKT_IDEA_PIC)}" alt="Idea picture preview">` : "";
+}
+function mktIdeaLayout() {
+  if (MKT_ELS.length > 12) return { error: "Too many elements (12 max). Delete some first." };
+  return { layout: { template: MKT_EDIT.file, elements: MKT_ELS.map((el) => el.kind === "logo"
+    ? { kind: "logo", x: el.x, y: el.y, w: el.w, white: el.white === true }
+    : { kind: "text", role: el.role || null, text: String(el.text).slice(0, 200), x: el.x, y: el.y, w: el.w, size: el.size, style: el.style, color: el.color, align: el.align, weight: el.weight, italic: el.italic === true, upper: el.upper === true, lines: el.lines }) } };
+}
+function mktIdeaFormOpen(idea, column) {
+  MKT_IDEA_EDIT = idea ? idea.id : null;
+  MKT_IDEA_PIC = idea?.imageData || null;
+  MKT_IDEA_LAYOUT = idea?.layout || null;
+  $("#mktIdeaFormT").textContent = idea ? "Edit idea" : "New idea";
+  $("#mktIdeaTitle").value = idea?.title || "";
+  $("#mktIdeaCap").value = idea?.caption || "";
+  $("#mktIdeaCol").value = idea?.column || column || "ideas";
+  $("#mktIdeaStatus").textContent = "";
+  mktIdeaCount();
+  mktIdeaPicShow();
+  $("#mktIdeaForm").hidden = false;
+  $("#mktIdeaTitle").focus();
+}
+function mktIdeaOpen(idea) {
+  MKT_EDIT.ideaId = idea.id;
+  mktInlineCommit();
+  mktPush();
+  if (idea.layout && Array.isArray(idea.layout.elements)) {
+    const t = MKT_TPL.find((x) => x.file === idea.layout.template);
+    if (t) {
+      if (MKT_EDIT.file) MKT_LAYOUTS[MKT_EDIT.file] = mktSnap();
+      MKT_EDIT.file = t.file; MKT_EDIT.bg = t.bg; MKT_EDIT.name = t.name; MKT_EDIT.img = null;
+      const lbl = $("#mktEditName");
+      if (lbl) lbl.textContent = t.name;
+      if ($("#mktLight")) $("#mktLight").checked = t.light === true;
+      if ($("#mktLogoWhite")) $("#mktLogoWhite").checked = t.ink === "white";
+    }
+    MKT_ELS = idea.layout.elements.map((s) => {
+      const el = JSON.parse(JSON.stringify(s));
+      el.id = el.role === "head" ? "head" : el.role === "sub" ? "sub" : `${el.kind === "logo" ? "logo" : "t"}${++MKT_IDC}`;
+      el.locked = false;
+      if (el.kind === "text") el.moved = true;
+      return el;
+    });
+    const head = mktRoleEl("head") || MKT_ELS.find((e) => e.kind === "text");
+    MKT_EDIT.sel = head ? head.id : (MKT_ELS[0]?.id || null);
+  } else {
+    MKT_ELS = mktDefaultEls();
+    const head = mktRoleEl("head"), sub = mktRoleEl("sub");
+    head.text = idea.title;
+    const first = String(idea.caption).split(/[.?!]\s/)[0] || "";
+    sub.text = first.slice(0, 90);
+    MKT_EDIT.sel = "head";
+  }
+  mktSyncSelText();
+  drawCustom();
+  mktSyncTools();
+  $("#mkt-edit")?.scrollIntoView();
+  toast("Idea loaded in the editor.");
+}
+async function mktIdeaPlace(idea, month, day, type) {
+  // The picture comes from the canvas, so the canvas must hold this idea:
+  // otherwise card B would go out under card A's picture.
+  if (MKT_EDIT.ideaId !== idea.id) {
+    mktIdeaOpen(idea);
+    throw new Error("Check the picture in the editor, then press Place again.");
+  }
+  const date = `${month}-${day}`;
+  const full = await mktRenderCapped();
+  await api("", { action: "mkt_place", month, date, caption: idea.caption,
+    alt: `${idea.title} (from the ideas board)`.slice(0, 200), type: type || "", imageData: full });
+  const r = await api("", { action: "mkt_idea_save", ...idea, column: "placed", placedDate: date });
+  MKT_IDEAS[MKT_IDEAS.findIndex((x) => x.id === idea.id)] = r.idea;
+  if (month === MKT_MONTH) { MKT_SEL = date; await renderMarketing(month); }
+}
+$("#mktIdeas").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-mkt-ie]");
+  if (!b) return;
+  const card = b.closest("[data-mkt-idea]");
+  const id = card?.dataset.mktIdea;
+  const op = b.dataset.mktIe;
+  if (op === "newcol") { mktIdeaFormOpen(null, b.dataset.to); return; }
+  const idea = MKT_IDEAS.find((x) => x.id === id);
+  if (!idea) return;
+  if (op === "open") { mktIdeaOpen(idea); return; }
+  if (op === "edit") { mktIdeaFormOpen(idea); return; }
+  if (op === "del") { MKT_IDEA_DEL = id; MKT_IDEA_PLACE = null; renderIdeas(); return; }
+  if (op === "delNo") { MKT_IDEA_DEL = null; renderIdeas(); return; }
+  if (op === "delYes") {
+    try { await api("", { action: "mkt_idea_delete", id }); } catch (err) { toast(err.message, true); return; }
+    MKT_IDEAS = MKT_IDEAS.filter((x) => x.id !== id);
+    MKT_IDEA_DEL = null;
+    renderIdeas();
+    toast("Idea deleted.");
+    return;
+  }
+  if (op === "move") {
+    try {
+      const r = await api("", { action: "mkt_idea_save", ...idea, column: b.dataset.to });
+      MKT_IDEAS[MKT_IDEAS.findIndex((x) => x.id === id)] = r.idea;
+      renderIdeas();
+    } catch (err) { toast(err.message, true); }
+    return;
+  }
+  if (op === "place") { MKT_IDEA_PLACE = MKT_IDEA_PLACE === id ? null : id; MKT_IDEA_DEL = null; renderIdeas(); return; }
+  if (op === "placeNo") { MKT_IDEA_PLACE = null; renderIdeas(); return; }
+});
+$("#mktIdeas").addEventListener("submit", async (e) => {
+  const f = e.target.closest("[data-mkt-placeform]");
+  if (!f) return;
+  e.preventDefault();
+  const idea = MKT_IDEAS.find((x) => x.id === f.dataset.mktPlaceform);
+  const st = f.querySelector("[data-mkt-placestatus]");
+  if (!idea) return;
+  if (!idea.imageData) { st.textContent = "This idea has no picture yet. Open it in the editor, design it, then attach the picture."; return; }
+  if (!idea.caption) { st.textContent = "Write the caption draft first."; return; }
+  const month = f.month.value, day = String(f.day.value).padStart(2, "0");
+  st.textContent = "Placing…";
+  try {
+    await mktIdeaPlace(idea, month, day, f.type.value);
+    MKT_IDEA_PLACE = null;
+    renderIdeas();
+    toast(`Placed on ${month}-${day}.`);
+  } catch (err) { st.textContent = err.message; }
+});
+$("#mktIdeas").addEventListener("dragstart", (e) => {
+  const card = e.target.closest("[data-mkt-idea]");
+  if (!card) return;
+  e.dataTransfer.setData("text/plain", card.dataset.mktIdea);
+  e.dataTransfer.effectAllowed = "move";
+});
+$("#mktIdeas").addEventListener("dragover", (e) => {
+  const col = e.target.closest("[data-mkt-col]");
+  if (!col) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+  col.classList.add("over");
+});
+$("#mktIdeas").addEventListener("dragleave", (e) => {
+  const col = e.target.closest("[data-mkt-col]");
+  if (col && !col.contains(e.relatedTarget)) col.classList.remove("over");
+});
+$("#mktIdeas").addEventListener("drop", async (e) => {
+  const col = e.target.closest("[data-mkt-col]");
+  if (!col) return;
+  e.preventDefault();
+  col.classList.remove("over");
+  const id = e.dataTransfer.getData("text/plain");
+  const idea = MKT_IDEAS.find((x) => x.id === id);
+  if (!idea || idea.column === col.dataset.mktCol) return;
+  try {
+    const r = await api("", { action: "mkt_idea_save", ...idea, column: col.dataset.mktCol });
+    MKT_IDEAS[MKT_IDEAS.findIndex((x) => x.id === id)] = r.idea;
+    renderIdeas();
+  } catch (err) { toast(err.message, true); }
+});
+$("#mktIdeaForm")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const st = $("#mktIdeaStatus");
+  st.textContent = "Saving…";
+  const body = { action: "mkt_idea_save", id: MKT_IDEA_EDIT || ("i" + Date.now().toString(36) + (++MKT_IDEAC).toString(36)),
+    column: $("#mktIdeaCol").value, title: $("#mktIdeaTitle").value, caption: $("#mktIdeaCap").value, imageData: MKT_IDEA_PIC,
+    layout: MKT_IDEA_LAYOUT, placedDate: (MKT_IDEAS.find((x) => x.id === MKT_IDEA_EDIT) || {}).placedDate || null };
+  try {
+    const r = await api("", body);
+    const at = MKT_IDEAS.findIndex((x) => x.id === r.idea.id);
+    if (at < 0) MKT_IDEAS.push(r.idea); else MKT_IDEAS[at] = r.idea;
+    $("#mktIdeaForm").hidden = true;
+    renderIdeas();
+    toast("Idea saved.");
+  } catch (err) { st.textContent = err.message; }
+});
+$("#mktIdeaShot")?.addEventListener("click", async () => {
+  const st = $("#mktIdeaStatus");
+  st.textContent = "Rendering…";
+  mktInlineCommit();
+  const keep = MKT_EDIT.sel;
+  MKT_EDIT.sel = null;
+  await drawCustom(false);
+  const small = document.createElement("canvas");
+  small.width = 480; small.height = 320;
+  small.getContext("2d").drawImage($("#mktCanvas"), 0, 0, 480, 320);
+  MKT_EDIT.sel = keep;
+  drawCustom();
+  let url = "";
+  for (let q = 80; q >= 50; q -= 10) {
+    url = small.toDataURL("image/jpeg", q / 100);
+    if (url.length <= MKT_MAX_IMAGE) break;
+  }
+  if (url.length > MKT_MAX_IMAGE) { st.textContent = "That picture is too big. Simplify the design and try again."; return; }
+  const built = mktIdeaLayout();
+  if (built.error) { st.textContent = built.error; return; }
+  MKT_IDEA_PIC = url;
+  MKT_IDEA_LAYOUT = built.layout;
+  mktIdeaPicShow();
+  st.textContent = "Picture attached.";
+});
+$("#mktIdeaNoPic")?.addEventListener("click", () => { MKT_IDEA_PIC = null; MKT_IDEA_LAYOUT = null; mktIdeaPicShow(); });
+$("#mktIdeaCancel")?.addEventListener("click", () => { $("#mktIdeaForm").hidden = true; });
+$("#mktIdeaTitle")?.addEventListener("input", mktIdeaCount);
+$("#mktIdeaCap")?.addEventListener("input", mktIdeaCount);
+$("#mktIdeaNew")?.addEventListener("click", () => {
+  if (MKT_IDEAS.length >= MKT_MAX_IDEAS) { toast("The board is full (200 ideas). Delete one first."); return; }
+  mktIdeaFormOpen(null, "ideas");
+});
+$("#mktBoardBtn")?.addEventListener("click", () => { MKT_IDEA_VIEW = "board"; renderIdeas(); });
+$("#mktGalleryBtn")?.addEventListener("click", () => { MKT_IDEA_VIEW = "gallery"; renderIdeas(); });
 async function loadChoumi() {
   let C; try { C = await api("?view=choumi"); } catch (err) { $("#dmReason").textContent = err.message; return; }
   const dm = C.deadman || {}, ai = C.ai || {}, status = ai.status || {};

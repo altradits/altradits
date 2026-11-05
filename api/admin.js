@@ -14,14 +14,12 @@
 //   GET  /api/admin?view=statement   -> money received through the website (&format=csv for the books)
 //   GET  /api/admin?view=activity&days=30 -> Ye₿ente deposits and transactions per wallet, most active first
 //   POST { action: "stan_report" } | { action: "node_topup", sats } | { action: "address_qr", address } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
-import { json, readBody, clean, newId, safeEqual, clientIp, siteUrl, EMAIL_RE } from "../lib/http.js";
+import { json, readBody, clean, newId, adminAuthed, clientIp, siteUrl, EMAIL_RE } from "../lib/http.js";
 import { listIds, getMany, getJSON, setJSON, pushId, usingRedis, hit, peek, listArchives } from "../lib/store.js";
 import { lightningMode } from "../lib/lightning.js";
 
 function authorized(request) {
-  const token = process.env.ADMIN_TOKEN;
-  const given = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
-  return Boolean(token) && safeEqual(token, given);
+  return adminAuthed(request.headers.get("authorization"));
 }
 
 const deny = () => json({ error: process.env.ADMIN_TOKEN ? "Wrong admin token." : "Set ADMIN_TOKEN in your environment first." }, 401);
@@ -100,6 +98,10 @@ export async function GET(request) {
     const month = clean(new URL(request.url).searchParams.get("month"), 7);
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return json({ error: "Pick a month from the schedule." }, 400);
     return json({ posts: (await getJSON(CUSTOM_KEY(month))) || [] });
+  }
+  if (view === "mktideas") {
+    const { IDEAS_KEY } = await import("../lib/marketing.js");
+    return json({ ideas: (await getJSON(IDEAS_KEY)) || [] });
   }
   if (view === "security") {
     const { securityView } = await import("../lib/attacks.js");
@@ -518,6 +520,22 @@ export async function POST(request) {
     if (body.confirm !== "DELETE") return json({ error: "Type DELETE to confirm." }, 400);
     const { deleteArchive } = await import("../lib/store.js");
     try { return json(deleteArchive(clean(body.name, 80))); } catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "mkt_idea_save" || body.action === "mkt_idea_delete") {
+    const { IDEAS_KEY, validateIdea } = await import("../lib/marketing.js");
+    const list = ((await getJSON(IDEAS_KEY)) || []).filter((e) => e && e.id);
+    if (body.action === "mkt_idea_delete") {
+      const id = String(body.id || "");
+      await setJSON(IDEAS_KEY, list.filter((e) => e.id !== id));
+      return json({ removed: id });
+    }
+    try {
+      const idea = validateIdea(body, list);
+      const at = list.findIndex((e) => e.id === idea.id);
+      if (at < 0) list.push(idea); else list[at] = idea;
+      await setJSON(IDEAS_KEY, list);
+      return json({ ok: true, idea });
+    } catch (err) { return json({ error: err.message }, 400); }
   }
   if (body.action === "mkt_place" || body.action === "mkt_remove") {
     const { CUSTOM_KEY, validateCustomPost } = await import("../lib/marketing.js");

@@ -1,7 +1,7 @@
 // The whole site in one Node process: static pages + api/*.js handlers.
 // Production: HostAfrica "Setup Node.js App" (Passenger) starts it via app.cjs.
 // Local:      npm run dev, then open http://localhost:3000
-import { clientIp, etagMatches } from "./lib/http.js";
+import { clientIp, etagMatches, adminAuthed } from "./lib/http.js";
 import http from "node:http";
 import fs from "node:fs";
 import crypto from "node:crypto";
@@ -36,7 +36,7 @@ if (!SERVER) {
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf", ".webmanifest": "application/manifest+json" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|friends\.html|plan\.html|donate\.html|bitcoin\.html|wallet\.html|bitcoin-core\.html|contact\.html|receipt\.html|robots\.txt|sitemap\.xml|llms\.txt|yebente\/app\/(?:index\.html|manifest\.webmanifest|assets\/[\w.-]+|fonts\/[\w.-]+|icons\/[\w.-]+)|assets\/[\w.-]+|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|friends\.html|plan\.html|donate\.html|bitcoin\.html|wallet\.html|bitcoin-core\.html|contact\.html|receipt\.html|robots\.txt|sitemap\.xml|llms\.txt|yebente\/app\/(?:index\.html|manifest\.webmanifest|assets\/[\w.-]+|fonts\/[\w.-]+|icons\/[\w.-]+)|assets\/[\w.-]+|assets\/marketing\/(?:(?:\d{4}-\d{2}|templates)\/)?[\w-][\w.-]*|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
 // HSTS: browsers that have visited once only ever use HTTPS here (no includeSubDomains,
 // so other subdomains such as mail are unaffected). COOP: no other site keeps a handle
 // on our windows.
@@ -125,7 +125,10 @@ const server = http.createServer(async (req, res) => {
       if (!handler) { res.writeHead(405).end("Method not allowed"); return; }
       const chunks = [];
       let size = 0;
-      const limit = 100_000;
+      // Posted pictures (custom calendar posts) run to ~700 KB, but only a
+      // request already carrying the admin token may buffer ~1 MB; the 413
+      // loop below holds everyone else at 100 KB.
+      const limit = api[1] === "admin" && adminAuthed(req.headers.authorization) ? 1_000_000 : 100_000;
       for await (const c of req) { size += c.length; if (size > limit) { res.writeHead(413, { "Content-Type": "application/json" }).end('{"error":"That file is too large."}'); return; } chunks.push(c); }
       const request = new Request(url, {
         method: req.method, headers: { ...req.headers, "x-remote-addr": req.socket.remoteAddress || "" },
