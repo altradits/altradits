@@ -1602,33 +1602,34 @@ $("#mktInline")?.addEventListener("keydown", (e) => {
   if (e.key === "Escape") mktInlineCommit();
 });
 addEventListener("resize", () => mktPositionActions());
-$("#mktDl")?.addEventListener("click", async () => {
+// A clean full-size render: outlines, handles and carets never reach it.
+async function mktRenderClean(quality) {
+  mktInlineCommit();
   const keep = MKT_EDIT.sel;
   MKT_EDIT.sel = null;
   await drawCustom(false);
-  const a = document.createElement("a");
-  a.href = $("#mktCanvas").toDataURL("image/jpeg", 0.9);
-  a.download = `altradits-${MKT_EDIT.name.toLowerCase()}-custom.jpg`;
-  a.click();
+  const url = $("#mktCanvas").toDataURL("image/jpeg", quality);
   MKT_EDIT.sel = keep;
   drawCustom();
+  return url;
+}
+$("#mktDl")?.addEventListener("click", async () => {
+  const a = document.createElement("a");
+  a.href = await mktRenderClean(0.9);
+  a.download = `altradits-${MKT_EDIT.name.toLowerCase()}-custom.jpg`;
+  a.click();
 });
 $("#mktPlace")?.addEventListener("click", async () => {
   const st = $("#mktIStatus");
   st.textContent = "Placing…";
   const month = $("#mktIMonth").value, day = String($("#mktIDay").value).padStart(2, "0");
-  const keep = MKT_EDIT.sel;
-  MKT_EDIT.sel = null;
   try {
-    await drawCustom(false);
     const r = await api("", { action: "mkt_place", month, date: `${month}-${day}`,
       caption: $("#mktICap").value, alt: `${MKT_EDIT.name} template with custom words`,
-      imageData: $("#mktCanvas").toDataURL("image/jpeg", 0.88) });
+      imageData: await mktRenderClean(0.88) });
     st.textContent = `Placed on ${r.placed}.`;
     await renderMarketing(month);
   } catch (err) { st.textContent = err.message; }
-  MKT_EDIT.sel = keep;
-  drawCustom();
 });
 $("#mktUnplace")?.addEventListener("click", async () => {
   const st = $("#mktIStatus");
@@ -1665,7 +1666,7 @@ $("#mktPosts").addEventListener("click", async (e) => {
 // Ideas board: rough cuts for future posts, stored server-side. Board and
 // gallery views, four columns, drag and drop plus a keyboard Move to menu.
 const MKT_IDEA_COLS = [["ideas", "Ideas"], ["drafting", "Drafting"], ["approved", "Approved"], ["placed", "Placed"]];
-const MKT_MAX_IMAGE = 700 * 1024; // mirrors lib/marketing.js MAX_IMAGE_CHARS
+const MKT_MAX_IMAGE = 60 * 1024; // mirrors lib/marketing.js MAX_IDEA_IMAGE_CHARS
 const MKT_MAX_IDEAS = 200; // mirrors lib/marketing.js MAX_IDEAS
 let MKT_IDEAS = [];
 let MKT_IDEA_VIEW = "board";
@@ -1701,7 +1702,7 @@ function mktPlaceMini(idea) {
     + `<label>Month <select name="month" class="sel">${opts}</select></label> `
     + `<label>Day <input name="day" inputmode="numeric" size="2" style="width:4rem" placeholder="25"></label> `
     + `<button type="submit">Place</button> <button type="button" data-mkt-ie="placeNo">Cancel</button> `
-    + `<span class="sm" data-mkt-placestatus role="status"></span></form>`;
+    + `<span class="sm" data-mkt-placestatus role="status"></span><br><span class="sm muted">The full-size picture comes from the editor.</span></form>`;
 }
 function renderIdeas() {
   const box = $("#mktIdeas");
@@ -1758,8 +1759,9 @@ function mktIdeaOpen(idea) {
 }
 async function mktIdeaPlace(idea, month, day) {
   const date = `${month}-${day}`;
+  const full = await mktRenderClean(0.88);
   await api("", { action: "mkt_place", month, date, caption: idea.caption,
-    alt: `${idea.title} (from the ideas board)`.slice(0, 200), imageData: idea.imageData });
+    alt: `${idea.title} (from the ideas board)`.slice(0, 200), imageData: full });
   const r = await api("", { action: "mkt_idea_save", ...idea, column: "placed", placedDate: date });
   MKT_IDEAS[MKT_IDEAS.findIndex((x) => x.id === idea.id)] = r.idea;
   if (month === MKT_MONTH) { MKT_SEL = date; await renderMarketing(month); }
@@ -1868,9 +1870,16 @@ $("#mktIdeaShot")?.addEventListener("click", async () => {
   const keep = MKT_EDIT.sel;
   MKT_EDIT.sel = null;
   await drawCustom(false);
-  const url = $("#mktCanvas").toDataURL("image/jpeg", 0.88);
+  const small = document.createElement("canvas");
+  small.width = 480; small.height = 320;
+  small.getContext("2d").drawImage($("#mktCanvas"), 0, 0, 480, 320);
   MKT_EDIT.sel = keep;
   drawCustom();
+  let url = "";
+  for (let q = 80; q >= 50; q -= 10) {
+    url = small.toDataURL("image/jpeg", q / 100);
+    if (url.length <= MKT_MAX_IMAGE) break;
+  }
   if (url.length > MKT_MAX_IMAGE) { st.textContent = "That picture is too big. Simplify the design and try again."; return; }
   MKT_IDEA_PIC = url;
   mktIdeaPicShow();

@@ -54,6 +54,17 @@ test("only real JPEGs pass, and the board caps at 200", () => {
   assert.equal(validateIdea({ ...good, id: "full7" }, full).id, "full7", "updating a card on a full board still works");
 });
 
+test("idea pictures cap at 60 KB, and the board caps at 8 MB", () => {
+  const mk = (n) => { const b = Buffer.alloc(n); b[0] = 0xff; b[1] = 0xd8; b[2] = 0xff; return "data:image/jpeg;base64," + b.toString("base64"); };
+  assert.equal(validIdeaImage(mk(46062)), true, "a 60 KB thumbnail passes");
+  assert.equal(validIdeaImage(mk(46080)), false, "past 60 KB fails");
+  assert.throws(() => validateIdea({ ...good, imageData: mk(46080) }, []), /too big/i, "oversize says too big");
+  const big = "data:image/jpeg;base64," + "A".repeat(60 * 1024);
+  const heavy = Array.from({ length: 150 }, (_, i) => ({ id: `heavy${i}`, column: "ideas", title: "t", caption: "", imageData: big, placedDate: null }));
+  assert.throws(() => validateIdea({ ...good, id: "overweight" }, heavy), /8 MB/i, "an overfull board refuses saves");
+  assert.equal(validateIdea({ ...good, id: "heavy7" }, heavy.slice(0, 10)).id, "heavy7", "a small board still saves");
+});
+
 const get = (view, token = "secret-admin") => new Request(`https://altradits.test/api/admin?view=${view}`,
   { headers: { Authorization: `Bearer ${token}` } });
 const post = (body, token = "secret-admin") => new Request("https://altradits.test/api/admin",
@@ -89,13 +100,16 @@ test("the API refuses bad columns, long captions, non-JPEGs and a full board", a
   await setJSON(IDEAS_KEY, Array.from({ length: MAX_IDEAS }, (_, i) => ({ id: `seed${i}`, column: "ideas", title: `Seed ${i}`, caption: "", imageData: null, placedDate: null })));
   const full = await (await admin.POST(post({ action: "mkt_idea_save", ...good, id: "overflow" }))).json();
   assert.match(full.error, /full/);
+  await setJSON(IDEAS_KEY, Array.from({ length: 150 }, (_, i) => ({ id: `bulk${i}`, column: "ideas", title: `Bulk ${i}`, caption: "", imageData: "data:image/jpeg;base64," + "A".repeat(60 * 1024), placedDate: null })));
+  const heavy = await (await admin.POST(post({ action: "mkt_idea_save", ...good, id: "bulk-overflow" }))).json();
+  assert.match(heavy.error, /8 MB/);
   await setJSON(IDEAS_KEY, []);
 });
 
 test("the dashboard is wired: board, form, editor and place paths", () => {
   const js = fs.readFileSync(path.join(ROOT, "assets", "admin.js"), "utf8");
   for (const s of ["view=mktideas", "mkt_idea_save", "mkt_idea_delete", "mktIdeas", "mktIdeaForm", "mktIdeaNew",
-    "mktIdeaTitle", "mktIdeaCap", "data-mkt-ie", "data-mkt-col", "mktIdeaOpen", "mktIdeaPlace", "mktIdeaShot", "drafting", "approved"]) {
+    "mktIdeaTitle", "mktIdeaCap", "data-mkt-ie", "data-mkt-col", "mktIdeaOpen", "mktIdeaPlace", "mktIdeaShot", "mktRenderClean", "drafting", "approved"]) {
     assert.ok(js.includes(s), `admin.js mentions ${s}`);
   }
   const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
