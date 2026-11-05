@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<meta name="theme-color" content="#EEF2F6">
+<link rel="canonical" href="https://altradits.com/research">
+<title>Product research: which Bitcoin service to open first in Kenya · Altradits</title>
+<meta name="description" content="Research from 5 Nov 2026: which Altradits product to open to the public first (kTown merchant QR), why the Ye₿ente wallet waits on a licence, the evidence, and the reference data.">
+<link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
+<meta property="og:title" content="Product research: which Bitcoin service to open first in Kenya · Altradits">
+<meta property="og:description" content="Research from 5 Nov 2026: which Altradits product to open to the public first (kTown merchant QR), why the Ye₿ente wallet waits on a licence, the evidence, and the reference data.">
+<meta property="og:url" content="https://altradits.com/research">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://altradits.com/assets/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Ye₿ente wallet: send money anywhere, keep all of it">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Product research: which Bitcoin service to open first in Kenya · Altradits">
+<meta name="twitter:description" content="Research from 5 Nov 2026: which Altradits product to open to the public first (kTown merchant QR), why the Ye₿ente wallet waits on a licence, the evidence, and the reference data.">
+<meta name="twitter:image" content="https://altradits.com/assets/social-card.png">
+<style>
+/* Brand fonts, served from this site: Bricolage Grotesque and Figtree (SIL Open Font License 1.1, https://openfontlicense.org), latin and latin-ext (₿), variable weight */
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0 -1rem;padding:.8rem 1rem;flex-wrap:wrap;row-gap:.5rem;position:sticky;top:0;z-index:50;background:rgba(238,242,246,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top img{height:2.5rem;width:auto;display:block}
+.topnav{display:flex;gap:.35rem;flex-wrap:wrap;row-gap:.35rem;align-items:center}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.45rem .95rem;border-radius:99px}
+.topnav a:hover{color:var(--ink);background:rgba(15,27,45,.08)}
+.topnav a[aria-current]{color:#fff;background:var(--ink)}
+@media (max-width:420px){.topnav{gap:.25rem}.topnav a{font-size:.9rem;padding:.4rem .7rem}.top img{height:1.9rem}}
+.hero{padding:2.25rem 0 1.5rem}
+.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem}
+.hero h1 em{font-style:normal;color:var(--btc-text)}
+.lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:38rem}
+.ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
+.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none}
+.btn.ghost{background:transparent;border-color:var(--ink)}
+h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:2.4rem 0 .4rem}
+h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
+.intro{color:var(--muted);margin:0 0 1.2rem;max-width:42rem}
+.cards{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem}
+.cards>li{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem}
+.cards p{margin:0;color:var(--muted);font-size:.97rem}
+.cards .links{display:flex;flex-wrap:wrap;gap:.4rem 1rem;margin-top:auto;padding-top:.3rem;font-weight:600}
+.tag{align-self:flex-start;font-size:.78rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}
+.sitefoot .wp{margin:0 0 .6rem}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top,.tabs{transition:box-shadow .25s ease}body.scrolled .top,body.scrolled .tabs{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.cards .links a,.more a,.foot nav a,.pager a{transition:color .18s ease}.more a{display:inline-block;transition:transform .18s ease,color .18s ease}.more a:hover{transform:translateX(4px)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
+.sm{font-size:.92rem}
+.proof{max-width:46rem;padding-left:1.2rem;color:var(--muted)}
+.proof li{margin:.4rem 0}
+.months{list-style:none;padding:0;margin:0;display:grid;gap:.6rem;max-width:46rem}
+.months li{background:var(--paper);border:2px solid var(--line);border-radius:.9rem;padding:.8rem 1rem;display:flex;flex-direction:column;gap:.15rem}
+.months .when{font-size:.78rem;font-weight:800;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
+.months span:not(.when){color:var(--muted);font-size:.95rem}
+.check{list-style:none;padding:0;margin:0;display:grid;gap:.5rem;max-width:46rem}
+.check li{display:grid;grid-template-columns:1.6rem 1fr;gap:.5rem;background:var(--paper);border:2px solid var(--line);border-radius:.9rem;padding:.7rem .9rem;color:var(--muted)}
+.check b{color:var(--ink)}
+.check .m{font-weight:800;font-size:1.1rem}.check .y{color:var(--ok)}.check .p{color:var(--btc-text)}
+.topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
+.topnav a.launch:hover{color:var(--ink);background:#ffa94d}
+.tblwrap{overflow-x:auto;max-width:46rem;margin:0 0 1rem}
+table{border-collapse:collapse;width:100%;font-size:.93rem;background:var(--paper)}
+caption{text-align:left;font-weight:700;padding:.4rem 0;color:var(--ink)}
+th,td{text-align:left;padding:.55rem .7rem;border:1px solid var(--line);vertical-align:top}
+th{background:var(--ink);color:#fff}
+tbody th{background:var(--paper);color:var(--ink)}
+td.num,th.num{text-align:right;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/library">Library</a><a href="/friends">Friends</a><a class="launch" href="/yebente">Open Ye₿ente</a></nav></div>
+
+  <header class="hero">
+    <h1>What should open <em>to the public first.</em></h1>
+    <p class="lead">Product research from 5 Nov 2026. One recommendation, the evidence behind it, and the reference data. Written for Stanley. Published openly.</p>
+    <div class="ctas"><a class="btn" href="#answer">Read the answer</a><a class="btn ghost" href="#reference">Reference data</a></div>
+  </header>
+
+  <h2 id="answer">The answer</h2>
+  <ul class="cards">
+    <li><span class="tag">Open first</span><h3>kTown merchant QR</h3><p>Sats in, M-Pesa out. Never holds money. A Kisumu pilot of 10 shops, free, four weeks.</p><div class="links"><a href="#pilot">The pilot plan</a></div></li>
+    <li><span class="tag">Blocked by law</span><h3>Ye₿ente wallet</h3><p>The wallet works, but custodial wallets need a CBK licence. Capital bar: KSh 150M. Licence first.</p><div class="links"><a href="#yebente">Why it waits</a></div></li>
+    <li><span class="tag">Stay inside</span><h3>Everything else</h3><p>Marketing engine and ops tooling stay internal. Learning content stays free. Donations stay open.</p><div class="links"><a href="#closed">What stays closed</a></div></li>
+  </ul>
+  <p class="intro sm">This is research, not legal advice. Points marked to confirm need a check before anyone acts on them.</p>
+
+  <h2 id="risks">Top risks</h2>
+  <ul class="check">
+    <li><span class="m p">!</span><span><b>The licence deadline passed on 4 Nov 2026.</b><br>New services need approval before they start. Ye₿ente wallet creation looks open on the live site now. The lawyer must say whether to pause it. <a href="#lawyer">Lawyer questions</a>.</span></li>
+    <li><span class="m p">!</span><span><b>One Mac over a tunnel is a single point of failure.</b><br>If the Mac sleeps, the node goes dark. Fine for a pilot. Not for strangers at scale.</span></li>
+    <li><span class="m p">!</span><span><b>Words must stay honest.</b><br>Ye₿ente is custodial: Altradits holds the sats and can freeze sends for safety. The homepage wording was fixed in Nov 2026. No page may claim otherwise.</span></li>
+    <li><span class="m p">!</span><span><b>Tando is partner and rival.</b><br>kTown rides Tando's rails. Tando could build merchant QR itself. The edge is local trust and Kiswahili support, not tech.</span></li>
+    <li><span class="m p">!</span><span><b>One person caps everything.</b><br>Support, liquidity, and incidents all land on Stanley. Caps on users and amounts keep one bad day survivable.</span></li>
+  </ul>
+
+  <h2 id="inventory">What exists today</h2>
+  <p class="intro">Read from the code on 5 Nov 2026, not from guesses. Live state checked the same day.</p>
+  <div class="tblwrap"><table>
+    <caption>Capability inventory</caption>
+    <thead><tr><th>Capability</th><th>State</th><th>Depends on</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>Ye₿ente wallet: PIN, handles, Lightning address, recovery</td><td>Live</td><td>Mac node, email</td><td>Friends and family only</td></tr>
+      <tr><td>Send Mobile to M-Pesa via Tando</td><td>Live</td><td>Tando, node liquidity</td><td>Inside the wallet only</td></tr>
+      <tr><td>Buy sats: Daraja, Bitika, Pesapal</td><td>Built, sandbox, hidden live</td><td>Partner approvals</td><td>Not for strangers</td></tr>
+      <tr><td>kTown merchant QR</td><td>Built, off live</td><td>Tando API only</td><td>Pilot next</td></tr>
+      <tr><td>Lightning address proxy</td><td>Live</td><td>Node</td><td>Part of the wallet</td></tr>
+      <tr><td>Donate page and Tip API</td><td>Live</td><td>Node, WoS fallback</td><td>Open, keep</td></tr>
+      <tr><td>Paid contact form and receipts</td><td>Live</td><td>Node</td><td>Site plumbing, keep</td></tr>
+      <tr><td>Marketing calendar and card editor</td><td>Live (admin)</td><td>None</td><td>Internal tool</td></tr>
+      <tr><td>Security watch and Deadman's Switch</td><td>Live</td><td>Optional AI key</td><td>Internal safety</td></tr>
+      <tr><td>Tracker and learning content</td><td>Live</td><td>GitHub API</td><td>Free, keep free</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="ktown">Why kTown first</h2>
+  <p class="intro">A Kisumu shop prints one QR. Any Lightning customer pays. The shop gets exact KES in M-Pesa. No wallet for the merchant. No hardware. kTown never holds money: sats go payer to Tando to M-Pesa, and Tando takes 1%. It is the only money-moving candidate that can plausibly open without a licence. The lawyer confirms.</p>
+  <ul class="proof">
+    <li>The direct alternative is the <a href="https://bitcoin.co.ke/send-money-to-kenya/docs/developer-api.html">Tando app and API</a> itself: zero-fee checkout, and every M-Pesa number already works as a Lightning address.</li>
+    <li><a href="https://www.europeanbusinessreview.com/best-bitcoin-payment-gateways-in-2026/">BTCPay Server</a> is free and non-custodial, but technical: a server and a node or provider.</li>
+    <li><a href="https://www.buildstudio.com.ng/apis/kotani-pay-api">Kotani Pay</a> offers stablecoin on and off ramp rails for builders.</li>
+    <li>The edge is a printed QR, the exact KES promise, Kiswahili, and a human who visits the shop.</li>
+    <li>Honest money: no revenue at launch. Later options are a flat till fee or a small add-on, lawyer first, since fee taking may change the licensing answer.</li>
+  </ul>
+
+  <h2 id="yebente">Why Ye₿ente waits</h2>
+  <p class="intro">The wallet is the best tech here. It is also custodial: the server ledger holds user sats on Stanley's node. Under Kenya's Virtual Asset Service Providers Act 2025, that looks like a wallet provider licence. The transition ended 4 Nov 2026. New providers need approval before they start.</p>
+  <div class="tblwrap"><table>
+    <caption>Licence capital per category (to confirm with the lawyer)</caption>
+    <thead><tr><th>Licence</th><th>Regulator</th><th class="num">Paid-up capital</th></tr></thead>
+    <tbody>
+      <tr><td>Wallet provider</td><td>CBK</td><td class="num">KSh 150M</td></tr>
+      <tr><td>Payment processor</td><td>CBK</td><td class="num">KSh 10M</td></tr>
+      <tr><td>Exchange</td><td>CMA</td><td class="num">KSh 100M</td></tr>
+      <tr><td>Stablecoin issuer</td><td>CBK</td><td class="num">KSh 300M</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="proof">
+    <li>Plus, to confirm: limited company, physical office, AML and KYC, audits, application and licence fees.</li>
+    <li>Rivals that avoid custody: Tando (non-custodial), Bitika (sats to your own wallet), Machankura (Lightning over USSD), Blink (open source, StableSats). Also in the space, depth in Kenya to confirm: Fedi, Wallet of Satoshi, Zeus, Bitnob.</li>
+    <li>Money math: revenue is zero today (spread 0, sends free). 100 buys a month at 1,000 KES with a 1% spread is 1,000 KES a month. Volume needs the licence first.</li>
+    <li>Scale math: 1,000 wallets at the 200,000 sat cap is 200M sats (2 BTC) of Stanley's outbound liquidity. The solvency check watches it. Funding it is real money.</li>
+  </ul>
+
+  <h2 id="pilot">The 30-day pilot</h2>
+  <p class="intro">10 shops in Kisumu Stanley can visit on foot. One printed QR each. KES only. 15 to 50,000 KES per payment. No fees from Altradits. Kiswahili and English.</p>
+  <ol class="months">
+    <li><span class="when">Days 1 to 7</span><b>Clearance and fixes</b><span>Lawyer questions out. Print flow, terms page, and abuse blocklist built and tested. Intro email to Tando sent.</span></li>
+    <li><span class="when">Days 8 to 14</span><b>First shops</b><span>Answers in. KTOWN on. 3 friendly shops onboarded. First real payments watched in person.</span></li>
+    <li><span class="when">Days 15 to 21</span><b>Ten live</b><span>10 shops live. Visit each. Log every failure and every support ask.</span></li>
+    <li><span class="when">Days 22 to 30</span><b>Decide</b><span>Grow (more shops, second town) or stop. The signals below decide.</span></li>
+  </ol>
+  <h3>Grow signals</h3>
+  <ul class="check">
+    <li><span class="m y">✓</span><span>8 or more of 10 shops still show the QR.</span></li>
+    <li><span class="m y">✓</span><span>Repeat customer payments, not just demos.</span></li>
+    <li><span class="m y">✓</span><span>Support under 30 minutes a day.</span></li>
+    <li><span class="m y">✓</span><span>A shop asks for a second QR or refers a neighbour.</span></li>
+  </ul>
+  <h3>Stop signals</h3>
+  <ul class="check">
+    <li><span class="m p">✕</span><span>Tando blocks or rate limits the use.</span></li>
+    <li><span class="m p">✕</span><span>Any payment lands wrong: amount or number.</span></li>
+    <li><span class="m p">✕</span><span>The lawyer says a licence is needed.</span></li>
+    <li><span class="m p">✕</span><span>Support passes 1 hour a day for 10 shops.</span></li>
+    <li><span class="m p">✕</span><span>Merchants stop showing the QR.</span></li>
+  </ul>
+  <p class="intro sm">Stanley does himself: the lawyer, the Tando email, the printing, and the shop visits. No new accounts needed. No Daraja, no Pesapal, no Bitika live key for kTown.</p>
+
+  <h2 id="closed">What stays closed</h2>
+  <ul class="proof">
+    <li>Ye₿ente for strangers. Custodial means a licence first.</li>
+    <li>Buy sats and card top-up for strangers. Same licence problem, plus sandbox keys that must never face the public.</li>
+    <li>Telebirr. No partner, no testing. A config flag is not a product.</li>
+    <li>Marketing tool, ops tooling, and the contact shield as services. Single-user internals. Selling them burns the one person who keeps the node safe.</li>
+  </ul>
+
+  <h2 id="reference">Reference data</h2>
+  <h3>Key dates</h3>
+  <ul class="proof">
+    <li>4 Nov 2025: the VASP Act commenced.</li>
+    <li>22 Jul 2026: the VASP Regulations gazetted (Legal Notice 134).</li>
+    <li>4 Nov 2026: the one year transition ended.</li>
+    <li>5 Nov 2026: this research reviewed.</li>
+  </ul>
+  <h3>Fees today</h3>
+  <ul class="proof">
+    <li>Tando: 1%, kept by Tando. Bitika: 3%, kept by Bitika.</li>
+    <li>Altradits: Buy spread 0, handle sends free. Revenue hooks exist and sit at zero.</li>
+    <li>Tando address claim: KES 210 over M-Pesa. Contact form: $1. Tips: 10 to 5,000,000 sats.</li>
+  </ul>
+  <h3>Caps in the code</h3>
+  <ul class="proof">
+    <li>Wallet 200,000 sats. Payment 100,000 sats. Daily send 200,000 sats. Recovery hold 1,000 sats.</li>
+    <li>Send Mobile 15 to 50,000 KES. Bitika buy 10 to 10,000 KES per payment.</li>
+  </ul>
+  <h3>Settings that gate features (names only)</h3>
+  <p class="intro sm">KTOWN, YEBENTE_WALLETS, YEBENTE_MPESA_BUY, YEBENTE_BITIKA_BUY, BITIKA_API_KEY, YEBENTE_BUY_PROVIDER, YEBENTE_CARD_BUY, PESAPAL_ENVIRONMENT, YEBENTE_BUY_SPREAD_PCT, YEBENTE_MAX_BALANCE_SATS, YEBENTE_MAX_PAYMENT_SATS, YEBENTE_DAILY_SEND_SATS, YEBENTE_RECOVERY_HOLD_SATS. See .env.example in the repo.</p>
+  <h3>Live snapshot, 5 Nov 2026</h3>
+  <div class="tblwrap"><table>
+    <caption>Health checks (read-only GET)</caption>
+    <thead><tr><th>Check</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>/api/yebente/health</td><td>Wallets on. Node connected. Send Mobile on. Buy hidden (sandbox). Card off.</td></tr>
+      <tr><td>/api/yebente/rails</td><td>M-Pesa through Tando only.</td></tr>
+      <tr><td>/api/ktown/health</td><td>Off.</td></tr>
+      <tr><td>/api/tracker</td><td>Working. Focus LND.</td></tr>
+      <tr><td>/, /yebente, /ktown</td><td>200.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Partner links</h3>
+  <ul class="proof">
+    <li><a href="https://bitcoin.co.ke/send-money-to-kenya/docs/developer-api.html">Tando developer docs</a> and the <a href="https://bitcoin.co.ke/claim-lightning-address/">address claim page</a>.</li>
+    <li><a href="https://bitika.xyz/developers/portal">Bitika developer portal</a> (test keys) and <a href="https://bitika.xyz/developers/docs">Bitika docs</a>.</li>
+  </ul>
+
+  <h2 id="sources">Sources</h2>
+  <ul class="proof">
+    <li>Regulation: <a href="https://www.ensafrica.com/news/detail/11076/kenya-s-virtual-asset-service-providers-act-20">ENSafrica on the VASP Act</a>, <a href="https://cryptonewsfocus.com/kenyas-crypto-licensing-deadline-arrives-on-november-4/">the 4 Nov deadline</a>, <a href="https://vellum.co.ke/kenyas-virtual-asset-regime-enters-compliance-phase-as-vasps-face-november-deadline/">Vellum on compliance</a>, <a href="https://www.lawlab.africa/analysis/kenya-vasp-countdown-4-november.html">LawLab countdown</a>, <a href="https://theindustryspread.com/kenya-vasp-transition-cbk-cma-licensing-split/">the CBK and CMA split</a>, <a href="https://www.liminalcustody.com/blog/kenya-vasp-licence-guide/">licence capital table</a>, <a href="https://techcabal.com/2026/08/07/firms-lining-up-for-crypto-licences-in-kenya/">licence seekers</a>, <a href="https://helloduty.com/blogs/data-protection-act-kenya-all-you-need-to-know">ODPC registration</a>.</li>
+    <li>Market: <a href="https://www.blink.sv/blog/40-million-kenyans-now-have-a-bitcoin-lightning-address">40M Lightning addresses</a>, <a href="https://bitnxt.io/interviews/tando-bitcoin-mpesa">Tando interview</a>, <a href="https://planb.academy/tutorials/exchange/centralized/bitika-bb7285f5-af75-4025-918b-d872d30ea62a">Bitika guide</a>, <a href="https://lightning.news/bitika-disrupting-finance/">Bitika profile</a>, <a href="https://www.blink.sv/blog/weekly-brief-2026-41">Bitika outage note</a>, <a href="https://bigbullcrypto.com/bitcoin-projects-are-bringing-financial-inclusion-to-feature-phones-in-africa/">Machankura on feature phones</a>, <a href="https://www.inclusivefintechforum.com/media-hub/latest-news/lessons-a-kenyan-village-transacting-in-bitcoin-harbours-in-inclusive-fintech?hs_amp=true">Blink in a Kenyan village</a>, <a href="https://borgenproject.org/kotani-pay/">Kotani Pay</a>.</li>
+    <li>Code: docs/yebente.md, docs/ktown.md, lib/ywallet.js, lib/ktown.js, lib/rails.js, lib/bitika.js, api/yebente.js, api/ktown.js, server.mjs, DEPLOY.md, in <a href="https://github.com/altradits/altradits">the repo</a>.</li>
+  </ul>
+
+  <h2 id="lawyer">Lawyer questions</h2>
+  <ol class="proof">
+    <li>Is the custodial Ye₿ente wallet a CBK wallet provider? Any lighter path: sandbox, partner licence, closed loop?</li>
+    <li>Wallet creation looks open live and the deadline passed. Pause it now? Exposure for past operation?</li>
+    <li>Does kTown, holding nothing, need any VASP licence, including payment processor? Does a flat till fee change that? A per-payment add-on?</li>
+    <li>Is written permission needed to front Tando's LNURL API commercially?</li>
+    <li>ODPC: register now or exempt? What must merchant terms and the privacy notice contain?</li>
+    <li>What disclosures and complaint handling must the pilot carry? Who owes the merchant when a payment fails mid-flight?</li>
+    <li>Company form for the pilot: sole proprietor or limited company? What changes for liability, tax, and any future licence?</li>
+    <li>Any regulatory precondition before applying for Daraja production, Pesapal production, or a Bitika live key?</li>
+    <li>What records to keep and for how long? Payment records are never pruned in code. Required? Any retention ceiling?</li>
+    <li>If Ye₿ente stays friends and family: what user cap, amount cap, and wording keeps it clearly non-public?</li>
+  </ol>
+
+  <h2>Method</h2>
+  <p class="intro">Read-only review of the main branch plus live GET checks and public sources on 5 Nov 2026. Every rival and rule links its source. Gaps say to confirm. Research, not legal advice. Questions go through <a href="/contact">Contact</a>.</p>
+
+</div>
+
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/yebente">Open Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin questions</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/research">Research</a> · <a href="/donate">Support my work</a> · <a href="/contact">Contact</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a></div></footer>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY>24)},{passive:true});document.body.classList.toggle("scrolled",scrollY>24); // nav shadow on scroll
+</script>
+</body>
+</html>
