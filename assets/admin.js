@@ -760,9 +760,9 @@ async function loadTemplates() {
   } catch (err) { box.innerHTML = `<p class="sm">Templates unavailable: ${esc(err.message)}</p>`; return; }
   MKT_TPL = list;
   box.innerHTML = `<div class="mktTpl">` + list.map((t, i) =>
-    `<figure><img src="/${esc(t.file)}" alt="${esc(t.name)} blank template" loading="lazy">`
+    `<figure data-mkt-edit="${i}"><img src="/${esc(t.file)}" alt="${esc(t.name)} blank template" title="Customize ${esc(t.name)}" loading="lazy">`
     + `<figcaption>${esc(t.name)} <span><a class="btn" href="/${esc(t.file)}" download="${esc(String(t.file).split("/").pop())}">Download</a> `
-    + `<button type="button" class="btn" data-mkt-edit="${i}">Customize</button></span></figcaption></figure>`
+    + `<button type="button" class="btn">Customize</button></span></figcaption></figure>`
   ).join("") + `</div>`;
 }
 let MKT_TPL = [];
@@ -874,6 +874,7 @@ $("#mktCal").addEventListener("click", (e) => {
   renderXPost();
 });
 $("#mktTpl").addEventListener("click", (e) => {
+  if (e.target.closest("a")) return; // downloads stay downloads
   const b = e.target.closest("[data-mkt-edit]");
   if (!b) return;
   editTemplate(Number(b.dataset.mktEdit));
