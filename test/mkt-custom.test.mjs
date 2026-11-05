@@ -59,3 +59,16 @@ test("the dashboard is wired: editor, place, remove, overlay", () => {
     assert.ok(html.includes(s), `admin.html has ${s}`);
   }
 });
+
+test("every dashboard selector starts with # and its element exists", () => {
+  const js = fs.readFileSync(path.join(ROOT, "assets/admin.js"), "utf8");
+  const bare = [...js.matchAll(/\$\(\s*["'`]([^"'`#}][^"'`]*?)["'`]/g)].map((m) => m[1]);
+  assert.deepEqual(bare, [], `selectors missing #: ${bare.join(", ")}`);
+  const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
+  const ids = new Set([...js.matchAll(/\$\(\s*["'`]#([A-Za-z][\w-]*)["'`]/g)].map((m) => m[1]));
+  assert.ok(ids.size > 50, "plenty of selectors checked");
+  for (const id of ids) {
+    const made = html.includes(`id="${id}"`) || js.includes(`id="${id}"`);
+    assert.ok(made, `#${id} exists in the page or in rendered markup`);
+  }
+});

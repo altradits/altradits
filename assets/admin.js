@@ -717,7 +717,7 @@ async function loadMarketing() {
   } catch (err) { $("#mktPosts").innerHTML = `<p class="sm">Schedule unavailable: ${esc(err.message)}</p>`; return; }
   sel.innerHTML = MKT_MONTHS.map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
   sel.value = MKT_MONTHS[MKT_MONTHS.length - 1];
-  const isel = $("mktIMonth");
+  const isel = $("#mktIMonth");
   if (isel) { isel.innerHTML = sel.innerHTML; isel.value = sel.value; }
   sel.onchange = () => renderMarketing(sel.value);
   $("#mktPrev").onclick = () => stepMonth(-1);
@@ -773,9 +773,9 @@ function editTemplate(i) {
   const t = MKT_TPL[i];
   if (!t) return;
   MKT_EDIT = { file: t.file, name: t.name, img: null };
-  const lbl = $("mktEditName");
+  const lbl = $("#mktEditName");
   if (lbl) lbl.textContent = t.name;
-  drawCustom().then(() => $("hMktEdit")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  drawCustom().then(() => $("#hMktEdit")?.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 function paintLine(ctx, line, x, y, halo) {
   if (halo) { ctx.save(); ctx.lineWidth = 10; ctx.strokeStyle = "rgba(15,27,45,.55)"; ctx.strokeText(line, x, y); ctx.restore(); }
@@ -803,7 +803,7 @@ function fitFont(ctx, text, maxW, start, min, weight, family) {
   return size;
 }
 async function drawCustom() {
-  const cv = $("mktCanvas");
+  const cv = $("#mktCanvas");
   if (!cv) return; // older cached page without the editor panel
   const ctx = cv.getContext("2d");
   if (!MKT_EDIT.img) {
@@ -812,8 +812,8 @@ async function drawCustom() {
   }
   ctx.drawImage(MKT_EDIT.img, 0, 0, 1920, 1280);
   try { await Promise.all([document.fonts.load('800 170px "Bricolage Grotesque"'), document.fonts.load('600 76px Figtree')]); } catch { /* system fonts stand in */ }
-  const light = $("mktLight")?.checked;
-  const head = $("mktHead")?.value.trim() || "", sub = $("mktSub")?.value.trim() || "";
+  const light = $("#mktLight")?.checked;
+  const head = $("#mktHead")?.value.trim() || "", sub = $("#mktSub")?.value.trim() || "";
   ctx.textBaseline = "top";
   let y = 270;
   if (head) {
@@ -879,29 +879,29 @@ $("#mktTpl").addEventListener("click", (e) => {
   editTemplate(Number(b.dataset.mktEdit));
 });
 for (const id of ["mktHead", "mktSub"]) $(`#${id}`)?.addEventListener("input", () => drawCustom());
-$("mktLight")?.addEventListener("change", () => drawCustom());
-$("mktDl")?.addEventListener("click", () => {
+$("#mktLight")?.addEventListener("change", () => drawCustom());
+$("#mktDl")?.addEventListener("click", () => {
   const a = document.createElement("a");
-  a.href = $("mktCanvas").toDataURL("image/jpeg", 0.9);
+  a.href = $("#mktCanvas").toDataURL("image/jpeg", 0.9);
   a.download = `altradits-${MKT_EDIT.name.toLowerCase()}-custom.jpg`;
   a.click();
 });
-$("mktPlace")?.addEventListener("click", async () => {
-  const st = $("mktIStatus");
+$("#mktPlace")?.addEventListener("click", async () => {
+  const st = $("#mktIStatus");
   st.textContent = "Placing…";
-  const month = $("mktIMonth").value, day = String($("mktIDay").value).padStart(2, "0");
+  const month = $("#mktIMonth").value, day = String($("#mktIDay").value).padStart(2, "0");
   try {
     const r = await api("", { action: "mkt_place", month, date: `${month}-${day}`,
-      caption: $("mktICap").value, alt: `${MKT_EDIT.name} template with custom words`,
-      imageData: $("mktCanvas").toDataURL("image/jpeg", 0.88) });
+      caption: $("#mktICap").value, alt: `${MKT_EDIT.name} template with custom words`,
+      imageData: $("#mktCanvas").toDataURL("image/jpeg", 0.88) });
     st.textContent = `Placed on ${r.placed}.`;
     await renderMarketing(month);
   } catch (err) { st.textContent = err.message; }
 });
-$("mktUnplace")?.addEventListener("click", async () => {
-  const st = $("mktIStatus");
+$("#mktUnplace")?.addEventListener("click", async () => {
+  const st = $("#mktIStatus");
   st.textContent = "Removing…";
-  const month = $("mktIMonth").value, day = String($("mktIDay").value).padStart(2, "0");
+  const month = $("#mktIMonth").value, day = String($("#mktIDay").value).padStart(2, "0");
   try {
     await api("", { action: "mkt_remove", month, date: `${month}-${day}` });
     st.textContent = `Removed ${month}-${day}.`;
