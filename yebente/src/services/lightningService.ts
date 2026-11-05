@@ -77,23 +77,20 @@ export function isLightningAddress(input: string): boolean {
 }
 
 /**
- * Friendly provider name for a Lightning-address domain.
+ * Friendly provider name for a Lightning-address domain. Exact domains only:
+ * a substring match would also rename blink.sv.evil.com (and CodeQL refuses
+ * substring checks on hosts). Anything else shows as itself.
  */
+const PROVIDERS: Record<string, string> = {
+  'walletofsatoshi.com': 'Wallet of Satoshi',
+  'blink.sv': 'Blink (Galoy)',
+  'bitcoin.co.ke': 'Tando (M-Pesa)',
+  'getalby.com': 'Alby',
+  'strike.me': 'Strike',
+  'coinos.io': 'CoinOS',
+};
 function providerFor(domain: string): string {
-  if (domain.includes('walletofsatoshi')) {
-    return 'Wallet of Satoshi';
-  } else if (domain.includes('blink.sv')) {
-    return 'Blink (Galoy)';
-  } else if (domain.includes('bitcoin.co.ke')) {
-    return 'Tando (M-Pesa)';
-  } else if (domain.includes('getalby')) {
-    return 'Alby';
-  } else if (domain.includes('strike.me')) {
-    return 'Strike';
-  } else if (domain.includes('coinos.io')) {
-    return 'CoinOS';
-  }
-  return domain;
+  return PROVIDERS[domain.toLowerCase()] || domain;
 }
 
 /**
