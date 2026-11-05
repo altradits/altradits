@@ -810,7 +810,7 @@ function mktDefaultEls() {
   ];
 }
 let MKT_ELS = mktDefaultEls();
-let MKT_EDIT = { file: "", bg: "", name: "", img: null, logoImg: null, logoWhite: null, sel: null, caret: null, caretOn: true };
+let MKT_EDIT = { file: "", bg: "", name: "", img: null, logoImg: null, logoWhite: null, sel: null, caret: null, caretOn: true, ideaId: null };
 let MKT_HIT = [];
 let MKT_HANDLES = [];
 const MKT_LAYOUTS = {};
@@ -843,8 +843,8 @@ function editTemplate(i, scroll = true) {
   mktInlineCommit();
   if (MKT_EDIT.file) MKT_LAYOUTS[MKT_EDIT.file] = mktSnap();
   const keepHead = mktRoleEl("head")?.text || "", keepSub = mktRoleEl("sub")?.text || "";
-  const keepCaret = MKT_EDIT.caret;
-  MKT_EDIT = { file: t.file, bg: t.bg, name: t.name, img: null, logoImg: null, logoWhite: null, sel: null, caret: keepCaret, caretOn: true };
+  const keepCaret = MKT_EDIT.caret, keepIdea = MKT_EDIT.ideaId;
+  MKT_EDIT = { file: t.file, bg: t.bg, name: t.name, img: null, logoImg: null, logoWhite: null, sel: null, caret: keepCaret, caretOn: true, ideaId: keepIdea };
   MKT_ELS = MKT_LAYOUTS[t.file] ? JSON.parse(MKT_LAYOUTS[t.file]) : mktDefaultEls();
   const head = mktRoleEl("head"), sub = mktRoleEl("sub");
   if (head) head.text = keepHead;
@@ -1744,6 +1744,7 @@ function mktIdeaFormOpen(idea, column) {
   $("#mktIdeaTitle").focus();
 }
 function mktIdeaOpen(idea) {
+  MKT_EDIT.ideaId = idea.id;
   mktInlineCommit();
   mktPush();
   const head = mktRoleEnsure("head"), sub = mktRoleEnsure("sub");
@@ -1758,6 +1759,12 @@ function mktIdeaOpen(idea) {
   toast("Idea loaded in the editor.");
 }
 async function mktIdeaPlace(idea, month, day) {
+  // The picture comes from the canvas, so the canvas must hold this idea:
+  // otherwise card B would go out under card A's picture.
+  if (MKT_EDIT.ideaId !== idea.id) {
+    mktIdeaOpen(idea);
+    throw new Error("Check the picture in the editor, then press Place again.");
+  }
   const date = `${month}-${day}`;
   const full = await mktRenderClean(0.88);
   await api("", { action: "mkt_place", month, date, caption: idea.caption,
