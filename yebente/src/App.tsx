@@ -160,6 +160,7 @@ export default function App() {
         frozen: w.frozen === true,
         pendingRecovery: w.pendingRecovery || null,
         emailChange: w.emailChange || null,
+        hold: w.hold || null,
       }));
       // Sats that came in since the last look: the receiver's show.
       if (firstSync.current) markCelebrated(txs.map((t) => t.referenceNumber));

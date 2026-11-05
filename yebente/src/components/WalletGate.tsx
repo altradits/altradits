@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Fingerprint, Lock, ArrowLeft, Download, Eye, Copy, Check, Share2 } from 'lucide-react';
 import {
   needsMove, unlockServerWallet, moveToDeviceKey, startLogin, finishLogin, createServerWallet,
-  restoreServerWallet, requestEmailRecovery, finishEmailRecovery, forgetServerWallet,
+  restoreServerWallet, requestEmailRecovery, finishEmailRecovery, forgetServerWallet, typoHintOf,
 } from '../services/altraditsWallet';
 import { biometricOn, approveUnlock } from '../services/biometric';
 import { downloadRecoveryCard, shareRecoveryCard, canShareCard } from '../services/recoveryCard';
@@ -59,13 +59,27 @@ export const WalletGate: React.FC<Props> = ({ locked, recoveryToken, onOpen, onR
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
+  const [typo, setTypo] = useState<{ hint: string; address: string; resend: () => void } | null>(null);
   useEffect(() => { if (recoveryToken) setMode('newpin'); }, [recoveryToken]);
   useEffect(() => { if (linked()) window.history.replaceState(null, '', window.location.pathname); }, []);
 
-  const go = (m: Mode) => { setMode(m); setError(''); setNote(''); setPin(''); setPin2(''); };
+  const go = (m: Mode) => { setMode(m); setError(''); setNote(''); setPin(''); setPin2(''); setTypo(null); };
   const run = async (fn: () => Promise<void>) => {
     setBusy(true); setError('');
     try { await fn(); } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Something went wrong. Try again.'); } finally { setBusy(false); }
+  };
+  // Sending to an email: when the server flags a misspelt domain, offer the
+  // typed address anyway (some real domains look like typos).
+  const runEmail = (fn: (confirmTypo: boolean) => Promise<void>) => {
+    const attempt = (confirm: boolean) => {
+      setBusy(true); setError(''); setTypo(null);
+      fn(confirm).catch((err: unknown) => {
+        const hint = !confirm && typoHintOf(err);
+        setError(err instanceof Error ? err.message : 'Something went wrong. Try again.');
+        if (hint) setTypo({ hint, address: email.trim(), resend: () => attempt(true) });
+      }).finally(() => setBusy(false));
+    };
+    attempt(false);
   };
   const twoPins = () => {
     if (!/^\d{6}$/.test(pin)) throw new Error('Choose a 6-digit PIN.');
@@ -127,9 +141,9 @@ export const WalletGate: React.FC<Props> = ({ locked, recoveryToken, onOpen, onR
           {!codeSent ? (
             <>
               <p className="text-sm text-[var(--yb-on-surface-variant)]">Enter the email on your wallet. We'll send a code; then you enter your PIN. Nothing gets reset.</p>
-              <input type="email" className={field} placeholder="you@email.com" value={email} autoComplete="email" onChange={(e) => setEmail(e.target.value.slice(0, 200))} />
+              <input type="email" className={field} placeholder="you@email.com" value={email} autoComplete="email" onChange={(e) => { setEmail(e.target.value.slice(0, 200)); setTypo(null); }} />
               <button type="button" className={primary} disabled={busy || !email.includes('@')}
-                onClick={() => run(async () => { await startLogin(email.trim()); setCodeSent(true); setNote('If that email is on a Ye₿ente wallet, a code is on its way. It works for 10 minutes.'); })}>
+                onClick={() => runEmail(async (confirmTypo) => { await startLogin(email.trim(), confirmTypo); setCodeSent(true); setNote('If that email is on a Ye₿ente wallet, a code is on its way. It works for 10 minutes.'); })}>
                 Send me a code
               </button>
               <p className="text-xs text-[var(--yb-on-surface-variant)]">No email on your wallet? <button type="button" className={link} onClick={() => go('recover')}>Use your recovery words</button></p>
@@ -207,9 +221,9 @@ export const WalletGate: React.FC<Props> = ({ locked, recoveryToken, onOpen, onR
           <p className="text-sm text-[var(--yb-on-surface-variant)]">For a lost phone or a forgotten PIN. You'll choose a new PIN, your other phones are signed out, and for 24 hours at most 1,000 sats can be sent, in case someone else is trying. Just using a new phone and you know your PIN? <button type="button" className={link} onClick={() => go('login')}>Log in instead</button>.</p>
           <div className="space-y-2">
             <span className="block text-xs font-semibold text-[var(--yb-secondary)]">With your email</span>
-            <input type="email" className={field} placeholder="you@email.com" value={email} autoComplete="email" onChange={(e) => setEmail(e.target.value.slice(0, 200))} />
+            <input type="email" className={field} placeholder="you@email.com" value={email} autoComplete="email" onChange={(e) => { setEmail(e.target.value.slice(0, 200)); setTypo(null); }} />
             <button type="button" className={secondary} disabled={busy || !email.includes('@')}
-              onClick={() => run(async () => { const r = await requestEmailRecovery(email.trim()); setNote(r.message); })}>Email me a recovery link</button>
+              onClick={() => runEmail(async (confirmTypo) => { const r = await requestEmailRecovery(email.trim(), confirmTypo); setNote(r.message); })}>Email me a recovery link</button>
           </div>
           <div className="space-y-2 pt-2 border-t border-[var(--yb-outline-variant)]/60">
             <span className="block text-xs font-semibold text-[var(--yb-secondary)] pt-2">With your 12 recovery words</span>
@@ -237,6 +251,11 @@ export const WalletGate: React.FC<Props> = ({ locked, recoveryToken, onOpen, onR
       )}
 
       {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
+      {typo && (
+        <button type="button" className={secondary} disabled={busy} onClick={typo.resend}>
+          Use {typo.address} anyway
+        </button>
+      )}
     </div>
   );
 };

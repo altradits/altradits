@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Smartphone, ShieldCheck } from 'lucide-react';
-import { fetchSecurity, removeDevice, cancelEmailRecovery, SecurityInfo } from '../services/altraditsWallet';
+import { fetchSecurity, removeDevice, cancelEmailRecovery, changeServerPin, SecurityInfo } from '../services/altraditsWallet';
 
 // The phones signed in to this wallet and what happened to it lately, so the
 // owner can spot a phone or a recovery they don't recognise and remove it.
@@ -17,6 +17,11 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
   const [cancelling, setCancelling] = useState(false);
   const [cancelPin, setCancelPin] = useState('');
   const [cancelNote, setCancelNote] = useState('');
+  const [changing, setChanging] = useState(false);
+  const [oldPin, setOldPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [newPin2, setNewPin2] = useState('');
+  const [pinNote, setPinNote] = useState('');
   const load = () => fetchSecurity().then(setInfo).catch(() => setInfo(null));
   useEffect(() => { load(); }, []);
   if (!info) return null;
@@ -34,6 +39,19 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
     catch (err: unknown) { setError(err instanceof Error ? err.message : 'Could not cancel the recovery.'); }
     finally { setBusy(false); }
   };
+
+  const changePin = async () => {
+    setBusy(true); setError(''); setPinNote('');
+    try {
+      if (newPin !== newPin2) throw new Error("The two new PINs don't match.");
+      await changeServerPin(oldPin, newPin);
+      setChanging(false); setOldPin(''); setNewPin(''); setNewPin2('');
+      setPinNote('PIN changed. Older sign-ins ended.'); await load(); onChanged?.();
+    }
+    catch (err: unknown) { setError(err instanceof Error ? err.message : 'Could not change the PIN.'); }
+    finally { setBusy(false); }
+  };
+  const pinBox = 'yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.3em]';
 
   return (
     <div className="space-y-2">
@@ -58,6 +76,31 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
         </div>
       )}
       {cancelNote && <p className="text-[11px] text-emerald-300 px-1">{cancelNote}</p>}
+      {info.hold && (
+        <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/30">
+          <p className="text-xs font-semibold text-amber-200">Recovery hold</p>
+          <p className="text-[11px] text-amber-300/90">At most {info.hold.left.toLocaleString()} of {info.hold.total.toLocaleString()} sats can still be sent, until {when(info.hold.until)}.</p>
+        </div>
+      )}
+      {!changing ? (
+        <button type="button" onClick={() => { setChanging(true); setOldPin(''); setNewPin(''); setNewPin2(''); setError(''); setPinNote(''); }}
+          className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center hover:bg-[var(--yb-surface-container-high)]">Change PIN</button>
+      ) : (
+        <div className="space-y-2">
+          <div className="grid grid-cols-3 gap-2">
+            <input type="password" inputMode="numeric" maxLength={6} name="yb-pin-old" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true"
+              value={oldPin} onChange={(e) => setOldPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Old PIN" className={pinBox} />
+            <input type="password" inputMode="numeric" maxLength={6} name="yb-pin-new" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true"
+              value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="New PIN" className={pinBox} />
+            <input type="password" inputMode="numeric" maxLength={6} name="yb-pin-new2" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true"
+              value={newPin2} onChange={(e) => setNewPin2(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Again" className={pinBox} />
+          </div>
+          <p className="text-[11px] text-[var(--yb-on-surface-variant)] px-1">Never a PIN you used before. Older sign-ins end.</p>
+          <button type="button" disabled={busy || oldPin.length !== 6 || newPin.length !== 6 || newPin2.length !== 6} onClick={changePin}
+            className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50">Set the new PIN</button>
+        </div>
+      )}
+      {pinNote && <p className="text-[11px] text-emerald-300 px-1">{pinNote}</p>}
       <ul className="space-y-1.5">
         {info.devices.map((d) => (
           <li key={d.id} className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)]">

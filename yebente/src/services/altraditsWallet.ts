@@ -61,6 +61,7 @@ export interface ServerWallet {
   email?: string | null;
   emailPending?: string | null;
   holdUntil?: string | null;
+  hold?: HoldInfo | null;
   frozen?: boolean;
   pendingRecovery?: PendingRecovery | null;
   emailChange?: { newEmail: string; effectiveAt: string } | null;
@@ -89,9 +90,16 @@ export async function api<T>(method: 'GET' | 'POST', path: string, body?: unknow
   });
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && session()) lockLocally(); // the session ended: lock, never forget the wallet
-  if (!res.ok || !data.success) throw new Error(data.error || 'Wallet service unavailable.');
+  if (!res.ok || !data.success) {
+    const err = new Error(data.error || 'Wallet service unavailable.') as Error & { typoHint?: string };
+    if (typeof data.typoHint === 'string') err.typoHint = data.typoHint; // a misspelt domain: offer "use anyway"
+    throw err;
+  }
   return data as T;
 }
+// The server's spelling suggestion on a refused email, if it gave one.
+export const typoHintOf = (err: unknown): string | null =>
+  err instanceof Error ? (err as Error & { typoHint?: string }).typoHint || null : null;
 
 export async function createServerWallet(pin: string, handle: string, email = '') {
   const r = await api<{ wallet: ServerWallet; session?: string; deviceId?: string; token?: string; recovery: string }>('POST', 'create', { pin, handle, email: email || undefined, device: await devicePublicKey() });
@@ -125,7 +133,11 @@ export async function moveToDeviceKey(pin: string) {
 }
 
 // A new phone: a one-time code by email first, then the PIN you already have (nothing is reset).
-export const startLogin = (email: string) => api<{ message: string }>('POST', 'login/start', { email });
+export const startLogin = (email: string, confirmTypo = false) =>
+  api<{ message: string }>('POST', 'login/start', confirmTypo ? { email, confirmTypo: true } : { email });
+// A new PIN on this trusted phone: needs the current one, never a recent one.
+export const changeServerPin = (pin: string, newPin: string) =>
+  api<{ changed: boolean }>('POST', 'pin/change', { pin, newPin });
 export async function finishLogin(email: string, code: string, pin: string) {
   const r = await api<{ wallet: ServerWallet; session: string; deviceId: string }>('POST', 'login/finish', { email, code, pin, device: await devicePublicKey() });
   opened(r);
@@ -138,7 +150,8 @@ export async function lockServerWallet() {
 }
 
 export interface PendingRecovery { requestedAt: string; expiresAt: string }
-export interface SecurityInfo { devices: { id: string; at: string; lastSeen: string; current: boolean }[]; olderDevices: number; log: { at: string; kind: string; text: string }[]; pendingRecovery: PendingRecovery | null }
+export interface HoldInfo { until: string; total: number; left: number }
+export interface SecurityInfo { devices: { id: string; at: string; lastSeen: string; current: boolean }[]; olderDevices: number; log: { at: string; kind: string; text: string }[]; pendingRecovery: PendingRecovery | null; hold?: HoldInfo | null }
 export const fetchSecurity = () => api<SecurityInfo & { success: boolean }>('GET', 'security');
 export const cancelEmailRecovery = (pin: string) => api<{ cancelled: boolean }>('POST', 'recovery/cancel', { pin });
 export async function removeDevice(id: string, pin: string) {
@@ -184,14 +197,14 @@ function entryToTransaction(e: ServerEntry): Transaction {
 }
 
 // ---- recovery by email
-export const setRecoveryEmail = (email: string, pin: string) =>
-  api<{ emailPending: string }>('POST', 'email', { email, pin });
+export const setRecoveryEmail = (email: string, pin: string, confirmTypo = false) =>
+  api<{ emailPending: string }>('POST', 'email', confirmTypo ? { email, pin, confirmTypo: true } : { email, pin });
 
 export const cancelPendingEmailChange = (pin: string) =>
   api<{ cancelled: boolean }>('POST', 'email/cancel', { pin });
 
-export const requestEmailRecovery = (email: string) =>
-  api<{ message: string }>('POST', 'recover-email', { email });
+export const requestEmailRecovery = (email: string, confirmTypo = false) =>
+  api<{ message: string }>('POST', 'recover-email', confirmTypo ? { email, confirmTypo: true } : { email });
 
 export async function finishEmailRecovery(token: string, pin: string) {
   const r = await api<{ wallet: ServerWallet; session?: string; deviceId?: string; token?: string }>('POST', 'recover-email/finish', { token, pin, device: await devicePublicKey() });

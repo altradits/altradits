@@ -6,7 +6,7 @@ import {
   queryWebLNBalance,
   LightningAddressDetails,
 } from '../services/lightningService';
-import { hasServerWallet, setRecoveryEmail, cancelPendingEmailChange, lockServerWallet, forgetServerWallet } from '../services/altraditsWallet';
+import { hasServerWallet, setRecoveryEmail, cancelPendingEmailChange, lockServerWallet, forgetServerWallet, typoHintOf } from '../services/altraditsWallet';
 import { PhonesAndSecurity } from './PhonesAndSecurity';
 import { biometricSupported, biometricOn, enableBiometric, disableBiometric } from '../services/biometric';
 import { Fingerprint } from 'lucide-react';
@@ -62,6 +62,18 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   const [walletMsg, setWalletMsg] = useState('');
   const [emailInput, setEmailInput] = useState('');
   const [emailPin, setEmailPin] = useState('');
+  const [emailTypo, setEmailTypo] = useState<string | null>(null);
+  const sendConfirmation = async (confirmTypo: boolean) => {
+    setWalletBusy(true); setValidationError(''); setWalletMsg(''); setEmailTypo(null);
+    try {
+      const r = await setRecoveryEmail(emailInput.trim(), emailPin, confirmTypo);
+      setWalletMsg(`Check ${r.emailPending} to confirm.`); setEmailInput(''); setEmailPin(''); onServerWalletChange?.();
+    } catch (err: unknown) {
+      setValidationError(err instanceof Error ? err.message : 'Wallet service unavailable.');
+      const hint = !confirmTypo && typoHintOf(err);
+      if (hint) setEmailTypo(hint);
+    } finally { setWalletBusy(false); }
+  };
   const [bioSupported, setBioSupported] = useState(false);
   const [bioActive, setBioActive] = useState(biometricOn());
   const [bioPin, setBioPin] = useState('');
@@ -375,7 +387,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                       data-lpignore="true"
                       data-1p-ignore="true"
                       value={emailInput}
-                      onChange={(e) => setEmailInput(e.target.value.slice(0, 200))}
+                      onChange={(e) => { setEmailInput(e.target.value.slice(0, 200)); setEmailTypo(null); }}
                       placeholder="you@email.com"
                       className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
                     />
@@ -396,16 +408,21 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                   <button
                     type="button"
                     disabled={walletBusy || !emailInput.includes('@') || !/^\d{6}$/.test(emailPin)}
-                    onClick={async () => {
-                      setWalletBusy(true); setValidationError(''); setWalletMsg('');
-                      try { const r = await setRecoveryEmail(emailInput.trim(), emailPin); setWalletMsg(`Check ${r.emailPending} to confirm.`); setEmailInput(''); setEmailPin(''); onServerWalletChange?.(); }
-                      catch (err: unknown) { setValidationError(err instanceof Error ? err.message : 'Wallet service unavailable.'); }
-                      finally { setWalletBusy(false); }
-                    }}
+                    onClick={() => sendConfirmation(false)}
                     className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center gap-2 hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50"
                   >
                     Send confirmation
                   </button>
+                  {emailTypo && (
+                    <button
+                      type="button"
+                      disabled={walletBusy}
+                      onClick={() => sendConfirmation(true)}
+                      className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center gap-2 hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50"
+                    >
+                      Use {emailInput.trim()} anyway
+                    </button>
+                  )}
                   {walletMsg && <p className="text-xs text-emerald-300 px-1">{walletMsg}</p>}
                 </div>
               )}

@@ -15,6 +15,7 @@ const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
 const receiptApi = await import(`${ROOT}/api/receipt.js`);
 const admin = await import(`${ROOT}/api/admin.js`);
 const { setJSON, getJSON } = await import(`${ROOT}/lib/store.js`);
+(await import(`${ROOT}/lib/email.js`)).setMailer({ sendMail: async () => {} }); // resends need a working transport stand-in
 const postAdmin = (body) => admin.POST(new Request("https://altradits.test/api/admin", { method: "POST",
   headers: { Authorization: `Bearer ${process.env.ADMIN_TOKEN}`, "Content-Type": "application/json" }, body: JSON.stringify(body) }));
 
