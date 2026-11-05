@@ -26,7 +26,8 @@ const { encodeLnurl } = await import("../lib/lnurl.js");
 
 // --- mock LNURL server (HTTPS, test CA) ------------------------------------
 execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-subj", "/CN=lnurl.test",
-  "-addext", "subjectAltName=DNS:lnurl.test", "-keyout", "key.pem", "-out", "cert.pem"], { stdio: "ignore" });
+  "-addext", "subjectAltName=DNS:lnurl.test,DNS:other.test,DNS:wos.test,DNS:livingroom.test,DNS:blink.test,DNS:lnurl.blink.test",
+  "-keyout", "key.pem", "-out", "cert.pem"], { stdio: "ignore" });
 const PORT = { n: 0 };
 const seen = [];  // every request's cookie/authorization headers (must stay empty)
 const cbGot = {}; // callback query per user
@@ -41,16 +42,25 @@ const invoice = (sats, descHash = null) => {
   return `lnbc${sats * 10}n1` + words.map((w) => BECH[w]).join("") + "qqqqqq";
 };
 const lnurlHandler = (req, res) => {
-  seen.push({ url: req.url, cookie: req.headers.cookie, auth: req.headers.authorization });
+  seen.push({ url: req.url, host: req.headers.host, cookie: req.headers.cookie, auth: req.headers.authorization });
   const u = new URL(req.url, "https://lnurl.test");
   const json = (code, obj, type = "application/json; charset=utf-8") => { res.writeHead(code, { "Content-Type": type }); res.end(JSON.stringify(obj)); };
   const m = u.pathname.match(/^\/\.well-known\/lnurlp\/([\w.-]+)$/);
   if (m) {
     const user = m[1];
+    const host = String(req.headers.host || "").split(":")[0].toLowerCase();
+    // WoS- and Blink-shaped: the callback lives on another host, like the real wallets.
+    if (host === "wos.test") return json(200, { tag: "payRequest", callback: "https://livingroom.test/cb/wos",
+      minSendable: 1000, maxSendable: 11000000, metadata: meta(user, "wos.test"), commentAllowed: 140 });
+    if (host === "blink.test") return json(200, { tag: "payRequest", callback: "https://lnurl.blink.test/cb/blink",
+      minSendable: 1000, maxSendable: 11000000, metadata: meta(user, "blink.test"), commentAllowed: 140 });
     if (user === "moved") { res.writeHead(302, { Location: "/cb/alice" }); res.end(); return; }
     if (user === "big") return json(200, { ...payRequest(user), pad: "x".repeat(100 * 1024) });
     if (user === "html") { res.writeHead(200, { "Content-Type": "text/html" }); res.end("<h1>not json</h1>"); return; }
-    if (user === "evil") return json(200, payRequest(user, { callback: "https://other.test/cb" }));
+    if (user === "evil") return json(200, payRequest(user, { callback: "https://other.test/cb/evil" }));
+    if (user === "trap") return json(200, payRequest(user, { callback: "https://evil.test/cb/evil" }));
+    if (user === "literal") return json(200, payRequest(user, { callback: "https://93.184.216.34/cb/alice" }));
+    if (user === "literal6") return json(200, payRequest(user, { callback: "https://[2001:db8::1]/cb/alice" }));
     if (user === "plain") return json(200, payRequest(user, { callback: "http://lnurl.test/cb/alice" }));
     if (user === "creds") return json(200, payRequest(user, { callback: "https://user:pass@lnurl.test/cb/alice" }));
     if (user === "down") return json(200, { status: "ERROR", reason: "No wallet here." });
@@ -92,15 +102,19 @@ const useDns = (map) => {
     cb(null, a);
   });
 };
-const localDns = () => useDns({ "lnurl.test": [{ address: "127.0.0.1", family: 4 }], "pin.test": [{ address: "127.0.0.1", family: 4 }] });
+const MOCK_HOSTS = ["lnurl.test", "other.test", "wos.test", "livingroom.test", "blink.test", "lnurl.blink.test"];
+const localDns = () => useDns(Object.fromEntries([...MOCK_HOSTS, "pin.test"].map((h) => [h, [{ address: "127.0.0.1", family: 4 }]])));
 
 let agent;
 // The proxy builds default-port URLs from addresses, but the mock listens on
 // a random port: map the host to it here, after every production check has
 // run on the real URL. DNS, TLS, size and content checks all stay live.
 const testFetcher = (u, o) => {
-  const prefix = "https://lnurl.test/";
-  const mapped = String(u).startsWith(prefix) ? `https://lnurl.test:${PORT.n}/` + String(u).slice(prefix.length) : String(u);
+  let mapped = String(u);
+  for (const h of MOCK_HOSTS) {
+    const prefix = `https://${h}/`;
+    if (mapped.startsWith(prefix)) { mapped = `https://${h}:${PORT.n}/` + mapped.slice(prefix.length); break; }
+  }
   return netsafe.publicFetch(mapped, { ...o, agent });
 };
 before(async () => {
@@ -219,11 +233,49 @@ test("a wrong content type is refused", async () => {
   assert.equal(r.body.error, UNREACHABLE);
 });
 
-test("the callback stays on the host that named it, over https, without userinfo", async () => {
-  for (const [to, why] of [["evil@lnurl.test", "another host"], ["plain@lnurl.test", "plain http"], ["creds@lnurl.test", "userinfo"]]) {
-    const r = await post("address/invoice", { to, sats: 50 }, { ip: "10.1.3.4" });
+test("a cross-host callback on a public host succeeds, WoS- and Blink-shaped included", async () => {
+  const cross = await post("address/invoice", { to: "evil@lnurl.test", sats: 50 }, { ip: "10.1.3.4" });
+  assert.equal(cross.status, 200, JSON.stringify(cross.body));
+  assert.equal(cross.body.invoice, "lnbc500n1testinvoice");
+  assert.deepEqual(cbGot.evil, { amount: "50000", comment: null });
+  const wos = await post("address/resolve", { to: "someone@wos.test" }, { ip: "10.1.3.4" });
+  assert.equal(wos.status, 200, JSON.stringify(wos.body));
+  assert.equal(wos.body.address, "someone@wos.test");
+  const wosInv = await post("address/invoice", { to: "someone@wos.test", sats: 50 }, { ip: "10.1.3.4" });
+  assert.equal(wosInv.status, 200, JSON.stringify(wosInv.body));
+  const blink = await post("address/invoice", { to: "someone@blink.test", sats: 50 }, { ip: "10.1.3.4" });
+  assert.equal(blink.status, 200, JSON.stringify(blink.body));
+});
+
+test("the callback must be plain https: no userinfo, no IP literal", async () => {
+  for (const [to, why] of [["plain@lnurl.test", "plain http"], ["creds@lnurl.test", "userinfo"],
+    ["literal@lnurl.test", "IPv4 literal"], ["literal6@lnurl.test", "IPv6 literal"]]) {
+    const r = await post("address/invoice", { to, sats: 50 }, { ip: "10.1.3.7" });
     assert.equal(r.status, 502, why);
     assert.equal(r.body.error, UNREACHABLE, why);
+  }
+});
+
+test("a cross-host callback to a private or loopback IP is refused before connecting", async () => {
+  // The callback hop runs under production rules (no local bypass), so a
+  // private answer is refused by the guard instead of connected to.
+  lnaddr.setLnaddrFetcher(async (u, o) => {
+    if (!String(u).includes("/cb/")) return testFetcher(u, o);
+    delete process.env.JOBS_ALLOW_LOCAL;
+    try { return await testFetcher(u, o); } finally { process.env.JOBS_ALLOW_LOCAL = "1"; }
+  });
+  try {
+    for (const [ip, why] of [["10.9.9.9", "private"], ["127.0.0.2", "loopback"]]) {
+      useDns({ ...Object.fromEntries(MOCK_HOSTS.map((h) => [h, [{ address: "127.0.0.1", family: 4 }]])),
+        "evil.test": [{ address: ip, family: 4 }] });
+      const r = await post("address/invoice", { to: "trap@lnurl.test", sats: 50 }, { ip: "10.1.3.8" });
+      assert.equal(r.status, 502, why);
+      assert.equal(r.body.error, UNREACHABLE, why);
+    }
+    assert.ok(seen.every((s) => String(s.host).split(":")[0] !== "evil.test"), "nothing was sent to the refused host");
+  } finally {
+    lnaddr.setLnaddrFetcher(testFetcher);
+    localDns();
   }
 });
 
