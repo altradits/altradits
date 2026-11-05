@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<title>kTown: Bitcoin payments that land as M-Pesa</title>
+<meta name="description" content="kTown: one QR on the counter. Customers pay in sats, the merchant in Kenya receives M-Pesa.">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/ktown/icons/icon-192.png">
+<link rel="manifest" href="/ktown/manifest.webmanifest">
+<meta name="theme-color" content="#0f1b2d">
+<link rel="stylesheet" href="/ktown/style.css">
+</head>
+<body>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+</script>
+<div class="lang" id="lang-toggle" hidden>
+  <button type="button" id="lang-en" aria-pressed="true">EN</button>
+  <button type="button" id="lang-sw" aria-pressed="false">SW</button>
+</div>
+<main class="wrap">
+  <section id="screen-qr" aria-labelledby="qr-shop">
+    <h1 class="shop" id="qr-shop">kTown</h1>
+    <p class="mpesa-name" id="qr-mpesa"></p>
+    <p style="text-align:center;margin:0"><span class="mark" id="qr-mark"></span></p>
+    <p class="secure-note" id="qr-secure" hidden></p>
+    <p class="offline-note" id="offline-note" role="status" data-i18n="offlineNote" hidden></p>
+    <div class="qr-card" id="qr" role="img" aria-label="Shop QR code"></div>
+    <p class="print-line">Pay with Bitcoin Lightning <b>⚡</b></p>
+    <p class="err" id="qr-err" role="alert" hidden></p>
+    <div class="row no-print">
+      <button type="button" class="btn" id="btn-print-card" data-i18n="printCard">Print card</button>
+      <button type="button" class="btn" id="btn-print-sheet" data-i18n="printSheet">Print sheet</button>
+    </div>
+    <button type="button" class="btn ghost no-print" id="btn-png" data-i18n="savePng">Save PNG</button>
+    <p class="foot" data-i18n="honest">kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.</p>
+  </section>
+  <section id="screen-settings" aria-labelledby="set-title" hidden>
+    <h1 class="shop" id="set-title" data-i18n="settings">Settings</h1>
+    <div id="signed-out">
+      <form id="f-register" class="card" novalidate>
+        <h2 data-i18n="register">Register</h2>
+        <label for="r-phone" data-i18n="phone">M-Pesa number</label>
+        <input id="r-phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="0712 345 678" required>
+        <label for="r-shop" data-i18n="shop">Shop name</label>
+        <input id="r-shop" name="shop" autocomplete="organization" maxlength="60" required>
+        <label for="r-mpesa" data-i18n="mpesaName">M-Pesa name, exactly as M-Pesa shows it</label>
+        <input id="r-mpesa" name="mpesa" autocomplete="off" maxlength="60" required>
+        <label for="r-pin" data-i18n="pin">6-digit PIN</label>
+        <input id="r-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="new-password" maxlength="6" required>
+        <p class="err" id="reg-err" role="alert" hidden></p>
+        <button type="submit" class="btn" id="btn-register" data-i18n="registerBtn">Register this number</button>
+      </form>
+      <p style="text-align:center"><button type="button" class="link" id="link-login" data-i18n="havePin">Already registered? Log in</button></p>
+      <form id="f-login" class="card" hidden novalidate>
+        <h2 data-i18n="login">Log in</h2>
+        <label for="l-phone" data-i18n="phone">M-Pesa number</label>
+        <input id="l-phone" name="phone" inputmode="tel" autocomplete="tel" required>
+        <label for="l-pin" data-i18n="pin">6-digit PIN</label>
+        <input id="l-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="current-password" maxlength="6" required>
+        <p class="err" id="login-err" role="alert" hidden></p>
+        <button type="submit" class="btn" id="btn-login" data-i18n="loginBtn">Log in</button>
+      </form>
+    </div>
+    <div id="signed-in" hidden>
+      <form id="f-names" class="card" novalidate>
+        <h2 data-i18n="names">Names</h2>
+        <label for="s-shop" data-i18n="shop">Shop name</label>
+        <input id="s-shop" name="shop" maxlength="60" required>
+        <label for="s-mpesa" data-i18n="mpesaName">M-Pesa name, exactly as M-Pesa shows it</label>
+        <input id="s-mpesa" name="mpesa" maxlength="60" required>
+        <p class="hint" id="verify-hint"></p>
+        <p class="err" id="set-err" role="alert" hidden></p>
+        <p class="ok-line" id="set-ok" role="status" hidden></p>
+        <button type="submit" class="btn" id="btn-save" data-i18n="save">Save</button>
+      </form>
+      <div class="card">
+        <h2 data-i18n="prefs">Display</h2>
+        <label for="s-currency" data-i18n="currency">Currency</label>
+        <select id="s-currency">
+          <option value="KES">KES</option><option value="USD">USD</option><option value="EUR">EUR</option>
+          <option value="UGX">UGX</option><option value="TZS">TZS</option>
+        </select>
+        <label for="s-lang" data-i18n="language">Language</label>
+        <select id="s-lang">
+          <option value="en">English</option><option value="sw">Kiswahili</option>
+        </select>
+      </div>
+      <form id="f-pin" class="card" novalidate>
+        <h2 data-i18n="newPin">New PIN</h2>
+        <label for="p-new" data-i18n="pin">6-digit PIN</label>
+        <input id="p-new" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="new-password" maxlength="6" required>
+        <p class="err" id="pin-err" role="alert" hidden></p>
+        <p class="ok-line" id="pin-ok" role="status" hidden></p>
+        <button type="submit" class="btn" id="btn-pin" data-i18n="setPin">Set PIN</button>
+      </form>
+      <div class="card">
+        <h2 data-i18n="history">History</h2>
+        <ul class="tx" id="history-list"></ul>
+        <p class="empty" id="hist-empty" hidden></p>
+      </div>
+      <button type="button" class="btn ghost" id="btn-signout" data-i18n="signout">Sign out</button>
+      <p class="foot" data-i18n="honest">kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.</p>
+    </div>
+  </section>
+  <div id="print-sheet" aria-hidden="true" hidden></div>
+</main>
+<nav class="tabs" aria-label="kTown">
+  <button type="button" id="tab-qr" aria-selected="true" data-i18n="qr">QR</button>
+  <button type="button" id="tab-settings" aria-selected="false" data-i18n="settings">Settings</button>
+</nav>
+<noscript><p style="text-align:center">kTown needs JavaScript.</p></noscript>
+<script src="/ktown/qrcode-generator-1.4.4.js"></script>
+<script src="/ktown/app.js"></script>
+</body>
+</html>

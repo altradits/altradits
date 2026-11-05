@@ -80,6 +80,7 @@ const mockTando = async (raw) => {
   return J({ status: "ERROR", reason: "Unknown." }, 404);
 };
 kt.setKtownFetcher(mockTando);
+kt.setKtownRatesFetcher(async () => J({ result: "success", rates: { KES: 1, USD: 0.0077, EUR: 0.0066, UGX: 28.5, TZS: 19.3 } }));
 const receiptTx = (over = {}) => ({ status: "completed", isPaid: true, paymentNetworkReceipt: "TIA7QK4M2P",
   payToAccount: "254712345678", merchantName: "JANE W MWANGI", currencyAmount: 100, currencyAmountSent: 100,
   baseCurrency: "KES", satsAmount: 990, tandoFees: 9.9, totalSatsAmount: 999.9, paymentHash: "x".repeat(64),
@@ -102,6 +103,7 @@ test("health names the switch; everything refuses while KTOWN is off", async () 
     assert.equal((await post("register", { phone: "0712345678", shop: "S", mpesaName: "M", pin: "715293" })).status, 501);
     assert.equal((await post("login", { phone: "0712345678", pin: "715293" })).status, 501);
     assert.equal((await get("me", { token: "x".repeat(32) })).status, 501);
+    assert.equal((await get("rates")).status, 501);
     assert.equal((await get("receipt/" + "ab".repeat(32))).status, 501);
     const ln = await get("lnurlp/aaaaaaaaaaaa");
     assert.equal(ln.body.status, "ERROR");
@@ -205,7 +207,9 @@ test("LNURL payRequest: the merchant's names, Tando's limits and rate", async ()
   assert.equal(b.maxSendable, 500000000);
   assert.equal(b.commentAllowed, 0);
   assert.deepEqual(b.currency, { code: "KES", minSendable: 15, maxSendable: 50000, multiplier: MULT });
+  assert.equal(b.verified, false, "the pay page reads the verified mark from here");
   const meta = JSON.parse(b.metadata);
+  assert.equal(meta.find((m) => m[0] === "text/plain")[1], "JANE W MWANGI\nAda Duka", "M-Pesa name, newline, shop name");
   assert.ok(meta.find((m) => m[0] === "text/plain")[1].includes("JANE W MWANGI"), "the M-Pesa name, exactly as typed");
   assert.ok(meta.find((m) => m[0] === "text/plain")[1].includes("Ada Duka"), "and the shop name");
   assert.equal(meta.find((m) => m[0] === "text/identifier")[1], `k-${adaId}@altradits.test`);
@@ -300,6 +304,7 @@ test("receipt: a completed payment lands in history and verifies the typed M-Pes
   assert.ok(done.confirmedAt);
   assert.equal((await get("me", { token: ada.session })).body.merchant.verified, true, "Tando's registered name matches the typed one");
   assert.equal((await get("me", { token: ada.session })).body.merchant.claimed, true, "the first matched receipt proves the number");
+  assert.equal((await get(`lnurlp/${adaId}`)).body.verified, true, "wallets ignore the extra field, the pay page reads it");
   // A second confirmation changes nothing (one record per payment hash).
   await get(`receipt/${hash}`);
   assert.equal((await get("history", { token: ada.session })).body.entries.filter((e) => e.mpesaCode === "TIA7QK4M2P").length, 1);
@@ -499,6 +504,28 @@ test("takeover: a claimed number, or one with a paid receipt, cannot be taken", 
   recB.createdAt = new Date(Date.now() - 30 * 864e5).toISOString();
   await store.setJSON(`kt:${b.body.merchant.id}`, recB);
   assert.equal((await post("register", { phone: "0799000099", shop: "Intruder", mpesaName: "X", pin: "482916" })).status, 409);
+});
+
+test("rates: KES into display currencies, cached an hour, stale when the feed fails", async () => {
+  let calls = 0;
+  kt.setKtownRatesFetcher(async () => { calls++; return J({ result: "success", rates: { USD: 0.0077, EUR: 0.0066, UGX: 28.5, TZS: 19.3 } }); });
+  kt.clearRatesCache();
+  const r = await get("rates");
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.deepEqual(r.body.rates, { KES: 1, USD: 0.0077, EUR: 0.0066, UGX: 28.5, TZS: 19.3 });
+  assert.equal(r.body.base, "KES");
+  assert.equal(r.body.stale, false);
+  assert.ok(Date.parse(r.body.at) <= Date.now());
+  await get("rates");
+  assert.equal(calls, 1, "asked once, then cached");
+  kt.setKtownRatesFetcher(async () => { calls++; throw new Error("feed down"); });
+  const stale = await kt.fiatRates(Date.now() + 2 * 3600e3);
+  assert.equal(stale.stale, true, "the last good answer still serves");
+  assert.deepEqual(stale.rates, { KES: 1, USD: 0.0077, EUR: 0.0066, UGX: 28.5, TZS: 19.3 });
+  kt.clearRatesCache();
+  assert.equal((await get("rates")).status, 502, "nothing cached and the feed down: an honest error");
+  kt.setKtownRatesFetcher(async () => J({ result: "success", rates: { KES: 1, USD: 0.0077, EUR: 0.0066, UGX: 28.5, TZS: 19.3 } }));
+  kt.clearRatesCache();
 });
 
 test("rate limits: registration and LNURL per network and per merchant", async () => {

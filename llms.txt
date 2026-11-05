@@ -16,6 +16,12 @@ Ye₿ente. Start here: https://altradits.com/
   lock payments. A recovery email plus PIN, or 12 recovery words, bring the
   wallet back on a new phone.
 
+## kTown: sats to M-Pesa for merchants
+
+- A shop prints one QR: https://altradits.com/ktown. Customers pay in sats,
+  the merchant receives Kenyan shillings in M-Pesa. kTown holds no money and
+  is not a wallet; Tando converts for a 1 percent fee.
+
 ## Questions, answered
 
 - Quick answers on the homepage: https://altradits.com/
