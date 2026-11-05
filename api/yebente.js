@@ -272,13 +272,13 @@ async function walletPost(request, action) {
     const w = await me(request);
     await yw._internal.withLedger(() => yw._internal.checkPin(w, body.pin));
     if ((await hit(`rl:yb:email:${w.id}`, 3600)) > 5) return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
-    return json({ success: true, ...(await yw.setEmail(w, body.email, site())) });
+    return json({ success: true, ...(await yw.setEmail(w, body.email, site(), { confirmTypo: body.confirmTypo === true })) });
   }
   if (action === "recover-email") {
     const email = String(body.email || "").trim().toLowerCase();
     if ((await hit(`rl:yb:rec:${ipKey(request)}`, 3600)) > 20 || (await hit(`rl:yb:rece:${crypto.createHash("sha256").update(email).digest("hex").slice(0, 16)}`, 3600)) > 3)
       return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
-    await sameTime(() => yw.requestEmailRecovery(email, site()));
+    await sameTime(() => yw.requestEmailRecovery(email, site(), { confirmTypo: body.confirmTypo === true }));
     return json({ success: true, message: "If that email is confirmed for a Ye₿ente wallet, a recovery link is on its way." });
   }
   if (action === "recover-email/finish") {
@@ -329,7 +329,7 @@ async function walletPost(request, action) {
     const email = String(body.email || "").trim().toLowerCase();
     if ((await hit(`rl:yb:ls:${ipKey(request)}`, 3600)) > 10 || (await hit(`rl:yb:lse:${crypto.createHash("sha256").update(email).digest("hex").slice(0, 16)}`, 3600)) > 3)
       return json({ success: false, error: "Too many attempts. Try again in an hour." }, 429);
-    await sameTime(() => yw.startLogin(email));
+    await sameTime(() => yw.startLogin(email, { confirmTypo: body.confirmTypo === true }));
     return json({ success: true, message: "If that email belongs to a Ye₿ente wallet, a login code is on its way." });
   }
   if (action === "login/finish") {
@@ -502,7 +502,7 @@ export async function POST(request) {
     if (PAYOUTS.test(path)) return off(NOT_CONFIGURED);
     return json({ success: false, error: "Not found" }, 404);
   } catch (err) {
-    if (err.status) return json({ success: false, error: err.message }, err.status);
+    if (err.status) return json({ success: false, error: err.message, ...(err.typoHint ? { typoHint: err.typoHint } : {}) }, err.status);
     console.error("yebente", path, err.message);
     return json({ success: false, error: "Internal server error." }, 500);
   }

@@ -52,6 +52,27 @@ test("a failed git fetch doesn't stop the deploy script before its keep-warm pin
   assert.doesNotMatch(sh, /^git fetch -q origin main$/m);
 });
 
+test("with the origin unreachable, the deploy script still pings /healthz and exits 0", async () => {
+  const { execFileSync } = await import("node:child_process");
+  const root = new URL("..", import.meta.url).pathname;
+  const sim = fs.mkdtempSync(path.join(os.tmpdir(), "altradits-cron-"));
+  const app = path.join(sim, "app");
+  fs.mkdirSync(path.join(app, "deploy"), { recursive: true });
+  fs.mkdirSync(path.join(sim, "home"), { recursive: true });
+  const bin = path.join(sim, "bin");
+  fs.mkdirSync(bin, { recursive: true });
+  execFileSync("git", ["init", "-q"], { cwd: app });
+  fs.writeFileSync(path.join(app, "f.txt"), "hi\n");
+  execFileSync("git", ["add", "f.txt"], { cwd: app });
+  execFileSync("git", ["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"], { cwd: app });
+  execFileSync("git", ["remote", "add", "origin", "/nonexistent/repo.git"], { cwd: app });
+  fs.copyFileSync(path.join(root, "deploy/cron.sh"), path.join(app, "deploy/cron.sh"));
+  fs.writeFileSync(path.join(bin, "curl"), `#!/bin/sh\necho "curl called: $@" >> ${sim}/curl.log\nexit 0\n`, { mode: 0o755 });
+  execFileSync("sh", ["deploy/cron.sh"], { cwd: app, env: { ...process.env, HOME: path.join(sim, "home"), SITE_URL: "https://altradits.test", PATH: `${bin}:${process.env.PATH}` } });
+  assert.match(fs.readFileSync(path.join(sim, "curl.log"), "utf8"), /https:\/\/altradits\.test\/healthz/);
+  assert.ok(!fs.existsSync(path.join(app, ".deploy.lock")), "the lock is released");
+});
+
 test("old addresses: agency pages and every old task order redirect, in Node and in Apache", () => {
   const root = new URL("..", import.meta.url).pathname;
   const srv = fs.readFileSync(path.join(root, "server.mjs"), "utf8"), ht = fs.readFileSync(path.join(root, ".htaccess"), "utf8");
