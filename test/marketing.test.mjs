@@ -285,6 +285,22 @@ test("honest custody: Ye₿ente posts never claim self-custody", () => {
   }
 });
 
+test("Ye₿ente posts promise only features that work today", () => {
+  // Buy, card top-up and external wallets stay hidden in the live app until
+  // their providers go live; a post must never promise them. Send Mobile,
+  // Receive, Send and handles work today.
+  const hidden = [/\bbuy\b/, /top[- ]?up/, /card top/, /external wallet/];
+  for (const m of months27()) {
+    for (const p of monthFile(m).posts) {
+      if (p.type !== "Ye₿ente") continue;
+      const text = [p.headline, p.subline, p.caption, p.alt].join(" ").toLowerCase();
+      for (const re of hidden) {
+        assert.doesNotMatch(text, re, `${p.date}: Ye₿ente post promises ${re}`);
+      }
+    }
+  }
+});
+
 test("no headline or caption repeats across 2026 and 2027", () => {
   const norm = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
   // 2026 headlines live only inside alt text, always as the opening words.

@@ -25,6 +25,10 @@ t.setGitHubFetcher(async (p) => {
     { type: "PushEvent", repo: { name: "altradits/altradits" }, created_at: day(2) }, // his own repo: doesn't count
     { type: "PushEvent", repo: { name: "minmoto/payment-channels" }, created_at: day(3) },
   ];
+  if (p.includes("/git/trees/")) return { truncated: false, tree: [] };
+  if (p.includes("/commits")) return [];
+  if (p.includes("/pulls/900/reviews")) return [{ user: { login: "altradits" }, submitted_at: day(1), html_url: "https://github.com/bitcoin/bitcoin/pull/900#pullrequestreview-1" }];
+  if (p.includes("/issues/900/comments")) return [];
   if (p.startsWith("/repos/")) return { private: p.includes("private/repo"), visibility: p.includes("private/repo") ? "private" : "public" };
   const q = decodeURIComponent(p.split("q=")[1]);
   assert.match(q, /-user:altradits/, "never his own repositories");
@@ -46,9 +50,13 @@ test("steps tick from GitHub; the streak counts only tracked projects; the day's
   assert.equal(lnd.steps.find((s) => s.key === "pr").done, true);
   assert.equal(r.done[0].steps.find((s) => s.key === "merged").count, 1);
   assert.equal(r.totals.steps, 2);
-  assert.equal(r.totals.merged, 1);
-  assert.equal(r.streak, 2, "today and yesterday on Bitcoin Core");
-  assert.equal(r.activeDays30, 3, "his own repository doesn't count");
+  assert.equal(r.totals.merged, 1, "merged everywhere outside his own repositories");
+  assert.equal(r.totals.mergedProjects, 0, "none on the six projects");
+  assert.equal(r.totals.mergedPast, 1, "one in past work");
+  assert.equal(r.streak, 4, "today and yesterday on Bitcoin Core, plus the authored pull request and the push");
+  assert.equal(r.activeDays30, 4, "his own repository doesn't count; the authored pull request does");
+  assert.equal(r.builder.started, false, "the Builder Path starts 2026-11-06, after this test's now");
+  assert.equal(r.builder.repoState, "ready");
   assert.equal(r.next.repo, "lightningnetwork/lnd", "the focus project first");
   assert.equal(r.next.focus, true);
   assert.equal(r.next.step.key, "review", "its first step not yet done (it has a pull request, not a review)");
@@ -69,17 +77,21 @@ test("the blockchain: every contribution mines a block; merged wins the mempool;
   assert.equal(C.fullTime, null, "the 21M day is set by hand when it happens");
 });
 
-test("cached for 24 hours, and the last result is kept if GitHub can't be reached", async () => {
+test("cached for 30 minutes with one shared refresh, and the last result is kept if GitHub can't be reached", async () => {
   calls = 0;
   const a = await t.tracker(now);
-  const b = await t.tracker(now + 23 * 3600e3);
-  assert.equal(calls, 11, "4 searches, the events and 6 repository checks, then the cache");
-  assert.equal(b.updatedAt, a.updatedAt);
+  const [b1, b2] = await Promise.all([t.tracker(now + 29 * 60e3), t.tracker(now + 29 * 60e3)]);
+  assert.equal(b1.updatedAt, a.updatedAt);
+  assert.equal(b2.updatedAt, a.updatedAt);
+  assert.equal(calls, 16, "4 searches, the events, 6 repository checks, the learning repo (check, tree, commits) and the review dates, then the cache");
   fail = true;
-  const c = await t.tracker(now + 25 * 3600e3);
+  const c = await t.tracker(now + 31 * 60e3);
   assert.equal(c.stale, true);
   assert.equal(c.totals.steps, a.totals.steps);
   fail = false;
+  const before = calls;
+  await Promise.all([t.tracker(now + 40 * 60e3), t.tracker(now + 40 * 60e3), t.tracker(now + 40 * 60e3)]);
+  assert.equal(calls - before, 16, "concurrent expired views share one refresh");
 });
 
 test("a cached result from older code is refreshed at once, not kept for a day", async () => {

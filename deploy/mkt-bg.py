@@ -105,7 +105,7 @@ def num_of(family, month):
 
 
 # Variant B ships per quarter so each quarterly PR stays reviewable.
-B_QUARTERS = {1: [1, 2, 3]}
+B_QUARTERS = {1: [1, 2, 3], 2: [4, 5, 6]}
 B_FIRST_NUM = 120
 
 NAMES_B = {
@@ -115,13 +115,22 @@ NAMES_B = {
     ("split", 2): "Route split wide", ("frame", 2): "Side rules",
     ("paper", 3): "Blocks low", ("ink", 3): "Night blocks",
     ("split", 3): "Block split wide", ("frame", 3): "Single frame",
+    ("paper", 4): "Arcs low", ("ink", 4): "Night arcs low",
+    ("split", 4): "Arc split wide", ("frame", 4): "Arc edges",
+    ("paper", 5): "Dots low", ("ink", 5): "Night dots low",
+    ("split", 5): "Dot split wide", ("frame", 5): "Dot rules",
+    ("paper", 6): "Crosses low", ("ink", 6): "Night plus low",
+    ("split", 6): "Cross split wide", ("frame", 6): "Plus edges",
 }
 
 
 def num_of_b(family, month):
     for q, months in B_QUARTERS.items():
         if month in months:
-            return (B_FIRST_NUM + (q - 1) * 12 +
+            # B_BASE_NUMS holds the quarters that break the straight
+            # 12-per-quarter run; it lives with their blocks, below.
+            base = B_BASE_NUMS.get(q, B_FIRST_NUM + (q - 1) * 12)
+            return (base +
                     FAMILIES.index(family) * 3 + months.index(month))
     raise KeyError(f"no variant B quarter holds month {month}")
 
@@ -272,7 +281,8 @@ class SSDraw:
 
 
 # Variant-B anchors: the same motif lower and smaller.
-ANCHORS_B = {1: (1620, 780, 0.8), 2: (1600, 640, 0.8), 3: (1600, 600, 0.8)}
+ANCHORS_B = {1: (1620, 780, 0.8), 2: (1600, 640, 0.8), 3: (1600, 600, 0.8),
+            4: (1700, 1080, 0.8), 5: (1620, 800, 0.8), 6: (1650, 850, 0.75)}
 
 
 def paint_paper(month, variant="A"):
@@ -313,9 +323,11 @@ SPLIT_ANCHORS = {1: (1730, 560, 0.62), 2: (1700, 580, 0.62),
 
 # Variant-B splits: same fields, edge moved and curve flipped.
 SPLITS_B = {1: (WHITE, NAVY, 1540, True), 2: (WHITE, RED, 1540, False),
-            3: (NAVY, WHITE, 1500, True)}
+            3: (NAVY, WHITE, 1500, True), 4: (CREAM, BLACK, 1540, False),
+            5: (WHITE, NAVY, 1520, False), 6: (CREAM, RED, 1500, True)}
 SPLIT_ANCHORS_B = {1: (1730, 680, 0.62), 2: (1710, 660, 0.62),
-                   3: (1700, 700, 0.62)}
+                   3: (1700, 700, 0.62), 4: (1860, 1010, 0.62),
+                   5: (1720, 680, 0.62), 6: (1700, 700, 0.62)}
 
 
 def paint_split(month, variant="A"):
@@ -436,6 +448,23 @@ def paint_frame_b(month):
         d.rectangle([1882, 24, 1892, 1256], fill=accent)
     elif month == 3:  # one thin border instead of two
         d.rectangle([28, 28, 1892, 1256], outline=accent, width=6)
+    elif month == 4:  # quarter arcs at the edge midpoints
+        for (x, y), (a0, a1) in zip([(960, 34), (34, 640), (1886, 640),
+                                    (960, 1246)],
+                                   [(0, 180), (270, 90),
+                                    (90, 270), (180, 360)]):
+            d.arc([x - 16, y - 16, x + 16, y + 16], start=a0, end=a1,
+                  fill=accent, width=6)
+    elif month == 5:  # dotted rules on two edges, not four
+        for x in range(32, 1890, 44):
+            d.ellipse([x - 7, 25, x + 7, 39], fill=accent)
+        for y in range(76, 1240, 44):
+            d.ellipse([25, y - 7, 39, y + 7], fill=accent)
+    elif month == 6:  # plus marks at the edge midpoints
+        for x, y in [(960, 34), (34, 640), (1886, 640), (960, 1246)]:
+            arm, w = 20, 7
+            d.rectangle([x - w / 2, y - arm, x + w / 2, y + arm], fill=accent)
+            d.rectangle([x - arm, y - w / 2, x + arm, y + w / 2], fill=accent)
     else:
         raise KeyError(f"no variant-B frame for month {month}")
     return img, [ground]
@@ -543,6 +572,139 @@ def entries():
                             "name": NAMES_B[(family, month)], "ink": ink,
                             "light": light, "family": family, "motif": month})
     return out
+
+
+# Variant B for Q3 (months 7-9): July rays, August bars, September steps.
+# Written as updates in one block, not edited literals, so this quarter
+# merges cleanly next to Q2's variant-B rows for months 4-6. Q3 numbers
+# start at bg-200: Q2 takes the numbers right after Q1 (bg-132 onward).
+B_QUARTERS.update({3: [7, 8, 9]})
+
+# Quarter bases that break the straight 12-per-quarter run (Q2 keeps it).
+B_BASE_NUMS = {3: 200}
+
+NAMES_B.update({
+    ("paper", 7): "Rays low", ("ink", 7): "Night rays low",
+    ("split", 7): "Ray split wide", ("frame", 7): "Ray ticks",
+    ("paper", 8): "Bars low", ("ink", 8): "Night bars low",
+    ("split", 8): "Bar split wide", ("frame", 8): "Short bars",
+    ("paper", 9): "Steps low", ("ink", 9): "Night steps low",
+    ("split", 9): "Step split wide", ("frame", 9): "Step edges",
+})
+
+# Paper/Ink B: the same motif lower and smaller, like Q1's.
+ANCHORS_B.update({7: (1620, 800, 0.8), 8: (1620, 800, 0.8),
+                  9: (1620, 800, 0.8)})
+
+# Split B: same fields, edge moved right, curve flipped, like Q1's.
+SPLITS_B.update({7: (NAVY, WHITE, 1540, False),
+                 8: (WHITE, NAVY, 1520, True),
+                 9: (NAVY, CREAM, 1560, True)})
+SPLIT_ANCHORS_B.update({7: (1730, 700, 0.62), 8: (1730, 700, 0.62),
+                        9: (1740, 720, 0.62)})
+
+
+def paint_frame_b_q3(month):
+    # Second frame arrangements for July, August and September.
+    m = MOTIFS[month]
+    ground, accent = m["ground"], m["accent"]
+    img = blank(ground)
+    d = SSDraw(ImageDraw.Draw(img))
+    if month == 7:  # ray ticks across the top and bottom middles
+        for x, tilt in ((920, -10), (960, 0), (1000, 10)):
+            d.line([x + tilt, 24, x, 48], fill=accent, width=6)
+            d.line([x, 1232, x + tilt, 1256], fill=accent, width=6)
+    elif month == 8:  # short bars, top-left and bottom-left
+        d.rectangle([24, 24, 320, 40], fill=accent)
+        d.rectangle([24, 1240, 320, 1256], fill=accent)
+    elif month == 9:  # staircases at the edge midpoints, not the corners
+        for x, y, sx, sy in ((924, 24, 1, 1), (24, 604, 1, 1),
+                             (1896, 604, -1, 1), (924, 1256, 1, -1)):
+            pts, px, py = [(x, y)], x, y
+            for _ in range(3):
+                px += sx * 10
+                pts.append((px, py))
+                py += sy * 10
+                pts.append((px, py))
+            d.line(pts, fill=accent, width=5, joint="miter")
+    else:
+        raise KeyError(f"no Q3 variant-B frame for month {month}")
+    return img, [ground]
+
+
+_paint_frame_earlier = PAINTERS["frame"]
+
+
+def paint_frame_q3(month, variant="A"):
+    if variant == "B" and month in (7, 8, 9):
+        return paint_frame_b_q3(month)
+    return _paint_frame_earlier(month, variant)
+
+
+PAINTERS["frame"] = paint_frame_q3
+
+
+# Variant B for Q4 (months 10-12): October waves, November triangles,
+# December zigzag. Same one-block style as Q3, for the same reason.
+B_QUARTERS.update({4: [10, 11, 12]})
+B_BASE_NUMS.update({4: 212})
+
+NAMES_B.update({
+    ("paper", 10): "Waves low", ("ink", 10): "Night waves low",
+    ("split", 10): "Wave split wide", ("frame", 10): "Low wave rule",
+    ("paper", 11): "Play low", ("ink", 11): "Night play low",
+    ("split", 11): "Play split wide", ("frame", 11): "Play edges",
+    ("paper", 12): "Pulse low", ("ink", 12): "Night pulse low",
+    ("split", 12): "Pulse split wide", ("frame", 12): "High pulse rule",
+})
+
+# Paper/Ink B: the same motif lower and smaller, like Q1's.
+ANCHORS_B.update({10: (1620, 800, 0.8), 11: (1620, 800, 0.8),
+                  12: (1620, 800, 0.8)})
+
+# Split B: same fields, edge moved right, curve flipped, like Q1's.
+SPLITS_B.update({10: (CREAM, NAVY, 1520, False),
+                 11: (NAVY, WHITE, 1480, True),
+                 12: (WHITE, BLACK, 1580, False)})
+SPLIT_ANCHORS_B.update({10: (1730, 700, 0.62), 11: (1720, 700, 0.62),
+                        12: (1740, 700, 0.62)})
+
+
+def paint_frame_b_q4(month):
+    # Second frame arrangements for October, November and December.
+    m = MOTIFS[month]
+    ground, accent = m["ground"], m["accent"]
+    img = blank(ground)
+    d = SSDraw(ImageDraw.Draw(img))
+    if month == 10:  # the wave rule, low instead of high
+        pts = [(24 + t * 1666, 1242 + np.sin(t * 22 * np.pi) * 7)
+               for t in np.linspace(0, 1, 380)]
+        d.line(pts, fill=accent, width=8, joint="curve")
+    elif month == 11:  # play marks at the edge midpoints, pointing in
+        d.polygon([(947, 24), (973, 24), (960, 49)], fill=accent)
+        d.polygon([(24, 627), (24, 653), (49, 640)], fill=accent)
+        d.polygon([(1896, 627), (1896, 653), (1871, 640)], fill=accent)
+        d.polygon([(947, 1256), (973, 1256), (960, 1231)], fill=accent)
+    elif month == 12:  # the pulse rule, high instead of low
+        pts = [(24 + i * 1872 / 26,
+                31 + (8 if i % 2 else -8) * (0 if i in (0, 26) else 1))
+               for i in range(27)]
+        d.line(pts, fill=accent, width=8, joint="curve")
+    else:
+        raise KeyError(f"no Q4 variant-B frame for month {month}")
+    return img, [ground]
+
+
+_paint_frame_q3chain = PAINTERS["frame"]
+
+
+def paint_frame_q4(month, variant="A"):
+    if variant == "B" and month in (10, 11, 12):
+        return paint_frame_b_q4(month)
+    return _paint_frame_q3chain(month, variant)
+
+
+PAINTERS["frame"] = paint_frame_q4
 
 
 def main(argv):

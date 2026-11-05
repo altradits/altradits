@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-IPX07CC/hGOENM1dsZ0utaxHxsMFOudUUD0z4HdTsBs='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-E+wQU48XCjF3Tj/ZDr/LjfqfMsLWpT4/raJU9RMYyNk='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/tracker">
 <title>Open-source tracker · Altradits</title>
@@ -158,6 +158,20 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .steps a{font-size:.85rem}
 .links{display:flex;flex-wrap:wrap;gap:.3rem 1rem;font-weight:600;margin-top:auto}
 .sm{font-size:.9rem}.muted{color:var(--muted)}
+.banner{background:#FFF4E0;border:2px solid var(--btc);border-radius:.8rem;padding:.7rem 1rem;margin:0 0 1rem;max-width:46rem}
+.barline{height:.6rem;background:var(--paper);border:2px solid var(--line);border-radius:99px;overflow:hidden;margin:.4rem 0;max-width:46rem}
+.barline i{display:block;height:100%;background:var(--btc);border-radius:99px}
+.mon{font:800 1rem 'Bricolage Grotesque',sans-serif;margin:1rem 0 .2rem}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);gap:.3rem;font-size:.72rem;color:var(--muted);text-align:center;max-width:46rem}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:.3rem;margin:.2rem 0 .4rem;max-width:46rem}
+.cal a,.cal span.cell{display:flex;align-items:center;justify-content:center;min-height:2.2rem;border-radius:.5rem;font-size:.8rem;font-weight:700;text-decoration:none;border:2px solid var(--line);color:var(--muted);background:var(--paper)}
+.cal .done{background:#0B7A5F;border-color:#0B7A5F;color:#fff}
+.cal a.done:hover,.cal a.done:focus-visible{outline:3px solid var(--ink)}
+.cal .missed{background:#fff;border-color:#B3352B;color:#B3352B}
+.cal .rest{background:transparent;border-style:dashed}
+.cal .open{border-color:var(--btc);color:var(--ink)}
+.cal .blank{visibility:hidden}
+.b.done{background:#0B7A5F;border-color:#0B7A5F!important}.b.missed{background:#fff;border:2px solid #B3352B!important}.b.rest{background:transparent;border:2px dashed #4B5A70!important}
 .topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
 .topnav a.launch:hover{color:var(--ink);background:#ffa94d}
 </style>
@@ -170,6 +184,12 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
     <h1>My open-source tracker, <em>updated by GitHub.</em></h1>
     <p class="lead">Six projects I don't own. One challenge each, solved without AI, following each project's own rules. Every step ticks itself when GitHub shows I did it.</p>
   </header>
+
+  <section class="chainbox" aria-labelledby="hBuilder">
+    <h2 id="hBuilder">The Builder Path</h2>
+    <p class="intro">One verified deliverable a day, from 6 November 2026 to the 2027 grant window. Review first: reading and testing other people's pull requests is the scarce skill. Every day is proven by my public GitHub activity. Nothing is ticked by hand.</p>
+    <div id="builder"><p class="muted">Loading from GitHub…</p></div>
+  </section>
 
   <section class="chainbox" aria-labelledby="hChain">
     <h2 id="hChain">My blockchain to the 21M day</h2>
@@ -219,6 +239,48 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
   let T;
   try { const r = await fetch("/api/tracker"); T = await r.json(); if (!r.ok) throw new Error(T.error); }
   catch (e) { $("#today").innerHTML = `<p class="muted">${esc(e.message || "GitHub can't be reached right now.")}</p>`; return; }
+  const B = T.builder;
+  if (B) {
+    const res = (d) => (d.resources || []).map((r) => `<a href="${esc(r.url)}">${esc(r.label)}</a>`).join("");
+    let h = "";
+    if (B.repoState !== "ready") h += `<div class="banner" role="status">${B.repoState === "private" ? `The learning repo <b>${esc(B.repo)}</b> is private, so log days cannot pass. Make it public.` : `Waiting for the public learning repo <b>${esc(B.repo)}</b>. Day 1 creates it.`}</div>`;
+    if (!B.started) {
+      h += `<div class="today"><span class="tag">Starts ${esc(B.start)}</span><h2>Day 1: ${esc(B.first.title)}</h2><p>${esc(B.first.what)}</p><div class="links">${res(B.first)}</div></div>`;
+    } else if (B.deliverable) {
+      const D = B.deliverable;
+      h += `<div class="today"><span class="tag">Day ${esc(B.dayNo)} of ${esc(B.of)} · ${esc(B.phase.name)}</span><h2>${esc(D.title)}</h2><p>${esc(D.what)}</p><div class="links">${res(D)}</div><p class="sm muted">${esc(D.verify)}</p></div>`;
+      h += `<p class="intro sm" style="margin-top:.8rem"><b>Phase goal:</b> ${esc(B.phase.goal)} <b>Exit test:</b> ${esc(B.phase.exit)}</p>`;
+    } else {
+      h += `<div class="today"><span class="tag">Complete</span><h2>The path ended ${esc(B.end)}.</h2><p>${esc(B.counts.done)} days done, ${esc(B.counts.missed)} missed.</p></div>`;
+    }
+    if (B.yesterday && B.yesterday.verdict !== "open") {
+      const y = B.yesterday;
+      h += y.verdict === "done" && y.proof ? `<p><b>Yesterday: done.</b> <a href="${esc(y.proof.url)}">${esc(y.proof.title)}</a></p>`
+        : y.verdict === "rest" ? `<p><b>Yesterday: rest.</b></p>` : `<p><b>Yesterday: missed.</b> ${esc(y.title)}. No proof on GitHub.</p>`;
+    }
+    const pct = Math.min(100, Math.round((100 * B.bar.merged) / B.bar.need));
+    h += `<div class="stats">` + [[B.streak, `day${B.streak === 1 ? "" : "s"} on the path in a row`], [B.reviews.week, "reviews this week, the scarce skill"],
+      [`${B.bar.merged} of ${B.bar.need}`, `merged code PRs on ${B.bar.short}`], [`${B.counts.done} done, ${B.counts.missed} missed`, "days so far"]]
+      .map(([b, s]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join("") + `</div>`;
+    h += `<div class="barline" role="img" aria-label="${esc(B.bar.merged)} of ${esc(B.bar.need)} merged code pull requests on ${esc(B.bar.short)}"><i style="width:${pct}%"></i></div>`;
+    h += `<p class="intro sm">The grant asks for code pull requests on one project, here ${esc(B.bar.short)}, no docs, no good first issues, plus reviews and community work. <a href="${esc(B.bar.listing)}">The listing</a>. The count cannot tell code from docs. Every merge, all projects: ${esc(T.totals.merged)}.</p>`;
+    const months = {};
+    for (const c of B.calendar) { (months[c.date.slice(0, 7)] ||= []).push(c); }
+    for (const [m, cells] of Object.entries(months)) {
+      const label = new Date(`${m}-15T12:00:00Z`).toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+      const off = (new Date(`${cells[0].date}T12:00:00Z`).getUTCDay() + 6) % 7;
+      h += `<h3 class="mon">${esc(label)}</h3><div class="dow" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div><div class="cal">`;
+      for (let i = 0; i < off; i++) h += `<span class="blank"></span>`;
+      for (const c of cells) {
+        const num = Number(c.date.slice(8, 10)), tip = `${c.date}: ${c.status}${c.proof ? `, ${c.proof.title}` : ""}`;
+        h += c.status === "done" && c.proof ? `<a class="done" href="${esc(c.proof.url)}" title="${esc(tip)}" aria-label="${esc(tip)}">${num}</a>`
+          : `<span class="cell ${c.status}" title="${esc(tip)}">${num}</span>`;
+      }
+      h += `</div>`;
+    }
+    h += `<p class="key"><span><i class="b done"></i>Done</span><span><i class="b missed"></i>Missed</span><span><i class="b rest"></i>Rest</span></p>`;
+    $("#builder").innerHTML = h;
+  }
   const C = T.chain, KIND = { pr: "Pull request", issue: "Issue", review: "Review", comment: "Comment" };
   const LABEL = { confirmed: "Confirmed ✓ won the mempool", mempool: "In the mempool", mined: "Mined", orphaned: "Orphaned" };
   const day = (iso) => (iso ? new Date(iso).toISOString().slice(0, 10) : "");
@@ -250,7 +312,7 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
   const n = T.next;
   $("#today").innerHTML = n ? `<span class="tag">${n.focus ? "Today's task · my focus" : "Today's task"}</span><h2>${esc(n.name)}: ${esc(n.step.title)}</h2><p>${esc(n.step.text)}</p><p><b>Challenge:</b> ${esc(n.challenge)}</p><div class="links"><a href="${esc(n.start)}">Find a task</a><a href="${esc(n.guide)}">Read the guide</a><a href="/plan">My six-month plan</a></div>`
     : `<span class="tag">All steps done</span><h2>Every challenge is complete.</h2><p>Time to pick harder ones.</p>`;
-  $("#stats").innerHTML = [[`${T.totals.steps} of ${T.totals.of}`, "steps done"], [T.streak, `day${T.streak === 1 ? "" : "s"} in a row`], [T.activeDays30, "active days, last 30"], [T.totals.merged, "pull requests merged"]]
+  $("#stats").innerHTML = [[`${T.totals.steps} of ${T.totals.of}`, "steps done on the six projects"], [T.streak, `day${T.streak === 1 ? "" : "s"} in a row`], [T.activeDays30, "active days, last 30"], [T.totals.merged, `pull requests merged, everywhere (${T.totals.mergedProjects} on the six projects)`]]
     .map(([b, s]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join("");
   $("#rules").innerHTML = T.rules.map((r) => `<li>${esc(r)}</li>`).join("");
   const card = (p, withChallenge) => `<li><div class="who">${p.logo ? `<img src="/assets/players/${esc(p.logo)}.png" alt="" width="44" height="44">` : ""}<div><h3>${esc(p.name)}</h3><small>${esc(p.repo)}</small>${p.repo === T.focus ? '<span class="tag">My focus</span>' : ""}</div></div>
@@ -260,7 +322,7 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
     <div class="links"><a href="https://github.com/${esc(p.repo)}">Repository</a>${p.guide ? `<a href="${esc(p.guide)}">Contributing guide</a>` : ""}${p.start ? `<a href="${esc(p.start)}">First tasks</a>` : ""}</div></li>`;
   $("#projects").innerHTML = T.projects.map((p) => card(p, true)).join("");
   $("#done").innerHTML = T.done.map((p) => card(p, false)).join("");
-  $("#updated").textContent = `Read from GitHub ${new Date(T.updatedAt).toLocaleString()}${T.stale ? " (GitHub didn't answer just now; showing the last result)" : ""}. Updates once a day.`;
+  $("#updated").textContent = `Read from GitHub ${new Date(T.updatedAt).toLocaleString()}${T.stale ? " (GitHub didn't answer just now; showing the last result)" : ""}. Refreshes every 30 minutes.`;
 })();
 </script>
 </body>
