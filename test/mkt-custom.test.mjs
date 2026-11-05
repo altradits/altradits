@@ -100,6 +100,14 @@ test("the element model, history keys and inline editing exist", () => {
   }
 });
 
+test("every studio helper called in admin.js is defined there", () => {
+  const js = fs.readFileSync(path.join(ROOT, "assets/admin.js"), "utf8");
+  const defs = new Set([...js.matchAll(/function (mkt\w+)\s*\(/g)].map((m) => m[1]));
+  const calls = [...js.matchAll(/(?<![\w$.])(mkt[A-Z]\w*)\s*\(/g)].map((m) => m[1]);
+  const missing = [...new Set(calls.filter((c) => !defs.has(c)))];
+  assert.deepEqual(missing, [], `helpers called but never defined: ${missing.join(", ")}`);
+});
+
 test("every dashboard selector starts with # and its element exists", () => {
   const js = fs.readFileSync(path.join(ROOT, "assets/admin.js"), "utf8");
   const bare = [...js.matchAll(/\$\(\s*["'`]([^"'`#}][^"'`]*?)["'`]/g)].map((m) => m[1]);

@@ -125,7 +125,9 @@ const server = http.createServer(async (req, res) => {
       if (!handler) { res.writeHead(405).end("Method not allowed"); return; }
       const chunks = [];
       let size = 0;
-      const limit = 100_000;
+      // Posted pictures (custom calendar posts) run to ~700 KB, so the
+      // token-gated admin API takes ~1 MB; everything else stays at 100 KB.
+      const limit = api[1] === "admin" ? 1_000_000 : 100_000;
       for await (const c of req) { size += c.length; if (size > limit) { res.writeHead(413, { "Content-Type": "application/json" }).end('{"error":"That file is too large."}'); return; } chunks.push(c); }
       const request = new Request(url, {
         method: req.method, headers: { ...req.headers, "x-remote-addr": req.socket.remoteAddress || "" },

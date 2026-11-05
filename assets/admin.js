@@ -1643,6 +1643,24 @@ async function mktRenderClean(quality) {
   drawCustom();
   return url;
 }
+// A clean render sized for the server: quality steps down until the picture
+// fits the custom-post cap, so Place works on every template.
+const MKT_PLACE_MAX = 700 * 1024; // mirrors lib/marketing.js MAX_IMAGE_CHARS
+async function mktRenderCapped() {
+  mktInlineCommit();
+  const keep = MKT_EDIT.sel;
+  MKT_EDIT.sel = null;
+  await drawCustom(false);
+  const cv = $("#mktCanvas");
+  let url = "";
+  for (const q of [0.88, 0.8, 0.75, 0.7, 0.65, 0.6]) {
+    url = cv.toDataURL("image/jpeg", q);
+    if (url.length <= MKT_PLACE_MAX) break;
+  }
+  MKT_EDIT.sel = keep;
+  drawCustom();
+  return url;
+}
 $("#mktDl")?.addEventListener("click", async () => {
   const a = document.createElement("a");
   a.href = await mktRenderClean(0.9);
@@ -1656,7 +1674,7 @@ $("#mktPlace")?.addEventListener("click", async () => {
   try {
     const r = await api("", { action: "mkt_place", month, date: `${month}-${day}`,
       caption: $("#mktICap").value, alt: `${MKT_EDIT.name} template with custom words`,
-      imageData: await mktRenderClean(0.88) });
+      imageData: await mktRenderCapped() });
     st.textContent = `Placed on ${r.placed}.`;
     await renderMarketing(month);
   } catch (err) { st.textContent = err.message; }
@@ -1782,7 +1800,7 @@ function mktIdeaOpen(idea) {
   const first = String(idea.caption).split(/[.?!]\s/)[0] || "";
   sub.text = first.slice(0, 90);
   MKT_EDIT.sel = "head";
-  mktSyncInputs();
+  mktSyncSelText();
   drawCustom();
   mktSyncTools();
   $("#mkt-edit")?.scrollIntoView();
@@ -1796,7 +1814,7 @@ async function mktIdeaPlace(idea, month, day) {
     throw new Error("Check the picture in the editor, then press Place again.");
   }
   const date = `${month}-${day}`;
-  const full = await mktRenderClean(0.88);
+  const full = await mktRenderCapped();
   await api("", { action: "mkt_place", month, date, caption: idea.caption,
     alt: `${idea.title} (from the ideas board)`.slice(0, 200), imageData: full });
   const r = await api("", { action: "mkt_idea_save", ...idea, column: "placed", placedDate: date });

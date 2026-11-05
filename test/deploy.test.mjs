@@ -97,3 +97,9 @@ test("the marketing schedule and templates are served locally, and nothing else 
   for (const bad of ["/assets/marketing/../server.mjs", "/assets/marketing/2026-11/../../server.mjs", "/assets/marketing/a/b/c.jpg",
     "/assets/marketing/", "/assets/other/x.png"]) assert.equal(PUBLIC.test(bad), false, bad);
 });
+
+test("the admin API accepts full-size pictures, other APIs stay capped", () => {
+  const root = new URL("..", import.meta.url).pathname;
+  const src = fs.readFileSync(path.join(root, "server.mjs"), "utf8");
+  assert.match(src, /const limit = api\[1\] === "admin" \? 1_000_000 : 100_000;/, "admin takes ~1 MB for pictures, the rest stay at 100 KB");
+});

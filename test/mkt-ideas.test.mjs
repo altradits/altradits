@@ -109,7 +109,7 @@ test("the API refuses bad columns, long captions, non-JPEGs and a full board", a
 test("the dashboard is wired: board, form, editor and place paths", () => {
   const js = fs.readFileSync(path.join(ROOT, "assets", "admin.js"), "utf8");
   for (const s of ["view=mktideas", "mkt_idea_save", "mkt_idea_delete", "mktIdeas", "mktIdeaForm", "mktIdeaNew",
-    "mktIdeaTitle", "mktIdeaCap", "data-mkt-ie", "data-mkt-col", "mktIdeaOpen", "mktIdeaPlace", "mktIdeaShot", "mktRenderClean", "MKT_EDIT.ideaId", "press Place again", "drafting", "approved"]) {
+    "mktIdeaTitle", "mktIdeaCap", "data-mkt-ie", "data-mkt-col", "mktIdeaOpen", "mktIdeaPlace", "mktIdeaShot", "mktRenderClean", "mktRenderCapped", "MKT_EDIT.ideaId", "press Place again", "drafting", "approved"]) {
     assert.ok(js.includes(s), `admin.js mentions ${s}`);
   }
   const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
