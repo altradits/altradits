@@ -112,14 +112,14 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
 
       if (configuredLightningAddress) {
         const details = await resolveLightningAddress(configuredLightningAddress);
-        if (!details.success || !details.callbackUrl) {
+        if (!details.success) {
           setErrorMessage(details.error || 'Could not reach the Lightning address saved in Wallet Settings.');
           setStep('error');
           return;
         }
 
         const externalInvoice = await createLightningInvoice(
-          details.callbackUrl,
+          configuredLightningAddress,
           numericSats,
           'Ye₿ente Sats Deposit'
         );

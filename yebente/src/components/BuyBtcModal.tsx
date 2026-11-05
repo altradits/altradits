@@ -385,8 +385,8 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
     if (!isCustodialWallet && isLightningAddress(configuredDestination)) {
       try {
         const details = await resolveLightningAddress(configuredDestination);
-        if (details.success && details.callbackUrl) {
-          const invRes = await createLightningInvoice(details.callbackUrl, satsAmount, 'Ye₿ente Sats Purchase');
+        if (details.success) {
+          const invRes = await createLightningInvoice(configuredDestination, satsAmount, 'Ye₿ente Sats Purchase');
           if (invRes.success && invRes.invoice) {
             setLightningInvoice(invRes.invoice);
           }

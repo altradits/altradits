@@ -54,7 +54,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
   const [resolvedProvider, setResolvedProvider] = useState<string>('');
   const [recipientType, setRecipientType] = useState<'unknown' | 'lightning_address' | 'lightning_invoice' | 'invalid_onchain'>('unknown');
   const [isResolving, setIsResolving] = useState(false);
-  const [resolvedCallback, setResolvedCallback] = useState<string>('');
+  const [resolvedAddress, setResolvedAddress] = useState<string>('');
   const [txReference, setTxReference] = useState<string>('');
   const [pin, setPin] = useState<string>('');
   const [scanning, setScanning] = useState(false);
@@ -100,7 +100,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     if (!clean) {
       setRecipientType('unknown');
       setResolvedProvider('');
-      setResolvedCallback('');
+      setResolvedAddress('');
       setErrorMessage('');
       return;
     }
@@ -108,7 +108,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     if (hasServerWallet() && isYebenteHandle(clean)) {
       setRecipientType('lightning_address');
       setResolvedProvider('Ye₿ente');
-      setResolvedCallback('');
+      setResolvedAddress('');
       setErrorMessage('');
       return;
     }
@@ -116,7 +116,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     if (isOnChainAddress(clean)) {
       setRecipientType('invalid_onchain');
       setResolvedProvider('On-Chain Bitcoin (Unsupported)');
-      setResolvedCallback('');
+      setResolvedAddress('');
       setErrorMessage('On-chain Bitcoin addresses are not supported. Ye₿ente operates exclusively on Lightning. Please enter a Lightning Address (e.g. name@walletofsatoshi.com) or a BOLT-11 invoice (lnbc...).');
       return;
     }
@@ -139,9 +139,10 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
           .then((res) => {
             if (res.success) {
               setResolvedProvider(res.provider || 'Lightning Address');
-              setResolvedCallback(res.callbackUrl || '');
+              setResolvedAddress(clean);
             } else {
               setResolvedProvider('Lightning Address');
+              setResolvedAddress('');
             }
           })
           .finally(() => setIsResolving(false));
@@ -153,7 +154,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
 
     setRecipientType('unknown');
     setResolvedProvider('');
-    setResolvedCallback('');
+    setResolvedAddress('');
   }, [recipient, currentlyOnline]);
 
   if (!isOpen) return null;
@@ -231,10 +232,10 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     try {
       let finalInvoice = cleanRecipient;
 
-      // 1. If recipient is a Lightning Address, generate invoice via callback
-      if (recipientType === 'lightning_address' && resolvedCallback) {
+      // 1. If recipient is a Lightning Address, ask our server for an invoice for it
+      if (recipientType === 'lightning_address' && resolvedAddress === cleanRecipient) {
         try {
-          const invRes = await createLightningInvoice(resolvedCallback, numericSats, 'Ye₿ente Payout');
+          const invRes = await createLightningInvoice(cleanRecipient, numericSats, 'Ye₿ente Payout');
           if (invRes.success && invRes.invoice) {
             finalInvoice = invRes.invoice;
           }

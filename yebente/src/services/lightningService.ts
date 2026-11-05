@@ -7,14 +7,7 @@ export interface LightningAddressDetails {
   provider: string;
   minSendableSats: number;
   maxSendableSats: number;
-  callbackUrl: string;
   commentAllowed: number;
-  currency?: {
-    code: string;
-    minSendable: number;
-    maxSendable: number;
-    multiplier: number;
-  };
   error?: string;
 }
 
@@ -84,8 +77,26 @@ export function isLightningAddress(input: string): boolean {
 }
 
 /**
+ * Friendly provider name for a Lightning-address domain. Exact domains only:
+ * a substring match would also rename blink.sv.evil.com (and CodeQL refuses
+ * substring checks on hosts). Anything else shows as itself.
+ */
+const PROVIDERS: Record<string, string> = {
+  'walletofsatoshi.com': 'Wallet of Satoshi',
+  'blink.sv': 'Blink (Galoy)',
+  'bitcoin.co.ke': 'Tando (M-Pesa)',
+  'getalby.com': 'Alby',
+  'strike.me': 'Strike',
+  'coinos.io': 'CoinOS',
+};
+function providerFor(domain: string): string {
+  return PROVIDERS[domain.toLowerCase()] || domain;
+}
+
+/**
  * Resolves a Lightning Address (such as user@walletofsatoshi.com, user@blink.sv, or phone@bitcoin.co.ke)
  * via the LNURL-pay protocol (RFC-LNURL) to verify the wallet is authentic and active.
+ * The lookup runs on our server, so this page never calls outside hosts itself.
  */
 export async function resolveLightningAddress(
   address: string
@@ -97,29 +108,13 @@ export async function resolveLightningAddress(
     clean = `${formatKenyanPhone(clean)}@bitcoin.co.ke`;
   }
 
-  let targetUrl: string;
   let defaultUsername = '';
   let defaultDomain = '';
 
   if (clean.startsWith('lnurl1')) {
     const decoded = decodeLnurl(clean);
-    if (!decoded) {
-      return {
-        success: false,
-        address: clean,
-        username: '',
-        domain: '',
-        provider: 'Unknown',
-        minSendableSats: 0,
-        maxSendableSats: 0,
-        callbackUrl: '',
-        commentAllowed: 0,
-        error: 'Invalid bech32 LNURL encoding.',
-      };
-    }
-    targetUrl = decoded;
     try {
-      const parsed = new URL(decoded);
+      const parsed = new URL(decoded || '');
       defaultDomain = parsed.hostname;
       const pathParts = parsed.pathname.split('/').filter(Boolean);
       defaultUsername = pathParts[pathParts.length - 1] || 'user';
@@ -129,185 +124,98 @@ export async function resolveLightningAddress(
     }
   } else {
     const [username, domain] = clean.split('@');
-    if (!username || !domain) {
-      return {
-        success: false,
-        address: clean,
-        username: '',
-        domain: '',
-        provider: 'Unknown',
-        minSendableSats: 0,
-        maxSendableSats: 0,
-        callbackUrl: '',
-        commentAllowed: 0,
-        error: 'Invalid Lightning Address format.',
-      };
-    }
-    defaultUsername = username;
-    defaultDomain = domain;
-    targetUrl = `https://${domain}/.well-known/lnurlp/${username}`;
+    defaultUsername = username || '';
+    defaultDomain = domain || '';
   }
+
+  const fail = (error: string): LightningAddressDetails => ({
+    success: false,
+    address: clean,
+    username: defaultUsername,
+    domain: defaultDomain,
+    provider: defaultDomain || 'Unknown',
+    minSendableSats: 0,
+    maxSendableSats: 0,
+    commentAllowed: 0,
+    error,
+  });
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 7000);
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    const token = getWalletToken();
 
-    const res = await fetch(targetUrl, {
+    const res = await fetch('/api/yebente/address/resolve', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ to: clean }),
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
 
-    if (!res.ok) {
-      return {
-        success: false,
-        address: clean,
-        username: defaultUsername,
-        domain: defaultDomain,
-        provider: defaultDomain,
-        minSendableSats: 0,
-        maxSendableSats: 0,
-        callbackUrl: '',
-        commentAllowed: 0,
-        error: `Could not reach Lightning wallet at ${defaultDomain}.`,
-      };
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data.success) {
+      return fail(data.error || `Could not reach Lightning wallet at ${defaultDomain}.`);
     }
 
-    const data = await res.json();
-
-    if (data.status === 'ERROR') {
-      return {
-        success: false,
-        address: clean,
-        username: defaultUsername,
-        domain: defaultDomain,
-        provider: defaultDomain,
-        minSendableSats: 0,
-        maxSendableSats: 0,
-        callbackUrl: '',
-        commentAllowed: 0,
-        error: data.reason || 'Lightning address resolution returned error.',
-      };
-    }
-
-    // Extract provider name from domain or metadata
-    let provider = defaultDomain;
-    if (defaultDomain.includes('walletofsatoshi')) {
-      provider = 'Wallet of Satoshi';
-    } else if (defaultDomain.includes('blink.sv')) {
-      provider = 'Blink (Galoy)';
-    } else if (defaultDomain.includes('bitcoin.co.ke')) {
-      provider = 'Tando (M-Pesa)';
-    } else if (defaultDomain.includes('getalby')) {
-      provider = 'Alby';
-    } else if (defaultDomain.includes('strike.me')) {
-      provider = 'Strike';
-    } else if (defaultDomain.includes('coinos.io')) {
-      provider = 'CoinOS';
-    }
-
-    // Extract human-readable address from metadata if present (LUD-06 / LUD-16 spec)
-    let standardAddress = `${defaultUsername}@${defaultDomain}`;
-    let parsedMetadata = data.metadata;
-    if (typeof parsedMetadata === 'string') {
-      try {
-        parsedMetadata = JSON.parse(parsedMetadata);
-      } catch {
-        parsedMetadata = [];
-      }
-    }
-    if (Array.isArray(parsedMetadata)) {
-      try {
-        const idEntry = parsedMetadata.find(
-          (m: unknown) => Array.isArray(m) && m[0] === 'text/identifier'
-        );
-        if (idEntry && typeof idEntry[1] === 'string') {
-          standardAddress = idEntry[1];
-        }
-      } catch {
-        // ignore
-      }
-    }
-
-    const minSendableSats = Math.ceil((Number(data.minSendable) || 1000) / 1000);
-    const maxSendableSats = Math.floor((Number(data.maxSendable) || 100000000000) / 1000);
-
-    const currencyData = data.currency
-      ? {
-          code: data.currency.code || 'KES',
-          minSendable: Number(data.currency.minSendable) || 15,
-          maxSendable: Number(data.currency.maxSendable) || 50000,
-          multiplier: Number(data.currency.multiplier) || 9000,
-        }
-      : undefined;
-
+    const domain = typeof data.domain === 'string' && data.domain ? data.domain : defaultDomain;
     return {
       success: true,
-      address: standardAddress,
-      username: defaultUsername,
-      domain: defaultDomain,
-      provider,
-      minSendableSats,
-      maxSendableSats,
-      callbackUrl: data.callback || '',
+      address: typeof data.address === 'string' && data.address ? data.address : clean,
+      username: typeof data.username === 'string' && data.username ? data.username : defaultUsername,
+      domain,
+      provider: providerFor(domain),
+      minSendableSats: Number(data.minSendableSats) || 0,
+      maxSendableSats: Number(data.maxSendableSats) || 0,
       commentAllowed: Number(data.commentAllowed) || 0,
-      currency: currencyData,
     };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Network error';
-    return {
-      success: false,
-      address: clean,
-      username: defaultUsername,
-      domain: defaultDomain,
-      provider: defaultDomain,
-      minSendableSats: 0,
-      maxSendableSats: 0,
-      callbackUrl: '',
-      commentAllowed: 0,
-      error: `Network error connecting to ${defaultDomain}: ${message}`,
-    };
+    return fail(`Network error connecting to ${defaultDomain}: ${message}`);
   }
 }
 
 /**
- * Creates an authentic BOLT-11 Lightning invoice directly from the resolved LNURL callback
+ * Creates an authentic BOLT-11 Lightning invoice for a Lightning address via
+ * our server, which asks the address's own LNURL callback.
  */
 export async function createLightningInvoice(
-  callbackUrl: string,
+  to: string,
   satsAmount: number,
   comment?: string
-): Promise<{ success: boolean; invoice?: string; paymentHash?: string; receiptUrl?: string; error?: string }> {
+): Promise<{ success: boolean; invoice?: string; error?: string }> {
   try {
-    const millisats = Math.round(satsAmount * 1000);
-    const url = new URL(callbackUrl);
-    url.searchParams.set('amount', String(millisats));
-    if (comment) {
-      url.searchParams.set('comment', comment);
-    }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+    const token = getWalletToken();
 
-    const res = await fetch(url.toString());
-    const data = await res.json();
+    const res = await fetch('/api/yebente/address/invoice', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ to, sats: satsAmount, comment }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
 
-    if (data.status === 'ERROR' || !data.pr) {
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data.success || !data.invoice) {
       return {
         success: false,
-        error: data.reason || 'Failed to generate BOLT-11 Lightning invoice from wallet.',
+        error: data.error || 'Failed to generate BOLT-11 Lightning invoice from wallet.',
       };
-    }
-
-    let paymentHash: string | undefined;
-    let receiptUrl: string | undefined;
-    if (data.successAction?.url) {
-      receiptUrl = data.successAction.url;
-      const parts = data.successAction.url.split('/');
-      paymentHash = parts[parts.length - 1];
     }
 
     return {
       success: true,
-      invoice: data.pr,
-      paymentHash,
-      receiptUrl,
+      invoice: data.invoice,
     };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to reach invoice generator';

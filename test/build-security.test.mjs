@@ -405,6 +405,27 @@ test("address QR: pasted text only, bc1q checked, capped, and no address-making 
   }
 });
 
+test("Ye₿ente calls only its fixed services: Lightning lookups go through the server, and connect-src names the rest", () => {
+  const CONNECT = "connect-src 'self' https://api.blink.sv https://api.coinbase.com https://open.er-api.com https://bitcoin.co.ke";
+  for (const f of ["yebente/index.html", "yebente/app/index.html", "yebente/public/.htaccess"]) {
+    assert.ok(read(f).includes(CONNECT), `${f}: connect-src names only the fixed feeds and Tando (Lightning lookups go through /api/yebente/address/*)`);
+  }
+  assert.ok(read("server.mjs").includes(CONNECT), "server.mjs YEBENTE_CSP: the same narrowed connect-src as the page");
+  for (const f of ["yebente/index.html", "yebente/app/index.html"]) {
+    assert.doesNotMatch(read(f), /connect-src[^;]*https:(?!\/)/, `${f}: no https: wildcard in connect-src`);
+  }
+  // The wallet's own lookup code calls only our API: any outside host it could
+  // name would need a connect-src entry, so none may remain.
+  const ls = read("yebente/src/services/lightningService.ts");
+  for (const m of [...ls.matchAll(/fetch\(\s*(`|'|")([^`"']*)/g)]) {
+    assert.ok(m[2].startsWith("/api/"), `lightningService.ts: fetch(${m[1]}${m[2].slice(0, 60)}...) must stay on our API (proxy outside lookups through the server)`);
+  }
+  // The shipped bundle is built from this source: it uses the proxy too.
+  const bundle = files("yebente/app/assets", /\.js$/).map((f) => read(f)).join("\n");
+  assert.ok(bundle.includes("/api/yebente/address/resolve") && bundle.includes("/api/yebente/address/invoice"),
+    "yebente/app/assets: rebuild the app (cd yebente && npm run build) so the shipped page uses the proxy");
+});
+
 test("admin bodies over 100 KB need the token up front: strangers hit 413, the token passes 700 KB", async () => {
   const { adminAuthed } = await import("../lib/http.js");
   assert.match(read("server.mjs"), /const limit = api\[1\] === "admin" && adminAuthed\(req\.headers\.authorization\) \? 1_000_000 : 100_000;/, "server.mjs: the ~1 MB body budget needs a valid admin token first");
