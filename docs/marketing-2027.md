@@ -139,9 +139,23 @@ Teach, do not hype: no price talk, no "to the moon", no "get rich", no
 investment advice, no guaranteed returns. Accurate Bitcoin and Lightning
 facts only; when unsure, leave it out. Ye₿ente posts show a real feature
 that exists in the wallet today (PIN, handle, QR, free handle sends,
-invoices, recovery words, M-Pesa buy where switched on); never promise
+invoices, passkeys, M-Pesa buy where switched on); never promise
 unreleased features. No headline or caption repeats across 2026-11,
 2026-12 and all of 2027.
+
+## Honest custody
+
+Ye₿ente is a custodial wallet: Altradits holds the bitcoin, there are no
+recovery words, and it has freeze and pause features. Never say or imply
+that Ye₿ente users hold their own keys, that their Ye₿ente money "can't
+be frozen", or that they "hold their own money" in Ye₿ente. Self-custody
+lessons (keys, 12 words, "their keys, their coins") are fine as general
+education in Lesson, Tip, Myth vs fact, Story or Question posts, framed
+as a later step ("when you're ready to hold your own keys..."), and must
+never sit in a Ye₿ente-type post or suggest Ye₿ente is self-custody. The
+marketing suite fails a Ye₿ente-type post that contains: freeze, froze,
+frozen, own keys, own money, hold your own, holding your own, nobody
+can, self-custody, 12 words, twelve words, seed, ownership, owning.
 
 ## Background library (Minimal 2027)
 

@@ -269,6 +269,22 @@ test("2027 copy fits the card rules", () => {
   }
 });
 
+test("honest custody: Ye₿ente posts never claim self-custody", () => {
+  // Ye₿ente is custodial: no recovery words, with freeze and pause.
+  const banned = [/freez/, /froze/, /own keys/, /own money/, /hold your own/,
+    /holding your own/, /nobody can/, /self.custody/, /12.words?/, /twelve.words?/, /\bseed\b/,
+    /ownership/, /owning/];
+  for (const m of months27()) {
+    for (const p of monthFile(m).posts) {
+      if (p.type !== "Ye₿ente") continue;
+      const text = [p.headline, p.subline, p.caption, p.alt].join(" ").toLowerCase();
+      for (const re of banned) {
+        assert.doesNotMatch(text, re, `${p.date}: Ye₿ente post claims ${re}`);
+      }
+    }
+  }
+});
+
 test("no headline or caption repeats across 2026 and 2027", () => {
   const norm = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
   // 2026 headlines live only inside alt text, always as the opening words.
