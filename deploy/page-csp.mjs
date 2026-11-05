@@ -32,7 +32,8 @@ export function withPolicy(html) {
   return html.slice(0, end + nl) + tag + html.slice(end + nl);
 }
 
-export const pages = () => fs.readdirSync(ROOT).filter((f) => f.endsWith(".html")).sort();
+export const pages = () => [...fs.readdirSync(ROOT).filter((f) => f.endsWith(".html")),
+  ...fs.readdirSync(path.join(ROOT, "ktown")).filter((f) => f.endsWith(".html")).map((f) => `ktown/${f}`)].sort();
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const check = process.argv.includes("--check");

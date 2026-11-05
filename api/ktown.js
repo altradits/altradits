@@ -15,6 +15,7 @@
 //   GET  lnurlp/<id> (= /.well-known/lnurlp/k-<id>)  the merchant as LNURL-pay
 //   GET  lnurlp/<id>/cb?amount=&currency=  Tando's invoice for exactly that amount
 //   GET  receipt/<hash>              Tando's status for a kTown-recorded payment only
+//   GET  rates                       KES into the display currencies (display only)
 import { json, readBody, clientIp } from "../lib/http.js";
 import { hit } from "../lib/store.js";
 import crypto from "node:crypto";
@@ -97,6 +98,17 @@ export async function GET(request) {
     if (cb) return await lnurlCallback(request, cb[1]);
     const rc = path.match(/^receipt\/([0-9a-fA-F]{1,80})$/);
     if (rc) return await receipt(request, rc[1]);
+    if (path === "rates") {
+      const kt = await import("../lib/ktown.js");
+      if (!kt.ktownOn()) return json({ success: false, error: "kTown isn't open yet." }, 501);
+      if ((await hit(`rl:kt:rates:${ipKey(request)}`, 600)) > 120) return json({ success: false, error: "Too many requests. Try again later." }, 429);
+      try {
+        return json({ success: true, ...(await kt.fiatRates()) });
+      } catch (e) {
+        return e.status ? json({ success: false, error: e.message }, e.status)
+          : json({ success: false, error: "Internal server error." }, 500);
+      }
+    }
     if (path === "me" || path === "history") {
       const kt = await import("../lib/ktown.js");
       if (!kt.ktownOn()) return json({ success: false, error: "kTown isn't open yet." }, 501);

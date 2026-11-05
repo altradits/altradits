@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<title>Pay with sats</title>
+<meta name="description" content="Pay this shop in sats over Lightning. The merchant receives M-Pesa.">
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/ktown/style.css">
+</head>
+<body>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+</script>
+<div class="lang">
+  <button type="button" id="lang-en" aria-pressed="true">EN</button>
+  <button type="button" id="lang-sw" aria-pressed="false">SW</button>
+</div>
+<main class="wrap">
+  <p class="receive" id="loading" role="status">Loading…</p>
+  <p class="err" id="fatal" role="alert" hidden style="text-align:center"></p>
+  <section id="view-pay" hidden aria-labelledby="pay-shop">
+    <h1 class="shop" id="pay-shop"></h1>
+    <p class="mpesa-name" id="pay-mpesa"></p>
+    <p style="text-align:center;margin:0"><span class="mark" id="pay-mark"></span></p>
+    <label for="amount" data-i18n="amount">Amount</label>
+    <div class="row">
+      <input id="amount" inputmode="decimal" autocomplete="off" placeholder="100">
+      <select id="pay-currency" aria-label="Currency">
+        <option value="KES">KES</option><option value="USD">USD</option><option value="EUR">EUR</option>
+        <option value="UGX">UGX</option><option value="TZS">TZS</option>
+      </select>
+    </div>
+    <p class="hint" id="limits"></p>
+    <p class="receive" id="receive"></p>
+    <p class="sats" id="sats"></p>
+    <p class="err" id="pay-err" role="alert" hidden></p>
+    <button type="button" class="btn" id="btn-pay" data-i18n="pay">Pay</button>
+    <p class="foot" data-i18n="honest">kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.</p>
+  </section>
+  <section id="view-invoice" hidden aria-labelledby="inv-title">
+    <h1 class="shop" id="inv-title" data-i18n="scanWith">Scan with your wallet</h1>
+    <div class="qr-card inv-qr" id="inv-qr" role="img" aria-label="Lightning invoice"></div>
+    <div class="copy-row">
+      <button type="button" class="btn small ghost" id="btn-copy" data-i18n="copy">Copy</button>
+      <a class="btn small" id="btn-open" href="#" data-i18n="openWallet">Open in wallet</a>
+    </div>
+    <p class="ok-line" id="copied" role="status" hidden style="text-align:center"></p>
+    <p class="receive" id="inv-wait"><small id="wait-text"></small></p>
+    <p class="err" id="inv-err" role="alert" hidden style="text-align:center"></p>
+    <p style="text-align:center"><button type="button" class="link" id="link-amount" data-i18n="newAmount">New amount</button></p>
+  </section>
+  <section id="view-paid" hidden aria-labelledby="paid-title">
+    <p class="paid" id="paid-title">✓</p>
+    <p class="mpesa-code" id="paid-code"></p>
+    <p class="receive"><small id="paid-sub"></small></p>
+    <p class="foot" data-i18n="honest">kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.</p>
+  </section>
+</main>
+<noscript><p style="text-align:center">Paying needs JavaScript.</p></noscript>
+<script src="/ktown/qrcode-generator-1.4.4.js"></script>
+<script src="/ktown/pay.js"></script>
+</body>
+</html>

@@ -35,8 +35,42 @@ Anyone can type any M-Pesa number at sign-up, so a squatter could register someo
 Why this shape: the true owner can always win. They know their own registered name and can complete a first payment (15 KES from any Lightning wallet, even their own), while a squatter would have to pay the victim and guess the victim's exact registered name to claim. The residual risk is a squatter who pays to hold a number plus its defaced shop name; the money still lands with the victim, and Stanley can delete the `kt:phone:<number>` and `kt:<id>` keys by hand for persistent abuse. Two people alternating takeovers every 48 hours ends the same way: whoever completes a matched payment first holds the number for good.
 - Limits: registration and login per network, per number and site-wide; LNURL and receipts per network and per merchant.
 
+## The app (PR 2)
+
+Static, no build step: two screens and one pay page do not earn React and a
+bundler. A hand-written app is a few kilobytes, loads fast on a low-end phone,
+and cannot drift from a forgotten rebuild. The repo's page pipeline (own CSP,
+frame check, Security watch reporter) applies unchanged.
+
+- `ktown/index.html`, `ktown/app.js`: the QR screen (shop name, M-Pesa name and
+  verified mark, one bold QR, Print) and Settings (register or log in, names,
+  currency, language, PIN, history, sign out). Served at /ktown.
+- `ktown/pay.html`, `ktown/pay.js`: the payer page at /k/<id>. Names and
+  limits come from the merchant's LNURL answer (plus its `verified` field,
+  which wallets ignore). The amount defaults to KES and converts from the
+  payer's currency through /api/ktown/rates; the invoice is always priced in
+  KES so the merchant receives exactly the shown shillings. Then the invoice
+  QR with copy and open-in-wallet, then the paid confirmation from the
+  receipt, polled every 3 seconds.
+- `ktown/style.css`: navy ink on cream, Bricolage headings, Figtree text, big
+  touch targets, AA-safe text colors. The QR is black on white SVG, crisp in
+  print and in black and white.
+- `ktown/qrcode-generator-1.4.4.js`: QR encoder by Kazuhiko Arase, MIT
+  licence (header kept), vendored so the QR renders locally with no network.
+- English and Kiswahili throughout, from a small word list in each page
+  script. Server error lines stay in English.
+- History converts into the merchant's currency with ≈ (display only; the KES
+  figure is exact). Without rates, both pages fall back to KES silently.
+- Print in PR 2 is one clean card via window.print; exact A6/A4 sheets and
+  the PNG download land in PR 3 with the offline service worker.
+
+Serving mirrors Ye₿ente on both stacks (server.mjs and .htaccess). Where
+nginx sends pages straight from disk, /ktown and /k/<id> need the same
+treatment Ye₿ente's app already has: /ktown serves ktown/index.html and
+/k/<id> serves ktown/pay.html with its query string kept.
+
 ## Still open
 
-- The app, the pay page, print and offline (PR 2 and PR 3).
+- Print sheets and PNG, the offline service worker, final polish (PR 3).
 - Lost-phone recovery without Stanley (today: he deletes two keys by hand).
 - If the live server ever sets proxy variables, Node sends `https.request` through the proxy and `lib/netsafe.js` can no longer pin DNS. Keep proxy variables off the live server, or teach the guard to refuse proxied requests.

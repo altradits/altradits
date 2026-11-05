@@ -1,0 +1,99 @@
+/* kTown: one bold QR, generous whitespace. Navy ink on cream, red for accents,
+Bitcoin orange for the lightning mark only. Text colors all meet WCAG AA on
+cream (navy 16.3:1, muted 6.6:1, error red 6.2:1). */
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+:root{
+  --navy:#0f1b2d; --red:#ea5158; --cream:#FFF7EC; --orange:#F7931A;
+  --paper:#fff; --line:#e7d6bd; --muted:#4a5a73; --err:#B42318;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--cream);color:var(--navy);
+  font:400 1.0625rem/1.55 Figtree,system-ui,-apple-system,sans-serif;min-height:100vh}
+h1,h2{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;line-height:1.15;margin:0}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px;border-radius:.25rem}
+.wrap{max-width:34rem;margin:0 auto;padding:1.5rem 1.25rem 6.5rem}
+/* QR screen: the code is the page. */
+.shop{font-size:1.6rem;font-weight:800;text-align:center;margin:.4rem 0 0}
+.mpesa-name{text-align:center;font-weight:700;font-size:1.15rem;margin:.15rem 0 0}
+.mark{display:inline-block;font-size:.85rem;font-weight:700;margin-top:.35rem}
+.mark.ok{color:var(--navy)}
+.mark.no{color:var(--err)}
+.secure-note{text-align:center;color:var(--muted);font-size:.92rem;margin:.4rem 0 0}
+.qr-card{background:var(--paper);border:1px solid var(--line);border-radius:1rem;
+  padding:1.1rem;margin:1.1rem auto 0;max-width:24rem}
+.qr-card svg{display:block;width:100%;height:auto}
+.print-line{text-align:center;font-size:.92rem;color:var(--muted);margin:.7rem 0 0}
+.print-line b{color:var(--orange)}
+/* Buttons and fields: big targets, navy ink. */
+.btn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;
+  min-height:3.25rem;padding:.8rem 1.25rem;margin-top:1rem;border-radius:.8rem;
+  font:700 1.05rem Figtree,system-ui,sans-serif;cursor:pointer;text-decoration:none;
+  background:var(--navy);color:#fff;border:2px solid var(--navy)}
+.btn.ghost{background:transparent;color:var(--navy)}
+.btn.small{min-height:2.75rem;font-size:.95rem}
+.btn[disabled]{opacity:.55;cursor:wait}
+label{display:block;font-weight:700;margin:1.1rem 0 .3rem}
+input,select{width:100%;min-height:3.25rem;padding:.7rem .9rem;font:400 1.05rem Figtree,system-ui,sans-serif;
+  color:var(--navy);background:var(--paper);border:2px solid var(--navy);border-radius:.8rem}
+input::placeholder{color:var(--muted);opacity:.8}
+.hint{color:var(--muted);font-size:.9rem;margin:.3rem 0 0}
+.err{color:var(--err);font-weight:700;margin:.8rem 0 0}
+.ok-line{color:var(--navy);font-weight:700;margin:.8rem 0 0}
+/* Settings sections. */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:1rem;padding:1.1rem 1.1rem 1.25rem;margin-top:1.1rem}
+.card h2{font-size:1.2rem;margin-bottom:.2rem}
+.card label:first-of-type{margin-top:.6rem}
+.row{display:flex;gap:.75rem}
+.row>*{flex:1;min-width:0}
+.link{background:none;border:0;padding:.6rem 0;color:var(--navy);font:700 1rem Figtree,system-ui,sans-serif;
+  text-decoration:underline;cursor:pointer;min-height:2.75rem}
+/* History. */
+.tx{list-style:none;margin:.8rem 0 0;padding:0}
+.tx li{display:flex;justify-content:space-between;gap:.75rem;padding:.7rem 0;border-top:1px solid var(--line)}
+.tx li:first-child{border-top:0}
+.tx .amt{font-weight:800;white-space:nowrap}
+.tx .sub{color:var(--muted);font-size:.88rem}
+.tx .st{font-weight:700;white-space:nowrap}
+.tx .st.done{color:var(--navy)}
+.tx .st.wait{color:var(--muted)}
+.tx .st.fail{color:var(--err)}
+.empty{color:var(--muted);margin:.6rem 0 0}
+/* Bottom tabs. */
+.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--paper);
+  border-top:2px solid var(--navy);padding:.4rem .8rem calc(.4rem + env(safe-area-inset-bottom))}
+.tabs button{flex:1;max-width:17rem;background:none;border:0;border-top:4px solid transparent;cursor:pointer;
+  font:800 1.05rem Figtree,system-ui,sans-serif;color:var(--navy);min-height:3.25rem}
+@media(min-width:40rem){.tabs{justify-content:center}}
+.tabs button[aria-selected="true"]{border-top-color:var(--red)}
+/* Pay page. */
+.amount{font-size:1.6rem;font-weight:800;text-align:center;min-height:4rem}
+.receive{text-align:center;font-size:1.25rem;font-weight:800;margin:.9rem 0 0}
+.receive small{display:block;font-size:.95rem;font-weight:400;color:var(--muted)}
+.sats{text-align:center;color:var(--muted);margin:.2rem 0 0}
+.inv-qr{max-width:20rem}
+.copy-row{display:flex;gap:.75rem;margin-top:1rem}
+.copy-row .btn{margin-top:0}
+.paid{text-align:center;font-size:1.5rem;font-weight:800;margin:1.2rem 0 0}
+.paid small{display:block;font-size:1rem;font-weight:400;color:var(--muted);margin-top:.3rem}
+.mpesa-code{text-align:center;font-size:1.3rem;font-weight:800;letter-spacing:.08em;margin:.4rem 0 0}
+.lang{display:flex;justify-content:flex-end;gap:.15rem;padding:.5rem 1rem 0}
+.lang button{background:none;border:0;cursor:pointer;font:700 .92rem Figtree,system-ui,sans-serif;
+  color:var(--muted);min-width:2.75rem;min-height:2.75rem;padding:.4rem}
+.lang button[aria-pressed="true"]{color:var(--navy);text-decoration:underline}
+.foot{margin:2rem 0 0;color:var(--muted);font-size:.88rem;text-align:center}
+[hidden]{display:none!important}
+/* PR2 print: the card only. Exact A6/A4 sheets and PNG land in PR3. */
+@media print{
+  body{background:#fff}
+  .wrap{max-width:none;padding:0}
+  .tabs,.btn,.lang,.foot,.secure-note,.no-print{display:none!important}
+  .qr-card{border:0;margin:0 auto;max-width:9cm;padding:0}
+  .shop{font-size:22pt}
+  .mpesa-name{font-size:15pt}
+  .print-line{font-size:11pt;color:#000}
+  .print-line b{color:#000}
+}
