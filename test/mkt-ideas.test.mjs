@@ -114,7 +114,8 @@ test("the dashboard is wired: board, form, editor and place paths", () => {
   }
   const html = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
   for (const s of ['id="mkt-ideas"', 'href="#mkt-ideas"', 'id="mktIdeas"', 'id="mktIdeaForm"', 'id="mktIdeaNew"',
-    'id="mktIdeaTitle"', 'id="mktIdeaCap"', 'id="mktIdeaCol"', 'id="mktBoardBtn"', 'id="mktGalleryBtn"']) {
+    'id="mktIdeaTitle"', 'id="mktIdeaCap"', 'id="mktIdeaCol"', 'id="mktBoardBtn"', 'id="mktGalleryBtn"',
+    '#mktBoardBtn[aria-pressed=true]', '#mktGalleryBtn[aria-pressed=true]']) {
     assert.ok(html.includes(s), `admin.html has ${s}`);
   }
 });
