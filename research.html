@@ -11,11 +11,11 @@
 <meta name="theme-color" content="#EEF2F6">
 <link rel="canonical" href="https://altradits.com/research">
 <title>Product research: which Bitcoin service to open first in Kenya · Altradits</title>
-<meta name="description" content="Research from 5 Nov 2026: which Altradits product to open to the public first (kTown merchant QR), why the Ye₿ente wallet waits on a licence, the evidence, and the reference data.">
+<meta name="description" content="Research from 5 Nov 2026: which Altradits product to open to the public first (kTown merchant QR), why the Ye₿ente wallet waits for legal advice, the evidence, and the reference data.">
 <link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
 <meta property="og:title" content="Product research: which Bitcoin service to open first in Kenya · Altradits">
-<meta property="og:description" content="Research from 5 Nov 2026: which Altradits product to open to the public first (kTown merchant QR), why the Ye₿ente wallet waits on a licence, the evidence, and the reference data.">
+<meta property="og:description" content="Research from 5 Nov 2026: which Altradits product to open to the public first (kTown merchant QR), why the Ye₿ente wallet waits for legal advice, the evidence, and the reference data.">
 <meta property="og:url" content="https://altradits.com/research">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://altradits.com/assets/social-card.png">
@@ -24,7 +24,7 @@
 <meta property="og:image:alt" content="Ye₿ente wallet: send money anywhere, keep all of it">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Product research: which Bitcoin service to open first in Kenya · Altradits">
-<meta name="twitter:description" content="Research from 5 Nov 2026: which Altradits product to open to the public first (kTown merchant QR), why the Ye₿ente wallet waits on a licence, the evidence, and the reference data.">
+<meta name="twitter:description" content="Research from 5 Nov 2026: which Altradits product to open to the public first (kTown merchant QR), why the Ye₿ente wallet waits for legal advice, the evidence, and the reference data.">
 <meta name="twitter:image" content="https://altradits.com/assets/social-card.png">
 <style>
 /* Brand fonts, served from this site: Bricolage Grotesque and Figtree (SIL Open Font License 1.1, https://openfontlicense.org), latin and latin-ext (₿), variable weight */
@@ -102,14 +102,14 @@ td.num,th.num{text-align:right;white-space:nowrap}
   <h2 id="answer">The answer</h2>
   <ul class="cards">
     <li><span class="tag">Open first</span><h3>kTown merchant QR</h3><p>Sats in, M-Pesa out. Never holds money. A Kisumu pilot of 10 shops, free, four weeks.</p><div class="links"><a href="#pilot">The pilot plan</a></div></li>
-    <li><span class="tag">Blocked by law</span><h3>Ye₿ente wallet</h3><p>The wallet works, but custodial wallets need a CBK licence. Capital bar: KSh 150M. Licence first.</p><div class="links"><a href="#yebente">Why it waits</a></div></li>
+    <li><span class="tag">Not yet</span><h3>Ye₿ente wallet</h3><p>The wallet works, but it holds users’ sats. Opening it wider waits for legal advice under Kenya’s VASP Act.</p><div class="links"><a href="#yebente">Why it waits</a></div></li>
     <li><span class="tag">Stay inside</span><h3>Everything else</h3><p>Marketing engine and ops tooling stay internal. Learning content stays free. Donations stay open.</p><div class="links"><a href="#closed">What stays closed</a></div></li>
   </ul>
   <p class="intro sm">This is research, not legal advice. Points marked to confirm need a check before anyone acts on them.</p>
 
   <h2 id="risks">Top risks</h2>
   <ul class="check">
-    <li><span class="m p">!</span><span><b>The licence deadline passed on 4 Nov 2026.</b><br>New services need approval before they start. Ye₿ente wallet creation looks open on the live site now. The lawyer must say whether to pause it. <a href="#lawyer">Lawyer questions</a>.</span></li>
+    <li><span class="m p">!</span><span><b>Kenya now licenses virtual asset services.</b><br>Every service here gets legal advice before it opens to more people.</span></li>
     <li><span class="m p">!</span><span><b>One Mac over a tunnel is a single point of failure.</b><br>If the Mac sleeps, the node goes dark. Fine for a pilot. Not for strangers at scale.</span></li>
     <li><span class="m p">!</span><span><b>Words must stay honest.</b><br>Ye₿ente is custodial: Altradits holds the sats and can freeze sends for safety. The homepage wording was fixed in Nov 2026. No page may claim otherwise.</span></li>
     <li><span class="m p">!</span><span><b>Tando is partner and rival.</b><br>kTown rides Tando's rails. Tando could build merchant QR itself. The edge is local trust and Kiswahili support, not tech.</span></li>
@@ -146,28 +146,17 @@ td.num,th.num{text-align:right;white-space:nowrap}
   </ul>
 
   <h2 id="yebente">Why Ye₿ente waits</h2>
-  <p class="intro">The wallet is the best tech here. It is also custodial: the server ledger holds user sats on Stanley's node. Under Kenya's Virtual Asset Service Providers Act 2025, that looks like a wallet provider licence. The transition ended 4 Nov 2026. New providers need approval before they start.</p>
-  <div class="tblwrap"><table>
-    <caption>Licence capital per category (to confirm with the lawyer)</caption>
-    <thead><tr><th>Licence</th><th>Regulator</th><th class="num">Paid-up capital</th></tr></thead>
-    <tbody>
-      <tr><td>Wallet provider</td><td>CBK</td><td class="num">KSh 150M</td></tr>
-      <tr><td>Payment processor</td><td>CBK</td><td class="num">KSh 10M</td></tr>
-      <tr><td>Exchange</td><td>CMA</td><td class="num">KSh 100M</td></tr>
-      <tr><td>Stablecoin issuer</td><td>CBK</td><td class="num">KSh 300M</td></tr>
-    </tbody>
-  </table></div>
+  <p class="intro">The wallet is the best tech here. It is also custodial: the server ledger holds user sats on Stanley’s node. Custodial services have their own rules under Kenya’s Virtual Asset Service Providers Act 2025, so it stays a learning wallet while that advice is taken.</p>
   <ul class="proof">
-    <li>Plus, to confirm: limited company, physical office, AML and KYC, audits, application and licence fees.</li>
     <li>Rivals that avoid custody: Tando (non-custodial), Bitika (sats to your own wallet), Machankura (Lightning over USSD), Blink (open source, StableSats). Also in the space, depth in Kenya to confirm: Fedi, Wallet of Satoshi, Zeus, Bitnob.</li>
-    <li>Money math: revenue is zero today (spread 0, sends free). 100 buys a month at 1,000 KES with a 1% spread is 1,000 KES a month. Volume needs the licence first.</li>
+    <li>Money math: revenue is zero today (spread 0, sends free). 100 buys a month at 1,000 KES with a 1% spread is 1,000 KES a month. Growth waits for the legal answer.</li>
     <li>Scale math: 1,000 wallets at the 200,000 sat cap is 200M sats (2 BTC) of Stanley's outbound liquidity. The solvency check watches it. Funding it is real money.</li>
   </ul>
 
   <h2 id="pilot">The 30-day pilot</h2>
   <p class="intro">10 shops in Kisumu Stanley can visit on foot. One printed QR each. KES only. 15 to 50,000 KES per payment. No fees from Altradits. Kiswahili and English.</p>
   <ol class="months">
-    <li><span class="when">Days 1 to 7</span><b>Clearance and fixes</b><span>Lawyer questions out. Print flow, terms page, and abuse blocklist built and tested. Intro email to Tando sent.</span></li>
+    <li><span class="when">Days 1 to 7</span><b>Clearance and fixes</b><span>Legal advice sought. Print flow, terms page, and abuse blocklist built and tested. Intro email to Tando sent.</span></li>
     <li><span class="when">Days 8 to 14</span><b>First shops</b><span>Answers in. KTOWN on. 3 friendly shops onboarded. First real payments watched in person.</span></li>
     <li><span class="when">Days 15 to 21</span><b>Ten live</b><span>10 shops live. Visit each. Log every failure and every support ask.</span></li>
     <li><span class="when">Days 22 to 30</span><b>Decide</b><span>Grow (more shops, second town) or stop. The signals below decide.</span></li>
@@ -183,16 +172,16 @@ td.num,th.num{text-align:right;white-space:nowrap}
   <ul class="check">
     <li><span class="m p">✕</span><span>Tando blocks or rate limits the use.</span></li>
     <li><span class="m p">✕</span><span>Any payment lands wrong: amount or number.</span></li>
-    <li><span class="m p">✕</span><span>The lawyer says a licence is needed.</span></li>
+    <li><span class="m p">✕</span><span>Legal advice says to wait.</span></li>
     <li><span class="m p">✕</span><span>Support passes 1 hour a day for 10 shops.</span></li>
     <li><span class="m p">✕</span><span>Merchants stop showing the QR.</span></li>
   </ul>
-  <p class="intro sm">Stanley does himself: the lawyer, the Tando email, the printing, and the shop visits. No new accounts needed. No Daraja, no Pesapal, no Bitika live key for kTown.</p>
+  <p class="intro sm">Stanley does himself: legal advice, the Tando email, the printing, and the shop visits. No new accounts needed. No Daraja, no Pesapal, no Bitika live key for kTown.</p>
 
   <h2 id="closed">What stays closed</h2>
   <ul class="proof">
-    <li>Ye₿ente for strangers. Custodial means a licence first.</li>
-    <li>Buy sats and card top-up for strangers. Same licence problem, plus sandbox keys that must never face the public.</li>
+    <li>Ye₿ente for strangers. It holds users’ sats, so it waits for legal advice.</li>
+    <li>Buy sats and card top-up for strangers. Same reason, plus sandbox keys that must never face the public.</li>
     <li>Telebirr. No partner, no testing. A config flag is not a product.</li>
     <li>Marketing tool, ops tooling, and the contact shield as services. Single-user internals. Selling them burns the one person who keeps the node safe.</li>
   </ul>
@@ -242,20 +231,6 @@ td.num,th.num{text-align:right;white-space:nowrap}
     <li>Market: <a href="https://www.blink.sv/blog/40-million-kenyans-now-have-a-bitcoin-lightning-address">40M Lightning addresses</a>, <a href="https://bitnxt.io/interviews/tando-bitcoin-mpesa">Tando interview</a>, <a href="https://planb.academy/tutorials/exchange/centralized/bitika-bb7285f5-af75-4025-918b-d872d30ea62a">Bitika guide</a>, <a href="https://lightning.news/bitika-disrupting-finance/">Bitika profile</a>, <a href="https://www.blink.sv/blog/weekly-brief-2026-41">Bitika outage note</a>, <a href="https://bigbullcrypto.com/bitcoin-projects-are-bringing-financial-inclusion-to-feature-phones-in-africa/">Machankura on feature phones</a>, <a href="https://www.inclusivefintechforum.com/media-hub/latest-news/lessons-a-kenyan-village-transacting-in-bitcoin-harbours-in-inclusive-fintech?hs_amp=true">Blink in a Kenyan village</a>, <a href="https://borgenproject.org/kotani-pay/">Kotani Pay</a>.</li>
     <li>Code: docs/yebente.md, docs/ktown.md, lib/ywallet.js, lib/ktown.js, lib/rails.js, lib/bitika.js, api/yebente.js, api/ktown.js, server.mjs, DEPLOY.md, in <a href="https://github.com/altradits/altradits">the repo</a>.</li>
   </ul>
-
-  <h2 id="lawyer">Lawyer questions</h2>
-  <ol class="proof">
-    <li>Is the custodial Ye₿ente wallet a CBK wallet provider? Any lighter path: sandbox, partner licence, closed loop?</li>
-    <li>Wallet creation looks open live and the deadline passed. Pause it now? Exposure for past operation?</li>
-    <li>Does kTown, holding nothing, need any VASP licence, including payment processor? Does a flat till fee change that? A per-payment add-on?</li>
-    <li>Is written permission needed to front Tando's LNURL API commercially?</li>
-    <li>ODPC: register now or exempt? What must merchant terms and the privacy notice contain?</li>
-    <li>What disclosures and complaint handling must the pilot carry? Who owes the merchant when a payment fails mid-flight?</li>
-    <li>Company form for the pilot: sole proprietor or limited company? What changes for liability, tax, and any future licence?</li>
-    <li>Any regulatory precondition before applying for Daraja production, Pesapal production, or a Bitika live key?</li>
-    <li>What records to keep and for how long? Payment records are never pruned in code. Required? Any retention ceiling?</li>
-    <li>If Ye₿ente stays friends and family: what user cap, amount cap, and wording keeps it clearly non-public?</li>
-  </ol>
 
   <h2>Method</h2>
   <p class="intro">Read-only review of the main branch plus live GET checks and public sources on 5 Nov 2026. Every rival and rule links its source. Gaps say to confirm. Research, not legal advice. Questions go through <a href="/contact">Contact</a>.</p>
