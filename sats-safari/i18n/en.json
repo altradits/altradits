@@ -30,13 +30,40 @@
     "comingSoon": "This stop is still being built. Come back soon."
   },
   "levels": {
-    "1": { "name": "Sats Market", "line": "Count tiny coins called sats." },
-    "2": { "name": "Keys and Padlocks", "line": "Keep the secret key secret." },
-    "3": { "name": "Send It On", "line": "Pass sats along. No double spend." },
-    "4": { "name": "Block Train", "line": "Link blocks into a chain." },
-    "5": { "name": "The Guessing Game", "line": "Mine by guessing numbers." },
-    "6": { "name": "Friends Agree", "line": "Everyone keeps the same list." },
-    "7": { "name": "Only 21 Million", "line": "New coins slow down to a stop." }
+    "1": {
+      "name": "Sats Market",
+      "line": "Count tiny coins called sats.",
+      "badge": "Coin Counter",
+      "cite": "2"
+    },
+    "2": {
+      "name": "Keys and Padlocks",
+      "line": "Keep the secret key secret.",
+      "badge": "Key Keeper",
+      "cite": "2"
+    },
+    "3": {
+      "name": "Send It On",
+      "line": "Pass sats along. No double spend.",
+      "badge": "Honest Sender",
+      "cite": "2 and 5"
+    },
+    "4": {
+      "name": "Block Train",
+      "line": "Link blocks into a chain."
+    },
+    "5": {
+      "name": "The Guessing Game",
+      "line": "Mine by guessing numbers."
+    },
+    "6": {
+      "name": "Friends Agree",
+      "line": "Everyone keeps the same list."
+    },
+    "7": {
+      "name": "Only 21 Million",
+      "line": "New coins slow down to a stop."
+    }
   },
   "level": {
     "stop": "Stop",
@@ -57,5 +84,70 @@
     "back": "Back",
     "close": "Close",
     "loading": "Loading..."
+  },
+  "l1": {
+    "countTitle": "Count the sats",
+    "countLine": "Tap every coin and count along.",
+    "hintCount": "Tap each coin that shines.",
+    "fillTitle": "Fill one bitcoin",
+    "fillLine": "Tap 10 times. Each tap adds 10,000,000 sats.",
+    "hintFill": "Tap the button ten times.",
+    "next": "Next",
+    "shopTitle": "Buy a mango",
+    "shopLine": "A mango costs {price} sats. You hold {wallet}. Put the exact coins on the till.",
+    "till": "Till",
+    "pay": "Pay",
+    "clear": "Clear",
+    "yum": "Yum! {left} sats are left.",
+    "tooLittle": "Too little. Add more.",
+    "tooMuch": "Too much. Start again.",
+    "hintShop": "The mango is 500. Five 100 coins do it.",
+    "a": "One bitcoin holds 100,000,000 tiny coins called sats.",
+    "b": "Small things cost a few sats. Nobody needs a whole bitcoin."
+  },
+  "l2": {
+    "openTitle": "Open your chest",
+    "openLine": "Only your secret key opens it. Nobody else holds one.",
+    "openBtn": "Use secret key",
+    "opened": "Open! Your sats are safe inside.",
+    "hintOpen": "Tap the key.",
+    "foxTitle": "A stranger appears",
+    "foxLine": "“Show me your secret key!” says the fox.",
+    "keepBtn": "Keep it secret",
+    "showBtn": "Show it",
+    "kept": "Well kept! Your sats stay yours.",
+    "shown": "Never! Nobody may see your secret key. Not even a friendly fox.",
+    "hintFox": "Your secret is yours alone.",
+    "addrTitle": "A friend pays you",
+    "addrLine": "Amina wants to send you sats. What do you give her?",
+    "secretCard": "Secret key",
+    "addrCard": "Public address",
+    "addrIs": "sunny-42",
+    "addrGood": "The address only receives. Coins arrive!",
+    "addrBad": "No! The secret key opens your coins. Never share it.",
+    "hintAddr": "Share the address. Hide the key.",
+    "a": "The secret key opens your coins. Never show it to anyone.",
+    "b": "The public address only receives. Sharing it is safe."
+  },
+  "l3": {
+    "sendTitle": "Send 100 sats to Aza",
+    "sendLine": "Tap Aza's address, then sign with your secret key.",
+    "you": "You: 100 sats",
+    "aza": "Aza's address",
+    "juma": "Juma's address",
+    "sign": "Sign with secret key",
+    "sent": "Sent! Aza has the 100 sats.",
+    "wrongAddr": "That is Juma. Aza is waiting.",
+    "hintSend": "Tap Aza, then sign.",
+    "backTitle": "Aza sends 50 back",
+    "backLine": "“Thank you!” Now send sats to Juma.",
+    "you50": "You: 50 sats",
+    "pay50": "Send 50",
+    "pay100": "Send 100",
+    "refused": "Refused! You have {have}. Every friend's list says so.",
+    "sent50": "Sent! Juma has 50 sats.",
+    "hintBack": "Count your sats first.",
+    "a": "A transaction moves sats from one address to another.",
+    "b": "The same sats can only be spent once. Everyone checks."
   }
 }

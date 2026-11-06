@@ -4,7 +4,7 @@
 // untouched. Fonts come from /assets (outside this scope): with no internet
 // the game falls back to the device's own fonts.
 // Bump CACHE when any cached file changes.
-const CACHE = "sats-safari-v1";
+const CACHE = "sats-safari-v2";
 const SHELL = [
   "/sats-safari/",
   "/sats-safari/index.html",
@@ -13,6 +13,10 @@ const SHELL = [
   "/sats-safari/i18n.js",
   "/sats-safari/progress.js",
   "/sats-safari/sound.js",
+  "/sats-safari/sats.js",
+  "/sats-safari/level1.js",
+  "/sats-safari/level2.js",
+  "/sats-safari/level3.js",
   "/sats-safari/i18n/en.json",
   "/sats-safari/i18n/sw.json",
 ];

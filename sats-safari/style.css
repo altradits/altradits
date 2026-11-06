@@ -106,3 +106,53 @@ main{display:block;max-width:46rem;margin:0 auto;padding:1.2rem 1rem 4rem}
  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
  @keyframes pop{from{transform:scale(.2) rotate(-40deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
 }
+
+/* Stops 1 to 3: market, keys, sending. */
+.round{letter-spacing:.3em;color:var(--sun-deep);font-weight:800;margin:.2rem 0}
+.big-count{font:800 1.6rem 'Bricolage Grotesque',Figtree,sans-serif;text-align:center;margin:.8rem 0}
+.coins{display:flex;flex-wrap:wrap;gap:.7rem;justify-content:center;margin:1rem 0}
+.coin{width:3.6rem;height:3.6rem;border-radius:50%;border:2px solid var(--ink);background:#FFE9B8;cursor:pointer;padding:.4rem}
+.coin svg{width:100%;height:100%;stroke:var(--sun-deep);stroke-width:1.6;fill:none}
+.coin:disabled{opacity:.45;cursor:default;transform:scale(.92)}
+.jar{height:2.2rem;border:2px solid var(--ink);border-radius:99px;overflow:hidden;background:var(--sand);margin:1rem 0}
+.jar-fill{height:100%;width:0;background:var(--sun)}
+.reveal{text-align:center}
+.big-coin{width:5rem;height:5rem;margin:0 auto;color:var(--sun-deep)}
+.big-coin svg{width:100%;height:100%;stroke:currentColor;stroke-width:1.6;fill:#FFE9B8}
+.stall{display:flex;align-items:center;gap:1rem;justify-content:center;margin:.6rem 0}
+.mango{width:3.4rem;height:3.4rem;color:var(--clay)}
+.mango svg{width:100%;height:100%;stroke:currentColor;stroke-width:1.8;fill:#FFD9A8}
+.price{font-weight:800}
+.row-btns{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;margin:.7rem 0}
+.chest{width:7rem;margin:1rem auto;text-align:center}
+.chest .lid{height:1.6rem;background:var(--sun);border:2px solid var(--ink);border-bottom:none;border-radius:.7rem .7rem 0 0;transform-origin:left center}
+.chest .box{background:var(--paper);border:2px solid var(--ink);border-radius:0 0 .7rem .7rem;padding:.4rem;color:var(--sun-deep);font-weight:800}
+.chest.open .lid{transform:rotate(-32deg)}
+.btn .ic{display:inline-flex;width:1.4rem;height:1.4rem;vertical-align:-3px;margin-right:.4rem}
+.btn .ic svg{width:100%;height:100%;stroke:currentColor;stroke-width:1.8;fill:none}
+.btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+.fox{display:flex;gap:.8rem;align-items:center;justify-content:center;margin:1rem 0}
+.fox .face{width:4rem;height:4rem;flex:0 0 auto;color:var(--clay)}
+.fox .face svg{width:100%;height:100%;stroke:currentColor;stroke-width:1.6;fill:#FFD9A8}
+.bubble{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:.6rem .9rem;font-weight:700;margin:0;max-width:20rem}
+.cards2{display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center;margin:1rem 0}
+.pick{display:flex;flex-direction:column;align-items:center;gap:.4rem;min-width:9rem;padding:.9rem;border:2px solid var(--ink);border-radius:1rem;background:var(--paper);cursor:pointer;font-weight:700}
+.pick .ic{width:2.4rem;height:2.4rem}
+.pick .ic svg{width:100%;height:100%;stroke:var(--ink);stroke-width:1.6;fill:none}
+.pick .addr{font:800 1.2rem 'Bricolage Grotesque',Figtree,sans-serif;background:var(--sky-soft);border-radius:.5rem;padding:.2rem .6rem}
+.pick.sel{background:var(--leaf-soft);box-shadow:0 4px 0 var(--ink)}
+.tx{display:flex;flex-direction:column;gap:.6rem;align-items:center;margin:.6rem 0}
+.who,.picks{display:flex;gap:.8rem;align-items:center}
+.face{width:2.6rem;height:2.6rem;color:var(--ink)}
+.face svg{width:100%;height:100%;stroke:currentColor;stroke-width:1.6;fill:var(--sky-soft)}
+.wire{position:relative;width:80%;height:2.2rem;border-top:4px dashed var(--line);margin-top:1rem}
+.fly{position:absolute;top:-1.3rem;left:0;color:var(--sun-deep);font-size:1.6rem}
+.friends{display:flex;gap:.8rem;justify-content:center;margin:1rem 0}
+.friend{display:flex;flex-direction:column;align-items:center;font-weight:800}
+.friend.no{color:var(--clay)}
+@media (prefers-reduced-motion:no-preference){
+.jar-fill{transition:width .25s ease}
+.chest .lid{transition:transform .3s ease}
+.fly.go{animation:fly .9s ease forwards}
+@keyframes fly{to{transform:translateX(16rem)}}
+}

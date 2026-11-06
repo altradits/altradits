@@ -5,7 +5,7 @@ import { loadLang, t, applyStatic, currentLang } from "./i18n.js";
 import { loadProgress, saveProgress, isUnlocked, awardStars, awardBadge, totalStars, fresh } from "./progress.js";
 import { play, setEnabled } from "./sound.js";
 
-export const SHIPPED = [];
+export const SHIPPED = [1, 2, 3];
 const STOPS = 7;
 
 const $ = (id) => document.getElementById(id);
@@ -134,7 +134,7 @@ function finishLevel(n, meta, stars) {
     `<p class="earned">${esc(t("learned.stars", { n: earned }))}</p>` +
     (isNew ? `<p class="badge-line"><span class="badge-dot" aria-hidden="true"></span>${esc(t("learned.badge"))}: ${esc(t(`levels.${n}.badge`))}</p>` : "") +
     `<ul class="points">${meta.learned.map((k) => `<li>${esc(t(k))}</li>`).join("")}</ul>` +
-    `<p class="cite">${esc(t("learned.cite", { s: meta.cite }))}</p>` +
+    `<p class="cite">${esc(t("learned.cite", { s: t(`levels.${n}.cite`) }))}</p>` +
     `<div class="row">` +
     (n < STOPS && SHIPPED.includes(n + 1) ? `<button type="button" class="btn" id="btn-next">${esc(t("learned.next"))}</button>` : "") +
     `<button type="button" class="btn ghost" id="btn-again">${esc(t("learned.again"))}</button>` +
