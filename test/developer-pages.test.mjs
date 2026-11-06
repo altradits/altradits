@@ -13,14 +13,10 @@ const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 const PAGES = ["developer.html", "developer-reference.html", "developer-dashboard.html"];
 
-test("every page with a site nav links to Developer (index.html is untouched by instruction)", async () => {
+test("every page with a site nav links to Developer", async () => {
   for (const f of fs.readdirSync(ROOT).filter((x) => x.endsWith(".html"))) {
     const html = read(f);
     if (!html.includes('<nav class="topnav"')) continue;
-    if (f === "index.html") {
-      assert.ok(!html.includes('href="/developer"'), "index.html stays untouched");
-      continue;
-    }
     assert.ok(html.includes('<a href="/developer"'), `${f}: nav links to /developer`);
   }
   for (const f of PAGES) assert.ok(read(f).includes('<a href="/developer" aria-current="page">Developer</a>'), `${f}: marks Developer current`);

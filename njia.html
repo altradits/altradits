@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<meta name="theme-color" content="#EEF2F6">
+<link rel="canonical" href="https://altradits.com/njia">
+<title>Njia: a small Lightning node, learning to earn · Altradits</title>
+<meta name="description" content="Njia tracks how a small Lightning node in Kisumu learns to earn from routing fees and leased channels. Honest state, no promises.">
+<link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
+<meta property="og:title" content="Njia: a small Lightning node, learning to earn · Altradits">
+<meta property="og:description" content="Njia tracks how a small Lightning node in Kisumu learns to earn from routing fees and leased channels.">
+<meta property="og:url" content="https://altradits.com/njia">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://altradits.com/assets/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Njia: five stops on the path of a small Lightning node learning to earn">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Njia: a small Lightning node, learning to earn · Altradits">
+<meta name="twitter:description" content="Njia tracks how a small Lightning node in Kisumu learns to earn from routing fees and leased channels.">
+<meta name="twitter:image" content="https://altradits.com/assets/social-card.png">
+<style>
+/* Brand fonts, served from this site: Bricolage Grotesque and Figtree (SIL Open Font License 1.1, https://openfontlicense.org), latin and latin-ext */
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--paper:#fff;color-scheme:light dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.wrap{max-width:44rem;margin:0 auto;padding:0 1rem 1rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0 -1rem;padding:.8rem 1rem;flex-wrap:wrap;row-gap:.5rem;position:sticky;top:0;z-index:50;background:rgba(238,242,246,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top img{height:2.5rem;width:auto;display:block}
+.topnav{display:flex;gap:.35rem;flex-wrap:wrap;row-gap:.35rem;align-items:center}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.45rem .95rem;border-radius:99px}
+.topnav a:hover{color:var(--ink);background:rgba(15,27,45,.08)}
+@media (max-width:420px){.topnav{gap:.25rem}.topnav a{font-size:.9rem;padding:.4rem .7rem}.top img{height:1.9rem}}
+.hero{padding:2rem 0 .5rem}
+.hero h1{font:800 clamp(2.4rem,8vw,3.6rem)/1.04 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0}
+.hero h1 em{font-style:normal;color:var(--btc-text)}
+.tag{font-size:1.2rem;line-height:1.5;color:var(--muted);margin:.7rem 0 0}
+.path{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;margin:1.4rem 0;padding:1rem .5rem .5rem}
+.path svg{display:block;width:100%;height:auto}
+.path .track{fill:none;stroke:var(--line);stroke-width:3;stroke-dasharray:7 6}
+.path .done-line{fill:none;stroke:var(--btc);stroke-width:3;stroke-dasharray:100 100;stroke-dashoffset:var(--off,100);stroke-linecap:round;animation:draw 1.2s ease-out}
+@keyframes draw{from{stroke-dashoffset:100}}
+.path .stop{fill:var(--paper);stroke:var(--ink);stroke-width:2.5}
+.path .stop.done{fill:var(--btc)}
+.path text{font:600 .82rem Figtree,system-ui,sans-serif;fill:var(--ink)}
+.path .st{font-size:.72rem;fill:var(--muted)}
+.honest{font-size:1.05rem;margin:0 0 1.4rem;padding:0 .2rem}
+.cards{list-style:none;padding:0;margin:0 0 1.4rem;display:grid;gap:.9rem}
+@media (min-width:40rem){.cards{grid-template-columns:1fr 1fr 1fr}}
+.cards li{background:var(--paper);border:2px solid var(--line);border-radius:.9rem;padding:.9rem 1rem}
+.cards h2{font:800 1.05rem/1.25 'Bricolage Grotesque',sans-serif;margin:0 0 .3rem}
+.cards p{margin:0 0 .4rem;color:var(--muted);font-size:.95rem}
+.cards a{font-size:.92rem;font-weight:600}
+.tiles{display:grid;gap:.7rem;margin:0 0 1.4rem}
+@media (min-width:30rem){.tiles{grid-template-columns:1fr 1fr 1fr}}
+.tiles div{background:var(--paper);border:2px solid var(--ink);border-radius:.8rem;padding:.7rem .9rem}
+.tiles small{display:block;color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+.tiles b{font:800 1.05rem 'Bricolage Grotesque',sans-serif}
+.fine{font-size:.85rem;color:var(--muted)}
+.ident{background:var(--paper);border:2px solid var(--ink);border-radius:.8rem;padding:.9rem 1rem;margin:0 0 1.4rem;overflow-wrap:anywhere}
+.ident code{font:.85em ui-monospace,Menlo,monospace;background:var(--bg);padding:.05rem .3rem;border-radius:.3rem}
+.ident .row{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;min-height:2.4rem;padding:.4rem .9rem;border-radius:.6rem;font:600 .9rem Figtree,sans-serif;border:2px solid var(--ink);cursor:pointer;background:transparent;color:var(--ink)}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:2rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}
+.sitefoot .wp{margin:0 0 .6rem}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1B2D;--ink:#EEF2F6;--muted:#A9B6C8;--line:#33415A;--blue:#7FB3E8;--btc-text:#F5A94B;--paper:#182742}.top{background:rgba(15,27,45,.9)}.topnav a:hover{background:rgba(238,242,246,.12)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.path .done-line{animation:none}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top,.tabs{transition:box-shadow .25s ease}body.scrolled .top,body.scrolled .tabs{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.cards .links a,.more a,.foot nav a,.pager a{transition:color .18s ease}.more a{display:inline-block;transition:transform .18s ease,color .18s ease}.more a:hover{transform:translateX(4px)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
+.topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
+.topnav a.launch:hover{color:var(--ink);background:#ffa94d}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/library">Library</a><a href="/friends">Friends</a><a href="/portfolio">Portfolio</a><a href="/developer">Developer</a><a class="launch" href="/ktown">Get kTown</a></nav></div>
+
+  <header class="hero">
+    <h1>Njia</h1>
+    <p class="tag">A small Lightning node, <em>learning to earn.</em></p>
+    <p class="tag" style="font-size:1rem">Routing fees and leased channels. Built and run in Kisumu.</p>
+  </header>
+
+  <section class="path" aria-label="The path to earning">
+    <svg id="njiaPath" viewBox="0 0 340 320" role="img" aria-label="Five stops: reserve, public channels, fair fees, always on, first lease">
+      <path class="track" d="M 60 20 Q 320 160 60 300"></path>
+      <path class="done-line" id="njiaDone" d="M 60 20 Q 320 160 60 300" pathLength="100"></path>
+      <g id="njiaStops"></g>
+    </svg>
+  </section>
+  <p class="honest" id="njiaLine" role="status">Loading…</p>
+
+  <ul class="cards" aria-label="How a node earns">
+    <li><h2>Routing fees</h2><p>A small fee each time a payment passes through.</p><a href="https://docs.lightning.engineering/lightning-network-tools/lnd/channel-fees">LND channel fees</a></li>
+    <li><h2>Leasing inbound</h2><p>New nodes pay to have a channel opened to them.</p><a href="/library">Learn in the Library</a></li>
+    <li><h2>Why it is slow</h2><p>Small nodes earn little at first. We show the real state, not a promise.</p><a href="/library">Learn in the Library</a></li>
+  </ul>
+
+  <section id="njiaNumbers" hidden aria-label="Earnings in bands">
+    <div class="tiles" id="njiaTiles"></div>
+    <p class="fine" id="njiaBandsNote"></p>
+  </section>
+
+  <section id="njiaIdentity" class="ident" hidden aria-label="Node identity">
+    <div id="njiaIdentBody"></div>
+  </section>
+
+</div>
+
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/yebente">Open Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin questions</a> · <a href="/wallet-guide">Ye₿ente guide</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/research">Research</a> · <a href="/portfolio">Portfolio</a> · <a href="/donate">Support my work</a> · <a href="/contact">Contact</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a></div></footer>
+<noscript><p style="text-align:center">Njia needs JavaScript to show the path.</p></noscript>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY>24)},{passive:true});document.body.classList.toggle("scrolled",scrollY>24); // nav shadow on scroll
+</script>
+<script src="/assets/njia.js"></script>
+</body>
+</html>

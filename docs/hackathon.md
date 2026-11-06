@@ -68,7 +68,7 @@ Three PRs (#328, #329, #330), all committed Nov 4 2026:
 1. `npm ci --ignore-scripts`
 2. `AI_PROVIDER=meta META_MODEL_API_KEY=<key> node demo/meta.mjs`
 3. Success looks like: provider Meta, model `muse-spark-1.3`, one queued
-   draft to `client@example.com`, spend of a fraction of a cent.
+   draft to `5tan@altradits.com`, spend of a fraction of a cent.
 
 ## Video shot list (3 minutes)
 
