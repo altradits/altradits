@@ -4,7 +4,7 @@
 // untouched. Fonts come from /assets (outside this scope): with no internet
 // the game falls back to the device's own fonts.
 // Bump CACHE when any cached file changes.
-const CACHE = "sats-safari-v3";
+const CACHE = "sats-safari-v4";
 const SHELL = [
   "/sats-safari/",
   "/sats-safari/index.html",
@@ -13,6 +13,7 @@ const SHELL = [
   "/sats-safari/i18n.js",
   "/sats-safari/progress.js",
   "/sats-safari/sound.js",
+  "/sats-safari/parents.js",
   "/sats-safari/sats.js",
   "/sats-safari/chain.js",
   "/sats-safari/mining.js",
@@ -33,7 +34,8 @@ self.addEventListener("install", (ev) => {
 self.addEventListener("activate", (ev) => {
   ev.waitUntil(
     caches.keys()
-      .then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      // Only our own old caches: other apps' offline copies are left alone.
+      .then((ks) => Promise.all(ks.filter((k) => k !== CACHE && k.startsWith("sats-safari-")).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });

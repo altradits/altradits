@@ -21,7 +21,7 @@ export function start(root, ctx) {
       `<div class="wire" id="s-wire" aria-hidden="true"><div class="fly" id="s-fly">●</div></div>` +
       `<div class="picks"><button type="button" class="pick" id="s-aza"><div class="face">${FRIEND("A")}</div><span>${esc(t("l3.aza"))}</span></button>` +
       `<button type="button" class="pick" id="s-juma"><div class="face">${FRIEND("J")}</div><span>${esc(t("l3.juma"))}</span></button></div></div>` +
-      `<p><button type="button" class="btn" id="s-sign" disabled>${esc(t("l3.sign"))} (100)</button></p>`;
+      `<p><button type="button" class="btn" id="s-sign" disabled>${esc(t("l3.sign", { amount: 100 }))}</button></p>`;
     const sign = root.querySelector("#s-sign");
     root.querySelector("#s-aza").addEventListener("click", (e) => {
       to = "aza";

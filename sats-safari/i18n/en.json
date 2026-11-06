@@ -16,7 +16,8 @@
     "play": "Start the safari",
     "stops": "7 stops, about 20 minutes",
     "made": "Made by Stanley in Kisumu, Kenya.",
-    "pretend": "Everything here is pretend. No real money."
+    "pretend": "Everything here is pretend. No real money.",
+    "parents": "For parents and teachers"
   },
   "map": {
     "title": "Your safari map",
@@ -40,7 +41,7 @@
       "name": "Keys and Padlocks",
       "line": "Keep the secret key secret.",
       "badge": "Key Keeper",
-      "cite": "2"
+      "cite": "2 and 10"
     },
     "3": {
       "name": "Send It On",
@@ -102,7 +103,7 @@
     "hintFill": "Tap the button ten times.",
     "next": "Next",
     "shopTitle": "Buy a mango",
-    "shopLine": "A mango costs {price} sats. You hold {wallet}. Put the exact coins on the till.",
+    "shopLine": "A mango costs {price} sats. You hold {wallet} sats. Put the exact coins on the till.",
     "till": "Till",
     "pay": "Pay",
     "clear": "Clear",
@@ -110,8 +111,9 @@
     "tooLittle": "Too little. Add more.",
     "tooMuch": "Too much. Start again.",
     "hintShop": "The mango is 500. Five 100 coins do it.",
-    "a": "One bitcoin holds 100,000,000 tiny coins called sats.",
-    "b": "Small things cost a few sats. Nobody needs a whole bitcoin."
+    "a": "One bitcoin splits into 100,000,000 tiny coins called sats. Each one passes from owner to owner.",
+    "b": "Small things cost a few sats. Nobody needs a whole bitcoin.",
+    "coin": "sat"
   },
   "l2": {
     "openTitle": "Open your chest",
@@ -143,7 +145,7 @@
     "you": "You: 100 sats",
     "aza": "Aza's address",
     "juma": "Juma's address",
-    "sign": "Sign with secret key",
+    "sign": "Sign with secret key ({amount})",
     "sent": "Sent! Aza has the 100 sats.",
     "wrongAddr": "That is Juma. Aza is waiting.",
     "hintSend": "Tap Aza, then sign.",
@@ -218,7 +220,7 @@
     "broken": "Broken",
     "valid": "Valid",
     "disqualified": "Right! A broken link disqualifies it.",
-    "lookClose": "Look at block 2. The link is broken.",
+    "lookClose": "Look closely. One block carries a cross.",
     "hintValid": "One block carries a cross.",
     "winTitle": "Whose list wins now?",
     "winLine": "Mosi is out. Tap the longest valid pile.",
@@ -230,7 +232,8 @@
     "obey": "Obey",
     "noBoss": "Nobody is the boss. Friends follow the longest valid list.",
     "a": "Every friend keeps the same list of blocks.",
-    "b": "The longest valid list wins. Nobody is the boss."
+    "b": "The longest valid list wins. Nobody is the boss.",
+    "hintBoss": "Nobody can boss the list."
   },
   "l7": {
     "storyTitle": "Four seasons of coins",
@@ -251,6 +254,21 @@
     "nextLine": "This season gave 6.25. What comes next?",
     "nextWrong": "Half of 6.25. Try again.",
     "a": "New coins halve about every 4 years: 50, 25, 12.5…",
-    "b": "Never more than 21 million. Then miners earn fees."
+    "b": "Never more than 21 million. Then miners earn fees.",
+    "hintNext": "Half of 6.25 is 3.125."
+  },
+  "parents": {
+    "title": "For parents and teachers",
+    "intro": "Sats Safari teaches children how Bitcoin works by playing. Seven short stops. About 20 minutes.",
+    "teachT": "What the game teaches",
+    "offlineT": "How to play offline",
+    "offline": "Open the game once with internet. After that it plays without internet. Progress stays on this device.",
+    "dataT": "What data leaves the device",
+    "data1": "The game itself: nothing. Stars, badges, language and sound stay in this browser.",
+    "data2": "The site counts the visit on its own server: the day, the page, the referring site, and the utm_source tag if the link carries one. No IP address, no cookie, no user agent.",
+    "data3": "If the page script lock blocks something, the browser sends the Security watch a short report: the page, the rule and the blocked address.",
+    "safetyT": "Safety",
+    "safety": "Everything is pretend. No real money, no wallets, no accounts, no chat, no ads.",
+    "back": "Back to menu"
   }
 }

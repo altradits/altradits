@@ -19,6 +19,9 @@ Name check (6 Nov 2026): no existing game or Bitcoin product is called
   localStorage, every access guarded. Pure JS, unit tested.
 - `sats-safari/sound.js`: synthesized blips. Off by default.
 - `sats-safari/levelN.js`: stop N. Exports `META` and `start(root, ctx)`.
+- `sats-safari/parents.js`: the parents and teachers screen (`#/parents`).
+- `sats-safari/sats.js`, `chain.js`, `mining.js`, `supply.js`: pure game
+  logic shared by the browser and the tests.
 - `sats-safari/sw.js`: offline play. Own cache (`sats-safari-vN`), scope
   /sats-safari. Bump the version when cached files change.
 - The game lives at /sats-safari/ (trailing slash). The worker's scope only
@@ -57,11 +60,45 @@ node -e "import('./deploy/page-csp.mjs').then(async ({ withPolicy }) => {
 | 6 | Friends Agree | Everyone keeps the same list; longest valid chain wins | §5 |
 | 7 | Only 21 Million | The cap and the halving, as a story | §6 |
 
+How each stop plays (2 to 4 minutes each):
+
+1. Tap coins to count, fill a bitcoin bar in tens of millions, buy a mango
+   with exact change.
+2. Open your chest with the secret key, refuse the fox who begs for it,
+   share only the public address.
+3. Pick a destination, sign, watch the coin fly. Then try to spend the same
+   sats twice and watch the friends refuse.
+4. Load transactions on the train, seal the block, link three blocks in
+   order, then change one old letter and watch the links break.
+5. Tap to guess a one-zero hash, drill for two zeros, then answer harder or
+   easier as the pace changes.
+6. Pick the tallest pile, disqualify its broken link, break the tie, refuse
+   the bossy baboon.
+7. Walk four halving seasons, then answer how many coins can ever exist and
+   what the next season gives.
+
 Facts are checked against the Bitcoin whitepaper and the bitcoin.org
 developer docs. Numbers the whitepaper does not state (100,000,000 sats to
 a bitcoin, 10 minute blocks, the halving every 210,000 blocks, the 21
 million cap) come from bitcoin.org and the code. Each stop's card names its
 whitepaper section.
+
+## Parents screen
+
+`#/parents` (menu button "For parents and teachers"): what the seven stops
+teach, how to play offline, and exactly what data leaves the device. The
+wording is pinned to the code: progress stays in the browser
+(`progress.js`); the visit counter stores day, page, referring site and
+utm_source only (`lib/visits.js`: no IP, no cookie, no user agent); the
+script-lock reporter sends page, rule and blocked address
+(`assets/report.js`).
+
+## Offline
+
+One online visit installs the worker (cache `sats-safari-vN`, scope
+/sats-safari). After that the whole game plays with no internet: all files
+are precached. To check by hand: open the game, turn on airplane mode,
+reload and play. Fonts fall back to the device's own while offline.
 
 ## How to add a language
 

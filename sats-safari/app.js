@@ -38,7 +38,7 @@ function showToast(text) {
 }
 
 function show(name) {
-  for (const s of ["menu", "map", "level"]) $(`screen-${s}`).hidden = s !== name;
+  for (const s of ["menu", "map", "level", "parents"]) $(`screen-${s}`).hidden = s !== name;
   if (name !== "level") $("modal").hidden = true;
   window.scrollTo(0, 0);
 }
@@ -146,6 +146,14 @@ function finishLevel(n, meta, stars) {
   $("btn-tomap").addEventListener("click", () => { play("click"); location.hash = "#/map"; });
   const next = $("btn-next");
   if (next) next.addEventListener("click", () => { play("click"); location.hash = `#/level/${n + 1}`; });
+  m.onkeydown = (e) => {
+    if (e.key === "Escape") { location.hash = "#/map"; return; }
+    if (e.key !== "Tab") return;
+    const btns = [...m.querySelectorAll("button")];
+    const first = btns[0], last = btns[btns.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
   $("btn-again").focus();
 }
 
@@ -158,7 +166,21 @@ function route() {
   applyStatic();
   if (level) renderLevel(Number(level[1]));
   else if (h === "#/map") renderMap();
+  else if (h === "#/parents") renderParents();
   else renderMenu();
+}
+
+async function renderParents() {
+  show("parents");
+  const root = $("parents-root");
+  root.innerHTML = `<p class="loading">${esc(t("common.loading"))}</p>`;
+  try {
+    const mod = await import("/sats-safari/parents.js");
+    root.innerHTML = "";
+    mod.start(root, { t });
+  } catch {
+    location.hash = "#/menu";
+  }
 }
 
 async function boot() {
@@ -171,6 +193,8 @@ async function boot() {
     return;
   }
   $("btn-play").addEventListener("click", () => { play("click"); location.hash = "#/map"; });
+  $("btn-parents").addEventListener("click", () => { play("click"); location.hash = "#/parents"; });
+  $("btn-parents-back").addEventListener("click", () => { play("click"); location.hash = "#/menu"; });
   $("btn-tomenu").addEventListener("click", () => { play("click"); location.hash = "#/menu"; });
   $("btn-level-map").addEventListener("click", () => { play("click"); location.hash = "#/map"; });
   $("btn-hint").addEventListener("click", () => { if (hintFn) { play("click"); showToast(hintFn()); } });

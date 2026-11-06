@@ -16,7 +16,8 @@
     "play": "Anza safari",
     "stops": "Vituo 7, kama dakika 20",
     "made": "Imetengenezwa na Stanley huko Kisumu, Kenya.",
-    "pretend": "Vyote hapa ni mchezo. Hakuna pesa za kweli."
+    "pretend": "Vyote hapa ni mchezo. Hakuna pesa za kweli.",
+    "parents": "Kwa wazazi na walimu"
   },
   "map": {
     "title": "Ramani ya safari yako",
@@ -40,7 +41,7 @@
       "name": "Funguo na Kufuli",
       "line": "Weka ufunguo wa siri kwa siri.",
       "badge": "Mlinzi wa Funguo",
-      "cite": "2"
+      "cite": "2 na 10"
     },
     "3": {
       "name": "Itume",
@@ -110,8 +111,9 @@
     "tooLittle": "Kidogo sana. Ongeza.",
     "tooMuch": "Zimezidi. Anza upya.",
     "hintShop": "Embe ni 500. Sarafu tano za 100 zinatosha.",
-    "a": "Bitcoin moja ina sarafu ndogo 100,000,000 zinazoitwa sats.",
-    "b": "Vitu vidogo vinagharimu sats chache. Huhitaji bitcoin nzima."
+    "a": "Bitcoin moja hugawanyika kuwa sarafu ndogo 100,000,000 zinazoitwa sats. Kila moja hupitishwa kutoka mmiliki hadi mmiliki.",
+    "b": "Vitu vidogo vinagharimu sats chache. Huhitaji bitcoin nzima.",
+    "coin": "sati"
   },
   "l2": {
     "openTitle": "Fungua sanduku lako",
@@ -143,7 +145,7 @@
     "you": "Wewe: sats 100",
     "aza": "Anwani ya Aza",
     "juma": "Anwani ya Juma",
-    "sign": "Saini kwa ufunguo wa siri",
+    "sign": "Saini kwa ufunguo wa siri ({amount})",
     "sent": "Imetumwa! Aza ana sats 100.",
     "wrongAddr": "Huyo ni Juma. Aza anangoja.",
     "hintSend": "Gusa Aza, kisha saini.",
@@ -218,7 +220,7 @@
     "broken": "Imevunjika",
     "valid": "Sahihi",
     "disqualified": "Sahihi! Kiungo kilichovunjika kinimuondoa.",
-    "lookClose": "Angalia kitalu 2. Kiungo kimevunjika.",
+    "lookClose": "Angalia kwa makini. Kitalu kimoja kina msalaba.",
     "hintValid": "Kitalu kimoja kina msalaba.",
     "winTitle": "Orodha ya nani inashinda sasa?",
     "winLine": "Mosi ametolewa. Gusa fungu refu sahihi.",
@@ -230,7 +232,8 @@
     "obey": "Tii",
     "noBoss": "Hakuna bosi. Marafiki hufuata orodha ndefu sahihi.",
     "a": "Kila rafiki ana orodha moja ya vitalu.",
-    "b": "Orodha ndefu sahihi inashinda. Hakuna bosi."
+    "b": "Orodha ndefu sahihi inashinda. Hakuna bosi.",
+    "hintBoss": "Hakuna anayeweza kuamuru orodha."
   },
   "l7": {
     "storyTitle": "Misimu minne ya sarafu",
@@ -251,6 +254,21 @@
     "nextLine": "Msimu huu ulitoa 6.25. Kisha nini?",
     "nextWrong": "Nusu ya 6.25. Jaribu tena.",
     "a": "Sarafu mpya hupungua nusu kama kila miaka 4: 50, 25, 12.5…",
-    "b": "Kamwe hazizidi milioni 21. Kisha wachimbaji hupata ada."
+    "b": "Kamwe hazizidi milioni 21. Kisha wachimbaji hupata ada.",
+    "hintNext": "Nusu ya 6.25 ni 3.125."
+  },
+  "parents": {
+    "title": "Kwa wazazi na walimu",
+    "intro": "Sats Safari inafundisha watoto jinsi Bitcoin inavyofanya kazi kwa kucheza. Vituo saba vifupi. Kama dakika 20.",
+    "teachT": "Mchezo unafundisha nini",
+    "offlineT": "Jinsi ya kucheza bila intaneti",
+    "offline": "Fungua mchezo mara moja ukiwa na intaneti. Baada ya hapo unachezeka bila intaneti. Maendeleo yanabaki kwenye kifaa hiki.",
+    "dataT": "Data gani inatoka kwenye kifaa",
+    "data1": "Mchezo wenyewe: hakuna. Nyota, beji, lugha na sauti vinabaki kwenye kivinjari hiki.",
+    "data2": "Tovuti huhesabu ziara kwenye seva yake: siku, ukurasa, tovuti iliyoelekeza, na lebo ya utm_source ikiwa kiungo kinayo. Hakuna anwani ya IP, hakuna kuki, wala maelezo ya kivinjari.",
+    "data3": "Ikiwa kinga ya hati za ukurasa itazuia kitu, kivinjari kinatuma ripoti fupi kwa Walinzi wa Usalama: ukurasa, sheria na anwani iliyozuiliwa.",
+    "safetyT": "Usalama",
+    "safety": "Vyote ni mchezo. Hakuna pesa za kweli, hakuna pochi, hakuna akaunti, hakuna gumzo, hakuna matangazo.",
+    "back": "Rudi kwenye menyu"
   }
 }

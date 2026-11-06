@@ -22,7 +22,7 @@ export function start(root, ctx) {
     let got = 0;
     root.innerHTML = `${bar(0, 3)}<h2>${esc(t("l1.countTitle"))}</h2><p>${esc(t("l1.countLine"))}</p>` +
       `<p class="big-count" aria-live="polite"><span id="c-n">0</span> / ${total}</p>` +
-      `<div class="coins" id="c-coins">${Array(total).fill(`<button type="button" class="coin" aria-label="sat">${COIN}</button>`).join("")}</div>`;
+      `<div class="coins" id="c-coins">${Array(total).fill(`<button type="button" class="coin" aria-label="${esc(t("l1.coin"))}">${COIN}</button>`).join("")}</div>`;
     const coins = [...root.querySelectorAll(".coin")];
     coins.forEach((b) => b.addEventListener("click", () => {
       if (b.disabled) return;

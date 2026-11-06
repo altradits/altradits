@@ -82,6 +82,7 @@ export function start(root, ctx) {
   }
 
   function roundBoss() {
+    ctx.hint(() => t("l6.hintBoss"));
     root.innerHTML = `${bar(2)}<h2>${esc(t("l6.bossTitle"))}</h2>` +
       `<div class="fox"><div class="face boss">♛</div><p class="bubble">${esc(t("l6.bossLine"))}</p></div>` +
       `<div class="row-btns"><button type="button" class="btn" id="b-list">${esc(t("l6.followList"))}</button>` +

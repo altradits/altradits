@@ -73,6 +73,8 @@ test("the worker precaches the whole game, serves same-site reads, and falls bac
   assert.match(sw, /u\.origin !== self\.location\.origin/, "same-site reads only");
   assert.match(sw, /ev\.request\.method !== "GET"/, "only reads go through the cache (reports pass through)");
   assert.match(sw, /caches\.match\("\/sats-safari\/"\)/, "failed reads fall back to the game");
+  assert.match(sw, /k\.startsWith\("sats-safari-"\)/, "activation clears only the game's own old caches");
+  assert.doesNotMatch(sw, /filter\(\(k\) => k !== CACHE\)/, "activation never wipes other apps' caches");
   assert.match(read("sats-safari/app.js"), /navigator\.serviceWorker\.register\("\/sats-safari\/sw\.js"\)/, "the game installs its worker");
   assert.match(read("sats-safari/app.js"), /document\.readyState === "complete"\) install\(\)/, "the worker installs even when boot outlasts the load event");
 });

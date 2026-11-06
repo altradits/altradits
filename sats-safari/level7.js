@@ -1,7 +1,7 @@
 // Sats Safari, stop 7: Only 21 Million. A story in four seasons: new coins
 // halve again and again, and the total can never pass 21 million.
 import { subsidyAt, totalAt, HALVING_BLOCKS } from "./supply.js";
-import { toBTC, formatSats } from "./sats.js";
+import { toBTC } from "./sats.js";
 
 export const META = { id: 7, badge: "treasure-keeper", learned: ["l7.a", "l7.b"] };
 
@@ -19,12 +19,12 @@ export function start(root, ctx) {
     let era = 0;
     const draw = () => {
       const sub = subsidyAt(era * HALVING_BLOCKS);
-      const total = totalAt(era * HALVING_BLOCKS);
+      const total = toBTC(totalAt(era * HALVING_BLOCKS)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
       root.innerHTML = `${bar(0)}<h2>${esc(t("l7.storyTitle"))}</h2>` +
         `<div class="season"><div class="tree">${TREE}</div>` +
         `<p class="big-count">${esc(t("l7.season", { n: era + 1 }))}</p>` +
         `<p>${esc(t("l7.gives", { coins: toBTC(sub) }))}</p>` +
-        (era > 0 ? `<p>${esc(t("l7.totalSoFar", { total: formatSats(total) }))}</p>` : "") +
+        (era > 0 ? `<p>${esc(t("l7.totalSoFar", { total }))}</p>` : "") +
         `<button type="button" class="btn" id="s-next">${esc(era < 3 ? t("l7.nextSeason") : t("l1.next"))}</button></div>`;
       root.querySelector("#s-next").addEventListener("click", () => {
         ctx.sound.play("coin");
@@ -56,6 +56,7 @@ export function start(root, ctx) {
   }
 
   function roundNext() {
+    ctx.hint(() => t("l7.hintNext"));
     root.innerHTML = `${bar(2)}<h2>${esc(t("l7.nextTitle"))}</h2><p>${esc(t("l7.nextLine"))}</p>` +
       `<div class="row-btns"><button type="button" class="btn" data-n="3.125">3.125</button>` +
       `<button type="button" class="btn ghost" data-n="6.25">6.25</button>` +

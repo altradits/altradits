@@ -41,6 +41,7 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
       <p class="tag" data-i18n="meta.tagline">A Bitcoin journey for kids</p>
       <p class="sub" data-i18n="meta.taglineSub">Play seven short stops. Earn stars.</p>
       <button type="button" class="btn" id="btn-play" data-i18n="menu.play">Start the safari</button>
+      <p><button type="button" class="btn ghost" id="btn-parents" data-i18n="menu.parents">For parents and teachers</button></p>
       <p class="fine" data-i18n="menu.stops">7 stops, about 20 minutes</p>
       <p class="fine" data-i18n="menu.pretend">Everything here is pretend. No real money.</p>
       <div id="menu-stars"></div>
@@ -56,6 +57,13 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
     </div>
     <ol class="stops" id="stops"></ol>
     <p><button type="button" class="btn ghost" id="btn-tomenu" data-i18n="nav.menu">Menu</button></p>
+  </section>
+  <section id="screen-parents" aria-labelledby="parents-h" hidden>
+    <div class="level-head">
+      <h1 id="parents-h" data-i18n="parents.title">For parents and teachers</h1>
+    </div>
+    <div id="parents-root" class="prose"></div>
+    <p><button type="button" class="btn ghost" id="btn-parents-back" data-i18n="parents.back">Back to menu</button></p>
   </section>
   <section id="screen-level" aria-labelledby="level-name" hidden>
     <div class="level-head">
