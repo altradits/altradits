@@ -31,6 +31,10 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
   RewriteRule ^ktown/?$ ktown/index.html [L]
   RewriteRule ^ktown/terms/?$ ktown/terms.html [L]
   RewriteRule ^k/([A-Za-z0-9_-]+)/?$ ktown/pay.html [L]
+  # Sats Safari: the game lives at /sats-safari/ (trailing slash), so its
+  # service worker (scope /sats-safari/) also covers the page itself.
+  RewriteRule ^sats-safari$ /sats-safari/ [R=301,L]
+  RewriteRule ^sats-safari/(index\.html)?$ sats-safari/index.html [L]
 </IfModule>
 
 # Pages are checked on every visit, so an update shows at once (an unchanged
