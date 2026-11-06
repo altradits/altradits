@@ -162,7 +162,7 @@ $("#refresh").addEventListener("click", async () => {
   if (b.classList.contains("busy")) return;
   b.classList.add("busy"); b.disabled = true; b.setAttribute("aria-busy", "true"); b.lastChild.textContent = "Refreshing…";
   const t0 = Date.now();
-  try { await load(); } finally {
+  try { await load(); if (njiaLoaded) await loadNjia(true); } finally { // Refresh re-reads the Earn tab
     await new Promise((r) => setTimeout(r, Math.max(0, 600 - (Date.now() - t0)))); // long enough to see it worked
     b.classList.remove("busy"); b.disabled = false; b.removeAttribute("aria-busy"); b.lastChild.textContent = "Refresh";
     toast(`Updated ${new Date().toLocaleTimeString()}`);
@@ -641,6 +641,7 @@ async function loadPnl() {
     ${row("Routing fees earned", E.routing, `${E.routed} payment${E.routed === 1 ? "" : "s"} passed through you. A private channel routes few or none.`, "+")}
     ${row("M-Pesa buy spread", E.spread, E.spreadPct ? `${E.spreadPct}% on ${E.buys} buy${E.buys === 1 ? "" : "s"} (KSh ${num(E.buyKes)} paid in).` : `Off: YEBENTE_BUY_SPREAD_PCT is 0, so buys earn nothing. ${E.buys} buy${E.buys === 1 ? "" : "s"}, KSh ${num(E.buyKes)}.`, "+")}
     ${row("Support payments", E.support, `${E.supportCount} on /donate.`, "+")}
+    ${row("Channel leases", E.leases || 0, `${E.leaseCount || 0} recorded by hand in the Earn tab. Voided leases excluded.`, "+")}
     ${row("Routing fees you paid", S.routeFees, `Your own payments. Of ${num(S.routeFeesAll)} sats in fees, Ye₿ente users repaid ${num(S.routeFeesRepaid)}.`, "−")}
     ${row("On-chain fees", S.onchain, "Opening or closing channels, moving coins.", "−")}
   </tbody></table>${L.nodeRead ? "" : '<p class="sm err">The node couldn\'t be read, so node figures show 0. Wake the Mac, make sure LND is running, and check LND_READONLY_MACAROON on the server.</p>'}`;
@@ -2700,7 +2701,7 @@ async function load() {
   renderChecklist(D); renderStan(D.stan, D.alerts); renderNode(D); renderChain(D); renderChainLow(D); renderRouting(D); renderSettlement(D); renderGlossary(); renderBanner(D); renderBackup(D.backup);
   renderVerify();
   await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing()]);
-  if (document.querySelector('[data-pane="earn"].on')) await loadNjia(njiaLoaded); // Earn visible: first load gentle, Refresh forces
+  if (document.querySelector('[data-pane="earn"].on') && !njiaLoaded) await loadNjia(false); // Earn visible on sign-in: first load gentle
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
 }
 token ? load() : showLogin();

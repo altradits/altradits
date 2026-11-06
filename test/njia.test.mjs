@@ -325,3 +325,13 @@ test("public API serves the stored summary, and hides it during lockdown", async
     delete process.env.NJIA;
   }
 });
+
+test("profit and loss counts lease fees under earned", async () => {
+  const pnl = await import("../lib/pnl.js");
+  const today = new Date().toISOString().slice(0, 10);
+  const before = nj.leaseTotals(await nj.listLeases(), Date.now()).month;
+  await nj.addLease({ date: today, sizeSats: 2000000, feeSats: 7777, termDays: 30, market: "direct" });
+  const pl = await pnl.profitLoss({ days: 30 });
+  assert.equal(pl.earned.leases, before + 7777);
+  assert.ok(pl.earned.total >= pl.earned.leases, "leases are part of the earned total");
+});
