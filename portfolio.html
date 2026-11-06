@@ -33,7 +33,7 @@
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 @font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 
-:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff;color-scheme:light dark}
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff;color-scheme:light}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
 a{color:var(--blue)}
@@ -52,9 +52,15 @@ a{color:var(--blue)}
 .lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:38rem}
 .gallery{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(20rem,100%),1fr));gap:1.5rem}
 .card{display:flex;flex-direction:column;background:var(--paper);border:2px solid var(--ink);border-radius:1rem;overflow:hidden;text-decoration:none;color:var(--ink)}
-.card:hover{box-shadow:6px 6px 0 var(--ink)}
+.card:hover,.card:focus-visible{box-shadow:6px 6px 0 var(--ink)}
 .card:focus-visible{outline-offset:4px}
-.card img{width:100%;height:24rem;object-fit:cover;object-position:top center;display:block;background:#0F1B2D}
+.gallery li{display:flex}
+.card{flex:1}
+.card .thumb{display:block;aspect-ratio:4/3;padding:1rem 1rem 0;background:linear-gradient(160deg,#D6E1EC,#EEF2F6 70%);border-bottom:2px solid var(--ink);overflow:hidden}
+.card .thumb img{display:block;width:100%;height:100%;object-fit:cover;object-position:left top;border:2px solid var(--ink);border-bottom:0;border-radius:.65rem .65rem 0 0;background:var(--paper)}
+.card .thumb img.mid{object-position:center}
+.card .thumb img.low{object-position:center bottom}
+.card h2,.card .body{overflow-wrap:anywhere}
 .card .body{padding:1.1rem 1.25rem 1.25rem;display:flex;flex-direction:column;gap:.35rem}
 .card h2{font:800 1.5rem/1.2 'Bricolage Grotesque',sans-serif;margin:0}
 .card p{margin:0;color:var(--muted)}
@@ -62,7 +68,6 @@ a{color:var(--blue)}
 .sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
 .sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}
 .sitefoot .wp{margin:0 0 .6rem}
-@media (prefers-color-scheme:dark){:root{--bg:#0F1B2D;--ink:#EEF2F6;--muted:#A9B6C8;--line:#33415A;--blue:#7FB3E8;--btc-text:#F5A94B;--paper:#182742}.top{background:rgba(15,27,45,.9)}.topnav a:hover{background:rgba(238,242,246,.12)}.card{border-color:var(--line)}.card:hover{box-shadow:6px 6px 0 var(--line)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top,.tabs{transition:box-shadow .25s ease}body.scrolled .top,body.scrolled .tabs{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.cards .links a,.more a,.foot nav a,.pager a{transition:color .18s ease}.more a{display:inline-block;transition:transform .18s ease,color .18s ease}.more a:hover{transform:translateX(4px)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
 .topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
@@ -81,18 +86,18 @@ a{color:var(--blue)}
   </header>
 
   <ul class="gallery">
-    <li><a class="card" href="/ktown"><img src="/assets/ktown-shot.png" alt="kTown app: the shop registration screen" width="390" height="844" loading="lazy"><span class="body"><span class="status">Pilot in Kisumu · Open</span><h2>kTown</h2><span>A free QR till for shops.</span></span></a></li>
-    <li><a class="card" href="/yebente"><img src="/assets/yebente-shot.png" alt="Ye₿ente app: the start screen with Log in and Create a wallet" width="390" height="844" loading="lazy" style="object-position:center"><span class="body"><span class="status">Early access</span><h2>Ye₿ente</h2><span>A starter Bitcoin wallet.</span></span></a></li>
-    <li><a class="card" href="/kazi"><img src="/assets/kazi-board.png" alt="The Kazi board: small paid tasks in Kisumu" width="1200" height="630" loading="lazy" style="object-position:center top"><span class="body"><span class="status">Pilot in Kisumu</span><h2>Kazi</h2><span>Small paid tasks. Earn sats or M-Pesa.</span></span></a></li>
-      <li><a class="card" href="/sats-safari/"><img src="/assets/sats-safari-card.png" alt="Sats Safari: a smiling sun above the Start the safari button" width="800" height="620" loading="lazy" style="object-position:center"><span class="body"><span class="status">Free · For kids</span><h2>Sats Safari</h2><span>A Bitcoin game for kids.</span></span></a></li>
-    <li><a class="card" href="/njia"><img src="/assets/njia-shot.png" alt="Njia: the five steps of the node's path to earning, none done yet" width="390" height="844" loading="lazy"><span class="body"><span class="status">Not earning yet · Private</span><h2>Njia</h2><span>A small Lightning node, learning to earn.</span></span></a></li>
-    <li><a class="card" href="/trivia"><img src="/assets/trivia-shot.png" alt="Mempool Mayhem: a sats trivia battle" width="1280" height="800" loading="lazy" style="object-position:center top"><span class="body"><span class="status">Free to enter</span><h2>Mempool Mayhem</h2><span>A sats trivia battle.</span></span></a></li>
-    <li><a class="card" href="/developer"><img src="/assets/developer-shot.png" alt="Altradits Developer page on a phone" width="390" height="844" loading="lazy"><span class="body"><span class="status">New</span><h2>Altradits Developer</h2><span>A Lightning API for Bitcoin apps. Sandbox free.</span></span></a></li>
-    <li><a class="card" href="https://github.com/altradits/kabuna"><img src="/assets/kabuna-shot.jpg" alt="Kabuna shop: the Ethiopian coffee storefront homepage" width="390" height="844" loading="lazy"><span class="body"><span class="status">In build · Open source</span><h2>Kabuna</h2><span>Ethiopian coffee and gifts, paid in Lightning.</span></span></a></li>
-    <li><a class="card" href="https://yebobank.vercel.app"><img src="/assets/yebobank-shot.png" alt="YeboBank demo: the savings dashboard with the test sats banner" width="390" height="844" loading="lazy"><span class="body"><span class="status">Demo (test network)</span><h2>YeboBank</h2><span>A Bitcoin savings demo. Test sats only, no real money.</span></span></a></li>
-    <li><a class="card" href="/address-check/"><img src="/assets/address-check-shot.png" alt="Address Check: a pasted address verified as P2WPKH on Bitcoin mainnet" width="390" height="844" loading="lazy"><span class="body"><span class="status">Free tool · Works offline</span><h2>Address Check</h2><span>Verify any Bitcoin address before you send.</span></span></a></li>
-    <li><a class="card" href="/touchtype"><img src="/assets/touchtype-shot.png" alt="TouchType game: a typing lesson with combo streak and on-screen keyboard" width="390" height="844" loading="lazy"><span class="body"><span class="status">Free game · Works offline</span><h2>TouchType</h2><span>An arcade typing game. No account, nothing to install.</span></span></a></li>
-  <li><a class="card" href="/opcode-circuit"><img src="/assets/opcode-circuit-shot.png" alt="Opcode Circuit: the campaign screen with 8 chapter cards" width="390" height="844" loading="lazy"><span class="body"><span class="status">Open</span><h2>Opcode Circuit</h2><span>A Bitcoin puzzle game for developers.</span></span></a></li>
+    <li><a class="card" href="/ktown"><span class="thumb"><img src="/assets/card-ktown.svg" alt="kTown: a printed QR till that customers scan to pay" width="800" height="624" loading="lazy"></span><span class="body"><span class="status">Pilot in Kisumu · Open</span><h2>kTown</h2><span>A free QR till for shops.</span></span></a></li>
+    <li><a class="card" href="/yebente"><span class="thumb"><img src="/assets/yebente-shot.png" alt="Ye₿ente app: the start screen with Log in and Create a wallet" width="390" height="844" loading="lazy" class="mid"></span><span class="body"><span class="status">Early access</span><h2>Ye₿ente</h2><span>A starter Bitcoin wallet.</span></span></a></li>
+    <li><a class="card" href="/kazi"><span class="thumb"><img src="/assets/card-kazi.svg" alt="The Kazi board: small paid tasks in Kisumu, paid in sats or M-Pesa" width="800" height="624" loading="lazy"></span><span class="body"><span class="status">Pilot in Kisumu</span><h2>Kazi</h2><span>Small paid tasks. Earn sats or M-Pesa.</span></span></a></li>
+      <li><a class="card" href="/sats-safari/"><span class="thumb"><img src="/assets/sats-safari-card.png" alt="Sats Safari: a smiling sun above the Start the safari button" width="800" height="620" loading="lazy" class="mid"></span><span class="body"><span class="status">Free · For kids</span><h2>Sats Safari</h2><span>A Bitcoin game for kids.</span></span></a></li>
+    <li><a class="card" href="/njia"><span class="thumb"><img src="/assets/njia-shot.png" alt="Njia: the five steps of the node's path to earning, none done yet" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Not earning yet · Private</span><h2>Njia</h2><span>A small Lightning node, learning to earn.</span></span></a></li>
+    <li><a class="card" href="/trivia"><span class="thumb"><img src="/assets/trivia-shot.png" alt="Mempool Mayhem: a sats trivia battle" width="1280" height="800" loading="lazy"></span><span class="body"><span class="status">Free to enter</span><h2>Mempool Mayhem</h2><span>A sats trivia battle.</span></span></a></li>
+    <li><a class="card" href="/developer"><span class="thumb"><img src="/assets/developer-shot.png" alt="Altradits Developer page on a phone" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">New</span><h2>Altradits Developer</h2><span>A Lightning API for Bitcoin apps. Sandbox free.</span></span></a></li>
+    <li><a class="card" href="https://github.com/altradits/kabuna"><span class="thumb"><img src="/assets/kabuna-shot.jpg" alt="Kabuna shop: the Ethiopian coffee storefront homepage" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">In build · Open source</span><h2>Kabuna</h2><span>Ethiopian coffee and gifts, paid in Lightning.</span></span></a></li>
+    <li><a class="card" href="https://yebobank.vercel.app"><span class="thumb"><img src="/assets/yebobank-shot.png" alt="YeboBank demo: the savings dashboard with the test sats banner" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Demo (test network)</span><h2>YeboBank</h2><span>A Bitcoin savings demo. Test sats only, no real money.</span></span></a></li>
+    <li><a class="card" href="/address-check/"><span class="thumb"><img src="/assets/address-check-shot.png" alt="Address Check: a pasted address verified as P2WPKH on Bitcoin mainnet" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Free tool · Works offline</span><h2>Address Check</h2><span>Verify any Bitcoin address before you send.</span></span></a></li>
+    <li><a class="card" href="/touchtype"><span class="thumb"><img class="low" src="/assets/touchtype-shot.png" alt="TouchType game: a typing lesson with combo streak and on-screen keyboard" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Free game · Works offline</span><h2>TouchType</h2><span>An arcade typing game. No account, nothing to install.</span></span></a></li>
+  <li><a class="card" href="/opcode-circuit"><span class="thumb"><img src="/assets/opcode-circuit-shot.png" alt="Opcode Circuit: the campaign screen with 8 chapter cards" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Open</span><h2>Opcode Circuit</h2><span>A Bitcoin puzzle game for developers.</span></span></a></li>
   </ul>
 
 
