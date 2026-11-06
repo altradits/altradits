@@ -124,6 +124,12 @@ const dest = async (c, user, sandbox = false) => {
   assert.equal(proven.json.destination.verified, true);
   return proven.json.destination;
 };
+const sim = async (c) => {
+  const reg = await call("POST", "v1/destinations", { token: c.session, body: { address: "dev@sandbox.altradits.com", sandbox: true } });
+  assert.equal(reg.status, 201, `register simulator: ${JSON.stringify(reg.json)}`);
+  assert.equal(reg.json.destination.verified, true);
+  return reg.json.destination;
+};
 const waitFor = async (fn, ms = 3000) => {
   const end = Date.now() + ms;
   for (;;) {
@@ -359,7 +365,7 @@ test("keys, scopes and environments stay separated", async () => {
   const live = await call("POST", "v1/keys", { token: c.session, body: { scopes: ["invoices:create", "invoices:read", "webhooks"] } });
   const sb = await call("POST", "v1/keys", { token: c.session, body: { sandbox: true } });
   const dLive = await dest(c, "seplive");
-  const dSb = await dest(c, "sepsb", true);
+  const dSb = await sim(c);
 
   const scoped = await call("POST", "v1/invoices", { token: c.key, body: { destinationId: dLive.id, sats: 5 } });
   assert.equal(scoped.status, 403);
@@ -374,8 +380,7 @@ test("keys, scopes and environments stay separated", async () => {
   // Webhooks fire only in their own environment.
   const wl = await call("POST", "v1/webhooks", { token: live.json.key, body: { url: "https://example.com/live" } });
   const ws = await call("POST", "v1/webhooks", { token: sb.json.key, body: { url: "https://example.com/sb", sandbox: true } });
-  wallet.settled.set(madeSb.json.invoice.paymentHash, true);
-  await call("GET", `v1/invoices/${madeSb.json.invoice.id}`, { token: sb.json.key });
+  await call("POST", "v1/sandbox/settle", { token: sb.json.key, body: { invoiceId: madeSb.json.invoice.id } });
   await waitFor(async () => (await dev.listDeliveries(c.account.id, ws.json.webhook.id, {})).deliveries.length === 1);
   assert.equal((await dev.listDeliveries(c.account.id, wl.json.webhook.id, {})).deliveries.length, 0);
   // A key sees only its environment's endpoints; a session sees all.

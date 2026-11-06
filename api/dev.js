@@ -35,6 +35,7 @@
 //   GET  v1/topups/<id>               with a live credit check
 //   GET  v1/balance
 //   GET  v1/statement?limit&cursor
+//   POST v1/sandbox/settle {invoiceId}   the settle simulator (test key or session)
 import { readBody, clientIp } from "../lib/http.js";
 import { hit } from "../lib/store.js";
 import crypto from "node:crypto";
@@ -230,7 +231,18 @@ export async function POST(request) {
       const a = await sessionAccount(request);
       const body = await readBody(request);
       const r = await dev.registerDestination(a.id, { address: body.address, sandbox: body.sandbox === true });
-      return reply({ ok: true, destination: r.destination, challenge: r.challenge }, 201);
+      return reply({ ok: true, destination: r.destination, challenge: r.challenge, ...(r.note ? { note: r.note } : {}) }, 201);
+    }
+    if (p === "sandbox/settle") {
+      const body = await readBody(request);
+      if (authOf(request).startsWith("ak_")) {
+        const auth = await keyAuth(request, "invoices:create", "Developer API sandbox");
+        const r = await dev.settleSandboxInvoice(auth.account.id, body.invoiceId, auth.sandbox);
+        return reply({ ok: true, ...r });
+      }
+      const a = await sessionAccount(request);
+      const r = await dev.settleSandboxInvoice(a.id, body.invoiceId);
+      return reply({ ok: true, ...r });
     }
     const prv = p.match(/^destinations\/([A-Za-z0-9_-]{1,80})\/prove$/);
     if (prv) {

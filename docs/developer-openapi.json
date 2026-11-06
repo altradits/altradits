@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Altradits Developer API",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "summary": "Power your app with Altradits infrastructure. Your customers pay straight to your own Lightning address or node. Altradits never holds their money.",
     "description": "Non-custodial Lightning infrastructure for developers. Register your own Lightning address, create invoices to it through this API, get settlement verification and webhooks. Customer payments go straight to your address. Altradits charges you 0.5% of settled volume, prepaid in sats to Stanley's node as a fee balance. The sandbox is free. Authentication: Authorization: Bearer <session or API key>. Every reply carries a requestId. Every error carries a stable code and a human sentence: { ok: false, requestId, code, error }.",
     "contact": { "name": "Altradits", "url": "https://altradits.com/developer" },
@@ -17,7 +17,8 @@
     { "name": "destinations", "description": "Your own Lightning addresses, with ownership proof." },
     { "name": "invoices", "description": "Invoices to your destinations, fetched from your address and checked. Needs an API key." },
     { "name": "webhooks", "description": "Signed POSTs when an invoice settles. Needs a key with the webhooks scope, or a session." },
-    { "name": "fees", "description": "The prepaid fee balance: top-ups in sats to Stanley's node, and the usage statement. Needs a session, or a key with invoices scope." }
+    { "name": "fees", "description": "The prepaid fee balance: top-ups in sats to Stanley's node, and the usage statement. Needs a session, or a key with invoices scope." },
+    { "name": "sandbox", "description": "Free testing with the built-in simulator. Needs a test key (ak_test_...) or a session." }
   ],
   "paths": {
     "/health": {
@@ -152,7 +153,7 @@
       "post": {
         "tags": ["destinations"],
         "summary": "Register a destination",
-        "description": "Registers your own Lightning address and starts the ownership proof: the address must resolve over LNURL-pay and name itself in its metadata, and you pay a 1-sat challenge invoice from the wallet behind it within an hour, then call prove. What the proof shows: you control a funded Lightning wallet, and the address resolves to itself. Lightning payments carry no sender identity, so it does not cryptographically prove the wallet owns the address. Your customers' payments go straight to this address. Altradits never holds them.",
+        "description": "Live: registers your own Lightning address and starts the ownership proof. Sandbox: only the built-in simulator dev@sandbox.altradits.com, verified at once with no payment. Proof (live): the address must resolve over LNURL-pay and name itself in its metadata, and you pay a 1-sat challenge invoice from the wallet behind it within an hour, then call prove. What the proof shows: you control a funded Lightning wallet, and the address resolves to itself. Lightning payments carry no sender identity, so it does not cryptographically prove the wallet owns the address. Your customers' payments go straight to this address. Altradits never holds them.",
         "operationId": "registerDestination",
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterDestination" } } } },
         "responses": {
@@ -356,6 +357,21 @@
           "200": { "description": "The statement.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Statement" } } } }
         }
       }
+    },
+    "/sandbox/settle": {
+      "post": {
+        "tags": ["sandbox"],
+        "summary": "Settle a sandbox invoice",
+        "description": "Plays the customer paying a sandbox invoice: marks the simulator payment settled, deducts the test fee, and fires sandbox webhooks. Needs a test key with invoices:create, or a dashboard session. Live invoices are refused (422 sandbox_only). Simulator invoices use signet encoding (lntb...), so a real mainnet wallet refuses them. The sandbox never touches the network or the node and works while mainnet is off.",
+        "operationId": "settleSandbox",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SandboxSettle" } } } },
+        "responses": {
+          "200": { "description": "Settled.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InvoiceStatus" } } } },
+          "404": { "description": "Unknown invoice.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "422": { "description": "Not a sandbox invoice.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "501": { "description": "The sandbox is not switched on.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
     }
   },
   "components": {
@@ -381,7 +397,7 @@
       "DestinationObject": { "type": "object", "required": ["id", "address", "sandbox", "verified", "verifiedAt", "proof", "createdAt"], "properties": { "id": { "type": "string" }, "address": { "type": "string" }, "sandbox": { "type": "boolean" }, "verified": { "type": "boolean" }, "verifiedAt": { "type": ["string", "null"], "format": "date-time" }, "proof": { "type": ["string", "null"], "description": "How ownership was proven, once verified." }, "createdAt": { "type": "string", "format": "date-time" } } },
       "Destination": { "type": "object", "required": ["ok", "requestId", "destination"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "destination": { "$ref": "#/components/schemas/DestinationObject" } } },
       "DestinationList": { "type": "object", "required": ["ok", "requestId", "destinations"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "destinations": { "type": "array", "items": { "$ref": "#/components/schemas/DestinationObject" } } } },
-      "DestinationChallenge": { "type": "object", "required": ["ok", "requestId", "destination", "challenge"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "destination": { "$ref": "#/components/schemas/DestinationObject" }, "challenge": { "type": "object", "required": ["bolt11", "expiresAt", "note"], "properties": { "bolt11": { "type": "string", "description": "The 1-sat challenge invoice. Pay it from the wallet behind the address." }, "expiresAt": { "type": "string", "format": "date-time" }, "note": { "type": "string" } } } } },
+      "DestinationChallenge": { "type": "object", "required": ["ok", "requestId", "destination", "challenge"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "destination": { "$ref": "#/components/schemas/DestinationObject" }, "challenge": { "type": ["object", "null"], "description": "Null for the simulator, which needs no proof.", "required": ["bolt11", "expiresAt", "note"], "properties": { "bolt11": { "type": "string", "description": "The 1-sat challenge invoice. Pay it from the wallet behind the address." }, "expiresAt": { "type": "string", "format": "date-time" }, "note": { "type": "string" } } } } },
       "CreateInvoice": { "type": "object", "required": ["destinationId"], "properties": { "destinationId": { "type": "string", "description": "A verified destination on your account, in the key's environment." }, "sats": { "type": "integer", "minimum": 1, "maximum": 100000000, "description": "Whole sats. Give sats or fiat, not both." }, "fiat": { "type": "object", "required": ["amount", "currency"], "properties": { "amount": { "type": "number", "exclusiveMinimum": 0 }, "currency": { "enum": ["USD", "KES"] } }, "description": "Converted at the live rate at creation; the rate is recorded on the invoice." }, "memo": { "type": "string", "maxLength": 200, "description": "Passed as the LNURL comment when the destination allows one." } } },
       "InvoiceObject": { "type": "object", "required": ["id", "destinationId", "address", "sandbox", "sats", "fiat", "memo", "bolt11", "paymentHash", "status", "verifySupported", "preimage", "createdAt", "settledAt"], "properties": { "id": { "type": "string" }, "destinationId": { "type": "string" }, "address": { "type": "string", "description": "Your destination. The payment goes straight there." }, "sandbox": { "type": "boolean" }, "sats": { "type": "integer" }, "fiat": { "type": ["object", "null"], "properties": { "amount": { "type": "number" }, "currency": { "type": "string" }, "btcRate": { "type": "number", "description": "Fiat per BTC at creation." } } }, "memo": { "type": ["string", "null"] }, "bolt11": { "type": "string", "description": "Your destination's own invoice, passed through unchanged." }, "paymentHash": { "type": "string" }, "status": { "enum": ["pending", "settled"] }, "verifySupported": { "type": "boolean", "description": "False when the destination answers no LUD-21 verify URL: the invoice then stays pending here." }, "preimage": { "type": ["string", "null"], "description": "Proof of payment, when the destination reports it." }, "createdAt": { "type": "string", "format": "date-time" }, "settledAt": { "type": ["string", "null"], "format": "date-time" } } },
       "Invoice": { "type": "object", "required": ["ok", "requestId", "invoice"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "invoice": { "$ref": "#/components/schemas/InvoiceObject" }, "deduplicated": { "type": "boolean", "description": "True when an Idempotency-Key replayed the first reply." } } },
@@ -401,6 +417,7 @@
       "TopupList": { "type": "object", "required": ["ok", "requestId", "topups", "nextCursor"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "topups": { "type": "array", "items": { "$ref": "#/components/schemas/TopupObject" } }, "nextCursor": { "type": ["string", "null"] } } },
       "Balance": { "type": "object", "required": ["ok", "requestId", "balance"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "balance": { "type": "object", "required": ["live", "test"], "properties": { "live": { "type": "integer", "description": "Prepaid sats on Stanley's node." }, "test": { "type": "integer", "description": "Free sandbox credit." } } } } },
       "StatementEntry": { "type": "object", "required": ["id", "at", "env", "type", "sats", "balanceAfter", "invoiceId", "topupId", "shortfall", "memo"], "properties": { "id": { "type": "string" }, "at": { "type": "string", "format": "date-time" }, "env": { "enum": ["live", "test"] }, "type": { "enum": ["topup", "fee", "grant"] }, "sats": { "type": "integer", "description": "Signed: top-ups and grants credit, fees debit." }, "balanceAfter": { "type": "integer" }, "invoiceId": { "type": ["string", "null"] }, "topupId": { "type": ["string", "null"] }, "shortfall": { "type": "integer", "description": "Fee sats the balance couldn't cover (floored at zero)." }, "memo": { "type": ["string", "null"] } } },
+      "SandboxSettle": { "type": "object", "required": ["invoiceId"], "properties": { "invoiceId": { "type": "string", "description": "A sandbox invoice on your account." } } },
       "Statement": { "type": "object", "required": ["ok", "requestId", "balance", "totals", "entries", "nextCursor"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "balance": { "type": "object", "properties": { "live": { "type": "integer" }, "test": { "type": "integer" } } }, "totals": { "type": "object", "properties": { "toppedUp": { "type": "integer" }, "feesPaid": { "type": "integer" }, "settledVolume": { "type": "integer" }, "settledCount": { "type": "integer" } } }, "entries": { "type": "array", "items": { "$ref": "#/components/schemas/StatementEntry" } }, "nextCursor": { "type": ["string", "null"] } } }
     }
   }

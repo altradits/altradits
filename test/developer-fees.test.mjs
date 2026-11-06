@@ -192,13 +192,14 @@ test("the statement shows the balance, the ledger and the totals", async () => {
 
 test("sandbox testing is free: a dry test balance refills itself", async () => {
   const c = await ctx();
-  const d = await dest(c, "free", true);
+  const reg = await call("POST", "v1/destinations", { token: c.session, body: { address: "dev@sandbox.altradits.com", sandbox: true } });
+  assert.equal(reg.json.destination.verified, true);
+  const d = reg.json.destination;
   assert.deepEqual(await balance(c), { live: 0, test: 0 });
   const made = await call("POST", "v1/invoices", { token: c.sb, body: { destinationId: d.id, sats: 4000 } });
   assert.equal(made.status, 201);
   assert.deepEqual(await balance(c), { live: 0, test: 10000 }, "the grant landed before the invoice");
-  wallet.settled.set(made.json.invoice.paymentHash, true);
-  await call("GET", `v1/invoices/${made.json.invoice.id}`, { token: c.sb });
+  await call("POST", "v1/sandbox/settle", { token: c.sb, body: { invoiceId: made.json.invoice.id } });
   assert.deepEqual(await balance(c), { live: 0, test: 9980 }, "the fee came off the test balance; live untouched");
   const st = await call("GET", "v1/statement", { token: c.session });
   assert.ok(st.json.entries.some((e) => e.type === "grant" && e.sats === 10000), "the grant is on the record");
