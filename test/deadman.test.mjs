@@ -494,6 +494,8 @@ test("deadman: file integrity ignores clean deploys and DirectAdmin Passenger bl
     `# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION BEGIN\n` +
     `<IfModule Litespeed>\n` +
     `SetEnv NODE_ENV production\n` +
+    `SetEnv  MAIL_CARE\n` + // a variable saved with an empty value
+    `SetEnv KTOWN_HELP Whatsapp +254707172370\n` +
     `</IfModule>\n` +
     `# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION END\n`;
   fs.writeFileSync(path.join(repoDir, ".htaccess"), directAdminHtaccess);
@@ -506,6 +508,14 @@ test("deadman: file integrity ignores clean deploys and DirectAdmin Passenger bl
   const afterDirectAdmin = await deadman.runDeadmanChecks({ rootDir: repoDir, force: true });
   assert.equal(afterDirectAdmin.files.ok, true, "DirectAdmin Passenger block changes in .htaccess must not trip file integrity");
   assert.equal(deadman.deadmanActive(), false);
+
+  // 2b. A change outside the panel blocks trips, and the alert names the line, never its text
+  fs.writeFileSync(path.join(repoDir, ".htaccess"), directAdminHtaccess.replace("Require all denied", "Require all granted # s3cret"));
+  const outside = await deadman.runDeadmanChecks({ rootDir: repoDir, force: true });
+  assert.equal(outside.files.ok, false);
+  assert.match(outside.files.detail, /M \.htaccess \(\.htaccess: outside the CloudLinux blocks, line 2 differs from git HEAD/);
+  assert.doesNotMatch(outside.files.detail, /s3cret|granted|Whatsapp/, "the alert never quotes the file");
+  await resetDeadman();
 
   // 3. Simulate a deploy of a merged main commit (files change AND git HEAD advances)
   fs.writeFileSync(path.join(repoDir, ".htaccess"), baseHtaccess);
