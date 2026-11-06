@@ -115,9 +115,9 @@ test("Send Mobile honors the hold: the server-side invoice plus wallet/send", as
   const real = lnaddrFetch();
   lnaddr.setLnaddrFetcher(async (u) => {
     const x = new URL(String(u));
-    if (x.hostname === "bitcoin.co.ke" && x.pathname === "/.well-known/lnurlp/0712345678")
-      return new Response(JSON.stringify({ tag: "payRequest", callback: "https://bitcoin.co.ke/lnurlp/cb/0712345678", minSendable: 1000, maxSendable: 1e9, metadata: "[]" }), { headers: { "content-type": "application/json" } });
-    if (x.hostname === "bitcoin.co.ke" && x.pathname === "/lnurlp/cb/0712345678")
+    if (x.hostname === "bitcoin.co.ke" && x.pathname === "/.well-known/lnurlp/0707172370")
+      return new Response(JSON.stringify({ tag: "payRequest", callback: "https://bitcoin.co.ke/lnurlp/cb/0707172370", minSendable: 1000, maxSendable: 1e9, metadata: "[]" }), { headers: { "content-type": "application/json" } });
+    if (x.hostname === "bitcoin.co.ke" && x.pathname === "/lnurlp/cb/0707172370")
       return new Response(JSON.stringify({ pr: invoice(Number(x.searchParams.get("amount")) / 1000).pr }), { headers: { "content-type": "application/json" } });
     return real(u);
   });
@@ -125,7 +125,7 @@ test("Send Mobile honors the hold: the server-side invoice plus wallet/send", as
     const a = await mk("holdmobile", "518274");
     await yw.credit({ walletId: a.wallet.id, sats: 9000, kind: "receive", ref: "fund-holdmobile" });
     const back = await recover(a.recovery, "619427");
-    const inv = await (await call("POST", "address/invoice", { to: "0712345678@bitcoin.co.ke", sats: 1001 }, back.token)).json();
+    const inv = await (await call("POST", "address/invoice", { to: "0707172370@bitcoin.co.ke", sats: 1001 }, back.token)).json();
     assert.ok(inv.invoice, "the proxy hands out the invoice");
     const r = await call("POST", "wallet/send", { to: inv.invoice, pin: "619427" }, back.token);
     assert.equal(r.status, 423);
@@ -139,9 +139,9 @@ test("a Lightning address honors the hold", async () => {
   yw.setLnurlFetcher((u, o) => globalThis.fetch(u, o));
   globalThis.fetch = async (url, opts) => {
     const u = new URL(String(url));
-    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/.well-known/lnurlp/0712345678")
-      return new Response(JSON.stringify({ tag: "payRequest", callback: "https://bitcoin.co.ke/lnurlp/cb/0712345678", minSendable: 1000, maxSendable: 1e9, metadata: "[]" }));
-    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/lnurlp/cb/0712345678")
+    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/.well-known/lnurlp/0707172370")
+      return new Response(JSON.stringify({ tag: "payRequest", callback: "https://bitcoin.co.ke/lnurlp/cb/0707172370", minSendable: 1000, maxSendable: 1e9, metadata: "[]" }));
+    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/lnurlp/cb/0707172370")
       return new Response(JSON.stringify({ pr: invoice(Number(u.searchParams.get("amount")) / 1000).pr }));
     return realFetch(url, opts);
   };
@@ -149,7 +149,7 @@ test("a Lightning address honors the hold", async () => {
     const a = await mk("holdlnaddr", "730184");
     await yw.credit({ walletId: a.wallet.id, sats: 9000, kind: "receive", ref: "fund-holdlnaddr" });
     const back = await recover(a.recovery, "527864");
-    const r = await call("POST", "wallet/send", { to: "0712345678@bitcoin.co.ke", sats: 1001, pin: "527864" }, back.token);
+    const r = await call("POST", "wallet/send", { to: "0707172370@bitcoin.co.ke", sats: 1001, pin: "527864" }, back.token);
     assert.equal(r.status, 423);
   } finally {
     globalThis.fetch = realFetch;

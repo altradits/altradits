@@ -59,6 +59,7 @@ input::placeholder{color:var(--muted);opacity:.8}
 .tx li:first-child{border-top:0}
 .tx .amt{font-weight:800;white-space:nowrap}
 .tx .sub{color:var(--muted);font-size:.88rem}
+.tx .sub.short{color:var(--err);font-weight:700}
 .tx .st{font-weight:700;white-space:nowrap}
 .tx .st.done{color:var(--navy)}
 .tx .st.wait{color:var(--muted)}
@@ -75,7 +76,6 @@ input::placeholder{color:var(--muted);opacity:.8}
 .amount{font-size:1.6rem;font-weight:800;text-align:center;min-height:4rem}
 .receive{text-align:center;font-size:1.25rem;font-weight:800;margin:.9rem 0 0}
 .receive small{display:block;font-size:.95rem;font-weight:400;color:var(--muted)}
-.sats{text-align:center;color:var(--muted);margin:.2rem 0 0}
 .inv-qr{max-width:20rem}
 .copy-row{display:flex;gap:.75rem;margin-top:1rem}
 .copy-row .btn{margin-top:0}

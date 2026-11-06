@@ -35,3 +35,19 @@ test("counts public pages with their source, never bots, admin pages or personal
   const raw = fs.readFileSync(path.join(".data", "visits", `${day}.jsonl`), "utf8");
   assert.doesNotMatch(raw, /iPhone|Mozilla|\d+\.\d+\.\d+\.\d+/);
 });
+
+test("the trivia game page is counted like any public page", async () => {
+  const ua = "Mozilla/5.0 (Linux; Android 10)";
+  recordVisit(req(ua), url("/trivia"), "/trivia.html");
+  await settle();
+  const s = visitSummary();
+  assert.deepEqual(s.byPage["trivia"], { d7: 1, d30: 1 });
+});
+
+test("the Sats Safari game page is counted like any public page", async () => {
+  const ua = "Mozilla/5.0 (Linux; Android 10)";
+  recordVisit(req(ua), url("/sats-safari"), "/sats-safari/index.html");
+  await settle();
+  const s = visitSummary();
+  assert.deepEqual(s.byPage["sats-safari"], { d7: 1, d30: 1 });
+});

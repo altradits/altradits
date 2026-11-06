@@ -33,7 +33,8 @@ export function withPolicy(html) {
 }
 
 export const pages = () => [...fs.readdirSync(ROOT).filter((f) => f.endsWith(".html")),
-  ...fs.readdirSync(path.join(ROOT, "ktown")).filter((f) => f.endsWith(".html")).map((f) => `ktown/${f}`)].sort();
+  ...fs.readdirSync(path.join(ROOT, "ktown")).filter((f) => f.endsWith(".html")).map((f) => `ktown/${f}`),
+  ...fs.readdirSync(path.join(ROOT, "touchtype")).filter((f) => f.endsWith(".html")).map((f) => `touchtype/${f}`)].sort();
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const check = process.argv.includes("--check");

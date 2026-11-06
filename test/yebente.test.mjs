@@ -20,24 +20,24 @@ test("health says what is on; every payout path refuses", async () => {
   assert.equal(h.buy, false);
   assert.equal(h.deposits, false);
   for (const p of ["lightning/disburse", "bitcoin/disburse", "mpesa/payout", "mpesa/b2b", "mpesa/reversal", "mpesa/ratiba", "telebirr/deposit", "telebirr/payout"]) {
-    const r = await call("POST", p, { invoice: "lnbc1", address: "bc1q", phone: "0712345678", amount: 100, satsAmount: 1000 });
+    const r = await call("POST", p, { invoice: "lnbc1", address: "bc1q", phone: "0707172370", amount: 100, satsAmount: 1000 });
     assert.equal(r.status, 501, p);
     assert.equal((await r.json()).configured, false, p);
   }
   // Buying and node deposits stay off until switched on.
-  assert.equal((await call("POST", "mpesa/stkpush", { phone: "0712345678", amount: 100 })).status, 501);
+  assert.equal((await call("POST", "mpesa/stkpush", { phone: "0707172370", amount: 100 })).status, 501);
   assert.equal((await call("POST", "lightning/create-invoice", { satsAmount: 1000 })).status, 501);
   assert.equal((await call("GET", "lightning/invoice-status/" + "a".repeat(64))).status, 501);
 });
 
 test("the M-Pesa callback needs the secret, and keeps the result without the phone number", async () => {
   const body = { Body: { stkCallback: { CheckoutRequestID: "ws_CO_1", ResultCode: 0, ResultDesc: "ok",
-    CallbackMetadata: { Item: [{ Name: "MpesaReceiptNumber", Value: "QAB12CD34" }, { Name: "PhoneNumber", Value: 254712345678 }] } } } };
+    CallbackMetadata: { Item: [{ Name: "MpesaReceiptNumber", Value: "QAB12CD34" }, { Name: "PhoneNumber", Value: 254707172370 }] } } } };
   assert.equal((await call("POST", "mpesa/callback/" + "y".repeat(32), body)).status, 403);
   assert.equal((await call("POST", "mpesa/callback/" + "x".repeat(32), body)).status, 200);
   const raw = fs.readFileSync(path.join(".data", "db.json"), "utf8");
   assert.match(raw, /QAB12CD34/);
-  assert.doesNotMatch(raw, /254712345678/);
+  assert.doesNotMatch(raw, /254707172370/);
   // Even with buying switched on, nobody can query Daraja without signing in (wallet/buy/<id> instead).
   process.env.YEBENTE_MPESA_BUY = "on";
   assert.equal((await call("POST", "mpesa/query", { checkoutRequestId: "ws_CO_1" })).status, 501);

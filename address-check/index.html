@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-RP7IrJTVi1KB4LWxhB/cH6Kwbw4sfZDOtjYxH0nH9zo='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<title>Bitcoin address checker: verify before you send · Altradits</title>
+<meta name="description" content="Free Bitcoin address checker. Paste any address: the checksum is verified on your device and you see what it pays to. Nothing leaves your browser. Works offline.">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="canonical" href="https://altradits.com/address-check/">
+<meta name="theme-color" content="#EEF2F6">
+<meta property="og:title" content="Bitcoin address checker: verify before you send">
+<meta property="og:description" content="Free Bitcoin address checker. Paste any address: the checksum is verified on your device and you see what it pays to. Nothing leaves your browser. Works offline.">
+<meta property="og:url" content="https://altradits.com/address-check/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Bitcoin address checker: verify before you send">
+<meta name="twitter:description" content="Free Bitcoin address checker. Paste any address: the checksum is verified on your device and you see what it pays to. Nothing leaves your browser. Works offline.">
+<style>
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--ok:#0B7A5F;--bad:#B3261E;--paper:#fff;color-scheme:light dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.wrap{max-width:44rem;margin:0 auto;padding:0 1rem 1rem}
+.skip{position:absolute;left:1rem;top:-3rem;background:var(--ink);color:var(--bg);padding:.5rem 1rem;border-radius:.5rem;z-index:99}
+.skip:focus{top:.5rem;color:var(--bg)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.9rem 0;border-bottom:1px solid var(--line)}
+.brand{font-weight:800;text-decoration:none;color:var(--ink);font-size:1.2rem}
+.tool{color:var(--muted);font-weight:600}
+h1{font-size:clamp(1.7rem,5vw,2.3rem);line-height:1.15;margin:1.4rem 0 .4rem;letter-spacing:-.01em}
+.lead{color:var(--muted);margin:0 0 1.2rem;max-width:36rem}
+label{display:block;font-weight:700;margin:0 0 .35rem}
+textarea{width:100%;min-height:4.6rem;padding:.7rem .8rem;border:2px solid var(--ink);border-radius:.75rem;background:var(--paper);color:var(--ink);font:400 1rem/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-all}
+textarea::placeholder{color:var(--muted);opacity:.8}
+.row{display:flex;gap:.6rem;margin-top:.7rem;flex-wrap:wrap}
+.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.9rem;min-width:7rem;padding:.7rem 1.4rem;border-radius:.75rem;font:700 1rem system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:#0F1B2D;cursor:pointer}
+.btn.ghost{background:transparent;border-color:var(--ink);color:var(--ink);min-width:0}
+.verdict{margin-top:1.2rem;padding:1rem 1.1rem;border:2px solid var(--ink);border-radius:1rem;background:var(--paper)}
+.verdict h2{margin:0 0 .3rem;font-size:1.25rem}
+.verdict.ok h2{color:var(--ok)}
+.verdict.bad h2{color:var(--bad)}
+.verdict p{margin:.4rem 0}
+.type{font-weight:700}
+.note{color:var(--muted);font-size:.95rem}
+.addr{display:block;margin:.6rem 0;padding:.7rem .8rem;background:var(--bg);border:1px solid var(--line);border-radius:.6rem;font:400 .95rem/1.9 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-all;overflow-wrap:anywhere}
+.addr .g{white-space:nowrap}
+.copy{margin:.2rem 0 .4rem;padding:.45rem 1rem;border-radius:.6rem;border:2px solid var(--ink);background:transparent;color:var(--ink);font:700 .95rem system-ui,sans-serif;cursor:pointer}
+dl.steps{margin:.6rem 0 0;display:grid;grid-template-columns:minmax(7rem,10rem) 1fr;gap:.35rem .8rem;font-size:.95rem}
+dl.steps dt{font-weight:700}
+dl.steps dd{margin:0;word-break:break-word}
+dl.steps dd.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85rem}
+.script{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85rem;word-break:break-all;background:var(--bg);border:1px solid var(--line);border-radius:.6rem;padding:.6rem .7rem}
+details{margin-top:1rem;border:2px solid var(--ink);border-radius:1rem;background:var(--paper);padding:.8rem 1rem}
+summary{font-weight:800;cursor:pointer;font-size:1.05rem}
+details p,.details li,.hint{color:var(--muted)}
+details ul{margin:.5rem 0;padding-left:1.2rem}
+details li{margin:.3rem 0}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:2.5rem}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media (max-width:34rem){dl.steps{grid-template-columns:1fr}dl.steps dt{margin-top:.3rem}}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1B2D;--ink:#EEF2F6;--muted:#A9B6C8;--line:#33415A;--blue:#7FB3E8;--paper:#182742;--ok:#4ADE9E;--bad:#F28B82}.btn.ghost{border-color:var(--line);color:var(--ink)}textarea{border-color:var(--line)}.verdict,details{border-color:var(--line)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the checker</a>
+<div class="wrap">
+  <header class="top"><a class="brand" href="/">Altradits</a><span class="tool">Address Check</span></header>
+  <main id="main">
+    <h1>Check a Bitcoin address</h1>
+    <p class="lead">Paste any address. This page checks it on your device and shows what it pays to. Nothing leaves your browser, and it works with no internet.</p>
+    <form id="form" action="#">
+      <label for="addr">Bitcoin address</label>
+      <textarea id="addr" rows="3" spellcheck="false" autocomplete="off" autocapitalize="none" autocorrect="off" placeholder="bc1q..., 1..., 3... or a bitcoin: link"></textarea>
+      <div class="row">
+        <button type="submit" class="btn">Check</button>
+        <button type="button" id="clear" class="btn ghost">Clear</button>
+      </div>
+    </form>
+    <section id="result" aria-live="polite"></section>
+    <details>
+      <summary>How to compare safely</summary>
+      <ul>
+        <li>Compare the start, the middle and the end. Scam lookalikes match the first and last characters on purpose.</li>
+        <li>A valid checksum stops typos, not substitution. A scammer's address is valid too.</li>
+        <li>Malware can swap an address after you copy it. Compare what you pasted with the sender's original, character by character.</li>
+        <li>For a large payment, send a small test first and confirm it arrived.</li>
+      </ul>
+    </details>
+    <details>
+      <summary>What this cannot do</summary>
+      <ul>
+        <li>It cannot tell who owns an address. It shows what the address pays to, never whom.</li>
+        <li>It never needs a private key. If you pasted one by mistake, it says so and stops.</li>
+        <li>It shows the network, so a testnet address pasted by mistake stands out.</li>
+      </ul>
+    </details>
+    <details>
+      <summary>Sources</summary>
+      <ul>
+        <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki">BIP173: Bech32</a></li>
+        <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki">BIP350: Bech32m</a></li>
+        <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0013.mediawiki">BIP13: P2SH address format</a></li>
+        <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0021.mediawiki">BIP21: bitcoin: links</a></li>
+        <li><a href="https://github.com/bitcoin/bitcoin/blob/master/src/key_io.cpp">Bitcoin Core: key_io.cpp</a></li>
+        <li><a href="https://csrc.nist.gov/pubs/fips/180-4/final">FIPS 180-4: SHA-256</a></li>
+      </ul>
+    </details>
+  </main>
+  <footer class="sitefoot">Free tool by <a href="/">Altradits</a>. Open source (MIT). Audits welcome: the whole checker is in this one file.</footer>
+</div>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+// Address Check core: pure functions, no DOM. The page runs them here and
+// test/address-check.test.mjs runs them in Node. Sources: FIPS 180-4 (SHA-256),
+// Bitcoin Core src/base58.cpp and src/key_io.cpp, BIP13, BIP141, BIP173,
+// BIP350, BIP21, BIP341 (P2TR), BIP431 (pay-to-anchor).
+var AddressCheck = (() => {
+"use strict";
+
+function fail(reason, detail, extra) {
+  return Object.assign({ ok: false, reason, detail: detail || "", pos: null, hint: "" }, extra || {});
+}
+
+// ---------- SHA-256 (FIPS 180-4) ----------
+const K256 = [
+  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+  0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+  0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+  0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+  0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+  0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+  0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+  0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+];
+function sha256Bytes(msg) {
+  let h0 = 0x6a09e667, h1 = 0xbb67ae85, h2 = 0x3c6ef372, h3 = 0xa54ff53a;
+  let h4 = 0x510e527f, h5 = 0x9b05688c, h6 = 0x1f83d9ab, h7 = 0x5be0cd19;
+  const bitLen = msg.length * 8;
+  const withOne = msg.length + 1;
+  const padLen = (withOne % 64 <= 56 ? 56 - (withOne % 64) : 120 - (withOne % 64)) + 8;
+  const padded = new Uint8Array(msg.length + 1 + padLen);
+  padded.set(msg, 0);
+  padded[msg.length] = 0x80;
+  const dv = new DataView(padded.buffer);
+  dv.setUint32(padded.length - 4, bitLen >>> 0);
+  dv.setUint32(padded.length - 8, Math.floor(bitLen / 0x100000000));
+  const w = new Uint32Array(64);
+  for (let off = 0; off < padded.length; off += 64) {
+    for (let i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4);
+    for (let i = 16; i < 64; i++) {
+      const s0 = ((w[i - 15] >>> 7) | (w[i - 15] << 25)) ^ ((w[i - 15] >>> 18) | (w[i - 15] << 14)) ^ (w[i - 15] >>> 3);
+      const s1 = ((w[i - 2] >>> 17) | (w[i - 2] << 15)) ^ ((w[i - 2] >>> 19) | (w[i - 2] << 13)) ^ (w[i - 2] >>> 10);
+      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+    }
+    let a = h0, b = h1, c = h2, d = h3, e = h4, f = h5, g = h6, h = h7;
+    for (let i = 0; i < 64; i++) {
+      const S1 = ((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7));
+      const ch = (e & f) ^ (~e & g);
+      const t1 = (h + S1 + ch + K256[i] + w[i]) | 0;
+      const S0 = ((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10));
+      const maj = (a & b) ^ (a & c) ^ (b & c);
+      const t2 = (S0 + maj) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    h0 = (h0 + a) | 0; h1 = (h1 + b) | 0; h2 = (h2 + c) | 0; h3 = (h3 + d) | 0;
+    h4 = (h4 + e) | 0; h5 = (h5 + f) | 0; h6 = (h6 + g) | 0; h7 = (h7 + h) | 0;
+  }
+  const out = new Uint8Array(32);
+  const o = new DataView(out.buffer);
+  o.setUint32(0, h0); o.setUint32(4, h1); o.setUint32(8, h2); o.setUint32(12, h3);
+  o.setUint32(16, h4); o.setUint32(20, h5); o.setUint32(24, h6); o.setUint32(28, h7);
+  return out;
+}
+const HEXB = "0123456789abcdef";
+function hexOf(bytes) {
+  let s = "";
+  for (const b of bytes) s += HEXB[b >> 4] + HEXB[b & 15];
+  return s;
+}
+function sha256Hex(bytes) { return hexOf(sha256Bytes(bytes)); }
+function asciiBytes(s) {
+  const b = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i) & 255;
+  return b;
+}
+
+// ---------- Base58 (Bitcoin alphabet) ----------
+const B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+function b58decode(s) {
+  let zeroes = 0;
+  while (zeroes < s.length && s[zeroes] === "1") zeroes++;
+  const digits = [];
+  for (let i = zeroes; i < s.length; i++) {
+    const v = B58.indexOf(s[i]);
+    if (v < 0) throw { pos: i, ch: s[i] };
+    let carry = v;
+    for (let j = 0; j < digits.length; j++) {
+      carry += digits[j] * 58;
+      digits[j] = carry & 255;
+      carry >>= 8;
+    }
+    while (carry > 0) { digits.push(carry & 255); carry >>= 8; }
+  }
+  const out = new Uint8Array(zeroes + digits.length);
+  for (let i = 0; i < digits.length; i++) out[out.length - 1 - i] = digits[i];
+  return out;
+}
+function b58encode(bytes) {
+  let zeroes = 0;
+  while (zeroes < bytes.length && bytes[zeroes] === 0) zeroes++;
+  const digits = [];
+  for (let i = zeroes; i < bytes.length; i++) {
+    let carry = bytes[i];
+    for (let j = 0; j < digits.length; j++) {
+      carry += digits[j] * 256;
+      digits[j] = carry % 58;
+      carry = Math.floor(carry / 58);
+    }
+    while (carry > 0) { digits.push(carry % 58); carry = Math.floor(carry / 58); }
+  }
+  let s = "1".repeat(zeroes);
+  for (let i = digits.length - 1; i >= 0; i--) s += B58[digits[i]];
+  return s;
+}
+
+// ---------- Bech32 / Bech32m (BIP173 / BIP350 reference) ----------
+const B32 = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+const B32_GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
+const BECH32 = 1, BECH32M = 0x2bc830a3;
+function polymod(values) {
+  let chk = 1;
+  for (const v of values) {
+    const b = chk >> 25;
+    chk = (((chk & 0x1ffffff) << 5) ^ v) >>> 0;
+    for (let i = 0; i < 5; i++) if ((b >> i) & 1) chk ^= B32_GEN[i];
+  }
+  return chk >>> 0;
+}
+function hrpExpand(hrp) {
+  const out = [];
+  for (let i = 0; i < hrp.length; i++) out.push(hrp.charCodeAt(i) >> 5);
+  out.push(0);
+  for (let i = 0; i < hrp.length; i++) out.push(hrp.charCodeAt(i) & 31);
+  return out;
+}
+function convertBits(data, fromBits, toBits, pad) {
+  let acc = 0, bits = 0;
+  const ret = [];
+  const maxv = (1 << toBits) - 1, maxAcc = (1 << (fromBits + toBits - 1)) - 1;
+  for (const value of data) {
+    if (value < 0 || value >> fromBits) return null;
+    acc = ((acc << fromBits) | value) & maxAcc;
+    bits += fromBits;
+    while (bits >= toBits) { bits -= toBits; ret.push((acc >> bits) & maxv); }
+  }
+  if (pad) {
+    if (bits) ret.push((acc << (toBits - bits)) & maxv);
+  } else if (bits >= fromBits || ((acc << (toBits - bits)) & maxv)) {
+    return null;
+  }
+  return ret;
+}
+// Throws {code,...} on failure; returns {hrp, data, encoding}.
+function bech32Decode(str) {
+  let lower = false, upper = false;
+  for (const c of str) {
+    if (c >= "a" && c <= "z") lower = true;
+    else if (c >= "A" && c <= "Z") upper = true;
+  }
+  if (lower && upper) throw { code: "mixed" };
+  const sep = str.lastIndexOf("1");
+  if (str.length > 90) throw { code: "length" };
+  if (sep < 1 || sep + 7 > str.length) throw { code: sep < 1 ? "sep" : "short" };
+  const s = str.toLowerCase();
+  for (let i = 0; i < s.length; i++) {
+    const o = s.charCodeAt(i);
+    if (o < 33 || o > 126) throw { code: "range", pos: i, ch: str[i] };
+  }
+  const hrp = s.slice(0, sep);
+  const data = [];
+  for (let i = sep + 1; i < s.length; i++) {
+    const v = B32.indexOf(s[i]);
+    if (v < 0) throw { code: "charset", pos: i, ch: str[i] };
+    data.push(v);
+  }
+  const chk = polymod(hrpExpand(hrp).concat(data));
+  if (chk !== BECH32 && chk !== BECH32M) throw { code: "checksum", chk };
+  return { hrp, data: data.slice(0, -6), encoding: chk === BECH32 ? "bech32" : "bech32m" };
+}
+function bech32Encode(hrp, data, encoding) {
+  const values = hrpExpand(hrp).concat(data);
+  const polymodOut = polymod(values.concat([0, 0, 0, 0, 0, 0])) ^ (encoding === "bech32" ? BECH32 : BECH32M);
+  let s = hrp + "1";
+  const full = data.concat([0, 0, 0, 0, 0, 0].map((_, i) => (polymodOut >> (5 * (5 - i))) & 31));
+  for (const v of full) s += B32[v];
+  return s;
+}
+
+// ---------- Address checks ----------
+const B58_VERSIONS = { 0x00: ["mainnet", "P2PKH"], 0x05: ["mainnet", "P2SH"], 0x6f: ["testnet", "P2PKH"], 0xc4: ["testnet", "P2SH"] };
+const HRP_NETWORKS = { bc: "mainnet", tb: "testnet", bcrt: "regtest" };
+
+function checkBase58(addr) {
+  let raw;
+  try {
+    raw = b58decode(addr);
+  } catch (e) {
+    return fail("Not a valid address.", "Character '" + e.ch + "' at position " + (e.pos + 1) + " never appears in a Bitcoin address.",
+      { pos: e.pos, hint: "0OIl".includes(e.ch) ? "Base58 leaves out 0, O, I and l because they look alike. Check for a misread character." : "" });
+  }
+  if (raw.length !== 25) {
+    return fail("Not a valid address.", "It decodes to " + raw.length + " bytes, but an address carries 25: a version byte, a 20 byte hash and a 4 byte checksum.",
+      { hint: raw.length > 25 ? "There may be extra characters pasted at the end." : "Some characters may be missing at the end." });
+  }
+  const version = raw[0], payload = hexOf(raw.slice(1, 21));
+  const embedded = hexOf(raw.slice(21, 25));
+  const computed = hexOf(sha256Bytes(sha256Bytes(raw.slice(0, 21))).slice(0, 4));
+  const known = B58_VERSIONS[version];
+  if (!known) {
+    return fail("Not a Bitcoin address.", "The version byte is 0x" + version.toString(16).padStart(2, "0") + ". Bitcoin uses 0x00 and 0x05 on mainnet, 0x6f and 0xc4 on testnet.",
+      { hint: version === 0x80 || version === 0xef ? "That version byte belongs to a private key, not an address. Keep it secret." : "" });
+  }
+  if (embedded !== computed) {
+    return fail("Checksum does not match.", "The address ends in checksum " + embedded + ", but its contents recompute to " + computed + ". At least one character is wrong. Ask for the address again; do not guess.",
+      { hint: "" });
+  }
+  const network = known[0], type = known[1];
+  const scriptPubKey = type === "P2PKH" ? "76a914" + payload + "88ac" : "a914" + payload + "87";
+  const asm = type === "P2PKH" ? "OP_DUP OP_HASH160 " + payload + " OP_EQUALVERIFY OP_CHECKSIG" : "OP_HASH160 " + payload + " OP_EQUAL";
+  const steps = [
+    ["Format", "Base58Check, " + addr.length + " characters starting with '" + addr[0] + "'"],
+    ["Version byte", "0x" + version.toString(16).padStart(2, "0") + " means " + type + " on Bitcoin " + network],
+    ["Payload", "20 bytes: " + payload],
+    ["Checksum", "ends in " + embedded + ", recomputed " + computed + ": match (double SHA-256)"],
+    ["Locking script", asm],
+  ];
+  return finish({ ok: true, kind: "base58", address: addr, network, type, version, payload, scriptPubKey, asm, steps });
+}
+
+function checkSegwit(addr) {
+  let dec;
+  try {
+    dec = bech32Decode(addr);
+  } catch (e) {
+    if (e.code === "mixed") return fail("Mixed upper and lower case.", "Bech32 addresses use one case only. Make it all lower case or all upper case and check again.");
+    if (e.code === "length") return fail("Too long.", "It has " + addr.length + " characters. Bech32 addresses stop at 90.");
+    if (e.code === "sep") return fail("No separator.", "A bech32 address looks like tb1... with a '1' after the prefix. This has none in the right place.");
+    if (e.code === "short") return fail("Too short.", "Even the shortest bech32 address needs a prefix, a '1', one character and a 6 character checksum.");
+    if (e.code === "range") return fail("Not a valid address.", "Character " + (e.pos + 1) + " is outside plain text. Copy the address again in one piece.", { pos: e.pos });
+    if (e.code === "charset") {
+      const hint = "bio".includes(addr[e.pos].toLowerCase()) ? "The letters b, i and o never appear in bech32 addresses." : "";
+      return fail("Not a valid address.", "Character '" + e.ch + "' at position " + (e.pos + 1) + " is not in the bech32 alphabet.", { pos: e.pos, hint });
+    }
+    if (e.code === "checksum") return fail("Checksum does not match.", "At least one character is wrong or missing. Ask for the address again; do not guess.");
+    return fail("Not a valid address.", "It is not bech32.");
+  }
+  const network = HRP_NETWORKS[dec.hrp];
+  if (dec.data.length === 0) return fail("Empty data section.", "There is nothing after the '1' separator.");
+  const version = dec.data[0];
+  // A checksum that matches the other encoding gets a precise message (BIP350).
+  const want = version === 0 ? "bech32" : "bech32m";
+  if (dec.encoding !== want) {
+    return fail("Wrong checksum style.", "Witness version " + version + " needs a " + (want === "bech32" ? "Bech32 (BIP173)" : "Bech32m (BIP350)") + " checksum, but this one checks out as " + (dec.encoding === "bech32" ? "Bech32" : "Bech32m") + ".",
+      { hint: "Old software wrote version 1 and later addresses with the v0 checksum. Ask for a fresh address." });
+  }
+  if (version > 16) return fail("Unknown witness version.", "The version is " + version + ". Witness versions run from 0 to 16.");
+  const program = convertBits(dec.data.slice(1), 5, 8, false);
+  if (!program) return fail("Broken bit grouping.", "The 5 to 8 bit regrouping fails: the padding is non-zero or longer than 4 bits. Some characters are wrong.");
+  if (program.length < 2 || program.length > 40) {
+    return fail("Wrong program length.", "Witness programs carry 2 to 40 bytes. This carries " + program.length + ".", {});
+  }
+  let type;
+  if (version === 0) {
+    if (program.length === 20) type = "P2WPKH";
+    else if (program.length === 32) type = "P2WSH";
+    else return fail("Wrong program length.", "Witness version 0 needs 20 bytes (P2WPKH) or 32 bytes (P2WSH). This has " + program.length + ".");
+  } else if (version === 1 && program.length === 32) {
+    type = "P2TR";
+  } else if (version === 1 && program.length === 2 && program[0] === 0x4e && program[1] === 0x73) {
+    type = "P2A";
+  } else {
+    type = "witness v" + version;
+  }
+  const payload = program.map((b) => HEXB[b >> 4] + HEXB[b & 15]).join("");
+  const opN = version === 0 ? "00" : (0x50 + version).toString(16);
+  const scriptPubKey = opN + program.length.toString(16).padStart(2, "0") + payload;
+  const asm = (version === 0 ? "0" : String(version)) + " " + payload;
+  const typeName = type === "P2WPKH" ? "P2WPKH (Segwit v0, key hash)" : type === "P2WSH" ? "P2WSH (Segwit v0, script hash)"
+    : type === "P2TR" ? "P2TR (Taproot, Segwit v1)" : type === "P2A" ? "P2A (pay to anchor, Segwit v1)"
+    : "Segwit version " + version + " (reserved for the future)";
+  const constName = dec.encoding === "bech32" ? "Bech32 constant 1" : "Bech32m constant 0x2bc830a3";
+  const steps = [
+    ["Format", (dec.encoding === "bech32" ? "Bech32 (BIP173)" : "Bech32m (BIP350)") + ", " + addr.length + " characters"],
+    ["Prefix", "'" + dec.hrp + "' means Bitcoin " + network],
+    ["Checksum", constName + ": match"],
+    ["Witness version", String(version)],
+    ["Program", program.length + " bytes: " + payload],
+    ["Locking script", asm],
+  ];
+  return finish({ ok: true, kind: "segwit", address: addr, network, type, typeName, version, payload, scriptPubKey, asm, steps });
+}
+
+function finish(r) {
+  // Re-encode from the decoded payload: what you see is what the bytes say.
+  let canonical = r.address;
+  if (r.kind === "base58") {
+    const raw = new Uint8Array(25);
+    raw[0] = r.version;
+    for (let i = 0; i < 20; i++) raw[1 + i] = parseInt(r.payload.slice(i * 2, i * 2 + 2), 16);
+    raw.set(sha256Bytes(sha256Bytes(raw.slice(0, 21))).slice(0, 4), 21);
+    canonical = b58encode(raw);
+  } else {
+    const prog = [];
+    for (let i = 0; i < r.payload.length; i += 2) prog.push(parseInt(r.payload.slice(i, i + 2), 16));
+    const hrp = r.address.slice(0, r.address.lastIndexOf("1")).toLowerCase();
+    const data5 = convertBits(prog, 8, 5, true);
+    canonical = bech32Encode(hrp, [r.version].concat(data5), r.version === 0 ? "bech32" : "bech32m");
+  }
+  r.canonical = canonical;
+  r.steps.push(["Re-encoded", canonical === r.address ? "identical to the pasted text" : "canonical form is lower case; the pasted text was upper case"]);
+  if (!r.typeName) r.typeName = r.type === "P2PKH" ? "P2PKH (pay to public key hash)" : "P2SH (pay to script hash)";
+  if (r.network === "testnet") r.networkNote = "tb and testnet version bytes are shared by testnet3, testnet4 and signet.";
+  return r;
+}
+
+function parseAmountBtc(s) {
+  const m = s.match(/^(\d+)(?:\.(\d{1,8}))?$/);
+  if (!m) return null;
+  const sats = BigInt(m[1]) * 100000000n + BigInt((m[2] || "").padEnd(8, "0") || "0");
+  if (sats > 21000000n * 100000000n) return null;
+  return sats;
+}
+
+function checkAddress(input) {
+  let s = String(input).replace(/^[\s ]+|[\s ]+$/g, "");
+  if ((s.startsWith('"') && s.endsWith('"') && s.length > 1) || (s.startsWith("'") && s.endsWith("'") && s.length > 1)) {
+    s = s.slice(1, -1);
+  }
+  let uri = null;
+  const scheme = s.match(/^bitcoin:/i);
+  if (scheme) {
+    const rest = s.slice(scheme[0].length);
+    const qi = rest.indexOf("?");
+    const addrPart = qi < 0 ? rest : rest.slice(0, qi);
+    uri = { raw: s };
+    if (qi >= 0) {
+      const params = {};
+      for (const pair of rest.slice(qi + 1).split("&")) {
+        const eq = pair.indexOf("=");
+        if (eq > 0) {
+          try { params[pair.slice(0, eq).toLowerCase()] = decodeURIComponent(pair.slice(eq + 1).replace(/\+/g, " ")); }
+          catch (e) { params[pair.slice(0, eq).toLowerCase()] = pair.slice(eq + 1); }
+        }
+      }
+      if (params.amount !== undefined) {
+        const sats = parseAmountBtc(params.amount.trim());
+        uri.amount = sats === null ? { error: params.amount } : { sats: sats.toString(), btc: params.amount.trim() };
+      }
+      if (params.label !== undefined) uri.label = params.label;
+      if (params.message !== undefined) uri.message = params.message;
+    }
+    if (!addrPart) return fail("The link has no address.", "This bitcoin: link carries no address before the '?'. Paste the full link or the address on its own.");
+    s = addrPart;
+  }
+  if (!s) return fail("Nothing pasted yet.", "Paste a Bitcoin address above and it is checked on this device.");
+  const ws = s.match(/[\s ]/);
+  if (ws) return fail("A space broke the address.", "There is whitespace at character " + (ws.index + 1) + ". Copy the address again in one piece.", { pos: ws.index });
+  if (s.length > 200) return fail("Far too long.", "It has " + s.length + " characters. The longest Bitcoin address runs 90.", {});
+  if (/^[5KLc9][1-9A-HJ-NP-Za-km-z]{50,51}$/.test(s)) {
+    return fail("This looks like a private key, not an address.", "It has the shape of a wallet import key (51 or 52 characters starting with " + s[0] + "). Never paste it into a website or share it. Nothing was sent anywhere; this page keeps everything on your device.", {});
+  }
+  if (/^(lnbc|lntb|lnbcrt)/i.test(s)) {
+    return fail("This is a Lightning invoice, not an address.", "It starts with '" + s.slice(0, 4).toLowerCase() + "'. Pay it from a Lightning wallet. This tool checks on-chain addresses only.", {});
+  }
+  if (/^[0-9a-fA-F]{64}$/.test(s)) {
+    return fail("This is 64 hex characters, not an address.", "That shape is a transaction id, or a raw private key. If it is a private key, keep it secret.", {});
+  }
+  const sep = s.lastIndexOf("1");
+  if (sep > 0 && (s.slice(0, sep).toLowerCase() === "bc" || s.slice(0, sep).toLowerCase() === "tb" || s.slice(0, sep).toLowerCase() === "bcrt")) {
+    const r = checkSegwit(s);
+    if (uri) r.uri = uri;
+    return r;
+  }
+  // Unknown bech32-shaped prefix with otherwise valid shape gets its own message.
+  if (sep > 0 && /^[A-Za-z]{1,10}$/.test(s.slice(0, sep)) && s.length <= 90) {
+    try {
+      const dec = bech32Decode(s);
+      return fail("Unknown prefix '" + dec.hrp + "'.", "Bitcoin address prefixes are bc (mainnet), tb (testnet) or bcrt (regtest). The checksum itself is fine.", {});
+    } catch (e) { /* falls through to Base58 diagnosis */ }
+  }
+  if (s.split("").every((c) => B58.indexOf(c) >= 0)) {
+    const r = checkBase58(s);
+    if (uri) r.uri = uri;
+    return r;
+  }
+  let pos = -1;
+  for (let i = 0; i < s.length; i++) if (B58.indexOf(s[i]) < 0) { pos = i; break; }
+  const ch = s[pos];
+  return fail("Not a valid address.", "Character '" + ch + "' at position " + (pos + 1) + " never appears in a Bitcoin address.", {
+    pos, hint: "0OIl".includes(ch) ? "Base58 leaves out 0, O, I and l because they look alike. Bech32 leaves out b, i, o and 1 for the same reason." : "",
+  });
+}
+
+return { checkAddress, bech32Decode, b58encode, b58decode, sha256Hex, asciiBytes };
+})();
+// ---------- Page UI (browser only; skipped when the tests run the core) ----------
+if (typeof document !== "undefined") {
+  const $ = (id) => document.getElementById(id);
+  const form = $("form"), box = $("addr"), out = $("result"), clearBtn = $("clear");
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+  function grouped(code) {
+    const c = el("code", "addr");
+    for (let i = 0; i < code.length; i += 4) {
+      c.appendChild(el("span", "g", code.slice(i, i + 4)));
+      if (i + 4 < code.length) c.appendChild(document.createTextNode(" "));
+    }
+    return c;
+  }
+  function fmtSats(s) { return s.replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+
+  function render() {
+    const value = box.value;
+    out.replaceChildren();
+    if (!value.trim()) return;
+    const r = AddressCheck.checkAddress(value);
+    const card = el("div", "verdict " + (r.ok ? "ok" : "bad"));
+    card.appendChild(el("h2", null, r.ok ? "Valid address." : r.reason));
+    if (r.ok) {
+      card.appendChild(el("p", "type", r.typeName + " on Bitcoin " + r.network + "."));
+      if (r.networkNote) card.appendChild(el("p", "note", r.networkNote));
+      if (r.uri && r.uri.amount && !r.uri.amount.error) {
+        card.appendChild(el("p", null, "The link asks for " + fmtSats(r.uri.amount.sats) + " sats (" + r.uri.amount.btc + " BTC)."));
+      }
+      if (r.uri && r.uri.amount && r.uri.amount.error) {
+        card.appendChild(el("p", "note", "The link names an amount this page cannot read: " + r.uri.amount.error));
+      }
+      if (r.uri && r.uri.label) card.appendChild(el("p", "note", "Label: " + r.uri.label));
+      if (r.uri && r.uri.message) card.appendChild(el("p", "note", "Message: " + r.uri.message));
+      card.appendChild(el("p", "note", "Compare every character with the sender's original:"));
+      card.appendChild(grouped(r.canonical));
+      const copy = el("button", "copy", "Copy address");
+      copy.type = "button";
+      copy.addEventListener("click", () => {
+        const done = () => { copy.textContent = "Copied."; };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(r.canonical).then(done, done);
+        else { box.value = r.canonical; box.select(); try { document.execCommand("copy"); } catch (e) { /* old browser */ } done(); }
+      });
+      card.appendChild(copy);
+      const dl = el("dl", "steps");
+      for (const step of r.steps) {
+        dl.appendChild(el("dt", null, step[0]));
+        const code = step[0] === "Locking script" || step[0] === "Payload" || step[0] === "Program";
+        dl.appendChild(el("dd", code ? "code" : null, step[1]));
+      }
+      card.appendChild(dl);
+      card.appendChild(el("p", "note", "Locking script (hex):"));
+      card.appendChild(el("p", "script", r.scriptPubKey));
+    } else {
+      card.appendChild(el("p", null, r.detail));
+      if (r.hint) card.appendChild(el("p", "note", r.hint));
+    }
+    out.appendChild(card);
+  }
+
+  let timer = 0;
+  box.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(render, 200); });
+  form.addEventListener("submit", (e) => { e.preventDefault(); clearTimeout(timer); render(); });
+  function clearAll(focus) { box.value = ""; out.replaceChildren(); if (focus) box.focus(); }
+  clearBtn.addEventListener("click", () => clearAll(true));
+  // Privacy: nothing typed here survives leaving the page.
+  addEventListener("pagehide", () => clearAll(false));
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/address-check/sw.js").catch(function () {});
+  }
+}
+</script>
+</body>
+</html>
