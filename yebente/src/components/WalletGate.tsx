@@ -144,7 +144,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
           {!codeSent ? (
             <>
               <p className="text-sm text-[var(--yb-on-surface-variant)]">Enter the email on your wallet. We'll send a code; then you enter your PIN. Nothing gets reset.</p>
-              <input type="email" className={field} placeholder="you@email.com" value={email} autoComplete="email" onChange={(e) => { setEmail(e.target.value.slice(0, 200)); setTypo(null); }} />
+              <input type="email" className={field} placeholder="5tan@altradits.com" value={email} autoComplete="email" onChange={(e) => { setEmail(e.target.value.slice(0, 200)); setTypo(null); }} />
               <button type="button" className={primary} disabled={busy || !email.includes('@')}
                 onClick={() => runEmail(async (confirmTypo) => { await startLogin(email.trim(), confirmTypo); setCodeSent(true); setNote('If that email is on a Ye₿ente wallet, a code is on its way. It works for 10 minutes.'); })}>
                 Send me a code
@@ -177,7 +177,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
           <PinInput value={pin2} onChange={setPin2} label="The same PIN again" name="yb-new-pin2" />
           <label className="block">
             <span className="block text-xs text-[var(--yb-on-surface-variant)] mb-1.5">Email (recommended: lets you log in on a new phone)</span>
-            <input type="email" className={field} placeholder="you@email.com" value={email} autoComplete="email" onChange={(e) => setEmail(e.target.value.slice(0, 200))} />
+            <input type="email" className={field} placeholder="5tan@altradits.com" value={email} autoComplete="email" onChange={(e) => setEmail(e.target.value.slice(0, 200))} />
           </label>
           <details>
             <summary className="text-xs text-[var(--yb-on-surface-variant)] cursor-pointer">Choose your Lightning address name (optional)</summary>
@@ -224,7 +224,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
           <p className="text-sm text-[var(--yb-on-surface-variant)]">For a lost phone or a forgotten PIN. You'll choose a new PIN, your other phones are signed out, and for 24 hours at most 1,000 sats can be sent, in case someone else is trying. Just using a new phone and you know your PIN? <button type="button" className={link} onClick={() => go('login')}>Log in instead</button>.</p>
           <div className="space-y-2">
             <span className="block text-xs font-semibold text-[var(--yb-secondary)]">With your email</span>
-            <input type="email" className={field} placeholder="you@email.com" value={email} autoComplete="email" onChange={(e) => { setEmail(e.target.value.slice(0, 200)); setTypo(null); }} />
+            <input type="email" className={field} placeholder="5tan@altradits.com" value={email} autoComplete="email" onChange={(e) => { setEmail(e.target.value.slice(0, 200)); setTypo(null); }} />
             <button type="button" className={secondary} disabled={busy || !email.includes('@')}
               onClick={() => runEmail(async (confirmTypo) => { const r = await requestEmailRecovery(email.trim(), confirmTypo); setNote(r.message); })}>Email me a recovery link</button>
           </div>

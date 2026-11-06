@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<meta name="theme-color" content="#EEF2F6">
+<link rel="canonical" href="https://altradits.com/developer">
+<title>Altradits Developer: a free Lightning API for Bitcoin apps</title>
+<meta name="description" content="Create Lightning invoices to your own address, verify settlement, get webhooks. Non-custodial: your customers pay you straight. Sandbox free, live costs 0.5% prepaid in sats.">
+<link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
+<meta property="og:title" content="Altradits Developer: a free Lightning API for Bitcoin apps">
+<meta property="og:description" content="Create Lightning invoices to your own address, verify settlement, get webhooks. Non-custodial: your customers pay you straight. Sandbox free, live costs 0.5% prepaid in sats.">
+<meta property="og:url" content="https://altradits.com/developer">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://altradits.com/assets/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Altradits Developer: a free Lightning API for Bitcoin apps">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Altradits Developer: a free Lightning API for Bitcoin apps">
+<meta name="twitter:description" content="Create Lightning invoices to your own address, verify settlement, get webhooks. Non-custodial: your customers pay you straight. Sandbox free, live costs 0.5% prepaid in sats.">
+<meta name="twitter:image" content="https://altradits.com/assets/social-card.png">
+<style>
+/* Brand fonts, served from this site: Bricolage Grotesque and Figtree (SIL Open Font License 1.1, https://openfontlicense.org), latin and latin-ext (₿), variable weight */
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0 -1rem;padding:.8rem 1rem;flex-wrap:wrap;row-gap:.5rem;position:sticky;top:0;z-index:50;background:rgba(238,242,246,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top img{height:2.5rem;width:auto;display:block}
+.topnav{display:flex;gap:.35rem;flex-wrap:wrap;row-gap:.35rem;align-items:center}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.45rem .95rem;border-radius:99px}
+.topnav a:hover{color:var(--ink);background:rgba(15,27,45,.08)}
+.topnav a[aria-current]{color:#fff;background:var(--ink)}
+@media (max-width:420px){.topnav{gap:.25rem}.topnav a{font-size:.9rem;padding:.4rem .7rem}.top img{height:1.9rem}}
+.hero{padding:2.25rem 0 1.5rem}
+.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem}
+.hero h1 em{font-style:normal;color:var(--btc-text)}
+.lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:38rem}
+.ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
+.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none}
+.btn.ghost{background:transparent;border-color:var(--ink)}
+h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:2.4rem 0 .4rem}
+h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
+.intro{color:var(--muted);margin:0 0 1.2rem;max-width:42rem}
+.cards{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem}
+.cards>li{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem}
+.cards p{margin:0;color:var(--muted);font-size:.97rem}
+.steps{max-width:44rem;padding-left:1.3rem;color:var(--muted)}
+.steps li{margin:.5rem 0}
+.steps b{color:var(--ink)}
+pre{background:var(--ink);color:#E8EEF5;border-radius:.75rem;padding:1rem 1.1rem;overflow-x:auto;font:400 .9rem/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;max-width:46rem}
+pre .c{color:#9FB2C8}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+p code,li code,td code{background:rgba(15,27,45,.08);border-radius:.3rem;padding:.05rem .3rem}
+table{border-collapse:collapse;max-width:46rem;width:100%;background:var(--paper);border:2px solid var(--ink);border-radius:.75rem;overflow:hidden}
+th,td{text-align:left;padding:.6rem .8rem;border-bottom:1px solid var(--line);font-size:.95rem;vertical-align:top}
+tr:last-child th,tr:last-child td{border-bottom:0}
+th{font-family:'Bricolage Grotesque',sans-serif}
+.pill{display:inline-block;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-radius:99px;padding:.15rem .6rem;background:rgba(11,122,95,.12);color:var(--ok)}
+.pill.sandbox{background:rgba(42,90,143,.12);color:var(--blue)}
+.pill.planned{background:rgba(15,27,45,.08);color:var(--muted)}
+.diagram{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1rem;max-width:46rem}
+.diagram svg{display:block;width:100%;height:auto}
+.note{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1rem 1.1rem;max-width:46rem;color:var(--muted)}
+.note b{color:var(--ink)}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}
+.sitefoot .wp{margin:0 0 .6rem}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top,.tabs{transition:box-shadow .25s ease}body.scrolled .top,body.scrolled .tabs{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}}
+.topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
+.topnav a.launch:hover{color:var(--ink);background:#ffa94d}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/library">Library</a><a href="/friends">Friends</a><a href="/developer" aria-current="page">Developer</a><a class="launch" href="/yebente">Open Ye₿ente</a></nav></div>
+
+  <header class="hero">
+    <h1>Power your app <em>with Lightning.</em></h1>
+    <p class="lead">Create invoices to your own Lightning address. Verify settlement. Get webhooks. Your customers pay you straight. Altradits never holds their money.</p>
+    <div class="ctas"><a class="btn" href="#quickstart">Start in the sandbox</a><a class="btn ghost" href="/developer/reference">Read the reference</a></div>
+  </header>
+
+  <h2 id="build">What you can build</h2>
+  <p class="intro">Anything that takes Lightning payments, without running a node.</p>
+  <ul class="cards">
+    <li><h3>Tips in your app</h3><p>Your readers tip your writers. The sats land on your address. The API tracks each payment.</p></li>
+    <li><h3>Sell digital goods</h3><p>One invoice per order, in sats or priced in USD and KES. Webhooks tell you what settled.</p></li>
+    <li><h3>Split a bill</h3><p>Many payers, one destination. Poll settlement or wait for the webhook.</p></li>
+    <li><h3>Learn Lightning free</h3><p>The sandbox simulates the whole flow. Test keys, test invoices, test webhooks. Nothing real moves.</p></li>
+  </ul>
+
+  <h2 id="how">How it works</h2>
+  <ol class="steps">
+    <li><b>Register your own Lightning address.</b> Prove it with a 1 sat challenge payment from the wallet behind it.</li>
+    <li><b>Your app asks the API for an invoice.</b> It fetches one from your address and checks the exact amount and description.</li>
+    <li><b>Your customer pays your address straight.</b> The sats never pass through Altradits.</li>
+    <li><b>You poll settlement or wait for a webhook.</b> Signed, retried, logged.</li>
+  </ol>
+  <div class="diagram">
+    <svg viewBox="0 0 640 232" role="img" aria-labelledby="flowtitle flowdesc">
+      <title id="flowtitle">Payment flow diagram</title>
+      <desc id="flowdesc">Your app asks the API for an invoice. The API fetches it from your wallet. Your customer pays your wallet straight. Settlement and webhooks flow back.</desc>
+      <style>text{font:600 13px Figtree,system-ui,sans-serif}.box{fill:#fff;stroke:#0F1B2D;stroke-width:2}.lbl{fill:#0F1B2D}.mut{fill:#4B5A70;font-weight:400;font-size:12px}.sats{stroke:#A84D08;stroke-width:2.5}.api{stroke:#2A5A8F;stroke-width:2;fill:none}.wh{stroke:#2A5A8F;stroke-width:2;fill:none;stroke-dasharray:5 4}</style>
+      <rect class="box" x="8" y="20" width="150" height="64" rx="12"/><text class="lbl" x="83" y="48" text-anchor="middle">Your app</text><text class="mut" x="83" y="66" text-anchor="middle">your code</text>
+      <rect class="box" x="245" y="20" width="150" height="64" rx="12"/><text class="lbl" x="320" y="48" text-anchor="middle">Altradits API</text><text class="mut" x="320" y="66" text-anchor="middle">checks, tracks</text>
+      <rect class="box" x="482" y="20" width="150" height="64" rx="12"/><text class="lbl" x="557" y="48" text-anchor="middle">Your wallet</text><text class="mut" x="557" y="66" text-anchor="middle">your address</text>
+      <line class="api" x1="158" y1="42" x2="235" y2="42"/><polygon points="245,37 245,47 235,42" fill="#2A5A8F"/>
+      <text class="mut" x="201" y="34" text-anchor="middle">invoice?</text>
+      <line class="api" x1="395" y1="42" x2="472" y2="42"/><polygon points="482,37 482,47 472,42" fill="#2A5A8F"/>
+      <text class="mut" x="438" y="34" text-anchor="middle">fetch</text>
+      <line class="api" x1="472" y1="104" x2="405" y2="104"/><polygon points="395,99 395,109 405,104" fill="#2A5A8F"/>
+      <text class="mut" x="438" y="98" text-anchor="middle">invoice</text>
+      <line class="api" x1="235" y1="104" x2="168" y2="104"/><polygon points="158,99 158,109 168,104" fill="#2A5A8F"/>
+      <text class="mut" x="201" y="98" text-anchor="middle">BOLT11</text>
+      <polyline class="wh" points="280,84 280,120 100,120 100,92"/><polygon points="95,92 105,92 100,82" fill="#2A5A8F"/>
+      <text class="mut" x="190" y="136" text-anchor="middle">webhook</text>
+      <rect class="box" x="482" y="140" width="150" height="64" rx="12"/><text class="lbl" x="557" y="168" text-anchor="middle">Customer</text><text class="mut" x="557" y="186" text-anchor="middle">any wallet</text>
+      <line class="sats" x1="570" y1="136" x2="570" y2="92"/><polygon points="565,92 575,92 570,82" fill="#A84D08"/>
+      <text class="mut" x="470" y="120" text-anchor="end">sats, straight to you</text>
+    </svg>
+  </div>
+
+  <h2 id="pricing">Pricing</h2>
+  <p class="intro">One charge. No tiers, no seats, no hidden fees.</p>
+  <div class="note"><b>0.5% of settled volume, prepaid in sats.</b> Top up your fee balance (100 sats minimum). Each settled payment deducts 0.5% rounded up, minimum 1 sat. The statement shows every top-up and fee. Credits are non-refundable, except on account close: unused balance pays out to a verified destination within 7 days.</div>
+  <p class="intro" style="margin-top:1rem">The sandbox is free. Test keys, test invoices, test webhooks, free test credit. Nothing real moves.</p>
+
+  <h2 id="quickstart">Quickstart</h2>
+  <ol class="steps">
+    <li><b>Get a sandbox key.</b> Sign in on the <a href="/developer/dashboard">dashboard</a> with your email. Create a test key. It starts with <code>ak_test_</code> and can never touch mainnet.</li>
+    <li><b>Create an invoice.</b> To the simulator address, free.</li>
+  </ol>
+  <h3>curl</h3>
+  <pre>curl -X POST https://altradits.com/api/dev/v1/invoices \
+  -H "Authorization: Bearer ak_test_your_key_here" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: order-123" \
+  -d '{"destinationId":"DEST_ID","sats":5000,"memo":"order 123"}'</pre>
+  <h3>JavaScript</h3>
+  <pre>const res = await fetch("https://altradits.com/api/dev/v1/invoices", {
+  method: "POST",
+  headers: {
+    "Authorization": "Bearer ak_test_your_key_here",
+    "Content-Type": "application/json",
+    "Idempotency-Key": "order-123"
+  },
+  body: JSON.stringify({ destinationId: "DEST_ID", sats: 5000, memo: "order 123" })
+});
+const { invoice } = await res.json();
+<span class="c">// Show invoice.bolt11 as a QR. Your customer pays your address straight.</span></pre>
+  <ol class="steps" start="3">
+    <li><b>Settle it and receive a webhook.</b> In the sandbox, play the customer with one call. Register a webhook URL first, then watch the signed <code>invoice.settled</code> POST arrive.</li>
+  </ol>
+  <pre>curl -X POST https://altradits.com/api/dev/v1/sandbox/settle \
+  -H "Authorization: Bearer ak_test_your_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"invoiceId":"INV_ID"}'</pre>
+
+  <h2 id="endpoints">Endpoints</h2>
+  <p class="intro">Every endpoint is in the <a href="/developer/reference">reference</a>. Every reply carries a request id. Every error carries a stable code.</p>
+  <table>
+    <tr><th>Group</th><th>Status</th><th>What it does</th></tr>
+    <tr><td>Accounts, keys, destinations</td><td><span class="pill">Live</span></td><td>Email sign-in, scoped API keys, your own addresses with ownership proof.</td></tr>
+    <tr><td>Invoices, verify by hash</td><td><span class="pill">Live</span></td><td>Exact-amount invoices in sats or fiat, settlement checks.</td></tr>
+    <tr><td>Webhooks</td><td><span class="pill">Live</span></td><td>Signed <code>invoice.settled</code> POSTs, retried and logged.</td></tr>
+    <tr><td>Top-ups, balance, statement</td><td><span class="pill">Live</span></td><td>Prepaid fee balance in sats, full usage ledger.</td></tr>
+    <tr><td>Sandbox simulator</td><td><span class="pill sandbox">Sandbox only</span></td><td>Free test destination and one-call settlement. Test keys only.</td></tr>
+    <tr><td>Account close and refund payout</td><td><span class="pill planned">Planned</span></td><td>Self-serve close with the unused balance paid out. For now, ask through the <a href="/contact">contact form</a> (a $1 spam shield applies).</td></tr>
+  </table>
+
+  <h2 id="limits">Limits</h2>
+  <ul class="steps" style="list-style:disc">
+    <li>1 to 100,000,000 sats per invoice.</li>
+    <li>100 invoices an hour per key. 2,000 invoices and 20 top-ups a day per account.</li>
+    <li>Webhook retries after 1 minute, 5 minutes, 30 minutes, 2 hours and 12 hours. Then the delivery is marked dead.</li>
+    <li>Past a limit, the API answers 429. Wait and retry.</li>
+  </ul>
+
+  <h2 id="security">Security</h2>
+  <ul class="steps" style="list-style:disc">
+    <li>Keys are shown once, stored hashed, and scoped: invoices, webhooks, or both.</li>
+    <li>Secrets never land in logs. Abuse is watched and guessing is locked out.</li>
+    <li>The site key that issues top-up and challenge invoices can only receive. It can never spend.</li>
+    <li>In a security lockdown, new invoices and top-ups freeze. Reads and retries continue.</li>
+  </ul>
+
+  <h2 id="support">Support</h2>
+  <p class="intro">Questions about the API: write through the <a href="/contact">contact form</a> (a $1 spam shield applies) and quote the request id from the reply. The <a href="/api/dev/v1/health">health endpoint</a> names whether the API and the sandbox are on.</p>
+  <div class="ctas"><a class="btn" href="/developer/dashboard">Open the dashboard</a><a class="btn ghost" href="/developer/reference">Read the reference</a></div>
+
+</div>
+
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/yebente">Open Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin questions</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/research">Research</a> · <a href="/portfolio">Portfolio</a> · <a href="/donate">Support my work</a> · <a href="/contact">Contact</a> · <a href="/developer">Developer</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a></div></footer>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY>24)},{passive:true});document.body.classList.toggle("scrolled",scrollY>24); // nav shadow on scroll
+</script>
+</body>
+</html>
