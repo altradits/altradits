@@ -43,7 +43,7 @@ async function gate(request) {
   const hour = new Date().toISOString().slice(0, 13);
   if ((await hit(`rl:admin:fail:all:${hour}`, 3600)) === 100) {
     const { emailOwner } = await import("../lib/email.js");
-    await emailOwner("Many wrong admin tokens", "More than 100 wrong admin tokens were tried in the last hour, from several connections. If that wasn't you, rotate ADMIN_TOKEN in DirectAdmin (openssl rand -hex 32), then Save and Restart the app.").catch(() => {});
+    await emailOwner("Many wrong admin tokens", "More than 100 wrong admin tokens were tried in the last hour, from several connections. If that wasn't you, rotate ADMIN_TOKEN in DirectAdmin (openssl rand -hex 32), then Save and Restart the app.", null, "trust").catch(() => {});
   }
   return deny();
 }

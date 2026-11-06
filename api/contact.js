@@ -108,7 +108,7 @@ async function send(request, body) {
     }
     const { sendEmail, OWNER_EMAIL } = await import("../lib/email.js");
     try {
-      await sendEmail({ to: OWNER_EMAIL, subject: `Contact: ${t.label} from ${name}`, kind: "owner",
+      await sendEmail({ to: OWNER_EMAIL, subject: `Contact: ${t.label} from ${name}`, kind: "owner", fromDept: t.dept,
         text: `A paid ($1) contact message arrived for ${t.dept}.${held ? ` SECURITY HOLD: it contains ${describe(held.reasons)}, so no AI agent may read it until you decide. The text below is defanged.` : ""}\n\nFrom: ${name} <${email}>\nAbout: ${t.label}\nReceipt: ${receipt}\n\n${held ? defang(message) : message}\n\nRead and queue a reply from the dashboard: Choumi tab, contact inbox.`, replyTo: email });
     } catch (err) { console.error("contact notify", err.message); }
     try {
