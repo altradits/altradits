@@ -15,17 +15,20 @@
 <script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 </script>
-<div class="lang">
-  <button type="button" id="lang-en" aria-pressed="true">EN</button>
-  <button type="button" id="lang-sw" aria-pressed="false">SW</button>
-</div>
+<header class="top">
+  <img class="brand" src="/assets/logo.png" alt="Altradits" width="325" height="119" fetchpriority="high">
+  <div class="lang">
+    <button type="button" id="lang-en" aria-pressed="true">EN</button>
+    <button type="button" id="lang-sw" aria-pressed="false">SW</button>
+  </div>
+</header>
 <main class="wrap">
   <p class="receive" id="loading" role="status">Loading…</p>
   <p class="err" id="fatal" role="alert" hidden style="text-align:center"></p>
   <section id="view-pay" hidden aria-labelledby="pay-shop">
     <h1 class="shop" id="pay-shop"></h1>
     <p class="mpesa-name" id="pay-mpesa"></p>
-    <p style="text-align:center;margin:0"><span class="mark" id="pay-mark"></span></p>
+    <p class="mark-line"><span class="mark" id="pay-mark"></span></p>
     <label for="amount" data-i18n="amount">Amount</label>
     <div class="row">
       <input id="amount" inputmode="decimal" autocomplete="off" placeholder="100">

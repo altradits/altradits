@@ -1,106 +1,143 @@
-/* kTown: one bold QR, generous whitespace. Navy ink on cream, red for accents,
-Bitcoin orange for the lightning mark only. Text colors all meet WCAG AA on
-cream (navy 16.3:1, muted 6.6:1, error red 6.2:1). */
+/* kTown design system: one calm cream field, navy ink, Bitcoin orange for
+actions. Material 3 ideas in plain CSS: tonal surfaces, elevation, state
+layers on every control, pill actions, 48px targets. Text colors meet WCAG
+AA on cream (navy 16.3:1, muted 6.6:1, error red 6.2:1, navy on orange 7.5:1). */
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
 @font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 @font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 :root{
-  --navy:#0f1b2d; --red:#ea5158; --cream:#FFF7EC; --orange:#F7931A;
+  --navy:#0f1b2d; --orange:#F7931A; --cream:#FFF7EC; --surface:#EEF2F6;
   --paper:#fff; --line:#e7d6bd; --muted:#4a5a73; --err:#B42318;
+  --field-line:#5c6b84;
+  --elev-1:0 1px 2px rgba(15,27,45,.07),0 2px 8px rgba(15,27,45,.06);
+  --elev-2:0 2px 4px rgba(15,27,45,.08),0 10px 28px rgba(15,27,45,.10);
+  --r-card:1.25rem; --r-qr:1.5rem; --r-field:.9rem;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--cream);color:var(--navy);
   font:400 1.0625rem/1.55 Figtree,system-ui,-apple-system,sans-serif;min-height:100vh}
 h1,h2{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;line-height:1.15;margin:0}
-:focus-visible{outline:3px solid var(--red);outline-offset:2px;border-radius:.25rem}
-.wrap{max-width:34rem;margin:0 auto;padding:1.5rem 1.25rem 6.5rem}
-/* QR screen: the code is the page. */
-.shop{font-size:1.6rem;font-weight:800;text-align:center;margin:.4rem 0 0}
-.mpesa-name{text-align:center;font-weight:700;font-size:1.15rem;margin:.15rem 0 0}
-.mark{display:inline-block;font-size:.85rem;font-weight:700;margin-top:.35rem}
+:focus-visible{outline:3px solid var(--navy);outline-offset:2px;border-radius:.25rem}
+/* Header: the untouched logo on cream, the language pill beside it. */
+.top{max-width:36rem;margin:0 auto;padding:1.25rem 1.5rem 0;display:flex;
+  align-items:center;justify-content:space-between;gap:1rem;min-height:4.25rem}
+.brand{display:block;height:1.875rem;width:auto}
+.lang{display:flex;background:var(--surface);border-radius:999px;padding:.25rem}
+.lang button{border:0;background:transparent;cursor:pointer;border-radius:999px;
+  font:700 .95rem Figtree,system-ui,sans-serif;color:var(--muted);
+  min-width:3rem;min-height:3rem;padding:.4rem .9rem}
+.lang button[aria-pressed="true"]{background:var(--navy);color:#fff}
+.wrap{max-width:36rem;margin:0 auto;padding:1.5rem 1.5rem 3rem}
+.has-tabs .wrap{padding-bottom:7.5rem}
+/* QR screen: the shop name, the code, the print action. */
+.shop{font-size:clamp(2.25rem,9vw,3rem);font-weight:800;text-align:center;
+  letter-spacing:-.01em;margin:1rem 0 0}
+.mpesa-name{text-align:center;font-weight:700;font-size:1.2rem;margin:.35rem 0 0}
+.mark-line{text-align:center;margin:.5rem 0 0}
+.mark{font-size:.9rem;font-weight:700}
 .mark.ok{color:var(--navy)}
-.mark.no{color:var(--err)}
+.mark.no{color:var(--muted)}
 .secure-note{text-align:center;color:var(--muted);font-size:.92rem;margin:.4rem 0 0}
 .offline-note{text-align:center;font-weight:700;font-size:.92rem;margin:.4rem 0 0}
 #print-sheet{display:none}
-.qr-card{background:var(--paper);border:1px solid var(--line);border-radius:1rem;
-  padding:1.1rem;margin:1.1rem auto 0;max-width:24rem}
+.qr-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-qr);
+  padding:clamp(1.25rem,5vw,2rem);margin:1.5rem auto 0;max-width:26rem;box-shadow:var(--elev-2)}
 .qr-card svg{display:block;width:100%;height:auto}
-.print-line{text-align:center;font-size:.92rem;color:var(--muted);margin:.7rem 0 0}
-.print-line b{color:var(--orange)}
-/* Buttons and fields: big targets, navy ink. */
+.print-line{text-align:center;font-size:.95rem;color:var(--muted);margin:1rem 0 0}
+.bolt{width:1em;height:1em;vertical-align:-.12em;color:var(--orange)}
+/* Actions: orange pills do the work, outlined pills wait their turn. */
 .btn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;
-  min-height:3.25rem;padding:.8rem 1.25rem;margin-top:1rem;border-radius:.8rem;
+  min-height:3.5rem;padding:.9rem 1.5rem;margin-top:1.25rem;border-radius:999px;
   font:700 1.05rem Figtree,system-ui,sans-serif;cursor:pointer;text-decoration:none;
-  background:var(--navy);color:#fff;border:2px solid var(--navy)}
-.btn.ghost{background:transparent;color:var(--navy)}
-.btn.small{min-height:2.75rem;font-size:.95rem}
-.btn[disabled]{opacity:.55;cursor:wait}
-label{display:block;font-weight:700;margin:1.1rem 0 .3rem}
-input,select{width:100%;min-height:3.25rem;padding:.7rem .9rem;font:400 1.05rem Figtree,system-ui,sans-serif;
-  color:var(--navy);background:var(--paper);border:2px solid var(--navy);border-radius:.8rem}
-input::placeholder{color:var(--muted);opacity:.8}
-.hint{color:var(--muted);font-size:.9rem;margin:.3rem 0 0}
+  background:var(--orange);color:var(--navy);border:2px solid var(--orange);
+  transition:background-color .15s ease,box-shadow .15s ease,opacity .15s ease}
+.btn:hover{background-image:linear-gradient(rgba(15,27,45,.08),rgba(15,27,45,.08))}
+.btn:active{background-image:linear-gradient(rgba(15,27,45,.16),rgba(15,27,45,.16))}
+.btn.ghost{background:transparent;color:var(--navy);border-color:var(--navy)}
+.btn.ghost:hover{background-color:rgba(15,27,45,.06);background-image:none}
+.btn.ghost:active{background-color:rgba(15,27,45,.12)}
+.btn.small{min-height:3rem;font-size:.95rem}
+.btn[disabled]{opacity:.5;cursor:wait;background-image:none}
+label{display:block;font-weight:700;margin:1.25rem 0 .35rem}
+input,select{width:100%;min-height:3.25rem;padding:.7rem 1rem;font:400 1.05rem Figtree,system-ui,sans-serif;
+  color:var(--navy);background:var(--paper);border:1.5px solid var(--field-line);border-radius:var(--r-field);
+  transition:border-color .15s ease,box-shadow .15s ease}
+input:focus,select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(15,27,45,.18)}
+input::placeholder{color:var(--muted);opacity:.85}
+.hint{color:var(--muted);font-size:.9rem;margin:.35rem 0 0}
 .err{color:var(--err);font-weight:700;margin:.8rem 0 0}
 .ok-line{color:var(--navy);font-weight:700;margin:.8rem 0 0}
 /* Settings sections. */
-.card{background:var(--paper);border:1px solid var(--line);border-radius:1rem;padding:1.1rem 1.1rem 1.25rem;margin-top:1.1rem}
-.card h2{font-size:1.2rem;margin-bottom:.2rem}
-.card label:first-of-type{margin-top:.6rem}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-card);
+  padding:1.5rem;margin-top:1.5rem;box-shadow:var(--elev-1)}
+.card h2{font-size:1.35rem;margin-bottom:.25rem}
+.card label:first-of-type{margin-top:.75rem}
 .row{display:flex;gap:.75rem}
 .row>*{flex:1;min-width:0}
-.link{background:none;border:0;padding:.6rem 0;color:var(--navy);font:700 1rem Figtree,system-ui,sans-serif;
-  text-decoration:underline;cursor:pointer;min-height:2.75rem}
-/* History. */
-.tx{list-style:none;margin:.8rem 0 0;padding:0}
-.tx li{display:flex;justify-content:space-between;gap:.75rem;padding:.7rem 0;border-top:1px solid var(--line)}
-.tx li:first-child{border-top:0}
-.tx .amt{font-weight:800;white-space:nowrap}
-.tx .sub{color:var(--muted);font-size:.88rem}
+@media(max-width:22.5rem){.row.no-print,.copy-row{flex-direction:column}
+  .copy-row .btn{margin-top:.75rem}.copy-row .btn:first-child{margin-top:0}}
+.link{background:none;border:0;border-radius:.5rem;padding:.6rem .5rem;color:var(--navy);
+  font:700 1rem Figtree,system-ui,sans-serif;text-decoration:underline;cursor:pointer;min-height:3rem}
+.link:hover{text-decoration-thickness:2px}
+/* History: the amount leads, the status sits in a quiet chip. */
+.tx{list-style:none;margin:1rem 0 0;padding:0}
+.tx li{display:flex;justify-content:space-between;gap:1rem;padding:1rem 0;border-top:1px solid var(--line)}
+.tx li:first-child{border-top:0;padding-top:.25rem}
+.tx li>div:first-child{min-width:0}
+.tx .amt{font:700 1.15rem "Bricolage Grotesque",Figtree,system-ui,sans-serif;white-space:nowrap}
+.tx .sub{color:var(--muted);font-size:.88rem;margin-top:.15rem}
 .tx .sub.short{color:var(--err);font-weight:700}
-.tx .st{font-weight:700;white-space:nowrap}
-.tx .st.done{color:var(--navy)}
-.tx .st.wait{color:var(--muted)}
-.tx .st.fail{color:var(--err)}
+.tx .st{font:700 .85rem Figtree,system-ui,sans-serif;white-space:nowrap;align-self:flex-start}
+.tx .st.done{color:var(--navy);background:var(--surface);border-radius:999px;padding:.35rem .85rem}
+.tx .st.wait{color:var(--muted);padding:.35rem 0}
+.tx .st.fail{color:var(--err);padding:.35rem 0}
 .empty{color:var(--muted);margin:.6rem 0 0}
-/* Bottom tabs. */
-.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--paper);
-  border-top:2px solid var(--navy);padding:.4rem .8rem calc(.4rem + env(safe-area-inset-bottom))}
-.tabs button{flex:1;max-width:17rem;background:none;border:0;border-top:4px solid transparent;cursor:pointer;
-  font:800 1.05rem Figtree,system-ui,sans-serif;color:var(--navy);min-height:3.25rem}
-@media(min-width:40rem){.tabs{justify-content:center}}
-.tabs button[aria-selected="true"]{border-top-color:var(--red)}
-/* Pay page. */
-.amount{font-size:1.6rem;font-weight:800;text-align:center;min-height:4rem}
-.receive{text-align:center;font-size:1.25rem;font-weight:800;margin:.9rem 0 0}
-.receive small{display:block;font-size:.95rem;font-weight:400;color:var(--muted)}
+/* Bottom tabs: a Material navigation bar, the orange pill marks the screen. */
+.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:.5rem;
+  background:var(--paper);border-top:1px solid var(--line);
+  padding:.6rem 1rem calc(.6rem + env(safe-area-inset-bottom))}
+.tabs button{flex:1;max-width:12rem;background:none;border:0;cursor:pointer;color:var(--muted);
+  font:700 .85rem Figtree,system-ui,sans-serif;display:flex;flex-direction:column;
+  align-items:center;gap:.2rem;min-height:3.5rem;padding:.35rem .5rem;border-radius:1rem}
+.tabs button svg{display:block;box-sizing:content-box;width:1.5rem;height:1.5rem;
+  padding:.25rem 1.25rem;border-radius:999px}
+.tabs button:hover svg{background:rgba(15,27,45,.06)}
+.tabs button[aria-selected="true"]{color:var(--navy)}
+.tabs button[aria-selected="true"] svg{background:var(--orange)}
+@media(min-width:40rem){.tabs{gap:1rem}}
+/* Pay page: the amount is the hero. */
+#amount{font:700 1.6rem "Bricolage Grotesque",Figtree,system-ui,sans-serif;min-height:4rem}
+.receive{text-align:center;font:800 clamp(1.6rem,6vw,2.1rem)/1.25 "Bricolage Grotesque",Figtree,system-ui,sans-serif;margin:1.5rem 0 0}
+.receive small{display:block;font:400 1rem/1.5 Figtree,system-ui,sans-serif;color:var(--muted);margin-top:.3rem}
+#paid-sub{color:var(--navy);font-weight:700;font-size:1.15rem}
 .inv-qr{max-width:20rem}
-.copy-row{display:flex;gap:.75rem;margin-top:1rem}
+.copy-row{display:flex;gap:.75rem;margin-top:1.25rem}
 .copy-row .btn{margin-top:0}
-.paid{text-align:center;font-size:1.5rem;font-weight:800;margin:1.2rem 0 0}
-.paid small{display:block;font-size:1rem;font-weight:400;color:var(--muted);margin-top:.3rem}
-.mpesa-code{text-align:center;font-size:1.3rem;font-weight:800;letter-spacing:.08em;margin:.4rem 0 0}
-.lang{display:flex;justify-content:flex-end;gap:.15rem;padding:.5rem 1rem 0}
-.lang button{background:none;border:0;cursor:pointer;font:700 .92rem Figtree,system-ui,sans-serif;
-  color:var(--muted);min-width:2.75rem;min-height:2.75rem;padding:.4rem}
-.lang button[aria-pressed="true"]{color:var(--navy);text-decoration:underline}
-.foot{margin:2rem 0 0;color:var(--muted);font-size:.88rem;text-align:center}
+.paid{text-align:center;font:800 clamp(2.5rem,10vw,3.25rem)/1.15 "Bricolage Grotesque",Figtree,system-ui,sans-serif;margin:2rem 0 0}
+.mpesa-code{text-align:center;font-size:1.35rem;font-weight:800;letter-spacing:.08em;margin:.5rem 0 0}
+.foot{margin:2.5rem 0 0;color:var(--muted);font-size:.88rem;text-align:center}
 .powered{margin:.5rem 0 0;color:var(--muted);font-size:.82rem;text-align:center}
 .powered a{color:var(--muted)}
 .help-line{margin:1.4rem 0 0;color:var(--muted);font-size:.92rem;text-align:center}
-.agree{display:flex;gap:.6rem;align-items:flex-start;font-weight:400;margin-top:1.1rem}
-.agree input{width:1.4rem;min-height:1.4rem;flex:none;margin-top:.25rem;accent-color:var(--navy)}
+.agree{display:flex;gap:.6rem;align-items:flex-start;font-weight:400;margin-top:1.25rem}
+.agree input{width:1.5rem;height:1.5rem;min-height:1.5rem;flex:none;margin-top:.2rem;accent-color:var(--navy);
+  border-radius:.35rem}
 .agree label{display:inline;font-weight:400;margin:0}
+.agree a{color:var(--navy)}
+.terms h1{font-size:2rem;margin-top:1.5rem}
 .terms ol{padding-left:1.4rem}
 .terms li{margin:.55rem 0}
 .terms h2{margin-top:1.6rem;font-size:1.25rem}
-.terms section h1{margin-top:2rem}
 .back{color:var(--navy);font-weight:700}
+.back::before{content:"← "}
 .version{margin-top:2rem;color:var(--muted);font-size:.88rem}
 .print-foot{display:none}
 [hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}
+}
 /* Print: an A6 counter card, or an A4 sheet of four (A6 is a quarter of A4).
 Named pages give capable browsers the exact size; the rest print the same
 content on the default paper. Pure black on white throughout. */
@@ -109,14 +146,14 @@ content on the default paper. Pure black on white throughout. */
 @media print{
   body{background:#fff}
   .wrap{max-width:none;padding:0}
-  .tabs,.btn,.lang,.foot,.powered,.help-line,.secure-note,.offline-note,.no-print,.mark,.err{display:none!important}
+  .tabs,.btn,.lang,.foot,.powered,.help-line,.secure-note,.offline-note,.no-print,.mark,.err,.top{display:none!important}
   #screen-qr{page:card}
   #screen-settings{display:none!important}
-  .qr-card{border:0;margin:0 auto;max-width:88mm;padding:0}
+  .qr-card{border:0;margin:0 auto;max-width:88mm;padding:0;box-shadow:none}
   .shop{font-size:22pt;color:#000}
   .mpesa-name{font-size:15pt;color:#000}
   .print-line{font-size:11pt;color:#000}
-  .print-line b{color:#000}
+  .print-line b,.print-line .bolt{color:#000}
   .print-foot{display:block;text-align:center;font-size:9pt;color:#000;margin:.35rem 0 0}
   body[data-print="a4"] #screen-qr{display:none!important}
   body[data-print="a4"] #print-sheet{display:grid!important;grid-template-columns:1fr 1fr;gap:6mm;page:sheet}
