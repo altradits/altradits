@@ -179,7 +179,7 @@ test("node dashboard: needs the admin token; shows block height against the tip,
   assert.equal(X.channels[0].scid, "972730x1173x0", "block × transaction × output");
   assert.equal(X.channels[0].uptimePct, 97.6);
   assert.equal(X.channels[0].csvDelay, 353);
-  assert.deepEqual(X.peers[0], { pubkey: "03d6", inbound: false, pingMs: 329, flaps: 183, sync: "", satSent: 611, satRecv: 90740 });
+  assert.deepEqual(X.peers[0], { pubkey: "03d6", inbound: false, pingMs: 329, flaps: 183, lastFlapAt: null, sync: "", satSent: 611, satRecv: 90740, flapsDay: null });
   assert.deepEqual(X.payments, { count: 2, succeeded: 1, failed: 1, sats: 1000, feeSats: 2 });
   assert.deepEqual(X.invoices, { count: 2, settled: 1, expired: 1, sats: 2100 }, "only the last 30 days");
   assert.deepEqual(X.utxos, { count: 0, sats: 0, coins: [] });
