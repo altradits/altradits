@@ -43,14 +43,20 @@ test("English and Kiswahili carry the same keys, filled in, with no em-dashes", 
 test("nothing in the game reaches outside it, except the way back to altradits.com", () => {
   for (const f of gameFiles()) {
     if (!/\.(html|js|css|json)$/.test(f)) continue;
-    const src = read(f).replaceAll("https://altradits.com", ""); // our own canonical and share URLs stay
-    assert.doesNotMatch(src, /https?:\/\//, `${f}: no outside addresses (same-origin paths only)`);
+    const src = read(f);
+    for (const m of src.matchAll(/https?:\/\/[^\s"'`]+/g)) {
+      assert.ok(m[0] === "https://altradits.com" || m[0].startsWith("https://altradits.com/"),
+        `${f}: outside address ${m[0]} (same-origin paths and our own canonical URLs only)`);
+    }
     assert.doesNotMatch(src, /—/, `${f}: no em-dashes (house style)`);
   }
   const html = read("sats-safari/index.html");
   for (const [, v] of html.matchAll(/(?:href|src)="([^"]*)"/g)) {
-    assert.ok(v.startsWith("/") || v.startsWith("#") || v.startsWith("data:") || v.startsWith("https://altradits.com") || !v.includes(":"),
-      `index.html: ${v} leaves the site (only /, # or data: links)`);
+    let sameOrigin = (v.startsWith("/") && !v.startsWith("//")) || v.startsWith("#") || v.startsWith("data:") || (!v.includes(":") && !v.startsWith("//"));
+    if (!sameOrigin) {
+      try { sameOrigin = new URL(v).origin === "https://altradits.com"; } catch { sameOrigin = false; }
+    }
+    assert.ok(sameOrigin, `index.html: ${v} leaves the site (only /, # or data: links)`);
   }
   assert.ok(html.includes('href="/"'), "the game links back to altradits.com");
   for (const f of gameFiles().filter((x) => x.endsWith(".js"))) {
