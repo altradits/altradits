@@ -256,5 +256,7 @@ let checking = false;
 function dueJobs() {
   if (checking) return;
   checking = true;
-  Promise.allSettled([maybeRunDaily(), maybeRunHourly(), maybeRunDeadmanChecks()]).then((r) => r.forEach((x) => x.status === "rejected" && console.error("due jobs", x.reason))).finally(() => { checking = false; });
+  // Developer webhooks: retry queued deliveries (a cheap no-op when the queue is empty).
+  const devWebhooks = import("./lib/devapi.js").then((d) => d.pumpWebhooks()).catch((e) => console.error("dev webhooks", e.message));
+  Promise.allSettled([maybeRunDaily(), maybeRunHourly(), maybeRunDeadmanChecks(), devWebhooks]).then((r) => r.forEach((x) => x.status === "rejected" && console.error("due jobs", x.reason))).finally(() => { checking = false; });
 }

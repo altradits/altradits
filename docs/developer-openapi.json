@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Altradits Developer API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "summary": "Power your app with Altradits infrastructure. Your customers pay straight to your own Lightning address or node. Altradits never holds their money.",
     "description": "Non-custodial Lightning infrastructure for developers. Register your own Lightning address, create invoices to it through this API, get settlement verification and webhooks. Customer payments go straight to your address. Altradits charges you 0.5% of settled volume, prepaid in sats to Stanley's node as a fee balance. The sandbox is free. Authentication: Authorization: Bearer <session or API key>. Every reply carries a requestId. Every error carries a stable code and a human sentence: { ok: false, requestId, code, error }.",
     "contact": { "name": "Altradits", "url": "https://altradits.com/developer" },
@@ -14,7 +14,9 @@
     { "name": "health", "description": "Switch status. Always answers." },
     { "name": "accounts", "description": "Signup and sign-in with email codes." },
     { "name": "keys", "description": "API keys. Shown once, stored hashed, scoped." },
-    { "name": "destinations", "description": "Your own Lightning addresses, with ownership proof." }
+    { "name": "destinations", "description": "Your own Lightning addresses, with ownership proof." },
+    { "name": "invoices", "description": "Invoices to your destinations, fetched from your address and checked. Needs an API key." },
+    { "name": "webhooks", "description": "Signed POSTs when an invoice settles. Needs a key with the webhooks scope, or a session." }
   ],
   "paths": {
     "/health": {
@@ -175,6 +177,117 @@
           "410": { "description": "The challenge expired. Register again.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
         }
       }
+    },
+    "/invoices": {
+      "get": {
+        "tags": ["invoices"],
+        "summary": "List invoices",
+        "description": "Your invoices, newest first. A key sees only its own environment. Cursor pagination: limit (1 to 200, default 50), then cursor=nextCursor.",
+        "operationId": "listInvoices",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 200 } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "The page.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InvoiceList" } } } }
+        }
+      },
+      "post": {
+        "tags": ["invoices"],
+        "summary": "Create an invoice",
+        "description": "Fetches a BOLT11 invoice from your verified destination for exactly the amount, checks the amount and the description hash, and tracks it. The invoice is your destination's own reply, passed through unchanged: your customer pays straight to your address. At most 100,000,000 sats per invoice. Fiat is converted at the live rate at creation and the rate is recorded. Frozen during a security lockdown (503 lockdown_freeze). Send Idempotency-Key to retry safely: the same key replays the first reply for 24 hours.",
+        "operationId": "createInvoice",
+        "parameters": [{ "name": "Idempotency-Key", "in": "header", "schema": { "type": "string" }, "description": "A unique key for this creation. Replays the first reply for 24 hours." }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateInvoice" } } } },
+        "responses": {
+          "201": { "description": "Created.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Invoice" } } } },
+          "200": { "description": "Replayed idempotent reply (deduplicated: true).", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Invoice" } } } },
+          "404": { "description": "Unknown destination.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": { "description": "Destination not verified.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "422": { "description": "Bad amount, out-of-range amount, idempotency conflict, or the destination renamed itself.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "502": { "description": "The destination is unreachable or returned a bad invoice.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "503": { "description": "Lockdown freeze, or the price feed is down.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/invoices/{id}": {
+      "get": {
+        "tags": ["invoices"],
+        "summary": "Invoice status",
+        "description": "The invoice, with a live settlement check when the destination supports LUD-21 verify. Without verify support the invoice stays pending here and the reply says so plainly: confirm in your own wallet.",
+        "operationId": "getInvoice",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "The invoice and its settlement state.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InvoiceStatus" } } } },
+          "404": { "description": "Unknown invoice.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "502": { "description": "The destination didn't answer the settlement check.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/verify/{hash}": {
+      "get": {
+        "tags": ["invoices"],
+        "summary": "Verify by payment hash",
+        "description": "Settlement state for one of your invoices by its payment hash (64 hex characters). Same live check as invoice status.",
+        "operationId": "verifyByHash",
+        "parameters": [{ "name": "hash", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^[0-9a-fA-F]{64}$" } }],
+        "responses": {
+          "200": { "description": "The invoice and its settlement state.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InvoiceStatus" } } } },
+          "404": { "description": "Unknown invoice.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/webhooks": {
+      "get": {
+        "tags": ["webhooks"],
+        "summary": "List webhook endpoints",
+        "description": "Every endpoint on the account. A key sees only its own environment; a session sees all.",
+        "operationId": "listWebhooks",
+        "responses": {
+          "200": { "description": "The endpoints.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WebhookList" } } } }
+        }
+      },
+      "post": {
+        "tags": ["webhooks"],
+        "summary": "Register a webhook endpoint",
+        "description": "Registers an https URL for invoice.settled events. The secret is shown once and never again. Deliveries POST JSON { event, invoice, deliveredAt } with X-Dev-Signature: t=<unix seconds>,v1=<hex> where v1 is HMAC-SHA256(secret, '<t>.<raw body>'). Check the timestamp is within 5 minutes and compare in constant time. Failures retry after 1m, 5m, 30m, 2h and 12h, then the delivery is marked dead. Endpoints are never deleted, only disabled.",
+        "operationId": "registerWebhook",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterWebhook" } } } },
+        "responses": {
+          "201": { "description": "Registered, with the secret shown once.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WebhookSecret" } } } },
+          "400": { "description": "Bad URL or events.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/webhooks/{id}/disable": {
+      "post": {
+        "tags": ["webhooks"],
+        "summary": "Disable an endpoint",
+        "description": "Stops new deliveries at once. The endpoint and its delivery log are kept, never deleted.",
+        "operationId": "disableWebhook",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Disabled.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Webhook" } } } },
+          "404": { "description": "Unknown webhook.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/webhooks/{id}/deliveries": {
+      "get": {
+        "tags": ["webhooks"],
+        "summary": "Delivery log",
+        "description": "Every delivery to the endpoint, newest first, with each attempt. Cursor pagination like invoices.",
+        "operationId": "listDeliveries",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 200 } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "The page.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeliveryList" } } } },
+          "404": { "description": "Unknown webhook.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
     }
   },
   "components": {
@@ -200,7 +313,19 @@
       "DestinationObject": { "type": "object", "required": ["id", "address", "sandbox", "verified", "verifiedAt", "proof", "createdAt"], "properties": { "id": { "type": "string" }, "address": { "type": "string" }, "sandbox": { "type": "boolean" }, "verified": { "type": "boolean" }, "verifiedAt": { "type": ["string", "null"], "format": "date-time" }, "proof": { "type": ["string", "null"], "description": "How ownership was proven, once verified." }, "createdAt": { "type": "string", "format": "date-time" } } },
       "Destination": { "type": "object", "required": ["ok", "requestId", "destination"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "destination": { "$ref": "#/components/schemas/DestinationObject" } } },
       "DestinationList": { "type": "object", "required": ["ok", "requestId", "destinations"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "destinations": { "type": "array", "items": { "$ref": "#/components/schemas/DestinationObject" } } } },
-      "DestinationChallenge": { "type": "object", "required": ["ok", "requestId", "destination", "challenge"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "destination": { "$ref": "#/components/schemas/DestinationObject" }, "challenge": { "type": "object", "required": ["bolt11", "expiresAt", "note"], "properties": { "bolt11": { "type": "string", "description": "The 1-sat challenge invoice. Pay it from the wallet behind the address." }, "expiresAt": { "type": "string", "format": "date-time" }, "note": { "type": "string" } } } } }
+      "DestinationChallenge": { "type": "object", "required": ["ok", "requestId", "destination", "challenge"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "destination": { "$ref": "#/components/schemas/DestinationObject" }, "challenge": { "type": "object", "required": ["bolt11", "expiresAt", "note"], "properties": { "bolt11": { "type": "string", "description": "The 1-sat challenge invoice. Pay it from the wallet behind the address." }, "expiresAt": { "type": "string", "format": "date-time" }, "note": { "type": "string" } } } } },
+      "CreateInvoice": { "type": "object", "required": ["destinationId"], "properties": { "destinationId": { "type": "string", "description": "A verified destination on your account, in the key's environment." }, "sats": { "type": "integer", "minimum": 1, "maximum": 100000000, "description": "Whole sats. Give sats or fiat, not both." }, "fiat": { "type": "object", "required": ["amount", "currency"], "properties": { "amount": { "type": "number", "exclusiveMinimum": 0 }, "currency": { "enum": ["USD", "KES"] } }, "description": "Converted at the live rate at creation; the rate is recorded on the invoice." }, "memo": { "type": "string", "maxLength": 200, "description": "Passed as the LNURL comment when the destination allows one." } } },
+      "InvoiceObject": { "type": "object", "required": ["id", "destinationId", "address", "sandbox", "sats", "fiat", "memo", "bolt11", "paymentHash", "status", "verifySupported", "preimage", "createdAt", "settledAt"], "properties": { "id": { "type": "string" }, "destinationId": { "type": "string" }, "address": { "type": "string", "description": "Your destination. The payment goes straight there." }, "sandbox": { "type": "boolean" }, "sats": { "type": "integer" }, "fiat": { "type": ["object", "null"], "properties": { "amount": { "type": "number" }, "currency": { "type": "string" }, "btcRate": { "type": "number", "description": "Fiat per BTC at creation." } } }, "memo": { "type": ["string", "null"] }, "bolt11": { "type": "string", "description": "Your destination's own invoice, passed through unchanged." }, "paymentHash": { "type": "string" }, "status": { "enum": ["pending", "settled"] }, "verifySupported": { "type": "boolean", "description": "False when the destination answers no LUD-21 verify URL: the invoice then stays pending here." }, "preimage": { "type": ["string", "null"], "description": "Proof of payment, when the destination reports it." }, "createdAt": { "type": "string", "format": "date-time" }, "settledAt": { "type": ["string", "null"], "format": "date-time" } } },
+      "Invoice": { "type": "object", "required": ["ok", "requestId", "invoice"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "invoice": { "$ref": "#/components/schemas/InvoiceObject" }, "deduplicated": { "type": "boolean", "description": "True when an Idempotency-Key replayed the first reply." } } },
+      "InvoiceStatus": { "type": "object", "required": ["ok", "requestId", "invoice", "verifySupported"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "invoice": { "$ref": "#/components/schemas/InvoiceObject" }, "verifySupported": { "type": "boolean" }, "note": { "type": "string", "description": "Present when the destination doesn't report settlement." } } },
+      "InvoiceList": { "type": "object", "required": ["ok", "requestId", "invoices", "nextCursor"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "invoices": { "type": "array", "items": { "$ref": "#/components/schemas/InvoiceObject" } }, "nextCursor": { "type": ["string", "null"] } } },
+      "RegisterWebhook": { "type": "object", "required": ["url"], "properties": { "url": { "type": "string", "description": "An https URL on a public host." }, "events": { "type": "array", "items": { "enum": ["invoice.settled"] }, "description": "Defaults to invoice.settled." }, "sandbox": { "type": "boolean", "description": "True to fire only for sandbox invoices. Defaults to false." } } },
+      "WebhookObject": { "type": "object", "required": ["id", "url", "sandbox", "events", "enabled", "createdAt"], "properties": { "id": { "type": "string" }, "url": { "type": "string" }, "sandbox": { "type": "boolean" }, "events": { "type": "array", "items": { "type": "string" } }, "enabled": { "type": "boolean" }, "createdAt": { "type": "string", "format": "date-time" } } },
+      "Webhook": { "type": "object", "required": ["ok", "requestId", "webhook"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "webhook": { "$ref": "#/components/schemas/WebhookObject" } } },
+      "WebhookSecret": { "type": "object", "required": ["ok", "requestId", "webhook", "secret"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "webhook": { "$ref": "#/components/schemas/WebhookObject" }, "secret": { "type": "string", "description": "Signs every delivery. Shown once, never again." }, "note": { "type": "string" } } },
+      "WebhookList": { "type": "object", "required": ["ok", "requestId", "webhooks"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "webhooks": { "type": "array", "items": { "$ref": "#/components/schemas/WebhookObject" } } } },
+      "DeliveryObject": { "type": "object", "required": ["id", "webhookId", "invoiceId", "event", "createdAt", "attempts", "done", "dead", "nextAt"], "properties": { "id": { "type": "string" }, "webhookId": { "type": "string" }, "invoiceId": { "type": "string" }, "event": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" }, "attempts": { "type": "array", "items": { "type": "object", "properties": { "at": { "type": "string", "format": "date-time" }, "ok": { "type": "boolean" }, "code": { "type": "integer" } } } }, "done": { "type": "boolean" }, "dead": { "type": "boolean", "description": "True when every retry failed." }, "nextAt": { "type": ["string", "null"], "format": "date-time" } } },
+      "DeliveryList": { "type": "object", "required": ["ok", "requestId", "deliveries", "nextCursor"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "deliveries": { "type": "array", "items": { "$ref": "#/components/schemas/DeliveryObject" } }, "nextCursor": { "type": ["string", "null"] } } }
     }
   }
 }

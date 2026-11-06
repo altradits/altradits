@@ -22,6 +22,14 @@
 //   GET  v1/destinations                  (session)
 //   POST v1/destinations {address, sandbox?} -> destination + 1-sat challenge invoice
 //   POST v1/destinations/<id>/prove      (session: after the challenge is paid)
+//   POST v1/invoices {destinationId, sats?|fiat?, memo?} (+ Idempotency-Key)
+//   GET  v1/invoices?limit&cursor        invoice routes take an API key, not a session
+//   GET  v1/invoices/<id>               with a live settlement check
+//   GET  v1/verify/<hash>               settlement by payment hash
+//   POST v1/webhooks {url, events?, sandbox?} -> endpoint + secret, shown once
+//   GET  v1/webhooks                     webhook routes take a key (webhooks scope) or a session
+//   POST v1/webhooks/<id>/disable
+//   GET  v1/webhooks/<id>/deliveries?limit&cursor
 import { readBody, clientIp } from "../lib/http.js";
 import { hit } from "../lib/store.js";
 import crypto from "node:crypto";
@@ -43,6 +51,36 @@ async function sessionAccount(request) {
   const a = await accountForSession(authOf(request));
   if (!a) throw Object.assign(new Error("Sign in again."), { code: "unauthorized", status: 401 });
   return a;
+}
+
+// API-key routes: the token must be a key (ak_live_ / ak_test_), never a
+// dashboard session. Unknown keys are key-guessing: logged for the Security
+// watch (deduped per connection per minute inside recordAttack).
+async function keyAuth(request, scope, where) {
+  const { authKey, requireScope } = await import("../lib/devapi.js");
+  try {
+    const auth = await authKey(authOf(request));
+    requireScope(auth.key, scope);
+    return auth;
+  } catch (e) {
+    // Only key-shaped tokens count as guessing: a dashboard session sent to
+    // a key route is a client bug, not an attack.
+    if (e.code === "invalid_key" && authOf(request).startsWith("ak_")) {
+      const { recordAttack } = await import("../lib/attacks.js");
+      recordAttack("dev_key_guess", { where, ip: clientIp(request) }).catch(() => {});
+    }
+    throw e;
+  }
+}
+
+// Webhook routes take either a key with the webhooks scope or a session (the
+// dashboard manages webhooks with the signed-in account).
+async function keyOrSession(request, where) {
+  if (authOf(request).startsWith("ak_")) {
+    const auth = await keyAuth(request, "webhooks", where);
+    return { account: auth.account, sandbox: auth.sandbox };
+  }
+  return { account: await sessionAccount(request), sandbox: undefined };
 }
 
 export async function GET(request) {
@@ -71,6 +109,37 @@ export async function GET(request) {
       if ((await hit(`rl:dev:destl:${a.id}`, 600)) > 60) return reply({ ok: false, code: "rate_limited", error: "Too many requests. Try again later." }, 429);
       const { listDestinations } = await import("../lib/devapi.js");
       return reply({ ok: true, destinations: await listDestinations(a.id) });
+    }
+    if (p === "invoices") {
+      const auth = await keyAuth(request, "invoices:read", "Developer API invoices");
+      if ((await hit(`rl:dev:invli:${ipKey(request)}`, 600)) > 300) return reply({ ok: false, code: "rate_limited", error: "Too many requests. Try again later." }, 429);
+      const { listInvoices } = await import("../lib/devapi.js");
+      const q = new URL(request.url).searchParams;
+      return reply({ ok: true, ...(await listInvoices(auth, { limit: q.get("limit"), cursor: q.get("cursor") })) });
+    }
+    const inv = p.match(/^invoices\/([A-Za-z0-9_-]{1,80})$/);
+    if (inv) {
+      const auth = await keyAuth(request, "invoices:read", "Developer API invoice");
+      const { getInvoice } = await import("../lib/devapi.js");
+      return reply({ ok: true, ...(await getInvoice(auth, inv[1])) });
+    }
+    const vfy = p.match(/^verify\/([0-9a-fA-F]{1,80})$/);
+    if (vfy) {
+      const auth = await keyAuth(request, "invoices:read", "Developer API verify");
+      const { verifyByHash } = await import("../lib/devapi.js");
+      return reply({ ok: true, ...(await verifyByHash(auth, vfy[1])) });
+    }
+    if (p === "webhooks") {
+      const { account, sandbox } = await keyOrSession(request, "Developer API webhooks");
+      const { listWebhooks } = await import("../lib/devapi.js");
+      return reply({ ok: true, webhooks: await listWebhooks(account.id, { sandbox }) });
+    }
+    const del = p.match(/^webhooks\/([A-Za-z0-9_-]{1,80})\/deliveries$/);
+    if (del) {
+      const { account } = await keyOrSession(request, "Developer API deliveries");
+      const { listDeliveries } = await import("../lib/devapi.js");
+      const q = new URL(request.url).searchParams;
+      return reply({ ok: true, ...(await listDeliveries(account.id, del[1], { limit: q.get("limit"), cursor: q.get("cursor") })) });
     }
   } catch (e) {
     return fail(e);
@@ -131,6 +200,26 @@ export async function POST(request) {
       const a = await sessionAccount(request);
       const r = await dev.proveDestination(a.id, prv[1]);
       return reply({ ok: true, destination: r.destination });
+    }
+    if (p === "invoices") {
+      const auth = await keyAuth(request, "invoices:create", "Developer API invoices");
+      if ((await hit(`rl:dev:invi:${ipKey(request)}`, 3600)) > 500) return reply({ ok: false, code: "rate_limited", error: "Too many invoices. Try again later." }, 429);
+      const body = await readBody(request);
+      const r = await dev.createInvoice(auth, { destinationId: body.destinationId, sats: body.sats, fiat: body.fiat,
+        memo: body.memo, idempotencyKey: request.headers.get("idempotency-key") });
+      return reply({ ok: true, ...r }, r.deduplicated ? 200 : 201);
+    }
+    if (p === "webhooks") {
+      const { account } = await keyOrSession(request, "Developer API webhooks");
+      const body = await readBody(request);
+      const r = await dev.registerWebhook(account.id, { url: body.url, events: body.events, sandbox: body.sandbox === true });
+      return reply({ ok: true, webhook: r.webhook, secret: r.secret, note: r.note }, 201);
+    }
+    const dis = p.match(/^webhooks\/([A-Za-z0-9_-]{1,80})\/disable$/);
+    if (dis) {
+      const { account } = await keyOrSession(request, "Developer API webhooks");
+      const r = await dev.disableWebhook(account.id, dis[1]);
+      return reply({ ok: true, webhook: r.webhook });
     }
   } catch (e) {
     return fail(e);
