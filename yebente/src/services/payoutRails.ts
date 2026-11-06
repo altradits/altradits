@@ -17,7 +17,7 @@ export interface Rail {
   dial: string; // 254
   digits: number; // subscriber digits after the country code
   starts: string[]; // accepted first digits
-  example: string; // 712 345 678
+  example: string; // 707 172 370
 }
 
 let listed: Promise<Rail[]> | null = null;
