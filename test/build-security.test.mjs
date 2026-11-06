@@ -549,3 +549,25 @@ test("admin bodies over 100 KB need the token up front: strangers hit 413, the t
   }
   assert.equal(adminAuthed("Bearer x"), false, "no token configured: nobody is authed");
 });
+
+test("trivia stakes: off by default, plain refusal, locks open only at the end, never on the public page", () => {
+  const sk = read("lib/trivia-stakes.js"), api = read("api/trivia.js"), ln = read("lib/lightning.js");
+  assert.match(read("lib/trivia.js"), /switchOn\("TRIVIA_STAKES"\)/, "lib/trivia.js: staked play waits on the TRIVIA_STAKES switch");
+  assert.match(sk, /Staked play is off/, "lib/trivia-stakes.js: one plain refusal when off");
+  assert.match(sk, /requireStakes\(\)/, "lib/trivia-stakes.js: every staked endpoint needs the switch on");
+  assert.match(sk, /Stakes settle when the game ends/, "lib/trivia-stakes.js: locks open only at the end");
+  assert.match(read("lib/trivia-live.js"), /Every seat locks the same stake before the game starts/, "lib/trivia-live.js: a staked game starts only when every seat is locked");
+  assert.doesNotMatch(sk, /ADMIN_MACAROON/, "lib/trivia-stakes.js: never the admin key (hold invoices need the invoice macaroon)");
+  assert.ok(api.includes("rl:trv:stake:"), "api/trivia.js: the stake rate limit is in place");
+  assert.match(api, /action === "stake"/, "api/trivia.js: stakes arrive as an action, locked on the server");
+  assert.match(ln, /\/v2\/invoices\/hodl/, "lib/lightning.js: hold invoices are made with AddHoldInvoice");
+  assert.match(ln, /\/v2\/invoices\/settle/, "lib/lightning.js: locks are collected with SettleInvoice");
+  assert.match(ln, /\/v2\/invoices\/cancel/, "lib/lightning.js: locks are refunded with CancelInvoice");
+  assert.match(read("api/admin.js"), /trivia_stake_set/, "api/admin.js: Stanley sets the equal stake");
+  assert.match(read("api/admin.js"), /trivia_stake_settle/, "api/admin.js: Stanley settles at the end");
+  assert.match(read("api/admin.js"), /trivia_stake_cancel/, "api/admin.js: Stanley can cancel the locks");
+  assert.match(read("docs/trivia.md"), /stays off until the licences are in place and the lawyer/, "docs/trivia.md: staked play stays off until licences plus lawyer written OK");
+  const html = read("trivia.html"), js = read("assets/trivia.js");
+  assert.doesNotMatch(html, /stak/i, "trivia.html: staked mode stays unshown while off");
+  assert.doesNotMatch(js, /stak/i, "assets/trivia.js: staked mode stays unshown while off");
+});
