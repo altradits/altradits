@@ -2,12 +2,13 @@
 // Puzzle views arrive from content/views.js. This shell stays dependency free.
 import { CHAPTERS } from "./content/chapters.js";
 import { PUZZLES1 } from "./content/puzzles1.js";
+import { PUZZLES2 } from "./content/puzzles2.js";
 import { renderPuzzle, esc } from "./content/views.js";
 import { loadState, saveState } from "./engine/store.js";
 const app = document.getElementById("app");
 const state = loadState();
 saveState(state);
-const ALL = [...PUZZLES1];
+const ALL = [...PUZZLES1, ...PUZZLES2];
 const byChapter = (id) => ALL.filter((p) => p.ch === id).sort((a, b) => a.n - b.n);
 function themeInit() {
   const btn = document.getElementById("theme");

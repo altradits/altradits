@@ -18,6 +18,7 @@ const SHELL = [
   "./sim/lightning.js",
   "./content/chapters.js",
   "./content/puzzles1.js",
+  "./content/puzzles2.js",
   "./content/views.js",
 ];
 self.addEventListener("install", (ev) => {

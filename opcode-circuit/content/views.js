@@ -1,8 +1,9 @@
 // Opcode Circuit puzzle views: briefing, widgets, inputs, verdict, debrief.
 // Widgets are small teaching tools: hash pads, a miner, a script debugger.
-import { hexToBytes, bytesToHex, sha256, doubleSha256, segwitDecode, base58CheckDecode, concat, bytesToBig, bigToBytes, pointMult, ecdsaSign, derEncode, SECP_N } from "../sim/primitives.js";
+import { hexToBytes, bytesToHex, sha256, doubleSha256, segwitDecode, base58CheckDecode, concat, bytesToBig, bigToBytes, pointMult, ecdsaSign, derEncode, SECP_N, schnorrVerify, convertBits } from "../sim/primitives.js";
 import { parseAsm, execute, disassemble } from "../sim/interpreter.js";
-import { blockHashOf, hashMeetsBits } from "../sim/toychain.js";
+import { blockHashOf, hashMeetsBits, packageRate, checkRBF, vulnerableSum, patchedSum, taprootOutputKey, verifyControlPath } from "../sim/toychain.js";
+import { fundingWitnessScript, p2wshScript, paymentHash, htlcClaim, htlcRefund, invoiceDecode, toyOnionPeel } from "../sim/lightning.js";
 import { starsFor, formatCost } from "../engine/score.js";
 import { recordSolve, saveState } from "../engine/store.js";
 export function esc(s) {
@@ -108,6 +109,197 @@ export function renderWidget(kind, puzzle, root) {
       root.querySelector("#w-out").textContent = `hex ${bytesToHex(b)} (${b.length} bytes) | sha256 ${bytesToHex(sha256(b))}`;
     };
     root.querySelector("#w-t").addEventListener("input", upd);
+    upd();
+  } else if (kind === "segwit") {
+    root.innerHTML = `<label for="w-a">Address</label><input type="text" id="w-a" value="bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4" autocomplete="off" spellcheck="false">`
+      + `<p class="verdict" id="w-out"></p>`;
+    const upd = () => {
+      const out = root.querySelector("#w-out");
+      try {
+        const d = segwitDecode(root.querySelector("#w-a").value.trim());
+        out.textContent = `version ${d.version}, ${d.encoding}, program ${bytesToHex(d.program)}`;
+      } catch (e) { out.textContent = `broken: ${e.message}`; }
+    };
+    root.querySelector("#w-a").addEventListener("input", upd);
+    upd();
+  } else if (kind === "schnorr") {
+    root.innerHTML = `<label for="w-p">Pubkey x (64 hex)</label><input type="text" id="w-p" value="F9308A019258C31049344F85F89D5229B531C845836F99B08601F113BCE036F9" autocomplete="off" spellcheck="false">`
+      + `<label for="w-m">Message (64 hex)</label><input type="text" id="w-m" value="${"00".repeat(32)}" autocomplete="off" spellcheck="false">`
+      + `<label for="w-s">Signature (128 hex)</label><input type="text" id="w-s" autocomplete="off" spellcheck="false">`
+      + `<p class="verdict" id="w-out">Paste a candidate sig.</p>`;
+    const upd = () => {
+      const out = root.querySelector("#w-out");
+      try {
+        const ok = schnorrVerify(hexToBytes(root.querySelector("#w-p").value.trim().toLowerCase()), hexToBytes(root.querySelector("#w-m").value.trim().toLowerCase()), hexToBytes(root.querySelector("#w-s").value.trim().toLowerCase()));
+        out.textContent = ok ? "VALID signature." : "INVALID signature.";
+      } catch (e) { out.textContent = `Need full hex: ${e.message}`; }
+    };
+    root.querySelector("#w-s").addEventListener("input", upd);
+  } else if (kind === "taptweak") {
+    root.innerHTML = `<label for="w-p">Internal key x (64 hex)</label><input type="text" id="w-p" value="F9308A019258C31049344F85F89D5229B531C845836F99B08601F113BCE036F9" autocomplete="off" spellcheck="false">`
+      + `<label for="w-m">Merkle root hex (empty for key path only)</label><input type="text" id="w-m" value="" autocomplete="off" spellcheck="false">`
+      + `<p class="verdict" id="w-out"></p>`;
+    const upd = () => {
+      const out = root.querySelector("#w-out");
+      try {
+        const px = hexToBytes(root.querySelector("#w-p").value.trim().toLowerCase());
+        const m = root.querySelector("#w-m").value.trim();
+        const Q = taprootOutputKey(px, m ? hexToBytes(m.toLowerCase()) : null);
+        out.textContent = `Output x: ${bytesToHex(bigToBytes(Q.x, 32))}`;
+      } catch (e) { out.textContent = `Need hex: ${e.message}`; }
+    };
+    root.querySelector("#w-p").addEventListener("input", upd);
+    root.querySelector("#w-m").addEventListener("input", upd);
+    upd();
+  } else if (kind === "controlblock") {
+    root.innerHTML = `<label for="w-i">Internal key x</label><input type="text" id="w-i" value="f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9" autocomplete="off" spellcheck="false">`
+      + `<label for="w-l">Leaf hash</label><input type="text" id="w-l" value="a85b2107f791b26a84e7586c28cec7cb61202ed3d01944d832500f363782d675" autocomplete="off" spellcheck="false">`
+      + `<label for="w-s">Sibling</label><input type="text" id="w-s" autocomplete="off" spellcheck="false">`
+      + `<label for="w-o">Output x</label><input type="text" id="w-o" value="679489af0cbf6c97bc15fc3ca5f6b4f264cc0a903715bbdf3fabadaece3405c8" autocomplete="off" spellcheck="false">`
+      + `<p class="verdict" id="w-out">Paste a sibling.</p>`;
+    const upd = () => {
+      const out = root.querySelector("#w-out");
+      try {
+        const g = (id) => hexToBytes(root.querySelector(id).value.trim().toLowerCase());
+        const ok = verifyControlPath(g("#w-i"), g("#w-l"), [g("#w-s")], g("#w-o"));
+        out.textContent = ok ? "VALID path: leaf sits under the output key." : "INVALID path.";
+      } catch (e) { out.textContent = `Need full hex: ${e.message}`; }
+    };
+    root.querySelector("#w-s").addEventListener("input", upd);
+  } else if (kind === "feerate") {
+    root.innerHTML = `<label for="w-f">Fee sats</label><input type="text" id="w-f" value="2000" autocomplete="off">`
+      + `<label for="w-v">Vsize</label><input type="text" id="w-v" value="200" autocomplete="off">`
+      + `<label for="w-af">Ancestor fees (comma, blank for none)</label><input type="text" id="w-af" value="" autocomplete="off">`
+      + `<label for="w-av">Ancestor vsizes (comma)</label><input type="text" id="w-av" value="" autocomplete="off">`
+      + `<p class="verdict" id="w-out"></p>`;
+    const upd = () => {
+      const out = root.querySelector("#w-out");
+      try {
+        const fee = Number(root.querySelector("#w-f").value), vsize = Number(root.querySelector("#w-v").value);
+        const af = root.querySelector("#w-af").value.split(",").filter((x) => x.trim() !== "").map(Number);
+        const av = root.querySelector("#w-av").value.split(",").filter((x) => x.trim() !== "").map(Number);
+        if (![fee, vsize, ...af, ...av].every(Number.isFinite)) throw new Error("numbers only");
+        const pkg = packageRate({ fee, vsize }, af.map((f, i) => ({ fee: f, vsize: av[i] || 0 })));
+        out.textContent = `Rate ${(fee / vsize).toFixed(2)} sat/vB. Package ${pkg.fee} over ${pkg.vsize}: ${pkg.rate.toFixed(2)} sat/vB.`;
+      } catch (e) { out.textContent = e.message; }
+    };
+    ["#w-f", "#w-v", "#w-af", "#w-av"].forEach((id) => root.querySelector(id).addEventListener("input", upd));
+    upd();
+  } else if (kind === "rbf") {
+    root.innerHTML = `<p class="brief">Mempool M: fee 1000, vsize 200, signals BIP125. Incremental relay 1 sat/vB.</p>`
+      + `<label for="w-f">Replacement fee</label><input type="text" id="w-f" value="1200" autocomplete="off">`
+      + `<label for="w-v">Replacement vsize</label><input type="text" id="w-v" value="200" autocomplete="off">`
+      + `<p><label><input type="checkbox" id="w-p"> Spends a new unconfirmed parent</label></p>`
+      + `<p class="verdict" id="w-out"></p>`;
+    const mempool = { M: { fee: 1000, vsize: 200, signalled: true, parents: [] }, X: { fee: 500, vsize: 200, signalled: false, parents: [] } };
+    const upd = () => {
+      const out = root.querySelector("#w-out");
+      const r = checkRBF({ fee: Number(root.querySelector("#w-f").value), vsize: Number(root.querySelector("#w-v").value), parents: root.querySelector("#w-p").checked ? ["X"] : [] }, ["M"], mempool, 1);
+      out.textContent = r.ok ? "PASSES BIP125." : `FAILS: ${r.reason}`;
+    };
+    ["#w-f", "#w-v"].forEach((id) => root.querySelector(id).addEventListener("input", upd));
+    root.querySelector("#w-p").addEventListener("change", upd);
+    upd();
+  } else if (kind === "moneyrange") {
+    root.innerHTML = `<label for="w-a">Output A sats</label><input type="text" id="w-a" value="9222000000000000000" autocomplete="off">`
+      + `<label for="w-b">Output B sats</label><input type="text" id="w-b" value="9222000000000000000" autocomplete="off">`
+      + `<p class="verdict" id="w-out"></p>`;
+    const upd = () => {
+      const out = root.querySelector("#w-out");
+      try {
+        const vs = [root.querySelector("#w-a").value.trim(), root.querySelector("#w-b").value.trim()].map(BigInt);
+        const wrap = vulnerableSum(vs);
+        const fix = patchedSum(vs);
+        out.textContent = `Old code sum: ${wrap}. Patched: ${fix.ok ? `ok, ${fix.sum}` : fix.reason}`;
+      } catch { out.textContent = "Type whole sats numbers."; }
+    };
+    root.querySelector("#w-a").addEventListener("input", upd);
+    root.querySelector("#w-b").addEventListener("input", upd);
+    upd();
+  } else if (kind === "funding") {
+    root.innerHTML = `<label for="w-a">Key A (66 hex)</label><input type="text" id="w-a" value="022f8bde4d1a07209355b4a7250a5c5128e88b84bddc619ab7cba8d569b240efe4" autocomplete="off" spellcheck="false">`
+      + `<label for="w-b">Key B (66 hex)</label><input type="text" id="w-b" value="03acd484e2f0c7f65309ad178a9f559abde09796974c57e714c35f110dfc27ccbe" autocomplete="off" spellcheck="false">`
+      + `<p class="verdict" id="w-out"></p>`;
+    const upd = () => {
+      const out = root.querySelector("#w-out");
+      try {
+        const ws = fundingWitnessScript(hexToBytes(root.querySelector("#w-a").value.trim().toLowerCase()), hexToBytes(root.querySelector("#w-b").value.trim().toLowerCase()));
+        out.textContent = `Witness: ${bytesToHex(ws)} | P2WSH: ${bytesToHex(p2wshScript(ws))}`;
+      } catch (e) { out.textContent = `Need hex keys: ${e.message}`; }
+    };
+    root.querySelector("#w-a").addEventListener("input", upd);
+    root.querySelector("#w-b").addEventListener("input", upd);
+    upd();
+  } else if (kind === "htlc") {
+    root.innerHTML = `<label for="w-r">Preimage R (64 hex)</label><input type="text" id="w-r" value="b7e151628aed2a6abf7158809cf4f3c762e7160f38b4da56a784d9045190cfee" autocomplete="off" spellcheck="false">`
+      + `<label for="w-h">Height</label><input type="text" id="w-h" value="799000" autocomplete="off">`
+      + `<p class="verdict" id="w-out"></p>`;
+    const upd = () => {
+      const out = root.querySelector("#w-out");
+      try {
+        const R = hexToBytes(root.querySelector("#w-r").value.trim().toLowerCase());
+        const H = paymentHash(R);
+        const h = Number(root.querySelector("#w-h").value);
+        const claim = htlcClaim(R, H, h, 800000), refund = htlcRefund(h, 800000);
+        out.textContent = `H: ${bytesToHex(H)} | Claim at ${h}: ${claim.ok ? "wins" : claim.reason} | Refund at ${h}: ${refund.ok ? "wins" : refund.reason}`;
+      } catch (e) { out.textContent = `Need hex R: ${e.message}`; }
+    };
+    root.querySelector("#w-r").addEventListener("input", upd);
+    root.querySelector("#w-h").addEventListener("input", upd);
+    upd();
+  } else if (kind === "onion") {
+    root.innerHTML = `<p class="brief">Toy cipher, NOT Sphinx. Blob for route B, C, D.</p>`
+      + `<label for="w-b">Blob hex</label><input type="text" id="w-b" value="dbbe29528a24169d0a8ac586f72f8f7e53e71818c6" autocomplete="off" spellcheck="false">`
+      + `<div class="btnrow"><button type="button" class="btn" id="w-p1">Peel as hop 1</button><button type="button" class="btn ghost" id="w-p2">Peel remainder as hop 2</button></div>`
+      + `<p class="verdict" id="w-out">Peel twice.</p>`;
+    let remainder = null;
+    root.querySelector("#w-p1").addEventListener("click", () => {
+      try {
+        const r = toyOnionPeel(hexToBytes(root.querySelector("#w-b").value.trim().toLowerCase()), 0);
+        remainder = r.remainder;
+        root.querySelector("#w-out").textContent = `Hop 1 sees next: ${r.nextHop}. Remainder: ${bytesToHex(remainder)}`;
+      } catch (e) { root.querySelector("#w-out").textContent = `Need hex blob: ${e.message}`; }
+    });
+    root.querySelector("#w-p2").addEventListener("click", () => {
+      try {
+        if (!remainder) { root.querySelector("#w-out").textContent = "Peel as hop 1 first."; return; }
+        const r = toyOnionPeel(remainder, 1);
+        root.querySelector("#w-out").textContent = `Hop 2 sees next: ${r.nextHop}.`;
+      } catch (e) { root.querySelector("#w-out").textContent = e.message; }
+    });
+  } else if (kind === "routecalc") {
+    const EDGES = { "A>B": [1000, 500, 40, 1000, 1000000], "A>C": [5000, 100, 144, 1000, 1000000], "A>D": [1000, 100, 40, 500000, 1000000], "B>E": [1000, 500, 40, 1000, 1000000], "C>E": [1000, 100, 40, 1000, 1000000], "D>E": [500, 50, 18, 1000, 1000000] };
+    root.innerHTML = `<label for="w-p">Path like A,B,E</label><input type="text" id="w-p" value="A,B,E" autocomplete="off">`
+      + `<p class="verdict" id="w-out"></p>`;
+    const upd = () => {
+      const out = root.querySelector("#w-out");
+      const hops = root.querySelector("#w-p").value.replace(/\s+/g, "").toUpperCase().split(",");
+      let fee = 0, cltv = 0;
+      for (let i = 0; i + 1 < hops.length; i++) {
+        const e = EDGES[`${hops[i]}>${hops[i + 1]}`];
+        if (!e) { out.textContent = `No edge ${hops[i]} to ${hops[i + 1]}.`; return; }
+        if (100000 < e[3] || 100000 > e[4]) { out.textContent = `Edge ${hops[i]} to ${hops[i + 1]} rejects 100000 msat (min ${e[3]}, cap ${e[4]}).`; return; }
+        fee += e[0] + Math.floor((100000 * e[1]) / 1000000);
+        cltv += e[2];
+      }
+      out.textContent = `Fee ${fee} msat, cltv ${cltv}. Valid.`;
+    };
+    root.querySelector("#w-p").addEventListener("input", upd);
+    upd();
+  } else if (kind === "invoice") {
+    root.innerHTML = `<label for="w-i">Invoice</label><input type="text" id="w-i" value="lnbc10n1pj48ugqpp55vghu0pys4k7dvftwuv8u76zre3f6kmz6kkdrq60ztenrd7p4p3qdqsw3hhjgrrdanxvet9l6x3avdukdpjk8d4svlltu3zdkwttejuaeps2kxp3mf68jrvuxhng7at4za978yvgtex7ywjv4dzntkq0aarddzgqeng90pthhav4wqxh6z2g" autocomplete="off" spellcheck="false">`
+      + `<label for="w-k">Node key (66 hex)</label><input type="text" id="w-k" value="02466d7fcae563e5cb09a0d1870bb580344804617879a14949cf22285f1bae3f27" autocomplete="off" spellcheck="false">`
+      + `<p class="verdict" id="w-out"></p>`;
+    const upd = () => {
+      const out = root.querySelector("#w-out");
+      try {
+        const d = invoiceDecode(root.querySelector("#w-i").value.trim().toLowerCase(), hexToBytes(root.querySelector("#w-k").value.trim().toLowerCase()));
+        const tags = d.tags.map((t) => `${t.tag === 1 ? "p" : t.tag === 13 ? "d" : `tag${t.tag}`}:${bytesToHex(Uint8Array.from(convertBits(t.data, 5, 8, false)))}`).join(" ");
+        out.textContent = `${d.hrp}, time ${d.timestamp}, sig ${d.sigOk ? "valid" : "INVALID"}. Tags ${tags}`;
+      } catch (e) { out.textContent = `broken: ${e.message}`; }
+    };
+    root.querySelector("#w-i").addEventListener("input", upd);
+    root.querySelector("#w-k").addEventListener("input", upd);
     upd();
   }
 }
