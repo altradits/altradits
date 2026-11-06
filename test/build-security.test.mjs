@@ -382,6 +382,7 @@ test("dashboard commands work as printed: reads use ln-ro, writes carry the node
   assert.doesNotMatch(html, /<code>lncli (?!--lnddir)/, "admin.html: every printed lncli command carries --lnddir (reads use ln-ro)");
   assert.doesNotMatch(js, /"lncli (?!--lnddir)/, "assets/admin.js: every lncli string carries --lnddir");
   assert.doesNotMatch(api, /"lncli (?!--lnddir)/, "api/admin.js: every lncli string carries --lnddir");
+  assert.doesNotMatch(read("lib/njia.js"), /"lncli (?!--lnddir)/, "lib/njia.js: every printed lncli command carries --lnddir (reads use ln-ro)");
   for (const f of ["admin.html", "assets/admin.js", "api/admin.js", "docs/manual-lnd.md", "DEPLOY.md"]) {
     assert.doesNotMatch(read(f), /--[a-z]+=~\//, `${f}: no flag path starts with ~/ (the shell never expands it there)`);
   }
@@ -516,4 +517,23 @@ test("admin bodies over 100 KB need the token up front: strangers hit 413, the t
     if (keep === undefined) delete process.env.ADMIN_TOKEN; else process.env.ADMIN_TOKEN = keep;
   }
   assert.equal(adminAuthed("Bearer x"), false, "no token configured: nobody is authed");
+});
+
+test("Njia stays read-only: no write imports, no write endpoints, no admin key, records never cleaned", () => {
+  const nj = read("lib/njia.js");
+  assert.doesNotMatch(nj, /\.macaroon/, "lib/njia.js: no macaroon filename");
+  assert.doesNotMatch(nj, /LND_ADMIN|YEBENTE_LND_PAY_MACAROON/, "lib/njia.js: never the admin key or the pay key");
+  assert.doesNotMatch(nj, /payInvoice|createInvoice|newOnchainAddress|spendCheck|startTopup/, "lib/njia.js: no import that can write to LND");
+  assert.doesNotMatch(nj, /\/v1\/chanpolicy|\/channels\/transactions|\/v2\/router\/send|\/v1\/channels\/stream/, "lib/njia.js: no LND write path");
+  const ln = read("lib/lightning.js");
+  for (const fn of ["export async function njiaRead", "export async function njiaPing"]) {
+    const at = ln.indexOf(fn);
+    assert.ok(at >= 0, `${fn} exists`);
+    const body = ln.slice(at, ln.indexOf("\n}\n", at));
+    for (const line of body.split("\n")) {
+      if (line.includes('"POST"')) assert.ok(line.includes("/v1/switch"), `${fn}: POST only to /v1/switch (the time-range read)`);
+    }
+    assert.doesNotMatch(body, /\/v1\/chanpolicy|\/channels\/transactions|\/v2\/router\/send|\/v1\/channels\/stream|\bDELETE\b/, `${fn}: no LND write endpoint`);
+  }
+  assert.doesNotMatch(read("lib/cleanup.js"), /njia:/, "lib/cleanup.js: Njia records are never cleaned up");
 });

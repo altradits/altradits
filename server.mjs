@@ -228,6 +228,8 @@ async function maybeRunHourly() {
     import("./lib/channels.js").then((c) => c.watchChannels()).catch((e) => console.error("channels", e.message));
     import("./lib/attacks.js").then((a) => a.checkSolvency()).catch((e) => console.error("solvency", e.message));
   }
+  // Njia: the hourly public summary and daily forwarding snapshot (no-op unless NJIA=on).
+  import("./lib/njia.js").then((m) => m.hourly()).catch((e) => console.error("njia hourly", e.message));
   import("./lib/bounces.js").then((b) => b.checkBounces()).then((r) => r.bounced && console.log("bounces", r)).catch((e) => console.error("bounces", e.message));
 }
 setInterval(() => maybeRunHourly().catch((e) => console.error("hourly", e)), 10 * 60 * 1000).unref();
@@ -252,9 +254,13 @@ if (SERVER) setTimeout(() => import("./lib/cleanup.js").then((c) => c.retireAgen
 
 // The host stops an idle app, so the 10-minute timers alone can miss a day.
 // Every /healthz ping (the deploy cron, every 5 minutes) also runs what's due.
+// Njia reachability: one cheap getinfo per 5-minute ping, only when NJIA is on.
+function maybeRunNjiaSample() {
+  return import("./lib/njia.js").then((m) => m.sample()).catch((e) => console.error("njia sample", e.message));
+}
 let checking = false;
 function dueJobs() {
   if (checking) return;
   checking = true;
-  Promise.allSettled([maybeRunDaily(), maybeRunHourly(), maybeRunDeadmanChecks()]).then((r) => r.forEach((x) => x.status === "rejected" && console.error("due jobs", x.reason))).finally(() => { checking = false; });
+  Promise.allSettled([maybeRunDaily(), maybeRunHourly(), maybeRunDeadmanChecks(), maybeRunNjiaSample()]).then((r) => r.forEach((x) => x.status === "rejected" && console.error("due jobs", x.reason))).finally(() => { checking = false; });
 }
