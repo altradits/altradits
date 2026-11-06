@@ -115,9 +115,9 @@ const server = http.createServer(async (req, res) => {
   const url = publicUrl(req);
   try {
     if (url.pathname === "/healthz") { res.writeHead(200, { "Content-Type": "text/plain" }).end("ok"); dueJobs(); return; }
-    // /api/<name>; only Ye₿ente's and kTown's APIs take a sub-path (/api/yebente/mpesa/stkpush…).
+    // /api/<name>; only Ye₿ente's, kTown's and the Developer API take a sub-path (/api/yebente/mpesa/stkpush…, /api/dev/v1/…).
     const api = url.pathname.match(/^\/api\/([a-z]+)(\/[\w.\/-]+)?$/);
-    if (api && api[2] && api[1] !== "yebente" && api[1] !== "ktown") { res.writeHead(404).end("Not found"); return; }
+    if (api && api[2] && api[1] !== "yebente" && api[1] !== "ktown" && api[1] !== "dev") { res.writeHead(404).end("Not found"); return; }
     if (api) {
       const file = path.join(ROOT, "api", `${api[1]}.js`);
       if (!fs.existsSync(file)) { res.writeHead(404).end("Not found"); return; }

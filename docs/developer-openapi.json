@@ -1,0 +1,206 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Altradits Developer API",
+    "version": "1.0.0",
+    "summary": "Power your app with Altradits infrastructure. Your customers pay straight to your own Lightning address or node. Altradits never holds their money.",
+    "description": "Non-custodial Lightning infrastructure for developers. Register your own Lightning address, create invoices to it through this API, get settlement verification and webhooks. Customer payments go straight to your address. Altradits charges you 0.5% of settled volume, prepaid in sats to Stanley's node as a fee balance. The sandbox is free. Authentication: Authorization: Bearer <session or API key>. Every reply carries a requestId. Every error carries a stable code and a human sentence: { ok: false, requestId, code, error }.",
+    "contact": { "name": "Altradits", "url": "https://altradits.com/developer" },
+    "license": { "name": "MIT", "url": "https://github.com/altradits/altradits/blob/main/LICENSE" }
+  },
+  "servers": [{ "url": "https://altradits.com/api/dev/v1", "description": "Live" }],
+  "security": [{ "bearer": [] }],
+  "tags": [
+    { "name": "health", "description": "Switch status. Always answers." },
+    { "name": "accounts", "description": "Signup and sign-in with email codes." },
+    { "name": "keys", "description": "API keys. Shown once, stored hashed, scoped." },
+    { "name": "destinations", "description": "Your own Lightning addresses, with ownership proof." }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["health"],
+        "summary": "API status",
+        "description": "Always answers, even when the API is off. api is on when DEVAPI=on, sandbox is on when DEVAPI_SANDBOX=on.",
+        "security": [],
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "Status.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Health" } } }
+          }
+        }
+      }
+    },
+    "/accounts/request-code": {
+      "post": {
+        "tags": ["accounts"],
+        "summary": "Request a signup code",
+        "description": "Emails a one-time 8-digit code. Works once, for 10 minutes. At most 5 codes an hour per address. Never reveals whether an address is registered.",
+        "security": [],
+        "operationId": "requestCode",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RequestCode" } } } },
+        "responses": {
+          "200": { "description": "Code sent.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Sent" } } } },
+          "422": { "description": "Likely typo in the email domain.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Too many codes.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "501": { "description": "The API is not open.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/accounts/verify-code": {
+      "post": {
+        "tags": ["accounts"],
+        "summary": "Verify the code",
+        "description": "Verifies the email and creates the account on first use, or signs an existing account back in. Returns a dashboard session token, good for 30 days. Wrong guesses are limited per address.",
+        "security": [],
+        "operationId": "verifyCode",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerifyCode" } } } },
+        "responses": {
+          "200": { "description": "Verified.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Session" } } } },
+          "400": { "description": "Wrong or expired code.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Too many wrong tries.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/accounts/me": {
+      "get": {
+        "tags": ["accounts"],
+        "summary": "My account",
+        "description": "The signed-in account. Needs a dashboard session token.",
+        "operationId": "me",
+        "responses": {
+          "200": { "description": "The account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Account" } } } },
+          "401": { "description": "Sign in again.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/accounts/sign-out": {
+      "post": {
+        "tags": ["accounts"],
+        "summary": "Sign out",
+        "description": "Ends this dashboard session at once.",
+        "operationId": "signOut",
+        "responses": {
+          "200": { "description": "Signed out.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SignedOut" } } } }
+        }
+      }
+    },
+    "/keys": {
+      "get": {
+        "tags": ["keys"],
+        "summary": "List keys",
+        "description": "Every key on the account, newest first. Only public halves: secrets never leave the store.",
+        "operationId": "listKeys",
+        "responses": {
+          "200": { "description": "The keys.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/KeyList" } } } }
+        }
+      },
+      "post": {
+        "tags": ["keys"],
+        "summary": "Create a key",
+        "description": "Creates an API key. Live keys start with ak_live_, sandbox keys with ak_test_. The secret is shown once and never again. Scopes default to all three. A test key can never touch mainnet, and a live key never works while the API is off.",
+        "operationId": "createKey",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateKey" } } } },
+        "responses": {
+          "201": { "description": "The key, shown once.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/KeySecret" } } } },
+          "400": { "description": "Unknown scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "501": { "description": "That environment is not switched on.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/keys/{id}/rotate": {
+      "post": {
+        "tags": ["keys"],
+        "summary": "Rotate a key",
+        "description": "Revokes the key and creates its replacement with the same name, scopes and environment. The new secret is shown once.",
+        "operationId": "rotateKey",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "201": { "description": "The replacement key, shown once.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/KeySecret" } } } },
+          "404": { "description": "Unknown key.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "410": { "description": "Already revoked.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/keys/{id}/revoke": {
+      "post": {
+        "tags": ["keys"],
+        "summary": "Revoke a key",
+        "description": "Revokes the key at once. The record is kept, never deleted.",
+        "operationId": "revokeKey",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Revoked.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Revoked" } } } },
+          "404": { "description": "Unknown key.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/destinations": {
+      "get": {
+        "tags": ["destinations"],
+        "summary": "List destinations",
+        "description": "Every registered address on the account.",
+        "operationId": "listDestinations",
+        "responses": {
+          "200": { "description": "The destinations.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DestinationList" } } } }
+        }
+      },
+      "post": {
+        "tags": ["destinations"],
+        "summary": "Register a destination",
+        "description": "Registers your own Lightning address and starts the ownership proof: the address must resolve over LNURL-pay and name itself in its metadata, and you pay a 1-sat challenge invoice from the wallet behind it within an hour, then call prove. What the proof shows: you control a funded Lightning wallet, and the address resolves to itself. Lightning payments carry no sender identity, so it does not cryptographically prove the wallet owns the address. Your customers' payments go straight to this address. Altradits never holds them.",
+        "operationId": "registerDestination",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterDestination" } } } },
+        "responses": {
+          "201": { "description": "Registered, with the challenge invoice.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DestinationChallenge" } } } },
+          "409": { "description": "Already registered.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "422": { "description": "The address does not name itself.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "502": { "description": "The address is not reachable.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "503": { "description": "Stanley's node is offline, so no challenge can be issued.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/destinations/{id}/prove": {
+      "post": {
+        "tags": ["destinations"],
+        "summary": "Prove ownership",
+        "description": "Checks the 1-sat challenge invoice is settled and the address still resolves to itself, then marks the destination verified.",
+        "operationId": "proveDestination",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Verified.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Destination" } } } },
+          "404": { "description": "Unknown destination.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": { "description": "The challenge is not paid yet.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "410": { "description": "The challenge expired. Register again.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": { "type": "http", "scheme": "bearer", "description": "A dashboard session token, or an API key (ak_live_... or ak_test_...). Keys are told apart from sessions by their prefix." }
+    },
+    "schemas": {
+      "Health": { "type": "object", "required": ["ok", "requestId", "version", "api", "sandbox"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "version": { "const": "v1" }, "api": { "enum": ["on", "off"] }, "sandbox": { "enum": ["on", "off"] } } },
+      "Error": { "type": "object", "required": ["ok", "requestId", "code", "error"], "properties": { "ok": { "const": false }, "requestId": { "type": "string" }, "code": { "type": "string", "description": "Stable machine code, e.g. invalid_key, bad_code, challenge_unpaid, insufficient_credits, lockdown_freeze." }, "error": { "type": "string", "description": "A human sentence." } } },
+      "Sent": { "type": "object", "required": ["ok", "requestId", "sent"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "sent": { "const": true } } },
+      "SignedOut": { "type": "object", "required": ["ok", "requestId", "signedOut"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "signedOut": { "const": true } } },
+      "Revoked": { "type": "object", "required": ["ok", "requestId", "revoked"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "revoked": { "const": true } } },
+      "RequestCode": { "type": "object", "required": ["email"], "properties": { "email": { "type": "string", "format": "email" }, "confirmTypo": { "type": "boolean", "description": "Set true to accept the address as typed after a 422 typo hint." } } },
+      "VerifyCode": { "type": "object", "required": ["email", "code"], "properties": { "email": { "type": "string", "format": "email" }, "code": { "type": "string", "description": "The 8-digit code from the email." } } },
+      "Account": { "type": "object", "required": ["ok", "requestId", "account"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "account": { "$ref": "#/components/schemas/AccountObject" } } },
+      "AccountObject": { "type": "object", "required": ["id", "email", "createdAt", "verifiedAt", "suspended"], "properties": { "id": { "type": "string" }, "email": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" }, "verifiedAt": { "type": "string", "format": "date-time" }, "suspended": { "type": "boolean" } } },
+      "Session": { "type": "object", "required": ["ok", "requestId", "account", "session"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "account": { "$ref": "#/components/schemas/AccountObject" }, "session": { "type": "string", "description": "Dashboard session token, good for 30 days." } } },
+      "CreateKey": { "type": "object", "properties": { "name": { "type": "string", "maxLength": 60 }, "scopes": { "type": "array", "items": { "enum": ["invoices:create", "invoices:read", "webhooks"] }, "description": "Defaults to all three." }, "sandbox": { "type": "boolean", "description": "True for a test key (ak_test_...). Defaults to false." } } },
+      "KeyObject": { "type": "object", "required": ["id", "prefix", "name", "scopes", "sandbox", "createdAt", "revokedAt", "lastUsedAt"], "properties": { "id": { "type": "string" }, "prefix": { "type": "string", "description": "First characters, for telling keys apart." }, "name": { "type": "string" }, "scopes": { "type": "array", "items": { "type": "string" } }, "sandbox": { "type": "boolean" }, "createdAt": { "type": "string", "format": "date-time" }, "revokedAt": { "type": ["string", "null"], "format": "date-time" }, "lastUsedAt": { "type": ["string", "null"], "format": "date-time" } } },
+      "KeySecret": { "type": "object", "required": ["ok", "requestId", "key", "id", "prefix", "name", "scopes", "sandbox", "createdAt"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "key": { "type": "string", "description": "The full secret. Shown once, never again." }, "id": { "type": "string" }, "prefix": { "type": "string" }, "name": { "type": "string" }, "scopes": { "type": "array", "items": { "type": "string" } }, "sandbox": { "type": "boolean" }, "createdAt": { "type": "string", "format": "date-time" }, "note": { "type": "string" } } },
+      "KeyList": { "type": "object", "required": ["ok", "requestId", "keys"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "keys": { "type": "array", "items": { "$ref": "#/components/schemas/KeyObject" } } } },
+      "RegisterDestination": { "type": "object", "required": ["address"], "properties": { "address": { "type": "string", "description": "Your own Lightning address, like name@wallet.com." }, "sandbox": { "type": "boolean", "description": "True to register it for the sandbox. Defaults to false." } } },
+      "DestinationObject": { "type": "object", "required": ["id", "address", "sandbox", "verified", "verifiedAt", "proof", "createdAt"], "properties": { "id": { "type": "string" }, "address": { "type": "string" }, "sandbox": { "type": "boolean" }, "verified": { "type": "boolean" }, "verifiedAt": { "type": ["string", "null"], "format": "date-time" }, "proof": { "type": ["string", "null"], "description": "How ownership was proven, once verified." }, "createdAt": { "type": "string", "format": "date-time" } } },
+      "Destination": { "type": "object", "required": ["ok", "requestId", "destination"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "destination": { "$ref": "#/components/schemas/DestinationObject" } } },
+      "DestinationList": { "type": "object", "required": ["ok", "requestId", "destinations"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "destinations": { "type": "array", "items": { "$ref": "#/components/schemas/DestinationObject" } } } },
+      "DestinationChallenge": { "type": "object", "required": ["ok", "requestId", "destination", "challenge"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "destination": { "$ref": "#/components/schemas/DestinationObject" }, "challenge": { "type": "object", "required": ["bolt11", "expiresAt", "note"], "properties": { "bolt11": { "type": "string", "description": "The 1-sat challenge invoice. Pay it from the wallet behind the address." }, "expiresAt": { "type": "string", "format": "date-time" }, "note": { "type": "string" } } } } }
+    }
+  }
+}
