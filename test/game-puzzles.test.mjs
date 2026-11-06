@@ -34,3 +34,15 @@ test("every puzzle carries hints and debrief sources", () => {
     assert.ok(p.idea && p.briefing && p.prompt, p.id);
   }
 });
+test("8-1 states the true P2WSH length (68 hex chars, 34 bytes)", () => {
+  const p = ALL.find((x) => x.id === "8-1");
+  assert.match(p.prompt, /68 hex chars/);
+  assert.equal(p.par.bytes, 34);
+});
+test("typed byte costs match decoded or UTF-8 length", async () => {
+  const { answerBytes } = await import("../opcode-circuit/engine/score.js");
+  for (const p of ALL.filter((x) => x.input === "text")) {
+    const r = p.check(p.reference);
+    assert.equal(r.bytes, answerBytes(p.reference), `${p.id}: byte cost must be honest`);
+  }
+});

@@ -134,7 +134,7 @@ export function execute(scriptBytes, stack = [], ctx = {}) {
   const cond = [];
   const active = () => cond.every(Boolean);
   const need = (n, name) => {
-    if (st.length < n) throw new Error(`${name} needs ${n} items.`);
+    if (st.length < n) throw new Error(`${name} needs ${n} item${n === 1 ? "" : "s"}.`);
     if (st.length + alt.length > LIMITS.maxStack) throw new Error("Stack over 1000 items.");
   };
   try {

@@ -5,7 +5,7 @@ import { parseAsm, execute, disassemble } from "../sim/interpreter.js";
 import { blockHashOf, hashMeetsBits, packageRate, checkRBF, vulnerableSum, patchedSum, taprootOutputKey, verifyControlPath } from "../sim/toychain.js";
 import { fundingWitnessScript, p2wshScript, paymentHash, htlcClaim, htlcRefund, invoiceDecode, toyOnionPeel } from "../sim/lightning.js";
 import { starsFor, formatCost } from "../engine/score.js";
-import { recordSolve, saveState, unlockAchievement } from "../engine/store.js";
+import { recordSolve, saveState, unlockAchievement, resetState, blankState } from "../engine/store.js";
 import { ACHIEVEMENTS, checkAchievements } from "../engine/achieve.js";
 export function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -52,14 +52,12 @@ export function renderWidget(kind, puzzle, root) {
         for (let n = start; n < start + 20000; n++) {
           const h = { ...base, nonce: n >>> 0 };
           if (hashMeetsBits(blockHashOf(h), h.bits)) {
-            out.textContent = `Won at nonce ${n} after ${n + 1} tries. Type it below.`;
-            const ans = document.getElementById("answer");
-            if (ans) ans.value = String(n);
+            out.textContent = `Won at nonce ${n} after ${n + 1} tries. Type it in the answer box.`;
             return;
           }
         }
         start += 20000;
-        out.textContent = `Tried ${start} nonces, still over target...`;
+        out.textContent = `Trying nonce ${start}, still over target...`;
         setTimeout(step, 0);
       };
       setTimeout(step, 0);
@@ -311,9 +309,21 @@ function renderDebugger(puzzle, root) {
     + `<div class="btnrow"><button type="button" class="btn" id="w-run">Run</button>`
     + `<button type="button" class="btn ghost" id="w-step">Step</button>`
     + `<button type="button" class="btn ghost" id="w-reset">Reset</button></div>`
+    + `<p class="verdict" id="w-status" hidden></p>`
     + `<div id="w-trace"></div>`;
   let trace = [], idx = -1, done = null;
   const show = () => {
+    const status = root.querySelector("#w-status");
+    if (!done) { status.hidden = true; }
+    else if (idx < trace.length - 1) {
+      status.hidden = false;
+      status.className = "verdict";
+      status.textContent = `Step ${idx + 1} of ${trace.length}.`;
+    } else {
+      status.hidden = false;
+      status.className = `verdict ${done.ok ? "ok" : "bad"}`;
+      status.textContent = done.ok ? `PASS in ${done.ops} ops.` : `FAIL: ${done.error}`;
+    }
     const box = root.querySelector("#w-trace");
     if (!trace.length) { box.innerHTML = ""; return; }
     const rows = trace.map((t, i) => `<tr${i === idx ? ' style="background:color-mix(in srgb,var(--acc) 18%,transparent)"' : ""}><td>${i}</td><td>${esc(t.op)}</td><td>${t.stack.map(esc).join("<br>") || "(empty)"}</td></tr>`).join("");
@@ -403,7 +413,11 @@ export function renderPuzzle(app, puzzle, state, nextId, allPuzzles = []) {
   } else if (puzzle.input === "script" && puzzle.widget === "debugger") {
     app.querySelector("#check").addEventListener("click", () => grade(app.querySelector("#w-asm").value));
   } else {
-    app.querySelector("#check").addEventListener("click", () => grade(app.querySelector("#answer").value));
+    const box = app.querySelector("#answer");
+    app.querySelector("#check").addEventListener("click", () => grade(box.value));
+    box.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); grade(box.value); }
+    });
   }
 }
 // Sandbox: a free interpreter playground. Nothing here is scored.
@@ -460,5 +474,11 @@ export function renderAchievements(app, state) {
     const got = state.achievements.includes(a.id);
     return `<li class="card${got ? " done" : ""}"><h2>${got ? "★" : "☆"} ${esc(a.title)}</h2><p>${esc(a.desc)}</p></li>`;
   }).join("");
-  app.innerHTML = `<section class="puz"><h2>Achievements</h2><p class="brief">${state.achievements.length} of ${ACHIEVEMENTS.length} unlocked.</p></section><ul class="grid">${items}</ul>`;
+  app.innerHTML = `<section class="puz"><h2>Achievements</h2><p class="brief">${state.achievements.length} of ${ACHIEVEMENTS.length} unlocked.</p><div class="btnrow"><button type="button" class="btn ghost" id="reset">Reset progress</button></div></section><ul class="grid">${items}</ul>`;
+  app.querySelector("#reset").addEventListener("click", () => {
+    if (!window.confirm("Erase all progress and achievements on this device?")) return;
+    resetState();
+    Object.assign(state, blankState());
+    renderAchievements(app, state);
+  });
 }

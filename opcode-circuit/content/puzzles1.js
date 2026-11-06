@@ -3,6 +3,7 @@
 // in test/game-puzzles.test.mjs enforce that for every puzzle here.
 import { hexToBytes, bytesToHex, readU32LE, readVarInt, sha256, doubleSha256, hash160, segwitDecode, base58CheckDecode, bytesToBig, bigToBytes, pointMult, pointCompress, ecdsaSign, SECP_N, concat } from "../sim/primitives.js";
 import { parseAsm, execute, executeP2SH, disassemble } from "../sim/interpreter.js";
+import { answerBytes } from "../engine/score.js";
 import { serializeTx, parseTx, txidOf, bitsToTarget, hashMeetsBits, blockHashOf, chainWork, retarget, merkleRoot, merkleVerify, flip } from "../sim/toychain.js";
 const enc = new TextEncoder();
 const cost = (bytes, ops = 0, sats = 0) => ({ bytes, ops, sats });
@@ -17,7 +18,7 @@ export const PUZZLES1 = [
     prompt: "Version bytes 02000000. Type the version number.",
     check(a) {
       const ok = a.trim() === "2";
-      return { ok, ...cost(a.trim().length), message: ok ? "Version 2. The 02 sits in the lowest byte." : "Read the 4 bytes little end first." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "Version 2. The 02 sits in the lowest byte." : "Read the 4 bytes little end first." };
     },
     reference: "2", wrong: ["33554432", "0"], hints: ["Little endian: first byte is the lowest place.", "02000000 hex is 2, not 33554432."],
     par: { bytes: 1, ops: 0, sats: 0 }, scored: ["bytes"],
@@ -30,7 +31,7 @@ export const PUZZLES1 = [
     prompt: "Decode fc, fd2c01, fe70110100. Type like 1,2,3.",
     check(a) {
       const ok = a.replace(/\s+/g, "") === "252,300,70000";
-      return { ok, ...cost(a.trim().length), message: ok ? "252, 300, 70000. The fd boundary sits at 253." : "fc is plain. fd means 2 more bytes LE. fe means 4 more bytes LE." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "252, 300, 70000. The fd boundary sits at 253." : "fc is plain. fd means 2 more bytes LE. fe means 4 more bytes LE." };
     },
     reference: "252,300,70000", wrong: ["252,300,7000", "253,300,70000"], hints: ["fc is below 253, so it is itself: 252.", "fd2c01: bytes 2c01 little endian is 300."],
     par: { bytes: 13, ops: 0, sats: 0 }, scored: ["bytes"],
@@ -43,10 +44,10 @@ export const PUZZLES1 = [
     prompt: "Toy tx:", code: TX_HEX, ask: "Type the locktime (decimal).",
     check(a) {
       const ok = a.trim() === "750000";
-      return { ok, ...cost(a.trim().length), message: ok ? "750000. The tail bytes b0710b00 read little end first." : "Find the final ac, then read 4 bytes little endian." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "750000. The tail bytes b0710b00 read little end first." : "Find the final ac, then read 4 bytes little endian." };
     },
     reference: "750000", wrong: ["2957395200", "0"], hints: ["Locktime is the last 4 bytes: b0710b00.", "b0710b00 little endian is 0x000b71b0, which is 750000."],
-    par: { bytes: 6, ops: 0, sats: 0 }, scored: ["bytes"],
+    par: { bytes: 3, ops: 0, sats: 0 }, scored: ["bytes"],
     debrief: ["Whitepaper section 1 (tx anatomy)", "Core src/primitives/transaction.h CTransaction"],
   },
   {
@@ -57,10 +58,10 @@ export const PUZZLES1 = [
     check(a) {
       const t = a.trim().toLowerCase();
       const ok = t === TXID;
-      return { ok, ...cost(t.length), message: ok ? "That is the txid. Internal order is the same bytes flipped." : "Hash twice, then reverse the 32 bytes for display." };
+      return { ok, ...cost(answerBytes(t)), message: ok ? "That is the txid. Internal order is the same bytes flipped." : "Hash twice, then reverse the 32 bytes for display." };
     },
     reference: TXID, wrong: ["7e3298d3a2e3fdbd0f56445a98c4ff67f34834fec2331223613f66a31e99f72e", [...TXID].reverse().join("")], hints: ["Double SHA-256 first: hash the hash.", "Then reverse byte order for display. Wallets show the flip."],
-    par: { bytes: 64, ops: 0, sats: 0 }, scored: ["bytes"],
+    par: { bytes: 32, ops: 0, sats: 0 }, scored: ["bytes"],
     debrief: ["Core src/hash.h Hash256", "Core src/uint256.h (display order)", "Whitepaper section 2 (tx hash chain)"],
   },
   {
@@ -85,10 +86,10 @@ export const PUZZLES1 = [
     prompt: "abc versus abd. How many of 64 hex chars differ?",
     check(a) {
       const ok = a.trim() === "58";
-      return { ok, ...cost(a.trim().length), message: ok ? "58 of 64. Mining leans on this: every nonce is a fresh lottery ticket." : "Hash abc, hash abd, compare char by char." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "58 of 64. Mining leans on this: every nonce is a fresh lottery ticket." : "Hash abc, hash abd, compare char by char." };
     },
     reference: "58", wrong: ["6", "64"], hints: ["The pad shows both digests. Line them up.", "Only a few chars survive. Count the rest."],
-    par: { bytes: 2, ops: 0, sats: 0 }, scored: ["bytes"],
+    par: { bytes: 1, ops: 0, sats: 0 }, scored: ["bytes"],
     debrief: ["FIPS 180-4 (SHA-256)", "Whitepaper section 4 (proof of work scans nonces)"],
   },
   {
@@ -98,14 +99,14 @@ export const PUZZLES1 = [
     prompt: "Bits 1f00ffff. Type the winning nonce.",
     check(a) {
       const t = a.trim();
-      if (!/^\d+$/.test(t)) return { ok: false, ...cost(t.length), message: "Type digits only." };
+      if (!/^\d+$/.test(t)) return { ok: false, ...cost(answerBytes(t)), message: "Type digits only." };
       const h = { version: 1, prevHash: "00".repeat(32), merkleRoot: "22".repeat(32), time: 1700000000, bits: 0x1f00ffff, nonce: Number(t) >>> 0 };
       const hash = blockHashOf(h);
       const ok = hashMeetsBits(hash, h.bits);
-      return { ok, ...cost(t.length), message: ok ? `Nonce ${t} wins. Hash ${hash.slice(0, 16)} sits under target.` : "That hash is over target. Keep scanning." };
+      return { ok, ...cost(answerBytes(t)), message: ok ? `Nonce ${t} wins. Hash ${hash.slice(0, 16)} sits under target.` : "That hash is over target. Keep scanning." };
     },
     reference: "282853", wrong: ["0", "282854"], hints: ["Press Mine and watch the counter.", "The first win sits near nonce 282853."],
-    par: { bytes: 6, ops: 0, sats: 0 }, scored: ["bytes"],
+    par: { bytes: 3, ops: 0, sats: 0 }, scored: ["bytes"],
     debrief: ["Whitepaper section 4 (proof of work)", "Core src/pow.cpp CheckProofOfWork", "Core src/primitives/block.h CBlockHeader"],
   },
   {
@@ -115,10 +116,10 @@ export const PUZZLES1 = [
     prompt: "2016 blocks in 7 days. Type the next bits.",
     check(a) {
       const ok = a.trim().toLowerCase() === "1c7fff80";
-      return { ok, ...cost(a.trim().length), message: ok ? "1c7fff80. Half the time, about twice as hard." : "New target is old times span over 2 weeks. Then back to bits." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "1c7fff80. Half the time, about twice as hard." : "New target is old times span over 2 weeks. Then back to bits." };
     },
     reference: "1c7fff80", wrong: ["1d00ffff", "1c00ffff"], hints: ["7 days over 14 days is one half.", "Halve the max target, then encode compact."],
-    par: { bytes: 8, ops: 0, sats: 0 }, scored: ["bytes"],
+    par: { bytes: 4, ops: 0, sats: 0 }, scored: ["bytes"],
     debrief: ["Core src/pow.cpp CalculateNextWorkRequired", "Whitepaper section 4 (difficulty adjustment)"],
   },
   {
@@ -143,7 +144,7 @@ export const PUZZLES1 = [
     prompt: "Blocks: C(hash c3, prev b2). A(hash a1, prev 00). B(hash b2, prev a1). Type oldest first.",
     check(a) {
       const ok = a.replace(/\s+/g, "").toUpperCase() === "A,B,C";
-      return { ok, ...cost(a.trim().length), message: ok ? "A points at genesis, B at A, C at B. One chain." : "Find the block whose prev no other hash matches. That is oldest." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "A points at genesis, B at A, C at B. One chain." : "Find the block whose prev no other hash matches. That is oldest." };
     },
     reference: "A,B,C", wrong: ["C,B,A", "B,A,C"], hints: ["Only A has a prev (00) that no block hashes to.", "Then follow prev links forward."],
     par: { bytes: 5, ops: 0, sats: 0 }, scored: ["bytes"],
@@ -156,11 +157,11 @@ export const PUZZLES1 = [
     prompt: "Type the 4 leaf root (64 hex chars).",
     check(a) {
       const ok = a.trim().toLowerCase() === "7879b7935145ee5613a8bceb75205f2949f702d724aa1423d42d5e9b7807dca9";
-      return { ok, ...cost(a.trim().length), message: ok ? "Root built. Every tx in the block folds into those 32 bytes." : "Hash A+B, hash C+D, then hash the two results." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "Root built. Every tx in the block folds into those 32 bytes." : "Hash A+B, hash C+D, then hash the two results." };
     },
     reference: "7879b7935145ee5613a8bceb75205f2949f702d724aa1423d42d5e9b7807dca9", wrong: ["5d32bae6c2390d15a78a02a0b1e27d7b691a32c5d95fbda9e7753572d4bd6c06", "00".repeat(32)],
     hints: ["Double SHA each pair, left first.", "Two level one hashes, then one root hash. Three hashes total."],
-    par: { bytes: 64, ops: 0, sats: 0 }, scored: ["bytes"],
+    par: { bytes: 32, ops: 0, sats: 0 }, scored: ["bytes"],
     debrief: ["Core src/consensus/merkle.cpp BlockMerkleRoot", "Whitepaper section 7 (merkle trees)"],
   },
   {
@@ -170,11 +171,11 @@ export const PUZZLES1 = [
     prompt: "Leaves A, B, C. Type the root (64 hex chars).",
     check(a) {
       const ok = a.trim().toLowerCase() === "5d32bae6c2390d15a78a02a0b1e27d7b691a32c5d95fbda9e7753572d4bd6c06";
-      return { ok, ...cost(a.trim().length), message: ok ? "Root built. C paired with itself. This rule matters in puzzle 3-5." : "Hash A+B, hash C+C, then hash the pair." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "Root built. C paired with itself. This rule matters in puzzle 3-5." : "Hash A+B, hash C+C, then hash the pair." };
     },
     reference: "5d32bae6c2390d15a78a02a0b1e27d7b691a32c5d95fbda9e7753572d4bd6c06", wrong: ["7879b7935145ee5613a8bceb75205f2949f702d724aa1423d42d5e9b7807dca9", "00".repeat(32)],
     hints: ["Odd count: C pairs with C.", "Same three hashes as 3-1, new shape."],
-    par: { bytes: 64, ops: 0, sats: 0 }, scored: ["bytes"],
+    par: { bytes: 32, ops: 0, sats: 0 }, scored: ["bytes"],
     debrief: ["Core src/consensus/merkle.cpp (duplicate last on odd levels)", "Whitepaper section 7"],
   },
   {
@@ -184,11 +185,11 @@ export const PUZZLES1 = [
     prompt: "Leaf B, index 1, two siblings. Type the root they prove.",
     check(a) {
       const ok = a.trim().toLowerCase() === "7879b7935145ee5613a8bceb75205f2949f702d724aa1423d42d5e9b7807dca9";
-      return { ok, ...cost(a.trim().length), message: ok ? "Proven. Two hashes stand in for the whole block." : "Index 1 is odd: hash sibling plus leaf. Then hash result plus second sibling." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "Proven. Two hashes stand in for the whole block." : "Index 1 is odd: hash sibling plus leaf. Then hash result plus second sibling." };
     },
     reference: "7879b7935145ee5613a8bceb75205f2949f702d724aa1423d42d5e9b7807dca9", wrong: ["5d32bae6c2390d15a78a02a0b1e27d7b691a32c5d95fbda9e7753572d4bd6c06", "00".repeat(32)],
     hints: ["First: H(sibling A plus leaf B). Index 1 goes right.", "Second: H(that plus sibling CD). Index halves to 0, so result goes left."],
-    par: { bytes: 64, ops: 0, sats: 0 }, scored: ["bytes"],
+    par: { bytes: 32, ops: 0, sats: 0 }, scored: ["bytes"],
     debrief: ["Whitepaper section 8 (simplified payment verification)", "Core src/merkleblock.cpp (partial proofs)"],
   },
   {
@@ -198,11 +199,11 @@ export const PUZZLES1 = [
     prompt: "Type the tampered root (64 hex chars).",
     check(a) {
       const ok = a.trim().toLowerCase() === "e19905a1b4b04e87df854d609291984af04ddc1fc1d5cf46fa42924ef13ff294";
-      return { ok, ...cost(a.trim().length), message: ok ? "New root. Nothing in common with the old one. That is tamper evidence." : "Rebuild A+B, C+D, then the pair, with the new B." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "New root. Nothing in common with the old one. That is tamper evidence." : "Rebuild A+B, C+D, then the pair, with the new B." };
     },
     reference: "e19905a1b4b04e87df854d609291984af04ddc1fc1d5cf46fa42924ef13ff294", wrong: ["7879b7935145ee5613a8bceb75205f2949f702d724aa1423d42d5e9b7807dca9", "00".repeat(32)],
     hints: ["Only the B leaf changed. A, C, D stay.", "The level one hash A+B changes, so the root changes."],
-    par: { bytes: 64, ops: 0, sats: 0 }, scored: ["bytes"],
+    par: { bytes: 32, ops: 0, sats: 0 }, scored: ["bytes"],
     debrief: ["Whitepaper section 7 (any change breaks the chain of hashes)"],
   },
   {
@@ -236,7 +237,7 @@ export const PUZZLES1 = [
           return { ok: false, ...cost(raw.length), message: "The unlock must be exactly two pushes." };
         }
         pushes = items.map((o) => o.push);
-      } catch (e) { return { ok: false, ...cost(a.length), message: e.message }; }
+      } catch (e) { return { ok: false, ...cost(answerBytes(a)), message: e.message }; }
       const lock = parseAsm("OP_DUP OP_HASH160 <5dedfbf9ea599dd4e3ca6a80b333c472fd0b3f69> OP_EQUALVERIFY OP_CHECKSIG");
       const r = execute(lock, pushes, { msgHash: hexToBytes("1ee4dd291cec0b0a904550d3759af9bb1f11659523cd531892ccce3ba5fc110b") });
       return { ok: r.ok, ...cost(pushes.reduce((s, b) => s + b.length + 1, 0), r.ops), message: r.ok ? "Unlocked. Sig first, pubkey second, every time." : `Locked: ${r.error}` };
@@ -257,7 +258,7 @@ export const PUZZLES1 = [
     check(a) {
       let raw;
       try { raw = parseAsm(a); }
-      catch (e) { return { ok: false, ...cost(a.length), message: e.message }; }
+      catch (e) { return { ok: false, ...cost(answerBytes(a)), message: e.message }; }
       const prog = parseAsm("OP_HASH160 <15fc0754e73eb85d1cbce08786fadb7320ecb8dc> OP_EQUAL");
       const r = executeP2SH(raw, prog, { msgHash: hexToBytes("795e6013e25d122f539685331821c5b19e4ea7d89450a28bffc82e3605c1b8a2") });
       return { ok: r.ok, ...cost(raw.length, r.ops), message: r.ok ? "Vault open. Hash matched, then 2 of 3 verified." : `Locked: ${r.error}` };
@@ -276,10 +277,10 @@ export const PUZZLES1 = [
     lock: "1000 OP_CHECKLOCKTIMEVERIFY OP_DROP OP_TRUE",
     check(a) {
       const ok = a.trim() === "1000";
-      return { ok, ...cost(a.trim().length), message: ok ? "1000. At 999 the timelock holds." : "Run heights in the widget. Find where fail turns to pass." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "1000. At 999 the timelock holds." : "Run heights in the widget. Find where fail turns to pass." };
     },
     reference: "1000", wrong: ["999", "1001"], hints: ["999 fails, 1000 passes.", "Smallest means the exact boundary."],
-    par: { bytes: 4, ops: 0, sats: 0 }, scored: ["bytes"],
+    par: { bytes: 2, ops: 0, sats: 0 }, scored: ["bytes"],
     debrief: ["BIP65 (CHECKLOCKTIMEVERIFY)", "Core src/script/interpreter.cpp EvalScript CLTV branch"],
   },
   {
@@ -292,7 +293,7 @@ export const PUZZLES1 = [
     check(a) {
       let raw;
       try { raw = parseAsm(a); }
-      catch (e) { return { ok: false, ...cost(a.length), message: e.message }; }
+      catch (e) { return { ok: false, ...cost(answerBytes(a)), message: e.message }; }
       const lock = parseAsm("2 <0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798> <02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5> <02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9> 3 OP_CHECKMULTISIG");
       const items = disassemble(raw);
       const r = execute(lock, items.map((o) => o.push || new Uint8Array(0)), { msgHash: hexToBytes("68e08e4e16253c2cf209b1e0b50c9594e7ada600a9171da5f35b751b3320dfb6") });
@@ -315,7 +316,7 @@ export const PUZZLES1 = [
     check(a) {
       const t = a.trim().toUpperCase().replace(/^OP_/, "");
       const ok = t === "EQUALVERIFY" || t === "OP_EQUALVERIFY";
-      return { ok, ...cost(a.trim().length), message: ok ? "EQUALVERIFY. The hashed sig never equals the pubkey hash." : "Step op by op. The trace stops at the killer." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "EQUALVERIFY. The hashed sig never equals the pubkey hash." : "Step op by op. The trace stops at the killer." };
     },
     reference: "OP_EQUALVERIFY", wrong: ["OP_CHECKSIG", "OP_DUP"], hints: ["OP_DUP copies the sig, not the key.", "HASH160 of a sig matches nothing."],
     par: { bytes: 14, ops: 0, sats: 0 }, scored: ["bytes"],
@@ -330,7 +331,7 @@ export const PUZZLES1 = [
     check(a) {
       let raw;
       try { raw = parseAsm(a); }
-      catch (e) { return { ok: false, ...cost(a.length), message: e.message }; }
+      catch (e) { return { ok: false, ...cost(answerBytes(a)), message: e.message }; }
       const items = disassemble(raw);
       if (items.length !== 1 || items[0].push === undefined) return { ok: false, ...cost(raw.length), message: "One push: the secret bytes." };
       const lock = parseAsm("OP_SHA256 <47cc47352d962126b43cad56da4c42739a45f6e6600ac36fb81731575f96a536> OP_EQUAL");

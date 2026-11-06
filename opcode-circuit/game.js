@@ -75,6 +75,7 @@ function achievementsView() {
 }
 function route() {
   const h = location.hash || "#/";
+  window.scrollTo(0, 0);
   let m = h.match(/^#\/chapter\/([\w-]+)/);
   if (m) { chapterView(m[1]); return; }
   m = h.match(/^#\/puzzle\/([\w-]+)/);
