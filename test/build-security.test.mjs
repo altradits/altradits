@@ -711,3 +711,46 @@ test("Opcode Circuit: same route on both stacks, install manifest, versioned off
   assert.match(read("sitemap.xml"), /<loc>https:\/\/altradits\.com\/opcode-circuit<\/loc>/, "sitemap lists the game");
 });
 
+test("the deploy writes a marker the file check defers to, and the marker is never web content", () => {
+  const cron = read("deploy/cron.sh");
+  assert.match(cron, /\.deploy-marker\.json/, "deploy/cron.sh: the deploy writes its window to .deploy-marker.json");
+  assert.match(cron, /marker "in-progress"/, "deploy/cron.sh: the marker opens when the deploy starts");
+  assert.match(cron, /marker "done"/, "deploy/cron.sh: the marker closes once the tree is final");
+  const deny = read(".htaccess").match(/<FilesMatch "\^\(([^"]+)\)\$">/)[1];
+  assert.ok(new RegExp(`^(${deny})$`).test(".deploy-marker.json"), ".htaccess: the deploy marker is denied to the web server");
+});
+
+test("a mid-deploy file check defers; unsigned or non-main code is a strong signal that freezes", () => {
+  const dm = read("lib/deadman.js");
+  assert.match(dm, /if \(deploy\.inProgress\)/, "lib/deadman.js checkFileIntegrity: a deploy in progress defers judgment");
+  assert.match(dm, /deferred: true/, "lib/deadman.js: the deferral is reported, not silent");
+  assert.match(dm, /headStatus\(rootDir\)/, "lib/deadman.js: the running HEAD is judged against origin/main");
+  assert.match(dm, /strong = true/, "lib/deadman.js: code outside a signed deploy is marked strong");
+  assert.match(dm, /if \(files\.strong\)/, "lib/deadman.js runDeadmanChecks: a strong file signal freezes at once");
+});
+
+test("the deadman acknowledgement link: hashed token, constant-time compare, single-use, rate-limited, never acts on GET", () => {
+  const dm = read("lib/deadman.js");
+  assert.match(dm, /createHash\("sha256"\)\.update\(token\)/, "lib/deadman.js: ack tokens are hashed");
+  assert.match(dm, /dmack:\$\{fh\}/, "lib/deadman.js: only the token hash is stored");
+  assert.match(dm, /timingSafeEqual\(Buffer\.from\(rec\.fh, "hex"\), Buffer\.from\(h, "hex"\)\)/, "lib/deadman.js: the stored ack hash is compared in constant time");
+  assert.match(dm, /if \(rec\.used\) return null/, "lib/deadman.js: a used ack token is dead (single-use)");
+  const api = read("api/deadman.js");
+  assert.match(api, /rl:dm:ack:/, "api/deadman.js: ack attempts are rate-limited per network");
+  const get = api.slice(api.indexOf("export async function GET"), api.indexOf("export async function POST"));
+  assert.doesNotMatch(get, /acknowledgeWatch\(/, "api/deadman.js GET: opening the link (mail scanners open every link) never closes the watch");
+  assert.match(api.slice(api.indexOf("export async function POST")), /acknowledgeWatch\(/, "api/deadman.js POST: only the button tap acknowledges");
+});
+
+test("a lockdown freezes Developer top-ups but never invoice creation (receiving always works)", () => {
+  const dev = read("lib/devapi.js");
+  const fn = (name) => {
+    const at = dev.indexOf(`export async function ${name}(`);
+    const next = dev.indexOf("\nexport async function ", at + 1);
+    return dev.slice(at, next === -1 ? undefined : next);
+  };
+  assert.doesNotMatch(fn("createInvoice"), /checkLockdown\(\)/, "lib/devapi.js createInvoice: receiving stays live during a lockdown");
+  assert.match(fn("createTopup"), /await checkLockdown\(\)/, "lib/devapi.js createTopup: top-ups freeze during a lockdown");
+  assert.match(dev, /lockdown_freeze/, "lib/devapi.js: the freeze still has its stable error code");
+});
+

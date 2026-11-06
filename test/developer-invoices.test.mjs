@@ -251,7 +251,7 @@ test("settlement: verify settles, silence stays pending, hashes verify", async (
   assert.match(qs.json.note, /Confirm in your wallet/, "the silence is stated plainly");
 });
 
-test("lockdown freezes new invoices; reads still work", async () => {
+test("lockdown leaves new invoices live; reads still work", async () => {
   const c = await ctx();
   const d = await dest(c, "lock");
   const before = await call("POST", "v1/invoices", { token: c.key, body: { destinationId: d.id, sats: 40 } });
@@ -259,9 +259,9 @@ test("lockdown freezes new invoices; reads still work", async () => {
   const deadman = await import("../lib/deadman.js");
   await deadman.tripDeadman({ trigger: "manual", reason: "Developer API test" });
   try {
-    const frozen = await call("POST", "v1/invoices", { token: c.key, body: { destinationId: d.id, sats: 40 } });
-    assert.equal(frozen.status, 503);
-    assert.equal(frozen.json.code, "lockdown_freeze");
+    // Receiving always works during a freeze: only money-out freezes.
+    const live = await call("POST", "v1/invoices", { token: c.key, body: { destinationId: d.id, sats: 40 } });
+    assert.equal(live.status, 201);
     assert.equal((await call("GET", `v1/invoices/${before.json.invoice.id}`, { token: c.key })).status, 200);
   } finally {
     await deadman.liftDeadman({ by: "stanley", force: "force", note: "Developer API test over" });
