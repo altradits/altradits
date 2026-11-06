@@ -22,7 +22,7 @@ const post = (p, body, ip = "203.0.113.7") => api.POST(new Request(`https://altr
 const admin = (body) => adminApi.POST(new Request("https://altradits.test/api/admin",
   { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer kazi-test-admin-token" }, body: JSON.stringify(body) }));
 const TASK = (over = {}) => ({ title: "Translate one page to Kiswahili", desc: "A shop sign needs checking.", reward: 2000, unit: "SATS",
-  location: "Kondele", poster: "Stan", contact: "WhatsApp 0712 000 000", agree: true, ...over });
+  location: "Kondele", poster: "Stan", contact: "WhatsApp 0707 172 370", agree: true, ...over });
 
 test("health always answers; everything else waits on the KAZI switch", async () => {
   assert.equal((await (await get("health")).json()).on, true);
