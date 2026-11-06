@@ -181,13 +181,14 @@ test("the statement shows the balance, the ledger and the totals", async () => {
   await call("GET", `v1/invoices/${made.json.invoice.id}`, { token: c.key });
   const st = await call("GET", "v1/statement", { token: c.session });
   assert.deepEqual(st.json.balance, { live: 495, test: 0 });
-  assert.deepEqual(st.json.totals, { toppedUp: 500, feesPaid: 5, settledVolume: 1000, settledCount: 1 });
+  assert.deepEqual(st.json.totals.live, { toppedUp: 500, feesPaid: 5, settledVolume: 1000, settledCount: 1, shortfall: 0 });
+  assert.deepEqual(st.json.totals.test, { toppedUp: 0, feesPaid: 0, settledVolume: 0, settledCount: 0, shortfall: 0 });
   assert.deepEqual(st.json.entries.map((e) => e.type), ["fee", "topup"], "newest first");
   assert.equal(st.json.entries[0].balanceAfter, 495);
   assert.equal(st.json.entries[1].balanceAfter, 500);
   assert.equal(st.json.entries[0].invoiceId, made.json.invoice.id);
   // A key with read scope sees the same statement.
-  assert.equal((await call("GET", "v1/statement", { token: c.key })).json.totals.settledCount, 1);
+  assert.equal((await call("GET", "v1/statement", { token: c.key })).json.totals.live.settledCount, 1);
 });
 
 test("sandbox testing is free: a dry test balance refills itself", async () => {

@@ -212,7 +212,7 @@ th{font-family:'Bricolage Grotesque',sans-serif}
   <div class="ep"><span class="method get">GET</span><code>/balance</code> <span class="pill">Live</span></div>
   <p class="intro">The prepaid balance: <code>{"live", "test"}</code> in sats.</p>
   <div class="ep"><span class="method get">GET</span><code>/statement</code> <span class="pill">Live</span></div>
-  <p class="intro">Balance, totals (<code>toppedUp</code>, <code>feesPaid</code>, <code>settledVolume</code>, <code>settledCount</code>), and the ledger: every top-up, fee and grant, newest first. Paginated.</p>
+  <p class="intro">Balance, per-environment totals (<code>live</code> and <code>test</code>: <code>toppedUp</code>, <code>feesPaid</code>, <code>settledVolume</code>, <code>settledCount</code>, <code>shortfall</code>), and the ledger: every top-up, fee and grant, newest first. Paginated. Only live fees are real sats.</p>
 
   <h2 id="sandbox">Sandbox</h2>
   <p class="intro">Test keys and the simulator. Free. Works while mainnet is off. The sandbox never touches the network or the node.</p>

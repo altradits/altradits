@@ -83,4 +83,8 @@ The sandbox runs while mainnet is off.
   `developer-dashboard.html`: page, reference, dashboard.
 - Tests: `test/developer-accounts.test.mjs`,
   `test/developer-invoices.test.mjs`, `test/developer-fees.test.mjs`,
-  `test/developer-sandbox.test.mjs`, `test/developer-pages.test.mjs`.
+  `test/developer-sandbox.test.mjs`, `test/developer-pages.test.mjs`,
+  `test/developer-admin.test.mjs`.
+- Admin: the Developer tab (`?view=developer`, `dev_suspend_key` action)
+  shows accounts, settled volume, live fees earned, abuse flags
+  (shortfalls, suspensions, guessing counts), and suspends keys.
