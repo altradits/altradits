@@ -499,6 +499,38 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
   assert.match(kt, /deleteKeys\(\[`kt:\$\{old\.id\}`\]\)/, "lib/ktown.js: a takeover ends the old record, so its sessions and QR die with it");
 });
 
+test("trivia: the switch gates writes, the server owns play, the page calls only this site", () => {
+  const live = read("lib/trivia-live.js"), api = read("api/trivia.js"), srv = read("server.mjs");
+  assert.match(read("lib/trivia.js"), /switchOn\("TRIVIA"\)/, "lib/trivia.js: live play waits on the TRIVIA switch");
+  assert.match(live, /requireTrivia\(\)/, "lib/trivia-live.js: starting and answering need the switch on");
+  for (const k of ["rl:trv:ans:", "rl:trv:join:", "rl:trv:fund:", "rl:trv:read:"])
+    assert.ok(api.includes(k), `api/trivia.js: rate limit ${k}... is in place`);
+  assert.match(live, /deadlineMs - QUESTION_MS/, "lib/trivia-live.js: reply timing is measured on the server clock");
+  assert.match(live, /settleBattle\(meta\.battle/, "lib/trivia-live.js: battle sats move once per settled round");
+  assert.match(live, /after !== before\) throw err\("Battle sats mismatch\."\s*, 500\)/, "lib/trivia-live.js: a broken battle total fails closed");
+  assert.match(api, /action === "answer"/, "api/trivia.js: answers arrive as an action, checked on the server");
+  const html = read("trivia.html"), js = read("assets/trivia.js");
+  assert.match(html, /connect-src 'self'/, "trivia.html: the page calls only this site's API");
+  assert.doesNotMatch(html, /connect-src 'self' https?:/, "trivia.html: no API host beside this site");
+  assert.doesNotMatch(html, /src="http/, "trivia.html: no outside scripts or images (store assets in the repo)");
+  assert.doesNotMatch(html, /rel="stylesheet" href="http/, "trivia.html: no outside styles (store assets in the repo)");
+  assert.doesNotMatch(js, /fetch\(\s*["'`]https?:/, "assets/trivia.js: fetch() takes same-site paths only");
+  assert.ok(js.includes("/api/trivia"), "assets/trivia.js: live play runs through /api/trivia");
+  assert.match(js, /esc\(/, "assets/trivia.js: server words are escaped before they reach the page");
+  assert.match(html, /name="theme-color" content="#EEF2F6"/, "trivia.html: the theme color is set");
+  assert.doesNotMatch(html, /stak/i, "trivia.html: staked mode stays unshown while off");
+  assert.doesNotMatch(js, /stak/i, "assets/trivia.js: staked mode stays unshown while off");
+  assert.doesNotMatch(html, /\bearn\b/i, "trivia.html: no earnings promises");
+  for (const id of ["game", "join-form", "live-status", "q-choices", "board-body", "fund-form", "books-btn"])
+    assert.ok(html.includes(`id="${id}"`), `trivia.html: #${id} is missing`);
+  for (const [, id] of js.matchAll(/\$\("([a-z-]+)"\)/g))
+    assert.ok(html.includes(`id="${id}"`), `assets/trivia.js: #${id} is missing from trivia.html`);
+  assert.match(srv, /receipt\\.html\|trivia\\.html/, "server.mjs: the page is served as public content");
+  assert.match(srv, /receipt\|trivia\)\\\/\?/, "server.mjs: /trivia serves the page, /trivia.html redirects to it");
+  assert.ok(read(".htaccess").includes("tracker|journey|trivia"), ".htaccess: the same route on the Apache stack");
+  assert.match(read("sitemap.xml"), /<loc>https:\/\/altradits\.com\/trivia<\/loc>/, "sitemap.xml: the game is listed");
+});
+
 test("admin bodies over 100 KB need the token up front: strangers hit 413, the token passes 700 KB", async () => {
   const { adminAuthed } = await import("../lib/http.js");
   assert.match(read("server.mjs"), /const limit = api\[1\] === "admin" && adminAuthed\(req\.headers\.authorization\) \? 1_000_000 : 100_000;/, "server.mjs: the ~1 MB body budget needs a valid admin token first");
