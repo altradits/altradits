@@ -22,6 +22,12 @@ Ye₿ente. Start here: https://altradits.com/
   the merchant receives Kenyan shillings in M-Pesa. kTown holds no money and
   is not a wallet; Tando converts for a 1 percent fee.
 
+## Kabuna: Ethiopian coffee and gifts, paid in Lightning
+
+- Stanley's shop for Ethiopian coffee and gifts. Checkout mints a Lightning
+  invoice from the shop's own address, so sats go straight to the owner.
+  Open source, in build: https://github.com/altradits/kabuna
+
 ## Questions, answered
 
 - kTown questions on the homepage: https://altradits.com/
