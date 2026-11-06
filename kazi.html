@@ -6,7 +6,7 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-vEv9wn0uVsdLGfhGHIiwzFyTipeGNd4Xlqffnmm6eRo='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-a/cYFeQGSKrSqLbbeEUxk96js1PRgvIukdRCcfERNts='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <meta name="theme-color" content="#EEF2F6">
 <link rel="canonical" href="https://altradits.com/kazi">
@@ -169,12 +169,16 @@ form.board .agree input{width:1.4rem;height:1.4rem;margin-top:.2rem;flex:none}
     <h3 id="mv-title"></h3>
     <p class="intro sm" id="mv-status"></p>
     <form class="board" id="edit-form">
+      <label for="e-title" data-i18n="fTitle">Title</label>
+      <input id="e-title" maxlength="100" autocomplete="off">
       <label for="e-desc" data-i18n="fDesc">What needs doing</label>
       <textarea id="e-desc" maxlength="2000"></textarea>
       <div class="row">
         <div><label for="e-reward" data-i18n="fReward">Reward</label><input id="e-reward" inputmode="numeric" autocomplete="off"></div>
         <div><label for="e-unit" data-i18n="fUnit">In</label><select id="e-unit"><option value="SATS">SATS</option><option value="KES">KES</option></select></div>
       </div>
+      <label for="e-location" data-i18n="fLocation">Where in Kisumu</label>
+      <input id="e-location" maxlength="60" autocomplete="off">
       <label for="e-contact" data-i18n="fContact">Contact line, shown on the board</label>
       <input id="e-contact" maxlength="120" autocomplete="off">
       <p class="intro sm" data-i18n="editNote">Edits go back to review before they appear.</p>
@@ -381,9 +385,11 @@ $("manage-view").hidden = false;
 $("mv-title").textContent = j.task.title;
 const st = { pending: t("statusPending"), open: t("statusOpen"), done: t("statusDone"), hidden: t("statusHidden") }[j.task.status] || j.task.status;
 $("mv-status").textContent = `${st} ${t("postedBy")} ${j.task.poster} · ${j.task.location}`;
+$("e-title").value = j.task.title;
 $("e-desc").value = j.task.desc;
 $("e-reward").value = j.task.reward;
 $("e-unit").value = j.task.unit;
+$("e-location").value = j.task.location;
 $("e-contact").value = j.task.contact;
 }
 $("manage-form").addEventListener("submit", async (e) => {
@@ -398,7 +404,8 @@ if (!managed) return;
 msg("edit-msg", "", "");
 try {
 const j = await api("manage", { id: managed.id, token: managed.token, action: "edit",
-desc: $("e-desc").value.trim(), reward: $("e-reward").value.trim(), unit: $("e-unit").value, contact: $("e-contact").value.trim() });
+title: $("e-title").value.trim(), desc: $("e-desc").value.trim(), reward: $("e-reward").value.trim(),
+unit: $("e-unit").value, location: $("e-location").value.trim(), contact: $("e-contact").value.trim() });
 managed.task = j.task;
 msg("edit-msg", t("saved"), "ok");
 } catch (err) { msg("edit-msg", err.message, "err"); }
