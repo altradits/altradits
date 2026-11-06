@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g=' 'sha256-sXj1Yn+HCN7zxDSBjiAd1AMzRqXzV/wG8dXCtFc/kSc='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<meta name="theme-color" content="#EEF2F6">
+<link rel="canonical" href="https://altradits.com/trivia">
+<title>Mempool Mayhem: free sats trivia battle · Altradits</title>
+<meta name="description" content="A free Bitcoin trivia battle. Entry costs nothing. Donors fund the prize pool, and winners are paid in sats over Lightning.">
+<link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
+<meta property="og:title" content="Mempool Mayhem: free sats trivia battle · Altradits">
+<meta property="og:description" content="A free Bitcoin trivia battle. Entry costs nothing. Donors fund the prize pool, and winners are paid in sats over Lightning.">
+<meta property="og:url" content="https://altradits.com/trivia">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://altradits.com/assets/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Ye₿ente wallet: send money anywhere, keep all of it">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mempool Mayhem: free sats trivia battle · Altradits">
+<meta name="twitter:description" content="A free Bitcoin trivia battle. Entry costs nothing. Donors fund the prize pool, and winners are paid in sats over Lightning.">
+<meta name="twitter:image" content="https://altradits.com/assets/social-card.png">
+<link rel="stylesheet" href="/assets/trivia.css">
+<style>
+/* Brand fonts, served from this site: Bricolage Grotesque and Figtree (SIL Open Font License 1.1, https://openfontlicense.org), latin and latin-ext (₿), variable weight */
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0 -1rem;padding:.8rem 1rem;flex-wrap:wrap;row-gap:.5rem;position:sticky;top:0;z-index:50;background:rgba(238,242,246,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top img{height:2.5rem;width:auto;display:block}
+.topnav{display:flex;gap:.35rem;flex-wrap:wrap;row-gap:.35rem;align-items:center}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.45rem .95rem;border-radius:99px}
+.topnav a:hover{color:var(--ink);background:rgba(15,27,45,.08)}
+.topnav a[aria-current]{color:#fff;background:var(--ink)}
+@media (max-width:420px){.topnav{gap:.25rem}.topnav a{font-size:.9rem;padding:.4rem .7rem}.top img{height:1.9rem}}
+.hero{padding:2.25rem 0 1.5rem}
+.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem}
+.hero h1 em{font-style:normal;color:var(--btc-text)}
+.lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:38rem}
+.ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
+.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none;cursor:pointer}
+.btn.ghost{background:transparent;border-color:var(--ink)}
+h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:2.4rem 0 .4rem}
+h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:1.6rem 0 .4rem}
+.intro{color:var(--muted);margin:0 0 1.2rem;max-width:42rem}
+.cards{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem}
+.cards>li{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem}
+.cards p{margin:0;color:var(--muted);font-size:.97rem}
+.proof{max-width:46rem;padding-left:1.2rem;color:var(--muted)}
+.proof li{margin:.4rem 0}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}
+.sitefoot .wp{margin:0 0 .6rem}
+.err{color:#B42318}
+.topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
+.topnav a.launch:hover{color:var(--ink);background:#ffa94d}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top,.tabs{transition:box-shadow .25s ease}body.scrolled .top,body.scrolled .tabs{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}}
+.qr{max-width:16rem;background:#fff;padding:.5rem;border-radius:.6rem;margin:1rem 0 .5rem}.qr svg{display:block;width:100%;height:auto}
+</style>
+</head>
+<body>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+</script>
+<div class="wrap">
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/library">Library</a><a href="/friends">Friends</a><a class="launch" href="/yebente">Open Ye₿ente</a></nav></div>
+
+  <header class="hero">
+    <h1>Mempool Mayhem. <em>A free sats trivia battle.</em></h1>
+    <p class="lead">Answer Bitcoin questions live. Entry is free. Donors fund the prizes. Winners are paid over Lightning.</p>
+    <div class="ctas"><a class="btn" href="#play">Play now</a><a class="btn ghost" href="#fund">Fund the pool</a></div>
+  </header>
+
+  <p class="off" id="trivia-off" hidden>Trivia is off right now. Past games stay readable below. Check back soon.</p>
+
+  <h2>How it plays</h2>
+  <ul class="cards">
+    <li><h3>Free entry</h3><p>Joining costs nothing. No buy-in, no deposit, no ticket.</p></li>
+    <li><h3>Last one standing</h3><p>Three lives. Twenty seconds a question. Wrong or silent answers cost a life. Ties share the win.</p></li>
+    <li><h3>The server keeps time</h3><p>Your clock decides nothing. The server opens and closes every round and checks every answer.</p></li>
+    <li><h3>Real prizes from donors</h3><p>The prize pool is donated sats. Winners split it at the end. Stanley approves every payout.</p></li>
+  </ul>
+
+  <h2 id="play">Play</h2>
+  <p class="intro">Pick a game, take a seat, answer live.</p>
+
+  <h3>Games</h3>
+  <ul class="games" id="games-list"><li><span class="t">Loading games.</span></li></ul>
+
+  <h3>Take a seat</h3>
+  <form id="join-form" class="quiz">
+    <label class="f" for="game">Game</label>
+    <select id="game" name="game"></select>
+    <div class="row2">
+      <div><label class="f" for="join-name">Player name</label><input id="join-name" name="name" maxlength="24" autocomplete="nickname" placeholder="Amina" required></div>
+      <div><label class="f" for="join-account">Account</label><input id="join-account" name="account" maxlength="20" autocomplete="off" placeholder="amina.ln" required></div>
+    </div>
+    <p class="hint">One seat per account. Lowercase letters, digits, dot, dash, underscore.</p>
+    <button class="btn" type="submit">Take a seat</button>
+    <p class="err" id="join-err" role="alert"></p>
+    <p class="status" id="join-ok" role="status"></p>
+  </form>
+
+  <h3>Live</h3>
+  <p class="status" id="live-status" role="status">Pick a game to watch or play.</p>
+  <p class="err" id="live-err" role="alert"></p>
+  <div class="quiz" id="live-q" hidden>
+    <p class="q-meta"><span id="q-round">Round 1</span> <span class="pill" id="q-level">beginner</span></p>
+    <p class="q-text" id="q-text"></p>
+    <p class="q-sw" id="q-sw" hidden></p>
+    <div class="count" aria-hidden="true"><i id="q-bar"></i></div>
+    <p class="q-left" id="q-left"></p>
+    <ul class="choices" id="q-choices"></ul>
+    <p class="q-foot" id="q-answers"></p>
+  </div>
+  <div class="quiz" id="live-last" hidden></div>
+  <p class="me" id="live-me" hidden></p>
+  <table class="board" aria-label="Scoreboard">
+    <thead><tr><th class="num">#</th><th>Player</th><th class="num">Points</th><th class="num">Lives</th><th class="num">Battle</th></tr></thead>
+    <tbody id="board-body"></tbody>
+  </table>
+
+  <h2 id="fund">Fund the pool</h2>
+  <p class="intro">Back a game, a team, or a player. Your sats become the prizes. Paid messages show on the wall.</p>
+  <form id="fund-form" class="quiz">
+    <label class="f" for="fund-game">Game</label>
+    <select id="fund-game" name="game"></select>
+    <div class="row2">
+      <div><label class="f" for="fund-sats">Amount (sats)</label><input id="fund-sats" name="sats" type="number" inputmode="numeric" min="10" max="5000000" step="1" placeholder="1000" required></div>
+      <div><label class="f" for="fund-kind">Backs</label><select id="fund-kind" name="kind"><option value="game">The game</option><option value="team">A team</option><option value="player">A player</option></select></div>
+    </div>
+    <label class="f" for="fund-target">Team or player</label>
+    <input id="fund-target" name="target" maxlength="64" autocomplete="off" placeholder="Red">
+    <p class="hint">Empty means the whole game.</p>
+    <label class="f" for="fund-msg">Message</label>
+    <input id="fund-msg" name="message" maxlength="140" autocomplete="off" placeholder="Good luck, everyone.">
+    <p class="hint">One line, no links.</p>
+    <button class="btn" type="submit">Make an invoice</button>
+    <p class="err" id="fund-err" role="alert"></p>
+  </form>
+  <div class="quiz" id="fund-invoice" hidden>
+    <div class="qr" id="fund-qr"></div>
+    <textarea id="fund-bolt" readonly rows="3" aria-label="Lightning invoice"></textarea>
+    <div class="ctas"><button type="button" class="btn ghost" id="fund-copy">Copy invoice</button><a class="btn ghost" id="fund-open" href="#">Open in wallet</a></div>
+    <p class="status" id="fund-state" role="status">Waiting for payment.</p>
+  </div>
+  <p class="status" id="pool-line" role="status"></p>
+  <h3>Message wall</h3>
+  <ul class="wall" id="wall"></ul>
+
+  <h2 id="books">Open books</h2>
+  <p class="intro">Every sat in and out is listed. The pool total always matches the entries.</p>
+  <div class="quiz">
+    <label class="f" for="books-game">Game</label>
+    <select id="books-game" name="game"></select>
+    <div class="ctas"><button type="button" class="btn" id="books-btn">Show the books</button></div>
+    <p class="err" id="books-err" role="alert"></p>
+    <p class="status" id="books-pool" role="status"></p>
+    <table class="board" aria-label="Ledger">
+      <thead><tr><th class="num">#</th><th>Kind</th><th class="num">Sats</th><th>Note</th><th>Time</th></tr></thead>
+      <tbody id="books-ledger"></tbody>
+    </table>
+  </div>
+
+  <h2>Honest notes</h2>
+  <ul class="proof">
+    <li>Entry is free in donor mode. This page never asks for payment to play.</li>
+    <li>Prizes come only from donations. A small pool means small prizes.</li>
+    <li>Nobody promises winnings. Play to learn Bitcoin.</li>
+    <li>We keep your player name and account only. No email, no phone, no tracking.</li>
+    <li>A cancelled game follows its written rule. Sats are kept for the next game or marked for manual return. The ledger keeps every entry.</li>
+  </ul>
+
+</div>
+
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/yebente">Open Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin questions</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/trivia">Trivia</a> · <a href="/donate">Support my work</a> · <a href="/contact">Contact</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a></div></footer>
+<script src="/assets/trivia.js"></script>
+<script>
+addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY>24)},{passive:true});document.body.classList.toggle("scrolled",scrollY>24); // nav shadow on scroll
+</script>
+</body>
+</html>
