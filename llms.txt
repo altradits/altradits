@@ -31,7 +31,8 @@ Ye₿ente. Start here: https://altradits.com/
 
 ## Questions, answered
 
-- Quick answers on the homepage: https://altradits.com/
+- kTown questions on the homepage: https://altradits.com/
+- Wallet questions in the wallet guide: https://altradits.com/wallet-guide
 - Full questions page: https://altradits.com/bitcoin
 - Free library in reading order: https://altradits.com/library
 - The teams behind the wallet: https://altradits.com/friends
