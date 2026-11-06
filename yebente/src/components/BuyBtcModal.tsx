@@ -522,7 +522,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
               <PhoneInput
                 dial="254"
                 digits={9}
-                example="712 345 678"
+                example="707 172 370"
                 value={phone}
                 onChange={(full) => setPhone(full)}
                 label={viaBitika ? 'M-Pesa or Airtel Money Number' : 'M-Pesa Phone Number'}

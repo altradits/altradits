@@ -282,7 +282,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 
   <div class="panel" id="nodeBanner" role="alert" hidden style="border-color:var(--crit)"></div>
 
-  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="earn">Earn</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
+  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="earn">Earn</button><button type="button" data-tab="kazi">Kazi</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
   <div class="pane" data-pane="overview">
   <section class="panel" aria-labelledby="hCheck">
     <h2 id="hCheck">Today's checklist</h2>
@@ -690,6 +690,17 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </section>
   </div>
 
+  <div class="pane" data-pane="kazi">
+    <section class="panel" aria-labelledby="hKazi">
+      <h2 id="hKazi">Kazi board moderation</h2>
+      <div class="learn"><p>Small paid tasks for Kisumu. Nothing goes public until you approve it here. Flags from visitors and the word screen's notes show on each task. Edits by the poster come back to this list.</p></div>
+      <h3 class="sub">Waiting for review <span class="muted sm" id="kaziPendingCount"></span></h3>
+      <div id="kaziPending"></div>
+      <h3 class="sub">On the board <span class="muted sm" id="kaziOpenCount"></span></h3>
+      <div id="kaziOpen"></div>
+    </section>
+  </div>
+
   <div class="pane" data-pane="security">
   <div class="grid2">
     <section class="panel" aria-labelledby="hSec">
@@ -710,7 +721,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <section class="panel" aria-labelledby="hErase">
       <h2 id="hErase">Erase a person (privacy request)</h2>
       <div class="learn"><p>Deletes for good everything about one email address: their contact words, pasted replies, and notes to them. Receipts and payment records stay for the books; wallet owners are refused until the wallet is handed over.</p></div>
-      <div class="row"><input id="eraseEmail" type="email" placeholder="their@email.com" autocomplete="off" style="max-width:16rem"><input id="eraseConfirm" placeholder="Type ERASE" autocomplete="off" style="max-width:9rem"><button type="button" class="btn" id="eraseGo">Erase</button></div>
+      <div class="row"><input id="eraseEmail" type="email" placeholder="5tan@altradits.com" autocomplete="off" style="max-width:16rem"><input id="eraseConfirm" placeholder="Type ERASE" autocomplete="off" style="max-width:9rem"><button type="button" class="btn" id="eraseGo">Erase</button></div>
       <p class="sm muted" id="eraseMsg" role="status"></p>
     </section>
   </div>

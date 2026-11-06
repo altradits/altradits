@@ -26,6 +26,13 @@ Ye₿ente. Start here: https://altradits.com/
 
 - How the Lightning node earns from routing fees and leased channels: https://altradits.com/njia
 
+## Kazi board: small paid tasks in Kisumu
+
+- A moderated noticeboard: https://altradits.com/kazi. Anyone posts a small
+  task; nothing goes public until approved. The poster pays the worker
+  directly, peer to peer, in sats or M-Pesa. Kazi holds no money and takes
+  no cut. English and Kiswahili.
+
 ## Questions, answered
 
 - kTown questions on the homepage: https://altradits.com/

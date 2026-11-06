@@ -84,7 +84,7 @@ const mockTando = async (raw) => {
 kt.setKtownFetcher(mockTando);
 kt.setKtownRatesFetcher(async () => J({ result: "success", rates: { KES: 1, USD: 0.0077, EUR: 0.0066, UGX: 28.5, TZS: 19.3 } }));
 const receiptTx = (over = {}) => ({ status: "completed", isPaid: true, paymentNetworkReceipt: "TIA7QK4M2P",
-  payToAccount: "254712345678", merchantName: "JANE W MWANGI", currencyAmount: 100, currencyAmountSent: 100,
+  payToAccount: "254707172370", merchantName: "JANE W MWANGI", currencyAmount: 100, currencyAmountSent: 100,
   baseCurrency: "KES", satsAmount: 990, tandoFees: 9.9, totalSatsAmount: 999.9, paymentHash: "x".repeat(64),
   dateTime: new Date().toISOString(), completedAt: new Date().toISOString(), ...over });
 
@@ -102,8 +102,8 @@ test("health names the switch; everything refuses while KTOWN is off", async () 
   delete process.env.KTOWN;
   try {
     assert.deepEqual((await get("health")).body, { ok: true, on: false, full: false });
-    assert.equal((await post("register", { agree: true, phone: "0712345678", shop: "S", mpesaName: "M", pin: "715293" })).status, 501);
-    assert.equal((await post("login", { phone: "0712345678", pin: "715293" })).status, 501);
+    assert.equal((await post("register", { agree: true, phone: "0707172370", shop: "S", mpesaName: "M", pin: "715293" })).status, 501);
+    assert.equal((await post("login", { phone: "0707172370", pin: "715293" })).status, 501);
     assert.equal((await get("me", { token: "x".repeat(32) })).status, 501);
     assert.equal((await get("rates")).status, 501);
     assert.equal((await get("receipt/" + "ab".repeat(32))).status, 501);
@@ -117,28 +117,28 @@ test("health names the switch; everything refuses while KTOWN is off", async () 
 });
 
 test("phone numbers: local, plus and full forms become 254 plus 9 Safaricom digits", () => {
-  for (const [in_, want] of [["0712345678", "254712345678"], ["+254712345678", "254712345678"], ["254712345678", "254712345678"],
-    ["254111234567", "254111234567"], ["254141234567", "254141234567"], [" 0712 345 678 ", "254712345678"]])
+  for (const [in_, want] of [["0707172370", "254707172370"], ["+254707172370", "254707172370"], ["254707172370", "254707172370"],
+    ["254111234567", "254111234567"], ["254141234567", "254141234567"], [" 0707 172 370 ", "254707172370"]])
     assert.equal(kt.normalizePhone(in_), want, in_);
-  for (const bad of ["", "0712", "2547123456789", "254812345678", "25410123456", "25471234567a", "+2547123456789", "123456789"])
+  for (const bad of ["", "0712", "2547071723709", "254812345678", "25410123456", "25470717237a", "+2547071723709", "123456789"])
     assert.throws(() => kt.normalizePhone(bad), /M-Pesa number/, bad);
 });
 
 let ada, adaId;
 test("register: activation proves the number's Tando address works; then login, me, settings", async () => {
-  const bad = await post("register", { agree: true, phone: "0712345678", shop: "", mpesaName: "JANE W MWANGI", pin: "715293" });
+  const bad = await post("register", { agree: true, phone: "0707172370", shop: "", mpesaName: "JANE W MWANGI", pin: "715293" });
   assert.equal(bad.status, 400);
   for (const pin of ["123456", "111111", "121212", "123", "abcdef"])
     assert.equal((await post("register", { agree: true, phone: "0712345679", shop: "S", mpesaName: "M", pin })).status, 400, pin);
   tando.mode = "no_kes"; // a number that answers without KES terms (claimed for a BTC wallet)
   try {
-    const r = await post("register", { agree: true, phone: "0712345678", shop: "Ada Shop", mpesaName: "JANE W MWANGI", pin: "715293" });
+    const r = await post("register", { agree: true, phone: "0707172370", shop: "Ada Shop", mpesaName: "JANE W MWANGI", pin: "715293" });
     assert.equal(r.status, 502, JSON.stringify(r.body));
     assert.match(r.body.error, /M-Pesa delivery/);
   } finally {
     tando.mode = "ok"; kt.clearQuoteCache();
   }
-  const r = await post("register", { agree: true, phone: "0712345678", shop: "Ada Shop", mpesaName: "JANE W MWANGI", pin: "715293" });
+  const r = await post("register", { agree: true, phone: "0707172370", shop: "Ada Shop", mpesaName: "JANE W MWANGI", pin: "715293" });
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.equal(r.body.success, true);
   assert.equal(r.body.merchant.shop, "Ada Shop");
@@ -151,14 +151,14 @@ test("register: activation proves the number's Tando address works; then login, 
   ada = r.body;
   adaId = ada.merchant.id;
   // The number is taken now; the secret parts are stored hashed.
-  assert.equal((await post("register", { agree: true, phone: "254712345678", shop: "Other", mpesaName: "X", pin: "482916" })).status, 409);
+  assert.equal((await post("register", { agree: true, phone: "254707172370", shop: "Other", mpesaName: "X", pin: "482916" })).status, 409);
   const raw = fs.readFileSync(path.join(".data", "db.json"), "utf8");
   assert.doesNotMatch(raw, /715293/);
   assert.doesNotMatch(raw, new RegExp(ada.session));
   // Login with the wrong PIN fails like an unknown number; the right one opens.
-  assert.equal((await post("login", { phone: "0712345678", pin: "000000" })).status, 403);
+  assert.equal((await post("login", { phone: "0707172370", pin: "000000" })).status, 403);
   assert.equal((await post("login", { phone: "0799999999", pin: "000000" })).status, 403);
-  const login = await post("login", { phone: "+254712345678", pin: "715293" });
+  const login = await post("login", { phone: "+254707172370", pin: "715293" });
   assert.equal(login.status, 200, JSON.stringify(login.body));
   assert.equal(login.body.merchant.id, adaId);
   // Signed-in reads and settings.
@@ -174,8 +174,8 @@ test("register: activation proves the number's Tando address works; then login, 
   // A new PIN on the signed-in phone; the old one stops working.
   assert.equal((await post("pin", { pin: "123456" }, { token: ada.session })).status, 400);
   assert.equal((await post("pin", { pin: "482916" }, { token: ada.session })).status, 200);
-  assert.equal((await post("login", { phone: "0712345678", pin: "715293" })).status, 403);
-  assert.equal((await post("login", { phone: "0712345678", pin: "482916" })).status, 200);
+  assert.equal((await post("login", { phone: "0707172370", pin: "715293" })).status, 403);
+  assert.equal((await post("login", { phone: "0707172370", pin: "482916" })).status, 200);
 });
 
 test("five wrong PINs lock logins for 15 minutes", async () => {
@@ -238,8 +238,11 @@ test("callback in KES mode: Tando's invoice unchanged, merchant receives exactly
   assert.ok(hist[0].sats > 1000 && hist[0].sats < 1100, `${hist[0].sats} sats for KES 100 plus 1%`);
   const ids = await store.listIds(`kt:tx:${adaId}`, 10);
   const entry = await store.getJSON(`kte:${ids[0]}`);
-  assert.deepEqual(Object.keys(entry).sort(), ["at", "confirmedAt", "hash", "id", "kesExpected", "kesReceived",
-    "merchantId", "merchantName", "mpesaCode", "msats", "sats", "status"]);
+  assert.deepEqual(Object.keys(entry).sort(), ["at", "confirmedAt", "feeKes", "hash", "id", "kesExpected", "kesReceived",
+    "merchantId", "merchantName", "mode", "mpesaCode", "msats", "mult", "sats", "status"]);
+  assert.equal(entry.mode, "kes", "the pay page prices in KES, so the payer covers the fee on top");
+  assert.equal(entry.mult, MULT, "the rate the fee figure is worked out from");
+  assert.equal(entry.feeKes, 1, "KES 100 at 1%: the payer's on-top fee, to two decimals");
   assert.ok(!fs.readFileSync(path.join(".data", "db.json"), "utf8").includes("203.0.113.9"), "no network address is stored");
   assert.equal((await get(`lnurlp/${adaId}/cb?amount=5&currency=KES`)).body.reason, "Send between 15 and 50,000 KES.");
   assert.equal((await get(`lnurlp/${adaId}/cb?amount=60000&currency=KES`)).status, 200);
@@ -254,6 +257,8 @@ test("callback in msat mode: the invoice must match the millisats exactly", asyn
   assert.equal(bolt11Msats(r.body.pr), 500000);
   const hist = (await get("history", { token: ada.session })).body.entries;
   assert.equal(hist[0].kesExpected, Math.floor((500000 / MULT) * 0.99), "KES value of the sats minus the 1%");
+  assert.equal(hist[0].mode, "msat", "history names the wallet-conversion path");
+  assert.equal(hist[0].feeKes, 1, "50 KES of sats: about 1 KES came out of the delivered shillings");
   tando.mode = "wrong_msats";
   try {
     const bad = await get(`lnurlp/${adaId}/cb?amount=500000`);
@@ -295,11 +300,11 @@ test("callback in KES mode refuses a wrong converted figure or sats outside the 
 test("receipt: a completed payment lands in history and verifies the typed M-Pesa name", async () => {
   const inv = await get(`lnurlp/${adaId}/cb?amount=100&currency=KES`);
   const hash = inv.body.successAction.url.split("/").pop();
-  tando.receipts.set(hash, receiptTx({ payToAccount: "254712345678", merchantName: "JANE W MWANGI", currencyAmountSent: 100 }));
+  tando.receipts.set(hash, receiptTx({ payToAccount: "254707172370", merchantName: "JANE W MWANGI", currencyAmountSent: 100 }));
   const rc = await get(`receipt/${hash}`);
   assert.equal(rc.status, 200, JSON.stringify(rc.body));
-  assert.deepEqual(rc.body, { success: true, status: "completed", paid: true, kes: 100,
-    mpesaCode: "TIA7QK4M2P", merchantName: "JANE W MWANGI" });
+  assert.deepEqual(rc.body, { success: true, status: "completed", paid: true, kes: 100, quoted: 100,
+    sats: 1010, feeKes: 1, mode: "kes", mpesaCode: "TIA7QK4M2P", merchantName: "JANE W MWANGI" });
   const hist = (await get("history", { token: ada.session })).body.entries;
   const done = hist.find((e) => e.mpesaCode === "TIA7QK4M2P");
   assert.equal(done.status, "completed");
@@ -318,6 +323,57 @@ test("receipt: a completed payment lands in history and verifies the typed M-Pes
   assert.equal((await get("me", { token: ada.session })).body.merchant.verified, false);
   assert.equal((await get("me", { token: ada.session })).body.merchant.claimed, true, "a rename unchecks the name, never the proven number");
   await post("settings", { mpesaName: "JANE W MWANGI" }, { token: ada.session });
+});
+
+test("KES mode delivers exactly the quoted shillings, with the payer's fee on top", async () => {
+  const s = await post("register", { agree: true, phone: "0711222333", shop: "Exact Shop", mpesaName: "EXACT SHOP", pin: "715293" });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  const id = s.body.merchant.id, session = s.body.session;
+  const inv = await get(`lnurlp/${id}/cb?amount=20&currency=KES`);
+  assert.equal(inv.status, 200, JSON.stringify(inv.body));
+  const hash = inv.body.successAction.url.split("/").pop();
+  // Tando's KES mode delivers exactly what was asked (docs, Fees and rounding).
+  tando.receipts.set(hash, receiptTx({ payToAccount: "254711222333", merchantName: "EXACT SHOP", currencyAmountSent: 20 }));
+  const rc = await get(`receipt/${hash}`);
+  assert.deepEqual(rc.body, { success: true, status: "completed", paid: true, kes: 20, quoted: 20,
+    sats: 202, feeKes: 0.2, mode: "kes", mpesaCode: "TIA7QK4M2P", merchantName: "EXACT SHOP" });
+  const hist = (await get("history", { token: session })).body.entries;
+  assert.equal(hist.length, 1);
+  assert.equal(hist[0].kesExpected, 20, "the quoted shillings");
+  assert.equal(hist[0].kesReceived, 20, "exactly what landed");
+  assert.equal(hist[0].mode, "kes");
+  assert.equal(hist[0].feeKes, 0.2, "the 1% the payer covered on top, to two decimals");
+  assert.equal(hist[0].sats, 202, "20 KES in sats plus the 1%, whole sats");
+});
+
+test("a KES shortfall is recorded honestly: quoted vs received, never hidden", async () => {
+  const s = await post("login", { phone: "0711222333", pin: "715293" });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  const id = s.body.merchant.id, session = s.body.session;
+  const inv = await get(`lnurlp/${id}/cb?amount=20&currency=KES`);
+  const hash = inv.body.successAction.url.split("/").pop();
+  // A Tando that takes the fee out of the delivery instead of on top of it:
+  // per its docs this should not happen in KES mode, but if it ever does the
+  // record keeps both numbers so the merchant sees quoted vs received.
+  tando.receipts.set(hash, receiptTx({ payToAccount: "254711222333", merchantName: "EXACT SHOP",
+    currencyAmountSent: 19, paymentNetworkReceipt: "SHORT1FALL2" }));
+  const rc = await get(`receipt/${hash}`);
+  assert.equal(rc.body.paid, true);
+  assert.equal(rc.body.kes, 19, "what landed");
+  assert.equal(rc.body.quoted, 20, "what was quoted");
+  const hist = (await get("history", { token: session })).body.entries;
+  const short = hist.find((e) => e.mpesaCode === "SHORT1FALL2");
+  assert.equal(short.status, "completed");
+  assert.equal(short.kesExpected, 20);
+  assert.equal(short.kesReceived, 19);
+});
+
+test("kesFee: the payer's on-top fee in KES, to two decimals, never below zero", () => {
+  assert.equal(kt.kesFee(1010000, MULT, 100), 1, "KES 100 at 1%");
+  assert.equal(kt.kesFee(202000, MULT, 20), 0.2, "KES 20 at 1%");
+  assert.equal(kt.kesFee(500000, MULT, 49), 1, "50 KES of sats against 49 expected");
+  assert.equal(kt.kesFee(100505, MULT, 10), 0.05, "rounds half up to cents");
+  assert.equal(kt.kesFee(99000, MULT, 10), 0, "rate drift can only shrink the value, never bill the merchant");
 });
 
 test("receipt: a name that does not match stays unverified, and a failed payout shows as failed", async () => {
@@ -393,7 +449,7 @@ const kt = await import(${JSON.stringify(path.join(root, "lib", "ktown.js"))});
 let lookups = 0;
 netsafe.setDnsLookup((host, opts, cb) => { lookups++; cb(null, [{ address: "10.9.9.9", family: 4 }]); });
 try {
-  await kt.tandoQuote("254712345678", { fresh: true });
+  await kt.tandoQuote("254707172370", { fresh: true });
   console.log("RESOLVED (bad) lookups=" + lookups);
   process.exit(1);
 } catch (e) {
@@ -414,7 +470,7 @@ try {
 });
 
 test("lock signs one phone out; a stranger's token signs nothing out", async () => {
-  const login = await post("login", { phone: "0712345678", pin: "482916" });
+  const login = await post("login", { phone: "0707172370", pin: "482916" });
   assert.equal(login.status, 200, JSON.stringify(login.body));
   assert.equal((await post("lock", {}, { token: login.body.session })).status, 200);
   assert.equal((await get("me", { token: login.body.session })).status, 401, "the token stopped working");
@@ -576,10 +632,10 @@ test("terms: registration needs a ticked 'I agree', stored with version and time
 test("help: KTOWN_HELP is answered as plain text, null when unset", async () => {
   delete process.env.KTOWN_HELP;
   assert.deepEqual((await get("help")).body, { success: true, help: null });
-  process.env.KTOWN_HELP = "  help@example.com  ";
-  assert.equal((await get("help")).body.help, "help@example.com");
-  process.env.KTOWN_HELP = "+254700111222";
-  assert.equal((await get("help")).body.help, "+254700111222");
+  process.env.KTOWN_HELP = "  5tan@altradits.com  ";
+  assert.equal((await get("help")).body.help, "5tan@altradits.com");
+  process.env.KTOWN_HELP = "+254707172370";
+  assert.equal((await get("help")).body.help, "+254707172370");
   delete process.env.KTOWN_HELP;
 });
 
