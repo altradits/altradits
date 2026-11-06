@@ -18,6 +18,7 @@ const satsKsh = (sats) => `${satsF(sats)}${ksh(sats) ? ` (${ksh(sats)})` : ""}`;
 const judge = (ok) => (ok === null || ok === undefined ? "" : ok ? "good" : "warn");
 let token = "";
 try { token = sessionStorage.getItem("altra.admin") || ""; } catch {}
+let njiaLoaded = false, NJIA = null; // Njia Earn tab: loaded lazily, refreshed with the rest
 
 // "Explain everything": on by default, remembered on this device.
 try { if (localStorage.getItem("altra.explain") === "off") { $("#explain").checked = false; document.body.classList.add("quiet"); } } catch {}
@@ -30,6 +31,7 @@ $("#explain").addEventListener("change", (e) => {
 const TABS = [...document.querySelectorAll("[data-tab]")].map((b) => b.dataset.tab);
 function tab(name) {
   if (!TABS.includes(name)) name = "overview";
+  if (name === "earn" && !njiaLoaded && token) loadNjia(false); // first open reads the node
   document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
   document.querySelectorAll("[data-pane]").forEach((p) => p.classList.toggle("on", p.dataset.pane === name));
   if (location.hash.slice(1) !== name) history.replaceState(null, "", `#${name}`);
@@ -160,7 +162,7 @@ $("#refresh").addEventListener("click", async () => {
   if (b.classList.contains("busy")) return;
   b.classList.add("busy"); b.disabled = true; b.setAttribute("aria-busy", "true"); b.lastChild.textContent = "Refreshing…";
   const t0 = Date.now();
-  try { await load(); } finally {
+  try { await load(); if (njiaLoaded) await loadNjia(true); } finally { // Refresh re-reads the Earn tab
     await new Promise((r) => setTimeout(r, Math.max(0, 600 - (Date.now() - t0)))); // long enough to see it worked
     b.classList.remove("busy"); b.disabled = false; b.removeAttribute("aria-busy"); b.lastChild.textContent = "Refresh";
     toast(`Updated ${new Date().toLocaleTimeString()}`);
@@ -639,6 +641,7 @@ async function loadPnl() {
     ${row("Routing fees earned", E.routing, `${E.routed} payment${E.routed === 1 ? "" : "s"} passed through you. A private channel routes few or none.`, "+")}
     ${row("M-Pesa buy spread", E.spread, E.spreadPct ? `${E.spreadPct}% on ${E.buys} buy${E.buys === 1 ? "" : "s"} (KSh ${num(E.buyKes)} paid in).` : `Off: YEBENTE_BUY_SPREAD_PCT is 0, so buys earn nothing. ${E.buys} buy${E.buys === 1 ? "" : "s"}, KSh ${num(E.buyKes)}.`, "+")}
     ${row("Support payments", E.support, `${E.supportCount} on /donate.`, "+")}
+    ${row("Channel leases", E.leases || 0, `${E.leaseCount || 0} recorded by hand in the Earn tab. Voided leases excluded.`, "+")}
     ${row("Routing fees you paid", S.routeFees, `Your own payments. Of ${num(S.routeFeesAll)} sats in fees, Ye₿ente users repaid ${num(S.routeFeesRepaid)}.`, "−")}
     ${row("On-chain fees", S.onchain, "Opening or closing channels, moving coins.", "−")}
   </tbody></table>${L.nodeRead ? "" : '<p class="sm err">The node couldn\'t be read, so node figures show 0. Wake the Mac, make sure LND is running, and check LND_READONLY_MACAROON on the server.</p>'}`;
@@ -2478,6 +2481,214 @@ $("#learnConsolidateBtn").addEventListener("click", async () => {
   } catch (err) { toast(err.message, true, 6000); }
 });
 
+// ---- Njia Earn tab (docs/njia.md): read-only dashboard, checklist, ledger ----
+const NJIA_DOT = { done: ["\u2713", "y", "Done"], progress: ["\u25D0", "", "In progress"], blocked: ["\u2717", "n", "Not yet"], unknown: ["\u25CB", "u", "Check yourself"] };
+function njiaStepNumbers(step, V) {
+  const n = step.numbers || {};
+  if (step.key === "backup") return n.markedAt ? `Last copy ${esc(ago(n.markedAt))}${n.stale === true ? ", but channels changed since" : n.stale === false ? `, covers all ${num(n.current)} channels` : ", freshness unknown"}.` : "No copy marked yet.";
+  if (step.key === "reserve") return n.confirmed === undefined ? "The node could not be read." : `${satsF(n.confirmed)} confirmed, ${satsF(n.unconfirmed)} unconfirmed. Floor ${satsF(10000)}${n.gap ? `, gap ${satsF(n.gap)}` : ", covered"}.`;
+  if (step.key === "privacy") return `${n.decided ? "Decided." : "Not decided yet: pick A, B or C before the first public channel."}${n.aliasWarn ? " The alias names the business." : ""}`;
+  if (step.key === "channels") return n.public === undefined ? "The node could not be read." : `${n.public} public active, ${n.pending || 0} opening${n.announced === null || n.announced === undefined ? "" : `, graph shows ${n.announced}`}.`;
+  if (step.key === "fees") {
+    if (!n.rows) return n.note || "The node could not be read.";
+    return `<table><thead><tr><th>Channel</th><th>Base</th><th>PPM</th><th>Earns on 100k</th><th></th></tr></thead><tbody>${n.rows.map((r) => r.known
+      ? `<tr><td><code>${esc(r.point)}</code></td><td>${num(r.baseMsat)} msat</td><td>${num(r.ppm)}</td><td>${satsF(r.earn100k)}</td><td>${r.def ? '<b class="err">Default</b>' : r.ok ? '<span class="ok">Fair</span>' : '<b class="err">Out of band</b>'}</td></tr>`
+      : `<tr><td><code>${esc(r.point)}</code></td><td colspan="4">No policy seen</td></tr>`).join("")}</tbody></table>`;
+  }
+  if (step.key === "uptime") {
+    if (n.samples === undefined) return "The node could not be read.";
+    if (!n.peers) return n.note || "Waiting for samples.";
+    const drops = n.peers.map((x) => x.flapsDay === null || x.flapsDay === undefined ? "?" : x.flapsDay).join(", ");
+    return `${n.samples} days sampled, ${n.pct === null || n.pct === undefined ? "?" : `${n.pct}%`} reachable. Peer drops per day: ${esc(drops)} (must stay under 5). Slowest channel uptime: ${n.uptimeMin === null || n.uptimeMin === undefined ? "?" : `${n.uptimeMin}%`}.`;
+  }
+  if (step.key === "lease") return `${n.live || 0} live in the ledger.`;
+  return "";
+}
+function njiaStepExtra(step, V) {
+  if (step.key === "privacy" && step.status !== "done") return `<p class="row"><button type="button" class="btn" id="btnDecided">Decided: A, B or C is picked</button></p>`;
+  if (step.key === "channels") {
+    const est = V.feeRates ? Math.max(150, Math.round(V.feeRates.fast * 250)) : 1000;
+    return `<p class="row"><input id="nodeActionSats" inputmode="numeric" value="${est}" style="max-width:9rem" aria-label="Expected chain fee in sats"> <button type="button" class="btn" id="btnNodeAction">Record expected chain fee</button></p>
+    <p class="sm muted">About ${num(est)} sats at today's fast rate (estimate). Record it before opening, or the Deadman balance check may trip on the spend. Peer criteria: uptime over 98%, well connected, real volume, sane fees, different owners.</p>`;
+  }
+  if (step.key === "lease") return `<p class="sm muted">With no prices entered: 1,000,000 sats at 1% earns 10,000 sats once (estimate).</p>`;
+  return "";
+}
+function renderNjiaSteps(V) {
+  $("#njiaSteps").innerHTML = `<ul class="check">${(V.steps || []).map((st) => {
+    const [mark, cls, word] = NJIA_DOT[st.status] || NJIA_DOT.unknown;
+    return `<li><span class="m ${cls}"${cls ? "" : ' style="color:var(--warn)"'}>${mark}</span><span><b>${esc(st.title)}</b> <span class="sm muted">${esc(word)}</span><br>`
+      + `<span class="sm">${esc(st.why)}</span><br><span class="sm">${njiaStepNumbers(st, V)}</span>`
+      + (st.how ? `<br><span class="sm">${esc(st.how)}</span>` : "")
+      + st.cmds.map((c) => `<br><code>${esc(c)}</code>`).join("")
+      + st.checks.map((c) => `<br><span class="sm muted">Check: <code>${esc(c)}</code></span>`).join("")
+      + njiaStepExtra(st, V) + `</span></li>`;
+  }).join("")}</ul>`;
+  $("#btnDecided")?.addEventListener("click", async () => {
+    try { await api("", { action: "njia_settings", field: "decided", value: true }); toast("Privacy option marked decided."); loadNjia(); }
+    catch (err) { toast(err.message, true, 6000); }
+  });
+  $("#btnNodeAction")?.addEventListener("click", async () => {
+    try { await api("", { action: "node_action_record", sats: Number($("#nodeActionSats").value), reason: "njia channel open" }); toast("Chain fee recorded."); }
+    catch (err) { toast(err.message, true, 6000); }
+  });
+}
+function renderNjiaPrivacy(V) {
+  const S = V.settings || {};
+  $("#swIdentityState").innerHTML = S.identity ? "<b>On</b>" : "<b>Off</b>";
+  $("#swNumbersState").innerHTML = S.numbers ? "<b>On</b>" : "<b>Off</b>";
+  $("#cfIdentityWrap").hidden = S.identity; $("#btnIdentityOff").hidden = !S.identity;
+  $("#cfNumbersWrap").hidden = S.numbers; $("#btnNumbersOff").hidden = !S.numbers;
+  const alias = V.nodeInfo?.alias || "";
+  const warn = S.identity && /altradits|stanley/i.test(alias);
+  $("#aliasWarn").hidden = !warn;
+  if (warn) $("#aliasWarn").textContent = `Your alias reads '${alias}'. The page now links this node to Altradits in public.`;
+  $("#listingSaved").textContent = S.listingUrl ? `Saved: ${S.listingUrl} (public only while Identity is on)` : "No link saved.";
+  if (!$("#listingUrl").value) $("#listingUrl").value = S.listingUrl || "";
+  $("#setLog").innerHTML = (V.setlog || []).map((e) => `<li>${esc(ago(e.at))}: ${esc(e.field)} ${esc(String(e.from ?? "?"))} to ${esc(String(e.to ?? "?"))}</li>`).join("") || "<li>None yet.</li>";
+}
+function renderNjiaPreview(V) {
+  const P = V.preview;
+  if (!P) return;
+  let h = `<p class="sm"><b>Visitors see${P.locked === false || V.locked === false ? "" : ""}:</b> ${esc(P.line || "")}</p><ul class="check">`;
+  h += (P.stops || []).map((s) => `<li><span class="m ${s.done ? "y" : "u"}">${s.done ? "\u2713" : "\u25CB"}</span><span>${esc(s.key)}: ${s.done ? "Done" : "Not yet"}</span></li>`).join("");
+  h += "</ul>";
+  if (P.numbers) h += `<p class="sm">Routing this month: <b>${esc(P.numbers.routing)}</b>. Leases: <b>${esc(P.numbers.leases)}</b>. Public channels: <b>${esc(P.numbers.channels)}</b>.<br><span class="muted">${esc(P.numbers.note || "")}</span></p>`;
+  if (P.identity) h += `<p class="sm">Alias: <b>${esc(P.identity.alias)}</b><br><code>${esc(P.identity.pubkey)}</code>${P.identity.onion ? `<br><code>${esc(P.identity.onion)}</code>` : ""}${P.identity.listingUrl ? `<br><a href="${esc(P.identity.listingUrl)}">${esc(P.identity.listingUrl)}</a>` : ""}<br><span class="muted">${esc(P.identity.note || "")}</span></p>`;
+  $("#njiaPreview").innerHTML = h;
+  $("#njiaPreview").hidden = false;
+}
+function renderNjiaDash(V) {
+  const T = V.totals, R = V.reserve;
+  $("#njiaKpis").innerHTML =
+      kpi("Reading", V.node === "earning" ? "Earning node" : "Site node", "", "Which node this tab reads. Set NJIA_LND_* for a separate earning node.")
+    + kpi("Channels", T ? `${T.channels} (${T.public} public, ${T.private} private)` : "\u2013", T ? judge(T.channels > 0) : "", "Public channels route and earn. Private ones only serve their two owners.")
+    + kpi("Active", T ? `${T.active}${T.pending ? ` (+${T.pending} opening)` : ""}` : "\u2013", "", "Channels whose peer is online right now.")
+    + kpi("You can send", T ? satsF(T.spendable) : "\u2013", "", "Local balance minus the locked reserve. See it yourself: ln-ro channelbalance.")
+    + kpi("You can receive", T ? satsF(T.receivable) : "\u2013", "", "Remote balance minus the peer reserve. See it yourself: ln-ro channelbalance.")
+    + kpi("On-chain reserve", R ? satsF(R.confirmed) : "\u2013", R ? judge(R.confirmed >= 10000) : "", R ? `Floor ${satsF(R.floor)}${R.gap ? `, gap ${satsF(R.gap)}` : ", covered"}. See it yourself: ln-ro walletbalance.` : "See it yourself: ln-ro walletbalance.")
+    + kpi("Routing, 30 days", V.feeSums ? satsF(V.feeSums.month) : "\u2013", "", "From the fee report. See it yourself: ln-ro feereport.")
+    + kpi("Forwards, 30 days", V.fwd ? num(V.fwd.count) : "\u2013", "", "Payments routed for others. See it yourself: ln-ro fwdinghistory --start_time=-30d.");
+  $("#njiaHint").hidden = !V.readHint;
+  if (V.readHint) $("#njiaHint").textContent = V.readHint;
+  $("#njiaChan").querySelector("tbody").innerHTML = (V.perChannel || []).map((c) => `<tr><td><code>${esc(c.point)}</code>${c.active ? "" : ' <b class="err">offline</b>'}</td>`
+    + `<td>${c.private ? "private" : "public"}</td><td>${satsF(c.capacity)}</td><td>${c.localShare}% yours</td><td>${satsF(c.spendable)}</td><td>${satsF(c.receivable)}</td>`
+    + `<td>${c.uptimePct === null ? "\u2013" : `${c.uptimePct}%`}</td></tr>`).join("") || '<tr><td colspan="7">No channels read.</td></tr>';
+  const reach = V.reach, bars = (reach?.days || []).map((d) => {
+    const pct = d.checks ? Math.round((d.ok / d.checks) * 100) : null;
+    return `<div style="flex:1;min-width:2px;background:${pct === null ? "var(--line)" : pct >= 98 ? "var(--ok)" : "var(--warn)"};height:${pct === null ? 4 : Math.max(6, Math.round(pct * 0.6))}px" title="${esc(d.day)}: ${d.ok}/${d.checks}"></div>`;
+  }).join("");
+  const drops = (V.peers || []).map((p) => `<tr><td><code title="${esc(p.pubkey)}">${esc(p.pubkey.slice(0, 16))}\u2026</code></td><td>${p.flapsDay === null || p.flapsDay === undefined ? "waiting for baseline" : `${p.flapsDay}/day`}</td><td>${p.pingMs ? `${num(p.pingMs)} ms` : "\u2013"}</td></tr>`).join("");
+  $("#njiaReach").innerHTML = `<p class="sm">Site reachability measures the tunnel and the node together: ${reach && reach.pct !== null ? `<b>${reach.pct}%</b> over ${reach.samples} sampled days` : "no samples yet (needs NJIA=on)"}.</p>`
+    + `<div style="display:flex;align-items:flex-end;gap:2px;height:36px" role="img" aria-label="Reachability per day">${bars}</div>`
+    + (drops ? `<div class="scroll"><table><thead><tr><th>Peer</th><th>Drops</th><th>Ping</th></tr></thead><tbody>${drops}</tbody></table></div>` : "");
+  $("#njiaFees").innerHTML = V.feeSums ? `<p class="sm">Earned: today <b>${satsF(V.feeSums.day)}</b>, 7 days <b>${satsF(V.feeSums.week)}</b>, 30 days <b>${satsF(V.feeSums.month)}</b>. See it yourself: <code>ln-ro feereport</code>.</p>` : '<p class="muted sm">No fee report read.</p>';
+  $("#njiaFwd").innerHTML = V.fwd ? `<p class="sm">${num(V.fwd.count)} forwards moved ${satsF(V.fwd.volume)} and earned ${satsF(V.fwd.fees)} in 30 days.</p>` : '<p class="muted sm">No forwarding history read.</p>';
+  $("#njiaTrend").innerHTML = V.trend ? trendHtml(V.trend) : "";
+  $("#njiaMonthly").innerHTML = (V.monthly && V.monthly.length) ? `<div class="scroll"><table><thead><tr><th>Month</th><th>Routing fees</th><th>Forwards</th></tr></thead><tbody>${V.monthly.map((m) => `<tr><td>${esc(m.month)}</td><td>${satsF(m.fees)}</td><td>${num(m.count)}</td></tr>`).join("")}</tbody></table></div>` : "";
+  const I = V.income || {};
+  $("#njiaLeaseInc").innerHTML = `<div class="kpis">` + kpi("Leases, 30 days", satsF(I.month || 0), "", "Fees typed into the ledger below.")
+    + kpi("Leases, 90 days", satsF(I.m3 || 0), "", "Same source.") + kpi("Leases, all time", satsF(I.all || 0), "", "Voided leases excluded.")
+    + kpi("Chain fees on leases", satsF(I.chainFees || 0), "", "What the lease opens cost on-chain.")
+    + kpi("Open lease capital", satsF(V.openCapital || 0), "", "Sizes of leases whose channel is still open.") + `</div>`;
+}
+function renderNjiaLedger(V) {
+  $("#leaseTable").querySelector("tbody").innerHTML = (V.leases || []).map((l) => l.kind === "void"
+    ? `<tr><td colspan="7"><s>Voided ${esc(l.voids || "")}: ${esc(l.reason || "")}</s></td><td></td></tr>`
+    : `<tr${l.live ? "" : ' style="opacity:.55"'}><td>${esc(l.date)}${l.buyer ? `<br><span class="sm muted">${esc(l.buyer)}</span>` : ""}</td><td>${satsF(l.sizeSats)}</td><td>${satsF(l.feeSats)}</td><td>${num(l.termDays)}d</td><td>${esc(l.market)}</td>`
+    + `<td>${esc(l.chan || "?")}</td><td>${l.yearlyPct === null || l.yearlyPct === undefined ? "\u2013" : `${l.yearlyPct}%`}</td>`
+    + `<td>${l.live ? `<button type="button" class="btn" data-void="${esc(l.id)}">Void</button>` : ""}</td></tr>`).join("") || '<tr><td colspan="8">No leases yet.</td></tr>';
+  $("#priceEst").innerHTML = V.estimates ? `<p class="sm">From your ${esc(V.estimates.market)} entry of ${esc(V.estimates.from)} (estimate): a 1M channel earns ${satsF(V.estimates.fee1M)}, a 2M channel ${satsF(V.estimates.fee2M)}${V.estimates.yearlyPct === null ? "" : `, about ${V.estimates.yearlyPct}% a year`}.</p>` : "";
+  $("#priceTable").querySelector("tbody").innerHTML = (V.prices || []).map((q) => `<tr${q.stale ? ' style="opacity:.55"' : ""}><td>${esc(q.date)}</td><td>${esc(q.market)}</td><td>${satsF(q.sizeSats)}</td>`
+    + `<td>${q.priceSats === null || q.priceSats === undefined ? "\u2013" : satsF(q.priceSats)}</td>`
+    + `<td>${q.ratePct === null || q.ratePct === undefined ? (q.ppm === null || q.ppm === undefined ? "\u2013" : `${num(q.ppm)} ppm`) : `${q.ratePct}%`}</td>`
+    + `<td>${q.termDays === null || q.termDays === undefined ? "\u2013" : `${num(q.termDays)}d`}</td><td>${q.stale ? "stale" : ""}</td></tr>`).join("") || '<tr><td colspan="7">No quotes yet.</td></tr>';
+}
+function renderNjia(V) {
+  $("#njiaOff").hidden = V.on !== false;
+  renderNjiaPrivacy(V); renderNjiaSteps(V); renderNjiaDash(V); renderNjiaLedger(V);
+  if (!$("#njiaPreview").hidden) renderNjiaPreview(V);
+  const res = (V.steps || []).find((s) => s.key === "reserve");
+  issue("njia-reserve", res && res.status === "blocked" ? "crit" : null, `Earn: on-chain reserve below ${satsF(10000)}.`, "earn:hEarnSteps");
+  const priv = (V.steps || []).find((s) => s.key === "privacy");
+  issue("njia-privacy", priv && priv.status === "blocked" ? "warn" : null, "Earn: a public channel names the business while the page hides it.", "earn:hEarnSteps");
+}
+async function loadNjia(force = false) {
+  try {
+    NJIA = await api("?view=njia" + (force ? "&refresh=1" : ""));
+    njiaLoaded = true;
+    renderNjia(NJIA);
+  } catch (err) {
+    if (!NJIA) $("#njiaSteps").innerHTML = `<p class="err sm">${esc(err.message)}</p>`;
+    else toast(err.message, true, 4000);
+  }
+  stamp("#njiaAge");
+}
+// end loadNjia
+$("#btnIdentity")?.addEventListener("click", async () => {
+  try { await api("", { action: "njia_settings", field: "identity", value: true, confirm: $("#cfIdentity").value.trim() }); $("#cfIdentity").value = ""; toast("Identity is now public."); loadNjia(); }
+  catch (err) { toast(err.message, true, 6000); }
+});
+$("#btnIdentityOff")?.addEventListener("click", async () => {
+  try { await api("", { action: "njia_settings", field: "identity", value: false }); toast("Identity hidden."); loadNjia(); }
+  catch (err) { toast(err.message, true, 6000); }
+});
+$("#btnNumbers")?.addEventListener("click", async () => {
+  try { await api("", { action: "njia_settings", field: "numbers", value: true, confirm: $("#cfNumbers").value.trim() }); $("#cfNumbers").value = ""; toast("Numbers are now public."); loadNjia(); }
+  catch (err) { toast(err.message, true, 6000); }
+});
+$("#btnNumbersOff")?.addEventListener("click", async () => {
+  try { await api("", { action: "njia_settings", field: "numbers", value: false }); toast("Numbers hidden."); loadNjia(); }
+  catch (err) { toast(err.message, true, 6000); }
+});
+$("#btnListing")?.addEventListener("click", async () => {
+  try { await api("", { action: "njia_listing", url: $("#listingUrl").value.trim() }); toast("Listing link saved."); loadNjia(); }
+  catch (err) { toast(err.message, true, 6000); }
+});
+$("#btnPreview")?.addEventListener("click", async () => { await loadNjia(); if (NJIA) renderNjiaPreview(NJIA); });
+$("#fLease")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("#leaseErr").textContent = "";
+  const lease = { date: $("#lDate").value, market: $("#lMarket").value, sizeSats: $("#lSize").value, feeSats: $("#lFee").value,
+    termDays: $("#lTerm").value, chainFeeSats: $("#lChainFee").value || 0, point: $("#lPoint").value.trim(), buyer: $("#lBuyer").value, note: $("#lNote").value };
+  try { await api("", { action: "njia_lease", lease }); toast("Lease recorded."); loadNjia(); }
+  catch (err) { $("#leaseErr").textContent = err.message; }
+});
+$("#leaseTable")?.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-void]");
+  if (!b) return;
+  const reason = ($("#leaseVoidReason")?.value || "").trim() || null;
+  if (!reason) {
+    if (!$("#leaseVoidReason")) b.closest("td").insertAdjacentHTML("beforeend", ` <input id="leaseVoidReason" placeholder="Why void?" style="max-width:10rem"> <button type="button" class="btn" id="leaseVoidGo">Void it</button>`);
+    $("#leaseVoidReason").dataset.id = b.dataset.void;
+    $("#leaseVoidReason").focus();
+    return;
+  }
+});
+document.addEventListener("click", async (e) => {
+  if (e.target?.id !== "leaseVoidGo") return;
+  const input = $("#leaseVoidReason");
+  try { await api("", { action: "njia_lease_void", id: input.dataset.id, reason: input.value }); toast("Lease voided."); loadNjia(); }
+  catch (err) { toast(err.message, true, 6000); }
+});
+$("#btnLeaseCsv")?.addEventListener("click", async () => {
+  try {
+    const res = await fetch("/api/admin?view=njia_csv", { headers: { Authorization: "Bearer " + token } });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Download failed");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(await res.blob()); a.download = "njia-ledger.csv"; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  } catch (err) { toast(err.message, true, 6000); }
+});
+$("#fPrice")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("#priceErr").textContent = "";
+  const price = { date: $("#pDate").value, market: $("#pMarket").value, sizeSats: $("#pSize").value, priceSats: $("#pPrice").value || null,
+    ratePct: $("#pRate").value || null, ppm: $("#pPpm").value || null, termDays: $("#pTerm").value || null, note: $("#pNote").value };
+  try { await api("", { action: "njia_price", price }); toast("Quote recorded."); loadNjia(); }
+  catch (err) { $("#priceErr").textContent = err.message; }
+});
+try { const t = new Date().toISOString().slice(0, 10); if ($("#lDate") && !$("#lDate").value) $("#lDate").value = t; if ($("#pDate") && !$("#pDate").value) $("#pDate").value = t; } catch {}
 // Kazi board moderation: waiting tasks with Approve, open tasks with Hide.
 // Every task word goes through esc(); flags and word-screen notes show so a
 // glance decides. Waiting tasks raise a "needs you" item until cleared.
@@ -2523,6 +2734,8 @@ async function load() {
   OVERVIEW = D;
   renderChecklist(D); renderStan(D.stan, D.alerts); renderNode(D); renderChain(D); renderChainLow(D); renderRouting(D); renderSettlement(D); renderGlossary(); renderBanner(D); renderBackup(D.backup);
   renderVerify();
+  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing()]);
+  if (document.querySelector('[data-pane="earn"].on') && !njiaLoaded) await loadNjia(false); // Earn visible on sign-in: first load gentle
   await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
 }
