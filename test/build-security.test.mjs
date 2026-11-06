@@ -529,6 +529,8 @@ test("trivia: the switch gates writes, the server owns play, the page calls only
   assert.match(srv, /receipt\|trivia\)\\\/\?/, "server.mjs: /trivia serves the page, /trivia.html redirects to it");
   assert.ok(read(".htaccess").includes("tracker|journey|trivia"), ".htaccess: the same route on the Apache stack");
   assert.match(read("sitemap.xml"), /<loc>https:\/\/altradits\.com\/trivia<\/loc>/, "sitemap.xml: the game is listed");
+  assert.ok(read("portfolio.html").includes("/assets/trivia-shot.png"), "portfolio.html: the card shows a real screenshot");
+  assert.ok(fs.existsSync(path.join(root, "assets/trivia-shot.png")), "assets/trivia-shot.png: the card screenshot is stored in the repo");
 });
 
 test("admin bodies over 100 KB need the token up front: strangers hit 413, the token passes 700 KB", async () => {
