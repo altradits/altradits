@@ -50,19 +50,27 @@
     },
     "4": {
       "name": "Treni ya Vitalu",
-      "line": "Unganisha vitalu kuwa mnyororo."
+      "line": "Unganisha vitalu kuwa mnyororo.",
+      "badge": "Muunganisha Mnyororo",
+      "cite": "3"
     },
     "5": {
       "name": "Mchezo wa Kubashiri",
-      "line": "Chimba kwa kubashiri nambari."
+      "line": "Chimba kwa kubashiri nambari.",
+      "badge": "Mbashiri Hodari",
+      "cite": "4"
     },
     "6": {
       "name": "Marafiki Wanakubaliana",
-      "line": "Kila mtu ana orodha moja."
+      "line": "Kila mtu ana orodha moja.",
+      "badge": "Rafiki Mwadilifu",
+      "cite": "5"
     },
     "7": {
       "name": "Milioni 21 Tu",
-      "line": "Sarafu mpya hupungua hadi kukoma."
+      "line": "Sarafu mpya hupungua hadi kukoma.",
+      "badge": "Mlinzi wa Hazina",
+      "cite": "6"
     }
   },
   "level": {
@@ -149,5 +157,100 @@
     "hintBack": "Hesabu sats zako kwanza.",
     "a": "Muamala huhamisha sats kutoka anwani moja hadi nyingine.",
     "b": "Sats zile zile zinaweza kutumika mara moja tu. Kila mtu hukagua."
+  },
+  "l4": {
+    "packTitle": "Pakia kitalu",
+    "packLine": "Gusa kila muamala ili kuupakia garini.",
+    "seal": "Kifunge kitalu",
+    "sealed": "Kimefungwa! Alama {hash}",
+    "hintPack": "Gusa kila tikiti.",
+    "tx1": "Aza → Juma 10",
+    "tx2": "Juma → Mosi 4",
+    "tx3": "Mosi → Aza 2",
+    "tx4": "Zuri → Aza 7",
+    "tx5": "Aza → Zuri 3",
+    "linkTitle": "Unganisha mnyororo",
+    "linkLine": "Gusa vitalu kwa mpangilio: 1, 2, 3.",
+    "linked": "Umeunganishwa! Kila kitalu kinashikilia alama iliyotangulia.",
+    "order": "Kwa mpangilio! Gusa kitalu {n}.",
+    "tamperLine": "Sasa gusa kitalu 1. Badilisha herufi moja ya zamani.",
+    "txBad": "Aza → Juma 100",
+    "broke": "Viungo vimevunjika! Herufi moja iliyobadilishwa huvunja kila kiungo kinachofuata.",
+    "hintLink": "Vitalu vinaunganika 1, 2, 3. Kisha gusa kitalu 1.",
+    "a": "Miamala husafiri pamoja kwenye kitalu.",
+    "b": "Kila kitalu kinashikilia alama ya kitalu kilichotangulia. Badilisha herufi moja na viungo vinavunjika."
+  },
+  "l5": {
+    "tapTitle": "Bashiri nambari",
+    "tapLine": "Kila mguso hujaribu nambari inayofuata. Alama lazima ianze na sifuri.",
+    "target": "Alama lazima ianze na: {zeros}",
+    "guess": "Bashiri!",
+    "found": "Imepatikana! Nambari {nonce} imeshinda.",
+    "hintTap": "Endelea kugusa. Bahati huja haraka.",
+    "autoTitle": "Sifuri mbili sasa",
+    "autoLine": "Sifuri mbili ni mara 16 ngumu zaidi. Acha mashine ichimbe.",
+    "mine": "Chimba!",
+    "trying": "Inajaribu",
+    "found2": "Imepatikana! Nambari {nonce} baada ya majaribio {guesses}.",
+    "hintAuto": "Gusa Chimba uangalie.",
+    "paceTitle": "Haraka sana au polepole?",
+    "tooFast": "Vitalu kila dakika 2. Haraka sana!",
+    "tooSlow": "Vitalu kila dakika 30. Polepole sana!",
+    "zerosNow": "Sifuri sasa: {zeros}",
+    "harder": "Ngumu zaidi (+sifuri 1)",
+    "easier": "Rahisi zaidi (−sifuri 1)",
+    "wrongFast": "Haraka sana humaanisha ngumu zaidi.",
+    "wrongSlow": "Polepole sana humaanisha rahisi zaidi.",
+    "tenMin": "Bitcoin halisi inalenga dakika 10 kwa kitalu.",
+    "hintPace": "Haraka? Ngumu. Polepole? Rahisi.",
+    "a": "Uchimbaji ni kubashiri nambari hadi alama ianze na sifuri.",
+    "b": "Haraka sana? Ngumu zaidi. Polepole sana? Rahisi zaidi. Kama dakika 10 kwa kitalu."
+  },
+  "l6": {
+    "longTitle": "Nani ana orodha ndefu zaidi?",
+    "longLine": "Hesabu vitalu. Gusa fungu refu zaidi.",
+    "blocks": "Vitalu {n}",
+    "longestFound": "Refu zaidi! Lakini ni sahihi?",
+    "countAgain": "Hesabu tena. Fungu la nani ni refu zaidi?",
+    "hintLongest": "Fungu refu zaidi linashinda raundi hii.",
+    "validTitle": "Je, orodha ndefu ni sahihi?",
+    "validLine": "Angalia kwa makini vitalu vya Mosi.",
+    "broken": "Imevunjika",
+    "valid": "Sahihi",
+    "disqualified": "Sahihi! Kiungo kilichovunjika kinimuondoa.",
+    "lookClose": "Angalia kitalu 2. Kiungo kimevunjika.",
+    "hintValid": "Kitalu kimoja kina msalaba.",
+    "winTitle": "Orodha ya nani inashinda sasa?",
+    "winLine": "Mosi ametolewa. Gusa fungu refu sahihi.",
+    "shorter": "Fupi zaidi. Fungu refu sahihi linashinda.",
+    "hintWinner": "Aza na Juma wametosha. Yeyote anashinda.",
+    "bossTitle": "Nyani mwenye kiburi",
+    "bossLine": "“Mimi ndiye bosi! Tumia orodha YANGU fupi!”",
+    "followList": "Fuata orodha",
+    "obey": "Tii",
+    "noBoss": "Hakuna bosi. Marafiki hufuata orodha ndefu sahihi.",
+    "a": "Kila rafiki ana orodha moja ya vitalu.",
+    "b": "Orodha ndefu sahihi inashinda. Hakuna bosi."
+  },
+  "l7": {
+    "storyTitle": "Misimu minne ya sarafu",
+    "season": "Msimu {n}",
+    "gives": "Kila kitalu kinatoa sarafu mpya {coins}.",
+    "totalSoFar": "Sarafu {total} zipo hadi sasa.",
+    "nextSeason": "Msimu unaofuata",
+    "hintStory": "Angalia zawadi zinavyopungua.",
+    "capTitle": "Zinawezaje kuwa NGAPI milele?",
+    "capLine": "Misimu minne imepita. Zawadi zinaendelea kupungua nusu.",
+    "opt21": "Milioni 21",
+    "opt100": "Milioni 100",
+    "optEndless": "Hazina mwisho",
+    "capRight": "Hasa! Kamwe hazizidi milioni 21.",
+    "capWrong": "Angalia zawadi zinazopungua. Jaribu tena.",
+    "hintCap": "Zawadi hupungua nusu milele.",
+    "nextTitle": "Msimu unaofuata unatoa…?",
+    "nextLine": "Msimu huu ulitoa 6.25. Kisha nini?",
+    "nextWrong": "Nusu ya 6.25. Jaribu tena.",
+    "a": "Sarafu mpya hupungua nusu kama kila miaka 4: 50, 25, 12.5…",
+    "b": "Kamwe hazizidi milioni 21. Kisha wachimbaji hupata ada."
   }
 }

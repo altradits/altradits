@@ -5,7 +5,7 @@ import { loadLang, t, applyStatic, currentLang } from "./i18n.js";
 import { loadProgress, saveProgress, isUnlocked, awardStars, awardBadge, totalStars, fresh } from "./progress.js";
 import { play, setEnabled } from "./sound.js";
 
-export const SHIPPED = [1, 2, 3];
+export const SHIPPED = [1, 2, 3, 4, 5, 6, 7];
 const STOPS = 7;
 
 const $ = (id) => document.getElementById(id);
@@ -26,6 +26,7 @@ const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="10" wid
 
 let progress = fresh();
 let hintFn = null;
+let leaveFns = [];
 let toastTimer = 0;
 
 function showToast(text) {
@@ -110,6 +111,7 @@ async function renderLevel(n) {
   const ctx = {
     t, say: showToast, sound: { play },
     hint(fn) { hintFn = fn; $("btn-hint").hidden = false; },
+    onLeave(fn) { leaveFns.push(fn); },
     finish(stars) { finishLevel(n, mod.META, stars); },
   };
   try {
@@ -148,6 +150,8 @@ function finishLevel(n, meta, stars) {
 }
 
 function route() {
+  for (const f of leaveFns) { try { f(); } catch { /* leaving never fails */ } }
+  leaveFns = [];
   const h = location.hash || "#/menu";
   const level = h.match(/^#\/level\/([1-7])$/);
   syncChrome();
@@ -189,9 +193,10 @@ async function boot() {
   syncChrome();
   route();
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/sats-safari/sw.js").catch(() => {});
-    });
+    // boot() awaits the words first, so the load event may already be gone.
+    const install = () => navigator.serviceWorker.register("/sats-safari/sw.js").catch(() => {});
+    if (document.readyState === "complete") install();
+    else window.addEventListener("load", install);
   }
 }
 

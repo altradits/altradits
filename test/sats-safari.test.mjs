@@ -74,6 +74,18 @@ test("the worker precaches the whole game, serves same-site reads, and falls bac
   assert.match(sw, /ev\.request\.method !== "GET"/, "only reads go through the cache (reports pass through)");
   assert.match(sw, /caches\.match\("\/sats-safari\/"\)/, "failed reads fall back to the game");
   assert.match(read("sats-safari/app.js"), /navigator\.serviceWorker\.register\("\/sats-safari\/sw\.js"\)/, "the game installs its worker");
+  assert.match(read("sats-safari/app.js"), /document\.readyState === "complete"\) install\(\)/, "the worker installs even when boot outlasts the load event");
+});
+
+test("every level module loads and exports its stop contract", async () => {
+  for (const f of gameFiles()) {
+    const m = f.match(/level(\d+)\.js$/);
+    if (!m) continue;
+    const mod = await import(`../sats-safari/level${m[1]}.js`);
+    assert.equal(mod.META.id, Number(m[1]), `${f}: META.id matches the file`);
+    assert.equal(typeof mod.start, "function", `${f}: exports start(root, ctx)`);
+    assert.ok(typeof mod.META.badge === "string" && Array.isArray(mod.META.learned), `${f}: META carries badge and learned keys`);
+  }
 });
 
 test("every shipped stop exists, and every level file is shipped (no forgotten level)", () => {

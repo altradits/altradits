@@ -4,7 +4,7 @@
 // untouched. Fonts come from /assets (outside this scope): with no internet
 // the game falls back to the device's own fonts.
 // Bump CACHE when any cached file changes.
-const CACHE = "sats-safari-v2";
+const CACHE = "sats-safari-v3";
 const SHELL = [
   "/sats-safari/",
   "/sats-safari/index.html",
@@ -14,9 +14,16 @@ const SHELL = [
   "/sats-safari/progress.js",
   "/sats-safari/sound.js",
   "/sats-safari/sats.js",
+  "/sats-safari/chain.js",
+  "/sats-safari/mining.js",
+  "/sats-safari/supply.js",
   "/sats-safari/level1.js",
   "/sats-safari/level2.js",
   "/sats-safari/level3.js",
+  "/sats-safari/level4.js",
+  "/sats-safari/level5.js",
+  "/sats-safari/level6.js",
+  "/sats-safari/level7.js",
   "/sats-safari/i18n/en.json",
   "/sats-safari/i18n/sw.json",
 ];
@@ -37,7 +44,8 @@ self.addEventListener("fetch", (ev) => {
     caches.match(ev.request).then(
       (hit) => hit || fetch(ev.request)
         .then((res) => {
-          if (res.ok && u.pathname.startsWith("/sats-safari/")) {
+          // The worker itself is never cached: update checks must reach the network.
+          if (res.ok && u.pathname.startsWith("/sats-safari/") && u.pathname !== "/sats-safari/sw.js") {
             const copy = res.clone();
             caches.open(CACHE).then((c) => c.put(ev.request, copy));
           }

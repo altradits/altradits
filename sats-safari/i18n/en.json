@@ -50,19 +50,27 @@
     },
     "4": {
       "name": "Block Train",
-      "line": "Link blocks into a chain."
+      "line": "Link blocks into a chain.",
+      "badge": "Chain Linker",
+      "cite": "3"
     },
     "5": {
       "name": "The Guessing Game",
-      "line": "Mine by guessing numbers."
+      "line": "Mine by guessing numbers.",
+      "badge": "Lucky Guesser",
+      "cite": "4"
     },
     "6": {
       "name": "Friends Agree",
-      "line": "Everyone keeps the same list."
+      "line": "Everyone keeps the same list.",
+      "badge": "Fair Friend",
+      "cite": "5"
     },
     "7": {
       "name": "Only 21 Million",
-      "line": "New coins slow down to a stop."
+      "line": "New coins slow down to a stop.",
+      "badge": "Treasure Keeper",
+      "cite": "6"
     }
   },
   "level": {
@@ -149,5 +157,100 @@
     "hintBack": "Count your sats first.",
     "a": "A transaction moves sats from one address to another.",
     "b": "The same sats can only be spent once. Everyone checks."
+  },
+  "l4": {
+    "packTitle": "Pack the block",
+    "packLine": "Tap each transaction to load it on the train.",
+    "seal": "Seal the block",
+    "sealed": "Sealed! Fingerprint {hash}",
+    "hintPack": "Tap every ticket.",
+    "tx1": "Aza → Juma 10",
+    "tx2": "Juma → Mosi 4",
+    "tx3": "Mosi → Aza 2",
+    "tx4": "Zuri → Aza 7",
+    "tx5": "Aza → Zuri 3",
+    "linkTitle": "Link the chain",
+    "linkLine": "Tap the blocks in order: 1, 2, 3.",
+    "linked": "Linked! Each block holds the last fingerprint.",
+    "order": "In order! Tap block {n} next.",
+    "tamperLine": "Now tap block 1. Change one old letter.",
+    "txBad": "Aza → Juma 100",
+    "broke": "The links broke! One changed letter breaks every link after it.",
+    "hintLink": "Blocks link 1, 2, 3. Then tap block 1.",
+    "a": "Transactions ride together in a block.",
+    "b": "Each block holds the last block's fingerprint. Change one letter and the links break."
+  },
+  "l5": {
+    "tapTitle": "Guess the number",
+    "tapLine": "Each tap tries the next number. The hash must start with a zero.",
+    "target": "The hash must start with: {zeros}",
+    "guess": "Guess!",
+    "found": "Found it! Nonce {nonce} wins.",
+    "hintTap": "Keep tapping. Luck comes fast.",
+    "autoTitle": "Two zeros now",
+    "autoLine": "Two zeros are 16 times harder. Let the machine drill.",
+    "mine": "Mine!",
+    "trying": "Trying",
+    "found2": "Found! Nonce {nonce} after {guesses} tries.",
+    "hintAuto": "Tap Mine and watch.",
+    "paceTitle": "Too fast or too slow?",
+    "tooFast": "Blocks every 2 minutes. Too fast!",
+    "tooSlow": "Blocks every 30 minutes. Too slow!",
+    "zerosNow": "Zeros now: {zeros}",
+    "harder": "Harder (+1 zero)",
+    "easier": "Easier (−1 zero)",
+    "wrongFast": "Too fast means harder, not easier.",
+    "wrongSlow": "Too slow means easier, not harder.",
+    "tenMin": "Real Bitcoin aims for 10 minutes a block.",
+    "hintPace": "Fast? Harder. Slow? Easier.",
+    "a": "Mining is guessing numbers until the hash starts with zeros.",
+    "b": "Too fast? Harder. Too slow? Easier. About 10 minutes a block."
+  },
+  "l6": {
+    "longTitle": "Who holds the longest list?",
+    "longLine": "Count the blocks. Tap the tallest pile.",
+    "blocks": "{n} blocks",
+    "longestFound": "Tallest! But is it valid?",
+    "countAgain": "Count again. Whose pile is tallest?",
+    "hintLongest": "Tallest pile wins this round.",
+    "validTitle": "Is the longest list valid?",
+    "validLine": "Look closely at Mosi's blocks.",
+    "broken": "Broken",
+    "valid": "Valid",
+    "disqualified": "Right! A broken link disqualifies it.",
+    "lookClose": "Look at block 2. The link is broken.",
+    "hintValid": "One block carries a cross.",
+    "winTitle": "Whose list wins now?",
+    "winLine": "Mosi is out. Tap the longest valid pile.",
+    "shorter": "Shorter. The longest valid pile wins.",
+    "hintWinner": "Aza and Juma tie. Either wins.",
+    "bossTitle": "The bossy baboon",
+    "bossLine": "“I am the boss! Use MY short list!”",
+    "followList": "Follow the list",
+    "obey": "Obey",
+    "noBoss": "Nobody is the boss. Friends follow the longest valid list.",
+    "a": "Every friend keeps the same list of blocks.",
+    "b": "The longest valid list wins. Nobody is the boss."
+  },
+  "l7": {
+    "storyTitle": "Four seasons of coins",
+    "season": "Season {n}",
+    "gives": "Each block gives {coins} new coins.",
+    "totalSoFar": "{total} coins exist so far.",
+    "nextSeason": "Next season",
+    "hintStory": "Watch the gifts shrink.",
+    "capTitle": "How many can there EVER be?",
+    "capLine": "Four seasons passed. The gifts keep halving.",
+    "opt21": "21 million",
+    "opt100": "100 million",
+    "optEndless": "Endless",
+    "capRight": "Exactly! Never more than 21 million.",
+    "capWrong": "Look at the shrinking gifts. Try again.",
+    "hintCap": "The gifts halve forever.",
+    "nextTitle": "Next season gives…?",
+    "nextLine": "This season gave 6.25. What comes next?",
+    "nextWrong": "Half of 6.25. Try again.",
+    "a": "New coins halve about every 4 years: 50, 25, 12.5…",
+    "b": "Never more than 21 million. Then miners earn fees."
   }
 }
