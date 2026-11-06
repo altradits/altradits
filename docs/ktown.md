@@ -58,8 +58,10 @@ frame check, Security watch reporter) applies unchanged.
   3 seconds: merchant received KSh X, Tando fee KSh Y (1%), you paid Z sats
   (about KSh X+Y).
 - `ktown/style.css`: navy ink on cream, Bricolage headings, Figtree text, big
-  touch targets, AA-safe text colors. The QR is black on white SVG, crisp in
-  print and in black and white.
+  touch targets, AA-safe text colors. Orange pill actions, a tonal language
+  pill, a Material-style bottom bar with an orange active pill, and the
+  Altradits header on all three pages. The QR is black on white SVG, crisp
+  in print and in black and white.
 - `ktown/qrcode-generator-1.4.4.js`: QR encoder by Kazuhiko Arase, MIT
   licence (header kept), vendored so the QR renders locally with no network.
 - English and Kiswahili throughout, from a small word list in each page

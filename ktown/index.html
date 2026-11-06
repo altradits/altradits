@@ -13,28 +13,31 @@
 <meta name="theme-color" content="#0f1b2d">
 <link rel="stylesheet" href="/ktown/style.css">
 </head>
-<body>
+<body class="has-tabs">
 <script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 </script>
-<div class="lang" id="lang-toggle" hidden>
-  <button type="button" id="lang-en" aria-pressed="true">EN</button>
-  <button type="button" id="lang-sw" aria-pressed="false">SW</button>
-</div>
+<header class="top">
+  <img class="brand" src="/assets/logo.png" alt="Altradits" width="325" height="119" fetchpriority="high">
+  <div class="lang" id="lang-toggle" hidden>
+    <button type="button" id="lang-en" aria-pressed="true">EN</button>
+    <button type="button" id="lang-sw" aria-pressed="false">SW</button>
+  </div>
+</header>
 <main class="wrap">
   <section id="screen-qr" aria-labelledby="qr-shop">
     <h1 class="shop" id="qr-shop">kTown</h1>
     <p class="mpesa-name" id="qr-mpesa"></p>
-    <p style="text-align:center;margin:0"><span class="mark" id="qr-mark"></span></p>
+    <p class="mark-line"><span class="mark" id="qr-mark"></span></p>
     <p class="secure-note" id="qr-secure" hidden></p>
     <p class="offline-note" id="offline-note" role="status" data-i18n="offlineNote" hidden></p>
     <div class="qr-card" id="qr" role="img" aria-label="Shop QR code"></div>
-    <p class="print-line">Pay with Bitcoin Lightning <b>⚡</b></p>
+    <p class="print-line">Pay with Bitcoin Lightning <svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8L20 9h-7l1-7z" fill="currentColor"/></svg></p>
     <p class="print-foot">Powered by Tando (1% fee)</p>
     <p class="err" id="qr-err" role="alert" hidden></p>
     <div class="row no-print">
       <button type="button" class="btn" id="btn-print-card" data-i18n="printCard">Print card</button>
-      <button type="button" class="btn" id="btn-print-sheet" data-i18n="printSheet">Print sheet</button>
+      <button type="button" class="btn ghost" id="btn-print-sheet" data-i18n="printSheet">Print sheet</button>
     </div>
     <button type="button" class="btn ghost no-print" id="btn-png" data-i18n="savePng">Save PNG</button>
     <p class="foot" data-i18n="honest">kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.</p>
@@ -114,8 +117,8 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
   <div id="print-sheet" aria-hidden="true" hidden></div>
 </main>
 <nav class="tabs" aria-label="kTown">
-  <button type="button" id="tab-qr" aria-selected="true" data-i18n="qr">QR</button>
-  <button type="button" id="tab-settings" aria-selected="false" data-i18n="settings">Settings</button>
+  <button type="button" id="tab-qr" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h2.5v2.5H14zM18.5 14H21v2.5h-2.5zM14 18.5h2.5V21H14zM18.5 18.5H21V21h-2.5z" fill="currentColor" stroke="none"/></svg><span data-i18n="qr">QR</span></button>
+  <button type="button" id="tab-settings" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h7M17 6h4"/><circle cx="14" cy="6" r="2.3"/><path d="M3 12h1M11 12h10"/><circle cx="8" cy="12" r="2.3"/><path d="M3 18h9M19 18h2"/><circle cx="16" cy="18" r="2.3"/></svg><span data-i18n="settings">Settings</span></button>
 </nav>
 <noscript><p style="text-align:center">kTown needs JavaScript.</p></noscript>
 <script src="/ktown/qrcode-generator-1.4.4.js"></script>

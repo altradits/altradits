@@ -1,8 +1,9 @@
 /* kTown merchant app: the QR screen and Settings. Everything rendered comes
-through textContent; the only innerHTML is the QR library's SVG (no scripts,
-no handlers). Talks only to this site's own API. */
+through textContent; innerHTML is only the QR library's SVG and one static
+bolt icon (no scripts, no handlers). Talks only to this site's own API. */
 "use strict";
 const $ = (id) => document.getElementById(id);
+const BOLT = '<svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8L20 9h-7l1-7z" fill="currentColor"/></svg>';
 
 const STR = {
   en: {
@@ -451,7 +452,10 @@ function buildSheet() {
     if (svg) box.append(svg.cloneNode(true));
     const line = document.createElement("p");
     line.className = "print-line";
-    line.textContent = "Pay with Bitcoin Lightning ⚡";
+    line.textContent = "Pay with Bitcoin Lightning ";
+    const bolt = document.createElement("b");
+    bolt.innerHTML = BOLT;
+    line.append(bolt);
     const foot = document.createElement("p");
     foot.className = "print-foot";
     foot.textContent = "Powered by Tando (1% fee)";

@@ -1,9 +1,9 @@
 // kTown service worker: the merchant app works with no internet and no SIM.
-// Cache-first for the app shell (page, code, QR encoder, fonts, icons); API
-// calls always go to the network, and the app falls back to its saved account
-// and history. Scope is /ktown, so the pay pages are untouched.
-// Bump CACHE when any cached file changes.
-const CACHE = "ktown-v4";
+// Cache-first for the app shell (page, code, QR encoder, fonts, icons, the
+// header logo); API calls always go to the network, and the app falls back
+// to its saved account and history. Scope is /ktown, so the pay pages are
+// untouched. Bump CACHE when any cached file changes.
+const CACHE = "ktown-v5";
 const SHELL = [
   "/ktown",
   "/ktown/index.html",
@@ -14,6 +14,7 @@ const SHELL = [
   "/ktown/manifest.webmanifest",
   "/ktown/icons/icon-192.png",
   "/ktown/icons/icon-512.png",
+  "/assets/logo.png",
   "/assets/figtree-latin.woff2",
   "/assets/figtree-latin-ext.woff2",
   "/assets/bricolage-grotesque-latin.woff2",
