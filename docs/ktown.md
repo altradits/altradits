@@ -92,7 +92,7 @@ Before KTOWN=on for the 10-shop pilot, these guard the first strangers:
   Tando converts sats to M-Pesa for its 1% fee; payments, refunds and
   failed payments are between the payer, Tando and M-Pesa; what kTown
   stores and why; how to ask for deletion; pilot status (free, may
-  stop). Draft for legal review until Stanley's lawyer signs off.
+  stop). Approved by Stanley's lawyer (version 2026-11-06).
   Registration ticks "I agree"; the terms version
   (KTOWN_TERMS_VERSION in lib/ktown.js) and the time are stored on the
   merchant record.
