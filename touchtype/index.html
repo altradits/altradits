@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+    <meta name="description" content="Muscle Memory Dojo - an offline arcade typing game. No account, no network calls during play.">
+    <title>Muscle Memory Dojo - Arcade Overdrive</title>
+    <link rel="canonical" href="https://altradits.com/touchtype">
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+    <meta name="theme-color" content="#050508">
+    <link rel="stylesheet" href="/touchtype/css/style.css">
+</head>
+<body>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+</script>
+
+    <header>
+        <div class="level-card">
+            <span id="player-level" class="level-badge">STAGE 1</span>
+            <div class="xp-container">
+                <div class="xp-text">
+                    <span>ACCURACY CHECK</span>
+                    <span id="mastery-text">0% / 95%</span>
+                </div>
+                <div class="xp-bar">
+                    <div id="xp-fill" class="xp-fill"></div>
+                </div>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="btn-sound" class="btn">Sound FX: Off</button>
+            <button id="btn-reset" class="btn">Reset Dojo</button>
+        </div>
+    </header>
+
+    <div class="sub-header">
+        <div class="quest-banner">
+            <span>TARGET REGION:</span>
+            <span id="quest-title" class="quest-title">1. Index Isolation (L3/R3)</span>
+        </div>
+        <div id="multiplier-tag" class="multiplier-badge">1x MULTIPLIER</div>
+        <div class="stats-summary">
+            <div class="stat-item"><span>STREAK:</span><b id="stat-streak">0</b></div>
+            <div class="stat-item"><span>ACCURACY:</span><b id="stat-acc">100%</b></div>
+            <div class="stat-item"><span>SPEED:</span><b id="stat-wpm">0 WPM</b></div>
+        </div>
+    </div>
+
+    <div id="arena" class="arena-container">
+        <div id="event-badge" class="event-popover">SURPRISE ENCOUNTER!</div>
+        <div id="finger-hint" class="finger-instruction">Left Index Finger</div>
+        <div id="stream-text" class="stream-text">loading...</div>
+        <div id="boss-timer" class="boss-timer-bar"></div>
+    </div>
+
+    <div class="stage-wrapper">
+        <div class="keyboard" id="keyboard">
+            <div class="keyboard-row">
+                <div class="key" data-key="`">`</div>
+                <div class="key" data-key="1">1</div>
+                <div class="key" data-key="2">2</div>
+                <div class="key" data-key="3">3</div>
+                <div class="key" data-key="4">4</div>
+                <div class="key" data-key="5">5</div>
+                <div class="key" data-key="6">6</div>
+                <div class="key" data-key="7">7</div>
+                <div class="key" data-key="8">8</div>
+                <div class="key" data-key="9">9</div>
+                <div class="key" data-key="0">0</div>
+                <div class="key" data-key="-">-</div>
+                <div class="key" data-key="=">=</div>
+                <div class="key wide" data-key="Backspace">Del</div>
+            </div>
+            <div class="keyboard-row">
+                <div class="key wide" data-key="Tab">Tab</div>
+                <div class="key" data-key="q">Q</div>
+                <div class="key" data-key="w">W</div>
+                <div class="key" data-key="e">E</div>
+                <div class="key" data-key="r">R</div>
+                <div class="key" data-key="t">T</div>
+                <div class="key" data-key="y">Y</div>
+                <div class="key" data-key="u">U</div>
+                <div class="key" data-key="i">I</div>
+                <div class="key" data-key="o">O</div>
+                <div class="key" data-key="p">P</div>
+                <div class="key" data-key="[">[</div>
+                <div class="key" data-key="]">]</div>
+            </div>
+            <div class="keyboard-row">
+                <div class="key wider" data-key="CapsLock">Caps</div>
+                <div class="key" data-key="a">A</div>
+                <div class="key" data-key="s">S</div>
+                <div class="key" data-key="d">D</div>
+                <div class="key" data-key="f">F</div>
+                <div class="key" data-key="g">G</div>
+                <div class="key" data-key="h">H</div>
+                <div class="key" data-key="j">J</div>
+                <div class="key" data-key="k">K</div>
+                <div class="key" data-key="l">L</div>
+                <div class="key" data-key=";">;</div>
+                <div class="key" data-key="'">'</div>
+                <div class="key wider" data-key="Enter">Enter</div>
+            </div>
+            <div class="keyboard-row">
+                <div class="key wider" data-key="Shift">Shift</div>
+                <div class="key" data-key="z">Z</div>
+                <div class="key" data-key="x">X</div>
+                <div class="key" data-key="c">C</div>
+                <div class="key" data-key="v">V</div>
+                <div class="key" data-key="b">B</div>
+                <div class="key" data-key="n">N</div>
+                <div class="key" data-key="m">M</div>
+                <div class="key" data-key=",">,</div>
+                <div class="key" data-key=".">.</div>
+                <div class="key" data-key="/">/</div>
+                <div class="key wider" data-key="Shift">Shift</div>
+            </div>
+            <div class="keyboard-row">
+                <div class="key space" data-key=" ">Space</div>
+            </div>
+        </div>
+        <canvas id="hands-overlay"></canvas>
+    </div>
+
+    <script src="/touchtype/js/game.js" defer></script>
+</body>
+</html>

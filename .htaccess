@@ -31,6 +31,8 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
   RewriteRule ^ktown/?$ ktown/index.html [L]
   RewriteRule ^ktown/terms/?$ ktown/terms.html [L]
   RewriteRule ^k/([A-Za-z0-9_-]+)/?$ ktown/pay.html [L]
+  # TouchType: the typing game at /touchtype.
+  RewriteRule ^touchtype/?$ touchtype/index.html [L]
 </IfModule>
 
 # Pages are checked on every visit, so an update shows at once (an unchanged
@@ -40,6 +42,11 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
     Header set Cache-Control "no-cache"
   </FilesMatch>
 </IfModule>
+
+# Game assets Apache serves directly need explicit types: a mistyped script
+# or sound is rejected by browsers, and a future wasm build needs its type.
+AddType application/wasm .wasm
+AddType audio/mpeg .mp3
 
 # Server code and project files are never web content. The Node router only
 # serves whitelisted paths, but Apache answers directly for existing files.
