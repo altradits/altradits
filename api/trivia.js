@@ -7,9 +7,16 @@
 //   GET  /api/trivia?view=game&game=       -> public game info (names, never accounts)
 //   GET  /api/trivia?view=games            -> recent games for joining and watching
 //   GET  /api/trivia?view=play&game=&account? -> live play: open question, ranks, your seat
+//   GET  /api/trivia?view=stake&hash= -> one stake lock: open, locked, settled, cancelled (staked play only)
+//   GET  /api/trivia?view=stakes&game= -> the game's equal stake and lock count, never accounts (staked play only)
 //   POST /api/trivia { action: "fund", game, sats, target, message } -> donor invoice
 //   POST /api/trivia { action: "join", game, name, account }         -> take a seat
 //   POST /api/trivia { action: "answer", game, account, index }      -> answer the open round
+//   POST /api/trivia { action: "stake", game, account }              -> lock your own equal stake (staked play only)
+//
+// Staked play waits on TRIVIA_STAKES=on (default off). When off, the two
+// stake views and the stake action refuse with one plain message; donor
+// mode (fund, join, answer, pool, ledger) runs as before.
 //
 // Bot resistance is honest: rate limits, one account per player per game, a
 // per-game join lock, and join timing (joins close at the start). No third
@@ -53,6 +60,16 @@ export async function GET(request) {
       const live = await import("../lib/trivia-live.js");
       return json(await live.playView(q.get("game"), { account: q.get("account") || null }));
     }
+    if (view === "stake") {
+      const sk = await import("../lib/trivia-stakes.js");
+      return json(await sk.stakeStatus(q.get("hash")));
+    }
+    if (view === "stakes") {
+      const sk = await import("../lib/trivia-stakes.js");
+      const v = await sk.stakesOf(q.get("game"));
+      if (!v.staked) return json({ game: v.game, staked: false });
+      return json({ game: v.game, staked: true, sats: v.sats, setAt: v.setAt, seats: v.seats, locked: v.locked, ready: v.ready });
+    }
     return json({ error: "Unknown view." }, 404);
   } catch (e) { return fail(e); }
 }
@@ -77,6 +94,12 @@ export async function POST(request) {
       if ((await hit(`rl:trv:ans:all:${hour()}`, 3600)) > 20000) return json({ error: "Busy right now. Try again in a few minutes." }, 429);
       const live = await import("../lib/trivia-live.js");
       return json(await live.submitAnswer(clean(body.game, 64), { account: body.account, index: body.index }));
+    }
+    if (body.action === "stake") {
+      if ((await hit(`rl:trv:stake:${ip}`, 3600)) > 20) return json({ error: "Too many stakes. Try again in an hour." }, 429);
+      if ((await hit(`rl:trv:stake:all:${hour()}`, 3600)) > 200) return json({ error: "Busy right now. Try again in a few minutes." }, 429);
+      const sk = await import("../lib/trivia-stakes.js");
+      return json(await sk.stakeSeat(clean(body.game, 64), body.account));
     }
     return json({ error: "Unknown action." }, 400);
   } catch (e) { return fail(e); }
