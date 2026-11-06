@@ -10,6 +10,7 @@ Docs: https://bitcoin.co.ke/send-money-to-kenya/docs/developer-api.html
 
 - `GET /.well-known/lnurlp/<254..>` answers payRequest with LUD-21 `currency` {code KES, minSendable 15, maxSendable 50000, multiplier in msat per KES}. Only Safaricom ranges resolve (7xx, 11x, 14x).
 - `GET <callback>?amount=<KES>&currency=KES` returns an invoice that delivers exactly that many shillings. The payer covers the 1% on top. Without `currency` the amount is millisats and the invoice matches it exactly, and the fee comes out of the delivered shillings.
+- Fees and rounding (docs, "Fees and rounding"): the 1% lands on top in KES mode and inside the delivery in sats mode. The M-Pesa payout is floored to a whole shilling. Wallets without currency support, or built strictly to the newer unmerged drafts, fall back to paying in sats, which lands about 1% short of their own conversion.
 - `GET /api/payment/<hash>` answers `{success, transaction}` with status (pending, received, completed, failed), isPaid, paymentNetworkReceipt (the M-Pesa code), payToAccount, merchantName (the M-Pesa registered name), currencyAmountSent and the sats figures. A payment counts as settled only when status is completed, isPaid is true and the M-Pesa code is present. Unknown hashes get 404.
 - A number its owner claimed points at their own bitcoin wallet instead of M-Pesa. kTown refuses those at registration: without KES terms there is no M-Pesa delivery to promise.
 
@@ -19,8 +20,9 @@ Docs: https://bitcoin.co.ke/send-money-to-kenya/docs/developer-api.html
 - Registration proves the number works by reading its Tando LNURL. Receiving starts at once: money can only flow to the registered M-Pesa number, so an early QR risks nothing.
 - Identity is a 6-digit PIN (patterns refused, 5 wrong tries lock logins for 15 minutes) plus a year-long session per shop phone. Whoever holds the session may change that merchant's settings; a merchant can only ever change their own. A signed-in phone sets a new PIN without the old one. A lost phone with a forgotten PIN needs Stanley to release the record (`ktown_release`, below), then the merchant signs up again, unless the registration is still unclaimed, stale and unpaid, in which case signing up again takes it over by itself. kTown holds no money, so nothing is at risk meanwhile.
 - LNURL: `GET /.well-known/lnurlp/k-<id>` (and `/api/ktown/lnurlp/<id>`) answers payRequest with the shop name and M-Pesa name, Tando's msat limits and the KES currency terms. The callback asks Tando for an invoice for exactly that amount and returns it unchanged.
+- Two payer paths, one promise. The pay page always prices in KES, so the merchant receives exactly the quoted shillings. A wallet scanning the printed QR directly uses KES mode when it speaks LUD-21 and plain sats otherwise; in sats mode LNURL-pay requires the invoice to equal the asked millisats, so the 1% cannot be added there and lands inside the delivery instead. kTown never grosses up: in KES mode that would overcharge the payer, in sats mode it would break the protocol. What lands short is named instead (see History).
 - Amount checks: in KES mode Tando's `converted` must equal the asked shillings and the invoice sats must sit inside a narrow band (the 1% plus drift and rounding); in msat mode the invoice must match the millisats exactly. Anything else is refused and recorded in the Security watch.
-- History records only the merchant's own facts: amount, shillings expected and received, payment hash, M-Pesa code, time. Nothing about who paid is asked for, read or stored. One record per payment hash; a repeat confirmation changes nothing. Payment records are never pruned.
+- History records only the merchant's own facts: amount, shillings expected and received, which path priced it, the rate, the payer's fee, payment hash, M-Pesa code, time. Nothing about who paid is asked for, read or stored. One record per payment hash; a repeat confirmation changes nothing. Payment records are never pruned. A shortfall is never hidden: quoted vs received shows in History whenever they differ.
 - Name verification: the typed M-Pesa name shows from the start as the name the customer will see. It is marked verified once a receipt for that merchant's number carries the same registered name.
 - Receipts: `GET /api/ktown/receipt/<hash>` answers only for hashes kTown itself recorded. Anything else gets 404 without Tando ever being asked, so no stranger's payment can be looked up here. The registered name is returned (and kept in history) only when it matches the merchant: a wrong guess learns nothing. A payment started before a takeover still reports its status afterwards, but names no name.
 
@@ -48,10 +50,13 @@ frame check, Security watch reporter) applies unchanged.
 - `ktown/pay.html`, `ktown/pay.js`: the payer page at /k/<id>. Names and
   limits come from the merchant's LNURL answer (plus its `verified` field,
   which wallets ignore). The amount defaults to KES and converts from the
-  payer's currency through /api/ktown/rates; the invoice is always priced in
-  KES so the merchant receives exactly the shown shillings. Then the invoice
-  QR with copy and open-in-wallet, then the paid confirmation from the
-  receipt, polled every 3 seconds.
+  payer's currency through /api/ktown/rates; before paying, the payer sees
+  only the shillings the merchant will receive (no sats figure, no fee
+  line). The invoice is always priced in KES so the merchant receives
+  exactly the shown shillings. Then the invoice QR with copy and
+  open-in-wallet, then the paid confirmation from the receipt, polled every
+  3 seconds: merchant received KSh X, Tando fee KSh Y (1%), you paid Z sats
+  (about KSh X+Y).
 - `ktown/style.css`: navy ink on cream, Bricolage headings, Figtree text, big
   touch targets, AA-safe text colors. The QR is black on white SVG, crisp in
   print and in black and white.
@@ -61,6 +66,9 @@ frame check, Security watch reporter) applies unchanged.
   script. Server error lines stay in English.
 - History converts into the merchant's currency with ≈ (display only; the KES
   figure is exact). Without rates, both pages fall back to KES silently.
+  Each settled entry also names what landed and why: the fee the payer
+  covered, quoted vs received when they differ, or that the wallet paid in
+  sats and the 1% came out of the shillings.
 
 ## Print and offline (PR 3)
 
@@ -69,6 +77,9 @@ frame check, Security watch reporter) applies unchanged.
   (about 500 by 700) entirely in the browser and downloads it. All three run
   on the same saved merchant data as the screen QR, so card, sheet, app and
   pay page can never disagree.
+- The QR holds the pay page link with the LNURL attached, so a phone camera
+  opens the exact pay page while a Lightning wallet pays the LNURL directly
+  (in KES mode when it speaks LUD-21, in sats otherwise).
 - `ktown/sw.js` installs the app as a PWA: it precaches the shell (HTML, CSS,
   scripts, fonts), answers same-site GET reads from the cache for offline
   use, never caches /api/ responses, and falls back to the app on a failed

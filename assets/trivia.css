@@ -1,0 +1,39 @@
+/* Mempool Mayhem live play. Same palette as the site: paper cards, ink
+   borders, bitcoin orange for action. No transitions: the countdown bar is
+   redrawn by script, so reduced-motion users get a calm page by default. */
+.quiz{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.2rem;margin:1rem 0}
+.quiz h3{margin:0 0 .4rem}
+.q-meta{display:flex;flex-wrap:wrap;gap:.4rem .8rem;align-items:center;color:var(--muted);font-size:.92rem;margin:.2rem 0 .6rem}
+.pill{display:inline-block;font-size:.78rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
+.count{height:.7rem;background:var(--bg);border:1px solid var(--line);border-radius:99px;overflow:hidden;margin:.4rem 0 .2rem}
+.count i{display:block;height:100%;background:var(--btc);width:0}
+.q-left{font-size:.92rem;color:var(--muted);margin:0 0 .6rem}
+.q-text{font-size:1.25rem;line-height:1.4;margin:.2rem 0 .8rem}
+.q-sw{color:var(--muted);font-size:1.02rem;margin:-.4rem 0 .8rem}
+.choices{list-style:none;padding:0;margin:0;display:grid;gap:.5rem}
+.choices button{width:100%;text-align:left;min-height:2.9rem;padding:.7rem .9rem;border-radius:.7rem;border:2px solid var(--ink);background:var(--bg);font:600 1rem Figtree,system-ui,sans-serif;color:var(--ink);cursor:pointer}
+.choices button:hover:not(:disabled){background:#fff}
+.choices button:disabled{cursor:default;opacity:.75}
+.choices button.picked{background:var(--btc);border-color:var(--ink);opacity:1}
+.q-foot{font-size:.92rem;color:var(--muted);margin:.7rem 0 0}
+table.board{width:100%;border-collapse:collapse;margin:.6rem 0 0;font-size:.97rem}
+table.board th,table.board td{text-align:left;padding:.45rem .5rem;border-bottom:1px solid var(--line)}
+table.board th{color:var(--muted);font-weight:700}
+table.board td.num,table.board th.num{text-align:right;font-variant-numeric:tabular-nums}
+.me{background:var(--bg);border:2px solid var(--line);border-radius:.7rem;padding:.6rem .8rem;margin:.8rem 0 0;font-size:.95rem}
+.me b{font-variant-numeric:tabular-nums}
+.status{font-size:.95rem;color:var(--muted);margin:.2rem 0}
+.games{list-style:none;padding:0;margin:.6rem 0;display:grid;gap:.5rem}
+.games li{background:var(--paper);border:2px solid var(--ink);border-radius:.8rem;padding:.7rem .9rem;display:flex;flex-wrap:wrap;gap:.3rem .9rem;align-items:baseline}
+.games .t{font-weight:700}
+.games .s{font-size:.85rem;color:var(--muted)}
+.wall{list-style:none;padding:0;margin:.6rem 0;display:grid;gap:.5rem}
+.wall li{background:var(--paper);border:2px solid var(--line);border-radius:.8rem;padding:.6rem .8rem}
+.wall .m{margin:0}
+.wall .w{font-size:.85rem;color:var(--muted);margin:.2rem 0 0}
+.row2{display:grid;gap:.6rem}
+@media (min-width:44rem){.row2{grid-template-columns:1fr 1fr}}
+label.f{display:block;font-weight:700;margin:.5rem 0 .1rem}
+.hint{font-size:.88rem;color:var(--muted);margin:.1rem 0 .4rem}
+select,input,textarea{width:100%;padding:.7rem .8rem;border:2px solid var(--line);border-radius:.6rem;font:inherit;background:var(--bg);margin:.3rem 0 .4rem;color:var(--ink)}
+.off{background:#FFF4E5;border:2px solid var(--btc);border-radius:.8rem;padding:.8rem 1rem;margin:1rem 0}

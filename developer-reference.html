@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<meta name="theme-color" content="#EEF2F6">
+<link rel="canonical" href="https://altradits.com/developer/reference">
+<title>API reference · Altradits Developer</title>
+<meta name="description" content="Every Altradits Developer endpoint: accounts, keys, destinations, invoices, webhooks, fee balance, sandbox. Methods, parameters, examples, error codes.">
+<link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
+<meta property="og:title" content="API reference · Altradits Developer">
+<meta property="og:description" content="Every Altradits Developer endpoint: accounts, keys, destinations, invoices, webhooks, fee balance, sandbox. Methods, parameters, examples, error codes.">
+<meta property="og:url" content="https://altradits.com/developer/reference">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://altradits.com/assets/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="API reference · Altradits Developer">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="API reference · Altradits Developer">
+<meta name="twitter:description" content="Every Altradits Developer endpoint: accounts, keys, destinations, invoices, webhooks, fee balance, sandbox. Methods, parameters, examples, error codes.">
+<meta name="twitter:image" content="https://altradits.com/assets/social-card.png">
+<style>
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0 -1rem;padding:.8rem 1rem;flex-wrap:wrap;row-gap:.5rem;position:sticky;top:0;z-index:50;background:rgba(238,242,246,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top img{height:2.5rem;width:auto;display:block}
+.topnav{display:flex;gap:.35rem;flex-wrap:wrap;row-gap:.35rem;align-items:center}
+.topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.45rem .95rem;border-radius:99px}
+.topnav a:hover{color:var(--ink);background:rgba(15,27,45,.08)}
+.topnav a[aria-current]{color:#fff;background:var(--ink)}
+@media (max-width:420px){.topnav{gap:.25rem}.topnav a{font-size:.9rem;padding:.4rem .7rem}.top img{height:1.9rem}}
+.hero{padding:2.25rem 0 1rem}
+.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem}
+.hero h1 em{font-style:normal;color:var(--btc-text)}
+.lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:38rem}
+h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:2.4rem 0 .4rem}
+h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:1.6rem 0 .3rem}
+.intro{color:var(--muted);margin:0 0 1rem;max-width:44rem}
+pre{background:var(--ink);color:#E8EEF5;border-radius:.75rem;padding:1rem 1.1rem;overflow-x:auto;font:400 .85rem/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;max-width:46rem}
+pre .c{color:#9FB2C8}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+p code,li code,td code{background:rgba(15,27,45,.08);border-radius:.3rem;padding:.05rem .3rem}
+table{border-collapse:collapse;max-width:46rem;width:100%;background:var(--paper);border:2px solid var(--ink);border-radius:.75rem;overflow:hidden;margin:0 0 1rem}
+th,td{text-align:left;padding:.55rem .75rem;border-bottom:1px solid var(--line);font-size:.92rem;vertical-align:top}
+tr:last-child th,tr:last-child td{border-bottom:0}
+th{font-family:'Bricolage Grotesque',sans-serif}
+.ep{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin:1.8rem 0 .3rem}
+.method{font:700 .85rem ui-monospace,Menlo,Consolas,monospace;color:#fff;background:var(--ink);border-radius:.4rem;padding:.25rem .6rem}
+.method.get{background:var(--ok)}
+.ep code{font-size:1rem}
+.pill{display:inline-block;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-radius:99px;padding:.15rem .6rem;background:rgba(11,122,95,.12);color:var(--ok)}
+.pill.sandbox{background:rgba(42,90,143,.12);color:var(--blue)}
+.toc{columns:2;max-width:46rem;padding-left:1.2rem;color:var(--muted)}
+.toc li{margin:.25rem 0}
+@media (max-width:560px){.toc{columns:1}}
+.sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}
+.sitefoot .wp{margin:0 0 .6rem}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top,.tabs{transition:box-shadow .25s ease}body.scrolled .top,body.scrolled .tabs{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}}
+.topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
+.topnav a.launch:hover{color:var(--ink);background:#ffa94d}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/library">Library</a><a href="/friends">Friends</a><a href="/developer" aria-current="page">Developer</a><a class="launch" href="/yebente">Open Ye₿ente</a></nav></div>
+
+  <header class="hero">
+    <h1>API <em>reference.</em></h1>
+    <p class="lead">Base URL <code>https://altradits.com/api/dev/v1</code>. JSON in, JSON out. This page restates the <a href="https://github.com/altradits/altradits/blob/main/docs/developer-openapi.json">OpenAPI 3.1 contract</a> in the repo.</p>
+  </header>
+
+  <h2 id="basics">Basics</h2>
+  <ul class="toc">
+    <li><a href="#auth">Authentication</a></li>
+    <li><a href="#errors">Errors and request ids</a></li>
+    <li><a href="#paging">Pagination</a></li>
+    <li><a href="#idem">Idempotency</a></li>
+    <li><a href="#limits">Rate limits</a></li>
+    <li><a href="#health">Health</a></li>
+    <li><a href="#accounts">Accounts</a></li>
+    <li><a href="#keys">Keys</a></li>
+    <li><a href="#destinations">Destinations</a></li>
+    <li><a href="#invoices">Invoices</a></li>
+    <li><a href="#webhooks">Webhooks</a></li>
+    <li><a href="#fees">Top-ups, balance, statement</a></li>
+    <li><a href="#sandbox">Sandbox</a></li>
+    <li><a href="#verifyhook">Verifying webhooks</a></li>
+    <li><a href="#changelog">Changelog</a></li>
+  </ul>
+
+  <h3 id="auth">Authentication</h3>
+  <p class="intro"><code>Authorization: Bearer &lt;token&gt;</code>. The token is a dashboard session or an API key. Keys start with <code>ak_live_</code> or <code>ak_test_</code>. A test key serves only the sandbox. A live key serves only live. Sessions manage the account and read everything, flagged per environment. Invoice creation always needs a key.</p>
+
+  <h3 id="errors">Errors and request ids</h3>
+  <p class="intro">Every reply carries <code>requestId</code>. Quote it when asking for help. Failures look like this:</p>
+  <pre>{"ok": false, "requestId": "9f2c…", "code": "insufficient_credits",
+ "error": "This invoice needs 2 sats of fee credit and the balance holds 0. Top up first."}</pre>
+  <table>
+    <tr><th>Code</th><th>Status</th><th>Meaning</th></tr>
+    <tr><td><code>api_off</code>, <code>sandbox_off</code></td><td>501</td><td>That environment is not switched on.</td></tr>
+    <tr><td><code>bad_email</code>, <code>email_typo</code>, <code>bad_code</code></td><td>400, 422, 400/429</td><td>Signup code problems. The typo reply names the likely address.</td></tr>
+    <tr><td><code>unauthorized</code>, <code>invalid_key</code>, <code>key_revoked</code></td><td>401</td><td>Sign in again, or the key is unknown or revoked.</td></tr>
+    <tr><td><code>suspended</code>, <code>forbidden_scope</code>, <code>bad_scope</code></td><td>403, 403, 400</td><td>Suspended account, missing scope, unknown scope.</td></tr>
+    <tr><td><code>unknown_key</code>, <code>unknown_destination</code>, <code>unknown_invoice</code>, <code>unknown_webhook</code>, <code>unknown_topup</code>, <code>not_found</code></td><td>404</td><td>Unknown id. Cross-environment lookups also answer 404.</td></tr>
+    <tr><td><code>destination_unverified</code>, <code>challenge_unpaid</code>, <code>duplicate_destination</code></td><td>409</td><td>Finish the ownership proof first, or the address is taken.</td></tr>
+    <tr><td><code>challenge_expired</code></td><td>410</td><td>Register again for a fresh challenge.</td></tr>
+    <tr><td><code>bad_amount</code>, <code>bad_currency</code>, <code>amount_out_of_range</code>, <code>bad_address</code>, <code>address_mismatch</code>, <code>bad_webhook_url</code>, <code>bad_webhook_events</code>, <code>idempotency_conflict</code>, <code>sandbox_address_only</code>, <code>sandbox_only</code></td><td>422</td><td>The request was understood but refused. The sentence says why.</td></tr>
+    <tr><td><code>rate_limited</code></td><td>429</td><td>Past a limit. Wait and retry.</td></tr>
+    <tr><td><code>insufficient_credits</code></td><td>402</td><td>The fee balance can't cover this invoice. Top up first.</td></tr>
+    <tr><td><code>address_unreachable</code>, <code>invoice_mismatch</code>, <code>invoice_untracked</code>, <code>verify_unreachable</code></td><td>502</td><td>The destination failed or answered wrong. Nothing was paid.</td></tr>
+    <tr><td><code>node_offline</code>, <code>rate_unavailable</code>, <code>lockdown_freeze</code>, <code>account_busy</code></td><td>503</td><td>Try again later. Lockdown freezes new invoices and top-ups only.</td></tr>
+    <tr><td><code>bad_version</code></td><td>404</td><td>Unknown API version. The current version is v1.</td></tr>
+  </table>
+
+  <h3 id="paging">Pagination</h3>
+  <p class="intro">List endpoints take <code>limit</code> (1 to 200, default 50) and <code>cursor</code>. The reply carries <code>nextCursor</code>: pass it as <code>cursor</code> for the next page, newest first.</p>
+
+  <h3 id="idem">Idempotency</h3>
+  <p class="intro">Invoice and top-up creation accept <code>Idempotency-Key</code>. The same key replays the first reply for 24 hours (<code>deduplicated: true</code>). The same key with different details answers 422.</p>
+
+  <h3 id="limits">Rate limits</h3>
+  <p class="intro">100 invoices an hour per key. 2,000 invoices and 20 top-ups a day per account. 5 signup codes an hour per address. Webhook and settlement polling are capped per invoice and per connection. Past a limit, 429.</p>
+
+  <h2 id="health">Health</h2>
+  <div class="ep"><span class="method get">GET</span><code>/health</code> <span class="pill">Live</span></div>
+  <p class="intro">Always answers. Names whether the API and the sandbox are on. No authentication.</p>
+  <pre>{"ok": true, "requestId": "…", "version": "v1", "api": "on", "sandbox": "on"}</pre>
+
+  <h2 id="accounts">Accounts</h2>
+  <div class="ep"><span class="method">POST</span><code>/accounts/request-code</code> <span class="pill">Live</span></div>
+  <p class="intro">Emails a one-time 8 digit code, good for 10 minutes. Body: <code>{"email", "confirmTypo?"}</code>. Never reveals whether an address is registered.</p>
+  <div class="ep"><span class="method">POST</span><code>/accounts/verify-code</code> <span class="pill">Live</span></div>
+  <p class="intro">Verifies the code. Creates the account on first use. Returns the account and a session token, good for 30 days. Body: <code>{"email", "code"}</code>.</p>
+  <div class="ep"><span class="method get">GET</span><code>/accounts/me</code> <span class="pill">Live</span></div>
+  <p class="intro">The signed-in account. Session only.</p>
+  <div class="ep"><span class="method">POST</span><code>/accounts/sign-out</code> <span class="pill">Live</span></div>
+  <p class="intro">Ends this session at once. Session only.</p>
+
+  <h2 id="keys">Keys</h2>
+  <p class="intro">Session only. Scopes: <code>invoices:create</code>, <code>invoices:read</code>, <code>webhooks</code>. Secrets are shown once and never again.</p>
+  <div class="ep"><span class="method get">GET</span><code>/keys</code> <span class="pill">Live</span></div>
+  <p class="intro">Every key, newest first. Public halves only.</p>
+  <div class="ep"><span class="method">POST</span><code>/keys</code> <span class="pill">Live</span></div>
+  <p class="intro">Body: <code>{"name?", "scopes?", "sandbox?"}</code>. Scopes default to all three. <code>sandbox: true</code> makes a test key.</p>
+  <div class="ep"><span class="method">POST</span><code>/keys/{id}/rotate</code> <span class="pill">Live</span></div>
+  <p class="intro">Revokes the key and returns its replacement, shown once.</p>
+  <div class="ep"><span class="method">POST</span><code>/keys/{id}/revoke</code> <span class="pill">Live</span></div>
+  <p class="intro">Revokes the key at once. The record is kept.</p>
+
+  <h2 id="destinations">Destinations</h2>
+  <p class="intro">Session only. Live: your own Lightning address, proven by a 1 sat challenge payment. Sandbox: only the built-in simulator <code>dev@sandbox.altradits.com</code>, verified at once with no payment.</p>
+  <div class="ep"><span class="method get">GET</span><code>/destinations</code> <span class="pill">Live</span></div>
+  <p class="intro">Every registered address on the account.</p>
+  <div class="ep"><span class="method">POST</span><code>/destinations</code> <span class="pill">Live</span></div>
+  <p class="intro">Body: <code>{"address", "sandbox?"}</code>. Live returns the destination plus the 1 sat challenge invoice. The address must resolve and name itself. Sandbox returns the verified simulator with <code>challenge: null</code>.</p>
+  <div class="ep"><span class="method">POST</span><code>/destinations/{id}/prove</code> <span class="pill">Live</span></div>
+  <p class="intro">After the challenge is paid. Checks settlement and re-binds the address, then marks it verified.</p>
+
+  <h2 id="invoices">Invoices</h2>
+  <p class="intro">Creation needs a key with <code>invoices:create</code>. Reads take a key with <code>invoices:read</code> or a session. A key sees only its own environment.</p>
+  <div class="ep"><span class="method">POST</span><code>/invoices</code> <span class="pill">Live</span></div>
+  <p class="intro">Fetches your destination's own invoice for exactly the amount, checks it, and tracks it. Body: <code>{"destinationId", "sats?" | "fiat?", "memo?"}</code>. Fiat: <code>{"amount", "currency"}</code>, USD or KES, converted at the live rate and recorded. At most 100,000,000 sats. Frozen in a lockdown (503). Needs its fee covered (402). Accepts <code>Idempotency-Key</code>.</p>
+  <pre><span class="c">POST /api/dev/v1/invoices</span>
+{"destinationId": "K7…", "sats": 5000, "memo": "order 123"}
+
+<span class="c">201, or 200 with "deduplicated": true on an Idempotency-Key replay</span>
+{"ok": true, "requestId": "…", "invoice": {
+  "id": "…", "address": "you@wallet.com", "sats": 5000,
+  "bolt11": "lnbc50u1…", "paymentHash": "…", "status": "pending",
+  "verifySupported": true, "createdAt": "…", "settledAt": null }}</pre>
+  <div class="ep"><span class="method get">GET</span><code>/invoices?limit&amp;cursor</code> <span class="pill">Live</span></div>
+  <p class="intro">Your invoices, newest first. Paginated.</p>
+  <div class="ep"><span class="method get">GET</span><code>/invoices/{id}</code> <span class="pill">Live</span></div>
+  <p class="intro">The invoice, with a live settlement check when the destination supports verify. Without verify support, the invoice stays pending and the reply carries a note saying to confirm in your wallet.</p>
+  <div class="ep"><span class="method get">GET</span><code>/verify/{hash}</code> <span class="pill">Live</span></div>
+  <p class="intro">Settlement by payment hash (64 hex characters). Same live check as invoice status.</p>
+
+  <h2 id="webhooks">Webhooks</h2>
+  <p class="intro">Key with the <code>webhooks</code> scope, or a session. A key sees only its own environment. Endpoints are never deleted, only disabled. The delivery log is kept.</p>
+  <div class="ep"><span class="method">POST</span><code>/webhooks</code> <span class="pill">Live</span></div>
+  <p class="intro">Body: <code>{"url", "events?", "sandbox?"}</code>. The URL must be https on a public host. Events default to <code>["invoice.settled"]</code>. Returns the endpoint plus the secret, shown once.</p>
+  <div class="ep"><span class="method get">GET</span><code>/webhooks</code> <span class="pill">Live</span></div>
+  <p class="intro">Every endpoint on the account. Secrets are never listed.</p>
+  <div class="ep"><span class="method">POST</span><code>/webhooks/{id}/disable</code> <span class="pill">Live</span></div>
+  <p class="intro">Stops new deliveries at once.</p>
+  <div class="ep"><span class="method get">GET</span><code>/webhooks/{id}/deliveries?limit&amp;cursor</code> <span class="pill">Live</span></div>
+  <p class="intro">Every delivery, newest first, with each attempt. Paginated.</p>
+  <pre><span class="c">POST to your URL on every settlement</span>
+{"event": "invoice.settled", "invoice": {…}, "deliveredAt": "…"}</pre>
+
+  <h2 id="fees">Top-ups, balance, statement</h2>
+  <p class="intro">Session, or a key (<code>invoices:create</code> to top up, <code>invoices:read</code> to read). Top-ups are live only, 100 sats minimum, invoiced from Stanley's node. Fees deduct 0.5% rounded up, minimum 1 sat, when an invoice settles. Credits are non-refundable, except on account close: unused live balance pays out to a verified destination within 7 days.</p>
+  <div class="ep"><span class="method">POST</span><code>/topups</code> <span class="pill">Live</span></div>
+  <p class="intro">Body: <code>{"sats"}</code>. Returns the node invoice. Pay it, then poll the top-up. Frozen in a lockdown (503). Accepts <code>Idempotency-Key</code>.</p>
+  <div class="ep"><span class="method get">GET</span><code>/topups?limit&amp;cursor</code> <span class="pill">Live</span></div>
+  <p class="intro">Your top-ups, newest first. Paginated.</p>
+  <div class="ep"><span class="method get">GET</span><code>/topups/{id}</code> <span class="pill">Live</span></div>
+  <p class="intro">The top-up, with a live check that credits the balance when paid. Crediting stays on during a lockdown.</p>
+  <div class="ep"><span class="method get">GET</span><code>/balance</code> <span class="pill">Live</span></div>
+  <p class="intro">The prepaid balance: <code>{"live", "test"}</code> in sats.</p>
+  <div class="ep"><span class="method get">GET</span><code>/statement</code> <span class="pill">Live</span></div>
+  <p class="intro">Balance, per-environment totals (<code>live</code> and <code>test</code>: <code>toppedUp</code>, <code>feesPaid</code>, <code>settledVolume</code>, <code>settledCount</code>, <code>shortfall</code>), and the ledger: every top-up, fee and grant, newest first. Paginated. Only live fees are real sats.</p>
+
+  <h2 id="sandbox">Sandbox</h2>
+  <p class="intro">Test keys and the simulator. Free. Works while mainnet is off. The sandbox never touches the network or the node.</p>
+  <div class="ep"><span class="method">POST</span><code>/sandbox/settle</code> <span class="pill sandbox">Sandbox only</span></div>
+  <p class="intro">Body: <code>{"invoiceId"}</code>. Plays the customer paying a sandbox invoice. Needs a test key with <code>invoices:create</code>, or a session. Live invoices are refused. Simulator invoices use signet encoding (<code>lntb…</code>), so a real wallet refuses them.</p>
+
+  <h2 id="verifyhook">Verifying webhooks</h2>
+  <p class="intro">Every delivery carries <code>X-Dev-Signature: t=&lt;unix seconds&gt;,v1=&lt;hex&gt;</code>, where v1 is <code>HMAC-SHA256(secret, "&lt;t&gt;.&lt;raw body&gt;")</code>. Check the timestamp is within 5 minutes. Compare in constant time. Failures retry after 1 minute, 5 minutes, 30 minutes, 2 hours and 12 hours. Then the delivery is marked dead.</p>
+  <pre><span class="c">Node.js verification</span>
+import crypto from "node:crypto";
+const [t, v1] = sig.split(",").map((p) => p.split("=")[1]);
+if (Math.abs(Date.now() / 1000 - Number(t)) &gt; 300) throw new Error("stale");
+const expect = crypto.createHmac("sha256", secret).update(`${t}.${rawBody}`).digest("hex");
+if (!crypto.timingSafeEqual(Buffer.from(v1), Buffer.from(expect))) throw new Error("bad signature");</pre>
+
+  <h2 id="changelog">Changelog</h2>
+  <table>
+    <tr><th>Version</th><th>Added</th></tr>
+    <tr><td>1.0.0</td><td>Accounts, keys, destinations.</td></tr>
+    <tr><td>1.1.0</td><td>Invoices, verify by hash, webhooks.</td></tr>
+    <tr><td>1.2.0</td><td>Top-ups, balance, statement. Fee gate on new invoices.</td></tr>
+    <tr><td>1.3.0</td><td>Sandbox simulator.</td></tr>
+    <tr><td>1.4.0</td><td>Sessions may read invoices.</td></tr>
+  </table>
+
+</div>
+
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/yebente">Open Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin questions</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/research">Research</a> · <a href="/portfolio">Portfolio</a> · <a href="/donate">Support my work</a> · <a href="/contact">Contact</a> · <a href="/developer">Developer</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a></div></footer>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY>24)},{passive:true});document.body.classList.toggle("scrolled",scrollY>24); // nav shadow on scroll
+</script>
+</body>
+</html>

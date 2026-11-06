@@ -299,8 +299,8 @@ test("send to a Lightning address (phone@bitcoin.co.ke pays M-Pesa); another Yeâ
   let lastAmount = null;
   globalThis.fetch = async (url, opts) => {
     const u = new URL(String(url));
-    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/.well-known/lnurlp/0712345678") return new Response(JSON.stringify({ tag: "payRequest", callback: "https://bitcoin.co.ke/lnurlp/cb/0712345678", minSendable: 15000, maxSendable: 50000000, metadata: "[]" }));
-    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/lnurlp/cb/0712345678") { lastAmount = Number(u.searchParams.get("amount")); return new Response(JSON.stringify({ pr: invoice(lastAmount / 1000).pr, successAction: { tag: "url", url: "https://bitcoin.co.ke/receipt/abc" } })); }
+    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/.well-known/lnurlp/0707172370") return new Response(JSON.stringify({ tag: "payRequest", callback: "https://bitcoin.co.ke/lnurlp/cb/0707172370", minSendable: 15000, maxSendable: 50000000, metadata: "[]" }));
+    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/lnurlp/cb/0707172370") { lastAmount = Number(u.searchParams.get("amount")); return new Response(JSON.stringify({ pr: invoice(lastAmount / 1000).pr, successAction: { tag: "url", url: "https://bitcoin.co.ke/receipt/abc" } })); }
     if (u.hostname === "evil.example") return new Response(JSON.stringify({ tag: "payRequest", callback: "https://evil.example/cb", minSendable: 1000, maxSendable: 1e9, metadata: "[]" }));
     if (u.pathname === "/cb") return new Response(JSON.stringify({ pr: invoice(999).pr })); // a different amount
     return realFetch(url, opts);
@@ -309,7 +309,7 @@ test("send to a Lightning address (phone@bitcoin.co.ke pays M-Pesa); another Yeâ
     const w = await yw.walletByHandle("payer");
     const token = (await (await call("POST", "wallet/create", { pin: "316280", handle: "mpesa-user" })).json()).token;
     await yw.credit({ walletId: (await yw.walletByHandle("mpesa-user")).id, sats: 3000, kind: "receive", ref: "fund-mpesa" });
-    const r = await (await call("POST", "wallet/send", { to: "0712345678@bitcoin.co.ke", sats: 2000, pin: "316280" }, token)).json();
+    const r = await (await call("POST", "wallet/send", { to: "0707172370@bitcoin.co.ke", sats: 2000, pin: "316280" }, token)).json();
     assert.equal(r.status, "completed");
     assert.equal(lastAmount, 2_000_000);
     assert.equal(r.receiptUrl, "https://bitcoin.co.ke/receipt/abc");
@@ -340,7 +340,7 @@ function lnurlEncode(url) {
 }
 
 test("send to an LNURL from a QR code; a Yeâ‚¿ente wallet's own QR is a free transfer", async () => {
-  assert.equal(yw.lnurlToUrl(lnurlEncode("https://bitcoin.co.ke/.well-known/lnurlp/0712345678").toUpperCase()), "https://bitcoin.co.ke/.well-known/lnurlp/0712345678");
+  assert.equal(yw.lnurlToUrl(lnurlEncode("https://bitcoin.co.ke/.well-known/lnurlp/0707172370").toUpperCase()), "https://bitcoin.co.ke/.well-known/lnurlp/0707172370");
   assert.equal(yw.lnurlToUrl("lnurlp://bitcoin.co.ke/lnurlp/Ab"), "https://bitcoin.co.ke/lnurlp/Ab");
   assert.equal(yw.lnurlToUrl(lnurlEncode("https://bitcoin.co.ke/x").slice(0, -1) + "q"), null); // bad checksum
   assert.equal(yw.lnurlToUrl(lnurlEncode("http://bitcoin.co.ke/x")), null); // not https
@@ -348,14 +348,14 @@ test("send to an LNURL from a QR code; a Yeâ‚¿ente wallet's own QR is a free tra
   let lastAmount = null;
   globalThis.fetch = async (url, opts) => {
     const u = new URL(String(url));
-    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/.well-known/lnurlp/0712345678") return new Response(JSON.stringify({ tag: "payRequest", callback: "https://bitcoin.co.ke/lnurlp/cb/0712345678", minSendable: 15000, maxSendable: 50000000, metadata: "[]" }));
-    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/lnurlp/cb/0712345678") { lastAmount = Number(u.searchParams.get("amount")); return new Response(JSON.stringify({ pr: invoice(lastAmount / 1000).pr })); }
+    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/.well-known/lnurlp/0707172370") return new Response(JSON.stringify({ tag: "payRequest", callback: "https://bitcoin.co.ke/lnurlp/cb/0707172370", minSendable: 15000, maxSendable: 50000000, metadata: "[]" }));
+    if (u.hostname === "bitcoin.co.ke" && u.pathname === "/lnurlp/cb/0707172370") { lastAmount = Number(u.searchParams.get("amount")); return new Response(JSON.stringify({ pr: invoice(lastAmount / 1000).pr })); }
     return realFetch(url, opts);
   };
   try {
     const token = (await (await call("POST", "wallet/create", { pin: "417306", handle: "qr-user" })).json()).token;
     await yw.credit({ walletId: (await yw.walletByHandle("qr-user")).id, sats: 2000, kind: "receive", ref: "fund-qr" });
-    const r = await (await call("POST", "wallet/send", { to: `lightning:${lnurlEncode("https://bitcoin.co.ke/.well-known/lnurlp/0712345678").toUpperCase()}`, sats: 500, pin: "417306" }, token)).json();
+    const r = await (await call("POST", "wallet/send", { to: `lightning:${lnurlEncode("https://bitcoin.co.ke/.well-known/lnurlp/0707172370").toUpperCase()}`, sats: 500, pin: "417306" }, token)).json();
     assert.equal(r.status, "completed");
     assert.equal(lastAmount, 500_000);
     const before = (await yw.walletByHandle("payer")).balance;
@@ -542,17 +542,17 @@ test("buy with M-Pesa: the prompt goes out, the sats are credited once when Safa
   try {
     const w = await (await call("POST", "wallet/create", { pin: "619427", handle: "buyer" })).json();
     // 1 BTC = 100,000 USD x 130 = 13,000,000 KES: 1,000 KES = 7,692 sats (no spread by default).
-    let r = await (await call("POST", "wallet/buy", { kes: 1000, phone: "0712345678" }, w.token)).json();
+    let r = await (await call("POST", "wallet/buy", { kes: 1000, phone: "0707172370" }, w.token)).json();
     assert.equal(r.success, true, JSON.stringify(r));
     assert.equal(r.satsAmount, 7692);
     assert.equal(stk.at(-1).Amount, 1000);
-    assert.equal(stk.at(-1).PhoneNumber, "254712345678");
+    assert.equal(stk.at(-1).PhoneNumber, "254707172370");
     assert.match(stk.at(-1).CallBackURL, /\/api\/yebente\/mpesa\/callback\/c{32}$/);
     const id = r.checkoutRequestId;
     // Not paid yet: nothing credited.
     assert.equal((await yw.walletByHandle("buyer")).balance, 0);
     // Safaricom's callback (with the secret): credited once, even if it comes twice.
-    const cb = { Body: { stkCallback: { CheckoutRequestID: id, ResultCode: 0, ResultDesc: "ok", CallbackMetadata: { Item: [{ Name: "MpesaReceiptNumber", Value: "QAB1234567" }, { Name: "PhoneNumber", Value: 254712345678 }] } } } };
+    const cb = { Body: { stkCallback: { CheckoutRequestID: id, ResultCode: 0, ResultDesc: "ok", CallbackMetadata: { Item: [{ Name: "MpesaReceiptNumber", Value: "QAB1234567" }, { Name: "PhoneNumber", Value: 254707172370 }] } } } };
     assert.equal((await call("POST", `mpesa/callback/${"c".repeat(32)}`, cb)).status, 200);
     assert.equal((await call("POST", `mpesa/callback/${"c".repeat(32)}`, cb)).status, 200);
     assert.equal((await yw.walletByHandle("buyer")).balance, 7692);
@@ -561,27 +561,27 @@ test("buy with M-Pesa: the prompt goes out, the sats are credited once when Safa
     const e = (await (await call("GET", "wallet/history", null, w.token)).json()).entries[0];
     assert.equal(e.kind, "buy"); assert.equal(e.ref, "MPESA-QAB1234567"); assert.equal(e.kes, 1000);
     // No callback: the status check asks Daraja. Cancelled -> nothing; paid -> credited.
-    r = await (await call("POST", "wallet/buy", { kes: 500, phone: "0712345678" }, w.token)).json();
+    r = await (await call("POST", "wallet/buy", { kes: 500, phone: "0707172370" }, w.token)).json();
     assert.equal(r.success, true, JSON.stringify(r));
     const cancelled = await (await call("GET", `wallet/buy/${r.checkoutRequestId}`, null, w.token)).json();
     assert.equal(cancelled.state, "failed", JSON.stringify(cancelled));
     assert.equal((await yw.walletByHandle("buyer")).balance, 7692);
-    r = await (await call("POST", "wallet/buy", { kes: 500, phone: "0712345678" }, w.token)).json();
+    r = await (await call("POST", "wallet/buy", { kes: 500, phone: "0707172370" }, w.token)).json();
     queryResult = { ResultCode: "0", ResultDesc: "ok", MpesaReceiptNumber: "QAB7654321" };
     assert.equal((await (await call("GET", `wallet/buy/${r.checkoutRequestId}`, null, w.token)).json()).state, "paid");
     assert.equal((await yw.walletByHandle("buyer")).balance, 7692 + 3846);
     // Another wallet can't see this purchase.
     assert.equal((await call("GET", `wallet/buy/${r.checkoutRequestId}`, null, juma.token)).status, 404);
     // Daily cap 3,000 KES: 1,500 bought (the cancelled one doesn't count), 1,600 more is refused.
-    assert.equal((await call("POST", "wallet/buy", { kes: 1600, phone: "0712345678" }, w.token)).status, 400);
+    assert.equal((await call("POST", "wallet/buy", { kes: 1600, phone: "0707172370" }, w.token)).status, 400);
     // Below the minimum, or not whole shillings.
-    assert.equal((await call("POST", "wallet/buy", { kes: 5, phone: "0712345678" }, w.token)).status, 400);
+    assert.equal((await call("POST", "wallet/buy", { kes: 5, phone: "0707172370" }, w.token)).status, 400);
     // Solvency: when the node couldn't pay out what wallets would hold, buying pauses.
     localBalance = 1000;
-    assert.equal((await call("POST", "wallet/buy", { kes: 100, phone: "0712345678" }, w.token)).status, 503);
+    assert.equal((await call("POST", "wallet/buy", { kes: 100, phone: "0707172370" }, w.token)).status, 503);
     localBalance = 1_000_000;
     // The old anonymous STK (sats credited only in a browser) stays off.
-    assert.equal((await call("POST", "mpesa/stkpush", { phone: "0712345678", amount: 100 })).status, 501);
+    assert.equal((await call("POST", "mpesa/stkpush", { phone: "0707172370", amount: 100 })).status, 501);
   } finally { globalThis.fetch = realFetch; delete process.env.YEBENTE_MPESA_BUY; lnd.close(); }
 });
 

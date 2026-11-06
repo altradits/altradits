@@ -59,8 +59,8 @@ test("wallet balances (largest first) and where payments went, with phone number
   const { walletBalances, destinations } = await import("../lib/activity.js");
   const now = Date.parse("2026-11-01T12:00:00Z"), at = (d) => new Date(now - d * 864e5).toISOString();
   await store.setJSON("yw:w7", { id: "w7", handle: "rich", balance: 50000, createdAt: at(9) }); await store.pushId("ywallets", "w7");
-  for (const [id, e] of [["m1", { kind: "send", sats: -3000, fee: 30, status: "completed", counterparty: "254712345678@bitcoin.co.ke", receiptUrl: "https://bitcoin.co.ke/api/payment/abc", at: at(2) }],
-    ["m2", { kind: "send", sats: -1000, fee: 5, status: "failed", counterparty: "254712345678@bitcoin.co.ke", at: at(1) }],
+  for (const [id, e] of [["m1", { kind: "send", sats: -3000, fee: 30, status: "completed", counterparty: "254707172370@bitcoin.co.ke", receiptUrl: "https://bitcoin.co.ke/api/payment/abc", at: at(2) }],
+    ["m2", { kind: "send", sats: -1000, fee: 5, status: "failed", counterparty: "254707172370@bitcoin.co.ke", at: at(1) }],
     ["m3", { kind: "send", sats: -2000, fee: 2, status: "completed", counterparty: "friend@walletofsatoshi.com", receiptUrl: "javascript:alert(1)", at: at(3) }]]) {
     await store.setJSON(`ywe:${id}`, { id, walletId: "w7", ...e }); await store.pushId("ywtx:w7", id);
   }
@@ -69,7 +69,7 @@ test("wallet balances (largest first) and where payments went, with phone number
   assert.ok(!JSON.stringify(B).includes("example.com"), "no emails, only whether one is set");
   const D = await destinations({ days: 30, now });
   const mpesa = D.destinations.find((d) => d.mpesa);
-  assert.equal(mpesa.to, "2547…678@bitcoin.co.ke", "phone number masked");
+  assert.equal(mpesa.to, "2547…370@bitcoin.co.ke", "phone number masked");
   assert.equal(mpesa.payments, 1, "failed payments don't count");
   assert.deepEqual(mpesa.receipts.map((r) => r.url), ["https://bitcoin.co.ke/api/payment/abc"]);
   assert.deepEqual(D.destinations.find((d) => d.to === "friend@walletofsatoshi.com").receipts, [], "only https receipt links");
