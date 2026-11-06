@@ -23,6 +23,7 @@ h1,h2{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;line-height
 /* Header: the untouched logo on cream, the language pill beside it. */
 .top{max-width:36rem;margin:0 auto;padding:1.25rem 1.5rem 0;display:flex;
   align-items:center;justify-content:space-between;gap:1rem;min-height:4.25rem}
+body.has-tabs .top,body.pay .top{padding-top:calc(.75rem + env(safe-area-inset-top));min-height:3.5rem}
 .brand{display:block;height:1.875rem;width:auto}
 .lang{display:flex;background:var(--surface);border-radius:999px;padding:.25rem}
 .lang button{border:0;background:transparent;cursor:pointer;border-radius:999px;
@@ -30,22 +31,40 @@ h1,h2{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;line-height
   min-width:3rem;min-height:3rem;padding:.4rem .9rem}
 .lang button[aria-pressed="true"]{background:var(--navy);color:#fff}
 .wrap{max-width:36rem;margin:0 auto;padding:1.5rem 1.5rem 3rem}
-.has-tabs .wrap{padding-bottom:7.5rem}
+/* App shell: on the merchant app and the pay page the header, content and
+tab bar fill exactly one viewport, so the page itself never scrolls. Long
+content scrolls inside .wrap; a long history scrolls inside its own list.
+The terms page keeps normal page scrolling. */
+body.has-tabs,body.pay{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+body.has-tabs .top,body.pay .top{flex:none}
+body.has-tabs .wrap,body.pay .wrap{flex:1 1 auto;min-height:0;width:100%;overflow-y:auto;overscroll-behavior:contain;
+  padding:1rem calc(1.5rem + env(safe-area-inset-right)) 1.25rem calc(1.5rem + env(safe-area-inset-left))}
 /* QR screen: the shop name, the code, the print action. */
-.shop{font-size:clamp(2.25rem,9vw,3rem);font-weight:800;text-align:center;
-  letter-spacing:-.01em;margin:1rem 0 0}
-.mpesa-name{text-align:center;font-weight:700;font-size:1.2rem;margin:.35rem 0 0}
-.mark-line{text-align:center;margin:.5rem 0 0}
-.mark{font-size:.9rem;font-weight:700}
+.shop{font-size:clamp(1.75rem,8vw,3rem);font-weight:800;text-align:center;
+  letter-spacing:-.01em;margin:1rem 0 0;overflow-wrap:anywhere}
+body.has-tabs .shop,body.pay .shop{margin-top:.35rem}
+body.signed-out #set-title{font-size:1.5rem;margin-top:.25rem}
+.mpesa-name{text-align:center;font-weight:700;font-size:1.1rem;margin:.3rem 0 0;overflow-wrap:anywhere}
+.mark-line{text-align:center;margin:.3rem 0 0}
+.mark{font-size:.85rem;font-weight:700}
 .mark.ok{color:var(--navy)}
 .mark.no{color:var(--muted)}
 .secure-note{text-align:center;color:var(--muted);font-size:.92rem;margin:.4rem 0 0}
 .offline-note{text-align:center;font-weight:700;font-size:.92rem;margin:.4rem 0 0}
 #print-sheet{display:none}
 .qr-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-qr);
-  padding:clamp(1.25rem,5vw,2rem);margin:1.5rem auto 0;max-width:26rem;box-shadow:var(--elev-2)}
+  padding:clamp(1rem,4vw,2rem);margin:.6rem auto 0;width:min(100%,26rem);box-shadow:var(--elev-2)}
+/* The code scales to the space left after the header, buttons and tab bar:
+full width on tall screens, capped by the viewport height on short ones,
+never below a scannable 220px (then the content area scrolls instead). */
+body.has-tabs #screen-qr .qr-card{width:max(16rem,min(100%,26rem,calc(100vh - 24.5rem)))}
+body.pay #view-invoice .qr-card{width:max(16rem,min(100%,20rem,calc(100vh - 23.5rem)))}
+@supports (height:100dvh){
+  body.has-tabs #screen-qr .qr-card{width:max(16rem,min(100%,26rem,calc(100dvh - 24.5rem)))}
+  body.pay #view-invoice .qr-card{width:max(16rem,min(100%,20rem,calc(100dvh - 23.5rem)))}
+}
 .qr-card svg{display:block;width:100%;height:auto}
-.print-line{text-align:center;font-size:.95rem;color:var(--muted);margin:1rem 0 0}
+.print-line{text-align:center;font-size:.9rem;color:var(--muted);margin:.45rem 0 0}
 .bolt{width:1em;height:1em;vertical-align:-.12em;color:var(--orange)}
 /* Actions: orange pills do the work, outlined pills wait their turn. */
 .btn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;
@@ -59,9 +78,11 @@ h1,h2{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;line-height
 .btn.ghost:hover{background-color:rgba(15,27,45,.06);background-image:none}
 .btn.ghost:active{background-color:rgba(15,27,45,.12)}
 .btn.small{min-height:3rem;font-size:.95rem}
+.btn.trio{padding:.55rem .2rem;font-size:.8rem;margin-top:.6rem}
 .btn[disabled]{opacity:.5;cursor:wait;background-image:none}
 label{display:block;font-weight:700;margin:1.25rem 0 .35rem}
-input,select{width:100%;min-height:3.25rem;padding:.7rem 1rem;font:400 1.05rem Figtree,system-ui,sans-serif;
+body.has-tabs label{margin:.8rem 0 .3rem}
+input,select{width:100%;min-height:3rem;padding:.7rem 1rem;font:400 1.05rem Figtree,system-ui,sans-serif;
   color:var(--navy);background:var(--paper);border:1.5px solid var(--field-line);border-radius:var(--r-field);
   transition:border-color .15s ease,box-shadow .15s ease}
 input:focus,select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(15,27,45,.18)}
@@ -72,17 +93,19 @@ input::placeholder{color:var(--muted);opacity:.85}
 /* Settings sections. */
 .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-card);
   padding:1.5rem;margin-top:1.5rem;box-shadow:var(--elev-1)}
+body.has-tabs .card{padding:1.25rem;margin-top:1rem}
 .card h2{font-size:1.35rem;margin-bottom:.25rem}
 .card label:first-of-type{margin-top:.75rem}
+body.has-tabs .card .btn{margin-top:1rem}
 .row{display:flex;gap:.75rem}
 .row>*{flex:1;min-width:0}
-@media(max-width:22.5rem){.row.no-print,.copy-row{flex-direction:column}
+@media(max-width:20rem){.row.no-print,.copy-row{flex-direction:column}
   .copy-row .btn{margin-top:.75rem}.copy-row .btn:first-child{margin-top:0}}
 .link{background:none;border:0;border-radius:.5rem;padding:.6rem .5rem;color:var(--navy);
   font:700 1rem Figtree,system-ui,sans-serif;text-decoration:underline;cursor:pointer;min-height:3rem}
 .link:hover{text-decoration-thickness:2px}
 /* History: the amount leads, the status sits in a quiet chip. */
-.tx{list-style:none;margin:1rem 0 0;padding:0}
+.tx{list-style:none;margin:1rem 0 0;padding:0;max-height:20rem;overflow-y:auto}
 .tx li{display:flex;justify-content:space-between;gap:1rem;padding:1rem 0;border-top:1px solid var(--line)}
 .tx li:first-child{border-top:0;padding-top:.25rem}
 .tx li>div:first-child{min-width:0}
@@ -95,21 +118,41 @@ input::placeholder{color:var(--muted);opacity:.85}
 .tx .st.fail{color:var(--err);padding:.35rem 0}
 .empty{color:var(--muted);margin:.6rem 0 0}
 /* Bottom tabs: a Material navigation bar, the orange pill marks the screen. */
-.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:.5rem;
+.tabs{flex:none;display:flex;justify-content:center;gap:.5rem;
   background:var(--paper);border-top:1px solid var(--line);
-  padding:.6rem 1rem calc(.6rem + env(safe-area-inset-bottom))}
+  padding:.6rem calc(1rem + env(safe-area-inset-right)) calc(.6rem + env(safe-area-inset-bottom)) calc(1rem + env(safe-area-inset-left))}
 .tabs button{flex:1;max-width:12rem;background:none;border:0;cursor:pointer;color:var(--muted);
   font:700 .85rem Figtree,system-ui,sans-serif;display:flex;flex-direction:column;
-  align-items:center;gap:.2rem;min-height:3.5rem;padding:.35rem .5rem;border-radius:1rem}
+  align-items:center;gap:.2rem;min-height:3.5rem;padding:.3rem .5rem;border-radius:1rem}
 .tabs button svg{display:block;box-sizing:content-box;width:1.5rem;height:1.5rem;
-  padding:.25rem 1.25rem;border-radius:999px}
+  padding:.2rem 1.25rem;border-radius:999px}
 .tabs button:hover svg{background:rgba(15,27,45,.06)}
 .tabs button[aria-selected="true"]{color:var(--navy)}
 .tabs button[aria-selected="true"] svg{background:var(--orange)}
 @media(min-width:40rem){.tabs{gap:1rem}}
+/* Short screens: tighter header, tabs and QR screen rhythm, and the
+print-oriented label gives way so the code, actions and footer all fit. */
+@media screen and (max-height:50rem){
+  body.has-tabs .top,body.pay .top{padding-top:calc(.5rem + env(safe-area-inset-top));min-height:2.75rem}
+  body.has-tabs .wrap,body.pay .wrap{padding-top:.75rem;padding-bottom:.6rem}
+  body.has-tabs .shop,body.pay .shop{font-size:clamp(1.6rem,7vw,2rem);margin-top:.2rem}
+  body.has-tabs .mpesa-name,body.pay .mpesa-name{font-size:1rem;margin-top:.15rem}
+  .mark{font-size:.8rem;line-height:1.35}
+  .mark-line{margin-top:.2rem}
+  .secure-note{margin-top:.25rem}
+  #screen-qr .qr-card{margin-top:.4rem;padding:.75rem}
+  #screen-qr>.print-line{display:none}
+  .btn.trio{margin-top:.4rem}
+  .foot{margin-top:.5rem}
+  .powered{margin-top:.25rem}
+  .tabs{padding-top:.45rem;padding-bottom:calc(.45rem + env(safe-area-inset-bottom))}
+  .tabs button{font-size:.78rem;gap:.15rem;min-height:3rem;padding:.2rem .5rem}
+  .tabs button svg{width:1.25rem;height:1.25rem;padding:.15rem 1rem}
+}
 /* Pay page: the amount is the hero. */
 #amount{font:700 1.6rem "Bricolage Grotesque",Figtree,system-ui,sans-serif;min-height:4rem}
 .receive{text-align:center;font:800 clamp(1.6rem,6vw,2.1rem)/1.25 "Bricolage Grotesque",Figtree,system-ui,sans-serif;margin:1.5rem 0 0}
+body.pay .receive{margin-top:1rem}
 .receive small{display:block;font:400 1rem/1.5 Figtree,system-ui,sans-serif;color:var(--muted);margin-top:.3rem}
 #paid-sub{color:var(--navy);font-weight:700;font-size:1.15rem}
 .inv-qr{max-width:20rem}
@@ -117,10 +160,10 @@ input::placeholder{color:var(--muted);opacity:.85}
 .copy-row .btn{margin-top:0}
 .paid{text-align:center;font:800 clamp(2.5rem,10vw,3.25rem)/1.15 "Bricolage Grotesque",Figtree,system-ui,sans-serif;margin:2rem 0 0}
 .mpesa-code{text-align:center;font-size:1.35rem;font-weight:800;letter-spacing:.08em;margin:.5rem 0 0}
-.foot{margin:2.5rem 0 0;color:var(--muted);font-size:.88rem;text-align:center}
-.powered{margin:.5rem 0 0;color:var(--muted);font-size:.82rem;text-align:center}
+.foot{margin:.75rem 0 0;color:var(--muted);font-size:.8rem;text-align:center}
+.powered{margin:.3rem 0 0;color:var(--muted);font-size:.78rem;text-align:center}
 .powered a{color:var(--muted)}
-.help-line{margin:1.4rem 0 0;color:var(--muted);font-size:.92rem;text-align:center}
+.help-line{margin:.9rem 0 0;color:var(--muted);font-size:.88rem;text-align:center}
 .agree{display:flex;gap:.6rem;align-items:flex-start;font-weight:400;margin-top:1.25rem}
 .agree input{width:1.5rem;height:1.5rem;min-height:1.5rem;flex:none;margin-top:.2rem;accent-color:var(--navy);
   border-radius:.35rem}
@@ -145,6 +188,9 @@ content on the default paper. Pure black on white throughout. */
 @page sheet{size:A4;margin:8mm}
 @media print{
   body{background:#fff}
+  body.has-tabs,body.pay{display:block;height:auto;overflow:visible}
+  body.has-tabs .wrap,body.pay .wrap{overflow:visible}
+  body.has-tabs #screen-qr .qr-card{width:auto}
   .wrap{max-width:none;padding:0}
   .tabs,.btn,.lang,.foot,.powered,.help-line,.secure-note,.offline-note,.no-print,.mark,.err,.top{display:none!important}
   #screen-qr{page:card}

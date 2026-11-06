@@ -172,11 +172,17 @@ function showPaid(d) {
     ? `${t("tandoFee")} ${t("about")} ${kesApprox(d.feeKes)} ${t("pctNote")}` : "");
   setLine("paid-sats", d.kes != null && d.feeKes != null && d.sats != null
     ? `${t("youPaid")} ${Number(d.sats).toLocaleString("en-US")} ${t("satsUnit")} (${t("about")} ${kesApprox(d.kes + d.feeKes)})` : "");
-  window.scrollTo(0, 0);
+  toTop();
 }
 
 function hideErr(id) {
   $(id).hidden = true;
+}
+
+// The content area scrolls, never the page: a new view starts at the top.
+function toTop() {
+  const main = document.querySelector("main");
+  if (main) main.scrollTop = 0;
 }
 
 async function boot() {
@@ -199,6 +205,12 @@ async function boot() {
 
   // Static pages carry no outside addresses; the credit link is set here.
   document.querySelectorAll(".powered a").forEach((a) => { a.href = "https://bitcoin.co.ke/"; });
+  // With the keyboard open the content area scrolls, never the page: keep
+  // the focused field in view.
+  document.addEventListener("focusin", (ev) => {
+    const el = ev.target;
+    if (el && el.matches && el.matches("input,select")) el.scrollIntoView({ block: "nearest" });
+  });
   get("help").then((d) => {
     if (d && typeof d.help === "string" && d.help) {
       $("help-pay-contact").textContent = d.help;
@@ -268,7 +280,7 @@ async function boot() {
       $("wait-text").textContent = t("waitingPay");
       $("copied").hidden = true;
       hideErr("inv-err");
-      window.scrollTo(0, 0);
+      toTop();
       const u = String((inv.successAction && inv.successAction.url) || "");
       const h = (u.split("/").pop() || "").toLowerCase();
       if (/^[0-9a-f]{64}$/.test(h)) {
@@ -306,7 +318,7 @@ async function boot() {
     $("view-invoice").hidden = true;
     $("view-pay").hidden = false;
     refreshReceive();
-    window.scrollTo(0, 0);
+    toTop();
   });
 }
 
