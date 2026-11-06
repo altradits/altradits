@@ -64,8 +64,24 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
 ul.warn{list-style:none;padding:.7rem .9rem;margin:.7rem 0 0;border:1px solid var(--warn);border-radius:6px}ul.warn li{margin:.35rem 0;font-size:.86rem}ul.warn li::before{content:"! ";color:var(--warn);font-weight:700}
 .spark{display:flex;align-items:flex-end;gap:3px;height:3rem;margin:.4rem 0 .8rem}.spark i{flex:1;background:var(--blue);border-radius:2px 2px 0 0;min-height:2px}
 .qr{max-width:15rem;background:#fff;padding:.5rem;border-radius:8px}.qr svg{width:100%;height:auto;display:block}
-.ev{border-bottom:1px solid var(--line);padding:.4rem 0}
+.ev{border-bottom:1px solid var(--line);padding:.4rem 0;overflow-wrap:anywhere}
 .events{max-height:24rem;overflow-y:auto}
+.sev{display:inline-block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:.05rem .55rem;border-radius:99px;border:2px solid;white-space:nowrap;vertical-align:.1rem}
+.sev.high{color:var(--crit);border-color:var(--crit);background:#FDECEA}
+.sev.medium{color:var(--warn);border-color:var(--warn);background:#FEF3E8}
+.sev.low{color:var(--muted);border-color:var(--line);background:var(--bg)}
+.sev.ok{color:var(--ok);border-color:var(--ok);background:#E7F5F0}
+.secmore summary{cursor:pointer;min-height:2rem}
+.chip{border:2px solid var(--line);background:var(--paper);border-radius:99px;padding:.3rem .8rem;font:600 .85rem Figtree,sans-serif;cursor:pointer;color:var(--ink);min-height:2.2rem}
+.chip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.secgroups{display:grid;gap:.5rem;margin:.6rem 0}
+.secgroup{border:2px solid var(--line);border-radius:.8rem;padding:.4rem .7rem}
+.secghead{background:none;border:0;padding:.3rem .2rem;cursor:pointer;font:inherit;color:var(--ink);text-align:left;width:100%;min-height:2.2rem}
+.secghead[aria-pressed=true]{outline:3px solid var(--btc);outline-offset:2px;border-radius:.4rem}
+.secgroup details{margin:0}
+.secgroup summary{cursor:pointer;color:var(--blue);font-size:.86rem;min-height:2rem}
+.gloss summary{column-gap:.4rem}
+.gloss summary b{white-space:nowrap}
 /* One channel, drawn: their side, your locked reserve, what you can spend */
 .chan{margin:.4rem 0 1rem}
 .chan .strip{display:flex;height:2.2rem;border:2px solid var(--ink);border-radius:.6rem;overflow:hidden}
@@ -302,7 +318,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div class="kpis" id="exInfo"></div>
     <div class="kpis" id="exGraph"></div>
     <h3 class="sub">Peers</h3>
-    <div class="learn"><p><b>Ping</b> is how long a message takes to the peer and back. <b>Reconnections</b> count how often the link dropped: many means an unstable internet or tunnel, and payments can fail during a drop.</p></div>
+    <div class="learn"><p><b>Ping</b> is how long a message takes to the peer and back. <b>Reconnections</b> count every drop since the peer was first seen, so a big total can be old. A peer flagged as dropping had a drop in the last day, or 5 or more drops a day: payments can fail during a drop.</p></div>
     <div id="exPeers" class="scroll"></div>
     <p class="sm muted" id="exAge"></p>
   </section>
@@ -414,6 +430,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
         <p>Your node also has a normal Bitcoin wallet. You need it to open channels, and to pay fees if a channel ever closes.</p>
         <p>On-chain fees are paid per size of transaction, in <b>sat/vB</b>. Open or close channels when fees are low.</p>
       </div>
+      <div id="chainLow"></div>
       <div class="kpis" id="chainKpis"></div>
       <p class="sm muted" id="chainAge"></p>
       <h3 class="sub">Your coins, and where each one sits</h3>
@@ -589,6 +606,9 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
       <div class="learn"><p>Everything the site turned away: guessed PINs, forged requests, blocked scripts. High-severity ones are emailed to you.</p></div>
       <div class="kpis" id="secKpis"></div>
       <p class="sm" id="secSolvency"></p>
+      <div id="secGroups"></div>
+      <h3 class="sub">Latest events <span class="muted sm" id="secCount"></span></h3>
+      <div class="row sm" id="secFilters" role="group" aria-label="Filter events by severity"></div>
       <div class="events" id="secEvents"></div>
     </section>
     <section class="panel" aria-labelledby="hHist">

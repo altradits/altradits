@@ -62,8 +62,10 @@ function renderAlerts() {
   $("#alertList").innerHTML = list.length ? list.map((x) => `<li><a href="#${esc(x.go.split(":")[0])}" data-go="${esc(x.go)}"><span class="lv ${x.level}">${x.level === "crit" ? "Act now" : "Soon"}</span><br>${esc(x.text)}</a></li>`).join("") : '<li class="sm muted">Nothing needs you right now.</li>';
 }
 function go(target) {
-  const [t, id] = target.split(":");
+  const [t, id, extra] = target.split(":");
   tab(t);
+  // A "What needs you" item can link straight to a filtered list, e.g. security:hSec:sev=high.
+  if (t === "security" && extra && extra.startsWith("sev=")) setSecFilter(extra.slice(4), "all");
   const el = id && document.getElementById(id);
   if (el) { const box = el.closest(".panel") || el; box.scrollIntoView({ block: "start" }); window.scrollBy(0, -70); box.classList.add("flash"); setTimeout(() => box.classList.remove("flash"), 2500); }
 }
@@ -173,11 +175,15 @@ function renderChecklist(D, L) {
     : B.nodeRead === false ? `Last copy ${ago(B.markedAt)}; freshness unknown until the node can be read.`
     : B.stale ? `Last copy ${ago(B.markedAt)}, but channels changed since. Copy again or new channels are unrecoverable.`
     : `Last copy ${ago(B.markedAt)} covers all ${B.current} open channel${B.current === 1 ? "" : "s"}.`;
+  const chainNeed = chain ? Math.max(0, 10_000 - (Number(chain.confirmed) || 0)) : null;
   const items = [
     [N ? N.synced && (N.behind ?? 0) <= 2 : false, "Node in step with the chain", N ? `Block ${num(N.blockHeight)}, ${N.behind ?? "?"} behind the tip.` : "The website can't read the node."],
     [N ? N.activeChannels > 0 : false, "At least one channel active", N ? `${N.activeChannels} active. With none, Lightning payments can't move.` : "Unknown until the node can be read."],
     [Y ? Y.covered : null, "Node can pay every Ye₿ente wallet", Y ? `Owed ${satsF(Y.owedSats)}; can send ${satsF(D.liquidity.outboundSats)}.` : "Wallets are off, or the balance can't be read."],
-    [chain ? chain.confirmed >= 10_000 : null, "Some sats on-chain for emergencies", chain ? `${satsF(chain.confirmed)} on-chain. Keep about 10,000+ to pay fees if a channel ever closes by force.` : "Needs the read-only key to check."],
+    [chain ? chain.confirmed >= 10_000 : null, "Some sats on-chain for emergencies", chain
+      ? (chain.confirmed >= 10_000 ? `${satsF(chain.confirmed)} on-chain. Enough to pay fees if a channel ever closes by force.`
+        : `${satsF(chain.confirmed)} on-chain. Send about ${satsF(chainNeed)} so the wallet holds 10,000+ for fees if a channel ever closes by force. How: open Money, then On-chain wallet, then Fund it: make an address on the Mac, paste it, press Show QR code.`)
+      : "Needs the read-only key to check."],
     [D.stan ? Date.now() - Date.parse(D.stan.at) < 36 * 3600e3 : null, "Stan's report arrived", D.stan ? `Last one ${ago(D.stan.at)}.` : "The first goes out tomorrow morning."],
     [bkOk, "Channel backup copy is fresh", bkWhy],
     [null, "24 recovery words safe on paper", "Never typed into a website or a phone. Only the node's own setup asks for them."],
@@ -224,6 +230,25 @@ function drawChannels(L) {
   }).join("");
 }
 
+// On-chain is under 10,000 sats: the exact amount to send, why, and a button
+// that points at the Fund it box (paste a Mac-made address, get a QR code).
+function chainLowHtml(confirmed) {
+  if (confirmed === null || confirmed === undefined || confirmed >= 10_000) return "";
+  const need = 10_000 - confirmed;
+  return `<p class="alert warn"><b>On-chain is low: ${satsF(confirmed)}.</b> Send about <b>${satsF(need)}</b> so the wallet holds 10,000+ sats. That pays the fee if a channel ever closes by force. Make an address on the Mac, paste it in the Fund it box below, press Show QR code, then send. <button type="button" class="btn" id="chainLowGo">Show me the Fund it box</button></p>`;
+}
+// end chainLowHtml
+function renderChainLow(D) {
+  $("#chainLow").innerHTML = chainLowHtml(D.details?.onchain ? D.details.onchain.confirmed : null);
+  $("#chainLowGo")?.addEventListener("click", () => {
+    const box = $("#chAddrPaste");
+    box.scrollIntoView({ block: "center" });
+    box.focus({ preventScroll: true });
+    box.classList.add("flash"); setTimeout(() => box.classList.remove("flash"), 2500);
+  });
+}
+// end chainLowRenderer
+
 // 4. On-chain wallet and chain fees.
 function renderChain(D) {
   const C = D.details?.onchain, F = D.chainFees;
@@ -259,7 +284,7 @@ $("#chAddrShow").addEventListener("click", async () => {
 });
 $("#chRefresh").addEventListener("click", async () => {
   const btn = $("#chRefresh"); btn.disabled = true;
-  try { OVERVIEW = await api(""); renderBanner(OVERVIEW); renderChecklist(OVERVIEW); renderChain(OVERVIEW); await loadExplorer(); toast("Balances rechecked."); }
+  try { OVERVIEW = await api(""); renderBanner(OVERVIEW); renderChecklist(OVERVIEW); renderChain(OVERVIEW); renderChainLow(OVERVIEW); await loadExplorer(); toast("Balances rechecked."); }
   catch (err) { toast(err.message, true, 6000); }
   btn.disabled = false;
 });
@@ -445,19 +470,112 @@ $("#lnAdd").addEventListener("click", async () => {
   try { await api("", { action: "ln_lesson", text: $("#lnLesson").value }); $("#lnLesson").value = ""; loadChannels(); } catch (err) { toast(err.message, true, 6000); }
 });
 
+// ==== Security watch rendering (tested in test/security-watch.test.mjs) ====
+// A Deadman's Switch lift reviews the intrusion it answered: events of the
+// kinds the switch watches that happened before the lift show as resolved,
+// with the all-clear note, and stop nagging in "What needs you". Failed
+// guesses (wrong tokens, PINs) are never resolved by a lift: they stay open.
+const SEC_RESOLVABLE = ["file_tampering", "unexplained_balance_drop", "admin_compromise"];
+const SEC_SEV_WORD = { high: "High", medium: "Medium", low: "Low" };
+const secSevOf = (e, T) => T[e.kind]?.severity || "low";
+function secLifts(deadman) {
+  const out = [];
+  for (const l of deadman?.liftHistory || []) if (l?.liftedAt) out.push({ at: l.liftedAt, note: l.note || "", forced: Boolean(l.forced) });
+  if (deadman?.liftedAt && !out.some((l) => l.at === deadman.liftedAt)) out.push({ at: deadman.liftedAt, note: deadman?.liftNote || "", forced: Boolean(deadman?.forcedLift) });
+  return out.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+}
+function secResolved(e, lifts) {
+  if (!SEC_RESOLVABLE.includes(e.kind)) return null;
+  return (lifts || []).filter((l) => l.at > e.at).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))[0] || null;
+}
+function secIssueText(open, resolved, T) {
+  const byKind = {};
+  for (const e of open) byKind[e.kind] = (byKind[e.kind] || 0) + 1;
+  const what = Object.entries(byKind).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${T[k]?.name || k} ×${n}`).join(", ");
+  let s = `${open.length} high-severity attempt${open.length === 1 ? "" : "s"} turned away today: ${what}. Each one is listed in Security watch.`;
+  if (resolved.length) s += ` (${resolved.length} more already resolved by your all-clear.)`;
+  return s;
+}
+function secFiltersHtml(counts, T, active) {
+  const sev = { high: 0, medium: 0, low: 0 };
+  for (const k of Object.keys(T)) sev[T[k].severity] = (sev[T[k].severity] || 0) + (counts[k]?.today || 0);
+  const total = sev.high + sev.medium + sev.low;
+  return [["all", `All (${total})`], ["high", `High (${sev.high})`], ["medium", `Medium (${sev.medium})`], ["low", `Low (${sev.low})`]]
+    .map(([v, label]) => `<button type="button" class="chip" data-secsev="${v}" aria-pressed="${String(v === active)}">${esc(label)}</button>`).join("");
+}
+function secGroupsHtml(counts, T, activeKind) {
+  const rows = Object.keys(T).filter((k) => (counts[k]?.today || 0) > 0)
+    .sort((a, b) => (counts[b].today - counts[a].today) || a.localeCompare(b));
+  if (!rows.length) return "";
+  return `<h3 class="sub">Today by technique</h3><div class="secgroups">` + rows.map((k) => {
+    const t = T[k], c = counts[k];
+    return `<div class="secgroup"><button type="button" class="secghead" data-seckind="${esc(k)}" aria-pressed="${String(k === activeKind)}" title="Show only these events">`
+      + `<span class="sev ${t.severity}">${SEC_SEV_WORD[t.severity] || t.severity}</span> <b>${esc(t.name)}</b> <span class="muted sm">×${c.today} today · ${c.week} this week</span></button>`
+      + `<details><summary>What it means and what to do</summary><p class="sm muted">${esc(t.what)} Reference: ${esc(t.ref)}.</p><p class="sm"><b>What to do:</b> ${esc(t.improve)}</p></details></div>`;
+  }).join("") + `</div>`;
+}
+function secFilterList(events, T, f = {}) {
+  const sev = f.sev || "all", kind = f.kind || "all";
+  return events.slice().sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
+    .filter((e) => (sev === "all" || secSevOf(e, T) === sev) && (kind === "all" || e.kind === kind));
+}
+function secEventsHtml(events, T, lifts, f = {}) {
+  if (!events.length) return '<p class="muted sm">Nothing turned away yet. Every blocked guess, forged request or held message will appear here, newest first.</p>';
+  const list = secFilterList(events, T, f);
+  if (!list.length) {
+    const what = `${f.sev && f.sev !== "all" ? `${SEC_SEV_WORD[f.sev]} ` : ""}events${f.kind && f.kind !== "all" ? ` for ${T[f.kind]?.name || f.kind}` : ""}`;
+    return `<p class="muted sm">No ${esc(what)} in this list. <button type="button" class="linkbtn" data-secreset>Show everything</button></p>`;
+  }
+  const shown = list.slice(0, 40);
+  return shown.map((e) => {
+    const s = secSevOf(e, T), res = secResolved(e, lifts);
+    const where = e.where ? `<br>${esc(e.where)}` : "";
+    const detail = !e.detail ? "" : e.detail.length <= 180 ? `<br><span class="muted">${esc(e.detail)}</span>`
+      : `<br><details class="secmore"><summary><span class="muted">${esc(e.detail.slice(0, 160))}…</span> Show all</summary><span class="muted">${esc(e.detail)}</span></details>`;
+    const note = res ? `<br><span class="ok">Resolved: ${res.note ? esc(res.note.length > 160 ? res.note.slice(0, 160) + "…" : res.note) : "reviewed when the Deadman's Switch was lifted"}</span> <span class="muted">(${esc(ago(res.at))})</span>` : "";
+    return `<div class="sm ev"><span class="sev ${s}">${SEC_SEV_WORD[s] || s}</span> <b>${esc(T[e.kind]?.name || e.kind)}</b> <span class="muted">${esc(ago(e.at))}</span>${where}${detail}${note}</div>`;
+  }).join("") + (list.length > shown.length ? `<p class="sm muted">Showing 40 of ${list.length}. Older events stay in the log.</p>` : "");
+}
+// end security-watch-rendering
+
 // 7. Security watch: what was turned away, and Bitcoin's attack history with our guards.
+let SEC_VIEW = null, SEC_SEV = "all", SEC_KIND = "all";
 async function loadSecurity() {
   let W; try { W = await api("?view=security"); } catch { return; }
-  const T = W.techniques, kinds = Object.keys(T);
-  const today = kinds.reduce((t, k) => t + W.counts[k].today, 0), week = kinds.reduce((t, k) => t + W.counts[k].week, 0);
-  const high = W.events.filter((e) => T[e.kind]?.severity === "high" && Date.now() - Date.parse(e.at) < 864e5);
-  issue("sec", high.length ? "warn" : null, `${high.length} high-severity attempt${high.length === 1 ? "" : "s"} turned away today. Check what and where.`, "security:hSec");
-  $("#secKpis").innerHTML = kpi("Turned away today", today, "", "Every one was blocked. Counts show who's trying.") + kpi("Last 7 days", week);
+  SEC_VIEW = W;
+  const T = W.techniques, kinds = Object.keys(T), lifts = secLifts(W.deadman);
+  const today = kinds.reduce((t, k) => t + (W.counts[k]?.today || 0), 0), week = kinds.reduce((t, k) => t + (W.counts[k]?.week || 0), 0);
+  const day = W.events.filter((e) => Date.now() - Date.parse(e.at) < 864e5);
+  const open = day.filter((e) => T[e.kind]?.severity === "high" && !secResolved(e, lifts));
+  const resolvedHigh = day.filter((e) => T[e.kind]?.severity === "high" && secResolved(e, lifts));
+  issue("sec", open.length ? "warn" : null, secIssueText(open, resolvedHigh, T), "security:hSec:sev=high");
+  $("#secKpis").innerHTML = kpi("Turned away today", today, "", "Every one was blocked. Counts show who's trying.") + kpi("Last 7 days", week)
+    + kpi("High severity, still open", open.length, open.length ? "warn" : "good", resolvedHigh.length ? `${resolvedHigh.length} more already resolved by your all-clear.` : "Open one below to read what to do.");
   const s = W.solvency;
   $("#secSolvency").innerHTML = s ? `<b>Ye₿ente solvency</b> (${esc(ago(s.at))}): owed ${esc(satsF(s.owedSats))} across ${esc(s.wallets)} wallets; the node can send ${esc(satsF(s.outboundSats))}. ${s.covered === false ? '<b class="err">Short.</b>' : s.covered ? "Covered." : ""}` : "";
-  $("#secEvents").innerHTML = W.events.length ? W.events.slice(0, 40).map((e) => `<div class="sm ev"><b>${esc(T[e.kind]?.name || e.kind)}</b> <span class="muted">${esc(ago(e.at))}</span><br>${esc(e.where)}${e.detail ? `<br><span class="muted">${esc(e.detail)}</span>` : ""}</div>`).join("") : '<p class="muted sm">Nothing turned away yet.</p>';
+  $("#secGroups").innerHTML = secGroupsHtml(W.counts, T, SEC_KIND);
+  $("#secFilters").innerHTML = secFiltersHtml(W.counts, T, SEC_SEV);
+  renderSecEvents();
   $("#secHistory").innerHTML = attackHistoryHtml(W.history);
 }
+function renderSecEvents() {
+  if (!SEC_VIEW) return;
+  const T = SEC_VIEW.techniques;
+  const list = secFilterList(SEC_VIEW.events, T, { sev: SEC_SEV, kind: SEC_KIND });
+  $("#secEvents").innerHTML = secEventsHtml(SEC_VIEW.events, T, secLifts(SEC_VIEW.deadman), { sev: SEC_SEV, kind: SEC_KIND });
+  $("#secCount").textContent = SEC_VIEW.events.length ? `(${Math.min(40, list.length)} of ${list.length} shown)` : "";
+}
+function setSecFilter(sev, kind) {
+  SEC_SEV = ["all", "high", "medium", "low"].includes(sev) ? sev : "all";
+  SEC_KIND = kind || "all";
+  if (!SEC_VIEW) return;
+  $("#secGroups").innerHTML = secGroupsHtml(SEC_VIEW.counts, SEC_VIEW.techniques, SEC_KIND);
+  $("#secFilters").innerHTML = secFiltersHtml(SEC_VIEW.counts, SEC_VIEW.techniques, SEC_SEV);
+  renderSecEvents();
+}
+$("#secFilters").addEventListener("click", (e) => { const b = e.target.closest("[data-secsev]"); if (b) setSecFilter(b.dataset.secsev, SEC_KIND); });
+$("#secGroups").addEventListener("click", (e) => { const b = e.target.closest("[data-seckind]"); if (b) setSecFilter(SEC_SEV, SEC_KIND === b.dataset.seckind ? "all" : b.dataset.seckind); });
+$("#secEvents").addEventListener("click", (e) => { if (e.target.closest("[data-secreset]")) setSecFilter("all", "all"); });
 // Attack history: one closed accordion per attack, oldest first, each with its guard status.
 const HIST_STATUS = { guarded: ["ok", "Guarded"], watch: ["warn", "Watch"], action: ["err", "Needs you"] };
 function attackHistoryHtml(list) {
@@ -570,7 +688,7 @@ const VERIFY = [
   ["Each channel: your side vs peer's side", "ln-ro listchannels | jq '.channels[] | {peer: .peer_alias, ours: .local_balance, theirs: .remote_balance}'"],
   ["Inbound per peer, biggest first", "ln-ro listchannels | jq '.channels | sort_by(.remote_balance|tonumber) | reverse | .[] | {peer: .peer_alias, inbound: .remote_balance}'"],
   ["Payments in flight (pending HTLCs)", "ln-ro listchannels | jq '[.channels[].pending_htlcs | length] | add'"],
-  ["Peers: ping and reconnections", "ln-ro listpeers | jq '.peers[] | {ping_ms: ((.ping_time|tonumber)/1000), flap_count}'"],
+  ["Peers: ping, reconnections and last drop", "ln-ro listpeers | jq '.peers[] | {ping_ms: ((.ping_time|tonumber)/1000), flap_count, last_flap: (if .last_flap_ns == \"0\" or .last_flap_ns == null then \"never\" else (.last_flap_ns|tonumber/1e9|strflocaltime(\"%Y-%m-%d %H:%M\")) end)}'"],
   ["Network size", "ln-ro getnetworkinfo | jq '{num_nodes, num_channels, graph_diameter}'"],
   ["Closed channels", "ln-ro closedchannels | jq '.channels[] | {close_type, capacity, settled_balance}'"],
   ["BTC price used for KSh", "curl -s https://api.coinbase.com/v2/prices/BTC-USD/spot | jq -r .data.amount; curl -s https://open.er-api.com/v6/latest/USD | jq .rates.KES"],
@@ -587,11 +705,29 @@ function renderVerify() {
 const blocksToDays = (b) => `${num(b)} blocks ≈ ${Math.round((b * 10) / 60 / 24 * 10) / 10} days`;
 const typeWhy = { ANCHORS: "Anchor channel: fees to close are added when closing, so a force close can still confirm when fees rise.", STATIC_REMOTE_KEY: "Static remote key: an older type; funds return to a fixed key on close.", SIMPLE_TAPROOT: "Taproot channel: newer; looks like a normal payment on-chain." };
 const closeWhy = { COOPERATIVE_CLOSE: "Cooperative: both sides agreed. Fast and cheap.", LOCAL_FORCE_CLOSE: "Force close by you: funds waited out the delay.", REMOTE_FORCE_CLOSE: "Force close by the peer.", BREACH_CLOSE: "Breach: a cheat was punished.", FUNDING_CANCELED: "Funding cancelled: the channel never opened.", ABANDONED: "Abandoned." };
+// ==== Peer flap recency (tested in test/security-watch.test.mjs) ====
+// A peer counts as still dropping when it dropped in the last day, or the
+// saved counts show 5 or more drops a day. The raw total is cumulative since
+// the peer was first seen, so it never warns on its own.
+function peerDropping(p, now = Date.now()) {
+  if (!p) return false;
+  if (p.lastFlapAt && now - Date.parse(p.lastFlapAt) < 864e5) return true;
+  return (Number(p.flapsDay) || 0) >= 5;
+}
+function peerFlapText(flappy, X) {
+  const bits = flappy.map((p) => {
+    const alias = (X?.channels || []).find((c) => c.pubkey === p.pubkey)?.alias || `peer ${String(p.pubkey || "").slice(0, 8)}`;
+    const recent = p.lastFlapAt ? `last drop ${ago(p.lastFlapAt)}` : `${p.flapsDay} drops a day`;
+    return `${alias} (${recent}, ${num(p.flaps)} in total)`;
+  }).join("; ");
+  return `Your peer connection keeps dropping: ${bits}. Payments can fail during a drop. Check the Mac is awake with internet, LND is running, and the tunnel is up. Details in Node, under Your node, its peer and the network.`;
+}
+// end peer-flap-recency
 async function loadExplorer() {
   let X; try { X = await api("?view=explore"); } catch (err) { $("#exInfo").textContent = err.message; return; }
   if (X.error) { $("#exInfo").textContent = X.error; $("#coinList").innerHTML = '<p class="muted">The node couldn\'t be read, so the coin list is unavailable.</p>'; return; }
-  const flappy = (X.peers || []).filter((p) => p.flaps > 50);
-  issue("peers", flappy.length ? "warn" : null, `Your peer connection keeps dropping (${flappy.map((p) => p.flaps).join(", ")} reconnections). Payments can fail during a drop: check the internet and tunnel.`, "node:hNet");
+  const flappy = (X.peers || []).filter((p) => peerDropping(p));
+  issue("peers", flappy.length ? "warn" : null, peerFlapText(flappy, X), "node:hNet");
   const off = offlineChannels(X.channels, X.peers);
   issue("peer_off", off.length ? "crit" : null, off.length ? `Peer offline now on ${off.length} channel${off.length === 1 ? "" : "s"} (${off.map((c) => c.alias || "Channel").join(", ")}). Payments there can't move until the peer is back.` : "", "channels:hInside");
   const I = X.info, G = X.graph;
@@ -603,8 +739,8 @@ async function loadExplorer() {
       + kpi("Public channels", num(G.channels), "", "Every channel announced to the network.")
       + kpi("Network diameter", `${G.diameter} hops`, "", "The longest shortest path between two nodes. Most payments need far fewer hops.")
       + kpi("Channels per node", G.avgOutDegree, "", "On average. Well-connected nodes have many; yours has one private channel.") : "";
-  $("#exPeers").innerHTML = X.peers?.length ? `<table><thead><tr><th>Peer</th><th>Ping</th><th>Reconnections</th><th>Sent</th><th>Received</th><th>Who connected</th></tr></thead><tbody>${X.peers.map((p) =>
-    `<tr><td><code title="${esc(p.pubkey)}">${esc(p.pubkey.slice(0, 16))}…</code></td><td>${esc(num(p.pingMs))} ms${p.pingMs > 500 ? ' <span class="err">slow</span>' : ""}</td><td>${esc(num(p.flaps))}${p.flaps > 50 ? ' <span class="err">unstable</span>' : ""}</td><td>${esc(satsF(p.satSent))}</td><td>${esc(satsF(p.satRecv))}</td><td>${p.inbound ? "They did" : "You did"}</td></tr>`).join("")}</tbody></table>` : '<p class="muted sm">No peers connected.</p>';
+  $("#exPeers").innerHTML = X.peers?.length ? `<table><thead><tr><th>Peer</th><th>Ping</th><th>Reconnections</th><th>Last drop</th><th>Sent</th><th>Received</th><th>Who connected</th></tr></thead><tbody>${X.peers.map((p) =>
+    `<tr><td><code title="${esc(p.pubkey)}">${esc(p.pubkey.slice(0, 16))}…</code></td><td>${esc(num(p.pingMs))} ms${p.pingMs > 500 ? ' <span class="err">slow</span>' : ""}</td><td>${esc(num(p.flaps))}${p.flapsDay === null || p.flapsDay === undefined ? "" : ` <span class="muted">(${esc(String(p.flapsDay))}/day)</span>`}${peerDropping(p) ? ' <span class="err">dropping</span>' : ""}</td><td>${p.lastFlapAt ? esc(ago(p.lastFlapAt)) : '<span class="muted">never</span>'}</td><td>${esc(satsF(p.satSent))}</td><td>${esc(satsF(p.satRecv))}</td><td>${p.inbound ? "They did" : "You did"}</td></tr>`).join("")}</tbody></table>` : '<p class="muted sm">No peers connected.</p>';
   const offPts = new Set(off.map((c) => c.point));
   stamp("#exAge");
   $("#exChans").innerHTML = (X.channels || []).map((c) => { const txid = c.point.split(":")[0];
@@ -2350,7 +2486,7 @@ async function load() {
   $("#login").hidden = true; $("#app").hidden = false;
   KES_PER_BTC = D.kesPerBtc;
   OVERVIEW = D;
-  renderChecklist(D); renderStan(D.stan, D.alerts); renderNode(D); renderChain(D); renderRouting(D); renderSettlement(D); renderGlossary(); renderBanner(D); renderBackup(D.backup);
+  renderChecklist(D); renderStan(D.stan, D.alerts); renderNode(D); renderChain(D); renderChainLow(D); renderRouting(D); renderSettlement(D); renderGlossary(); renderBanner(D); renderBackup(D.backup);
   renderVerify();
   await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing()]);
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
