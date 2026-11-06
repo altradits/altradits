@@ -46,12 +46,36 @@ The page promises nothing it cannot keep: free entry, donor funded
 prizes, no earnings talk, no staked mode shown while off. Player names
 and accounts are the only personal data kept. No email, no phone.
 
+## Staked play (off)
+
+Staked play stays off until the licences are in place and the lawyer
+gives written OK. The switch is `TRIVIA_STAKES=on`, default off. When
+off, every staked endpoint refuses with one plain message, and the
+public page shows nothing staked. Donor-funded play runs as above
+either way.
+
+When on, each seated player locks the same equal stake from their own
+wallet through a Lightning hold invoice. The sats stay locked until the
+game ends. A staked game starts only when every seat is locked. At the
+end Stanley settles the locks (`trivia_stake_settle`): the stakes join
+the pool, and winners are paid with the normal payout approval. To call
+off a staked game, cancel the locks first (`trivia_stake_cancel`): the
+node refunds every payer. Expired locks refund themselves.
+
+Test on a fake node or regtest first. The test suite locks, settles and
+cancels against a fake node (`test/trivia-stakes.test.mjs`). For
+regtest, point `LND_REST_URL` at the regtest node with its invoice
+macaroon, set `TRIVIA=on` and `TRIVIA_STAKES=on`, then set, lock, settle
+and cancel one game from the admin API before touching real sats.
+
 ## Files
 
 - `trivia.html`, `assets/trivia.js`, `assets/trivia.css`: the page.
 - `lib/trivia.js`: rules engine. `lib/trivia-ledger.js`: sats ledger.
 - `lib/trivia-donors.js`: donor pool, joins, cancel, payouts.
+- `lib/trivia-stakes.js`: equal own stakes on hold invoices, off by default.
 - `lib/trivia-live.js`: live rounds on the server clock.
+- `lib/lightning.js`: hold invoice calls (make, read, settle, cancel).
 - `api/trivia.js`: public API. `api/admin.js`: trivia actions.
 - `data/trivia/level-1..5.json`: the question bank.
-- `test/trivia-*.test.mjs`: engine, ledger, bank, donor, admin, live.
+- `test/trivia-*.test.mjs`: engine, ledger, bank, donor, admin, live, stakes.
