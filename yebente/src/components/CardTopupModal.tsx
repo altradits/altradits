@@ -97,7 +97,7 @@ export const CardTopupModal: React.FC<CardTopupModalProps> = ({ isOpen, onClose,
                   className="rounded-2xl border border-[var(--yb-outline-variant)] bg-[var(--yb-surface)] px-4 py-3 text-base font-normal" />
               </label>
               <label className="flex flex-col gap-1.5 text-sm font-semibold">Email for the receipt
-                <input value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" placeholder="you@example.com"
+                <input value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" placeholder="5tan@altradits.com"
                   className="rounded-2xl border border-[var(--yb-outline-variant)] bg-[var(--yb-surface)] px-4 py-3 text-base font-normal" />
               </label>
               <button type="button" onClick={startOrder}
