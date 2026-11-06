@@ -15,7 +15,10 @@
 //   GET  /api/admin?view=emails      -> the email log (a wallet email's link is never stored)
 //   GET  /api/admin?view=statement   -> money received through the website (&format=csv for the books)
 //   GET  /api/admin?view=activity&days=30 -> Ye₿ente deposits and transactions per wallet, most active first
+//   GET  /api/admin?view=trivia -> Mempool Mayhem games with pools; ?view=trivia_game&game= -> one game: pool, ledger, donors, payouts, live play, stakes
 //   POST { action: "stan_report" } | { action: "node_topup", sats } | { action: "address_qr", address } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
+//   POST { action: "trivia_create", id?, title, startsAt?, players? } | { action: "trivia_schedule", id, startsAt } | { action: "trivia_start", id, totalRounds? } | { action: "trivia_cancel", id, rule: "keep"|"return", note?, nextGame? } | { action: "trivia_payout", game, winner, to, pin }
+//   POST { action: "trivia_stake_set", id, sats } | { action: "trivia_stake_settle", id } | { action: "trivia_stake_cancel", id } (staked play: off unless TRIVIA_STAKES=on)
 //   POST { action: "ktown_block" | "ktown_unblock" | "ktown_release", phone } (kTown squatter tools, docs/ktown.md)
 //   POST { action: "njia_lease", lease } | { action: "njia_lease_void", id, reason } | { action: "njia_price", price } | { action: "njia_settings", field, value, confirm } | { action: "njia_listing", url } (Njia records, docs/njia.md)
 import { json, readBody, clean, newId, adminAuthed, clientIp, siteUrl, EMAIL_RE } from "../lib/http.js";
@@ -140,6 +143,36 @@ export async function GET(request) {
     return json(await walletActivity({ days }));
   }
   if (view === "emails") return json({ emails: (await getMany("email", await listIds("emails", 100))).map(({ text, ...e }) => e) });
+  // Mempool Mayhem: games with pools (reads stay up when the switch is off).
+  if (view === "trivia") {
+    const dn = await import("../lib/trivia-donors.js");
+    const { stakesOn } = await import("../lib/trivia.js");
+    const ids = await listIds("trv:games", 200);
+    const games = [];
+    for (const id of ids) {
+      const m = await dn.gameMeta(id);
+      if (!m) continue;
+      const t = await dn.ledgerTotals(id).catch(() => ({ net: 0, count: 0 }));
+      games.push({ id: m.id, title: m.title, status: m.status, startsAt: m.startsAt, players: m.players.length, winners: m.winners, poolSats: t.net, entries: t.count, cancel: m.cancel });
+    }
+    return json({ games, house: clean(process.env.TRIVIA_HOUSE_WALLET, 40) || null, rules: dn.CANCEL_RULES, stakesOn: stakesOn() });
+  }
+  if (view === "trivia_game") {
+    const dn = await import("../lib/trivia-donors.js");
+    const live = await import("../lib/trivia-live.js");
+    const sk = await import("../lib/trivia-stakes.js");
+    const game = clean(new URL(request.url).searchParams.get("game"), 64);
+    try {
+      const meta = await dn.gameMeta(game);
+      if (!meta) return json({ error: "No such game." }, 404);
+      const intents = await getMany("trv:don", await listIds(`trv:dons:${game}`, 2000));
+      return json({ meta, pool: await dn.poolView(game), payouts: await dn.payoutsOf(game),
+        donors: intents.map((i) => ({ hash: i.hash, sats: i.sats, target: i.target, message: i.message, state: i.state, at: i.at, paidAt: i.paidAt || null, carriedTo: i.carriedTo || null })),
+        ledger: { entries: await dn.ledgerEntries(game, 500), totals: await dn.ledgerTotals(game) },
+        live: await live.playView(game).catch(() => null),
+        stakes: await sk.stakesOf(game).catch(() => null) });
+    } catch (err) { return json({ error: err.message }, err.status || 400); }
+  }
 
   const { nodeInfo, nodeDetails, chainTip, outboundSats, inboundSats, onchainFeeRates, openChannelPoints } = await import("../lib/lightning.js");
   const { btcKes } = await import("../lib/lightning.js");
@@ -559,6 +592,29 @@ export async function POST(request) {
       if (body.action === "ktown_block") return json({ ok: true, phone: await kt.blockPhone(body.phone) });
       if (body.action === "ktown_unblock") return json({ ok: true, phone: await kt.unblockPhone(body.phone) });
       return json({ ok: true, ...(await kt.releaseMerchantByPhone(body.phone)) });
+    } catch (err) { return json({ error: err.message }, err.status || 400); }
+  }
+  // Mempool Mayhem: create, schedule, start, cancel (with the written rule),
+  // and pay winners. Writes need TRIVIA=on; payouts travel only via the
+  // wallet payout path (PIN, caps, lockdown), and the PIN is passed through,
+  // never stored. Staked play needs TRIVIA_STAKES=on too, and settles only
+  // when the game is over; cancelling a game does not touch live stake locks
+  // (cancel those first with trivia_stake_cancel, or they expire and refund).
+  if (body.action === "trivia_create" || body.action === "trivia_schedule" || body.action === "trivia_start" || body.action === "trivia_cancel" || body.action === "trivia_payout" || body.action === "trivia_stake_set" || body.action === "trivia_stake_settle" || body.action === "trivia_stake_cancel") {
+    const dn = await import("../lib/trivia-donors.js");
+    try {
+      if (body.action === "trivia_create") return json({ ok: true, game: await dn.createGame({ id: body.id ? clean(body.id, 64) : undefined, title: body.title, startsAt: body.startsAt || null, players: body.players || [] }) });
+      if (body.action === "trivia_schedule") return json({ ok: true, game: await dn.scheduleGame(clean(body.id, 64), body.startsAt) });
+      if (body.action === "trivia_start") {
+        const live = await import("../lib/trivia-live.js");
+        return json({ ok: true, live: await live.startGame(clean(body.id, 64), { totalRounds: body.totalRounds }) });
+      }
+      if (body.action === "trivia_cancel") return json({ ok: true, cancel: await dn.cancelGame(clean(body.id, 64), { rule: body.rule, note: body.note || "", nextGame: body.nextGame || null }) });
+      if (body.action === "trivia_payout") return json({ ok: true, payout: await dn.approvePayout(clean(body.game, 64), { winner: body.winner, to: body.to, pin: body.pin }) });
+      const sk = await import("../lib/trivia-stakes.js");
+      if (body.action === "trivia_stake_set") return json({ ok: true, stake: await sk.setStake(clean(body.id, 64), body.sats) });
+      if (body.action === "trivia_stake_settle") return json({ ok: true, settled: await sk.settleStakes(clean(body.id, 64)) });
+      return json({ ok: true, cancelled: await sk.cancelStakes(clean(body.id, 64)) });
     } catch (err) { return json({ error: err.message }, err.status || 400); }
   }
   // Kazi board moderation: list every task (newest first, flagged ones carry

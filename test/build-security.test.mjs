@@ -614,3 +614,60 @@ test("sample contacts anyone can see or copy are Stanley's own, never a stranger
   for (const f of visible) for (const s of retired)
     assert.ok(!read(f).includes(s), `${f}: retired sample ${s} is still visible${f.startsWith("yebente/app/") ? " (rebuild: cd yebente && npm run build)" : ""}`);
 });
+
+test("trivia: the switch gates writes, the server owns play, the page calls only this site", () => {
+  const live = read("lib/trivia-live.js"), api = read("api/trivia.js"), srv = read("server.mjs");
+  assert.match(read("lib/trivia.js"), /switchOn\("TRIVIA"\)/, "lib/trivia.js: live play waits on the TRIVIA switch");
+  assert.match(live, /requireTrivia\(\)/, "lib/trivia-live.js: starting and answering need the switch on");
+  for (const k of ["rl:trv:ans:", "rl:trv:join:", "rl:trv:fund:", "rl:trv:read:"])
+    assert.ok(api.includes(k), `api/trivia.js: rate limit ${k}... is in place`);
+  assert.match(live, /deadlineMs - QUESTION_MS/, "lib/trivia-live.js: reply timing is measured on the server clock");
+  assert.match(live, /settleBattle\(meta\.battle/, "lib/trivia-live.js: battle sats move once per settled round");
+  assert.match(live, /after !== before\) throw err\("Battle sats mismatch\."\s*, 500\)/, "lib/trivia-live.js: a broken battle total fails closed");
+  assert.match(api, /action === "answer"/, "api/trivia.js: answers arrive as an action, checked on the server");
+  const html = read("trivia.html"), js = read("assets/trivia.js");
+  assert.match(html, /connect-src 'self'/, "trivia.html: the page calls only this site's API");
+  assert.doesNotMatch(html, /connect-src 'self' https?:/, "trivia.html: no API host beside this site");
+  assert.doesNotMatch(html, /src="http/, "trivia.html: no outside scripts or images (store assets in the repo)");
+  assert.doesNotMatch(html, /rel="stylesheet" href="http/, "trivia.html: no outside styles (store assets in the repo)");
+  assert.doesNotMatch(js, /fetch\(\s*["'`]https?:/, "assets/trivia.js: fetch() takes same-site paths only");
+  assert.ok(js.includes("/api/trivia"), "assets/trivia.js: live play runs through /api/trivia");
+  assert.match(js, /esc\(/, "assets/trivia.js: server words are escaped before they reach the page");
+  assert.match(html, /name="theme-color" content="#EEF2F6"/, "trivia.html: the theme color is set");
+  assert.doesNotMatch(html, /stak/i, "trivia.html: staked mode stays unshown while off");
+  assert.doesNotMatch(js, /stak/i, "assets/trivia.js: staked mode stays unshown while off");
+  assert.doesNotMatch(html, /\bearn\b/i, "trivia.html: no earnings promises");
+  for (const id of ["game", "join-form", "live-status", "q-choices", "board-body", "fund-form", "books-btn"])
+    assert.ok(html.includes(`id="${id}"`), `trivia.html: #${id} is missing`);
+  for (const [, id] of js.matchAll(/\$\("([a-z-]+)"\)/g))
+    assert.ok(html.includes(`id="${id}"`), `assets/trivia.js: #${id} is missing from trivia.html`);
+  assert.ok(srv.includes("trivia\\.html"), "server.mjs: the page is served as public content");
+  assert.match((srv.split("\n").find((l) => l.trim().startsWith("const page =")) || ""), /\|trivia[|)]/, "server.mjs: /trivia serves the page, /trivia.html redirects to it");
+  assert.match(read(".htaccess"), /\|trivia[|)][^\n]*\/\?\$ \$1\.html/, ".htaccess: the same route on the Apache stack");
+  assert.match(read("sitemap.xml"), /<loc>https:\/\/altradits\.com\/trivia<\/loc>/, "sitemap.xml: the game is listed");
+  assert.ok(read("portfolio.html").includes("/assets/trivia-shot.png"), "portfolio.html: the card shows a real screenshot");
+  assert.ok(fs.existsSync(path.join(root, "assets/trivia-shot.png")), "assets/trivia-shot.png: the card screenshot is stored in the repo");
+});
+
+test("trivia stakes: off by default, plain refusal, locks open only at the end, never on the public page", () => {
+  const sk = read("lib/trivia-stakes.js"), api = read("api/trivia.js"), ln = read("lib/lightning.js");
+  assert.match(read("lib/trivia.js"), /switchOn\("TRIVIA_STAKES"\)/, "lib/trivia.js: staked play waits on the TRIVIA_STAKES switch");
+  assert.match(sk, /Staked play is off/, "lib/trivia-stakes.js: one plain refusal when off");
+  assert.match(sk, /requireStakes\(\)/, "lib/trivia-stakes.js: every staked endpoint needs the switch on");
+  assert.match(sk, /Stakes settle when the game ends/, "lib/trivia-stakes.js: locks open only at the end");
+  assert.match(read("lib/trivia-live.js"), /Every seat locks the same stake before the game starts/, "lib/trivia-live.js: a staked game starts only when every seat is locked");
+  assert.doesNotMatch(sk, /ADMIN_MACAROON/, "lib/trivia-stakes.js: never the admin key (hold invoices need the invoice macaroon)");
+  assert.ok(api.includes("rl:trv:stake:"), "api/trivia.js: the stake rate limit is in place");
+  assert.match(api, /action === "stake"/, "api/trivia.js: stakes arrive as an action, locked on the server");
+  assert.match(ln, /\/v2\/invoices\/hodl/, "lib/lightning.js: hold invoices are made with AddHoldInvoice");
+  assert.match(ln, /\/v2\/invoices\/settle/, "lib/lightning.js: locks are collected with SettleInvoice");
+  assert.match(ln, /\/v2\/invoices\/cancel/, "lib/lightning.js: locks are refunded with CancelInvoice");
+  assert.match(read("api/admin.js"), /trivia_stake_set/, "api/admin.js: Stanley sets the equal stake");
+  assert.match(read("api/admin.js"), /trivia_stake_settle/, "api/admin.js: Stanley settles at the end");
+  assert.match(read("api/admin.js"), /trivia_stake_cancel/, "api/admin.js: Stanley can cancel the locks");
+  assert.match(read("docs/trivia.md"), /stays off until the licences are in place and the lawyer/, "docs/trivia.md: staked play stays off until licences plus lawyer written OK");
+  const html = read("trivia.html"), js = read("assets/trivia.js");
+  assert.doesNotMatch(html, /stak/i, "trivia.html: staked mode stays unshown while off");
+  assert.doesNotMatch(js, /stak/i, "assets/trivia.js: staked mode stays unshown while off");
+});
+
