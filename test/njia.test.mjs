@@ -17,6 +17,8 @@ const nj = await import("../lib/njia.js");
 const ln = await import("../lib/lightning.js");
 const adminApi = await import("../api/admin.js");
 const { deadmanActive } = await import("../lib/deadman.js");
+const pubApi = await import("../api/njia.js");
+const store = await import("../lib/store.js");
 const TOKEN = process.env.ADMIN_TOKEN;
 const AUTH_HDR = `Bearer ${TOKEN}`;
 const WRONG_HDR = `Bearer ${"wrong-token"}`;
@@ -270,7 +272,56 @@ test("admin Njia records round-trip through the gate", async () => {
 // --- static: no outside calls ------------------------------------------------------
 test("Njia makes no third-party calls: no fetch in its new code", () => {
   const root = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
-  const src = fs.readFileSync(path.join(root, "lib/njia.js"), "utf8");
-  assert.doesNotMatch(src, /(?<![\w.])fetch\(/, "lib/njia.js: no direct fetch()");
-  assert.doesNotMatch(src, /publicFetch\(/, "lib/njia.js: no guarded fetch either (prices are typed in)");
+  for (const f of ["lib/njia.js", "api/njia.js"]) {
+    const src = fs.readFileSync(path.join(root, f), "utf8");
+    assert.doesNotMatch(src, /(?<![\w.])fetch\(/, `${f}: no direct fetch()`);
+    assert.doesNotMatch(src, /publicFetch\(/, `${f}: no guarded fetch either (prices are typed in)`);
+  }
+});
+
+// --- public API ------------------------------------------------------------------
+const pubGet = async (qs, ip = "10.61.0.9") => {
+  const r = await pubApi.GET(new Request(`https://altradits.test/api/njia${qs}`, { headers: { "x-forwarded-for": ip } }));
+  return { status: r.status, body: await r.json().catch(() => null) };
+};
+
+test("public API while off: health answers 200, the summary is only { on:false }", async () => {
+  delete process.env.NJIA;
+  const h = await pubGet("?part=health");
+  assert.equal(h.status, 200);
+  assert.equal(h.body.ok, true);
+  assert.equal(h.body.on, false);
+  assert.deepEqual(await pubGet("", "10.61.0.10").then((r) => r.body), { on: false });
+});
+
+test("public API rate limits: the 61st request in a minute gets 429", async () => {
+  delete process.env.NJIA;
+  let last = null;
+  for (let i = 0; i < 61; i++) last = await pubGet("", "10.61.0.11");
+  assert.equal(last.status, 429);
+});
+
+test("public API serves the stored summary, and hides it during lockdown", async () => {
+  process.env.NJIA = "on";
+  const f = path.join(process.cwd(), ".data", "deadman-state.json");
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  const stops = [{ key: "reserve", done: false }];
+  await store.setJSON("njia:public", { at: new Date().toISOString(), on: true, stage: "reserve", stops,
+    line: "Not earning yet. Step 1 of 5.",
+    numbers: { routing: "0", leases: "none", channels: "none", note: "Bands." },
+    identity: { alias: "Altradits", pubkey: PUBKEY, onion: null, listingUrl: null, note: "Links." } });
+  try {
+    const open = await pubGet("", "10.61.0.12");
+    assert.equal(open.body.identity.pubkey, PUBKEY);
+    assert.ok(open.body.numbers, "bands served");
+    fs.writeFileSync(f, JSON.stringify({ active: true }));
+    const shut = await pubGet("", "10.61.0.13");
+    assert.equal(shut.body.line, "Paused for a security check.");
+    assert.equal(shut.body.identity, undefined);
+    assert.equal(shut.body.numbers, undefined);
+    assert.ok(!JSON.stringify(shut.body).includes(PUBKEY), "no pubkey during lockdown");
+  } finally {
+    fs.writeFileSync(f, JSON.stringify({ active: false }));
+    delete process.env.NJIA;
+  }
 });

@@ -537,3 +537,12 @@ test("Njia stays read-only: no write imports, no write endpoints, no admin key, 
   }
   assert.doesNotMatch(read("lib/cleanup.js"), /njia:/, "lib/cleanup.js: Njia records are never cleaned up");
 });
+
+test("Njia page renders server data as text, never as HTML", () => {
+  const js = read("assets/njia.js");
+  assert.doesNotMatch(js, /innerHTML/, "assets/njia.js: build the DOM with textContent, never innerHTML");
+  assert.match(js, /textContent/, "assets/njia.js: page data becomes text");
+  assert.doesNotMatch(js, /nodeInfo|read\.info|channelbalance|walletbalance/, "assets/njia.js: the page only knows the public summary");
+  assert.match(read("njia.html"), /\/assets\/njia\.js/, "njia.html: loads the page script");
+  assert.match(read("api/njia.js"), /deadmanActive\(\)/, "api/njia.js: lockdown hides the summary");
+});

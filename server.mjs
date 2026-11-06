@@ -36,7 +36,7 @@ if (!SERVER) {
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf", ".webmanifest": "application/manifest+json" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|friends\.html|plan\.html|research\.html|portfolio\.html|donate\.html|bitcoin\.html|wallet\.html|wallet-guide\.html|bitcoin-core\.html|contact\.html|receipt\.html|robots\.txt|sitemap\.xml|llms\.txt|yebente\/app\/(?:index\.html|manifest\.webmanifest|assets\/[\w.-]+|fonts\/[\w.-]+|icons\/[\w.-]+)|ktown\/(?:index\.html|pay\.html|terms\.html|manifest\.webmanifest|icons\/[\w.-]+\.(?:png|svg)|[\w.-]+\.(?:js|css))|assets\/[\w.-]+|assets\/marketing\/(?:(?:\d{4}-\d{2}|templates)\/)?[\w-][\w.-]*|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|friends\.html|plan\.html|research\.html|portfolio\.html|donate\.html|bitcoin\.html|wallet\.html|wallet-guide\.html|bitcoin-core\.html|contact\.html|receipt\.html|njia\.html|robots\.txt|sitemap\.xml|llms\.txt|yebente\/app\/(?:index\.html|manifest\.webmanifest|assets\/[\w.-]+|fonts\/[\w.-]+|icons\/[\w.-]+)|ktown\/(?:index\.html|pay\.html|terms\.html|manifest\.webmanifest|icons\/[\w.-]+\.(?:png|svg)|[\w.-]+\.(?:js|css))|assets\/[\w.-]+|assets\/marketing\/(?:(?:\d{4}-\d{2}|templates)\/)?[\w-][\w.-]*|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
 // HSTS: browsers that have visited once only ever use HTTPS here (no includeSubDomains,
 // so other subdomains such as mail are unaffected). COOP: no other site keeps a handle
 // on our windows.
@@ -175,9 +175,9 @@ const server = http.createServer(async (req, res) => {
     const old = url.pathname.match(/^\/([a-z-]+)(?:\.html|\/)?$/);
     if (old && req.method === "GET" && old[1] in GONE) { res.writeHead(301, { Location: `/${GONE[old[1]]}` }).end(); return; }
     if (/^\/(?:r|h)\/[a-z0-9]{4,12}\/?$/.test(url.pathname) && req.method === "GET") { res.writeHead(301, { Location: "/" }).end(); return; }
-    const oldPage = url.pathname.match(/^\/(journey|library|players|friends|plan|research|portfolio|tracker|admin|donate|bitcoin|bitcoin-core|contact|receipt|wallet-guide)\.html$/);
+    const oldPage = url.pathname.match(/^\/(journey|library|players|friends|plan|research|portfolio|tracker|admin|donate|bitcoin|bitcoin-core|contact|receipt|wallet-guide|njia)\.html$/);
     if (oldPage && req.method === "GET") { res.writeHead(301, { Location: `/${oldPage[1]}${url.search}` }).end(); return; }
-    const page = url.pathname.match(/^\/(journey|library|players|friends|plan|research|portfolio|tracker|admin|donate|bitcoin|bitcoin-core|contact|receipt|wallet-guide)\/?$/);
+    const page = url.pathname.match(/^\/(journey|library|players|friends|plan|research|portfolio|tracker|admin|donate|bitcoin|bitcoin-core|contact|receipt|wallet-guide|njia)\/?$/);
     // Ye₿ente: the built app in yebente/app, served at /yebente.
     const yb = url.pathname.match(/^\/yebente(?:\/(?:index\.html)?)?$/) ? "/yebente/app/index.html" : url.pathname.match(/^\/yebente\/(manifest\.webmanifest|(?:assets|fonts|icons)\/[\w.-]+)$/)?.[1];
     // kTown: the merchant app at /ktown, the terms at /ktown/terms, the pay
