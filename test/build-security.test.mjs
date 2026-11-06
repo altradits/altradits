@@ -517,3 +517,30 @@ test("admin bodies over 100 KB need the token up front: strangers hit 413, the t
   }
   assert.equal(adminAuthed("Bearer x"), false, "no token configured: nobody is authed");
 });
+
+test("sample contacts anyone can see or copy are Stanley's own, never a stranger's number", () => {
+  // A made-up number like 0712345678 belongs to a real stranger: anyone who
+  // copies one from a page, an example or a doc and sends money loses it. So
+  // user-visible samples are Stanley's test number (a wrong payment to it can
+  // be refunded) and his test email.
+  const EMAIL = "5tan@altradits.com";
+  assert.match(read("ktown/index.html"), /placeholder="0707 172 370"/, "ktown/index.html: the phone placeholder is Stanley's test number");
+  assert.match(read("lib/ktown.js"), /like 0707 172 370\./, "lib/ktown.js: the M-Pesa error names Stanley's test number");
+  assert.match(read("lib/rails.js"), /example: "707 172 370"/, "lib/rails.js: the M-Pesa example is Stanley's test number");
+  assert.match(read("yebente/src/components/BuyBtcModal.tsx"), /example="707 172 370"/, "BuyBtcModal: the M-Pesa example is Stanley's test number");
+  for (const f of ["yebente/src/components/WalletGate.tsx", "yebente/src/components/WalletSettingsModal.tsx", "yebente/src/components/CardTopupModal.tsx"])
+    assert.match(read(f), new RegExp(`placeholder="${EMAIL}"`), `${f}: the email placeholder is Stanley's test email`);
+  assert.match(read("admin.html"), new RegExp(`placeholder="${EMAIL}"`), "admin.html: the erase-box placeholder is Stanley's test email");
+  assert.match(read("docs/hackathon.md"), new RegExp(EMAIL), "docs/hackathon.md: the draft goes to Stanley's test email");
+  assert.match(read("demo/meta.mjs"), new RegExp(EMAIL), "demo/meta.mjs: the demo draft goes to Stanley's test email");
+  // The retired samples are gone from everything people can see or copy.
+  const retired = ["0712345678", "254712345678", "712 345 678", "0712 345 678", "you@email.com", "you@example.com", "their@email.com"];
+  const visible = ["ktown/index.html", "ktown/pay.html", "ktown/terms.html", "ktown/app.js", "admin.html",
+    "lib/ktown.js", "lib/rails.js", "docs/hackathon.md", "demo/meta.mjs",
+    "yebente/src/components/BuyBtcModal.tsx", "yebente/src/components/CardTopupModal.tsx", "yebente/src/components/PhoneInput.tsx",
+    "yebente/src/components/WalletGate.tsx", "yebente/src/components/WalletSettingsModal.tsx", "yebente/src/services/payoutRails.ts"];
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  if (bundle) visible.push(`yebente/app/assets/${bundle}`);
+  for (const f of visible) for (const s of retired)
+    assert.ok(!read(f).includes(s), `${f}: retired sample ${s} is still visible${f.startsWith("yebente/app/") ? " (rebuild: cd yebente && npm run build)" : ""}`);
+});

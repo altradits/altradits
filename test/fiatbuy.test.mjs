@@ -70,7 +70,7 @@ test("card order: refused gracefully without a node instead of quoting blindly",
 test("card status: Completed credits once; a repeat confirmation never pays twice", async () => {
   const { wallet, token } = await mkWallet("card_paid");
   ppStatusDesc = "Completed"; ppStatusCode = 1; ppStatusKes = null;
-  const order = await pep.submitOrder({ email: "buyer@example.com", kes: 500 });
+  const order = await pep.submitOrder({ email: "5tan@altradits.com", kes: 500 });
   assert.match(order.redirectUrl, /^https:\/\/pay\.test\/checkout\//);
   await yw.startCardBuy(await getJSON(`yw:${wallet.id}`), { kes: 500, sats: 3875 }, order.trackingId);
   const check = () => yb.GET(authed(token, `http://x/api/yebente/wallet/card/status/${order.trackingId}`));
@@ -84,7 +84,7 @@ test("card status: Completed credits once; a repeat confirmation never pays twic
 
 test("card status: Failed closes the order and credits nothing; Pending leaves it open", async () => {
   const { wallet, token } = await mkWallet("card_failed");
-  const order = await pep.submitOrder({ email: "buyer@example.com", kes: 500 });
+  const order = await pep.submitOrder({ email: "5tan@altradits.com", kes: 500 });
   await yw.startCardBuy(await getJSON(`yw:${wallet.id}`), { kes: 500, sats: 3875 }, order.trackingId);
   ppStatusDesc = "Pending"; ppStatusCode = 0;
   const pending = await (await yb.GET(authed(token, `http://x/api/yebente/wallet/card/status/${order.trackingId}`))).json();
@@ -98,7 +98,7 @@ test("card status: Failed closes the order and credits nothing; Pending leaves i
 
 test("card status: an unclear provider answer never credits, and never closes", async () => {
   const { wallet, token } = await mkWallet("card_unclear");
-  const order = await pep.submitOrder({ email: "buyer@example.com", kes: 500 });
+  const order = await pep.submitOrder({ email: "5tan@altradits.com", kes: 500 });
   await yw.startCardBuy(await getJSON(`yw:${wallet.id}`), { kes: 500, sats: 3875 }, order.trackingId);
   ppFailStatus = true;
   try {
@@ -114,7 +114,7 @@ test("card status: an unclear provider answer never credits, and never closes", 
 
 test("card status: a different amount than quoted never credits", async () => {
   const { wallet, token } = await mkWallet("card_mismatch");
-  const order = await pep.submitOrder({ email: "buyer@example.com", kes: 500 });
+  const order = await pep.submitOrder({ email: "5tan@altradits.com", kes: 500 });
   await yw.startCardBuy(await getJSON(`yw:${wallet.id}`), { kes: 500, sats: 3875 }, order.trackingId);
   ppStatusDesc = "Completed"; ppStatusCode = 1; ppStatusKes = 50; // provider says 50, we quoted 500
   try {
@@ -127,7 +127,7 @@ test("card status: a different amount than quoted never credits", async () => {
 test("card status: only the wallet that ordered can ask", async () => {
   const a = await mkWallet("card_owner");
   const b = await mkWallet("card_stranger");
-  const order = await pep.submitOrder({ email: "buyer@example.com", kes: 500 });
+  const order = await pep.submitOrder({ email: "5tan@altradits.com", kes: 500 });
   await yw.startCardBuy(await getJSON(`yw:${a.wallet.id}`), { kes: 500, sats: 3875 }, order.trackingId);
   ppStatusDesc = "Completed"; ppStatusCode = 1;
   const r = await yb.GET(authed(b.token, `http://x/api/yebente/wallet/card/status/${order.trackingId}`));
@@ -138,7 +138,7 @@ test("card status: only the wallet that ordered can ask", async () => {
 
 test("card IPN: a wrong secret is refused; the right one confirms through a server query", async () => {
   const { wallet } = await mkWallet("card_ipn");
-  const order = await pep.submitOrder({ email: "buyer@example.com", kes: 500 });
+  const order = await pep.submitOrder({ email: "5tan@altradits.com", kes: 500 });
   await yw.startCardBuy(await getJSON(`yw:${wallet.id}`), { kes: 500, sats: 3875 }, order.trackingId);
   ppStatusDesc = "Completed"; ppStatusCode = 1;
   const bad = await yb.POST(new Request("http://x/api/yebente/card/ipn/wrong-secret-12345678", { method: "POST" }));
@@ -151,7 +151,7 @@ test("card IPN: a wrong secret is refused; the right one confirms through a serv
 
 test("card IPN: the provider's JSON notice shape confirms too", async () => {
   const { wallet } = await mkWallet("card_ipnbody");
-  const order = await pep.submitOrder({ email: "buyer@example.com", kes: 500 });
+  const order = await pep.submitOrder({ email: "5tan@altradits.com", kes: 500 });
   await yw.startCardBuy(await getJSON(`yw:${wallet.id}`), { kes: 500, sats: 3875 }, order.trackingId);
   ppStatusDesc = "Completed"; ppStatusCode = 1;
   const good = await yb.POST(new Request("http://x/api/yebente/card/ipn/card-callback-secret-12345678",
@@ -162,7 +162,7 @@ test("card IPN: the provider's JSON notice shape confirms too", async () => {
 
 test("card return page: only the state, never amounts", async () => {
   const { wallet } = await mkWallet("card_return");
-  const order = await pep.submitOrder({ email: "buyer@example.com", kes: 777 });
+  const order = await pep.submitOrder({ email: "5tan@altradits.com", kes: 777 });
   await yw.startCardBuy(await getJSON(`yw:${wallet.id}`), { kes: 777, sats: 6000 }, order.trackingId);
   ppStatusDesc = "Completed"; ppStatusCode = 1;
   const html = await (await yb.GET(new Request(`http://x/api/yebente/wallet/card/return?OrderTrackingId=${order.trackingId}`))).text();
@@ -179,9 +179,9 @@ test("card and M-Pesa buys share one daily shilling limit", async () => {
 });
 
 test("provider sign-in is asked once and reused while fresh", async () => {
-  await pep.submitOrder({ email: "buyer@example.com", kes: 100 }); // warms the cache in any order
+  await pep.submitOrder({ email: "5tan@altradits.com", kes: 100 }); // warms the cache in any order
   const before = ppTokenHits;
-  await pep.submitOrder({ email: "buyer@example.com", kes: 100 });
-  await pep.submitOrder({ email: "buyer@example.com", kes: 100 });
+  await pep.submitOrder({ email: "5tan@altradits.com", kes: 100 });
+  await pep.submitOrder({ email: "5tan@altradits.com", kes: 100 });
   assert.equal(ppTokenHits, before);
 });
