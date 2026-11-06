@@ -98,7 +98,7 @@ input::placeholder{color:var(--muted);opacity:.8}
 .terms h2{margin-top:1.6rem;font-size:1.25rem}
 .terms section h1{margin-top:2rem}
 .back{color:var(--navy);font-weight:700}
-.draft{margin-top:2rem;color:var(--muted);font-size:.88rem}
+.version{margin-top:2rem;color:var(--muted);font-size:.88rem}
 .print-foot{display:none}
 [hidden]{display:none!important}
 /* Print: an A6 counter card, or an A4 sheet of four (A6 is a quarter of A4).

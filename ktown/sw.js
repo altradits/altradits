@@ -3,7 +3,7 @@
 // calls always go to the network, and the app falls back to its saved account
 // and history. Scope is /ktown, so the pay pages are untouched.
 // Bump CACHE when any cached file changes.
-const CACHE = "ktown-v2";
+const CACHE = "ktown-v3";
 const SHELL = [
   "/ktown",
   "/ktown/index.html",
