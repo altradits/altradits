@@ -1,0 +1,66 @@
+/* Opcode Circuit style: a calm terminal. Dark by default, light on request.
+   System mono for code, system sans for prose. No webfonts, no images. */
+:root{
+  --bg:#0b1220; --panel:#111a2e; --panel2:#0e1626; --ink:#d7e3f4; --muted:#8fa3bf;
+  --line:#24334f; --acc:#46d19a; --acc2:#f5a94b; --bad:#ff7a7a; --ok:#46d19a;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark light;
+}
+[data-theme="light"]{
+  --bg:#f4f6fa; --panel:#ffffff; --panel2:#eef2f7; --ink:#14213a; --muted:#51617a;
+  --line:#c9d3e0; --acc:#0b7a5f; --acc2:#a84d08; --bad:#b3261e; --ok:#0b7a5f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:400 1rem/1.55 var(--sans);min-height:100vh;display:flex;flex-direction:column}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:44px 44px;mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 30%,transparent 75%)}
+.top{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding:.7rem 1rem;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 88%,transparent);position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:.55rem;text-decoration:none;color:var(--ink);font-weight:800;font-family:var(--mono);letter-spacing:.02em}
+.sigil{width:1.4rem;height:1.4rem;border-radius:.35rem;background:conic-gradient(from 40deg,var(--acc),var(--acc2),var(--acc));box-shadow:0 0 0 2px var(--line)}
+.topnav{display:flex;gap:.25rem;flex-wrap:wrap}
+.topnav a{color:var(--muted);text-decoration:none;font-weight:600;padding:.4rem .8rem;border-radius:99px}
+.topnav a:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 10%,transparent)}
+.topnav a[aria-current]{color:var(--bg);background:var(--acc)}
+#theme{margin-left:auto;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:.6rem;padding:.4rem .8rem;font:inherit;cursor:pointer}
+#theme:hover{color:var(--ink);border-color:var(--acc)}
+.sim{margin:0;padding:.5rem 1rem;text-align:center;font-size:.85rem;color:var(--bg);background:var(--acc2);font-weight:600}
+.wrap{max-width:56rem;margin:0 auto;padding:1.2rem 1rem 3rem;width:100%;position:relative}
+.hero{padding:1.5rem 0}
+.hero h1{font:800 clamp(1.8rem,5vw,2.6rem)/1.1 var(--mono);margin:0 0 .6rem}
+.hero h1 .cur{color:var(--acc)}
+.lead{color:var(--muted);max-width:40rem;margin:0 0 1rem}
+.grid{list-style:none;margin:1.2rem 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(16rem,100%),1fr));gap:.9rem}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:.9rem;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.4rem}
+.card h2{font:700 1.05rem var(--mono);margin:0}
+.card h2 .n{color:var(--acc)}
+.card p{margin:0;color:var(--muted);font-size:.92rem}
+.card .go{margin-top:.5rem;text-decoration:none;color:var(--acc);font-weight:700;font-family:var(--mono)}
+.card.done{border-color:var(--acc)}
+.puz{background:var(--panel);border:1px solid var(--line);border-radius:.9rem;padding:1.1rem;margin:1rem 0}
+.puz h2{font:700 1.15rem var(--mono);margin:.2rem 0 .6rem}
+.puz .brief{color:var(--muted);margin:0 0 .8rem}
+.puz label{display:block;font-weight:600;margin:.7rem 0 .25rem}
+.puz input[type="text"],.puz textarea{width:100%;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:.55rem;padding:.6rem .7rem;font:400 .95rem var(--mono)}
+.puz textarea{min-height:6rem;resize:vertical}
+.btnrow{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.9rem}
+button.btn{background:var(--acc);color:#06130d;border:0;border-radius:.6rem;padding:.6rem 1.1rem;font:700 .95rem var(--sans);cursor:pointer}
+button.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button.btn:hover{filter:brightness(1.08)}
+.verdict{margin:.8rem 0 0;padding:.7rem .9rem;border-radius:.6rem;font-family:var(--mono);font-size:.92rem}
+.verdict.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);border:1px solid var(--ok)}
+.verdict.bad{background:color-mix(in srgb,var(--bad) 12%,transparent);border:1px solid var(--bad)}
+.debrief{margin-top:1rem;border-top:1px dashed var(--line);padding-top:.8rem}
+.debrief h3{font:700 .95rem var(--mono);margin:0 0 .4rem;color:var(--acc)}
+.debrief ul{margin:.3rem 0;padding-left:1.2rem;color:var(--muted);font-size:.9rem}
+.badge{display:inline-block;font:700 .72rem var(--mono);text-transform:uppercase;letter-spacing:.06em;border:1px solid var(--acc2);color:var(--acc2);border-radius:.4rem;padding:.1rem .45rem;margin-left:.5rem;vertical-align:middle}
+table.trace{width:100%;border-collapse:collapse;font:400 .82rem var(--mono);margin-top:.7rem}
+table.trace th,table.trace td{text-align:left;padding:.3rem .5rem;border-bottom:1px solid var(--line);vertical-align:top;word-break:break-all}
+table.trace th{color:var(--muted);font-weight:600}
+.foot{margin-top:auto;padding:1.2rem 1rem 2rem;border-top:1px solid var(--line);color:var(--muted);font-size:.88rem;text-align:center}
+.foot a{color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+@media (max-width:420px){.top{padding:.6rem .7rem}.wrap{padding:1rem .8rem 2.5rem}table.trace{font-size:.72rem}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
