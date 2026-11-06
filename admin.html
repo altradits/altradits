@@ -282,7 +282,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 
   <div class="panel" id="nodeBanner" role="alert" hidden style="border-color:var(--crit)"></div>
 
-  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
+  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="earn">Earn</button><button type="button" data-tab="kazi">Kazi</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
   <div class="pane" data-pane="overview">
   <section class="panel" aria-labelledby="hCheck">
     <h2 id="hCheck">Today's checklist</h2>
@@ -364,7 +364,98 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </section>
   </div>
 
-  <div class="pane" data-pane="money">
+  <div class="pane" data-pane="earn">
+  <p class="alert warn" id="njiaOff" hidden>Njia is off: set NJIA=on in DirectAdmin to start the hourly summary and reachability samples. This tab still reads the node on demand, and the ledger below still records.</p>
+  <div class="panel" id="hEarnPrivacy">
+    <h2>Njia privacy</h2>
+    <div class="learn"><p>The public page hides the node by default: no pubkey, no alias, no onion address, no listing link. Two switches below can reveal them. Each switch-on needs a typed word and is logged.</p>
+    <p>Four warnings. A public channel announces the node alias to the whole network, whatever the page hides. Every invoice this site issues already reveals the pubkey to whoever paid it. Exact numbers can identify the node, so the page shows bands only. Hidden means the page cannot sell: buyers find leases on the marketplace.</p></div>
+    <p class="see sm">See it yourself: the public summary lives in the store as <code>njia:public</code>, rebuilt hourly.</p>
+    <dl>
+      <dt>Identity on the public page</dt>
+      <dd><span id="swIdentityState" class="sm"><b>Off</b></span>
+        <span id="cfIdentityWrap"> <input id="cfIdentity" placeholder="Type LINK to switch on" autocomplete="off" style="max-width:12rem"> <button type="button" class="btn" id="btnIdentity">Switch on</button></span>
+        <button type="button" class="btn" id="btnIdentityOff" hidden>Switch off</button></dd>
+      <dt>Numbers on the public page</dt>
+      <dd><span id="swNumbersState" class="sm"><b>Off</b></span>
+        <span id="cfNumbersWrap"> <input id="cfNumbers" placeholder="Type SHOW to switch on" autocomplete="off" style="max-width:12rem"> <button type="button" class="btn" id="btnNumbers">Switch on</button></span>
+        <button type="button" class="btn" id="btnNumbersOff" hidden>Switch off</button></dd>
+    </dl>
+    <p class="alert crit" id="aliasWarn" hidden></p>
+    <h3 class="sub">Marketplace listing</h3>
+    <div class="row"><input id="listingUrl" placeholder="https://magma.amboss.space/…" autocomplete="off" style="max-width:26rem" aria-label="Marketplace listing link"> <button type="button" class="btn" id="btnListing">Save link</button></div>
+    <p class="sm muted" id="listingSaved"></p>
+    <h3 class="sub">Preview</h3>
+    <p><button type="button" class="btn" id="btnPreview">Preview what visitors see</button></p>
+    <div id="njiaPreview" class="inside" hidden></div>
+    <h3 class="sub">Settings log</h3>
+    <ul id="setLog" class="sm"></ul>
+  </div>
+  <div class="panel" id="hEarnSteps">
+    <h2>Checklist</h2>
+    <p class="see sm">See it yourself: every step names its read-only check. The site runs none of the commands below. Reads use <code>ln-ro</code>.</p>
+    <div id="njiaSteps"><p class="muted sm">Loading…</p></div>
+  </div>
+  <div class="panel" id="hEarnDash">
+    <h2>Live dashboard</h2>
+    <p class="sm muted" id="njiaAge"></p>
+    <p class="alert warn" id="njiaHint" hidden></p>
+    <div class="kpis" id="njiaKpis"></div>
+    <h3 class="sub">Channels</h3>
+    <div class="scroll"><table id="njiaChan"><thead><tr><th>Channel</th><th>Type</th><th>Capacity</th><th>Local share</th><th>Can send</th><th>Can receive</th><th>Uptime</th></tr></thead><tbody></tbody></table></div>
+    <h3 class="sub">Reachability and peers</h3>
+    <div id="njiaReach"></div>
+    <h3 class="sub">Fee report</h3>
+    <div id="njiaFees"></div>
+    <h3 class="sub">Forwarding income</h3>
+    <div id="njiaFwd"></div>
+    <div id="njiaTrend"></div>
+    <div id="njiaMonthly"></div>
+    <h3 class="sub">Lease income</h3>
+    <div id="njiaLeaseInc"></div>
+  </div>
+  <div class="panel" id="hEarnLedger">
+    <h2>Lease ledger</h2>
+    <div class="learn"><p>Every lease you sell, typed in by hand. Append-only: mistakes are voided, never deleted, so the books stay honest.</p></div>
+    <form id="fLease" novalidate>
+      <div class="grid2">
+        <p><label for="lDate">Date</label><input id="lDate" type="date" required></p>
+        <p><label for="lMarket">Marketplace</label><select id="lMarket" class="sel"><option>Magma</option><option>Lightning Pool</option><option>direct</option><option>other</option></select></p>
+        <p><label for="lSize">Channel size (sats)</label><input id="lSize" inputmode="numeric" required></p>
+        <p><label for="lFee">Fee received (sats)</label><input id="lFee" inputmode="numeric" required></p>
+        <p><label for="lTerm">Term (days)</label><input id="lTerm" inputmode="numeric" required></p>
+        <p><label for="lChainFee">Chain fee paid (sats, optional)</label><input id="lChainFee" inputmode="numeric"></p>
+        <p><label for="lPoint">Channel point (optional)</label><input id="lPoint" placeholder="txid:index" autocomplete="off"></p>
+        <p><label for="lBuyer">Buyer alias (optional, stays here)</label><input id="lBuyer" maxlength="40" autocomplete="off"></p>
+      </div>
+      <p><label for="lNote">Note (optional)</label><input id="lNote" maxlength="200" autocomplete="off"></p>
+      <p class="err" id="leaseErr" role="alert"></p>
+      <p><button type="submit" class="btn primary" id="btnLease">Add lease</button> <button type="button" class="btn" id="btnLeaseCsv">Download CSV</button></p>
+    </form>
+    <div class="scroll"><table id="leaseTable"><thead><tr><th>Date</th><th>Size</th><th>Fee</th><th>Term</th><th>Market</th><th>Channel</th><th>Yearly (estimate)</th><th></th></tr></thead><tbody></tbody></table></div>
+  </div>
+  <div class="panel" id="hEarnPrices">
+    <h2>Marketplace prices</h2>
+    <div class="learn"><p>Quotes you saw, typed in by hand. The site fetches none. Estimates below say which entry they came from.</p></div>
+    <form id="fPrice" novalidate>
+      <div class="grid2">
+        <p><label for="pDate">Date</label><input id="pDate" type="date" required></p>
+        <p><label for="pMarket">Marketplace</label><input id="pMarket" maxlength="40" autocomplete="off" required></p>
+        <p><label for="pSize">Size (sats)</label><input id="pSize" inputmode="numeric" required></p>
+        <p><label for="pPrice">Price (sats, optional)</label><input id="pPrice" inputmode="numeric"></p>
+        <p><label for="pRate">Rate (percent, optional)</label><input id="pRate" inputmode="decimal"></p>
+        <p><label for="pPpm">PPM (optional)</label><input id="pPpm" inputmode="numeric"></p>
+        <p><label for="pTerm">Term (days, optional)</label><input id="pTerm" inputmode="numeric"></p>
+      </div>
+      <p><label for="pNote">Note (optional)</label><input id="pNote" maxlength="200" autocomplete="off"></p>
+      <p class="err" id="priceErr" role="alert"></p>
+      <p><button type="submit" class="btn primary" id="btnPrice">Add quote</button></p>
+    </form>
+    <div id="priceEst"></div>
+    <div class="scroll"><table id="priceTable"><thead><tr><th>Date</th><th>Market</th><th>Size</th><th>Price</th><th>Rate</th><th>Term</th><th></th></tr></thead><tbody></tbody></table></div>
+  </div>
+</div>
+<div class="pane" data-pane="money">
   <section class="panel" aria-labelledby="hMap">
     <h2 id="hMap">Where your money is</h2>
     <p class="see sm">Verify on the Mac: <code>ln-ro walletbalance</code> · <code>ln-ro channelbalance</code> (see Learn → Verify)</p>
@@ -599,6 +690,17 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </section>
   </div>
 
+  <div class="pane" data-pane="kazi">
+    <section class="panel" aria-labelledby="hKazi">
+      <h2 id="hKazi">Kazi board moderation</h2>
+      <div class="learn"><p>Small paid tasks for Kisumu. Nothing goes public until you approve it here. Flags from visitors and the word screen's notes show on each task. Edits by the poster come back to this list.</p></div>
+      <h3 class="sub">Waiting for review <span class="muted sm" id="kaziPendingCount"></span></h3>
+      <div id="kaziPending"></div>
+      <h3 class="sub">On the board <span class="muted sm" id="kaziOpenCount"></span></h3>
+      <div id="kaziOpen"></div>
+    </section>
+  </div>
+
   <div class="pane" data-pane="security">
   <div class="grid2">
     <section class="panel" aria-labelledby="hSec">
@@ -619,7 +721,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <section class="panel" aria-labelledby="hErase">
       <h2 id="hErase">Erase a person (privacy request)</h2>
       <div class="learn"><p>Deletes for good everything about one email address: their contact words, pasted replies, and notes to them. Receipts and payment records stay for the books; wallet owners are refused until the wallet is handed over.</p></div>
-      <div class="row"><input id="eraseEmail" type="email" placeholder="their@email.com" autocomplete="off" style="max-width:16rem"><input id="eraseConfirm" placeholder="Type ERASE" autocomplete="off" style="max-width:9rem"><button type="button" class="btn" id="eraseGo">Erase</button></div>
+      <div class="row"><input id="eraseEmail" type="email" placeholder="5tan@altradits.com" autocomplete="off" style="max-width:16rem"><input id="eraseConfirm" placeholder="Type ERASE" autocomplete="off" style="max-width:9rem"><button type="button" class="btn" id="eraseGo">Erase</button></div>
       <p class="sm muted" id="eraseMsg" role="status"></p>
     </section>
   </div>

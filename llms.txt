@@ -22,9 +22,21 @@ Ye₿ente. Start here: https://altradits.com/
   the merchant receives Kenyan shillings in M-Pesa. kTown holds no money and
   is not a wallet; Tando converts for a 1 percent fee.
 
+## Njia: the node learning to earn
+
+- How the Lightning node earns from routing fees and leased channels: https://altradits.com/njia
+
+## Kazi board: small paid tasks in Kisumu
+
+- A moderated noticeboard: https://altradits.com/kazi. Anyone posts a small
+  task; nothing goes public until approved. The poster pays the worker
+  directly, peer to peer, in sats or M-Pesa. Kazi holds no money and takes
+  no cut. English and Kiswahili.
+
 ## Questions, answered
 
-- Quick answers on the homepage: https://altradits.com/
+- kTown questions on the homepage: https://altradits.com/
+- Wallet questions in the wallet guide: https://altradits.com/wallet-guide
 - Full questions page: https://altradits.com/bitcoin
 - Free library in reading order: https://altradits.com/library
 - The teams behind the wallet: https://altradits.com/friends

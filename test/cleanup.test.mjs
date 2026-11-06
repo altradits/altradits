@@ -86,16 +86,16 @@ test("daily backup: compressed, encrypted with BACKUP_KEY, owner-only, rotated, 
 test("erase a person: messages anonymized with the books kept, replies and notes deleted, receipts kept", async () => {
   const { erasePerson } = await import("../lib/cleanup.js");
   await store.setJSON("contact:msg:e1", { id: "e1", at: "2026-11-01T10:00:00.000Z", paidAt: "2026-11-01T10:00:00.000Z",
-    name: "Nia", email: "nia@example.com", topic: "other", label: "Other", dept: "office", sats: 1000, hash: "c".repeat(64),
+    name: "Nia", email: "5tan@altradits.com", topic: "other", label: "Other", dept: "office", sats: 1000, hash: "c".repeat(64),
     receipt: "ALT-2026-0001", handled: true, message: "Hello there." });
   await store.pushId("contact:inbox", "e1");
-  await store.setJSON("reply:r1", { id: "r1", at: "2026-11-02T10:00:00.000Z", from: "nia@example.com", dept: "office", text: "Thanks!", handled: false });
+  await store.setJSON("reply:r1", { id: "r1", at: "2026-11-02T10:00:00.000Z", from: "5tan@altradits.com", dept: "office", text: "Thanks!", handled: false });
   await store.pushId("reply:inbox", "r1");
-  await store.setJSON("email:rcpt", { id: "rcpt", to: "nia@example.com", from: "Altradits", subject: "Receipt ALT-2026-0001: thank you", kind: "wallet", status: "logged" });
+  await store.setJSON("email:rcpt", { id: "rcpt", to: "5tan@altradits.com", from: "Altradits", subject: "Receipt ALT-2026-0001: thank you", kind: "wallet", status: "logged" });
   await store.pushId("emails", "rcpt");
-  await store.setJSON("email:note", { id: "note", to: "nia@example.com", from: "Altradits", subject: "Re: hello", text: "Hello there.", kind: "wallet", status: "logged" });
+  await store.setJSON("email:note", { id: "note", to: "5tan@altradits.com", from: "Altradits", subject: "Re: hello", text: "Hello there.", kind: "wallet", status: "logged" });
   await store.pushId("emails", "note");
-  const r = await erasePerson("Nia@Example.COM");
+  const r = await erasePerson("5TAN@Altradits.COM");
   assert.deepEqual(r, { anonymized: 1, deleted: 2, kept: 1 });
   const m = await store.getJSON("contact:msg:e1");
   assert.equal(m.name, "[erased]");
@@ -113,7 +113,7 @@ test("erase a person: messages anonymized with the books kept, replies and notes
 test("erase a person: bad address rejected, wallet owners refused", async () => {
   const { erasePerson } = await import("../lib/cleanup.js");
   await assert.rejects(() => erasePerson("not-an-email"), /email address/);
-  await store.setJSON("yw:w9", { id: "w9", handle: "nia9", email: "nia@example.com", balance: 0 });
-  await assert.rejects(() => erasePerson("nia@example.com"), /wallet/);
+  await store.setJSON("yw:w9", { id: "w9", handle: "nia9", email: "5tan@altradits.com", balance: 0 });
+  await assert.rejects(() => erasePerson("5tan@altradits.com"), /wallet/);
   assert.equal((await store.getJSON("contact:msg:e1")).receipt, "ALT-2026-0001"); // nothing half-erased
 });

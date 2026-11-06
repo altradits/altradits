@@ -1,5 +1,6 @@
-// FAQ merge: the homepage owns every wallet question, /bitcoin owns the learning
-// program, and neither repeats the other. Each page's FAQPage data matches.
+// FAQ merge: the wallet guide owns every wallet question, the homepage owns the
+// kTown questions, /bitcoin owns the learning program, and none repeats the
+// other. Each page's FAQPage data matches.
 // Run: node --test test/faq-duplicates.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -25,20 +26,24 @@ const ldFaq = (html) => {
   return JSON.parse(m[1]).mainEntity.map((e) => ({ q: e.name, a: e.acceptedAnswer.text }));
 };
 
-test("the homepage and /bitcoin share no question or answer", () => {
+test("the guide, the homepage and /bitcoin share no question or answer", () => {
   const home = faqs(read("index.html"));
+  const guide = faqs(read("wallet-guide.html"));
   const coins = faqs(read("bitcoin.html"));
-  assert.equal(home.length, 10, `homepage holds 10 wallet questions, found ${home.length}`);
+  assert.equal(home.length, 10, `homepage holds 10 kTown questions, found ${home.length}`);
+  assert.equal(guide.length, 10, `wallet guide holds 10 wallet questions, found ${guide.length}`);
   assert.equal(coins.length, 5, `/bitcoin holds 5 program questions, found ${coins.length}`);
-  for (const h of home) {
-    for (const c of coins) {
-      assert.notEqual(h.q, c.q, `question lives on both pages: ${h.q}`);
-      assert.notEqual(h.a, c.a, `answer lives on both pages (under: ${h.q})`);
+  for (const [a, an, b, bn] of [[home, "homepage", coins, "/bitcoin"], [guide, "wallet guide", coins, "/bitcoin"], [home, "homepage", guide, "wallet guide"]]) {
+    for (const x of a) {
+      for (const y of b) {
+        assert.notEqual(x.q, y.q, `question lives on both ${an} and ${bn}: ${x.q}`);
+        assert.notEqual(x.a, y.a, `answer lives on both ${an} and ${bn} (under: ${x.q})`);
+      }
     }
   }
 });
 
-for (const f of ["index.html", "bitcoin.html"]) {
+for (const f of ["index.html", "wallet-guide.html", "bitcoin.html"]) {
   test(`${f}: the FAQPage data matches the visible questions`, () => {
     const html = read(f);
     const visible = faqs(html);

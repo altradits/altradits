@@ -9,6 +9,8 @@
 //   GET  /api/admin?view=channels    -> channels, alerts and advice (lib/channels.js)
 //   GET  /api/admin?view=liquidity   -> sending power and top-up amounts
 //   GET  /api/admin?view=topup&hash= -> a top-up's state
+//   GET  /api/admin?view=njia{&refresh=1} -> Njia Earn tab: checklist, dashboard, ledger, prices, settings (read-only)
+//   GET  /api/admin?view=njia_csv -> the Njia lease ledger as CSV
 //   GET  /api/admin?view=security    -> what was turned away, and Bitcoin's attack history
 //   GET  /api/admin?view=emails      -> the email log (a wallet email's link is never stored)
 //   GET  /api/admin?view=statement   -> money received through the website (&format=csv for the books)
@@ -18,6 +20,7 @@
 //   POST { action: "trivia_create", id?, title, startsAt?, players? } | { action: "trivia_schedule", id, startsAt } | { action: "trivia_start", id, totalRounds? } | { action: "trivia_cancel", id, rule: "keep"|"return", note?, nextGame? } | { action: "trivia_payout", game, winner, to, pin }
 //   POST { action: "trivia_stake_set", id, sats } | { action: "trivia_stake_settle", id } | { action: "trivia_stake_cancel", id } (staked play: off unless TRIVIA_STAKES=on)
 //   POST { action: "ktown_block" | "ktown_unblock" | "ktown_release", phone } (kTown squatter tools, docs/ktown.md)
+//   POST { action: "njia_lease", lease } | { action: "njia_lease_void", id, reason } | { action: "njia_price", price } | { action: "njia_settings", field, value, confirm } | { action: "njia_listing", url } (Njia records, docs/njia.md)
 import { json, readBody, clean, newId, adminAuthed, clientIp, siteUrl, EMAIL_RE } from "../lib/http.js";
 import { listIds, getMany, getJSON, setJSON, pushId, usingRedis, hit, peek, listArchives } from "../lib/store.js";
 import { lightningMode } from "../lib/lightning.js";
@@ -96,6 +99,17 @@ export async function GET(request) {
     const { topupStatus } = await import("../lib/channels.js");
     const t = await topupStatus(clean(new URL(request.url).searchParams.get("hash"), 64));
     return t ? json(t) : json({ error: "No such top-up." }, 404);
+  }
+  if (view === "njia") {
+    const force = new URL(request.url).searchParams.get("refresh") === "1";
+    if (force && (await hit("rl:njia:refresh", 15)) > 1) return json({ error: "Refresh is limited to once every 15 seconds." }, 429);
+    const { snapshot } = await import("../lib/njia.js");
+    try { return json(await within(snapshot({ force }))); } catch (err) { return json({ error: err.message }, 502); }
+  }
+  if (view === "njia_csv") {
+    const { listLeases, ledgerCsv } = await import("../lib/njia.js");
+    return new Response(ledgerCsv(await listLeases()), { headers: { "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="njia-ledger-${new Date().toISOString().slice(0, 10)}.csv"`, "Cache-Control": "no-store" } });
   }
   if (view === "mktcustom") {
     const { CUSTOM_KEY } = await import("../lib/marketing.js");
@@ -359,6 +373,19 @@ export async function POST(request) {
     try { return json(await recordNodeAction({ sats: body.sats, reason: clean(body.reason, 200), by: "stanley" })); }
     catch (err) { return json({ error: err.message }, 400); }
   }
+  // Njia records: ledger entries, prices and reveal settings. Reads stay in
+  // ?view=njia; these writes only touch the store, never the node.
+  if (String(body.action || "").startsWith("njia_")) {
+    if ((await hit("rl:njia:write", 3600)) > 60) return json({ error: "Too many Njia changes. Try again in an hour." }, 429);
+    const nj = await import("../lib/njia.js");
+    try {
+      if (body.action === "njia_lease") return json({ ok: true, lease: await nj.addLease(body.lease || {}) });
+      if (body.action === "njia_lease_void") return json({ ok: true, entry: await nj.voidLease({ id: String(body.id || ""), reason: body.reason || "" }) });
+      if (body.action === "njia_price") return json({ ok: true, price: await nj.addPrice(body.price || {}) });
+      if (body.action === "njia_settings") return json({ ok: true, settings: await nj.setSetting({ field: body.field, value: body.value === true, confirm: body.confirm || "", ip: clientIp(request) }) });
+      if (body.action === "njia_listing") return json({ ok: true, settings: await nj.setListing({ url: body.url || "", ip: clientIp(request) }) });
+    } catch (err) { return json({ error: err.message }, err.status || 400); }
+  }
   if (body.action === "contact_read") {
     const m = await getJSON(`contact:msg:${clean(body.id, 80)}`);
     if (!m) return json({ error: "No such message." }, 404);
@@ -588,6 +615,21 @@ export async function POST(request) {
       if (body.action === "trivia_stake_set") return json({ ok: true, stake: await sk.setStake(clean(body.id, 64), body.sats) });
       if (body.action === "trivia_stake_settle") return json({ ok: true, settled: await sk.settleStakes(clean(body.id, 64)) });
       return json({ ok: true, cancelled: await sk.cancelStakes(clean(body.id, 64)) });
+    } catch (err) { return json({ error: err.message }, err.status || 400); }
+  }
+  // Kazi board moderation: list every task (newest first, flagged ones carry
+  // their reasons), approve a waiting task onto the public board, or hide a
+  // task. Nothing goes public except through kazi_approve. Docs: docs/kisumu-app.md.
+  if (body.action === "kazi_list" || body.action === "kazi_approve" || body.action === "kazi_hide") {
+    const kz = await import("../lib/kazi.js");
+    try {
+      if (body.action === "kazi_list") {
+        const tasks = await kz.adminList();
+        for (const t of tasks.filter((t) => t.flags > 0)) t.reasons = await kz.flagReasons(t.id);
+        return json({ ok: true, tasks });
+      }
+      if (body.action === "kazi_approve") return json({ ok: true, ...(await kz.approveTask(body.id)) });
+      return json({ ok: true, ...(await kz.hideTask(body.id)) });
     } catch (err) { return json({ error: err.message }, err.status || 400); }
   }
   if (body.action === "mkt_idea_save" || body.action === "mkt_idea_delete") {
