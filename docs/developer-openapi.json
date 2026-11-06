@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Altradits Developer API",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "summary": "Power your app with Altradits infrastructure. Your customers pay straight to your own Lightning address or node. Altradits never holds their money.",
     "description": "Non-custodial Lightning infrastructure for developers. Register your own Lightning address, create invoices to it through this API, get settlement verification and webhooks. Customer payments go straight to your address. Altradits charges you 0.5% of settled volume, prepaid in sats to Stanley's node as a fee balance. The sandbox is free. Authentication: Authorization: Bearer <session or API key>. Every reply carries a requestId. Every error carries a stable code and a human sentence: { ok: false, requestId, code, error }.",
     "contact": { "name": "Altradits", "url": "https://altradits.com/developer" },
@@ -16,7 +16,8 @@
     { "name": "keys", "description": "API keys. Shown once, stored hashed, scoped." },
     { "name": "destinations", "description": "Your own Lightning addresses, with ownership proof." },
     { "name": "invoices", "description": "Invoices to your destinations, fetched from your address and checked. Needs an API key." },
-    { "name": "webhooks", "description": "Signed POSTs when an invoice settles. Needs a key with the webhooks scope, or a session." }
+    { "name": "webhooks", "description": "Signed POSTs when an invoice settles. Needs a key with the webhooks scope, or a session." },
+    { "name": "fees", "description": "The prepaid fee balance: top-ups in sats to Stanley's node, and the usage statement. Needs a session, or a key with invoices scope." }
   ],
   "paths": {
     "/health": {
@@ -288,6 +289,73 @@
           "404": { "description": "Unknown webhook.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
         }
       }
+    },
+    "/topups": {
+      "get": {
+        "tags": ["fees"],
+        "summary": "List top-ups",
+        "description": "Your top-ups, newest first. Cursor pagination like invoices.",
+        "operationId": "listTopups",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 200 } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "The page.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TopupList" } } } }
+        }
+      },
+      "post": {
+        "tags": ["fees"],
+        "summary": "Top up the fee balance",
+        "description": "Issues a Lightning invoice from Stanley's node for at least 100 sats. Pay it, then poll the top-up: when it settles, the balance is credited. Top-ups are your payment for the API service, never customer money. Frozen during a security lockdown (503 lockdown_freeze). Send Idempotency-Key to retry safely.",
+        "operationId": "createTopup",
+        "parameters": [{ "name": "Idempotency-Key", "in": "header", "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateTopup" } } } },
+        "responses": {
+          "201": { "description": "Issued.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Topup" } } } },
+          "200": { "description": "Replayed idempotent reply (deduplicated: true).", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Topup" } } } },
+          "503": { "description": "Lockdown freeze, or the node can't receive.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/topups/{id}": {
+      "get": {
+        "tags": ["fees"],
+        "summary": "Top-up status",
+        "description": "The top-up, with a live settlement check that credits the balance when the invoice is paid. Crediting stays on during a lockdown; only creating new top-ups is frozen.",
+        "operationId": "getTopup",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "The top-up.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TopupStatus" } } } },
+          "404": { "description": "Unknown top-up.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/balance": {
+      "get": {
+        "tags": ["fees"],
+        "summary": "Fee balance",
+        "description": "The prepaid balance in sats: live (real sats on Stanley's node) and test (free sandbox credit). New live invoices are refused with 402 insufficient_credits when the live balance can't cover their fee.",
+        "operationId": "getBalance",
+        "responses": {
+          "200": { "description": "The balance.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Balance" } } } }
+        }
+      }
+    },
+    "/statement": {
+      "get": {
+        "tags": ["fees"],
+        "summary": "Usage statement",
+        "description": "The balance, running totals, and the ledger: every top-up, fee, and sandbox grant, newest first. Fees are 0.5% of settled sats, rounded up, minimum 1 sat. Prepaid credits are non-refundable, except on account close: any unused live balance is paid out to a verified destination within 7 days. Cursor pagination like invoices.",
+        "operationId": "getStatement",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 200 } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "The statement.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Statement" } } } }
+        }
+      }
     }
   },
   "components": {
@@ -325,7 +393,15 @@
       "WebhookSecret": { "type": "object", "required": ["ok", "requestId", "webhook", "secret"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "webhook": { "$ref": "#/components/schemas/WebhookObject" }, "secret": { "type": "string", "description": "Signs every delivery. Shown once, never again." }, "note": { "type": "string" } } },
       "WebhookList": { "type": "object", "required": ["ok", "requestId", "webhooks"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "webhooks": { "type": "array", "items": { "$ref": "#/components/schemas/WebhookObject" } } } },
       "DeliveryObject": { "type": "object", "required": ["id", "webhookId", "invoiceId", "event", "createdAt", "attempts", "done", "dead", "nextAt"], "properties": { "id": { "type": "string" }, "webhookId": { "type": "string" }, "invoiceId": { "type": "string" }, "event": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" }, "attempts": { "type": "array", "items": { "type": "object", "properties": { "at": { "type": "string", "format": "date-time" }, "ok": { "type": "boolean" }, "code": { "type": "integer" } } } }, "done": { "type": "boolean" }, "dead": { "type": "boolean", "description": "True when every retry failed." }, "nextAt": { "type": ["string", "null"], "format": "date-time" } } },
-      "DeliveryList": { "type": "object", "required": ["ok", "requestId", "deliveries", "nextCursor"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "deliveries": { "type": "array", "items": { "$ref": "#/components/schemas/DeliveryObject" } }, "nextCursor": { "type": ["string", "null"] } } }
+      "DeliveryList": { "type": "object", "required": ["ok", "requestId", "deliveries", "nextCursor"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "deliveries": { "type": "array", "items": { "$ref": "#/components/schemas/DeliveryObject" } }, "nextCursor": { "type": ["string", "null"] } } },
+      "CreateTopup": { "type": "object", "required": ["sats"], "properties": { "sats": { "type": "integer", "minimum": 100, "maximum": 100000000, "description": "Whole sats, at least 100." } } },
+      "TopupObject": { "type": "object", "required": ["id", "sats", "bolt11", "paymentHash", "expiresAt", "status", "createdAt", "creditedAt"], "properties": { "id": { "type": "string" }, "sats": { "type": "integer" }, "bolt11": { "type": "string", "description": "Stanley's node invoice. Pay it to fund your fee balance." }, "paymentHash": { "type": "string" }, "expiresAt": { "type": "string", "format": "date-time" }, "status": { "enum": ["pending", "credited"] }, "createdAt": { "type": "string", "format": "date-time" }, "creditedAt": { "type": ["string", "null"], "format": "date-time" } } },
+      "Topup": { "type": "object", "required": ["ok", "requestId", "topup"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "topup": { "$ref": "#/components/schemas/TopupObject" }, "deduplicated": { "type": "boolean" } } },
+      "TopupStatus": { "type": "object", "required": ["ok", "requestId", "topup"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "topup": { "$ref": "#/components/schemas/TopupObject" }, "note": { "type": "string", "description": "Present when the invoice expired unpaid." } } },
+      "TopupList": { "type": "object", "required": ["ok", "requestId", "topups", "nextCursor"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "topups": { "type": "array", "items": { "$ref": "#/components/schemas/TopupObject" } }, "nextCursor": { "type": ["string", "null"] } } },
+      "Balance": { "type": "object", "required": ["ok", "requestId", "balance"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "balance": { "type": "object", "required": ["live", "test"], "properties": { "live": { "type": "integer", "description": "Prepaid sats on Stanley's node." }, "test": { "type": "integer", "description": "Free sandbox credit." } } } } },
+      "StatementEntry": { "type": "object", "required": ["id", "at", "env", "type", "sats", "balanceAfter", "invoiceId", "topupId", "shortfall", "memo"], "properties": { "id": { "type": "string" }, "at": { "type": "string", "format": "date-time" }, "env": { "enum": ["live", "test"] }, "type": { "enum": ["topup", "fee", "grant"] }, "sats": { "type": "integer", "description": "Signed: top-ups and grants credit, fees debit." }, "balanceAfter": { "type": "integer" }, "invoiceId": { "type": ["string", "null"] }, "topupId": { "type": ["string", "null"] }, "shortfall": { "type": "integer", "description": "Fee sats the balance couldn't cover (floored at zero)." }, "memo": { "type": ["string", "null"] } } },
+      "Statement": { "type": "object", "required": ["ok", "requestId", "balance", "totals", "entries", "nextCursor"], "properties": { "ok": { "const": true }, "requestId": { "type": "string" }, "balance": { "type": "object", "properties": { "live": { "type": "integer" }, "test": { "type": "integer" } } }, "totals": { "type": "object", "properties": { "toppedUp": { "type": "integer" }, "feesPaid": { "type": "integer" }, "settledVolume": { "type": "integer" }, "settledCount": { "type": "integer" } } }, "entries": { "type": "array", "items": { "$ref": "#/components/schemas/StatementEntry" } }, "nextCursor": { "type": ["string", "null"] } } }
     }
   }
 }

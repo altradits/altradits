@@ -108,6 +108,11 @@ const ctx = async (scopes = ["invoices:create", "invoices:read", "webhooks"]) =>
   await call("POST", "v1/accounts/request-code", { body: { email: mailbox } });
   const me = (await call("POST", "v1/accounts/verify-code", { body: { email: mailbox, code: lastCode() } })).json;
   const key = (await call("POST", "v1/keys", { token: me.session, body: { scopes } })).json.key;
+  // Live invoices need fee credit: fund the account through a top-up.
+  const top = (await call("POST", "v1/topups", { token: me.session, body: { sats: 50000 } })).json;
+  assert.equal(top.topup.status, "pending");
+  node.paidHashes.add((await store.getJSON(`dev:top:${top.topup.id}`)).paymentHash);
+  assert.equal((await call("GET", `v1/topups/${top.topup.id}`, { token: me.session })).json.topup.status, "credited");
   return { ...me, key };
 };
 const dest = async (c, user, sandbox = false) => {
