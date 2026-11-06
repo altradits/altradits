@@ -17,6 +17,8 @@ const SHELL = [
   "./sim/toychain.js",
   "./sim/lightning.js",
   "./content/chapters.js",
+  "./content/puzzles1.js",
+  "./content/views.js",
 ];
 self.addEventListener("install", (ev) => {
   ev.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
