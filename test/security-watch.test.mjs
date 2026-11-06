@@ -223,6 +223,18 @@ test("snapshots round-trip: first sighting sets the baseline, the next read proj
   assert.equal(missing[0].flapsDay, null, "no pubkey still renders");
 });
 
+test("frequent page loads keep the day-old baseline, so the rate still shows", async () => {
+  const t0 = Date.parse("2026-11-07T08:00:00.000Z");
+  await annotatePeerFlaps([{ pubkey: "03keep", flaps: 50 }], t0);
+  for (let h = 2; h <= 6; h++) await annotatePeerFlaps([{ pubkey: "03keep", flaps: 50 + h }], t0 + h * 3600e3);
+  const later = await annotatePeerFlaps([{ pubkey: "03keep", flaps: 62 }], t0 + 12 * 3600e3);
+  assert.equal(later[0].flapsDay, 24, "measured from the first baseline, not the last page load");
+  const soon = await annotatePeerFlaps([{ pubkey: "03fresh", flaps: 10 }], t0);
+  const blip = await annotatePeerFlaps([{ pubkey: "03fresh", flaps: 11 }], t0 + 10 * 60e3);
+  assert.equal(blip[0].flapsDay, null, "one drop in ten minutes is not projected to a day");
+  assert.equal(soon[0].flapsDay, null);
+});
+
 test("new UI hooks exist in page and script", () => {
   for (const id of ["secGroups", "secFilters", "secCount", "chainLow", "chAddrPaste"]) {
     assert.ok(page.includes(`id="${id}"`), `admin.html has #${id}`);
