@@ -89,13 +89,14 @@ async function keyOrSession(request, where) {
   return { account: await sessionAccount(request), sandbox: undefined };
 }
 
-// Fee-balance routes take a session or a key with the given scope.
+// Fee-balance and invoice-read routes take a session or a key with the given
+// scope. Sessions see both environments, flagged; keys see only their own.
 async function keyOrSessionScope(request, scope, where) {
   if (authOf(request).startsWith("ak_")) {
     const auth = await keyAuth(request, scope, where);
-    return auth.account;
+    return { account: auth.account, sandbox: auth.sandbox, key: auth.key };
   }
-  return sessionAccount(request);
+  return { account: await sessionAccount(request), sandbox: undefined, key: null };
 }
 
 export async function GET(request) {
@@ -126,7 +127,7 @@ export async function GET(request) {
       return reply({ ok: true, destinations: await listDestinations(a.id) });
     }
     if (p === "invoices") {
-      const auth = await keyAuth(request, "invoices:read", "Developer API invoices");
+      const auth = await keyOrSessionScope(request, "invoices:read", "Developer API invoices");
       if ((await hit(`rl:dev:invli:${ipKey(request)}`, 600)) > 300) return reply({ ok: false, code: "rate_limited", error: "Too many requests. Try again later." }, 429);
       const { listInvoices } = await import("../lib/devapi.js");
       const q = new URL(request.url).searchParams;
@@ -134,13 +135,13 @@ export async function GET(request) {
     }
     const inv = p.match(/^invoices\/([A-Za-z0-9_-]{1,80})$/);
     if (inv) {
-      const auth = await keyAuth(request, "invoices:read", "Developer API invoice");
+      const auth = await keyOrSessionScope(request, "invoices:read", "Developer API invoice");
       const { getInvoice } = await import("../lib/devapi.js");
       return reply({ ok: true, ...(await getInvoice(auth, inv[1])) });
     }
     const vfy = p.match(/^verify\/([0-9a-fA-F]{1,80})$/);
     if (vfy) {
-      const auth = await keyAuth(request, "invoices:read", "Developer API verify");
+      const auth = await keyOrSessionScope(request, "invoices:read", "Developer API verify");
       const { verifyByHash } = await import("../lib/devapi.js");
       return reply({ ok: true, ...(await verifyByHash(auth, vfy[1])) });
     }
@@ -157,24 +158,24 @@ export async function GET(request) {
       return reply({ ok: true, ...(await listDeliveries(account.id, del[1], { limit: q.get("limit"), cursor: q.get("cursor") })) });
     }
     if (p === "topups") {
-      const account = await keyOrSessionScope(request, "invoices:read", "Developer API top-ups");
+      const { account } = await keyOrSessionScope(request, "invoices:read", "Developer API top-ups");
       const { listTopups } = await import("../lib/devapi.js");
       const q = new URL(request.url).searchParams;
       return reply({ ok: true, ...(await listTopups(account.id, { limit: q.get("limit"), cursor: q.get("cursor") })) });
     }
     const top = p.match(/^topups\/([A-Za-z0-9_-]{1,80})$/);
     if (top) {
-      const account = await keyOrSessionScope(request, "invoices:read", "Developer API top-ups");
+      const { account } = await keyOrSessionScope(request, "invoices:read", "Developer API top-ups");
       const { getTopup } = await import("../lib/devapi.js");
       return reply({ ok: true, ...(await getTopup(account.id, top[1])) });
     }
     if (p === "balance") {
-      const account = await keyOrSessionScope(request, "invoices:read", "Developer API balance");
+      const { account } = await keyOrSessionScope(request, "invoices:read", "Developer API balance");
       const { getBalance } = await import("../lib/devapi.js");
       return reply({ ok: true, balance: await getBalance(account.id) });
     }
     if (p === "statement") {
-      const account = await keyOrSessionScope(request, "invoices:read", "Developer API statement");
+      const { account } = await keyOrSessionScope(request, "invoices:read", "Developer API statement");
       const { getStatement } = await import("../lib/devapi.js");
       const q = new URL(request.url).searchParams;
       return reply({ ok: true, ...(await getStatement(account.id, { limit: q.get("limit"), cursor: q.get("cursor") })) });
@@ -271,7 +272,7 @@ export async function POST(request) {
       return reply({ ok: true, webhook: r.webhook });
     }
     if (p === "topups") {
-      const account = await keyOrSessionScope(request, "invoices:create", "Developer API top-ups");
+      const { account } = await keyOrSessionScope(request, "invoices:create", "Developer API top-ups");
       if ((await hit(`rl:dev:topi:${ipKey(request)}`, 3600)) > 100) return reply({ ok: false, code: "rate_limited", error: "Too many top-ups. Try again later." }, 429);
       const body = await readBody(request);
       const r = await dev.createTopup(account.id, { sats: body.sats, idempotencyKey: request.headers.get("idempotency-key") });

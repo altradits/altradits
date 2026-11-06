@@ -395,6 +395,22 @@ test("keys, scopes and environments stay separated", async () => {
   assert.ok((await securityView(500)).events.some((e) => e.kind === "dev_key_guess"), "key guessing lands in the Security watch");
 });
 
+test("dashboard sessions read invoices in both environments but create nothing", async () => {
+  const c = await ctx();
+  const live = (await call("POST", "v1/keys", { token: c.session, body: {} })).json.key;
+  const sb = (await call("POST", "v1/keys", { token: c.session, body: { sandbox: true } })).json.key;
+  const dLive = await dest(c, "sesslive");
+  const dSb = await sim(c);
+  const a = await call("POST", "v1/invoices", { token: live, body: { destinationId: dLive.id, sats: 11 } });
+  const b = await call("POST", "v1/invoices", { token: sb, body: { destinationId: dSb.id, sats: 12 } });
+  const list = await call("GET", "v1/invoices", { token: c.session });
+  assert.equal(list.json.invoices.length, 2, "a session sees both environments, flagged");
+  assert.deepEqual(list.json.invoices.map((i) => i.sandbox).sort(), [false, true]);
+  assert.equal((await call("GET", `v1/invoices/${a.json.invoice.id}`, { token: c.session })).json.invoice.id, a.json.invoice.id);
+  assert.equal((await call("GET", `v1/verify/${b.json.invoice.paymentHash}`, { token: c.session })).json.invoice.id, b.json.invoice.id);
+  assert.equal((await call("POST", "v1/invoices", { token: c.session, body: { destinationId: dLive.id, sats: 5 } })).status, 401);
+});
+
 test("invoice rate limits hold per key", async () => {
   const c = await ctx();
   const d = await dest(c, "flood");

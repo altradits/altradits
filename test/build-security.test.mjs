@@ -517,3 +517,16 @@ test("admin bodies over 100 KB need the token up front: strangers hit 413, the t
   }
   assert.equal(adminAuthed("Bearer x"), false, "no token configured: nobody is authed");
 });
+
+test("Developer pages are wired like the others: nav, routes, policy, no secrets in the open", () => {
+  for (const f of ["developer.html", "developer-reference.html", "developer-dashboard.html"]) {
+    assert.ok(read(f).includes('<a href="/developer" aria-current="page">Developer</a>'), `${f}: marks Developer current`);
+    assert.match(read(f), /<meta http-equiv="Content-Security-Policy" content="[^"]+">/, `${f}: carries its policy tag`);
+    assert.doesNotMatch(read(f), /ak_(live|test)_[A-Za-z0-9_-]{32}/, `${f}: no real API key in the open (keys carry 32 secret characters)`);
+  }
+  const srv = read("server.mjs");
+  assert.match(srv, /developer\\.html\|developer-reference\\.html\|developer-dashboard\\.html/, "server.mjs PUBLIC serves the Developer files");
+  assert.match(srv, /api\[1\] !== "dev"/, "server.mjs: the Developer API takes a sub-path");
+  assert.match(srv, /pumpWebhooks/, "server.mjs: health pings pump Developer webhook retries");
+  assert.match(read(".htaccess"), /developer\/\(reference\|dashboard\)/, ".htaccess: the reference and dashboard resolve on the Apache stack");
+});

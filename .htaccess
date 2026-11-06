@@ -31,6 +31,9 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
   RewriteRule ^ktown/?$ ktown/index.html [L]
   RewriteRule ^ktown/terms/?$ ktown/terms.html [L]
   RewriteRule ^k/([A-Za-z0-9_-]+)/?$ ktown/pay.html [L]
+  # Developer: the page at /developer, the reference and the dashboard below it.
+  RewriteRule ^developer/?$ developer.html [L]
+  RewriteRule ^developer/(reference|dashboard)/?$ developer-$1.html [L]
 </IfModule>
 
 # Pages are checked on every visit, so an update shows at once (an unchanged
