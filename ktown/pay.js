@@ -8,6 +8,7 @@ const STR = {
   en: {
     loading: "Loading…", amount: "Amount", pay: "Pay",
     honest: "kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.",
+    poweredBy: "Powered by Tando (1% fee)", helpIs: "Help",
     between: "Between", and: "and", receive: "Merchant receives",
     feeIncl: "Tando's 1% included", scanWith: "Scan with your wallet",
     copy: "Copy", copied: "Copied.", openWallet: "Open in wallet",
@@ -22,6 +23,7 @@ const STR = {
   sw: {
     loading: "Inapakia…", amount: "Kiasi", pay: "Lipa",
     honest: "kTown haishiki pesa. Tando hubadilisha sats kuwa M-Pesa kwa asilimia 1.",
+    poweredBy: "Inaendeshwa na Tando (ada 1%)", helpIs: "Msaada",
     between: "Kati ya", and: "na", receive: "Muuzaji atapokea",
     feeIncl: "Ada ya Tando asilimia 1 imejumuishwa", scanWith: "Skani na pochi yako",
     copy: "Nakili", copied: "Imenakiliwa.", openWallet: "Fungua kwenye pochi",
@@ -180,6 +182,15 @@ async function boot() {
   };
   $("lang-en").addEventListener("click", () => { lang = "en"; localStorage.setItem("kt.paylang", lang); applyLang(); });
   $("lang-sw").addEventListener("click", () => { lang = "sw"; localStorage.setItem("kt.paylang", lang); applyLang(); });
+
+  // Static pages carry no outside addresses; the credit link is set here.
+  document.querySelectorAll(".powered a").forEach((a) => { a.href = "https://bitcoin.co.ke/"; });
+  get("help").then((d) => {
+    if (d && typeof d.help === "string" && d.help) {
+      $("help-pay-contact").textContent = d.help;
+      $("help-pay").hidden = false;
+    }
+  }).catch(() => { /* no help contact set, or offline: nothing shows */ });
 
   if (!id) {
     fatal(t("unknownQr"));

@@ -10,6 +10,8 @@ const STR = {
     honest: "kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.",
     register: "Register", phone: "M-Pesa number", shop: "Shop name",
     mpesaName: "M-Pesa name, exactly as M-Pesa shows it", pin: "6-digit PIN",
+    agree1: "I agree to the", agree2: "terms", agreeFirst: "Tick 'I agree' to the terms first.",
+    poweredBy: "Powered by Tando (1% fee)", helpIs: "Help",
     registerBtn: "Register this number", havePin: "Already registered? Log in",
     login: "Log in", loginBtn: "Log in", names: "Names", save: "Save",
     prefs: "Display", currency: "Currency", language: "Language",
@@ -29,6 +31,8 @@ const STR = {
     honest: "kTown haishiki pesa. Tando hubadilisha sats kuwa M-Pesa kwa asilimia 1.",
     register: "Jisajili", phone: "Nambari ya M-Pesa", shop: "Jina la duka",
     mpesaName: "Jina la M-Pesa, kama M-Pesa inavyoonyesha", pin: "PIN ya tarakimu 6",
+    agree1: "Nakubali", agree2: "masharti", agreeFirst: "Weka tiki 'Nakubali' masharti kwanza.",
+    poweredBy: "Inaendeshwa na Tando (ada 1%)", helpIs: "Msaada",
     registerBtn: "Sajili nambari hii", havePin: "Umeshajisajili? Ingia",
     login: "Ingia", loginBtn: "Ingia", names: "Majina", save: "Hifadhi",
     prefs: "Muonekano", currency: "Sarafu", language: "Lugha",
@@ -249,10 +253,14 @@ async function boot() {
   $("f-register").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     hideErr("reg-err");
+    if (!$("r-agree").checked) {
+      showErr("reg-err", { message: t("agreeFirst") });
+      return;
+    }
     setBusy($("btn-register"), true);
     try {
       const d = await api("register", { method: "POST", body: {
-        phone: $("r-phone").value, shop: $("r-shop").value, mpesaName: $("r-mpesa").value, pin: $("r-pin").value,
+        phone: $("r-phone").value, shop: $("r-shop").value, mpesaName: $("r-mpesa").value, pin: $("r-pin").value, agree: true,
       } });
       localStorage.setItem("kt.session", d.session);
       setMerchant(d.merchant);
@@ -328,6 +336,9 @@ async function boot() {
   window.addEventListener("online", () => refresh());
   window.addEventListener("offline", () => { $("offline-note").hidden = false; });
 
+  // Static pages carry no outside addresses; the credit link is set here.
+  document.querySelectorAll(".powered a").forEach((a) => { a.href = "https://bitcoin.co.ke/"; });
+  loadHelp();
   applyLang();
   if (!localStorage.getItem("kt.session")) {
     showScreen("settings");
@@ -368,6 +379,28 @@ async function refresh() {
   }
 }
 
+// The pilot help contact (KTOWN_HELP), as plain text, cached for offline
+// days. Nothing shows when Stanley has not set one.
+async function loadHelp() {
+  try {
+    const d = await api("help");
+    const contact = d && typeof d.help === "string" && d.help ? d.help : null;
+    if (contact) {
+      localStorage.setItem("kt.help", contact);
+      showHelp(contact);
+    } else {
+      localStorage.removeItem("kt.help"); // Stanley removed it: forget it everywhere
+    }
+  } catch {
+    showHelp(localStorage.getItem("kt.help")); // offline: the last known contact, if any
+  }
+}
+function showHelp(contact) {
+  if (!contact) return;
+  $("help-app-contact").textContent = contact;
+  $("help-app").hidden = false;
+}
+
 async function signOut() {
   localStorage.removeItem("kt.session");
   lang = localStorage.getItem("kt.lang") || "en";
@@ -398,7 +431,10 @@ function buildSheet() {
     const line = document.createElement("p");
     line.className = "print-line";
     line.textContent = "Pay with Bitcoin Lightning ⚡";
-    card.append(shop, mp, box, line);
+    const foot = document.createElement("p");
+    foot.className = "print-foot";
+    foot.textContent = "Powered by Tando (1% fee)";
+    card.append(shop, mp, box, line, foot);
     sheet.append(card);
   }
   sheet.hidden = false;

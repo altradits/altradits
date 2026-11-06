@@ -87,6 +87,19 @@ input::placeholder{color:var(--muted);opacity:.8}
   color:var(--muted);min-width:2.75rem;min-height:2.75rem;padding:.4rem}
 .lang button[aria-pressed="true"]{color:var(--navy);text-decoration:underline}
 .foot{margin:2rem 0 0;color:var(--muted);font-size:.88rem;text-align:center}
+.powered{margin:.5rem 0 0;color:var(--muted);font-size:.82rem;text-align:center}
+.powered a{color:var(--muted)}
+.help-line{margin:1.4rem 0 0;color:var(--muted);font-size:.92rem;text-align:center}
+.agree{display:flex;gap:.6rem;align-items:flex-start;font-weight:400;margin-top:1.1rem}
+.agree input{width:1.4rem;min-height:1.4rem;flex:none;margin-top:.25rem;accent-color:var(--navy)}
+.agree label{display:inline;font-weight:400;margin:0}
+.terms ol{padding-left:1.4rem}
+.terms li{margin:.55rem 0}
+.terms h2{margin-top:1.6rem;font-size:1.25rem}
+.terms section h1{margin-top:2rem}
+.back{color:var(--navy);font-weight:700}
+.draft{margin-top:2rem;color:var(--muted);font-size:.88rem}
+.print-foot{display:none}
 [hidden]{display:none!important}
 /* Print: an A6 counter card, or an A4 sheet of four (A6 is a quarter of A4).
 Named pages give capable browsers the exact size; the rest print the same
@@ -96,7 +109,7 @@ content on the default paper. Pure black on white throughout. */
 @media print{
   body{background:#fff}
   .wrap{max-width:none;padding:0}
-  .tabs,.btn,.lang,.foot,.secure-note,.offline-note,.no-print,.mark,.err{display:none!important}
+  .tabs,.btn,.lang,.foot,.powered,.help-line,.secure-note,.offline-note,.no-print,.mark,.err{display:none!important}
   #screen-qr{page:card}
   #screen-settings{display:none!important}
   .qr-card{border:0;margin:0 auto;max-width:88mm;padding:0}
@@ -104,6 +117,7 @@ content on the default paper. Pure black on white throughout. */
   .mpesa-name{font-size:15pt;color:#000}
   .print-line{font-size:11pt;color:#000}
   .print-line b{color:#000}
+  .print-foot{display:block;text-align:center;font-size:9pt;color:#000;margin:.35rem 0 0}
   body[data-print="a4"] #screen-qr{display:none!important}
   body[data-print="a4"] #print-sheet{display:grid!important;grid-template-columns:1fr 1fr;gap:6mm;page:sheet}
   .sheet-card{border:1pt dashed #666;padding:4mm;text-align:center;break-inside:avoid}
@@ -111,4 +125,5 @@ content on the default paper. Pure black on white throughout. */
   .sheet-card .mpesa-name{font-size:12pt}
   .sheet-card .qr-card{max-width:68mm}
   .sheet-card .print-line{font-size:9pt}
+  .sheet-card .print-foot{font-size:8pt}
 }

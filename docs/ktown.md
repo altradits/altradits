@@ -17,7 +17,7 @@ Docs: https://bitcoin.co.ke/send-money-to-kenya/docs/developer-api.html
 
 - `lib/ktown.js`: merchants, sessions, the Tando calls, LNURL answers, history. `api/ktown.js`: the routes. Store keys are listed at the top of lib/ktown.js. Switched on with `KTOWN=on`.
 - Registration proves the number works by reading its Tando LNURL. Receiving starts at once: money can only flow to the registered M-Pesa number, so an early QR risks nothing.
-- Identity is a 6-digit PIN (patterns refused, 5 wrong tries lock logins for 15 minutes) plus a year-long session per shop phone. Whoever holds the session may change that merchant's settings; a merchant can only ever change their own. A signed-in phone sets a new PIN without the old one. A lost phone with a forgotten PIN needs Stanley to delete the `kt:phone:<number>` and `kt:<id>` keys by hand, then the merchant signs up again, unless the registration is still unclaimed, stale and unpaid, in which case signing up again takes it over by itself. kTown holds no money, so nothing is at risk meanwhile.
+- Identity is a 6-digit PIN (patterns refused, 5 wrong tries lock logins for 15 minutes) plus a year-long session per shop phone. Whoever holds the session may change that merchant's settings; a merchant can only ever change their own. A signed-in phone sets a new PIN without the old one. A lost phone with a forgotten PIN needs Stanley to release the record (`ktown_release`, below), then the merchant signs up again, unless the registration is still unclaimed, stale and unpaid, in which case signing up again takes it over by itself. kTown holds no money, so nothing is at risk meanwhile.
 - LNURL: `GET /.well-known/lnurlp/k-<id>` (and `/api/ktown/lnurlp/<id>`) answers payRequest with the shop name and M-Pesa name, Tando's msat limits and the KES currency terms. The callback asks Tando for an invoice for exactly that amount and returns it unchanged.
 - Amount checks: in KES mode Tando's `converted` must equal the asked shillings and the invoice sats must sit inside a narrow band (the 1% plus drift and rounding); in msat mode the invoice must match the millisats exactly. Anything else is refused and recorded in the Security watch.
 - History records only the merchant's own facts: amount, shillings expected and received, payment hash, M-Pesa code, time. Nothing about who paid is asked for, read or stored. One record per payment hash; a repeat confirmation changes nothing. Payment records are never pruned.
@@ -32,7 +32,7 @@ Anyone can type any M-Pesa number at sign-up, so a squatter could register someo
 - A registration that is still unclaimed after 48 hours, with no paid receipt, can be taken over by signing up again for the same number. The old record goes (its sessions and its QR end with it); its payment entries stay in the store, kept, never deleted.
 - Anything showing liveness holds the number: a claim, or money that landed. A working till whose name never matched (a typo, a different spelling) is not disturbed by a takeover.
 
-Why this shape: the true owner can always win. They know their own registered name and can complete a first payment (15 KES from any Lightning wallet, even their own), while a squatter would have to pay the victim and guess the victim's exact registered name to claim. The residual risk is a squatter who pays to hold a number plus its defaced shop name; the money still lands with the victim, and Stanley can delete the `kt:phone:<number>` and `kt:<id>` keys by hand for persistent abuse. Two people alternating takeovers every 48 hours ends the same way: whoever completes a matched payment first holds the number for good.
+Why this shape: the true owner can always win. They know their own registered name and can complete a first payment (15 KES from any Lightning wallet, even their own), while a squatter would have to pay the victim and guess the victim's exact registered name to claim. The residual risk is a squatter who pays to hold a number plus its defaced shop name; the money still lands with the victim, and Stanley can release the record (`ktown_release`, below) for persistent abuse. Two people alternating takeovers every 48 hours ends the same way: whoever completes a matched payment first holds the number for good.
 - Limits: registration and login per network, per number and site-wide; LNURL and receipts per network and per merchant.
 
 ## The app (PR 2)
@@ -78,11 +78,45 @@ frame check, Security watch reporter) applies unchanged.
   `ktown/icons/` (192 and 512, plus the SVG they were drawn from).
 
 Serving mirrors Ye₿ente on both stacks (server.mjs and .htaccess). Where
-nginx sends pages straight from disk, /ktown and /k/<id> need the same
-treatment Ye₿ente's app already has: /ktown serves ktown/index.html and
-/k/<id> serves ktown/pay.html with its query string kept.
+nginx sends pages straight from disk, /ktown, /ktown/terms and /k/<id>
+need the same treatment Ye₿ente's app already has: /ktown serves
+ktown/index.html, /ktown/terms serves ktown/terms.html, and /k/<id>
+serves ktown/pay.html with its query string kept.
+
+## Pre-launch (Kisumu pilot)
+
+Before KTOWN=on for the 10-shop pilot, these guard the first strangers:
+
+- Merchant terms and privacy notice at /ktown/terms, short and plain in
+  English and Kiswahili: kTown never holds money and is not a wallet;
+  Tando converts sats to M-Pesa for its 1% fee; payments, refunds and
+  failed payments are between the payer, Tando and M-Pesa; what kTown
+  stores and why; how to ask for deletion; pilot status (free, may
+  stop). Draft for legal review until Stanley's lawyer signs off.
+  Registration ticks "I agree"; the terms version
+  (KTOWN_TERMS_VERSION in lib/ktown.js) and the time are stored on the
+  merchant record.
+- "Powered by Tando (1% fee)" links to https://bitcoin.co.ke on /ktown
+  and on every pay page (the address is set in the page script, so
+  static pages carry no outside addresses), with a small footer on the
+  printed card and sheet.
+- KTOWN_HELP: the pilot help contact (a phone number or email Stanley
+  sets in env), answered by GET /api/ktown/help and shown as plain
+  text on the app and the pay page. Hidden when unset. No form.
+- Squatter blocklist: POST /api/admin { action: "ktown_block" |
+  "ktown_unblock", phone } keeps a number from registering
+  (kt:blocked:<phone>, checked in register); { action: "ktown_release",
+  phone } deletes a merchant record so its number can sign up again
+  (its sessions and QR end; its payment entries stay, kept). Every
+  takeover, block, unblock and release is logged in the Security watch
+  (technique ktown_number) with the number, so Stanley can act from
+  the log.
+- Pilot cap: KTOWN_MAX_MERCHANTS (default 10). Past it, registration
+  answers "kTown is full for now." A takeover replaces its record, so
+  a full pilot still lets it through. Health answers { ok, on, full }
+  only: never the count.
 
 ## Still open
 
-- Lost-phone recovery without Stanley (today: he deletes two keys by hand).
+- Lost-phone recovery without Stanley (today: he releases the record and the merchant signs up again).
 - If the live server ever sets proxy variables, Node sends `https.request` through the proxy and `lib/netsafe.js` can no longer pin DNS. Keep proxy variables off the live server, or teach the guard to refuse proxied requests.

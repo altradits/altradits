@@ -3,10 +3,11 @@
 // calls always go to the network, and the app falls back to its saved account
 // and history. Scope is /ktown, so the pay pages are untouched.
 // Bump CACHE when any cached file changes.
-const CACHE = "ktown-v1";
+const CACHE = "ktown-v2";
 const SHELL = [
   "/ktown",
   "/ktown/index.html",
+  "/ktown/terms.html",
   "/ktown/style.css",
   "/ktown/app.js",
   "/ktown/qrcode-generator-1.4.4.js",

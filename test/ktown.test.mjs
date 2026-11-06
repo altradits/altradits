@@ -11,11 +11,13 @@ import path from "node:path";
 import crypto from "node:crypto";
 
 process.chdir(fs.mkdtempSync(path.join(os.tmpdir(), "altradits-ktown-")));
-for (const k of ["UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "DATA_DIR", "JOBS_ALLOW_LOCAL", "PASSENGER_APP_ENV", "NODE_ENV", "KTOWN"]) delete process.env[k];
-Object.assign(process.env, { KTOWN: "on", SITE_URL: "https://altradits.test" });
+for (const k of ["UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "DATA_DIR", "JOBS_ALLOW_LOCAL", "PASSENGER_APP_ENV", "NODE_ENV", "KTOWN", "KTOWN_MAX_MERCHANTS", "KTOWN_HELP", "ADMIN_TOKEN"]) delete process.env[k];
+// Room for every sign-up below; the cap test pins the pilot size itself.
+Object.assign(process.env, { KTOWN: "on", SITE_URL: "https://altradits.test", KTOWN_MAX_MERCHANTS: "1000", ADMIN_TOKEN: "ktown-test-admin-token" });
 
 const kt = await import("../lib/ktown.js");
 const api = await import("../api/ktown.js");
+const adminApi = await import("../api/admin.js");
 const store = await import("../lib/store.js");
 
 // --- a BOLT11-shaped invoice with an exact amount and payment hash (signature unchecked)
@@ -96,15 +98,16 @@ const get = async (p, opts) => { const r = await call("GET", p, null, opts); ret
 const post = async (p, body, opts) => { const r = await call("POST", p, body, opts); return { status: r.status, body: await r.json() }; };
 
 test("health names the switch; everything refuses while KTOWN is off", async () => {
-  assert.deepEqual((await get("health")).body, { ok: true, on: true });
+  assert.deepEqual((await get("health")).body, { ok: true, on: true, full: false });
   delete process.env.KTOWN;
   try {
-    assert.deepEqual((await get("health")).body, { ok: true, on: false });
-    assert.equal((await post("register", { phone: "0712345678", shop: "S", mpesaName: "M", pin: "715293" })).status, 501);
+    assert.deepEqual((await get("health")).body, { ok: true, on: false, full: false });
+    assert.equal((await post("register", { agree: true, phone: "0712345678", shop: "S", mpesaName: "M", pin: "715293" })).status, 501);
     assert.equal((await post("login", { phone: "0712345678", pin: "715293" })).status, 501);
     assert.equal((await get("me", { token: "x".repeat(32) })).status, 501);
     assert.equal((await get("rates")).status, 501);
     assert.equal((await get("receipt/" + "ab".repeat(32))).status, 501);
+    assert.equal((await get("help")).body.success, true, "the help contact answers even while off");
     const ln = await get("lnurlp/aaaaaaaaaaaa");
     assert.equal(ln.body.status, "ERROR");
     assert.match(ln.body.reason, /isn't open yet/);
@@ -123,19 +126,19 @@ test("phone numbers: local, plus and full forms become 254 plus 9 Safaricom digi
 
 let ada, adaId;
 test("register: activation proves the number's Tando address works; then login, me, settings", async () => {
-  const bad = await post("register", { phone: "0712345678", shop: "", mpesaName: "JANE W MWANGI", pin: "715293" });
+  const bad = await post("register", { agree: true, phone: "0712345678", shop: "", mpesaName: "JANE W MWANGI", pin: "715293" });
   assert.equal(bad.status, 400);
   for (const pin of ["123456", "111111", "121212", "123", "abcdef"])
-    assert.equal((await post("register", { phone: "0712345679", shop: "S", mpesaName: "M", pin })).status, 400, pin);
+    assert.equal((await post("register", { agree: true, phone: "0712345679", shop: "S", mpesaName: "M", pin })).status, 400, pin);
   tando.mode = "no_kes"; // a number that answers without KES terms (claimed for a BTC wallet)
   try {
-    const r = await post("register", { phone: "0712345678", shop: "Ada Shop", mpesaName: "JANE W MWANGI", pin: "715293" });
+    const r = await post("register", { agree: true, phone: "0712345678", shop: "Ada Shop", mpesaName: "JANE W MWANGI", pin: "715293" });
     assert.equal(r.status, 502, JSON.stringify(r.body));
     assert.match(r.body.error, /M-Pesa delivery/);
   } finally {
     tando.mode = "ok"; kt.clearQuoteCache();
   }
-  const r = await post("register", { phone: "0712345678", shop: "Ada Shop", mpesaName: "JANE W MWANGI", pin: "715293" });
+  const r = await post("register", { agree: true, phone: "0712345678", shop: "Ada Shop", mpesaName: "JANE W MWANGI", pin: "715293" });
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.equal(r.body.success, true);
   assert.equal(r.body.merchant.shop, "Ada Shop");
@@ -148,7 +151,7 @@ test("register: activation proves the number's Tando address works; then login, 
   ada = r.body;
   adaId = ada.merchant.id;
   // The number is taken now; the secret parts are stored hashed.
-  assert.equal((await post("register", { phone: "254712345678", shop: "Other", mpesaName: "X", pin: "482916" })).status, 409);
+  assert.equal((await post("register", { agree: true, phone: "254712345678", shop: "Other", mpesaName: "X", pin: "482916" })).status, 409);
   const raw = fs.readFileSync(path.join(".data", "db.json"), "utf8");
   assert.doesNotMatch(raw, /715293/);
   assert.doesNotMatch(raw, new RegExp(ada.session));
@@ -176,7 +179,7 @@ test("register: activation proves the number's Tando address works; then login, 
 });
 
 test("five wrong PINs lock logins for 15 minutes", async () => {
-  const r = await post("register", { phone: "0722000001", shop: "Lock Shop", mpesaName: "LOCK TEST", pin: "604391" });
+  const r = await post("register", { agree: true, phone: "0722000001", shop: "Lock Shop", mpesaName: "LOCK TEST", pin: "604391" });
   assert.equal(r.status, 200, JSON.stringify(r.body));
   for (let i = 0; i < 4; i++)
     assert.equal((await post("login", { phone: "0722000001", pin: "000000" }, { ip: "8.8.8.8" })).status, 403, `try ${i}`);
@@ -187,7 +190,7 @@ test("five wrong PINs lock logins for 15 minutes", async () => {
 });
 
 test("a merchant can only read and change their own settings and history", async () => {
-  const b = await post("register", { phone: "0733000002", shop: "B Shop", mpesaName: "B NAME", pin: "284731" });
+  const b = await post("register", { agree: true, phone: "0733000002", shop: "B Shop", mpesaName: "B NAME", pin: "284731" });
   assert.equal(b.status, 200, JSON.stringify(b.body));
   const changed = await post("settings", { shop: "B Shop New" }, { token: b.body.session });
   assert.equal(changed.body.merchant.shop, "B Shop New");
@@ -318,7 +321,7 @@ test("receipt: a completed payment lands in history and verifies the typed M-Pes
 });
 
 test("receipt: a name that does not match stays unverified, and a failed payout shows as failed", async () => {
-  const c = await post("register", { phone: "0744000003", shop: "C Shop", mpesaName: "WRONG NAME", pin: "390517" });
+  const c = await post("register", { agree: true, phone: "0744000003", shop: "C Shop", mpesaName: "WRONG NAME", pin: "390517" });
   assert.equal(c.status, 200, JSON.stringify(c.body));
   const inv = await get(`lnurlp/${c.body.merchant.id}/cb?amount=50&currency=KES`);
   const hash = inv.body.successAction.url.split("/").pop();
@@ -438,8 +441,8 @@ test("a repeated invoice reuses its first record; history carries the payment ha
 
 test("two sign-ups racing for one number: one wins, the other hears it is taken", async () => {
   const [a, b] = await Promise.all([
-    post("register", { phone: "0766000011", shop: "Race A", mpesaName: "RACE", pin: "715293" }, { ip: "7.7.7.1" }),
-    post("register", { phone: "0766000011", shop: "Race B", mpesaName: "RACE", pin: "715293" }, { ip: "7.7.7.2" }),
+    post("register", { agree: true, phone: "0766000011", shop: "Race A", mpesaName: "RACE", pin: "715293" }, { ip: "7.7.7.1" }),
+    post("register", { agree: true, phone: "0766000011", shop: "Race B", mpesaName: "RACE", pin: "715293" }, { ip: "7.7.7.2" }),
   ]);
   assert.deepEqual([a.status, b.status].sort(), [200, 409]);
   const winner = a.status === 200 ? a.body : b.body;
@@ -448,7 +451,7 @@ test("two sign-ups racing for one number: one wins, the other hears it is taken"
 
 test("takeover: a stale unclaimed number with no paid receipt goes to the new sign-up", async () => {
   // A squatter registers someone else's number.
-  const sq = await post("register", { phone: "0777000077", shop: "Squat Shop", mpesaName: "SQUATTER", pin: "715293" });
+  const sq = await post("register", { agree: true, phone: "0777000077", shop: "Squat Shop", mpesaName: "SQUATTER", pin: "715293" });
   assert.equal(sq.status, 200, JSON.stringify(sq.body));
   const squat = sq.body;
   assert.equal(squat.merchant.claimed, false);
@@ -456,12 +459,12 @@ test("takeover: a stale unclaimed number with no paid receipt goes to the new si
   const sqInv = await get(`lnurlp/${squat.merchant.id}/cb?amount=90&currency=KES`);
   const sqHash = sqInv.body.successAction.url.split("/").pop();
   // A fresh registration holds: the owner hears it is taken.
-  assert.equal((await post("register", { phone: "0777000077", shop: "Real Duka", mpesaName: "REAL OWNER", pin: "482916" })).status, 409);
+  assert.equal((await post("register", { agree: true, phone: "0777000077", shop: "Real Duka", mpesaName: "REAL OWNER", pin: "482916" })).status, 409);
   // 48 hours pass with no paid receipt. The owner signs up again and takes it over.
   const rec = await store.getJSON(`kt:${squat.merchant.id}`);
   rec.createdAt = new Date(Date.now() - 3 * 864e5).toISOString();
   await store.setJSON(`kt:${squat.merchant.id}`, rec);
-  const own = await post("register", { phone: "0777000077", shop: "Real Duka", mpesaName: "REAL OWNER", pin: "482916" });
+  const own = await post("register", { agree: true, phone: "0777000077", shop: "Real Duka", mpesaName: "REAL OWNER", pin: "482916" });
   assert.equal(own.status, 200, JSON.stringify(own.body));
   assert.notEqual(own.body.merchant.id, squat.merchant.id);
   assert.equal((await get("me", { token: squat.session })).status, 401, "the old sessions ended");
@@ -483,7 +486,7 @@ test("takeover: a stale unclaimed number with no paid receipt goes to the new si
 
 test("takeover: a claimed number, or one with a paid receipt, cannot be taken", async () => {
   // Claimed: a matched receipt proves it, however old it gets.
-  const a = await post("register", { phone: "0788000088", shop: "A Shop", mpesaName: "ALICE A", pin: "715293" });
+  const a = await post("register", { agree: true, phone: "0788000088", shop: "A Shop", mpesaName: "ALICE A", pin: "715293" });
   assert.equal(a.status, 200, JSON.stringify(a.body));
   const inv = await get(`lnurlp/${a.body.merchant.id}/cb?amount=100&currency=KES`);
   const hash = inv.body.successAction.url.split("/").pop();
@@ -492,9 +495,9 @@ test("takeover: a claimed number, or one with a paid receipt, cannot be taken", 
   const recA = await store.getJSON(`kt:${a.body.merchant.id}`);
   recA.createdAt = new Date(Date.now() - 30 * 864e5).toISOString();
   await store.setJSON(`kt:${a.body.merchant.id}`, recA);
-  assert.equal((await post("register", { phone: "0788000088", shop: "Intruder", mpesaName: "X", pin: "482916" })).status, 409);
+  assert.equal((await post("register", { agree: true, phone: "0788000088", shop: "Intruder", mpesaName: "X", pin: "482916" })).status, 409);
   // Unclaimed but paid (the name never matched): a working till is not disturbed.
-  const b = await post("register", { phone: "0799000099", shop: "B Shop", mpesaName: "WRONG B", pin: "715293" });
+  const b = await post("register", { agree: true, phone: "0799000099", shop: "B Shop", mpesaName: "WRONG B", pin: "715293" });
   assert.equal(b.status, 200, JSON.stringify(b.body));
   const invB = await get(`lnurlp/${b.body.merchant.id}/cb?amount=100&currency=KES`);
   const hashB = invB.body.successAction.url.split("/").pop();
@@ -503,7 +506,7 @@ test("takeover: a claimed number, or one with a paid receipt, cannot be taken", 
   const recB = await store.getJSON(`kt:${b.body.merchant.id}`);
   recB.createdAt = new Date(Date.now() - 30 * 864e5).toISOString();
   await store.setJSON(`kt:${b.body.merchant.id}`, recB);
-  assert.equal((await post("register", { phone: "0799000099", shop: "Intruder", mpesaName: "X", pin: "482916" })).status, 409);
+  assert.equal((await post("register", { agree: true, phone: "0799000099", shop: "Intruder", mpesaName: "X", pin: "482916" })).status, 409);
 });
 
 test("rates: KES into display currencies, cached an hour, stale when the feed fails", async () => {
@@ -530,10 +533,10 @@ test("rates: KES into display currencies, cached an hour, stale when the feed fa
 
 test("rate limits: registration and LNURL per network and per merchant", async () => {
   for (let i = 0; i < 10; i++) {
-    const r = await post("register", { phone: `07550000${10 + i}`, shop: `S${i}`, mpesaName: "N", pin: "715293" }, { ip: "6.6.6.6" });
+    const r = await post("register", { agree: true, phone: `07550000${10 + i}`, shop: `S${i}`, mpesaName: "N", pin: "715293" }, { ip: "6.6.6.6" });
     assert.equal(r.status, 200, `signup ${i}: ${JSON.stringify(r.body)}`);
   }
-  const capped = await post("register", { phone: "0755000099", shop: "SX", mpesaName: "N", pin: "715293" }, { ip: "6.6.6.6" });
+  const capped = await post("register", { agree: true, phone: "0755000099", shop: "SX", mpesaName: "N", pin: "715293" }, { ip: "6.6.6.6" });
   assert.equal(capped.status, 429);
   for (let i = 0; i < 60; i++) {
     const r = await get(`lnurlp/${adaId}`, { ip: "6.6.6.7" });
@@ -542,4 +545,154 @@ test("rate limits: registration and LNURL per network and per merchant", async (
   const cappedLn = await get(`lnurlp/${adaId}`, { ip: "6.6.6.7" });
   assert.equal(cappedLn.status, 200);
   assert.match(cappedLn.body.reason, /Too many requests/);
+});
+
+// --- pre-launch: terms, help, cap, blocklist --------------------------------
+
+const ADMIN = "ktown-test-admin-token";
+const apost = async (body, token = ADMIN) => {
+  const r = await adminApi.POST(new Request("https://altradits.test/api/admin", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify(body),
+  }));
+  return { status: r.status, body: await r.json() };
+};
+
+test("terms: registration needs a ticked 'I agree', stored with version and time", async () => {
+  for (const agree of [undefined, false, "yes", 1]) {
+    const r = await post("register", { agree, phone: "0711000101", shop: "T Shop", mpesaName: "T NAME", pin: "715293" });
+    assert.equal(r.status, 400, `agree=${agree}`);
+    assert.match(r.body.error, /I agree/);
+  }
+  const r = await post("register", { agree: true, phone: "0711000101", shop: "T Shop", mpesaName: "T NAME", pin: "715293" });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  const m = await store.getJSON(`kt:${r.body.merchant.id}`);
+  assert.deepEqual(Object.keys(m.agreedTerms).sort(), ["at", "version"]);
+  assert.equal(m.agreedTerms.version, kt.KTOWN_TERMS_VERSION);
+  assert.ok(Date.parse(m.agreedTerms.at) <= Date.now());
+});
+
+test("help: KTOWN_HELP is answered as plain text, null when unset", async () => {
+  delete process.env.KTOWN_HELP;
+  assert.deepEqual((await get("help")).body, { success: true, help: null });
+  process.env.KTOWN_HELP = "  help@example.com  ";
+  assert.equal((await get("help")).body.help, "help@example.com");
+  process.env.KTOWN_HELP = "+254700111222";
+  assert.equal((await get("help")).body.help, "+254700111222");
+  delete process.env.KTOWN_HELP;
+});
+
+test("pilot cap: past KTOWN_MAX_MERCHANTS registration is refused, health names full", async () => {
+  const base = await kt.merchantCount();
+  assert.deepEqual(Object.keys((await get("health")).body).sort(), ["full", "ok", "on"], "health names only on/off and full");
+  process.env.KTOWN_MAX_MERCHANTS = String(base + 1);
+  try {
+    const a = await post("register", { agree: true, phone: "0711000202", shop: "Cap A", mpesaName: "CAP A", pin: "715293" });
+    assert.equal(a.status, 200, JSON.stringify(a.body));
+    assert.equal((await get("health")).body.full, true);
+    const b = await post("register", { agree: true, phone: "0711000303", shop: "Cap B", mpesaName: "CAP B", pin: "482916" });
+    assert.equal(b.status, 503);
+    assert.equal(b.body.error, "kTown is full for now.");
+    // A takeover replaces its record, so a full pilot still lets it through.
+    const rec = await store.getJSON(`kt:${a.body.merchant.id}`);
+    rec.createdAt = new Date(Date.now() - 3 * 864e5).toISOString();
+    await store.setJSON(`kt:${a.body.merchant.id}`, rec);
+    const own = await post("register", { agree: true, phone: "0711000202", shop: "Cap Owner", mpesaName: "CAP OWNER", pin: "604391" });
+    assert.equal(own.status, 200, JSON.stringify(own.body));
+    assert.equal(await kt.merchantCount(), base + 1, "the takeover replaced, not added");
+    assert.equal((await store.listIds("ktowns", 2000)).length, base + 1, "the merchant list holds live records only");
+  } finally {
+    process.env.KTOWN_MAX_MERCHANTS = "1000";
+  }
+  assert.equal((await get("health")).body.full, false);
+  for (const bad of ["", "abc", "0", "-5"]) {
+    process.env.KTOWN_MAX_MERCHANTS = bad;
+    assert.equal(kt.maxMerchants(), 10, `KTOWN_MAX_MERCHANTS=${bad || "(unset)"} falls back to 10`);
+  }
+  process.env.KTOWN_MAX_MERCHANTS = "1000";
+});
+
+test("pilot cap: two strangers racing for the last place never overshoot it", async () => {
+  const base = await kt.merchantCount();
+  process.env.KTOWN_MAX_MERCHANTS = String(base + 1);
+  try {
+    const rs = await Promise.all([
+      post("register", { agree: true, phone: "0711000404", shop: "Last A", mpesaName: "LAST A", pin: "715293" }, { ip: "8.8.4.1" }),
+      post("register", { agree: true, phone: "0711000505", shop: "Last B", mpesaName: "LAST B", pin: "482916" }, { ip: "8.8.4.2" }),
+    ]);
+    assert.ok(rs.filter((r) => r.status === 200).length <= 1, JSON.stringify(rs.map((r) => r.status)));
+    for (const r of rs) if (r.status !== 200) assert.equal(r.body.error, "kTown is full for now.");
+    assert.ok((await kt.merchantCount()) <= base + 1, "never past the cap");
+    for (const r of rs) if (r.status !== 200) {
+      const phone = r === rs[0] ? "254711000404" : "254711000505";
+      assert.equal(await store.getJSON(`kt:phone:${phone}`), null, "a sign-up that gave its place back leaves no record");
+    }
+  } finally {
+    process.env.KTOWN_MAX_MERCHANTS = "1000";
+  }
+});
+
+test("an app copy from before the terms (no agree sent) is told to reopen", async () => {
+  const r = await post("register", { phone: "0711000606", shop: "Old App", mpesaName: "OLD APP", pin: "715293" });
+  assert.equal(r.status, 400);
+  assert.match(r.body.error, /new terms\. Close and reopen the app/);
+  assert.equal((await post("register", { agree: false, phone: "0711000606", shop: "Old App", mpesaName: "OLD APP", pin: "715293" })).body.error, "Tick 'I agree' to the terms first.");
+});
+
+test("squatter blocklist: a blocked number cannot register; unblock lifts it", async () => {
+  assert.equal((await apost({ action: "ktown_block", phone: "0711000404" }, "wrong-token")).status, 401);
+  assert.equal((await apost({ action: "ktown_block", phone: "0711000404" }, null)).status, 401);
+  const blocked = await apost({ action: "ktown_block", phone: "0711000404" });
+  assert.equal(blocked.status, 200, JSON.stringify(blocked.body));
+  assert.deepEqual(blocked.body, { ok: true, phone: "254711000404" });
+  const r = await post("register", { agree: true, phone: "0711000404", shop: "Sq", mpesaName: "SQ", pin: "715293" });
+  assert.equal(r.status, 403);
+  assert.match(r.body.error, /blocked/);
+  // A block stops registering only: a signed-up shop keeps working.
+  const s = await post("register", { agree: true, phone: "0711000505", shop: "Stay Shop", mpesaName: "STAY", pin: "715293" });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  assert.equal((await apost({ action: "ktown_block", phone: "0711000505" })).status, 200);
+  assert.equal((await post("login", { phone: "0711000505", pin: "715293" })).status, 200);
+  assert.equal((await apost({ action: "ktown_block", phone: "not a number" })).status, 400);
+  const lifted = await apost({ action: "ktown_unblock", phone: "0711000404" });
+  assert.deepEqual(lifted.body, { ok: true, phone: "254711000404" });
+  assert.equal((await apost({ action: "ktown_unblock", phone: "0711000404" })).status, 404);
+  const retry = await post("register", { agree: true, phone: "0711000404", shop: "Free Shop", mpesaName: "FREE", pin: "482916" });
+  assert.equal(retry.status, 200, JSON.stringify(retry.body));
+});
+
+test("release frees a number: sessions and QR die, payment records stay", async () => {
+  assert.equal((await apost({ action: "ktown_release", phone: "0711000606" }, "wrong-token")).status, 401);
+  const s = await post("register", { agree: true, phone: "0711000606", shop: "Gone Shop", mpesaName: "GONE", pin: "715293" });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  const id = s.body.merchant.id, session = s.body.session;
+  const inv = await get(`lnurlp/${id}/cb?amount=100&currency=KES`);
+  assert.equal(inv.status, 200, JSON.stringify(inv.body));
+  const before = await kt.merchantCount();
+  const rel = await apost({ action: "ktown_release", phone: "0711000606" });
+  assert.equal(rel.status, 200, JSON.stringify(rel.body));
+  assert.equal(rel.body.shop, "Gone Shop");
+  assert.equal(await store.getJSON(`kt:${id}`), null, "the record is gone");
+  assert.equal(await store.getJSON("kt:phone:254711000606"), null, "the number is free");
+  assert.equal(await kt.merchantCount(), before - 1);
+  assert.equal((await get("me", { token: session })).status, 401, "the sessions ended");
+  assert.equal((await get(`lnurlp/${id}`)).status, 404, "the QR is dead");
+  assert.equal((await store.listIds(`kt:tx:${id}`, 10)).length, 1, "its payment record is kept, not deleted");
+  assert.equal((await apost({ action: "ktown_release", phone: "0711000606" })).status, 404);
+  const again = await post("register", { agree: true, phone: "0711000606", shop: "Back Shop", mpesaName: "BACK", pin: "482916" });
+  assert.equal(again.status, 200, JSON.stringify(again.body));
+  assert.notEqual(again.body.merchant.id, id);
+});
+
+test("takeovers, blocks and releases are logged in the Security watch", async () => {
+  const { securityView, TECHNIQUES } = await import("../lib/attacks.js");
+  assert.equal(TECHNIQUES.ktown_number.severity, "low", "logged for Stanley, never emailed");
+  const events = (await securityView()).events.filter((e) => e.kind === "ktown_number");
+  const wheres = events.map((e) => e.where);
+  assert.ok(wheres.includes("kTown takeover 254777000077"), "the earlier takeover is logged");
+  assert.ok(wheres.includes("kTown block 254711000404"), "the block is logged");
+  assert.ok(wheres.includes("kTown unblock 254711000404"), "the unblock is logged");
+  assert.ok(wheres.includes("kTown release 254711000606"), "the release is logged");
+  assert.ok(events.every((e) => e.detail && e.at), "every event carries words and a time");
 });

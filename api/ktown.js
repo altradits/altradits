@@ -3,10 +3,11 @@
 // and is not a wallet: it fronts the merchant's Tando address, and the sats go
 // straight to Tando and on to M-Pesa for Tando's 1% fee.
 //
-// Switched on with KTOWN=on. Off: every route below refuses, except health.
+// Switched on with KTOWN=on. Off: every route below refuses, except health and help.
 //
-//   GET  health                      always: {ok, on}
-//   POST register {phone, shop, mpesaName, pin} -> {merchant, session}
+//   GET  health                      always: {ok, on, full} (full: the pilot cap is reached)
+//   GET  help                        always: {help} (KTOWN_HELP, or null when unset)
+//   POST register {phone, shop, mpesaName, pin, agree} -> {merchant, session}
 //   POST login {phone, pin} -> {merchant, session}
 //   GET  me, history                 (Authorization: Bearer <session>)
 //   POST settings {shop?, mpesaName?, currency?, lang?}  (signed in)
@@ -88,8 +89,13 @@ async function receipt(request, hash) {
 export async function GET(request) {
   const path = sub(request);
   if (path === "" || path === "health") {
-    const { ktownOn } = await import("../lib/ktown.js");
-    return json({ ok: true, on: ktownOn() });
+    const { ktownOn, pilotFull } = await import("../lib/ktown.js");
+    const on = ktownOn();
+    return json({ ok: true, on, full: on ? await pilotFull() : false });
+  }
+  if (path === "help") {
+    const { ktownHelp } = await import("../lib/ktown.js");
+    return json({ success: true, help: ktownHelp() });
   }
   try {
     const lp = path.match(/^lnurlp\/([A-Za-z0-9_-]{1,80})$/);
@@ -138,7 +144,7 @@ export async function POST(request) {
         || (await hit(`rl:kt:regp:${phoneKey}`, 3600)) > 5
         || (await hit(`rl:kt:reg:all:${new Date().toISOString().slice(0, 13)}`, 3600)) > 100)
         return json({ success: false, error: "Too many sign-ups. Try again later." }, 429);
-      const r = await kt.registerMerchant({ phone: body.phone, shop: body.shop, mpesaName: body.mpesaName, pin: body.pin });
+      const r = await kt.registerMerchant({ phone: body.phone, shop: body.shop, mpesaName: body.mpesaName, pin: body.pin, agree: body.agree });
       return json({ success: true, merchant: kt.publicMerchant(r.merchant, site()), session: r.session });
     }
     if (path === "login") {
