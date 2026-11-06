@@ -24,15 +24,15 @@ test("every page carries its own up-to-date Content-Security-Policy (nginx sends
 });
 
 test("every page refuses to load inside another site's frame (a meta policy can't forbid framing)", () => {
-  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "ktown/terms.html"]) {
-    const html = read(f), srcs = [...html.matchAll(/<script[^>]*\bsrc="\/((?:assets|ktown)\/[\w.-]+\.js)(?:\?[\w=.-]*)?"/g)].map((m) => read(m[1])).join("\n");
+  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "ktown/terms.html", "opcode-circuit/index.html"]) {
+    const html = read(f), srcs = [...html.matchAll(/<script[^>]*\bsrc="\/((?:assets|ktown|opcode-circuit)\/[\w.-]+\.js)(?:\?[\w=.-]*)?"/g)].map((m) => read(m[1])).join("\n");
     assert.match(html + srcs, /window\.top !== window\.self/, `${f}: add the frame check at the top of its script`);
     assert.match(html, /<script src="\/assets\/report\.js"><\/script>/, `${f}: the Security watch reporter is missing (run: node deploy/page-csp.mjs)`);
   }
 });
 
 test("pages have no inline event handlers or javascript: links (the policy would block them, and they invite injection)", () => {
-  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "ktown/terms.html", "yebente/app/index.html"]) {
+  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "ktown/terms.html", "opcode-circuit/index.html", "yebente/app/index.html"]) {
     const html = read(f);
     assert.doesNotMatch(html, /<[^>]+\son[a-z]+\s*=\s*["']/i, `${f}: move the inline handler into the page script`);
     assert.doesNotMatch(html, /href\s*=\s*["']\s*javascript:/i, `${f}: no javascript: links`);
@@ -155,7 +155,7 @@ test("no AI co-authors: the check runs in CI, before every push and on every com
 });
 
 test("every top-level folder is either public on purpose or denied to the web server", () => {
-  const PUBLIC = new Set(["assets", "ktown"]); // pages' own scripts, styles and images; kTown holds only web content
+  const PUBLIC = new Set(["assets", "ktown", "opcode-circuit"]); // pages' own scripts, styles and images; kTown and Opcode Circuit hold only web content
   const DOT = /^\./; // nginx refuses dot-folders (.git, .github, .claude); .htaccess adds 404s
   for (const d of fs.readdirSync(root, { withFileTypes: true }).filter((x) => x.isDirectory()).map((x) => x.name)) {
     if (PUBLIC.has(d) || DOT.test(d) || d === "node_modules" || d === "tmp") continue; // node_modules gets deploy/deny.htaccess on the server
@@ -209,6 +209,7 @@ test("site copy uses no em-dashes (house style: a full stop, comma or colon read
     "yebente/index.html",
     ...walk("yebente/src").filter((f) => /\.(tsx?|css)$/.test(f)),
     ...walk("ktown").filter((f) => /\.(html|js|css)$/.test(f) && !f.includes("qrcode-generator-")),
+    ...walk("opcode-circuit").filter((f) => /\.(html|js|css)$/.test(f)),
   ];
   for (const f of targets) assert.doesNotMatch(read(f), /—/, `${f}: replace the em-dash with a full stop, comma or colon`);
 });
@@ -497,6 +498,29 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
   assert.match(kt, /if \(nameMatch && !merchant\.claimed\)/, "lib/ktown.js: a matched receipt claims the number, and nothing unclaims it");
   assert.match(kt, /takeoverEligible/, "lib/ktown.js: a stale unclaimed number with no paid receipt can be taken over");
   assert.match(kt, /deleteKeys\(\[`kt:\$\{old\.id\}`\]\)/, "lib/ktown.js: a takeover ends the old record, so its sessions and QR die with it");
+});
+
+test("Opcode Circuit: same route on both stacks, install manifest, versioned offline shell, no outside refs", () => {
+  const srv = read("server.mjs"), ht = read(".htaccess");
+  assert.ok(srv.includes('"/opcode-circuit/index.html"'), "server.mjs: /opcode-circuit serves the game");
+  assert.match(srv, /opcode-circuit\\\/\(\?:[^)]*manifest\\.webmanifest[^)]*icons\\\/\[\\w\.-\]\+/, "server.mjs: the game path serves its manifest and icons");
+  assert.ok(ht.includes("opcode-circuit/index.html"), ".htaccess: the same route on the Apache stack");
+  const mani = JSON.parse(read("opcode-circuit/manifest.webmanifest"));
+  assert.equal(mani.start_url, "/opcode-circuit", "the game installs at /opcode-circuit");
+  assert.equal(mani.scope, "/opcode-circuit", "installed scope stays inside the game");
+  assert.equal(mani.display, "standalone", "the game installs standalone");
+  for (const icon of mani.icons)
+    assert.ok(fs.existsSync(path.join(root, icon.src.replace(/^\//, ""))), `${icon.src} exists on disk`);
+  const sw = read("opcode-circuit/sw.js");
+  assert.match(sw, /const CACHE = "opcode-circuit-v\d+"/, "sw.js: a versioned cache");
+  for (const f of ["./index.html", "./game.js", "./sim/primitives.js", "./sim/interpreter.js"])
+    assert.ok(sw.includes(f), `sw.js: the offline shell precaches ${f}`);
+  assert.match(sw, /u\.origin !== self\.location\.origin/, "sw.js: same-site reads only");
+  assert.match(sw, /startsWith\("\/api\/"/, "sw.js: live API data is never cached");
+  const html = read("opcode-circuit/index.html");
+  assert.match(html, /connect-src 'self'/, "the game calls no host but this site");
+  assert.doesNotMatch(html, /(src|href)="http/, "no outside scripts, styles or images");
+  assert.match(read("sitemap.xml"), /<loc>https:\/\/altradits\.com\/opcode-circuit<\/loc>/, "sitemap lists the game");
 });
 
 test("admin bodies over 100 KB need the token up front: strangers hit 413, the token passes 700 KB", async () => {

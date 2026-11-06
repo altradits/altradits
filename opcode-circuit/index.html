@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<title>Opcode Circuit: a Bitcoin puzzle game for developers</title>
+<meta name="description" content="Opcode Circuit: 8 chapters of hands on Bitcoin and Lightning puzzles. Bytes, hashes, merkle, script, segwit, fees, consensus bugs, Lightning. Runs offline in your browser.">
+<link rel="canonical" href="https://altradits.com/opcode-circuit">
+<meta name="theme-color" content="#0b1220">
+<link rel="icon" href="/opcode-circuit/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/opcode-circuit/icons/icon.svg">
+<link rel="manifest" href="/opcode-circuit/manifest.webmanifest">
+<meta property="og:title" content="Opcode Circuit: a Bitcoin puzzle game for developers">
+<meta property="og:description" content="Build and break things on a simulated chain. 8 chapters, 40 puzzles, zero network after load.">
+<meta property="og:url" content="https://altradits.com/opcode-circuit">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://altradits.com/assets/social-card.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Opcode Circuit: a Bitcoin puzzle game for developers">
+<meta name="twitter:description" content="Build and break things on a simulated chain. 8 chapters, 40 puzzles, zero network after load.">
+<link rel="stylesheet" href="/opcode-circuit/style.css">
+</head>
+<body>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+</script>
+<header class="top">
+  <a class="brand" href="/opcode-circuit" data-route="home"><span class="sigil" aria-hidden="true"></span><span>Opcode Circuit</span></a>
+  <nav class="topnav" aria-label="Game">
+    <a href="/opcode-circuit" data-route="home">Campaign</a>
+    <a href="/opcode-circuit/sandbox" data-route="sandbox">Sandbox</a>
+    <a href="/opcode-circuit/achievements" data-route="achievements">Achievements</a>
+  </nav>
+  <button type="button" id="theme" aria-label="Toggle theme">Light</button>
+</header>
+<p class="sim" role="note">Toy chain. Simulated coins with no real value. Learning only. No real keys: never paste a real key or seed here.</p>
+<main id="app" class="wrap" aria-live="polite"></main>
+<footer class="foot">
+  <p>Simulation for learning. Coins here are fake. Sources sit on each debrief card.</p>
+  <p><a href="/">Altradits</a> · <a href="/portfolio">Portfolio</a> · <a href="https://bitcoin.org/bitcoin.pdf">Whitepaper</a></p>
+</footer>
+<noscript><p class="wrap">Opcode Circuit needs JavaScript. Every puzzle runs locally in your browser.</p></noscript>
+<script type="module" src="/opcode-circuit/game.js"></script>
+</body>
+</html>
