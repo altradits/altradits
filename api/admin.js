@@ -534,6 +534,21 @@ export async function POST(request) {
       return json({ ok: true, ...(await kt.releaseMerchantByPhone(body.phone)) });
     } catch (err) { return json({ error: err.message }, err.status || 400); }
   }
+  // Kazi board moderation: list every task (newest first, flagged ones carry
+  // their reasons), approve a waiting task onto the public board, or hide a
+  // task. Nothing goes public except through kazi_approve. Docs: docs/kisumu-app.md.
+  if (body.action === "kazi_list" || body.action === "kazi_approve" || body.action === "kazi_hide") {
+    const kz = await import("../lib/kazi.js");
+    try {
+      if (body.action === "kazi_list") {
+        const tasks = await kz.adminList();
+        for (const t of tasks.filter((t) => t.flags > 0)) t.reasons = await kz.flagReasons(t.id);
+        return json({ ok: true, tasks });
+      }
+      if (body.action === "kazi_approve") return json({ ok: true, ...(await kz.approveTask(body.id)) });
+      return json({ ok: true, ...(await kz.hideTask(body.id)) });
+    } catch (err) { return json({ error: err.message }, err.status || 400); }
+  }
   if (body.action === "mkt_idea_save" || body.action === "mkt_idea_delete") {
     const { IDEAS_KEY, validateIdea } = await import("../lib/marketing.js");
     const list = ((await getJSON(IDEAS_KEY)) || []).filter((e) => e && e.id);

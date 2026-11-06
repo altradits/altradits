@@ -2478,6 +2478,41 @@ $("#learnConsolidateBtn").addEventListener("click", async () => {
   } catch (err) { toast(err.message, true, 6000); }
 });
 
+// Kazi board moderation: waiting tasks with Approve, open tasks with Hide.
+// Every task word goes through esc(); flags and word-screen notes show so a
+// glance decides. Waiting tasks raise a "needs you" item until cleared.
+const kaziMoney = (n, unit) => unit === "KES" ? `KSh ${num(n)}` : `${num(n)} SATS`;
+function kaziCard(t, waiting) {
+  const notes = [...(t.flags ? [`${t.flags} flag${t.flags === 1 ? "" : "s"}`] : []), ...(t.screenReasons || [])];
+  return `<div class="panel" style="margin:.6rem 0" data-kazi="${esc(t.id)}">`
+    + `<h3 class="sub">${esc(t.title)} · ${esc(kaziMoney(t.reward, t.unit))}</h3>`
+    + `<p class="sm muted">${esc(t.location)} · ${esc(t.poster)} · ${esc(t.contact)} · ${esc(ago(t.createdAt))}</p>`
+    + `<p style="white-space:pre-wrap">${esc(t.desc)}</p>`
+    + (notes.length ? `<p class="sm"><b>Notes:</b> ${esc(notes.join(", "))}</p>` : "")
+    + ((t.reasons || []).length ? `<p class="sm"><b>Flags:</b> ${esc(t.reasons.join(" | "))}</p>` : "")
+    + `<div class="row"><button type="button" class="btn ${waiting ? "primary" : ""}" data-kazi-act="${waiting ? "approve" : "hide"}" data-id="${esc(t.id)}">${waiting ? "Approve" : "Hide"}</button></div></div>`;
+}
+async function loadKazi() {
+  try {
+    const { tasks } = await api("", { action: "kazi_list" });
+    const waiting = tasks.filter((t) => t.status === "pending"), open = tasks.filter((t) => t.status === "open");
+    $("#kaziPendingCount").textContent = waiting.length ? `${waiting.length} waiting` : "";
+    $("#kaziOpenCount").textContent = open.length ? `${open.length} open` : "";
+    $("#kaziPending").innerHTML = waiting.length ? waiting.map((t) => kaziCard(t, true)).join("") : '<p class="sm muted">Nothing waits. New tasks land here.</p>';
+    $("#kaziOpen").innerHTML = open.length ? open.map((t) => kaziCard(t, false)).join("") : '<p class="sm muted">Nothing on the board.</p>';
+    issue("kazi", waiting.length ? "soon" : null, `${waiting.length} Kazi task${waiting.length === 1 ? "" : "s"} wait${waiting.length === 1 ? "s" : ""} for review.`, "kazi:hKazi");
+  } catch (err) { $("#kaziPending").innerHTML = `<p class="sm muted">${esc(err.message)}</p>`; }
+}
+document.querySelector('[data-pane="kazi"]').addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-kazi-act]");
+  if (!btn) return;
+  try {
+    await api("", { action: btn.dataset.kaziAct === "approve" ? "kazi_approve" : "kazi_hide", id: btn.dataset.id });
+    toast(btn.dataset.kaziAct === "approve" ? "Task approved. It is on the board." : "Task hidden.");
+    loadKazi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
 async function load() {
   let D;
   $("#loginErr").textContent = "Loading… reading the node can take a few seconds.";
@@ -2488,7 +2523,7 @@ async function load() {
   OVERVIEW = D;
   renderChecklist(D); renderStan(D.stan, D.alerts); renderNode(D); renderChain(D); renderChainLow(D); renderRouting(D); renderSettlement(D); renderGlossary(); renderBanner(D); renderBackup(D.backup);
   renderVerify();
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing()]);
+  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
 }
 token ? load() : showLogin();
