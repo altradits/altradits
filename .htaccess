@@ -44,6 +44,8 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
   RewriteRule ^address-check/(index\.html)?$ address-check/index.html [L]
   # TouchType: the typing game at /touchtype.
   RewriteRule ^touchtype/?$ touchtype/index.html [L]
+  # Opcode Circuit: the developer game at /opcode-circuit.
+  RewriteRule ^opcode-circuit/?$ opcode-circuit/index.html [L]
 </IfModule>
 
 # Pages are checked on every visit, so an update shows at once (an unchanged
