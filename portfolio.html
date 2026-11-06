@@ -6,25 +6,25 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#EEF2F6">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
-<meta name="theme-color" content="#EEF2F6">
 <link rel="canonical" href="https://altradits.com/portfolio">
-<title>Products built by Stanley: kTown, Ye₿ente and Sats Safari · Altradits</title>
-<meta name="description" content="Three products built by Stanley in Kisumu: kTown, a free QR till for shops (pilot open); Ye₿ente, a starter Bitcoin wallet in early access; and Sats Safari, a free Bitcoin game for kids.">
+<title>Apps built by Stanley · Altradits</title>
+<meta name="description" content="Apps built by Stanley in Kisumu: kTown, a free QR till for shops (pilot open), Ye₿ente, a starter Bitcoin wallet in early access, and Kazi, a task board for Kisumu (pilot).">
 <link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
-<meta property="og:title" content="Products built by Stanley: kTown, Ye₿ente and Sats Safari · Altradits">
-<meta property="og:description" content="Three products built by Stanley in Kisumu: kTown, a free QR till for shops (pilot open); Ye₿ente, a starter Bitcoin wallet in early access; and Sats Safari, a free Bitcoin game for kids.">
+<meta property="og:title" content="Apps built by Stanley · Altradits portfolio · Altradits">
+<meta property="og:description" content="Apps built by Stanley in Kisumu: kTown, a free QR till for shops (pilot open), Ye₿ente, a starter Bitcoin wallet in early access, and Kazi, a task board for Kisumu (pilot).">
 <meta property="og:url" content="https://altradits.com/portfolio">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://altradits.com/assets/social-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Products by Altradits: the kTown QR till, the Ye₿ente wallet and the Sats Safari game">
+<meta property="og:image:alt" content="Products by Altradits: the kTown QR till, the Ye₿ente wallet and the Kazi board">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Products built by Stanley: kTown, Ye₿ente and Sats Safari · Altradits">
-<meta name="twitter:description" content="Three products built by Stanley in Kisumu: kTown, a free QR till for shops (pilot open); Ye₿ente, a starter Bitcoin wallet in early access; and Sats Safari, a free Bitcoin game for kids.">
+<meta name="twitter:title" content="Apps built by Stanley · Altradits portfolio · Altradits">
+<meta name="twitter:description" content="Apps built by Stanley in Kisumu: kTown, a free QR till for shops (pilot open), Ye₿ente, a starter Bitcoin wallet in early access, and Kazi, a task board for Kisumu (pilot).">
 <meta name="twitter:image" content="https://altradits.com/assets/social-card.png">
 <style>
 /* Brand fonts, served from this site: Bricolage Grotesque and Figtree (SIL Open Font License 1.1, https://openfontlicense.org), latin and latin-ext (₿), variable weight */
@@ -33,7 +33,7 @@
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 @font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 
-:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff}
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff;color-scheme:light dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
 a{color:var(--blue)}
@@ -50,26 +50,21 @@ a{color:var(--blue)}
 .hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem}
 .hero h1 em{font-style:normal;color:var(--btc-text)}
 .lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:38rem}
-.ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
-.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none}
-.btn.ghost{background:transparent;border-color:var(--ink)}
-h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:2.4rem 0 .4rem}
-h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
-.intro{color:var(--muted);margin:0 0 1.2rem;max-width:42rem}
-.cards{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem}
-.cards>li{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem}
-.cards p{margin:0;color:var(--muted);font-size:.97rem}
-.cards .links{display:flex;flex-wrap:wrap;gap:.4rem 1rem;margin-top:auto;padding-top:.3rem;font-weight:600}
-.tag{align-self:flex-start;font-size:.78rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
+.gallery{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(20rem,100%),1fr));gap:1.5rem}
+.card{display:flex;flex-direction:column;background:var(--paper);border:2px solid var(--ink);border-radius:1rem;overflow:hidden;text-decoration:none;color:var(--ink)}
+.card:hover{box-shadow:6px 6px 0 var(--ink)}
+.card:focus-visible{outline-offset:4px}
+.card img{width:100%;height:24rem;object-fit:cover;object-position:top center;display:block;background:#0F1B2D}
+.card .body{padding:1.1rem 1.25rem 1.25rem;display:flex;flex-direction:column;gap:.35rem}
+.card h2{font:800 1.5rem/1.2 'Bricolage Grotesque',sans-serif;margin:0}
+.card p{margin:0;color:var(--muted)}
+.card .status{align-self:flex-start;font-size:.78rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
 .sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
 .sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}
 .sitefoot .wp{margin:0 0 .6rem}
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1B2D;--ink:#EEF2F6;--muted:#A9B6C8;--line:#33415A;--blue:#7FB3E8;--btc-text:#F5A94B;--paper:#182742}.top{background:rgba(15,27,45,.9)}.topnav a:hover{background:rgba(238,242,246,.12)}.card{border-color:var(--line)}.card:hover{box-shadow:6px 6px 0 var(--line)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top,.tabs{transition:box-shadow .25s ease}body.scrolled .top,body.scrolled .tabs{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.cards .links a,.more a,.foot nav a,.pager a{transition:color .18s ease}.more a{display:inline-block;transition:transform .18s ease,color .18s ease}.more a:hover{transform:translateX(4px)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
-.sm{font-size:.92rem}
-.proof{max-width:46rem;padding-left:1.2rem;color:var(--muted)}
-.proof li{margin:.4rem 0}
 .topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
 .shot{display:block;max-width:36rem;margin:1rem 0;border:2px solid var(--ink);border-radius:1rem;overflow:hidden}
 .shot img{display:block;width:100%;height:auto}
@@ -78,48 +73,25 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/library">Library</a><a href="/friends">Friends</a><a class="launch" href="/ktown">Get kTown</a></nav></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/library">Library</a><a href="/friends">Friends</a><a href="/portfolio" aria-current="page">Portfolio</a><a class="launch" href="/ktown">Get kTown</a></nav></div>
 
   <header class="hero">
-    <h1>Three products. <em>Built by Stanley.</em></h1>
-    <p class="lead">kTown is open now for Kisumu shops. Ye₿ente is a starter wallet in early access. Sats Safari is a free Bitcoin game for kids. All are designed, built and run by Stanley in Kisumu, Kenya.</p>
-    <div class="ctas"><a class="btn" href="/ktown">Get kTown for your shop</a><a class="btn ghost" href="/yebente">Open Ye₿ente</a></div>
+    <h1>Apps by Altradits. <em>Built by Stanley.</em></h1>
+    <p class="lead">Designed, built and run in Kisumu, Kenya. Tap a card to open the app.</p>
   </header>
 
-  <h2 id="ktown">kTown</h2>
-  <p class="intro">A free QR till for shops.</p>
-  <p class="intro sm"><b>Status:</b> Pilot in Kisumu, open.</p>
-  <ul class="proof">
-    <li>The shop prints one QR and shows it at the till.</li>
-    <li>Any customer with a Lightning wallet scans it and pays in sats.</li>
-    <li>The shop gets exact shillings in M-Pesa. kTown never holds money. Tando converts for 1%.</li>
+  <ul class="gallery">
+    <li><a class="card" href="/ktown"><img src="/assets/ktown-shot.png" alt="kTown app: the shop registration screen" width="390" height="844" loading="lazy"><span class="body"><span class="status">Pilot in Kisumu · Open</span><h2>kTown</h2><span>A free QR till for shops.</span></span></a></li>
+    <li><a class="card" href="/yebente"><img src="/assets/yebente-shot.png" alt="Ye₿ente app: the start screen with Log in and Create a wallet" width="390" height="844" loading="lazy" style="object-position:center"><span class="body"><span class="status">Early access</span><h2>Ye₿ente</h2><span>A starter Bitcoin wallet.</span></span></a></li>
+    <li><a class="card" href="/kazi"><img src="/assets/kazi-board.png" alt="The Kazi board: small paid tasks in Kisumu" width="1200" height="630" loading="lazy" style="object-position:center top"><span class="body"><span class="status">Pilot in Kisumu</span><h2>Kazi</h2><span>Small paid tasks. Earn sats or M-Pesa.</span></span></a></li>
+      <li><a class="card" href="/sats-safari/"><img src="/assets/sats-safari-card.png" alt="Sats Safari: a smiling sun above the Start the safari button" width="800" height="620" loading="lazy" style="object-position:center"><span class="body"><span class="status">Free · For kids</span><h2>Sats Safari</h2><span>A Bitcoin game for kids.</span></span></a></li>
   </ul>
-  <div class="ctas"><a class="btn" href="/ktown">Get kTown for your shop</a><a class="btn ghost" href="/ktown/terms">Read the terms</a></div>
 
-  <h2 id="yebente">Ye₿ente</h2>
-  <p class="intro">A starter Bitcoin wallet.</p>
-  <p class="intro sm"><b>Status:</b> Early access.</p>
-  <ul class="proof">
-    <li>Open a wallet in about a minute, nothing to install.</li>
-    <li>Altradits holds your sats on its own node. Balances stay small.</li>
-    <li>Send and receive over Lightning. Cash out to M-Pesa.</li>
-  </ul>
-  <div class="ctas"><a class="btn ghost" href="/yebente">Open Ye₿ente</a></div>
 
-  <h2 id="sats-safari">Sats Safari</h2>
-  <p class="intro">A Bitcoin game for kids.</p>
-  <p class="intro sm"><b>Status:</b> Free. Play in the browser, works offline.</p>
-  <a class="shot" href="/sats-safari"><img src="/assets/sats-safari-card.png" alt="Sats Safari: a smiling sun above the Start the safari button" width="800" height="620"></a>
-  <ul class="proof">
-    <li>Seven short stops teach sats, keys, transactions, blocks, mining, the network and the 21 million cap.</li>
-    <li>English and Kiswahili. Sound off by default. Progress stays on the device.</li>
-    <li>Everything is pretend. No real money, no accounts, no ads.</li>
-  </ul>
-  <div class="ctas"><a class="btn" href="/sats-safari">Play Sats Safari</a></div>
 
 </div>
 
-<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/yebente">Open Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin questions</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/research">Research</a> · <a href="/portfolio">Portfolio</a> · <a href="/donate">Support my work</a> · <a href="/contact">Contact</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a></div></footer>
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/yebente">Open Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin questions</a> · <a href="/wallet-guide">Ye₿ente guide</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/research">Research</a> · <a href="/portfolio">Portfolio</a> · <a href="/donate">Support my work</a> · <a href="/contact">Contact</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a></div></footer>
 <script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY>24)},{passive:true});document.body.classList.toggle("scrolled",scrollY>24); // nav shadow on scroll
