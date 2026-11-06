@@ -197,7 +197,7 @@ const { invoice } = await res.json();
     <li>Keys are shown once, stored hashed, and scoped: invoices, webhooks, or both.</li>
     <li>Secrets never land in logs. Abuse is watched and guessing is locked out.</li>
     <li>The site key that issues top-up and challenge invoices can only receive. It can never spend.</li>
-    <li>In a security lockdown, new invoices and top-ups freeze. Reads and retries continue.</li>
+    <li>In a security lockdown, new top-ups freeze. Invoices, reads and retries continue.</li>
   </ul>
 
   <h2 id="support">Support</h2>

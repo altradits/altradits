@@ -121,7 +121,7 @@ th{font-family:'Bricolage Grotesque',sans-serif}
     <tr><td><code>rate_limited</code></td><td>429</td><td>Past a limit. Wait and retry.</td></tr>
     <tr><td><code>insufficient_credits</code></td><td>402</td><td>The fee balance can't cover this invoice. Top up first.</td></tr>
     <tr><td><code>address_unreachable</code>, <code>invoice_mismatch</code>, <code>invoice_untracked</code>, <code>verify_unreachable</code></td><td>502</td><td>The destination failed or answered wrong. Nothing was paid.</td></tr>
-    <tr><td><code>node_offline</code>, <code>rate_unavailable</code>, <code>lockdown_freeze</code>, <code>account_busy</code></td><td>503</td><td>Try again later. Lockdown freezes new invoices and top-ups only.</td></tr>
+    <tr><td><code>node_offline</code>, <code>rate_unavailable</code>, <code>lockdown_freeze</code>, <code>account_busy</code></td><td>503</td><td>Try again later. Lockdown freezes new top-ups only; invoices keep working.</td></tr>
     <tr><td><code>bad_version</code></td><td>404</td><td>Unknown API version. The current version is v1.</td></tr>
   </table>
 
