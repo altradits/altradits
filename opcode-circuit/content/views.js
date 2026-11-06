@@ -5,7 +5,8 @@ import { parseAsm, execute, disassemble } from "../sim/interpreter.js";
 import { blockHashOf, hashMeetsBits, packageRate, checkRBF, vulnerableSum, patchedSum, taprootOutputKey, verifyControlPath } from "../sim/toychain.js";
 import { fundingWitnessScript, p2wshScript, paymentHash, htlcClaim, htlcRefund, invoiceDecode, toyOnionPeel } from "../sim/lightning.js";
 import { starsFor, formatCost } from "../engine/score.js";
-import { recordSolve, saveState } from "../engine/store.js";
+import { recordSolve, saveState, unlockAchievement } from "../engine/store.js";
+import { ACHIEVEMENTS, checkAchievements } from "../engine/achieve.js";
 export function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
@@ -305,7 +306,7 @@ export function renderWidget(kind, puzzle, root) {
 }
 function renderDebugger(puzzle, root) {
   root.innerHTML = `<p class="brief">Lock: <code>${esc(puzzle.lock)}</code></p>`
-    + `<label for="w-asm">Unlock script (also the answer box below stays in sync)</label>`
+    + `<label for="w-asm">Unlock script (this box is your answer)</label>`
     + `<textarea id="w-asm" spellcheck="false">${esc(puzzle.preset || "")}</textarea>`
     + `<div class="btnrow"><button type="button" class="btn" id="w-run">Run</button>`
     + `<button type="button" class="btn ghost" id="w-step">Step</button>`
@@ -335,8 +336,6 @@ function renderDebugger(puzzle, root) {
       trace = r.trace; idx = trace.length - 1; done = r;
     } catch (e) { trace = []; idx = -1; done = { ok: false, error: e.message }; }
     show();
-    const ans = document.getElementById("answer");
-    if (ans && ans.tagName === "TEXTAREA") ans.value = root.querySelector("#w-asm").value;
   });
   root.querySelector("#w-step").addEventListener("click", () => {
     try {
@@ -350,13 +349,15 @@ function renderDebugger(puzzle, root) {
   });
   root.querySelector("#w-reset").addEventListener("click", () => { trace = []; idx = -1; done = null; show(); });
 }
-// Render one puzzle into app. onSolved stores progress. nextId links onward.
-export function renderPuzzle(app, puzzle, state, nextId) {
+// Render one puzzle into app. Stores progress and achievements. nextId links onward.
+export function renderPuzzle(app, puzzle, state, nextId, allPuzzles = []) {
   const simp = puzzle.simplified ? `<span class="badge">Simplified</span>` : "";
   let inputHtml = "";
   if (puzzle.input === "choice") {
     inputHtml = puzzle.choices.map((c) => `<button type="button" class="btn ghost pick" data-v="${esc(c)}">${esc(c)}</button>`).join("");
     inputHtml = `<div class="btnrow" id="answer-row">${inputHtml}</div>`;
+  } else if (puzzle.input === "script" && puzzle.widget === "debugger") {
+    inputHtml = ""; // the debugger box above is the answer box
   } else if (puzzle.input === "script") {
     inputHtml = `<label for="answer">Unlock script</label><textarea id="answer" spellcheck="false">${esc(puzzle.preset || "")}</textarea>`;
   } else {
@@ -385,10 +386,13 @@ export function renderPuzzle(app, puzzle, state, nextId) {
     v.className = `verdict ${r.ok ? "ok" : "bad"}`;
     if (!r.ok) { v.textContent = r.message; return; }
     const stars = starsFor({ bytes: r.bytes, ops: r.ops, sats: r.sats }, puzzle.par, puzzle.scored);
-    const next = recordSolve(state, puzzle.id, { bytes: r.bytes, ops: r.ops, sats: r.sats }, stars);
+    let next = recordSolve(state, puzzle.id, { bytes: r.bytes, ops: r.ops, sats: r.sats }, stars);
+    const fresh = allPuzzles.length ? checkAchievements(next, allPuzzles) : [];
+    for (const id of fresh) next = unlockAchievement(next, id);
     Object.assign(state, next);
     saveState(state);
-    v.textContent = `${r.message} Cost ${formatCost({ bytes: r.bytes, ops: r.ops, sats: r.sats })}. ${stars} of 3 stars.`;
+    const medals = fresh.map((id) => ACHIEVEMENTS.find((a) => a.id === id)?.title).filter(Boolean);
+    v.textContent = `${r.message} Cost ${formatCost({ bytes: r.bytes, ops: r.ops, sats: r.sats })}. ${stars} of 3 stars.${medals.length ? ` Achievement: ${medals.join(", ")}.` : ""}`;
     const src = puzzle.debrief.map((s) => `<li>${esc(s)}</li>`).join("");
     app.querySelector("#debrief").innerHTML = `<div class="debrief"><h3>Debrief: ${esc(puzzle.idea)}</h3>`
       + (puzzle.simplified ? `<p><span class="badge">Simplified</span> ${esc(puzzle.simplified)}</p>` : "")
@@ -396,7 +400,65 @@ export function renderPuzzle(app, puzzle, state, nextId) {
   };
   if (puzzle.input === "choice") {
     app.querySelectorAll(".pick").forEach((b) => b.addEventListener("click", () => grade(b.getAttribute("data-v"))));
+  } else if (puzzle.input === "script" && puzzle.widget === "debugger") {
+    app.querySelector("#check").addEventListener("click", () => grade(app.querySelector("#w-asm").value));
   } else {
     app.querySelector("#check").addEventListener("click", () => grade(app.querySelector("#answer").value));
   }
+}
+// Sandbox: a free interpreter playground. Nothing here is scored.
+export function renderSandbox(app) {
+  app.innerHTML = `<section class="puz"><h2>Sandbox</h2><p class="brief">Free stack machine. Write any lock and unlock, set toy context, step through. Nothing here is scored. Toy hashes only.</p>`
+    + `<label for="sb-lock">Lock script</label><textarea id="sb-lock" spellcheck="false">OP_DUP OP_HASH160 &lt;5dedfbf9ea599dd4e3ca6a80b333c472fd0b3f69&gt; OP_EQUALVERIFY OP_CHECKSIG</textarea>`
+    + `<label for="sb-unlock">Unlock script</label><textarea id="sb-unlock" spellcheck="false"></textarea>`
+    + `<label for="sb-msg">Message hash hex (for CHECKSIG, blank to skip sigs)</label><input type="text" id="sb-msg" value="" autocomplete="off" spellcheck="false">`
+    + `<label for="sb-locktime">Tx locktime (for CLTV, blank when unused)</label><input type="text" id="sb-locktime" value="" autocomplete="off">`
+    + `<div class="btnrow"><button type="button" class="btn" id="sb-run">Run</button><button type="button" class="btn ghost" id="sb-step">Step</button><button type="button" class="btn ghost" id="sb-reset">Reset</button></div>`
+    + `<div id="sb-trace"></div></section>`;
+  let trace = [], idx = -1, done = null;
+  const show = () => {
+    const box = app.querySelector("#sb-trace");
+    if (!trace.length && !done) { box.innerHTML = ""; return; }
+    const rows = trace.map((t, i) => `<tr${i === idx ? ' style="background:color-mix(in srgb,var(--acc) 18%,transparent)"' : ""}><td>${i}</td><td>${esc(t.op)}</td><td>${t.stack.map(esc).join("<br>") || "(empty)"}</td></tr>`).join("");
+    box.innerHTML = (trace.length ? `<table class="trace"><tr><th>#</th><th>op</th><th>stack</th></tr>${rows}</table>` : "")
+      + (done ? `<p class="verdict ${done.ok ? "ok" : "bad"}">${esc(done.ok ? `PASS in ${done.ops} ops` : `FAIL: ${done.error}`)}</p>` : "");
+  };
+  const compileAll = () => {
+    const unlock = disassemble(parseAsm(app.querySelector("#sb-unlock").value)).map((o) => o.push || new Uint8Array(0));
+    const lock = parseAsm(app.querySelector("#sb-lock").value);
+    const ctx = {};
+    const mh = app.querySelector("#sb-msg").value.trim();
+    if (mh) ctx.msgHash = hexToBytes(mh.toLowerCase());
+    const lt = app.querySelector("#sb-locktime").value.trim();
+    if (lt !== "") { ctx.txLocktime = Number(lt); ctx.inputSequence = 0xfffffffe; }
+    return { lock, unlock, ctx };
+  };
+  app.querySelector("#sb-run").addEventListener("click", () => {
+    try {
+      const { lock, unlock, ctx } = compileAll();
+      const r = execute(lock, unlock, ctx);
+      trace = r.trace; idx = trace.length - 1; done = r;
+    } catch (e) { trace = []; idx = -1; done = { ok: false, error: e.message }; }
+    show();
+  });
+  app.querySelector("#sb-step").addEventListener("click", () => {
+    try {
+      if (!trace.length && !done) {
+        const { lock, unlock, ctx } = compileAll();
+        const r = execute(lock, unlock, ctx);
+        trace = r.trace; done = r; idx = -1;
+      }
+      if (idx < trace.length - 1) idx++;
+    } catch (e) { trace = []; idx = -1; done = { ok: false, error: e.message }; }
+    show();
+  });
+  app.querySelector("#sb-reset").addEventListener("click", () => { trace = []; idx = -1; done = null; show(); });
+}
+// Achievements board: locked and unlocked side by side.
+export function renderAchievements(app, state) {
+  const items = ACHIEVEMENTS.map((a) => {
+    const got = state.achievements.includes(a.id);
+    return `<li class="card${got ? " done" : ""}"><h2>${got ? "★" : "☆"} ${esc(a.title)}</h2><p>${esc(a.desc)}</p></li>`;
+  }).join("");
+  app.innerHTML = `<section class="puz"><h2>Achievements</h2><p class="brief">${state.achievements.length} of ${ACHIEVEMENTS.length} unlocked.</p></section><ul class="grid">${items}</ul>`;
 }

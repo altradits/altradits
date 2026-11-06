@@ -11,6 +11,7 @@ const SHELL = [
   "./icons/icon.svg",
   "./engine/store.js",
   "./engine/score.js",
+  "./engine/achieve.js",
   "./sim/primitives.js",
   "./sim/interpreter.js",
   "./sim/vectors.js",

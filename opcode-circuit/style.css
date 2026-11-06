@@ -26,7 +26,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
 .topnav a[aria-current]{color:var(--bg);background:var(--acc)}
 #theme{margin-left:auto;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:.6rem;padding:.4rem .8rem;font:inherit;cursor:pointer}
 #theme:hover{color:var(--ink);border-color:var(--acc)}
-.sim{margin:0;padding:.5rem 1rem;text-align:center;font-size:.85rem;color:var(--bg);background:var(--acc2);font-weight:600}
+.sim{margin:0;padding:.5rem 1rem;text-align:center;font-size:.85rem;color:var(--bg);background:var(--acc2);font-weight:600;position:relative;z-index:1}
 .wrap{max-width:56rem;margin:0 auto;padding:1.2rem 1rem 3rem;width:100%;position:relative}
 .hero{padding:1.5rem 0}
 .hero h1{font:800 clamp(1.8rem,5vw,2.6rem)/1.1 var(--mono);margin:0 0 .6rem}

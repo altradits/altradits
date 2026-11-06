@@ -48,3 +48,20 @@ test("achievements unlock once", () => {
   st = store.unlockAchievement(st, "first");
   assert.deepEqual(st.achievements, ["first"]);
 });
+test("achievement rules fire on the right state", async () => {
+  const { ACHIEVEMENTS, checkAchievements } = await import("../opcode-circuit/engine/achieve.js");
+  const { PUZZLES1 } = await import("../opcode-circuit/content/puzzles1.js");
+  const { PUZZLES2 } = await import("../opcode-circuit/content/puzzles2.js");
+  const all = [...PUZZLES1, ...PUZZLES2];
+  assert.equal(ACHIEVEMENTS.length, 13);
+  let st = store.blankState();
+  assert.deepEqual(checkAchievements(st, all), []);
+  st = store.recordSolve(st, "1-1", { bytes: 1, ops: 0, sats: 0 }, 3);
+  assert.deepEqual(checkAchievements(st, all), ["first-solve"]);
+  st = store.unlockAchievement(st, "first-solve");
+  for (const p of all.filter((x) => x.ch === "bytes")) st = store.recordSolve(st, p.id, { bytes: 1, ops: 0, sats: 0 }, 3);
+  assert.ok(checkAchievements(st, all).includes("ch-bytes"));
+  st = store.unlockAchievement(st, "ch-bytes");
+  st = store.recordSolve(st, "2-2", { bytes: 6, ops: 0, sats: 0 }, 3);
+  assert.ok(checkAchievements(st, all).includes("miner"));
+});

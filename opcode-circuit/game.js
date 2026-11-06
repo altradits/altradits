@@ -3,7 +3,7 @@
 import { CHAPTERS } from "./content/chapters.js";
 import { PUZZLES1 } from "./content/puzzles1.js";
 import { PUZZLES2 } from "./content/puzzles2.js";
-import { renderPuzzle, esc } from "./content/views.js";
+import { renderPuzzle, renderSandbox, renderAchievements, esc } from "./content/views.js";
 import { loadState, saveState } from "./engine/store.js";
 const app = document.getElementById("app");
 const state = loadState();
@@ -63,16 +63,15 @@ function puzzleView(id) {
   const ps = byChapter(p.ch);
   const i = ps.findIndex((x) => x.id === id);
   const nextId = i >= 0 && i + 1 < ps.length ? ps[i + 1].id : null;
-  renderPuzzle(app, p, state, nextId);
+  renderPuzzle(app, p, state, nextId, ALL);
 }
 function sandboxView() {
   nav("sandbox");
-  app.innerHTML = `<section class="puz"><h2>Sandbox</h2><p class="brief">A free interpreter playground. Ships with the polish PR.</p></section>`;
+  renderSandbox(app);
 }
 function achievementsView() {
   nav("achievements");
-  const list = state.achievements.length ? state.achievements.map((a) => `<li>${esc(a)}</li>`).join("") : "<li>None yet. Solve puzzles to earn them.</li>";
-  app.innerHTML = `<section class="puz"><h2>Achievements</h2><ul>${list}</ul></section>`;
+  renderAchievements(app, state);
 }
 function route() {
   const h = location.hash || "#/";
@@ -96,6 +95,6 @@ themeInit();
 route();
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => { /* offline is best effort */ });
+    navigator.serviceWorker.register("/opcode-circuit/sw.js").catch(() => { /* offline is best effort */ });
   });
 }
