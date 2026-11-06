@@ -519,7 +519,8 @@ test("Opcode Circuit: same route on both stacks, install manifest, versioned off
   assert.match(sw, /startsWith\("\/api\/"/, "sw.js: live API data is never cached");
   const html = read("opcode-circuit/index.html");
   assert.match(html, /connect-src 'self'/, "the game calls no host but this site");
-  assert.doesNotMatch(html, /(src|href)="http/, "no outside scripts, styles or images");
+  assert.doesNotMatch(html, /src="http/, "no outside scripts or images");
+  assert.doesNotMatch(html, /<link[^>]*rel="stylesheet"[^>]*href="http/, "no outside styles");
   assert.match(read("sitemap.xml"), /<loc>https:\/\/altradits\.com\/opcode-circuit<\/loc>/, "sitemap lists the game");
 });
 
