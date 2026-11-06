@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<script src="/assets/report.js"></script>
+<title>Sats Safari: a Bitcoin journey for kids · Altradits</title>
+<meta name="description" content="Sats Safari is a free game for children about 8 to 13. Play seven short stops and learn how Bitcoin works: sats, keys, transactions, blocks, mining, the network and the 21 million cap.">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="canonical" href="https://altradits.com/sats-safari/">
+<meta name="theme-color" content="#FAF3DF">
+<meta property="og:title" content="Sats Safari: a Bitcoin journey for kids">
+<meta property="og:description" content="A free game for children. Seven short stops across the savanna teach how Bitcoin works. No real money, no accounts.">
+<meta property="og:url" content="https://altradits.com/sats-safari/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Sats Safari: a Bitcoin journey for kids">
+<meta name="twitter:description" content="A free game for children. Seven short stops across the savanna teach how Bitcoin works.">
+<link rel="stylesheet" href="/sats-safari/style.css">
+</head>
+<body>
+<script>
+if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
+</script>
+<a class="skip" href="#main">Skip to game</a>
+<header class="topbar">
+  <a class="brand" href="/" aria-label="Altradits home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span data-i18n="nav.home">Altradits</span></a>
+  <a class="gametitle" href="#/menu" data-i18n="meta.title">Sats Safari</a>
+  <div class="controls">
+    <button type="button" class="chip" id="btn-lang">Kiswahili</button>
+    <button type="button" class="chip" id="btn-sound" aria-pressed="false">Sound off</button>
+  </div>
+</header>
+<main id="main">
+  <section id="screen-menu" aria-labelledby="menu-h">
+    <div class="menu-hero">
+      <div class="sun" id="menu-sun" aria-hidden="true"></div>
+      <h1 id="menu-h" data-i18n="meta.title">Sats Safari</h1>
+      <p class="tag" data-i18n="meta.tagline">A Bitcoin journey for kids</p>
+      <p class="sub" data-i18n="meta.taglineSub">Play seven short stops. Earn stars.</p>
+      <button type="button" class="btn" id="btn-play" data-i18n="menu.play">Start the safari</button>
+      <p class="fine" data-i18n="menu.stops">7 stops, about 20 minutes</p>
+      <p class="fine" data-i18n="menu.pretend">Everything here is pretend. No real money.</p>
+      <div id="menu-stars"></div>
+      <p class="fine" data-i18n="menu.made">Made by Stanley in Kisumu, Kenya.</p>
+      <p class="boot-error" id="boot-error" hidden>Could not load. Check your connection and reload. Imeshindwa kupakia. Angalia muunganisho, kisha jaribu tena.</p>
+    </div>
+  </section>
+  <section id="screen-map" aria-labelledby="map-h" hidden>
+    <div class="map-head">
+      <h1 id="map-h" data-i18n="map.title">Your safari map</h1>
+      <p data-i18n="map.subtitle">Finish each stop to open the next one.</p>
+      <p id="map-total"></p>
+    </div>
+    <ol class="stops" id="stops"></ol>
+    <p><button type="button" class="btn ghost" id="btn-tomenu" data-i18n="nav.menu">Menu</button></p>
+  </section>
+  <section id="screen-level" aria-labelledby="level-name" hidden>
+    <div class="level-head">
+      <p class="kicker" id="level-kicker"></p>
+      <h1 id="level-name"></h1>
+    </div>
+    <div id="level-root"></div>
+    <div class="level-foot">
+      <button type="button" class="btn ghost" id="btn-hint" data-i18n="level.hint" hidden>Hint</button>
+      <button type="button" class="btn ghost" id="btn-level-map" data-i18n="level.map">Map</button>
+    </div>
+  </section>
+</main>
+<div id="modal" hidden></div>
+<div id="toast" role="status" hidden></div>
+<script type="module" src="/sats-safari/app.js"></script>
+</body>
+</html>

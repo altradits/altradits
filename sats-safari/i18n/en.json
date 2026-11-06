@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "title": "Sats Safari",
+    "tagline": "A Bitcoin journey for kids",
+    "taglineSub": "Play seven short stops. Earn stars."
+  },
+  "nav": {
+    "home": "Altradits",
+    "menu": "Menu",
+    "map": "Map",
+    "soundOn": "Sound on",
+    "soundOff": "Sound off",
+    "language": "Language"
+  },
+  "menu": {
+    "play": "Start the safari",
+    "stops": "7 stops, about 20 minutes",
+    "made": "Made by Stanley in Kisumu, Kenya.",
+    "pretend": "Everything here is pretend. No real money."
+  },
+  "map": {
+    "title": "Your safari map",
+    "subtitle": "Finish each stop to open the next one.",
+    "stars": "Stars",
+    "locked": "Locked",
+    "soon": "Soon",
+    "open": "Play",
+    "done": "Done",
+    "finishPrev": "Finish the last stop first.",
+    "comingSoon": "This stop is still being built. Come back soon."
+  },
+  "levels": {
+    "1": { "name": "Sats Market", "line": "Count tiny coins called sats." },
+    "2": { "name": "Keys and Padlocks", "line": "Keep the secret key secret." },
+    "3": { "name": "Send It On", "line": "Pass sats along. No double spend." },
+    "4": { "name": "Block Train", "line": "Link blocks into a chain." },
+    "5": { "name": "The Guessing Game", "line": "Mine by guessing numbers." },
+    "6": { "name": "Friends Agree", "line": "Everyone keeps the same list." },
+    "7": { "name": "Only 21 Million", "line": "New coins slow down to a stop." }
+  },
+  "level": {
+    "stop": "Stop",
+    "of": "of",
+    "hint": "Hint",
+    "map": "Map"
+  },
+  "learned": {
+    "title": "What you learned",
+    "stars": "You earned {n} of 3 stars",
+    "badge": "Badge earned",
+    "next": "Next stop",
+    "again": "Play again",
+    "map": "Back to map",
+    "cite": "From the Bitcoin whitepaper, section {s}"
+  },
+  "common": {
+    "back": "Back",
+    "close": "Close",
+    "loading": "Loading..."
+  }
+}

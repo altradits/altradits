@@ -24,15 +24,15 @@ test("every page carries its own up-to-date Content-Security-Policy (nginx sends
 });
 
 test("every page refuses to load inside another site's frame (a meta policy can't forbid framing)", () => {
-  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "ktown/terms.html"]) {
-    const html = read(f), srcs = [...html.matchAll(/<script[^>]*\bsrc="\/((?:assets|ktown)\/[\w.-]+\.js)(?:\?[\w=.-]*)?"/g)].map((m) => read(m[1])).join("\n");
+  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "ktown/terms.html", "sats-safari/index.html"]) {
+    const html = read(f), srcs = [...html.matchAll(/<script[^>]*\bsrc="\/((?:assets|ktown|sats-safari)\/[\w.-]+\.js)(?:\?[\w=.-]*)?"/g)].map((m) => read(m[1])).join("\n");
     assert.match(html + srcs, /window\.top !== window\.self/, `${f}: add the frame check at the top of its script`);
     assert.match(html, /<script src="\/assets\/report\.js"><\/script>/, `${f}: the Security watch reporter is missing (run: node deploy/page-csp.mjs)`);
   }
 });
 
 test("pages have no inline event handlers or javascript: links (the policy would block them, and they invite injection)", () => {
-  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "ktown/terms.html", "yebente/app/index.html"]) {
+  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "ktown/terms.html", "yebente/app/index.html", "sats-safari/index.html"]) {
     const html = read(f);
     assert.doesNotMatch(html, /<[^>]+\son[a-z]+\s*=\s*["']/i, `${f}: move the inline handler into the page script`);
     assert.doesNotMatch(html, /href\s*=\s*["']\s*javascript:/i, `${f}: no javascript: links`);
@@ -155,7 +155,7 @@ test("no AI co-authors: the check runs in CI, before every push and on every com
 });
 
 test("every top-level folder is either public on purpose or denied to the web server", () => {
-  const PUBLIC = new Set(["assets", "ktown"]); // pages' own scripts, styles and images; kTown holds only web content
+  const PUBLIC = new Set(["assets", "ktown", "sats-safari"]); // pages' own scripts, styles and images; kTown and Sats Safari hold only web content
   const DOT = /^\./; // nginx refuses dot-folders (.git, .github, .claude); .htaccess adds 404s
   for (const d of fs.readdirSync(root, { withFileTypes: true }).filter((x) => x.isDirectory()).map((x) => x.name)) {
     if (PUBLIC.has(d) || DOT.test(d) || d === "node_modules" || d === "tmp") continue; // node_modules gets deploy/deny.htaccess on the server
@@ -209,6 +209,7 @@ test("site copy uses no em-dashes (house style: a full stop, comma or colon read
     "yebente/index.html",
     ...walk("yebente/src").filter((f) => /\.(tsx?|css)$/.test(f)),
     ...walk("ktown").filter((f) => /\.(html|js|css)$/.test(f) && !f.includes("qrcode-generator-")),
+    ...walk("sats-safari").filter((f) => /\.(html|js|css)$/.test(f)),
   ];
   for (const f of targets) assert.doesNotMatch(read(f), /—/, `${f}: replace the em-dash with a full stop, comma or colon`);
 });

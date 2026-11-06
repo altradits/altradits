@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "title": "Sats Safari",
+    "tagline": "Safari ya Bitcoin kwa watoto",
+    "taglineSub": "Cheza vituo saba vifupi. Pata nyota."
+  },
+  "nav": {
+    "home": "Altradits",
+    "menu": "Menyu",
+    "map": "Ramani",
+    "soundOn": "Sauti imewashwa",
+    "soundOff": "Sauti imezimwa",
+    "language": "Lugha"
+  },
+  "menu": {
+    "play": "Anza safari",
+    "stops": "Vituo 7, kama dakika 20",
+    "made": "Imetengenezwa na Stanley huko Kisumu, Kenya.",
+    "pretend": "Vyote hapa ni mchezo. Hakuna pesa za kweli."
+  },
+  "map": {
+    "title": "Ramani ya safari yako",
+    "subtitle": "Maliza kila kituo ili ufungue kinachofuata.",
+    "stars": "Nyota",
+    "locked": "Imefungwa",
+    "soon": "Hivi karibuni",
+    "open": "Cheza",
+    "done": "Umemaliza",
+    "finishPrev": "Kwanza maliza kituo kilichotangulia.",
+    "comingSoon": "Kituo hiki bado kinajengwa. Rudi hivi karibuni."
+  },
+  "levels": {
+    "1": { "name": "Soko la Sats", "line": "Hesabu sarafu ndogo zinazoitwa sats." },
+    "2": { "name": "Funguo na Kufuli", "line": "Weka ufunguo wa siri kwa siri." },
+    "3": { "name": "Itume", "line": "Pitisha sats. Usitumie mara mbili." },
+    "4": { "name": "Treni ya Vitalu", "line": "Unganisha vitalu kuwa mnyororo." },
+    "5": { "name": "Mchezo wa Kubashiri", "line": "Chimba kwa kubashiri nambari." },
+    "6": { "name": "Marafiki Wanakubaliana", "line": "Kila mtu ana orodha moja." },
+    "7": { "name": "Milioni 21 Tu", "line": "Sarafu mpya hupungua hadi kukoma." }
+  },
+  "level": {
+    "stop": "Kituo",
+    "of": "ya",
+    "hint": "Dokezo",
+    "map": "Ramani"
+  },
+  "learned": {
+    "title": "Ulichokijifunza",
+    "stars": "Umepata nyota {n} kati ya 3",
+    "badge": "Umetunukiwa beji",
+    "next": "Kituo kinachofuata",
+    "again": "Cheza tena",
+    "map": "Rudi kwenye ramani",
+    "cite": "Kutoka karatasi nyeupe ya Bitcoin, sehemu ya {s}"
+  },
+  "common": {
+    "back": "Nyuma",
+    "close": "Funga",
+    "loading": "Inapakia..."
+  }
+}
