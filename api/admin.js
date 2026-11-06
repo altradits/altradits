@@ -298,12 +298,12 @@ async function buildChoumiView() {
       issueUrl: "https://github.com/altradits/altradits/issues/248",
       workingMemoryIssue: 253,
       workingMemoryUrl: "https://github.com/altradits/altradits/issues/253",
-      summary: "Choumi Yakunte and the 5 background departments are back in altradits/altradits with the 2-step Deadman's Switch, per-department power buttons (off by default, $10/month ceiling, $2/incident cap, 20 worker calls/day), 4-step QA, and continual learning.",
+      summary: "Choumi Yakunte and the 5 background departments are back in altradits/altradits with the graded Deadman's Switch (watch, confirm, money-out freeze), per-department power buttons (off by default, $10/month ceiling, $2/incident cap, 20 worker calls/day), 4-step QA, and continual learning.",
       decisions: [
         "Keep lib/stan.js in code; display name is Choumi Yakunte",
         "Power buttons start OFF by default; only Stanley turns them on or off",
         "Monthly AI ceiling $10, incident cap $2, WORKER_CALLS_PER_DAY = 20",
-        "Deadman's Switch Step 1 freezes money & outgoing actions in plain code; Step 2 wakes tech, admin, growth & personal while social & marketing stay silent",
+        "Deadman's Switch freezes money-out in plain code only on a strong signal (watch and confirm never freeze); the freeze wakes tech, admin, growth & personal while social & marketing stay silent",
         "Deferred until requested: inbox reading, marketing autoposting, career tools",
       ],
       openQuestions: [
@@ -358,6 +358,12 @@ export async function POST(request) {
     const { updateDeadmanChecklist } = await import("../lib/deadman.js");
     try { return json(await updateDeadmanChecklist(body.checklist || {}, { by: "stanley" })); }
     catch (err) { return json({ error: err.message }, 400); }
+  }
+  if (body.action === "deadman_ack") {
+    const { acknowledgeWatchAsStanley } = await import("../lib/deadman.js");
+    const r = await acknowledgeWatchAsStanley();
+    if (!r.ok) return json({ error: r.reason === "no open watch" ? "No security watch is open right now." : "A lockdown lifts only through the checklist below." }, 400);
+    return json({ ok: true, closed: r.entry.id });
   }
   if (body.action === "deadman_drill") {
     const { runSecurityDrill } = await import("../lib/deadman.js");

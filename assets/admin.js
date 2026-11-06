@@ -2170,18 +2170,33 @@ async function loadChoumi() {
 
   // 1. Deadman's Switch
   issue("deadman", dm.active ? "crit" : null, dm.active ? `Deadman's Switch TRIGGERED (${dm.trigger || "manual"}): ${dm.reason || "lockdown active"}` : "", "choumi:hDeadman");
+  const dmLevel = dm.active ? 3 : Number(dm.level) || 0;
+  const dmState = dm.active ? ["TRIGGERED", "warn", `Since ${dm.trippedAt ? ago(dm.trippedAt) : "?"} (${dm.trigger || "manual"}).`]
+    : dmLevel === 2 ? ["Confirm: was this you?", "warn", "The signal persisted. Evidence emailed with a one-tap link. Nothing is frozen."]
+    : dmLevel === 1 ? ["Watch", "", "One weak signal. Watching and re-checking. Nothing is frozen."]
+    : ["Armed", "good", "Watching for intrusion 24/7."];
   $("#dmKpis").innerHTML =
-      kpi("Switch state", dm.active ? "TRIGGERED" : "Armed", dm.active ? "warn" : "good", dm.active ? `Since ${dm.trippedAt ? ago(dm.trippedAt) : "?"} (${dm.trigger || "manual"}).` : "Watching for intrusion 24/7.")
+      kpi("Switch state", dmState[0], dmState[1], dmState[2])
     + kpi("Neutralized checklist", `${done} / ${DM_CHECK_LABELS.length}`, dm.active ? (done === DM_CHECK_LABELS.length ? "good" : "warn") : "", "Every item must be ticked before you can lift the lockdown.")
     + kpi("Incident override", ai.incidentOverrideActive ? "Active" : "Standby", ai.incidentOverrideActive ? "warn" : "", "Powers on response departments during lockdown.")
     + kpi("Last drill", dm.lastDrill?.at ? ago(dm.lastDrill.at) : "None yet", dm.lastDrill?.ok ? "good" : "", dm.lastDrill?.scenario || "Run monthly on a local copy.");
   $("#dmReason").innerHTML = dm.active
-    ? `<b class="err">Lockdown active:</b> ${esc(dm.reason || "Triggered")} ${dm.detail ? `<span class="muted">(${esc(dm.detail)})</span>` : ""}`
+    ? `<b class="err">Lockdown active:</b> ${esc(dm.reason || "Triggered")} ${dm.detail ? `<span class="muted">(${esc(dm.detail)})</span>` : ""}${dm.cause ? `<br><span class="muted">Likely cause: ${esc(dm.cause)}</span>` : ""}`
     : "All triggers quiet. Money-out and external actions are operating normally.";
   const frozenEntries = Object.entries(dm.frozen || {}).filter(([, v]) => v).map(([k]) => FROZEN_LABELS[k] || k);
   $("#dmFrozen").innerHTML = frozenEntries.length
     ? `<p class="alert crit"><b>Frozen right now:</b> ${frozenEntries.map(esc).join(" · ")}</p>`
     : "";
+  const w = dm.watch;
+  $("#dmWatch").innerHTML = (!dm.active && w)
+    ? `<p class="alert ${w.level >= 2 ? "warn" : ""}"><b>Level ${esc(w.level)}, ${esc(w.level >= 2 ? "confirm" : "watch")}:</b> ${esc(w.detail || "server files differ from the last deploy")}<br><span class="muted">First seen ${esc(ago(w.firstSeen))} · seen ${esc(w.sightings)} time(s) · nothing is frozen.${dm.cause ? ` Likely cause: ${esc(dm.cause)}` : ""}</span></p>`
+    : "";
+  $("#dmAck").hidden = Boolean(dm.active || !w);
+  const DM_WATCH_OUTCOMES = { resolved: "resolved itself", acknowledged: "you confirmed: this was me", escalated_freeze: "escalated to a freeze", cleared_on_trip: "closed by the freeze", cleared_on_lift: "closed on lift" };
+  const hist = (dm.history || []).slice(0, 5);
+  $("#dmHistory").innerHTML = hist.length
+    ? hist.map((h) => `<div class="sm ev"><b>Level ${esc(h.level)}</b> · ${esc(DM_WATCH_OUTCOMES[h.outcome] || h.outcome || "closed")} · ${esc(ago(h.closedAt))} · seen ${esc(h.sightings)} time(s)<br><span class="muted">${esc((h.detail || "").slice(0, 160))}</span></div>`).join("")
+    : '<p class="muted sm">No watches yet.</p>';
   $("#dmChecklist").innerHTML = DM_CHECK_LABELS.map(([k, label]) =>
     `<label class="switch" style="display:flex;margin:.3rem 0"><input type="checkbox" data-dm-check="${esc(k)}"${cl[k] ? " checked" : ""}> ${esc(label)}</label>`
   ).join("");
@@ -2353,6 +2368,14 @@ $("#dmToggle").addEventListener("click", async () => {
       toast("Deadman's Switch tripped: lockdown active.");
     }
     $("#dmNote").value = "";
+    loadChoumi();
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
+$("#dmAck").addEventListener("click", async () => {
+  try {
+    await api("", { action: "deadman_ack" });
+    toast("Watch closed: this was you.");
     loadChoumi();
   } catch (err) { toast(err.message, true, 6000); }
 });

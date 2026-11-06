@@ -69,7 +69,7 @@ The sandbox runs while mainnet is off.
 - Per invoice: 1 to 100,000,000 sats. Per key: 100 invoices an hour.
   Per account: 2,000 invoices and 20 top-ups a day. Webhook retries:
   1m, 5m, 30m, 2h, 12h, then dead. Replay window: 5 minutes.
-- Deadman lockdown freezes new invoices and top-ups. Reads, settlement
+- Deadman lockdown freezes new top-ups only. Invoices, reads, settlement
   checks, top-up crediting and webhook retries continue.
 
 ## Files

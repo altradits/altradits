@@ -197,7 +197,7 @@
       "post": {
         "tags": ["invoices"],
         "summary": "Create an invoice",
-        "description": "Fetches a BOLT11 invoice from your verified destination for exactly the amount, checks the amount and the description hash, and tracks it. The invoice is your destination's own reply, passed through unchanged: your customer pays straight to your address. At most 100,000,000 sats per invoice. Fiat is converted at the live rate at creation and the rate is recorded. Frozen during a security lockdown (503 lockdown_freeze). Send Idempotency-Key to retry safely: the same key replays the first reply for 24 hours.",
+        "description": "Fetches a BOLT11 invoice from your verified destination for exactly the amount, checks the amount and the description hash, and tracks it. The invoice is your destination's own reply, passed through unchanged: your customer pays straight to your address. At most 100,000,000 sats per invoice. Fiat is converted at the live rate at creation and the rate is recorded. Stays live during a security lockdown: receiving always works. Send Idempotency-Key to retry safely: the same key replays the first reply for 24 hours.",
         "operationId": "createInvoice",
         "parameters": [{ "name": "Idempotency-Key", "in": "header", "schema": { "type": "string" }, "description": "A unique key for this creation. Replays the first reply for 24 hours." }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateInvoice" } } } },
