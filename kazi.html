@@ -6,7 +6,7 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-0hc3NS2IOLWR1QlZNJFG+fKo/+Wl6EHqrgjzzzlIDKQ='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-vEv9wn0uVsdLGfhGHIiwzFyTipeGNd4Xlqffnmm6eRo='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <meta name="theme-color" content="#EEF2F6">
 <link rel="canonical" href="https://altradits.com/kazi">
@@ -89,7 +89,7 @@ form.board textarea{min-height:6rem}
 form.board .row{display:grid;gap:.7rem;grid-template-columns:1fr 1fr}
 @media (max-width:520px){form.board .row{grid-template-columns:1fr}}
 .agree{display:flex;gap:.6rem;align-items:flex-start;font-weight:400}
-.agree input{width:1.4rem;height:1.4rem;margin-top:.2rem;flex:none}
+form.board .agree input{width:1.4rem;height:1.4rem;margin-top:.2rem;flex:none}
 .formmsg{font-weight:700}
 .formmsg.err{color:#9C2B2B}
 .formmsg.ok{color:var(--ok)}
@@ -327,7 +327,7 @@ const h = await api("health");
 const st = $("board-status");
 if (!h.on) { st.hidden = false; $("board-status-text").textContent = t("boardOff"); $("tasks-empty").hidden = false; return; }
 if (h.full) { st.hidden = false; $("board-status-text").textContent = t("boardFull"); } else st.hidden = true;
-try { const help = await api("help"); if (help.help) { const hp = $("board-help"); hp.hidden = false; hp.textContent = `${t("helpIs")}: ${help.help}`; } } catch {}
+try { const help = await api("help"); if (help.help) { st.hidden = false; const hp = $("board-help"); hp.hidden = false; hp.textContent = `${t("helpIs")}: ${help.help}`; } } catch {}
 tasks = (await api("list")).tasks || [];
 } catch { $("tasks-empty").hidden = false; $("tasks-empty").textContent = t("noConn"); return; }
 $("tasks-empty").hidden = tasks.length > 0;
