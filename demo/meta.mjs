@@ -34,7 +34,7 @@ say("Beat 3: one instruction becomes queued drafts.");
 const rec = await stan.instruct({
   text: "Thank Bright Kiptoo for trying the Ye₿ente wallet and invite one reply with any question.",
   dept: "founder",
-  to: "client@example.com",
+  to: "5tan@altradits.com",
 });
 console.log(`status=${rec.status} plan=${rec.plan || "(none)"}`);
 const drafts = await stan.pendingDrafts();
