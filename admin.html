@@ -748,10 +748,16 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="pane" data-pane="choumi">
   <section class="panel" aria-labelledby="hDeadman">
     <h2 id="hDeadman">Deadman's Switch</h2>
-    <div class="learn"><p><b>Step 1</b> runs in plain code (even with no AI key): if an intrusion trigger fires or you press the switch, every money-out action, top-up, and external email freezes at once while public pages keep loading. <b>Step 2</b> wakes Choumi and the response departments (Web/Bitcoin, Operations, Community Care, Personal Assistant) while Social and Marketing stay silent.</p></div>
+    <div class="learn"><p><b>Level 1</b> records a watch when one weak signal appears. <b>Level 2</b> emails you the evidence with a one-tap link when the signal persists. <b>Level 3</b> freezes money-out only on a strong signal, and wakes Choumi and the response departments (Web/Bitcoin, Operations, Community Care, Personal Assistant) while Social and Marketing stay silent. Receiving always works.</p></div>
     <div class="kpis" id="dmKpis"></div>
     <p class="sm" id="dmReason"></p>
     <div id="dmFrozen" class="sm"></div>
+    <div id="dmWatch" class="sm"></div>
+    <div class="row">
+      <button type="button" class="btn primary" id="dmAck" hidden>This was me</button>
+    </div>
+    <h3 class="sub">Watch history</h3>
+    <div id="dmHistory" class="sm"></div>
     <h3 class="sub">Neutralized checklist (required to lift lockdown)</h3>
     <div id="dmChecklist" class="sm"></div>
     <div class="row">
