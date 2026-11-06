@@ -507,6 +507,37 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
   assert.match(kt, /deleteKeys\(\[`kt:\$\{old\.id\}`\]\)/, "lib/ktown.js: a takeover ends the old record, so its sessions and QR die with it");
 });
 
+test("Kazi board: switched off by default, moderated publishing, limits on every route, words rendered inert", () => {
+  const kz = read("lib/kazi.js"), api = read("api/kazi.js"), srv = read("server.mjs"), ad = read("api/admin.js");
+  assert.match(kz, /switchOn\("KAZI"\)/, "lib/kazi.js: everything waits on the KAZI switch");
+  assert.doesNotMatch(kz, /(?<![\w.])fetch\(/, "lib/kazi.js: no outside calls at all (posters and workers settle off the board)");
+  assert.doesNotMatch(kz, /clientIp\(/, "lib/kazi.js: never sees the network address, so no record can carry it");
+  assert.match(kz, /screen\(/, "lib/kazi.js: task words pass the word screen before Stanley sees them");
+  assert.match(kz, /timingSafeEqual/, "lib/kazi.js: the manage token is compared in constant time");
+  assert.match(kz, /manageHash: sha\(token\)/, "lib/kazi.js: only the manage token's hash is stored");
+  assert.match(kz, /status: "pending"/, "lib/kazi.js: a new task waits for review");
+  assert.match(ad, /body\.action === "kazi_list"/, "api/admin.js: the moderation list sits behind the admin gate");
+  assert.match(ad, /kazi_approve/, "api/admin.js: approval is an explicit admin act");
+  assert.match(read("assets/admin.js"), /data-kazi-act/, "assets/admin.js: the dashboard approves and hides with buttons");
+  for (const k of ["rl:kz:list:", "rl:kz:post:", "rl:kz:post:all", "rl:kz:manage:", "rl:kz:flag:"])
+    assert.ok(api.includes(k), `api/kazi.js: rate limit ${k}... is in place`);
+  const html = read("kazi.html");
+  assert.match(html, /connect-src 'self'/, "kazi.html: the board calls only this site's API");
+  assert.doesNotMatch(html, /connect-src 'self' https?:/, "kazi.html: no API host beside this site");
+  assert.doesNotMatch(html, /src="http/, "kazi.html: no outside scripts or images (store assets in the repo)");
+  assert.doesNotMatch(html, /url\(http/, "kazi.html: no outside fonts or styles (store assets in the repo)");
+  const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]).join("\n");
+  const uses = [...inline.matchAll(/[^\n]*innerHTML[^\n]*/g)].map((m) => m[0].trim());
+  assert.ok(uses.length > 0 && uses.every((l) => /document\.documentElement\.innerHTML = ""/.test(l)), "kazi.html: the only innerHTML is the frame check clearing the page; task words render through textContent");
+  assert.match(inline, /window\.top !== window\.self/, "kazi.html: the frame check is in the page script");
+  assert.ok(srv.includes("|kazi)\\.html$/"), "server.mjs: /kazi.html redirects to /kazi");
+  assert.ok(srv.includes("|kazi)\\/?$/"), "server.mjs: /kazi serves the board");
+  assert.ok(srv.includes('kazi\\.html'), "server.mjs: the board page is whitelisted for serving");
+  assert.ok(srv.includes('api[1] !== "kazi"'), "server.mjs: the board API keeps its sub-paths");
+  assert.match(read(".htaccess"), /\|kazi\)\/\?\$ \$1\.html/, ".htaccess: /kazi works on the Apache stack too");
+  assert.match(read("sitemap.xml"), /<loc>https:\/\/altradits\.com\/kazi<\/loc><lastmod>20\d\d-\d\d-\d\d<\/lastmod>/, "sitemap.xml: the board is listed with a date");
+});
+
 test("admin bodies over 100 KB need the token up front: strangers hit 413, the token passes 700 KB", async () => {
   const { adminAuthed } = await import("../lib/http.js");
   assert.match(read("server.mjs"), /const limit = api\[1\] === "admin" && adminAuthed\(req\.headers\.authorization\) \? 1_000_000 : 100_000;/, "server.mjs: the ~1 MB body budget needs a valid admin token first");

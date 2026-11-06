@@ -282,7 +282,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 
   <div class="panel" id="nodeBanner" role="alert" hidden style="border-color:var(--crit)"></div>
 
-  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
+  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="kazi">Kazi</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
   <div class="pane" data-pane="overview">
   <section class="panel" aria-labelledby="hCheck">
     <h2 id="hCheck">Today's checklist</h2>
@@ -597,6 +597,17 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div class="kpis" id="actKpis" style="margin-top:.8rem"></div>
     <div id="actList" class="scroll"></div>
   </section>
+  </div>
+
+  <div class="pane" data-pane="kazi">
+    <section class="panel" aria-labelledby="hKazi">
+      <h2 id="hKazi">Kazi board moderation</h2>
+      <div class="learn"><p>Small paid tasks for Kisumu. Nothing goes public until you approve it here. Flags from visitors and the word screen's notes show on each task. Edits by the poster come back to this list.</p></div>
+      <h3 class="sub">Waiting for review <span class="muted sm" id="kaziPendingCount"></span></h3>
+      <div id="kaziPending"></div>
+      <h3 class="sub">On the board <span class="muted sm" id="kaziOpenCount"></span></h3>
+      <div id="kaziOpen"></div>
+    </section>
   </div>
 
   <div class="pane" data-pane="security">
