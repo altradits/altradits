@@ -282,7 +282,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 
   <div class="panel" id="nodeBanner" role="alert" hidden style="border-color:var(--crit)"></div>
 
-  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="earn">Earn</button><button type="button" data-tab="kazi">Kazi</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
+  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="developer">Developer</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="earn">Earn</button><button type="button" data-tab="kazi">Kazi</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
   <div class="pane" data-pane="overview">
   <section class="panel" aria-labelledby="hCheck">
     <h2 id="hCheck">Today's checklist</h2>
@@ -613,6 +613,24 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div class="kpis" id="moneyKpis"></div>
     <div class="row"><button type="button" class="btn" id="moneyCsv">Download for the books (CSV)</button></div>
     <div id="moneyList" class="scroll"></div>
+  </section>
+  </div>
+
+  <div class="pane" data-pane="developer">
+  <section class="panel" aria-labelledby="hDevMoney">
+    <h2 id="hDevMoney">Developer API: fees earned</h2>
+    <div class="learn"><p>Other developers' apps pay you 0.5% of settled volume, prepaid in sats to your node. Their customers' money never touches you: it goes straight to their own addresses. Only live fees below are real sats.</p></div>
+    <div class="kpis" id="devKpis"></div>
+    <p class="sm" id="devSwitches"></p>
+  </section>
+  <section class="panel" aria-labelledby="hDevFlags">
+    <h2 id="hDevFlags">Abuse flags</h2>
+    <div class="learn"><p>Shortfall means simultaneous settlements cost more than the balance held. Guessing counts come from the Security watch. Suspend a key to stop it at once; the developer can still create a new one from their dashboard.</p></div>
+    <div id="devFlags" class="scroll"></div>
+  </section>
+  <section class="panel" aria-labelledby="hDevAccts">
+    <h2 id="hDevAccts">Accounts</h2>
+    <div id="devAccounts" class="scroll"></div>
   </section>
   </div>
 
@@ -1040,6 +1058,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn" id="rcptResend" hidden>Resend receipt email</button><button type="button" class="btn primary" id="rcptClose">Close</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<script type="module" src="/assets/admin.js?v=refresh19"></script>
+<script type="module" src="/assets/admin.js?v=refresh20"></script>
 </body>
 </html>

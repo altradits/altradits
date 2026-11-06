@@ -19,5 +19,8 @@
   <url><loc>https://altradits.com/journey</loc><lastmod>2026-11-03</lastmod><priority>0.7</priority></url>
   <url><loc>https://altradits.com/donate</loc><lastmod>2026-11-03</lastmod><priority>0.4</priority></url>
   <url><loc>https://altradits.com/contact</loc><lastmod>2026-11-03</lastmod><priority>0.5</priority></url>
+  <url><loc>https://altradits.com/developer</loc><lastmod>2026-11-06</lastmod><priority>0.7</priority></url>
+  <url><loc>https://altradits.com/developer/reference</loc><lastmod>2026-11-06</lastmod><priority>0.5</priority></url>
+  <url><loc>https://altradits.com/developer/dashboard</loc><lastmod>2026-11-06</lastmod><priority>0.4</priority></url>
   <url><loc>https://altradits.com/kazi</loc><lastmod>2026-11-06</lastmod><priority>0.5</priority></url>
 </urlset>

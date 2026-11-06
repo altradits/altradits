@@ -630,6 +630,33 @@ async function download(path, name) {
 $("#moneyList").addEventListener("click", (e) => { const i = e.target.closest("[data-receipt]")?.dataset.receipt; if (i !== undefined) openReceipt(Number(i)); });
 $("#moneyCsv").addEventListener("click", () => download("?view=statement&format=csv", `altradits-statement-${new Date().toISOString().slice(0, 10)}.csv`));
 
+// Developer API: accounts, volume, fees earned to the node, abuse flags, key suspension.
+async function loadDeveloper() {
+  let D; try { D = await api("?view=developer"); } catch (err) { $("#devAccounts").textContent = err.message; return; }
+  $("#devKpis").innerHTML = kpi("Fees earned (live)", satsF(D.feesEarnedLive), "", `${ksh(D.feesEarnedLive)} to your node.`)
+    + kpi("Settled volume (live)", satsF(D.settledVolumeLive), "", "Through developers' own addresses.")
+    + kpi("Accounts", num(D.accountCount), "", `${D.totals.live.settledCount} live settlements, ${D.totals.test.settledCount} test.`)
+    + kpi("Flags", num(D.flags.length), D.flags.length ? "warn" : "good", D.flags.length ? "See below." : "Nothing flagged.");
+  $("#devSwitches").textContent = `API ${D.switches.api ? "on" : "off"} (DEVAPI) · Sandbox ${D.switches.sandbox ? "on" : "off"} (DEVAPI_SANDBOX) · Code guessing today: ${D.guessing.code.today} · Key guessing today: ${D.guessing.key.today}.`;
+  issue("devflags", D.flags.length ? "soon" : null, D.flags.length ? `${D.flags.length} Developer API account${D.flags.length === 1 ? " needs" : "s need"} a look.` : "", "developer:hDevFlags");
+  $("#devFlags").innerHTML = D.flags.length ? `<table><thead><tr><th>Account</th><th>Flag</th><th>Detail</th></tr></thead><tbody>${D.flags.map((f) =>
+    `<tr><td>${esc(f.email)}</td><td>${esc(f.kind)}</td><td>${esc(f.detail)}</td></tr>`).join("")}</tbody></table>`
+    : '<p class="muted sm">No flags.</p>';
+  $("#devAccounts").innerHTML = D.accounts.length ? D.accounts.map((a) =>
+    `<table><thead><tr><th colspan="4">${esc(a.email)}${a.suspended ? ' · <b class="err">suspended</b>' : ""}</th></tr></thead><tbody>`
+    + `<tr><td>Live balance</td><td>${esc(satsF(a.balance.live))}</td><td>Test balance</td><td>${esc(satsF(a.balance.test))}</td></tr>`
+    + `<tr><td>Live fees paid</td><td>${esc(satsF(a.totals.live.feesPaid))}</td><td>Live volume</td><td>${esc(satsF(a.totals.live.settledVolume))} (${a.totals.live.settledCount})</td></tr>`
+    + `<tr><td>Destinations</td><td>${a.verifiedDestinations} of ${a.destinations} verified</td><td>Keys</td><td>${a.activeKeys} of ${a.keyCount} active</td></tr>`
+    + a.keys.map((k) => `<tr><td><code>${esc(k.prefix)}…</code></td><td>${esc(k.name)} · ${k.sandbox ? "test" : "live"}${k.revokedAt ? " · revoked" : ""}</td><td class="sm muted">${esc(k.scopes.join(", "))}</td><td>${k.revokedAt ? "" : `<button type="button" class="btn" data-dev-suspend="${esc(k.id)}">Suspend</button>`}</td></tr>`).join("")
+    + `</tbody></table>`).join("") : '<p class="muted sm">No developer accounts yet.</p>';
+}
+$("#devAccounts").addEventListener("click", async (e) => {
+  const id = e.target.closest("[data-dev-suspend]")?.dataset.devSuspend;
+  if (!id) return;
+  try { await api("", { action: "dev_suspend_key", keyId: id }); toast("Key suspended."); loadDeveloper(); }
+  catch (err) { toast(err.message, true, 6000); }
+});
+
 // Profit and loss: what the node earned and spent, and what is yours after Ye₿ente's wallet holders.
 async function loadPnl() {
   let L; try { L = await api(`?view=pnl&days=${encodeURIComponent($("#pnlDays").value)}`); } catch (err) { $("#pnlTable").textContent = err.message; return; }
@@ -2734,9 +2761,9 @@ async function load() {
   OVERVIEW = D;
   renderChecklist(D); renderStan(D.stan, D.alerts); renderNode(D); renderChain(D); renderChainLow(D); renderRouting(D); renderSettlement(D); renderGlossary(); renderBanner(D); renderBackup(D.backup);
   renderVerify();
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing()]);
+  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing()]);
   if (document.querySelector('[data-pane="earn"].on') && !njiaLoaded) await loadNjia(false); // Earn visible on sign-in: first load gentle
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
+  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
 }
 token ? load() : showLogin();

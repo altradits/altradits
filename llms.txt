@@ -22,6 +22,14 @@ Ye₿ente. Start here: https://altradits.com/
   the merchant receives Kenyan shillings in M-Pesa. kTown holds no money and
   is not a wallet; Tando converts for a 1 percent fee.
 
+## Developer: a Lightning API for Bitcoin apps
+
+- Create Lightning invoices to your own address, verify settlement, get
+  webhooks: https://altradits.com/developer. Non-custodial: customers pay
+  the developer straight. Sandbox free, live costs 0.5 percent prepaid
+  in sats. Reference: https://altradits.com/developer/reference.
+  Dashboard: https://altradits.com/developer/dashboard.
+
 ## Njia: the node learning to earn
 
 - How the Lightning node earns from routing fees and leased channels: https://altradits.com/njia

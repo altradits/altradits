@@ -15,6 +15,8 @@
 //   GET  /api/admin?view=emails      -> the email log (a wallet email's link is never stored)
 //   GET  /api/admin?view=statement   -> money received through the website (&format=csv for the books)
 //   GET  /api/admin?view=activity&days=30 -> Ye₿ente deposits and transactions per wallet, most active first
+//   GET  /api/admin?view=developer -> Developer API accounts, volume, fees earned, abuse flags
+//   POST { action: "dev_suspend_key", keyId } -> suspend a Developer API key
 //   GET  /api/admin?view=trivia -> Mempool Mayhem games with pools; ?view=trivia_game&game= -> one game: pool, ledger, donors, payouts, live play, stakes
 //   POST { action: "stan_report" } | { action: "node_topup", sats } | { action: "address_qr", address } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
 //   POST { action: "trivia_create", id?, title, startsAt?, players? } | { action: "trivia_schedule", id, startsAt } | { action: "trivia_start", id, totalRounds? } | { action: "trivia_cancel", id, rule: "keep"|"return", note?, nextGame? } | { action: "trivia_payout", game, winner, to, pin }
@@ -143,6 +145,10 @@ export async function GET(request) {
     return json(await walletActivity({ days }));
   }
   if (view === "emails") return json({ emails: (await getMany("email", await listIds("emails", 100))).map(({ text, ...e }) => e) });
+  if (view === "developer") {
+    const { developerAdminView } = await import("../lib/devapi.js");
+    return json(await developerAdminView());
+  }
   // Mempool Mayhem: games with pools (reads stay up when the switch is off).
   if (view === "trivia") {
     const dn = await import("../lib/trivia-donors.js");
@@ -332,6 +338,11 @@ export async function POST(request) {
     if (!validDepositAddress(address)) return json({ error: "That isn't a bc1q address from your node. On the Mac run lncli --lnddir=$HOME/.lnd-altradits --network=mainnet newaddress p2wkh and paste the whole address." }, 400);
     if ((await hit("rl:addrqr", 3600)) > 60) return json({ error: "Too many QR codes. Try again in an hour." }, 429);
     return json({ address, qr: await qrSvg(address) });
+  }
+  if (body.action === "dev_suspend_key") {
+    const { adminSuspendKey } = await import("../lib/devapi.js");
+    try { return json({ ok: true, ...(await adminSuspendKey(clean(body.keyId, 64))) }); }
+    catch (err) { return json({ error: err.message }, err.status || 400); }
   }
   if (body.action === "deadman_trip") {
     const { tripDeadman } = await import("../lib/deadman.js");
