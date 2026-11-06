@@ -215,3 +215,102 @@ test("ai: enforces WORKER_CALLS_PER_DAY (20), monthly $10 ceiling, and $2 incide
   assert.equal(isDeptOn("marketing"), true, "marketing restored to Stanley's prior on state");
   delete process.env.ANTHROPIC_API_KEY;
 });
+
+test("ai: guarded create keeps the SDK promise shape (withResponse/asResponse) and records each call once", async () => {
+  resetStateFile();
+  process.env.ANTHROPIC_API_KEY = "[REDACTED]";
+  setDeptPower("tech", true, { by: "stanley" });
+  const data = {
+    model: "claude-sonnet-5-5",
+    content: [{ type: "text", text: "hi" }],
+    stop_reason: "end_turn",
+    usage: { input_tokens: 100, output_tokens: 50 },
+  };
+  const apiPromise = () => {
+    const p = Promise.resolve(data);
+    p.withResponse = async () => ({ data, response: { status: 200 } });
+    p.asResponse = async () => ({ status: 200 });
+    return p;
+  };
+  const c = guardClient({ messages: { create: () => apiPromise() } }, "tech");
+
+  const viaAwait = await c.messages.create({ model: "x" });
+  assert.equal(viaAwait.content[0].text, "hi");
+  const viaBoth = await c.messages.create({ model: "x" }).withResponse();
+  assert.equal(viaBoth.data.content[0].text, "hi");
+  assert.equal(viaBoth.response.status, 200);
+  const raw = await c.messages.create({ model: "x" }).asResponse();
+  assert.equal(raw.status, 200);
+
+  const tech = deptPowerView().departments.find((d) => d.id === "tech");
+  assert.equal(tech.today.calls, 3, "one usage record per call, however it was consumed");
+  assert.equal(tech.month.calls, 3);
+  delete process.env.ANTHROPIC_API_KEY;
+});
+
+test("ai: guard refusals reject through withResponse too, so an in-flight stream still pauses cleanly", async () => {
+  resetStateFile();
+  process.env.ANTHROPIC_API_KEY = "[REDACTED]";
+  const c = guardClient({ messages: { create: async () => ({}) } }, "tech");
+  await assert.rejects(() => c.messages.create({}), (e) => isAiPaused(e) && e.kind === "dept_off");
+  await assert.rejects(() => c.messages.create({}).withResponse(), (e) => isAiPaused(e) && e.kind === "dept_off");
+  await assert.rejects(() => c.messages.create({}).asResponse(), (e) => isAiPaused(e) && e.kind === "dept_off");
+  delete process.env.ANTHROPIC_API_KEY;
+});
+
+test("ai: a guarded SDK stream survives the SDK inner messages.create(...).withResponse() and records one call", async () => {
+  resetStateFile();
+  process.env.ANTHROPIC_API_KEY = "[REDACTED]";
+  setDeptPower("founder", true, { by: "stanley" });
+  const { default: Anthropic } = await import("@anthropic-ai/sdk");
+  const sse = [
+    'event: message_start',
+    'data: {"type":"message_start","message":{"id":"m1","type":"message","role":"assistant","content":[],"model":"m","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":10,"output_tokens":1}}}',
+    '',
+    'event: content_block_start',
+    'data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}',
+    '',
+    'event: content_block_delta',
+    'data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"hi"}}',
+    '',
+    'event: content_block_stop',
+    'data: {"type":"content_block_stop","index":0}',
+    '',
+    'event: message_delta',
+    'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":5}}',
+    '',
+    'event: message_stop',
+    'data: {"type":"message_stop"}',
+    '',
+    '',
+  ].join("\n");
+  const stubFetch = async () => new Response(sse, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+  const c = guardClient(new Anthropic({ apiKey: "test-key", fetch: stubFetch }), "founder");
+  const msg = await c.messages.stream({ model: "m", max_tokens: 5, messages: [{ role: "user", content: "hi" }] }).finalMessage();
+  assert.equal(msg.content[0].text, "hi");
+  const founder = deptPowerView().departments.find((d) => d.id === "founder");
+  assert.equal(founder.today.calls, 1, "streaming call recorded once, on the final message");
+  assert.ok(founder.today.usd > 0, "streaming call records spend from the final usage");
+  delete process.env.ANTHROPIC_API_KEY;
+});
+
+test("ai: errors through withResponse still map and trip the breaker, without an unhandled rejection", async () => {
+  resetStateFile();
+  process.env.ANTHROPIC_API_KEY = "[REDACTED]";
+  setDeptPower("tech", true, { by: "stanley" });
+  const creditErr = Object.assign(new Error("Your credit balance is too low."), { status: 400 });
+  const c = guardClient({
+    messages: {
+      create: () => {
+        const p = Promise.reject(creditErr);
+        p.withResponse = async () => { await p; };
+        return p;
+      },
+    },
+  }, "tech");
+  await assert.rejects(() => c.messages.create({}).withResponse(), (e) => isAiPaused(e) && e.kind === "credits");
+  assert.equal(aiPaused(), true);
+  assert.equal(aiStatus().kind, "credits");
+  resumeAi();
+  delete process.env.ANTHROPIC_API_KEY;
+});
