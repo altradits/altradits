@@ -613,6 +613,33 @@ test("pilot cap: past KTOWN_MAX_MERCHANTS registration is refused, health names 
   process.env.KTOWN_MAX_MERCHANTS = "1000";
 });
 
+test("pilot cap: two strangers racing for the last place never overshoot it", async () => {
+  const base = await kt.merchantCount();
+  process.env.KTOWN_MAX_MERCHANTS = String(base + 1);
+  try {
+    const rs = await Promise.all([
+      post("register", { agree: true, phone: "0711000404", shop: "Last A", mpesaName: "LAST A", pin: "715293" }, { ip: "8.8.4.1" }),
+      post("register", { agree: true, phone: "0711000505", shop: "Last B", mpesaName: "LAST B", pin: "482916" }, { ip: "8.8.4.2" }),
+    ]);
+    assert.ok(rs.filter((r) => r.status === 200).length <= 1, JSON.stringify(rs.map((r) => r.status)));
+    for (const r of rs) if (r.status !== 200) assert.equal(r.body.error, "kTown is full for now.");
+    assert.ok((await kt.merchantCount()) <= base + 1, "never past the cap");
+    for (const r of rs) if (r.status !== 200) {
+      const phone = r === rs[0] ? "254711000404" : "254711000505";
+      assert.equal(await store.getJSON(`kt:phone:${phone}`), null, "a sign-up that gave its place back leaves no record");
+    }
+  } finally {
+    process.env.KTOWN_MAX_MERCHANTS = "1000";
+  }
+});
+
+test("an app copy from before the terms (no agree sent) is told to reopen", async () => {
+  const r = await post("register", { phone: "0711000606", shop: "Old App", mpesaName: "OLD APP", pin: "715293" });
+  assert.equal(r.status, 400);
+  assert.match(r.body.error, /new terms\. Close and reopen the app/);
+  assert.equal((await post("register", { agree: false, phone: "0711000606", shop: "Old App", mpesaName: "OLD APP", pin: "715293" })).body.error, "Tick 'I agree' to the terms first.");
+});
+
 test("squatter blocklist: a blocked number cannot register; unblock lifts it", async () => {
   assert.equal((await apost({ action: "ktown_block", phone: "0711000404" }, "wrong-token")).status, 401);
   assert.equal((await apost({ action: "ktown_block", phone: "0711000404" }, null)).status, 401);
