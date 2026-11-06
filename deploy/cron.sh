@@ -15,11 +15,20 @@ find . -maxdepth 1 -name .deploy.lock -mmin +10 -exec rmdir {} \; 2>/dev/null ||
 mkdir .deploy.lock 2>/dev/null || exit 0
 trap 'rmdir .deploy.lock 2>/dev/null' EXIT
 
+# The Deadman's Switch file check defers while a deploy runs: judging a
+# half-written tree froze money-out on 6 Nov 2026. The marker records the
+# window (start/end); a run that dies leaves "in-progress", which the check
+# treats as stale after 15 minutes. Timestamps and commit hashes only.
+MARKER="$APP_DIR/.deploy-marker.json"
+marker() { printf '{"state":"%s","startedAt":"%s","endedAt":"%s","oldHead":"%s","newHead":"%s","changed":%s}\n' "$1" "$2" "$3" "$4" "$5" "$6" > "$MARKER" 2>/dev/null || true; }
+
 # A failed fetch (GitHub down, or the deploy key missing) must not stop the
 # rest: the keep-warm ping below runs the daily backup and follow-ups. It is
 # logged once an hour, not every 5 minutes. Never prompt for a password.
 export GIT_TERMINAL_PROMPT=0
 OLD=$(git rev-parse HEAD)
+STARTED=$(date -u +%FT%TZ)
+marker "in-progress" "$STARTED" "" "$OLD" "" "false"
 if git fetch -q origin main 2>/dev/null; then
   NEW=$(git rev-parse origin/main)
 else
@@ -65,6 +74,10 @@ fi
 if [ -n "$CHANGED" ]; then
   mkdir -p tmp && touch tmp/restart.txt
 fi
+
+# The deploy window ends here: the tree is final, so the file check may judge it again.
+if [ -n "$CHANGED" ]; then marker "done" "$STARTED" "$(date -u +%FT%TZ)" "$OLD" "$(git rev-parse HEAD)" "true";
+else marker "done" "$STARTED" "$(date -u +%FT%TZ)" "$OLD" "$OLD" "false"; fi
 
 # Keep the app warm. Each ping also runs any daily or hourly job that is due
 # (backup, follow-ups, held payments), even if the app was just restarted.
