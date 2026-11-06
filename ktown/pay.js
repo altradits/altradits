@@ -10,11 +10,13 @@ const STR = {
     honest: "kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.",
     poweredBy: "Powered by Tando (1% fee)", helpIs: "Help",
     between: "Between", and: "and", receive: "Merchant receives",
-    feeIncl: "Tando's 1% included", scanWith: "Scan with your wallet",
+    scanWith: "Scan with your wallet",
     copy: "Copy", copied: "Copied.", openWallet: "Open in wallet",
     waitingPay: "Waiting for payment…", stillWaiting: "Still waiting.",
     checkAgain: "Check again", newAmount: "New amount",
     paid: "Paid", paidRecv: "Merchant received", failedPay: "Payment failed. Try a new amount.",
+    tandoFee: "Tando fee", about: "about", pctNote: "(1%)",
+    youPaid: "You paid", satsUnit: "sats",
     afterPayNote: "After paying, the merchant's M-Pesa message confirms it.",
     unknownQr: "This QR code is unknown.",
     confirmed: "Confirmed M-Pesa name", notConfirmed: "M-Pesa name not yet confirmed",
@@ -25,11 +27,13 @@ const STR = {
     honest: "kTown haishiki pesa. Tando hubadilisha sats kuwa M-Pesa kwa asilimia 1.",
     poweredBy: "Inaendeshwa na Tando (ada 1%)", helpIs: "Msaada",
     between: "Kati ya", and: "na", receive: "Muuzaji atapokea",
-    feeIncl: "Ada ya Tando asilimia 1 imejumuishwa", scanWith: "Skani na pochi yako",
+    scanWith: "Skani na pochi yako",
     copy: "Nakili", copied: "Imenakiliwa.", openWallet: "Fungua kwenye pochi",
     waitingPay: "Inasubiri malipo…", stillWaiting: "Bado inasubiri.",
     checkAgain: "Angalia tena", newAmount: "Kiasi kipya",
     paid: "Imelipwa", paidRecv: "Muuzaji alipokea", failedPay: "Malipo yameshindikana. Jaribu kiasi kipya.",
+    tandoFee: "Ada ya Tando", about: "takriban", pctNote: "(asilimia 1)",
+    youPaid: "Umelipa", satsUnit: "sats",
     afterPayNote: "Baada ya kulipa, ujumbe wa M-Pesa wa muuzaji ndio uthibitisho.",
     unknownQr: "Msimbo huu haujulikani.",
     confirmed: "Jina la M-Pesa limethibitishwa", notConfirmed: "Jina la M-Pesa halijathibitishwa",
@@ -39,6 +43,8 @@ const STR = {
 let lang = localStorage.getItem("kt.paylang") || "en";
 const t = (k) => (STR[lang] && STR[lang][k]) || STR.en[k] || k;
 const kesFmt = (n) => `KSh ${Number(n).toLocaleString("en-US")}`;
+// An about figure with at most two decimals, zeros trimmed: 20.2, not 20.20.
+const kesApprox = (n) => `KSh ${Number(Number(n).toFixed(2)).toLocaleString("en-US")}`;
 
 const id = (location.pathname.match(/\/k\/([A-Za-z0-9_-]{1,80})/) || [])[1] || "";
 let terms = null; // { shop, mpesa, verified, kesMin, kesMax, mult }
@@ -83,15 +89,14 @@ function refreshReceive() {
   hideErr("pay-err");
   const kes = kesOfInput();
   const btn = $("btn-pay");
+  // Before paying, the payer sees only what the merchant will receive: no
+  // sats figure, no fee line. The breakdown shows after the payment lands.
   if (kes == null || !terms) {
     $("receive").textContent = "";
-    $("sats").textContent = "";
     btn.disabled = true;
     return;
   }
   $("receive").textContent = `${t("receive")} ${kesFmt(kes)}`;
-  const sats = Math.round((kes * terms.mult * 1.01) / 1000);
-  $("sats").textContent = `≈ ${sats.toLocaleString("en-US")} sats · ${t("feeIncl")}`;
   const ok = kes >= terms.kesMin && kes <= terms.kesMax;
   btn.disabled = !ok;
   if (!ok) {
@@ -152,12 +157,21 @@ async function pollOnce() {
   return false;
 }
 
+function setLine(id, text) {
+  $(id).textContent = text || "";
+  $(id).parentElement.hidden = !text;
+}
+
 function showPaid(d) {
   $("view-invoice").hidden = true;
   $("view-paid").hidden = false;
   $("paid-title").textContent = `✓ ${t("paid")}`;
   $("paid-code").textContent = d.mpesaCode || "";
-  $("paid-sub").textContent = d.kes != null ? `${t("paidRecv")} ${kesFmt(d.kes)}` : "";
+  setLine("paid-sub", d.kes != null ? `${t("paidRecv")} ${kesFmt(d.kes)}` : "");
+  setLine("paid-fee", d.kes != null && d.feeKes != null
+    ? `${t("tandoFee")} ${t("about")} ${kesApprox(d.feeKes)} ${t("pctNote")}` : "");
+  setLine("paid-sats", d.kes != null && d.feeKes != null && d.sats != null
+    ? `${t("youPaid")} ${Number(d.sats).toLocaleString("en-US")} ${t("satsUnit")} (${t("about")} ${kesApprox(d.kes + d.feeKes)})` : "");
   window.scrollTo(0, 0);
 }
 

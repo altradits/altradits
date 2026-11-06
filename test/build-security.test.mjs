@@ -455,6 +455,14 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
     for (const [, id] of src.matchAll(/\$\("([a-z-]+)"\)/g))
       assert.ok(html.includes(`id="${id}"`), `${js}: #${id} is missing from ${page}`);
   }
+  const payHtml = read("ktown/pay.html"), payJs = read("ktown/pay.js");
+  assert.doesNotMatch(payHtml, /id="sats"/, "ktown/pay.html: before paying, no sats figure is shown");
+  assert.doesNotMatch(payJs, /feeIncl/, "ktown/pay.js: before paying, no fee line is shown");
+  assert.match(payJs, /setLine\("paid-fee"/, "ktown/pay.js: after paying, the Tando fee shows");
+  assert.match(payJs, /setLine\("paid-sats"/, "ktown/pay.js: after paying, the sats paid show");
+  const appJs = read("ktown/app.js");
+  assert.match(appJs, /e\.mode === "msat"/, "ktown/app.js: history names payments that arrived by a wallet's own conversion");
+  assert.match(appJs, /kesReceived < e\.kesExpected/, "ktown/app.js: history shows quoted vs received when they differ");
   const qrLib = fs.readdirSync(path.join(root, "ktown")).find((f) => f.startsWith("qrcode-generator-") && f.endsWith(".js"));
   assert.ok(qrLib && /\d+\.\d+\.\d+/.test(qrLib), "ktown/: the QR library is vendored with its version in the name, never hotlinked");
   assert.match(read(`ktown/${qrLib}`), /Licensed under the MIT license/, "ktown/: the QR library keeps its licence header");

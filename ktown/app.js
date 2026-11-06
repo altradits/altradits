@@ -21,6 +21,9 @@ const STR = {
     verifyHint: "Type it exactly as M-Pesa shows it. The first payment confirms it.",
     saved: "Saved.", histEmpty: "No payments yet.",
     received: "Received", waiting: "Waiting", failed: "Failed",
+    payerFee: "Payer covered", pctNote: "(1%)",
+    quotedWord: "Quoted", landedWord: "received",
+    histWallet: "Paid from a wallet in sats. Tando's 1% came out of the shillings.",
     noConn: "No connection. Try again.",
     tryAgain: "Something went wrong. Try again.",
     offlineNote: "Offline. Showing saved data.",
@@ -42,6 +45,9 @@ const STR = {
     verifyHint: "Andika kama M-Pesa inavyoonyesha. Malipo ya kwanza yatalithibitisha.",
     saved: "Imehifadhiwa.", histEmpty: "Hakuna malipo bado.",
     received: "Imepokelewa", waiting: "Inasubiri", failed: "Imeshindikana",
+    payerFee: "Mlipaji alilipa", pctNote: "(asilimia 1)",
+    quotedWord: "Bei", landedWord: "zimefika",
+    histWallet: "Imelipwa kutoka pochi kwa sats. Asilimia 1 ya Tando ilitoka kwenye shilingi.",
     noConn: "Hakuna mtandao. Jaribu tena.",
     tryAgain: "Kuna tatizo. Jaribu tena.",
     offlineNote: "Nje ya mtandao. Inaonyesha data iliyohifadhiwa.",
@@ -152,6 +158,21 @@ function renderHistory(entries) {
     sub.className = "sub";
     sub.textContent = e.mpesaCode ? `${e.mpesaCode} · ${fmtDate(e.confirmedAt || e.at)}` : fmtDate(e.at);
     left.append(amt, sub);
+    // What landed and why: the fee the payer covered, quoted vs received
+    // when they differ, or the wallet's own conversion that absorbed the fee.
+    if (e.status === "completed" && e.kesReceived != null) {
+      const det = document.createElement("div");
+      det.className = "sub";
+      if (e.mode === "msat") {
+        det.textContent = t("histWallet");
+      } else if (e.kesReceived < e.kesExpected) {
+        det.textContent = `${t("quotedWord")} ${money(e.kesExpected, "KES")}, ${t("landedWord")} ${money(e.kesReceived, "KES")}`;
+        det.className = "sub short";
+      } else if (e.feeKes != null) {
+        det.textContent = `${t("payerFee")} ${money(e.feeKes, "KES")} ${t("pctNote")}`;
+      }
+      if (det.textContent) left.append(det);
+    }
     const st = document.createElement("div");
     st.className = "st " + (e.status === "completed" ? "done" : e.status === "failed" ? "fail" : "wait");
     st.textContent = e.status === "completed" ? t("received") : e.status === "failed" ? t("failed") : t("waiting");

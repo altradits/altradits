@@ -238,8 +238,11 @@ test("callback in KES mode: Tando's invoice unchanged, merchant receives exactly
   assert.ok(hist[0].sats > 1000 && hist[0].sats < 1100, `${hist[0].sats} sats for KES 100 plus 1%`);
   const ids = await store.listIds(`kt:tx:${adaId}`, 10);
   const entry = await store.getJSON(`kte:${ids[0]}`);
-  assert.deepEqual(Object.keys(entry).sort(), ["at", "confirmedAt", "hash", "id", "kesExpected", "kesReceived",
-    "merchantId", "merchantName", "mpesaCode", "msats", "sats", "status"]);
+  assert.deepEqual(Object.keys(entry).sort(), ["at", "confirmedAt", "feeKes", "hash", "id", "kesExpected", "kesReceived",
+    "merchantId", "merchantName", "mode", "mpesaCode", "msats", "mult", "sats", "status"]);
+  assert.equal(entry.mode, "kes", "the pay page prices in KES, so the payer covers the fee on top");
+  assert.equal(entry.mult, MULT, "the rate the fee figure is worked out from");
+  assert.equal(entry.feeKes, 1, "KES 100 at 1%: the payer's on-top fee, to two decimals");
   assert.ok(!fs.readFileSync(path.join(".data", "db.json"), "utf8").includes("203.0.113.9"), "no network address is stored");
   assert.equal((await get(`lnurlp/${adaId}/cb?amount=5&currency=KES`)).body.reason, "Send between 15 and 50,000 KES.");
   assert.equal((await get(`lnurlp/${adaId}/cb?amount=60000&currency=KES`)).status, 200);
@@ -254,6 +257,8 @@ test("callback in msat mode: the invoice must match the millisats exactly", asyn
   assert.equal(bolt11Msats(r.body.pr), 500000);
   const hist = (await get("history", { token: ada.session })).body.entries;
   assert.equal(hist[0].kesExpected, Math.floor((500000 / MULT) * 0.99), "KES value of the sats minus the 1%");
+  assert.equal(hist[0].mode, "msat", "history names the wallet-conversion path");
+  assert.equal(hist[0].feeKes, 1, "50 KES of sats: about 1 KES came out of the delivered shillings");
   tando.mode = "wrong_msats";
   try {
     const bad = await get(`lnurlp/${adaId}/cb?amount=500000`);
@@ -298,8 +303,8 @@ test("receipt: a completed payment lands in history and verifies the typed M-Pes
   tando.receipts.set(hash, receiptTx({ payToAccount: "254712345678", merchantName: "JANE W MWANGI", currencyAmountSent: 100 }));
   const rc = await get(`receipt/${hash}`);
   assert.equal(rc.status, 200, JSON.stringify(rc.body));
-  assert.deepEqual(rc.body, { success: true, status: "completed", paid: true, kes: 100,
-    mpesaCode: "TIA7QK4M2P", merchantName: "JANE W MWANGI" });
+  assert.deepEqual(rc.body, { success: true, status: "completed", paid: true, kes: 100, quoted: 100,
+    sats: 1010, feeKes: 1, mode: "kes", mpesaCode: "TIA7QK4M2P", merchantName: "JANE W MWANGI" });
   const hist = (await get("history", { token: ada.session })).body.entries;
   const done = hist.find((e) => e.mpesaCode === "TIA7QK4M2P");
   assert.equal(done.status, "completed");
@@ -318,6 +323,57 @@ test("receipt: a completed payment lands in history and verifies the typed M-Pes
   assert.equal((await get("me", { token: ada.session })).body.merchant.verified, false);
   assert.equal((await get("me", { token: ada.session })).body.merchant.claimed, true, "a rename unchecks the name, never the proven number");
   await post("settings", { mpesaName: "JANE W MWANGI" }, { token: ada.session });
+});
+
+test("KES mode delivers exactly the quoted shillings, with the payer's fee on top", async () => {
+  const s = await post("register", { agree: true, phone: "0711222333", shop: "Exact Shop", mpesaName: "EXACT SHOP", pin: "715293" });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  const id = s.body.merchant.id, session = s.body.session;
+  const inv = await get(`lnurlp/${id}/cb?amount=20&currency=KES`);
+  assert.equal(inv.status, 200, JSON.stringify(inv.body));
+  const hash = inv.body.successAction.url.split("/").pop();
+  // Tando's KES mode delivers exactly what was asked (docs, Fees and rounding).
+  tando.receipts.set(hash, receiptTx({ payToAccount: "254711222333", merchantName: "EXACT SHOP", currencyAmountSent: 20 }));
+  const rc = await get(`receipt/${hash}`);
+  assert.deepEqual(rc.body, { success: true, status: "completed", paid: true, kes: 20, quoted: 20,
+    sats: 202, feeKes: 0.2, mode: "kes", mpesaCode: "TIA7QK4M2P", merchantName: "EXACT SHOP" });
+  const hist = (await get("history", { token: session })).body.entries;
+  assert.equal(hist.length, 1);
+  assert.equal(hist[0].kesExpected, 20, "the quoted shillings");
+  assert.equal(hist[0].kesReceived, 20, "exactly what landed");
+  assert.equal(hist[0].mode, "kes");
+  assert.equal(hist[0].feeKes, 0.2, "the 1% the payer covered on top, to two decimals");
+  assert.equal(hist[0].sats, 202, "20 KES in sats plus the 1%, whole sats");
+});
+
+test("a KES shortfall is recorded honestly: quoted vs received, never hidden", async () => {
+  const s = await post("login", { phone: "0711222333", pin: "715293" });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  const id = s.body.merchant.id, session = s.body.session;
+  const inv = await get(`lnurlp/${id}/cb?amount=20&currency=KES`);
+  const hash = inv.body.successAction.url.split("/").pop();
+  // A Tando that takes the fee out of the delivery instead of on top of it:
+  // per its docs this should not happen in KES mode, but if it ever does the
+  // record keeps both numbers so the merchant sees quoted vs received.
+  tando.receipts.set(hash, receiptTx({ payToAccount: "254711222333", merchantName: "EXACT SHOP",
+    currencyAmountSent: 19, paymentNetworkReceipt: "SHORT1FALL2" }));
+  const rc = await get(`receipt/${hash}`);
+  assert.equal(rc.body.paid, true);
+  assert.equal(rc.body.kes, 19, "what landed");
+  assert.equal(rc.body.quoted, 20, "what was quoted");
+  const hist = (await get("history", { token: session })).body.entries;
+  const short = hist.find((e) => e.mpesaCode === "SHORT1FALL2");
+  assert.equal(short.status, "completed");
+  assert.equal(short.kesExpected, 20);
+  assert.equal(short.kesReceived, 19);
+});
+
+test("kesFee: the payer's on-top fee in KES, to two decimals, never below zero", () => {
+  assert.equal(kt.kesFee(1010000, MULT, 100), 1, "KES 100 at 1%");
+  assert.equal(kt.kesFee(202000, MULT, 20), 0.2, "KES 20 at 1%");
+  assert.equal(kt.kesFee(500000, MULT, 49), 1, "50 KES of sats against 49 expected");
+  assert.equal(kt.kesFee(100505, MULT, 10), 0.05, "rounds half up to cents");
+  assert.equal(kt.kesFee(99000, MULT, 10), 0, "rate drift can only shrink the value, never bill the merchant");
 });
 
 test("receipt: a name that does not match stays unverified, and a failed payout shows as failed", async () => {
