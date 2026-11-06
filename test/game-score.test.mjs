@@ -48,6 +48,18 @@ test("achievements unlock once", () => {
   st = store.unlockAchievement(st, "first");
   assert.deepEqual(st.achievements, ["first"]);
 });
+test("answerBytes counts decoded bytes for hex, UTF-8 otherwise", () => {
+  assert.equal(score.answerBytes("00".repeat(32)), 32);
+  assert.equal(score.answerBytes("1c7fff80"), 4);
+  assert.equal(score.answerBytes("2"), 1);
+  assert.equal(score.answerBytes("252,300,70000"), 13);
+  assert.equal(score.answerBytes("tx7:0"), 5);
+  assert.equal(score.answerBytes("-2744073709551616"), 17);
+});
+test("formatCost uses singular forms", () => {
+  assert.equal(score.formatCost({ bytes: 1, ops: 1, sats: 1 }), "1 byte, 1 op, 1 sat");
+  assert.equal(score.formatCost({ bytes: 2, ops: 0, sats: 5 }), "2 bytes, 0 ops, 5 sats");
+});
 test("achievement rules fire on the right state", async () => {
   const { ACHIEVEMENTS, checkAchievements } = await import("../opcode-circuit/engine/achieve.js");
   const { PUZZLES1 } = await import("../opcode-circuit/content/puzzles1.js");

@@ -17,7 +17,7 @@ body{background:var(--bg);color:var(--ink);font:400 1rem/1.55 var(--sans);min-he
 body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
   background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
   background-size:44px 44px;mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 30%,transparent 75%)}
-.top{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding:.7rem 1rem;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 88%,transparent);position:sticky;top:0;z-index:5}
+.top{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding:.7rem 1rem;border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:5}
 .brand{display:flex;align-items:center;gap:.55rem;text-decoration:none;color:var(--ink);font-weight:800;font-family:var(--mono);letter-spacing:.02em}
 .sigil{width:1.4rem;height:1.4rem;border-radius:.35rem;background:conic-gradient(from 40deg,var(--acc),var(--acc2),var(--acc));box-shadow:0 0 0 2px var(--line)}
 .topnav{display:flex;gap:.25rem;flex-wrap:wrap}
@@ -49,7 +49,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
 button.btn{background:var(--acc);color:#06130d;border:0;border-radius:.6rem;padding:.6rem 1.1rem;font:700 .95rem var(--sans);cursor:pointer}
 button.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 button.btn:hover{filter:brightness(1.08)}
-.verdict{margin:.8rem 0 0;padding:.7rem .9rem;border-radius:.6rem;font-family:var(--mono);font-size:.92rem}
+.verdict{margin:.8rem 0 0;padding:.7rem .9rem;border-radius:.6rem;font-family:var(--mono);font-size:.92rem;overflow-wrap:anywhere}
+.puz .brief,.puz p b{overflow-wrap:anywhere}
 .verdict.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);border:1px solid var(--ok)}
 .verdict.bad{background:color-mix(in srgb,var(--bad) 12%,transparent);border:1px solid var(--bad)}
 .debrief{margin-top:1rem;border-top:1px dashed var(--line);padding-top:.8rem}

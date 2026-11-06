@@ -54,6 +54,10 @@ test("simulation disclaimer is on the page", () => {
   assert.match(html, /No real keys/);
   assert.match(html, /never paste a real key/i);
 });
+test("widgets never fill the answer box (2-2 must not solve itself)", () => {
+  const views = fs.readFileSync(path.join(root, "content", "views.js"), "utf8");
+  assert.doesNotMatch(views, /getElementById\("answer"\)/, "no widget touches the answer box");
+});
 test("no mainnet key or seed fixtures in game files", () => {
   for (const f of walk(root)) {
     const src = fs.readFileSync(f, "utf8");

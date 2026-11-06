@@ -2,6 +2,7 @@
 // check() is pure, reference passes within par, wrong fails.
 import { hexToBytes, bytesToHex, sha256, taggedHash, concat, equalBytes, bytesToBig, bigToBytes, pointMult, schnorrVerify, segwitDecode, base58CheckDecode } from "../sim/primitives.js";
 import { parseAsm, execute, disassemble } from "../sim/interpreter.js";
+import { answerBytes } from "../engine/score.js";
 import { txWeight, txVsize, serializeTx, packageRate, pickForBlock, checkRBF, checkCarveout, vulnerableSum, patchedSum, patchedInputs, MAX_MONEY, taprootOutputKey, tapLeafHash, tapBranchHash, verifyControlPath, SIGHASH } from "../sim/toychain.js";
 import { fundingWitnessScript, p2wshScript, paymentHash, htlcClaim, htlcRefund, invoiceDecode, findRoute, toyOnionPeel, channelOpen, channelAddHTLC, channelCommit, channelRevoke, channelSettle, jammingBlocked } from "../sim/lightning.js";
 const cost = (bytes, ops = 0, sats = 0) => ({ bytes, ops, sats });
@@ -13,7 +14,7 @@ export const PUZZLES2 = [
     prompt: "110 base bytes, 108 witness bytes. Type weight,vsize.",
     check(a) {
       const ok = a.replace(/\s+/g, "") === "548,137";
-      return { ok, ...cost(a.trim().length), message: ok ? "548 WU, 137 vB. The witness rides at quarter price." : "Weight is base times 4 plus witness. vsize rounds up." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "548 WU, 137 vB. The witness rides at quarter price." : "Weight is base times 4 plus witness. vsize rounds up." };
     },
     reference: "548,137", wrong: ["656,164", "548,138"], hints: ["110 times 4 is 440, plus 108 is 548.", "548 over 4 is exactly 137."],
     par: { bytes: 7, ops: 0, sats: 0 }, scored: ["bytes"],
@@ -62,11 +63,11 @@ export const PUZZLES2 = [
     prompt: "Internal F9308A01...360F9, no script. Type output x.",
     check(a) {
       const ok = a.trim().toLowerCase() === "418c46636d9e1a683f58e35b42336e776fdcc3b2d4e39e7a0bf1ab0716e3c5fa";
-      return { ok, ...cost(a.trim().length), message: ok ? "Key path derived. A sig for Q spends with no script shown." : "Tweak with an empty merkle root, then read x." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "Key path derived. A sig for Q spends with no script shown." : "Tweak with an empty merkle root, then read x." };
     },
     reference: "418c46636d9e1a683f58e35b42336e776fdcc3b2d4e39e7a0bf1ab0716e3c5fa", wrong: ["f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9", "00".repeat(32)],
     hints: ["Empty root means the tweak commits to key path only.", "Read the x of P plus t times G."],
-    par: { bytes: 64, ops: 0, sats: 0 }, scored: ["bytes"],
+    par: { bytes: 32, ops: 0, sats: 0 }, scored: ["bytes"],
     debrief: ["BIP341 (key path spending)", "BIP340 tagged hash TapTweak"],
   },
   {
@@ -94,7 +95,7 @@ export const PUZZLES2 = [
     check(a) {
       let raw;
       try { raw = parseAsm(a); }
-      catch (e) { return { ok: false, ...cost(a.length), message: e.message }; }
+      catch (e) { return { ok: false, ...cost(answerBytes(a)), message: e.message }; }
       const items = disassemble(raw);
       if (!items.every((o) => o.push !== undefined) || items.length !== 4) return { ok: false, ...cost(raw.length), message: "Four pushes: sig, key, sig, key." };
       const r = execute(parseAsm("0 OP_CHECKSIGADD OP_CHECKSIGADD 2 OP_NUMEQUAL"), items.map((o) => o.push), { tapMsg: hexToBytes("63aca20e231fdb00082ae0da33704fd89f3f6b7de5ad3529a3ab145dc2937825") });
@@ -113,7 +114,7 @@ export const PUZZLES2 = [
     prompt: "Type the ids best package rate first.",
     check(a) {
       const ok = a.replace(/\s+/g, "").toUpperCase() === "C,D,A,E,B";
-      return { ok, ...cost(a.trim().length), message: ok ? "C 12, D 10.2, A 10, E 9, B 1.5. D rides its rich ancestor." : "Add each ancestor fee and size before dividing." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "C 12, D 10.2, A 10, E 9, B 1.5. D rides its rich ancestor." : "Add each ancestor fee and size before dividing." };
     },
     reference: "C,D,A,E,B", wrong: ["C,A,E,D,B", "A,B,C,D,E"], hints: ["D package is 5100 over 500: 10.2.", "B package is 600 over 400: 1.5, last."],
     par: { bytes: 9, ops: 0, sats: 0 }, scored: ["bytes"],
@@ -187,7 +188,7 @@ export const PUZZLES2 = [
     prompt: "Two outputs of 9222000000000000000 sats. Type the wrapped int64 sum.",
     check(a) {
       const ok = a.trim() === "-2744073709551616";
-      return { ok, ...cost(a.trim().length), message: ok ? "Negative. The chain briefly held billions it never minted." : "Add in the tool. Watch the wrap past 2^63 minus 1." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "Negative. The chain briefly held billions it never minted." : "Add in the tool. Watch the wrap past 2^63 minus 1." };
     },
     reference: "-2744073709551616", wrong: ["18444000000000000000", "0"], hints: ["2^63 minus 1 is 9223372036854775807.", "Twice 9.222e18 wraps deep negative."],
     par: { bytes: 17, ops: 0, sats: 0 }, scored: ["bytes"],
@@ -216,7 +217,7 @@ export const PUZZLES2 = [
     prompt: "Inputs tx7:0, tx9:1, tx7:0. Type the duplicate.",
     check(a) {
       const ok = a.replace(/\s+/g, "").toLowerCase() === "tx7:0";
-      return { ok, ...cost(a.trim().length), message: ok ? "tx7:0 twice. One line of checking would have caught it." : "Which outpoint appears twice?" };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "tx7:0 twice. One line of checking would have caught it." : "Which outpoint appears twice?" };
     },
     reference: "tx7:0", wrong: ["tx9:1", "tx7:1"], hints: ["List each input and count.", "tx7:0 opens and closes the tx."],
     par: { bytes: 5, ops: 0, sats: 0 }, scored: ["bytes"],
@@ -256,14 +257,14 @@ export const PUZZLES2 = [
     id: "8-1", ch: "lightning", n: 1, title: "Fund it", input: "text", widget: "funding",
     idea: "A channel opens on a 2 of 2 P2WSH.",
     briefing: "Two funding keys. A: 022f8bde4d1a07209355b4a7250a5c5128e88b84bddc619ab7cba8d569b240efe4. B: 03acd484e2f0c7f65309ad178a9f559abde09796974c57e714c35f110dfc27ccbe. The witness script is 2, key, key, 2, CHECKMULTISIG. The output is 0 plus SHA256 of that script. Build it in the tool. Type the P2WSH script hex.",
-    prompt: "Type the funding P2WSH script (70 hex chars).",
+    prompt: "Type the funding P2WSH script (68 hex chars, 34 bytes).",
     check(a) {
       const ok = a.trim().toLowerCase() === "0020543c151bd3a12091e870478b9428a2df588999b037f31545dbd7e1f7492150f1";
-      return { ok, ...cost(a.trim().length), message: ok ? "Channel funded. Neither side can move coins alone." : "Assemble 2 key key 2 CHECKMULTISIG, hash it, prefix 0." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "Channel funded. Neither side can move coins alone." : "Assemble 2 key key 2 CHECKMULTISIG, hash it, prefix 0." };
     },
     reference: "0020543c151bd3a12091e870478b9428a2df588999b037f31545dbd7e1f7492150f1", wrong: ["0020543c151bd3a12091e870478b9428a2df588999b037f31545dbd7e1f7492150f2", "00".repeat(35)],
     hints: ["Witness script first, then SHA256.", "Output is 0020 plus the 32 byte hash."],
-    par: { bytes: 70, ops: 0, sats: 0 }, scored: ["bytes"],
+    par: { bytes: 34, ops: 0, sats: 0 }, scored: ["bytes"],
     debrief: ["BOLT3 (funding tx, P2WSH 2 of 2)", "BOLT2 (funding_created and locked)"],
   },
   {
@@ -273,11 +274,11 @@ export const PUZZLES2 = [
     prompt: "Type H equals SHA256(R) (64 hex chars).",
     check(a) {
       const ok = a.trim().toLowerCase() === "07fb9f060cc128b18836129aa71e5725e3411c25f3801960fdaa2d04d5c4a15b";
-      return { ok, ...cost(a.trim().length), message: ok ? "Locked. Claim wins before T, refund wins at T." : "SHA256 the 32 preimage bytes, no flip." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "Locked. Claim wins before T, refund wins at T." : "SHA256 the 32 preimage bytes, no flip." };
     },
     reference: "07fb9f060cc128b18836129aa71e5725e3411c25f3801960fdaa2d04d5c4a15b", wrong: ["b7e151628aed2a6abf7158809cf4f3c762e7160f38b4da56a784d9045190cfee", "00".repeat(32)],
     hints: ["H is the hash, not R itself.", "Try claim at both heights in the tool."],
-    par: { bytes: 64, ops: 0, sats: 0 }, scored: ["bytes"],
+    par: { bytes: 32, ops: 0, sats: 0 }, scored: ["bytes"],
     debrief: ["BOLT2 (update_add_htlc: payment_hash, cltv_expiry)", "BOLT3 (HTLC scripts, core paths)"],
   },
   {
@@ -287,7 +288,7 @@ export const PUZZLES2 = [
     prompt: "Peel twice. What next hop does hop 2 see?",
     check(a) {
       const ok = a.trim().toUpperCase() === "C";
-      return { ok, ...cost(a.trim().length), message: ok ? "C. Hop 2 never met the sender or the payload." : "Peel once for B, peel the remainder for the next." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "C. Hop 2 never met the sender or the payload." : "Peel once for B, peel the remainder for the next." };
     },
     reference: "C", wrong: ["B", "D"], hints: ["First peel reveals B plus a remainder blob.", "Feed the remainder to the second peel."],
     par: { bytes: 1, ops: 0, sats: 0 }, scored: ["bytes"],
@@ -301,7 +302,7 @@ export const PUZZLES2 = [
     prompt: "Type the cheapest valid path.",
     check(a) {
       const ok = a.replace(/\s+/g, "").toUpperCase() === "A,B,E";
-      return { ok, ...cost(a.trim().length), message: ok ? "A,B,E at 2100 msat, cltv 80. A-D-E is barred by its minimum." : "Price each path, skip edges whose minimum exceeds 100000." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "A,B,E at 2100 msat, cltv 80. A-D-E is barred by its minimum." : "Price each path, skip edges whose minimum exceeds 100000." };
     },
     reference: "A,B,E", wrong: ["A,D,E", "A,C,E"], hints: ["A-D needs 500000 minimum. The payment is 100000.", "A,B,E costs 1050 plus 1050."],
     par: { bytes: 5, ops: 0, sats: 0 }, scored: ["bytes"],
@@ -314,11 +315,11 @@ export const PUZZLES2 = [
     prompt: "Invoice: lnbc10n1pj48ugqpp55vghu0pys4k7dvftwuv8u76zre3f6kmz6kkdrq60ztenrd7p4p3qdqsw3hhjgrrdanxvet9l6x3avdukdpjk8d4svlltu3zdkwttejuaeps2kxp3mf68jrvuxhng7at4za978yvgtex7ywjv4dzntkq0aarddzgqeng90pthhav4wqxh6z2g. Type the p tag hash.",
     check(a) {
       const ok = a.trim().toLowerCase() === "a3117e3c24856de6b12b77187e7b421e629d5b62d5acd1834f12f331b7c1a862";
-      return { ok, ...cost(a.trim().length), message: ok ? "That hash is what the payer HTLC will lock to." : "Decode, find tag p, read its 32 bytes as hex." };
+      return { ok, ...cost(answerBytes(a)), message: ok ? "That hash is what the payer HTLC will lock to." : "Decode, find tag p, read its 32 bytes as hex." };
     },
     reference: "a3117e3c24856de6b12b77187e7b421e629d5b62d5acd1834f12f331b7c1a862", wrong: ["00".repeat(32), "07fb9f060cc128b18836129aa71e5725e3411c25f3801960fdaa2d04d5c4a15b"],
     hints: ["Tag p holds 52 five bit words: 32 bytes.", "The decoder prints each tag as hex."],
-    par: { bytes: 64, ops: 0, sats: 0 }, scored: ["bytes"],
+    par: { bytes: 32, ops: 0, sats: 0 }, scored: ["bytes"],
     simplified: "Recovery flag skipped and node key given. Real decoders recover the key from the sig.",
     debrief: ["BOLT11 (invoice format, p tag is the payment hash)"],
   },

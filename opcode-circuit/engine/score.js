@@ -30,5 +30,13 @@ function totalRatio(cost, par, scored) {
   return n ? sum / n : 0;
 }
 export function formatCost(cost) {
-  return `${cost.bytes || 0} bytes, ${cost.ops || 0} ops, ${cost.sats || 0} sats`;
+  const b = cost.bytes || 0, o = cost.ops || 0, s = cost.sats || 0;
+  return `${b} byte${b === 1 ? "" : "s"}, ${o} op${o === 1 ? "" : "s"}, ${s} sat${s === 1 ? "" : "s"}`;
+}
+// Honest byte cost for a typed answer: even length hex counts decoded bytes,
+// anything else counts UTF-8 length.
+export function answerBytes(answer) {
+  const t = String(answer).trim();
+  if (t.length >= 2 && t.length % 2 === 0 && /^[0-9a-fA-F]+$/.test(t)) return t.length / 2;
+  return new TextEncoder().encode(t).length;
 }
