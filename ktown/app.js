@@ -100,7 +100,8 @@ function showScreen(which) {
   $("screen-settings").hidden = which !== "settings";
   $("tab-qr").setAttribute("aria-selected", String(which === "qr"));
   $("tab-settings").setAttribute("aria-selected", String(which === "settings"));
-  window.scrollTo(0, 0);
+  const main = document.querySelector("main");
+  if (main) main.scrollTop = 0;
 }
 
 function drawQR(text) {
@@ -214,6 +215,7 @@ function setMerchant(m) {
     $("signed-in").hidden = true;
   }
   applyLang();
+  document.body.classList.toggle("signed-out", !m);
   if (m) {
     renderQR();
     renderSettings();
@@ -360,9 +362,16 @@ async function boot() {
 
   // Static pages carry no outside addresses; the credit link is set here.
   document.querySelectorAll(".powered a").forEach((a) => { a.href = "https://bitcoin.co.ke/"; });
+  // With the keyboard open the content area scrolls, never the page: keep
+  // the focused field (and the submit below it) in view.
+  document.addEventListener("focusin", (ev) => {
+    const el = ev.target;
+    if (el && el.matches && el.matches("input,select")) el.scrollIntoView({ block: "nearest" });
+  });
   loadHelp();
   applyLang();
   if (!localStorage.getItem("kt.session")) {
+    document.body.classList.add("signed-out");
     showScreen("settings");
     return;
   }

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <title>kTown: Bitcoin payments that land as M-Pesa</title>
@@ -36,10 +36,10 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
     <p class="print-foot">Powered by Tando (1% fee)</p>
     <p class="err" id="qr-err" role="alert" hidden></p>
     <div class="row no-print">
-      <button type="button" class="btn" id="btn-print-card" data-i18n="printCard">Print card</button>
-      <button type="button" class="btn ghost" id="btn-print-sheet" data-i18n="printSheet">Print sheet</button>
+      <button type="button" class="btn small trio" id="btn-print-card" data-i18n="printCard">Print card</button>
+      <button type="button" class="btn small trio ghost" id="btn-print-sheet" data-i18n="printSheet">Print sheet</button>
+      <button type="button" class="btn small trio ghost" id="btn-png" data-i18n="savePng">Save PNG</button>
     </div>
-    <button type="button" class="btn ghost no-print" id="btn-png" data-i18n="savePng">Save PNG</button>
     <p class="foot" data-i18n="honest">kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.</p>
     <p class="powered"><a class="tando" rel="noopener" data-i18n="poweredBy">Powered by Tando (1% fee)</a></p>
   </section>
