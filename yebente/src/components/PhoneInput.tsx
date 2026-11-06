@@ -12,7 +12,7 @@ const subscriber = (dial: string, digits: number, phone: string) => {
 interface PhoneInputProps {
   dial: string; // country code without +, e.g. 254
   digits: number; // subscriber digits after it
-  example: string; // e.g. 712 345 678
+  example: string; // e.g. 707 172 370
   value: string;
   onChange: (fullPhone: string, rawDigits: string) => void;
   label?: string;
@@ -57,7 +57,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
     inputRef.current?.focus();
   };
 
-  // Formatter for display: "712 345 678"
+  // Formatter for display: "707 172 370"
   const formatDisplayDigits = (val: string) => {
     if (!val) return '';
     if (val.length <= 3) return val;

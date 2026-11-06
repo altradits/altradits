@@ -60,7 +60,7 @@ test("outbound screen blocks external links, secrets, personal details and invoi
   const { screenOutbound } = await import(`${ROOT}/lib/screen.js`);
   assert.ok(screenOutbound("See https://evil.example/x for details.").reasons.includes("link"));
   assert.ok(screenOutbound("Your seed phrase is needed to verify.").reasons.includes("secret"));
-  assert.ok(screenOutbound("Call me on +254712345678 any time.").reasons.includes("personal"));
+  assert.ok(screenOutbound("Call me on +254707172370 any time.").reasons.includes("personal"));
   assert.ok(screenOutbound("Pay this invoice lnbc10u1p0exampleinvoicestringhere").flagged);
   assert.ok(screenOutbound("Run `rm -rf /` to fix it.").flagged);
 });

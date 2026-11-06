@@ -24,15 +24,15 @@ test("every page carries its own up-to-date Content-Security-Policy (nginx sends
 });
 
 test("every page refuses to load inside another site's frame (a meta policy can't forbid framing)", () => {
-  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "ktown/terms.html", "address-check/index.html"]) {
-    const html = read(f), srcs = [...html.matchAll(/<script[^>]*\bsrc="\/((?:assets|ktown)\/[\w.-]+\.js)(?:\?[\w=.-]*)?"/g)].map((m) => read(m[1])).join("\n");
+  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "ktown/terms.html", "sats-safari/index.html", "address-check/index.html"]) {
+    const html = read(f), srcs = [...html.matchAll(/<script[^>]*\bsrc="\/((?:assets|ktown|sats-safari)\/[\w.-]+\.js)(?:\?[\w=.-]*)?"/g)].map((m) => read(m[1])).join("\n");
     assert.match(html + srcs, /window\.top !== window\.self/, `${f}: add the frame check at the top of its script`);
     assert.match(html, /<script src="\/assets\/report\.js"><\/script>/, `${f}: the Security watch reporter is missing (run: node deploy/page-csp.mjs)`);
   }
 });
 
 test("pages have no inline event handlers or javascript: links (the policy would block them, and they invite injection)", () => {
-  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "ktown/terms.html", "yebente/app/index.html", "address-check/index.html"]) {
+  for (const f of [...fs.readdirSync(root).filter((x) => x.endsWith(".html")), "ktown/index.html", "ktown/pay.html", "ktown/terms.html", "yebente/app/index.html", "sats-safari/index.html", "address-check/index.html"]) {
     const html = read(f);
     assert.doesNotMatch(html, /<[^>]+\son[a-z]+\s*=\s*["']/i, `${f}: move the inline handler into the page script`);
     assert.doesNotMatch(html, /href\s*=\s*["']\s*javascript:/i, `${f}: no javascript: links`);
@@ -155,7 +155,7 @@ test("no AI co-authors: the check runs in CI, before every push and on every com
 });
 
 test("every top-level folder is either public on purpose or denied to the web server", () => {
-  const PUBLIC = new Set(["assets", "ktown", "address-check"]); // pages' own scripts, styles and images; kTown and Address Check hold only web content
+  const PUBLIC = new Set(["assets", "ktown", "sats-safari", "address-check"]); // pages' own scripts, styles and images; kTown, Sats Safari and Address Check hold only web content
   const DOT = /^\./; // nginx refuses dot-folders (.git, .github, .claude); .htaccess adds 404s
   for (const d of fs.readdirSync(root, { withFileTypes: true }).filter((x) => x.isDirectory()).map((x) => x.name)) {
     if (PUBLIC.has(d) || DOT.test(d) || d === "node_modules" || d === "tmp") continue; // node_modules gets deploy/deny.htaccess on the server
@@ -209,6 +209,7 @@ test("site copy uses no em-dashes (house style: a full stop, comma or colon read
     "yebente/index.html",
     ...walk("yebente/src").filter((f) => /\.(tsx?|css)$/.test(f)),
     ...walk("ktown").filter((f) => /\.(html|js|css)$/.test(f) && !f.includes("qrcode-generator-")),
+    ...walk("sats-safari").filter((f) => /\.(html|js|css)$/.test(f)),
     ...walk("address-check").filter((f) => /\.(html|js)$/.test(f)),
   ];
   for (const f of targets) assert.doesNotMatch(read(f), /—/, `${f}: replace the em-dash with a full stop, comma or colon`);
@@ -383,6 +384,7 @@ test("dashboard commands work as printed: reads use ln-ro, writes carry the node
   assert.doesNotMatch(html, /<code>lncli (?!--lnddir)/, "admin.html: every printed lncli command carries --lnddir (reads use ln-ro)");
   assert.doesNotMatch(js, /"lncli (?!--lnddir)/, "assets/admin.js: every lncli string carries --lnddir");
   assert.doesNotMatch(api, /"lncli (?!--lnddir)/, "api/admin.js: every lncli string carries --lnddir");
+  assert.doesNotMatch(read("lib/njia.js"), /"lncli (?!--lnddir)/, "lib/njia.js: every printed lncli command carries --lnddir (reads use ln-ro)");
   for (const f of ["admin.html", "assets/admin.js", "api/admin.js", "docs/manual-lnd.md", "DEPLOY.md"]) {
     assert.doesNotMatch(read(f), /--[a-z]+=~\//, `${f}: no flag path starts with ~/ (the shell never expands it there)`);
   }
@@ -456,6 +458,14 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
     for (const [, id] of src.matchAll(/\$\("([a-z-]+)"\)/g))
       assert.ok(html.includes(`id="${id}"`), `${js}: #${id} is missing from ${page}`);
   }
+  const payHtml = read("ktown/pay.html"), payJs = read("ktown/pay.js");
+  assert.doesNotMatch(payHtml, /id="sats"/, "ktown/pay.html: before paying, no sats figure is shown");
+  assert.doesNotMatch(payJs, /feeIncl/, "ktown/pay.js: before paying, no fee line is shown");
+  assert.match(payJs, /setLine\("paid-fee"/, "ktown/pay.js: after paying, the Tando fee shows");
+  assert.match(payJs, /setLine\("paid-sats"/, "ktown/pay.js: after paying, the sats paid show");
+  const appJs = read("ktown/app.js");
+  assert.match(appJs, /e\.mode === "msat"/, "ktown/app.js: history names payments that arrived by a wallet's own conversion");
+  assert.match(appJs, /kesReceived < e\.kesExpected/, "ktown/app.js: history shows quoted vs received when they differ");
   const qrLib = fs.readdirSync(path.join(root, "ktown")).find((f) => f.startsWith("qrcode-generator-") && f.endsWith(".js"));
   assert.ok(qrLib && /\d+\.\d+\.\d+/.test(qrLib), "ktown/: the QR library is vendored with its version in the name, never hotlinked");
   assert.match(read(`ktown/${qrLib}`), /Licensed under the MIT license/, "ktown/: the QR library keeps its licence header");
@@ -500,6 +510,38 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
   assert.match(kt, /deleteKeys\(\[`kt:\$\{old\.id\}`\]\)/, "lib/ktown.js: a takeover ends the old record, so its sessions and QR die with it");
 });
 
+test("Kazi board: switched off by default, moderated publishing, limits on every route, words rendered inert", () => {
+  const kz = read("lib/kazi.js"), api = read("api/kazi.js"), srv = read("server.mjs"), ad = read("api/admin.js");
+  assert.match(kz, /switchOn\("KAZI"\)/, "lib/kazi.js: everything waits on the KAZI switch");
+  assert.doesNotMatch(kz, /(?<![\w.])fetch\(/, "lib/kazi.js: no outside calls at all (posters and workers settle off the board)");
+  assert.doesNotMatch(kz, /clientIp\(/, "lib/kazi.js: never sees the network address, so no record can carry it");
+  assert.match(kz, /screen\(/, "lib/kazi.js: task words pass the word screen before Stanley sees them");
+  assert.match(kz, /timingSafeEqual/, "lib/kazi.js: the manage token is compared in constant time");
+  assert.match(kz, /manageHash: sha\(token\)/, "lib/kazi.js: only the manage token's hash is stored");
+  assert.match(kz, /status: "pending"/, "lib/kazi.js: a new task waits for review");
+  assert.match(ad, /body\.action === "kazi_list"/, "api/admin.js: the moderation list sits behind the admin gate");
+  assert.match(ad, /kazi_approve/, "api/admin.js: approval is an explicit admin act");
+  assert.match(read("assets/admin.js"), /data-kazi-act/, "assets/admin.js: the dashboard approves and hides with buttons");
+  for (const k of ["rl:kz:list:", "rl:kz:post:", "rl:kz:post:all", "rl:kz:manage:", "rl:kz:flag:"])
+    assert.ok(api.includes(k), `api/kazi.js: rate limit ${k}... is in place`);
+  const html = read("kazi.html");
+  assert.match(html, /connect-src 'self'/, "kazi.html: the board calls only this site's API");
+  assert.doesNotMatch(html, /connect-src 'self' https?:/, "kazi.html: no API host beside this site");
+  assert.doesNotMatch(html, /src="http/, "kazi.html: no outside scripts or images (store assets in the repo)");
+  assert.doesNotMatch(html, /url\(http/, "kazi.html: no outside fonts or styles (store assets in the repo)");
+  const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]).join("\n");
+  const uses = [...inline.matchAll(/[^\n]*innerHTML[^\n]*/g)].map((m) => m[0].trim());
+  assert.ok(uses.length > 0 && uses.every((l) => /document\.documentElement\.innerHTML = ""/.test(l)), "kazi.html: the only innerHTML is the frame check clearing the page; task words render through textContent");
+  assert.match(inline, /window\.top !== window\.self/, "kazi.html: the frame check is in the page script");
+  const srvLine = (start) => srv.split("\n").find((l) => l.trim().startsWith(start)) || "";
+  assert.match(srvLine("const oldPage"), /\|kazi[|)]/, "server.mjs: /kazi.html redirects to /kazi");
+  assert.match(srvLine("const page ="), /\|kazi[|)]/, "server.mjs: /kazi serves the board");
+  assert.ok(srv.includes('kazi\\.html'), "server.mjs: the board page is whitelisted for serving");
+  assert.ok(srv.includes('api[1] !== "kazi"'), "server.mjs: the board API keeps its sub-paths");
+  assert.match(read(".htaccess"), /\|kazi[|)][^\n]*\/\?\$ \$1\.html/, ".htaccess: /kazi works on the Apache stack too");
+  assert.match(read("sitemap.xml"), /<loc>https:\/\/altradits\.com\/kazi<\/loc><lastmod>20\d\d-\d\d-\d\d<\/lastmod>/, "sitemap.xml: the board is listed with a date");
+});
+
 test("admin bodies over 100 KB need the token up front: strangers hit 413, the token passes 700 KB", async () => {
   const { adminAuthed } = await import("../lib/http.js");
   assert.match(read("server.mjs"), /const limit = api\[1\] === "admin" && adminAuthed\(req\.headers\.authorization\) \? 1_000_000 : 100_000;/, "server.mjs: the ~1 MB body budget needs a valid admin token first");
@@ -518,3 +560,128 @@ test("admin bodies over 100 KB need the token up front: strangers hit 413, the t
   }
   assert.equal(adminAuthed("Bearer x"), false, "no token configured: nobody is authed");
 });
+
+test("Njia stays read-only: no write imports, no write endpoints, no admin key, records never cleaned", () => {
+  const nj = read("lib/njia.js");
+  assert.doesNotMatch(nj, /\.macaroon/, "lib/njia.js: no macaroon filename");
+  assert.doesNotMatch(nj, /LND_ADMIN|YEBENTE_LND_PAY_MACAROON/, "lib/njia.js: never the admin key or the pay key");
+  assert.doesNotMatch(nj, /payInvoice|createInvoice|newOnchainAddress|spendCheck|startTopup/, "lib/njia.js: no import that can write to LND");
+  assert.doesNotMatch(nj, /\/v1\/chanpolicy|\/channels\/transactions|\/v2\/router\/send|\/v1\/channels\/stream/, "lib/njia.js: no LND write path");
+  const ln = read("lib/lightning.js");
+  for (const fn of ["export async function njiaRead", "export async function njiaPing"]) {
+    const at = ln.indexOf(fn);
+    assert.ok(at >= 0, `${fn} exists`);
+    const body = ln.slice(at, ln.indexOf("\n}\n", at));
+    for (const line of body.split("\n")) {
+      if (line.includes('"POST"')) assert.ok(line.includes("/v1/switch"), `${fn}: POST only to /v1/switch (the time-range read)`);
+    }
+    assert.doesNotMatch(body, /\/v1\/chanpolicy|\/channels\/transactions|\/v2\/router\/send|\/v1\/channels\/stream|\bDELETE\b/, `${fn}: no LND write endpoint`);
+  }
+  assert.doesNotMatch(read("lib/cleanup.js"), /njia:/, "lib/cleanup.js: Njia records are never cleaned up");
+});
+
+test("Njia page renders server data as text, never as HTML", () => {
+  const js = read("assets/njia.js");
+  assert.doesNotMatch(js, /innerHTML/, "assets/njia.js: build the DOM with textContent, never innerHTML");
+  assert.match(js, /textContent/, "assets/njia.js: page data becomes text");
+  assert.doesNotMatch(js, /nodeInfo|read\.info|channelbalance|walletbalance/, "assets/njia.js: the page only knows the public summary");
+  assert.match(read("njia.html"), /\/assets\/njia\.js/, "njia.html: loads the page script");
+  assert.match(read("api/njia.js"), /deadmanActive\(\)/, "api/njia.js: lockdown hides the summary");
+});
+
+test("sample contacts anyone can see or copy are Stanley's own, never a stranger's number", () => {
+  // A made-up number like 0712345678 belongs to a real stranger: anyone who
+  // copies one from a page, an example or a doc and sends money loses it. So
+  // user-visible samples are Stanley's test number (a wrong payment to it can
+  // be refunded) and his test email.
+  const EMAIL = "5tan@altradits.com";
+  assert.match(read("ktown/index.html"), /placeholder="0707 172 370"/, "ktown/index.html: the phone placeholder is Stanley's test number");
+  assert.match(read("lib/ktown.js"), /like 0707 172 370\./, "lib/ktown.js: the M-Pesa error names Stanley's test number");
+  assert.match(read("lib/rails.js"), /example: "707 172 370"/, "lib/rails.js: the M-Pesa example is Stanley's test number");
+  assert.match(read("yebente/src/components/BuyBtcModal.tsx"), /example="707 172 370"/, "BuyBtcModal: the M-Pesa example is Stanley's test number");
+  for (const f of ["yebente/src/components/WalletGate.tsx", "yebente/src/components/WalletSettingsModal.tsx", "yebente/src/components/CardTopupModal.tsx"])
+    assert.match(read(f), new RegExp(`placeholder="${EMAIL}"`), `${f}: the email placeholder is Stanley's test email`);
+  assert.match(read("admin.html"), new RegExp(`placeholder="${EMAIL}"`), "admin.html: the erase-box placeholder is Stanley's test email");
+  assert.match(read("docs/hackathon.md"), new RegExp(EMAIL), "docs/hackathon.md: the draft goes to Stanley's test email");
+  assert.match(read("demo/meta.mjs"), new RegExp(EMAIL), "demo/meta.mjs: the demo draft goes to Stanley's test email");
+  // The retired samples are gone from everything people can see or copy.
+  const retired = ["0712345678", "254712345678", "712 345 678", "0712 345 678", "you@email.com", "you@example.com", "their@email.com"];
+  const visible = ["ktown/index.html", "ktown/pay.html", "ktown/terms.html", "ktown/app.js", "admin.html",
+    "lib/ktown.js", "lib/rails.js", "docs/hackathon.md", "demo/meta.mjs",
+    "yebente/src/components/BuyBtcModal.tsx", "yebente/src/components/CardTopupModal.tsx", "yebente/src/components/PhoneInput.tsx",
+    "yebente/src/components/WalletGate.tsx", "yebente/src/components/WalletSettingsModal.tsx", "yebente/src/services/payoutRails.ts"];
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  if (bundle) visible.push(`yebente/app/assets/${bundle}`);
+  for (const f of visible) for (const s of retired)
+    assert.ok(!read(f).includes(s), `${f}: retired sample ${s} is still visible${f.startsWith("yebente/app/") ? " (rebuild: cd yebente && npm run build)" : ""}`);
+});
+
+test("trivia: the switch gates writes, the server owns play, the page calls only this site", () => {
+  const live = read("lib/trivia-live.js"), api = read("api/trivia.js"), srv = read("server.mjs");
+  assert.match(read("lib/trivia.js"), /switchOn\("TRIVIA"\)/, "lib/trivia.js: live play waits on the TRIVIA switch");
+  assert.match(live, /requireTrivia\(\)/, "lib/trivia-live.js: starting and answering need the switch on");
+  for (const k of ["rl:trv:ans:", "rl:trv:join:", "rl:trv:fund:", "rl:trv:read:"])
+    assert.ok(api.includes(k), `api/trivia.js: rate limit ${k}... is in place`);
+  assert.match(live, /deadlineMs - QUESTION_MS/, "lib/trivia-live.js: reply timing is measured on the server clock");
+  assert.match(live, /settleBattle\(meta\.battle/, "lib/trivia-live.js: battle sats move once per settled round");
+  assert.match(live, /after !== before\) throw err\("Battle sats mismatch\."\s*, 500\)/, "lib/trivia-live.js: a broken battle total fails closed");
+  assert.match(api, /action === "answer"/, "api/trivia.js: answers arrive as an action, checked on the server");
+  const html = read("trivia.html"), js = read("assets/trivia.js");
+  assert.match(html, /connect-src 'self'/, "trivia.html: the page calls only this site's API");
+  assert.doesNotMatch(html, /connect-src 'self' https?:/, "trivia.html: no API host beside this site");
+  assert.doesNotMatch(html, /src="http/, "trivia.html: no outside scripts or images (store assets in the repo)");
+  assert.doesNotMatch(html, /rel="stylesheet" href="http/, "trivia.html: no outside styles (store assets in the repo)");
+  assert.doesNotMatch(js, /fetch\(\s*["'`]https?:/, "assets/trivia.js: fetch() takes same-site paths only");
+  assert.ok(js.includes("/api/trivia"), "assets/trivia.js: live play runs through /api/trivia");
+  assert.match(js, /esc\(/, "assets/trivia.js: server words are escaped before they reach the page");
+  assert.match(html, /name="theme-color" content="#EEF2F6"/, "trivia.html: the theme color is set");
+  assert.doesNotMatch(html, /stak/i, "trivia.html: staked mode stays unshown while off");
+  assert.doesNotMatch(js, /stak/i, "assets/trivia.js: staked mode stays unshown while off");
+  assert.doesNotMatch(html, /\bearn\b/i, "trivia.html: no earnings promises");
+  for (const id of ["game", "join-form", "live-status", "q-choices", "board-body", "fund-form", "books-btn"])
+    assert.ok(html.includes(`id="${id}"`), `trivia.html: #${id} is missing`);
+  for (const [, id] of js.matchAll(/\$\("([a-z-]+)"\)/g))
+    assert.ok(html.includes(`id="${id}"`), `assets/trivia.js: #${id} is missing from trivia.html`);
+  assert.ok(srv.includes("trivia\\.html"), "server.mjs: the page is served as public content");
+  assert.match((srv.split("\n").find((l) => l.trim().startsWith("const page =")) || ""), /\|trivia[|)]/, "server.mjs: /trivia serves the page, /trivia.html redirects to it");
+  assert.match(read(".htaccess"), /\|trivia[|)][^\n]*\/\?\$ \$1\.html/, ".htaccess: the same route on the Apache stack");
+  assert.match(read("sitemap.xml"), /<loc>https:\/\/altradits\.com\/trivia<\/loc>/, "sitemap.xml: the game is listed");
+  assert.ok(read("portfolio.html").includes("/assets/trivia-shot.png"), "portfolio.html: the card shows a real screenshot");
+  assert.ok(fs.existsSync(path.join(root, "assets/trivia-shot.png")), "assets/trivia-shot.png: the card screenshot is stored in the repo");
+});
+
+test("trivia stakes: off by default, plain refusal, locks open only at the end, never on the public page", () => {
+  const sk = read("lib/trivia-stakes.js"), api = read("api/trivia.js"), ln = read("lib/lightning.js");
+  assert.match(read("lib/trivia.js"), /switchOn\("TRIVIA_STAKES"\)/, "lib/trivia.js: staked play waits on the TRIVIA_STAKES switch");
+  assert.match(sk, /Staked play is off/, "lib/trivia-stakes.js: one plain refusal when off");
+  assert.match(sk, /requireStakes\(\)/, "lib/trivia-stakes.js: every staked endpoint needs the switch on");
+  assert.match(sk, /Stakes settle when the game ends/, "lib/trivia-stakes.js: locks open only at the end");
+  assert.match(read("lib/trivia-live.js"), /Every seat locks the same stake before the game starts/, "lib/trivia-live.js: a staked game starts only when every seat is locked");
+  assert.doesNotMatch(sk, /ADMIN_MACAROON/, "lib/trivia-stakes.js: never the admin key (hold invoices need the invoice macaroon)");
+  assert.ok(api.includes("rl:trv:stake:"), "api/trivia.js: the stake rate limit is in place");
+  assert.match(api, /action === "stake"/, "api/trivia.js: stakes arrive as an action, locked on the server");
+  assert.match(ln, /\/v2\/invoices\/hodl/, "lib/lightning.js: hold invoices are made with AddHoldInvoice");
+  assert.match(ln, /\/v2\/invoices\/settle/, "lib/lightning.js: locks are collected with SettleInvoice");
+  assert.match(ln, /\/v2\/invoices\/cancel/, "lib/lightning.js: locks are refunded with CancelInvoice");
+  assert.match(read("api/admin.js"), /trivia_stake_set/, "api/admin.js: Stanley sets the equal stake");
+  assert.match(read("api/admin.js"), /trivia_stake_settle/, "api/admin.js: Stanley settles at the end");
+  assert.match(read("api/admin.js"), /trivia_stake_cancel/, "api/admin.js: Stanley can cancel the locks");
+  assert.match(read("docs/trivia.md"), /stays off until the licences are in place and the lawyer/, "docs/trivia.md: staked play stays off until licences plus lawyer written OK");
+  const html = read("trivia.html"), js = read("assets/trivia.js");
+  assert.doesNotMatch(html, /stak/i, "trivia.html: staked mode stays unshown while off");
+  assert.doesNotMatch(js, /stak/i, "assets/trivia.js: staked mode stays unshown while off");
+});
+
+test("Developer pages are wired like the others: nav, routes, policy, no secrets in the open", () => {
+  for (const f of ["developer.html", "developer-reference.html", "developer-dashboard.html"]) {
+    assert.ok(read(f).includes('<a href="/developer" aria-current="page">Developer</a>'), `${f}: marks Developer current`);
+    assert.match(read(f), /<meta http-equiv="Content-Security-Policy" content="[^"]+">/, `${f}: carries its policy tag`);
+    assert.doesNotMatch(read(f), /ak_(live|test)_[A-Za-z0-9_-]{32}/, `${f}: no real API key in the open (keys carry 32 secret characters)`);
+  }
+  const srv = read("server.mjs");
+  assert.match(srv, /developer\\.html\|developer-reference\\.html\|developer-dashboard\\.html/, "server.mjs PUBLIC serves the Developer files");
+  assert.match(srv, /api\[1\] !== "dev"/, "server.mjs: the Developer API takes a sub-path");
+  assert.match(srv, /pumpWebhooks/, "server.mjs: health pings pump Developer webhook retries");
+  assert.match(read(".htaccess"), /developer\/\(reference\|dashboard\)/, ".htaccess: the reference and dashboard resolve on the Apache stack");
+});
+
