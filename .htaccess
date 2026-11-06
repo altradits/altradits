@@ -38,6 +38,10 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
   # service worker (scope /sats-safari/) also covers the page itself.
   RewriteRule ^sats-safari$ /sats-safari/ [R=301,L]
   RewriteRule ^sats-safari/(index\.html)?$ sats-safari/index.html [L]
+  # Address Check: the tool lives at /address-check/ (trailing slash), so its
+  # service worker (scope /address-check/) also covers the page itself.
+  RewriteRule ^address-check$ /address-check/ [R=301,L]
+  RewriteRule ^address-check/(index\.html)?$ address-check/index.html [L]
 </IfModule>
 
 # Pages are checked on every visit, so an update shows at once (an unchanged
