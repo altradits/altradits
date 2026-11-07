@@ -7,12 +7,14 @@
 //
 //   GET  health                      always: {ok, on, full} (full: the pilot cap is reached)
 //   GET  help                        always: {help} (KTOWN_HELP, or null when unset)
-//   POST register {phone, shop, mpesaName, pin, agree} -> {merchant, session}
+//   POST register {phone, shop, mpesaName, pin, agree, lang?} -> {merchant, session}
 //   POST login {phone, pin} -> {merchant, session}
 //   GET  me, history                 (Authorization: Bearer <session>)
 //   POST settings {shop?, mpesaName?, currency?, lang?}  (signed in)
 //   POST pin {pin}                   a new PIN (signed in: the session proves ownership)
 //   POST lock                        sign out on this phone (signed in)
+//   POST check                       asks Tando about this merchant's own newest pending
+//                                    payments (at most 5, picked by the server) -> {merchant, entries}
 //   GET  lnurlp/<id> (= /.well-known/lnurlp/k-<id>)  the merchant as LNURL-pay
 //   GET  lnurlp/<id>/cb?amount=&currency=  Tando's invoice for exactly that amount
 //   GET  receipt/<hash>              Tando's status for a kTown-recorded payment only
@@ -144,7 +146,7 @@ export async function POST(request) {
         || (await hit(`rl:kt:regp:${phoneKey}`, 3600)) > 5
         || (await hit(`rl:kt:reg:all:${new Date().toISOString().slice(0, 13)}`, 3600)) > 100)
         return json({ success: false, error: "Too many sign-ups. Try again later." }, 429);
-      const r = await kt.registerMerchant({ phone: body.phone, shop: body.shop, mpesaName: body.mpesaName, pin: body.pin, agree: body.agree });
+      const r = await kt.registerMerchant({ phone: body.phone, shop: body.shop, mpesaName: body.mpesaName, pin: body.pin, agree: body.agree, lang: body.lang });
       return json({ success: true, merchant: kt.publicMerchant(r.merchant, site()), session: r.session });
     }
     if (path === "login") {
@@ -166,6 +168,19 @@ export async function POST(request) {
         ? await kt.updateSettings(m, { shop: body.shop, mpesaName: body.mpesaName, currency: body.currency, lang: body.lang })
         : await kt.changePin(m, body.pin);
       return json({ success: true, merchant: kt.publicMerchant(next, site()) });
+    }
+    if (path === "check") {
+      if (!kt.ktownOn()) return json({ success: false, error: "kTown isn't open yet." }, 501);
+      const m = await me(request);
+      // The app asks every ~20 s while open: these caps keep any one phone, or
+      // one shop on many phones, from turning it into a stream of Tando calls.
+      const ses = crypto.createHash("sha256").update(authOf(request)).digest("hex").slice(0, 32);
+      if ((await hit(`rl:kt:chk:${ses}`, 600)) > 40 || (await hit(`rl:kt:chkm:${m.id}`, 600)) > 80)
+        return json({ success: false, error: "Too many checks. Try again later." }, 429);
+      const r = await kt.confirmPending(m.id, 5);
+      const { getJSON } = await import("../lib/store.js");
+      const fresh = (await getJSON(`kt:${m.id}`)) || m;
+      return json({ success: true, checked: r.checked, merchant: kt.publicMerchant(fresh, site()), entries: await kt.history(m.id) });
     }
     if (path === "lock") {
       if (!kt.ktownOn()) return json({ success: false, error: "kTown isn't open yet." }, 501);

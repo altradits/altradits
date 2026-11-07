@@ -597,8 +597,12 @@ test("sample contacts anyone can see or copy are Stanley's own, never a stranger
   // user-visible samples are Stanley's test number (a wrong payment to it can
   // be refunded) and his test email.
   const EMAIL = "5tan@altradits.com";
-  assert.match(read("ktown/index.html"), /placeholder="0707 172 370"/, "ktown/index.html: the phone placeholder is Stanley's test number");
-  assert.match(read("lib/ktown.js"), /like 0707 172 370\./, "lib/ktown.js: the M-Pesa error names Stanley's test number");
+  // kTown's merchants are strangers on the street: its sample is a pattern no
+  // one can dial or pay, and no real number (not even Stanley's) is shown.
+  assert.match(read("ktown/index.html"), /placeholder="07XX XXX XXX"/, "ktown/index.html: the phone placeholder is the undialable 07XX XXX XXX");
+  assert.match(read("lib/ktown.js"), /like 07XX XXX XXX\./, "lib/ktown.js: the M-Pesa error shows the undialable 07XX XXX XXX");
+  for (const f of ["ktown/index.html", "ktown/app.js", "ktown/pay.html", "ktown/pay.js", "lib/ktown.js", "api/ktown.js"])
+    assert.doesNotMatch(read(f), /(?:\+?254|\b0)\s?(?:7|1[14])\d{2}\s?\d{3}\s?\d{3}\b/, `${f}: no real phone number in kTown's public text`);
   assert.match(read("lib/rails.js"), /example: "707 172 370"/, "lib/rails.js: the M-Pesa example is Stanley's test number");
   assert.match(read("yebente/src/components/BuyBtcModal.tsx"), /example="707 172 370"/, "BuyBtcModal: the M-Pesa example is Stanley's test number");
   for (const f of ["yebente/src/components/WalletGate.tsx", "yebente/src/components/WalletSettingsModal.tsx", "yebente/src/components/CardTopupModal.tsx"])

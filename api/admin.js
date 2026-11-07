@@ -23,6 +23,7 @@
 //   POST { action: "trivia_stake_set", id, sats } | { action: "trivia_stake_settle", id } | { action: "trivia_stake_cancel", id } (staked play: off unless TRIVIA_STAKES=on)
 //   POST { action: "ktown_shops" } -> every signed-up kTown shop with its QR link, for printing posters
 //   POST { action: "ktown_block" | "ktown_unblock" | "ktown_release", phone } (kTown squatter tools, docs/ktown.md)
+//   POST { action: "ktown_secure", id } | { action: "ktown_reset_pin", id } -> secure a visited shop; a one-time temporary PIN
 //   POST { action: "njia_lease", lease } | { action: "njia_lease_void", id, reason } | { action: "njia_price", price } | { action: "njia_settings", field, value, confirm } | { action: "njia_listing", url } (Njia records, docs/njia.md)
 import { json, readBody, clean, newId, adminAuthed, clientIp, siteUrl, EMAIL_RE } from "../lib/http.js";
 import { listIds, getMany, getJSON, setJSON, pushId, usingRedis, hit, peek, listArchives } from "../lib/store.js";
@@ -641,6 +642,16 @@ export async function POST(request) {
   if (body.action === "ktown_shops") {
     const kt = await import("../lib/ktown.js");
     return json({ shops: await kt.adminShops(siteUrl(request)), max: kt.maxMerchants() });
+  }
+  // kTown shop care: secure a shop Stanley visited (no 48-hour takeover), or
+  // reset a forgotten PIN (same shop id, so posters keep working). The
+  // temporary PIN is in this one reply only: never stored or logged in plain text.
+  if (body.action === "ktown_secure" || body.action === "ktown_reset_pin") {
+    const kt = await import("../lib/ktown.js");
+    try {
+      if (body.action === "ktown_secure") return json({ ok: true, ...(await kt.secureMerchant(body.id)) });
+      return json({ ok: true, ...(await kt.resetMerchantPin(body.id)) }); // json() sends no-store
+    } catch (err) { return json({ error: err.message }, err.status || 400); }
   }
   if (body.action === "kazi_list" || body.action === "kazi_approve" || body.action === "kazi_hide") {
     const kz = await import("../lib/kazi.js");

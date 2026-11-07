@@ -62,7 +62,7 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
       <form id="f-register" class="card" novalidate>
         <h2 data-i18n="register">Register</h2>
         <label for="r-phone" data-i18n="phone">M-Pesa number</label>
-        <input id="r-phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="0707 172 370" required>
+        <input id="r-phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="07XX XXX XXX" required>
         <label for="r-shop" data-i18n="shop">Shop name</label>
         <input id="r-shop" name="shop" autocomplete="organization" maxlength="60" required>
         <label for="r-mpesa" data-i18n="mpesaName">M-Pesa name, exactly as M-Pesa shows it</label>
@@ -81,6 +81,7 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
         <label for="l-pin" data-i18n="pin">6-digit PIN</label>
         <input id="l-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="current-password" maxlength="6" required>
         <p class="err" id="login-err" role="alert" hidden></p>
+        <p class="hint" id="forgot-pin" hidden><span data-i18n="forgotPin">Forgot your PIN? Ask kTown help to reset it.</span> <span id="forgot-contact"></span></p>
         <button type="submit" class="btn" id="btn-login" data-i18n="loginBtn">Log in</button>
       </form>
     </div>

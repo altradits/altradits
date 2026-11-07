@@ -2788,27 +2788,69 @@ function posterHtml(m) {
     + `<div class="qr">${posterQr(`${m.payUrl}?lightning=${m.lnurl}`)}</div>`
     + `<div><p class="how">Scan with any Lightning wallet. Pay in sats.</p><p class="foot">The shop gets M-Pesa · Powered by Tando (1% fee) · altradits.com/ktown</p></div></section>`;
 }
-function printPosters(list) {
+// Stanley prints a poster only for a shop he visited, so printing secures it
+// first (no 48-hour takeover). A shop that can't be secured is not printed.
+async function secureShops(list) {
+  for (const m of list) {
+    if (m.securedAt) continue;
+    const r = await api("", { action: "ktown_secure", id: m.id });
+    m.claimed = true; m.securedAt = r.securedAt; m.securedBy = r.securedBy;
+  }
+}
+async function printPosters(list) {
   if (!list.length) return;
   if (typeof window.qrcode !== "function") { toast("The QR maker didn't load. Refresh the page.", true); return; }
+  try { await secureShops(list); } catch (err) { toast(`Not printed: ${err.message}`, true, 6000); loadKtown(); return; }
+  renderKtown();
   $("#posters").innerHTML = list.map(posterHtml).join("");
   document.body.classList.add("posters-on");
   setTimeout(() => window.print(), 50);
 }
 window.addEventListener("afterprint", () => { document.body.classList.remove("posters-on"); $("#posters").innerHTML = ""; });
+// Secured: Stanley secured it, or a matched first payment claimed it. Either
+// way the 48-hour takeover can't take the number.
+function renderKtown() {
+  const shops = KTOWN;
+  $("#ktownList").innerHTML = shops.length ? `<table><thead><tr><th>Shop</th><th>M-Pesa name</th><th>Phone ends</th><th>Paid</th><th>Joined</th><th>Number</th><th></th></tr></thead><tbody>${shops.map((m, i) =>
+    `<tr><td>${esc(m.shop)}${m.verified ? "" : ' <span class="muted sm">(not confirmed)</span>'}</td><td>${esc(m.mpesaName)}</td><td>…${esc(m.phoneEnd)}</td><td>${esc(String(m.paidCount))}</td><td>${esc(String(m.createdAt || "").slice(0, 10))}</td>`
+    + `<td>${m.claimed ? "Secured" : '<span class="muted">Not secured</span>'}</td>`
+    + `<td><button type="button" class="btn" data-poster="${i}">Print poster</button> ${m.claimed ? "" : `<button type="button" class="btn" data-secure="${i}">Secure</button> `}<button type="button" class="btn" data-resetpin="${i}">Reset PIN</button></td></tr>`).join("")}</tbody></table>`
+    : '<p class="sm muted">No shops yet. They appear here as soon as they register at altradits.com/ktown.</p>';
+}
 async function loadKtown() {
   try {
     const { shops, max } = await api("", { action: "ktown_shops" });
     KTOWN = shops;
     $("#ktownCount").textContent = `${shops.length} of ${max} places`;
-    $("#ktownList").innerHTML = shops.length ? `<table><thead><tr><th>Shop</th><th>M-Pesa name</th><th>Phone ends</th><th>Paid</th><th>Joined</th><th></th></tr></thead><tbody>${shops.map((m, i) =>
-      `<tr><td>${esc(m.shop)}${m.verified ? "" : ' <span class="muted sm">(not confirmed)</span>'}</td><td>${esc(m.mpesaName)}</td><td>…${esc(m.phoneEnd)}</td><td>${esc(String(m.paidCount))}</td><td>${esc(String(m.createdAt || "").slice(0, 10))}</td><td><button type="button" class="btn" data-poster="${i}">Print poster</button></td></tr>`).join("")}</tbody></table>`
-      : '<p class="sm muted">No shops yet. They appear here as soon as they register at altradits.com/ktown.</p>';
+    renderKtown();
     issue("ktown", shops.length >= max ? "soon" : null, `kTown is full: ${shops.length} of ${max} places. Raise KTOWN_MAX_MERCHANTS to let more shops in.`, "ktown:hKtown");
   } catch (err) { $("#ktownList").innerHTML = `<p class="sm muted">${esc(err.message)}</p>`; }
 }
-$("#ktownList").addEventListener("click", (e) => { const i = e.target.closest("[data-poster]")?.dataset.poster; if (i !== undefined) printPosters([KTOWN[Number(i)]]); });
-$("#ktownPrintAll").addEventListener("click", () => printPosters(KTOWN));
+$("#ktownList").addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-poster],[data-secure],[data-resetpin]");
+  if (!btn) return;
+  if (btn.dataset.poster !== undefined) return printPosters([KTOWN[Number(btn.dataset.poster)]]);
+  if (btn.dataset.secure !== undefined) {
+    const m = KTOWN[Number(btn.dataset.secure)];
+    if (!m || !confirm(`Secure "${m.shop}"? Do this only for a shop you visited. Its number can then never be taken over.`)) return;
+    btn.disabled = true;
+    try { await secureShops([m]); toast(`"${m.shop}" is secured.`); renderKtown(); } catch (err) { toast(err.message, true, 6000); btn.disabled = false; }
+    return;
+  }
+  const m = KTOWN[Number(btn.dataset.resetpin)];
+  if (!m || !confirm(`Reset the PIN of "${m.shop}"? The shop keeps its QR. Its phones are signed out and you get a temporary PIN to give the owner.`)) return;
+  btn.disabled = true;
+  try {
+    const r = await api("", { action: "ktown_reset_pin", id: m.id });
+    // Shown once, on Stanley's screen only: never logged, never stored.
+    toast(`Temporary PIN for "${m.shop}": ${r.pin}. Give it to the owner in person. They set their own in Settings.`, false, 0);
+  } catch (err) { toast(err.message, true, 6000); }
+  btn.disabled = false;
+});
+$("#ktownPrintAll").addEventListener("click", () => {
+  if (KTOWN.some((m) => !m.claimed) && !confirm("Printing secures every shop listed here: their numbers can never be taken over. Print only for shops you visited. Go on?")) return;
+  printPosters(KTOWN);
+});
 $("#ktownReload").addEventListener("click", loadKtown);
 
 async function load() {

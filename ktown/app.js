@@ -29,6 +29,7 @@ const STR = {
     tryAgain: "Something went wrong. Try again.",
     offlineNote: "Offline. Showing saved data.",
     pngFail: "PNG failed. Try again.",
+    forgotPin: "Forgot your PIN? Ask kTown help to reset it.",
   },
   sw: {
     qr: "QR", settings: "Mipangilio", printCard: "Chapisha kadi", printSheet: "Chapisha karatasi", savePng: "Hifadhi PNG",
@@ -53,10 +54,32 @@ const STR = {
     tryAgain: "Kuna tatizo. Jaribu tena.",
     offlineNote: "Nje ya mtandao. Inaonyesha data iliyohifadhiwa.",
     pngFail: "PNG imeshindikana. Jaribu tena.",
+    forgotPin: "Umesahau PIN? Omba msaada wa kTown uiweke upya.",
   },
 };
 let lang = "en";
 const t = (k) => (STR[lang] && STR[lang][k]) || STR.en[k] || k;
+
+// The server answers in English. The common lines are shown in Kiswahili
+// when the app is in Kiswahili; anything else stays as the server said it.
+const SW_ERR = {
+  "Wrong number or PIN.": "Nambari au PIN si sahihi.",
+  "Wrong PIN. Try again in 15 minutes.": "PIN si sahihi. Jaribu tena baada ya dakika 15.",
+  "Enter an M-Pesa number, like 07XX XXX XXX.": "Weka nambari ya M-Pesa, kama 07XX XXX XXX.",
+  "kTown is full for now.": "kTown imejaa kwa sasa.",
+  "Tando isn't reachable right now. Try again in a minute.": "Tando haipatikani kwa sasa. Jaribu tena baada ya dakika moja.",
+  "That number is already registered. Log in on the shop phone.": "Nambari hii imeshasajiliwa. Ingia kwenye simu ya duka.",
+  "That number isn't set up for M-Pesa delivery.": "Nambari hii haijawekwa kupokea M-Pesa.",
+  "Choose a 6-digit PIN.": "Chagua PIN ya tarakimu 6.",
+  "Too many attempts. Try again in an hour.": "Majaribio yamezidi. Jaribu tena baada ya saa moja.",
+  "Sign in again on the shop phone.": "Ingia tena kwenye simu ya duka.",
+};
+function swErr(msg) {
+  if (lang !== "sw") return msg;
+  if (SW_ERR[msg]) return SW_ERR[msg];
+  const wait = /^Too many wrong PINs\. Try again in (\d+) minutes\.$/.exec(msg);
+  return wait ? `PIN zisizo sahihi zimezidi. Jaribu tena baada ya dakika ${wait[1]}.` : msg;
+}
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/ktown/sw.js").catch(() => {});
 const SYM = { KES: "KSh ", USD: "$", EUR: "€", UGX: "USh ", TZS: "TSh " };
 const money = (n, code) => `${SYM[code] || `${code} `}${Number(n).toLocaleString("en-US")}`;
@@ -84,7 +107,7 @@ async function api(path, { method = "GET", body = null, auth = false } = {}) {
 
 function showErr(id, e) {
   const el = $(id);
-  el.textContent = e && e.message ? e.message : t("tryAgain");
+  el.textContent = e && e.message ? swErr(e.message) : t("tryAgain");
   el.hidden = false;
 }
 const hideErr = (id) => { $(id).hidden = true; };
@@ -194,12 +217,49 @@ async function loadHistory() {
       } catch { rates = null; }
     } else rates = null;
     renderHistory(d.entries);
+    checkPending();
   } catch {
     try {
       renderHistory(JSON.parse(localStorage.getItem("kt.history") || "[]"));
     } catch { renderHistory([]); }
   }
 }
+
+// A customer who scans the printed QR straight from a wallet never opens the
+// pay page, so nothing else asks Tando whether that payment landed. While the
+// app is open and on screen, it asks for this shop's own newest pending
+// payments (the server picks them, at most 5) and History updates in place.
+const CHECK_EVERY = 20e3;
+const RECENT_MS = 3 * 864e5; // the server only asks about the last three days
+let checking = false;
+function hasPending() {
+  try {
+    return JSON.parse(localStorage.getItem("kt.history") || "[]")
+      .some((e) => e && e.status === "pending" && Date.now() - Date.parse(e.at) < RECENT_MS);
+  } catch { return false; }
+}
+async function checkPending() {
+  if (checking || !merchant || !localStorage.getItem("kt.session")) return;
+  if (document.visibilityState !== "visible" || !navigator.onLine || !hasPending()) return;
+  checking = true;
+  try {
+    const d = await api("check", { method: "POST", auth: true });
+    localStorage.setItem("kt.history", JSON.stringify(d.entries));
+    renderHistory(d.entries);
+    if (d.merchant && (d.merchant.verified !== merchant.verified || d.merchant.claimed !== merchant.claimed)) {
+      merchant = d.merchant;
+      localStorage.setItem("kt.merchant", JSON.stringify(merchant));
+      renderQR();
+      renderSettings();
+    }
+  } catch (e) {
+    if (e.status === 401) signOut();
+  } finally {
+    checking = false;
+  }
+}
+setInterval(checkPending, CHECK_EVERY);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkPending(); });
 
 function setMerchant(m) {
   merchant = m;
@@ -284,7 +344,7 @@ async function boot() {
     setBusy($("btn-register"), true);
     try {
       const d = await api("register", { method: "POST", body: {
-        phone: $("r-phone").value, shop: $("r-shop").value, mpesaName: $("r-mpesa").value, pin: $("r-pin").value, agree: true,
+        phone: $("r-phone").value, shop: $("r-shop").value, mpesaName: $("r-mpesa").value, pin: $("r-pin").value, agree: true, lang,
       } });
       localStorage.setItem("kt.session", d.session);
       setMerchant(d.merchant);
@@ -295,12 +355,18 @@ async function boot() {
   $("f-login").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     hideErr("login-err");
+    $("forgot-pin").hidden = true;
     setBusy($("btn-login"), true);
     try {
       const d = await api("login", { method: "POST", body: { phone: $("l-phone").value, pin: $("l-pin").value } });
       localStorage.setItem("kt.session", d.session);
       setMerchant(d.merchant);
-    } catch (e) { showErr("login-err", e); }
+    } catch (e) {
+      showErr("login-err", e);
+      // Under the error: how to get a forgotten PIN reset, with the help contact when set.
+      $("forgot-contact").textContent = localStorage.getItem("kt.help") || "";
+      $("forgot-pin").hidden = false;
+    }
     setBusy($("btn-login"), false);
   });
 
