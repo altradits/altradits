@@ -10,7 +10,7 @@ const STR = {
     qr: "QR", settings: "Settings", printCard: "Print card", printSheet: "Print sheet", savePng: "Save PNG",
     honest: "kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.",
     register: "Register", phone: "M-Pesa number", shop: "Shop name",
-    mpesaName: "M-Pesa name, exactly as M-Pesa shows it", pin: "6-digit PIN",
+    mpesaName: "M-Pesa name (as M-Pesa shows it)", pin: "6-digit PIN",
     agree1: "I agree to the", agree2: "terms", agreeFirst: "Tick 'I agree' to the terms first.",
     poweredBy: "Powered by Tando (1% fee)", helpIs: "Help",
     registerBtn: "Register this number", havePin: "Already registered? Log in",
@@ -34,7 +34,7 @@ const STR = {
     qr: "QR", settings: "Mipangilio", printCard: "Chapisha kadi", printSheet: "Chapisha karatasi", savePng: "Hifadhi PNG",
     honest: "kTown haishiki pesa. Tando hubadilisha sats kuwa M-Pesa kwa asilimia 1.",
     register: "Jisajili", phone: "Nambari ya M-Pesa", shop: "Jina la duka",
-    mpesaName: "Jina la M-Pesa, kama M-Pesa inavyoonyesha", pin: "PIN ya tarakimu 6",
+    mpesaName: "Jina la M-Pesa (kama M-Pesa)", pin: "PIN ya tarakimu 6",
     agree1: "Nakubali", agree2: "masharti", agreeFirst: "Weka tiki 'Nakubali' masharti kwanza.",
     poweredBy: "Inaendeshwa na Tando (ada 1%)", helpIs: "Msaada",
     registerBtn: "Sajili nambari hii", havePin: "Umeshajisajili? Ingia",
@@ -265,7 +265,11 @@ async function boot() {
     sheet.hidden = true;
   });
   $("btn-png").addEventListener("click", savePng);
-  $("link-login").addEventListener("click", () => { $("f-login").hidden = false; $("link-login").hidden = true; });
+  $("link-login").addEventListener("click", () => {
+    $("f-login").hidden = false;
+    $("link-login").hidden = true;
+    $("f-login").scrollIntoView({ block: "nearest" });
+  });
   const setLang = (l) => {
     lang = l;
     localStorage.setItem("kt.lang", l);
