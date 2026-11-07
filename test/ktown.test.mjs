@@ -752,3 +752,20 @@ test("takeovers, blocks and releases are logged in the Security watch", async ()
   assert.ok(wheres.includes("kTown release 254711000606"), "the release is logged");
   assert.ok(events.every((e) => e.detail && e.at), "every event carries words and a time");
 });
+
+test("admin shop list: needs the token, lists each shop with its QR link, phone shows only its last three digits", async () => {
+  assert.equal((await apost({ action: "ktown_shops" }, "wrong-token")).status, 401);
+  const s = await post("register", { agree: true, phone: "0711000707", shop: "Poster Shop", mpesaName: "POSTER", pin: "715293" });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  const r = await apost({ action: "ktown_shops" });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  const shop = r.body.shops.find((m) => m.id === s.body.merchant.id);
+  assert.ok(shop, "the new shop is listed");
+  assert.equal(shop.shop, "Poster Shop");
+  assert.equal(shop.phoneEnd, "707");
+  assert.equal(shop.payUrl, s.body.merchant.payUrl, "same pay link as the shop's own app");
+  assert.equal(shop.lnurl, s.body.merchant.lnurl, "same QR as the shop's own app");
+  assert.ok(!JSON.stringify(r.body).includes("711000707"), "the full phone number never leaves the server");
+  assert.ok(!JSON.stringify(r.body).includes('"pin"'), "no PIN hash in the list");
+  assert.equal(r.body.max, 1000);
+});
