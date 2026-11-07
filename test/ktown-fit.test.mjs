@@ -58,7 +58,7 @@ test("kTown height: landscape phones go two-column, short screens stay scannable
     "ktown/style.css: the invoice code sits beside its actions");
   assert.match(css, /#view-pay\{display:grid;grid-template-columns:1fr 1fr/,
     "ktown/style.css: the pay form splits into shop and amount columns");
-  assert.match(css, /max\(13\.5rem,min\(17rem,calc\(100dvh - 8rem\)\)\)/,
+  assert.match(css, /max\(14rem,min\(17rem,calc\(100dvh - 8rem\)\)\)/,
     "ktown/style.css: the landscape code is capped by height, floored at 200px");
   assert.match(css, /@media screen and \(max-height:52rem\)\{/,
     "ktown/style.css: short-screen tightening covers short landscape windows");
@@ -66,6 +66,46 @@ test("kTown height: landscape phones go two-column, short screens stay scannable
     "ktown/style.css: the invoice code stays scannable on short screens");
   assert.match(css, /#screen-qr,#view-pay,#view-invoice\{display:block\}/,
     "ktown/style.css: printing from a landscape phone keeps the stacked card");
+});
+
+test("kTown auth fit: compact two-column forms, the submit stays visible", () => {
+  assert.match(css, /#f-register,#f-login\{display:grid;grid-template-columns:1fr 1fr/,
+    "ktown/style.css: short screens pair the auth fields side by side");
+  assert.match(css, /\.field>label\{margin:0 0 \.3rem\}/,
+    "ktown/style.css: field labels drop their top margin inside the grid");
+  assert.match(css, /#btn-register,#btn-login\{position:sticky;bottom:\.5rem/,
+    "ktown/style.css: the submit pins above the tab bar when the form scrolls");
+  assert.match(css, /#signed-out:has\(#f-login:not\(\[hidden\]\)\) #btn-register\{position:static\}/,
+    "ktown/style.css: the pinned register button unpins once log in shows");
+  assert.match(css, /#signed-out>p\{grid-row:1\}/,
+    "ktown/style.css: the log-in link moves above the card where forms scroll");
+  assert.match(read("ktown/index.html"), /M-Pesa name \(as M-Pesa shows it\)/,
+    "ktown/index.html: the shorter M-Pesa name label");
+  assert.match(read("ktown/app.js"), /M-Pesa name \(as M-Pesa shows it\)/,
+    "ktown/app.js: the shorter M-Pesa name label in English");
+  assert.match(read("ktown/app.js"), /\(kama M-Pesa\)/,
+    "ktown/app.js: the shorter M-Pesa name label in Kiswahili");
+  assert.match(read("ktown/app.js"), /\$\("f-login"\)\.scrollIntoView\(\{ block: "nearest" \}\)/,
+    "ktown/app.js: revealing log in brings it into view");
+});
+
+test("kTown height: the code fits with the shop notes, settings groups up", () => {
+  assert.match(css, /max\(14rem,min\(/,
+    "ktown/style.css: the short-screen code floor stays scannable near 200px");
+  assert.match(css, /#screen-qr \.qr-card\{[^}]*padding:\.5rem\}/,
+    "ktown/style.css: tighter code padding buys height on short screens");
+  assert.match(css, /html\[lang="sw"\] body\.has-tabs #screen-qr \.qr-card\{[^}]*100dvh - 26rem/,
+    "ktown/style.css: the Kiswahili code gives way to the longer footer");
+  assert.match(css, /#signed-in\{display:grid;grid-template-columns:1fr 1fr/,
+    "ktown/style.css: wide screens pair the settings cards side by side");
+  assert.match(css, /#f-names\{display:grid;grid-template-columns:1fr 1fr/,
+    "ktown/style.css: wide screens pair the names fields too");
+  assert.match(read("ktown/index.html"), /<div class="field"><label for="s-shop"/,
+    "ktown/index.html: the names fields are wrapped for the grid");
+  assert.match(css, /\.tx\{[^}]*max-height:10rem/,
+    "ktown/style.css: compact screens cap the history list lower");
+  assert.match(css, /background-attachment: local, local, scroll, scroll/,
+    "ktown/style.css: scroll shadows hint at more content, not just a scrollbar");
 });
 
 test("kTown fit: no fixed heights that force overflow", () => {

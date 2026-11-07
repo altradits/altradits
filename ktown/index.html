@@ -48,14 +48,14 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
     <div id="signed-out">
       <form id="f-register" class="card" novalidate>
         <h2 data-i18n="register">Register</h2>
-        <label for="r-phone" data-i18n="phone">M-Pesa number</label>
-        <input id="r-phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="0707 172 370" required>
-        <label for="r-shop" data-i18n="shop">Shop name</label>
-        <input id="r-shop" name="shop" autocomplete="organization" maxlength="60" required>
-        <label for="r-mpesa" data-i18n="mpesaName">M-Pesa name, exactly as M-Pesa shows it</label>
-        <input id="r-mpesa" name="mpesa" autocomplete="off" maxlength="60" required>
-        <label for="r-pin" data-i18n="pin">6-digit PIN</label>
-        <input id="r-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="new-password" maxlength="6" required>
+        <div class="field"><label for="r-phone" data-i18n="phone">M-Pesa number</label>
+        <input id="r-phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="0707 172 370" required></div>
+        <div class="field"><label for="r-shop" data-i18n="shop">Shop name</label>
+        <input id="r-shop" name="shop" autocomplete="organization" maxlength="60" required></div>
+        <div class="field"><label for="r-mpesa" data-i18n="mpesaName">M-Pesa name (as M-Pesa shows it)</label>
+        <input id="r-mpesa" name="mpesa" autocomplete="off" maxlength="60" required></div>
+        <div class="field"><label for="r-pin" data-i18n="pin">6-digit PIN</label>
+        <input id="r-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="new-password" maxlength="6" required></div>
         <p class="agree"><input type="checkbox" id="r-agree"> <span><label for="r-agree" data-i18n="agree1">I agree to the</label> <a href="/ktown/terms" target="_blank" rel="noopener" data-i18n="agree2">terms</a></span></p>
         <p class="err" id="reg-err" role="alert" hidden></p>
         <button type="submit" class="btn" id="btn-register" data-i18n="registerBtn">Register this number</button>
@@ -63,10 +63,10 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
       <p style="text-align:center"><button type="button" class="link" id="link-login" data-i18n="havePin">Already registered? Log in</button></p>
       <form id="f-login" class="card" hidden novalidate>
         <h2 data-i18n="login">Log in</h2>
-        <label for="l-phone" data-i18n="phone">M-Pesa number</label>
-        <input id="l-phone" name="phone" inputmode="tel" autocomplete="tel" required>
-        <label for="l-pin" data-i18n="pin">6-digit PIN</label>
-        <input id="l-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="current-password" maxlength="6" required>
+        <div class="field"><label for="l-phone" data-i18n="phone">M-Pesa number</label>
+        <input id="l-phone" name="phone" inputmode="tel" autocomplete="tel" required></div>
+        <div class="field"><label for="l-pin" data-i18n="pin">6-digit PIN</label>
+        <input id="l-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="current-password" maxlength="6" required></div>
         <p class="err" id="login-err" role="alert" hidden></p>
         <button type="submit" class="btn" id="btn-login" data-i18n="loginBtn">Log in</button>
       </form>
@@ -74,10 +74,10 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
     <div id="signed-in" hidden>
       <form id="f-names" class="card" novalidate>
         <h2 data-i18n="names">Names</h2>
-        <label for="s-shop" data-i18n="shop">Shop name</label>
-        <input id="s-shop" name="shop" maxlength="60" required>
-        <label for="s-mpesa" data-i18n="mpesaName">M-Pesa name, exactly as M-Pesa shows it</label>
-        <input id="s-mpesa" name="mpesa" maxlength="60" required>
+        <div class="field"><label for="s-shop" data-i18n="shop">Shop name</label>
+        <input id="s-shop" name="shop" maxlength="60" required></div>
+        <div class="field"><label for="s-mpesa" data-i18n="mpesaName">M-Pesa name (as M-Pesa shows it)</label>
+        <input id="s-mpesa" name="mpesa" maxlength="60" required></div>
         <p class="hint" id="verify-hint"></p>
         <p class="err" id="set-err" role="alert" hidden></p>
         <p class="ok-line" id="set-ok" role="status" hidden></p>

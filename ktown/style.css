@@ -38,7 +38,18 @@ The terms page keeps normal page scrolling. */
 body.has-tabs,body.pay{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
 body.has-tabs .top,body.pay .top{flex:none}
 body.has-tabs .wrap,body.pay .wrap{flex:1 1 auto;min-height:0;width:100%;overflow-y:auto;overscroll-behavior:contain;
-  padding:1rem calc(1.5rem + env(safe-area-inset-right)) 1.25rem calc(1.5rem + env(safe-area-inset-left))}
+  padding:1rem calc(1.5rem + env(safe-area-inset-right)) 1.25rem calc(1.5rem + env(safe-area-inset-left));
+  /* Scroll shadows: when the content area scrolls, a soft shade marks the
+  cut edge, so a hidden scrollbar is never the only clue. Invisible when
+  everything fits. */
+  background:
+    linear-gradient(var(--cream) 30%, transparent) center top,
+    linear-gradient(transparent, var(--cream) 70%) center bottom,
+    radial-gradient(farthest-side at 50% 0, rgba(15,27,45,.22), transparent) center top,
+    radial-gradient(farthest-side at 50% 100%, rgba(15,27,45,.22), transparent) center bottom;
+  background-repeat:no-repeat;
+  background-size:100% 2.5rem, 100% 2.5rem, 100% .875rem, 100% .875rem;
+  background-attachment: local, local, scroll, scroll}
 /* QR screen: the shop name, the code, the print action. */
 .shop{font-size:clamp(1.75rem,8vw,3rem);font-weight:800;text-align:center;
   letter-spacing:-.01em;margin:1rem 0 0;overflow-wrap:anywhere}
@@ -55,12 +66,13 @@ body.signed-out #set-title{font-size:1.5rem;margin-top:.25rem}
 .qr-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-qr);
   padding:clamp(1rem,4vw,2rem);margin:.6rem auto 0;width:min(100%,26rem);box-shadow:var(--elev-2)}
 /* The code scales to the space left after the header, buttons and tab bar:
-full width on tall screens, capped by the viewport height on short ones,
-never below a scannable 220px (then the content area scrolls instead). */
-body.has-tabs #screen-qr .qr-card{width:max(16rem,min(100%,26rem,calc(100vh - 24.5rem)))}
+full width on tall screens, capped by the viewport height on short ones.
+The merchant floor keeps the code near 200px even with the first-payment
+note showing (then the content area scrolls instead). */
+body.has-tabs #screen-qr .qr-card{width:max(14rem,min(100%,26rem,calc(100vh - 24.5rem)))}
 body.pay #view-invoice .qr-card{width:max(16rem,min(100%,20rem,calc(100vh - 23.5rem)))}
 @supports (height:100dvh){
-  body.has-tabs #screen-qr .qr-card{width:max(16rem,min(100%,26rem,calc(100dvh - 24.5rem)))}
+  body.has-tabs #screen-qr .qr-card{width:max(14rem,min(100%,26rem,calc(100dvh - 24.5rem)))}
   body.pay #view-invoice .qr-card{width:max(16rem,min(100%,20rem,calc(100dvh - 23.5rem)))}
 }
 .qr-card svg{display:block;width:100%;height:auto}
@@ -105,7 +117,15 @@ body.has-tabs .card .btn{margin-top:1rem}
   font:700 1rem Figtree,system-ui,sans-serif;text-decoration:underline;cursor:pointer;min-height:3rem}
 .link:hover{text-decoration-thickness:2px}
 /* History: the amount leads, the status sits in a quiet chip. */
-.tx{list-style:none;margin:1rem 0 0;padding:0;max-height:20rem;overflow-y:auto}
+.tx{list-style:none;margin:1rem 0 0;padding:0;max-height:20rem;overflow-y:auto;
+  background:
+    linear-gradient(var(--paper) 30%, transparent) center top,
+    linear-gradient(transparent, var(--paper) 70%) center bottom,
+    radial-gradient(farthest-side at 50% 0, rgba(15,27,45,.20), transparent) center top,
+    radial-gradient(farthest-side at 50% 100%, rgba(15,27,45,.20), transparent) center bottom;
+  background-repeat:no-repeat;
+  background-size:100% 2.5rem, 100% 2.5rem, 100% .875rem, 100% .875rem;
+  background-attachment: local, local, scroll, scroll}
 .tx li{display:flex;justify-content:space-between;gap:1rem;padding:1rem 0;border-top:1px solid var(--line)}
 .tx li:first-child{border-top:0;padding-top:.25rem}
 .tx li>div:first-child{min-width:0}
@@ -136,23 +156,30 @@ The 52rem line also covers short landscape windows (1180x820), where the
 full-size chrome and full-width code would overflow by a few dozen pixels. */
 @media screen and (max-height:52rem){
   body.has-tabs .top,body.pay .top{padding-top:calc(.5rem + env(safe-area-inset-top));min-height:2.75rem}
-  body.has-tabs .wrap,body.pay .wrap{padding-top:.75rem;padding-bottom:.6rem}
-  body.has-tabs .shop,body.pay .shop{font-size:clamp(1.6rem,7vw,2rem);margin-top:.2rem}
-  body.has-tabs .mpesa-name,body.pay .mpesa-name{font-size:1rem;margin-top:.15rem}
+  body.has-tabs .wrap,body.pay .wrap{padding-top:.6rem;padding-bottom:.5rem}
+  body.has-tabs .shop,body.pay .shop{font-size:clamp(1.6rem,7vw,2rem);margin-top:.1rem}
+  body.has-tabs .mpesa-name,body.pay .mpesa-name{font-size:1rem;margin-top:.1rem}
   .mark{font-size:.8rem;line-height:1.35}
-  .mark-line{margin-top:.2rem}
-  .secure-note{margin-top:.25rem}
-  #screen-qr .qr-card{margin-top:.4rem;padding:.75rem}
+  .mark-line{margin-top:.15rem}
+  .secure-note{margin-top:.15rem}
+  #screen-qr .qr-card{margin-top:.3rem;padding:.5rem}
   /* The invoice code keeps the same box (its padding shrinks as the code
   grows), but the code itself stays scannable: 230px, not 190px. */
   #view-invoice .qr-card{padding:.75rem}
   #screen-qr>.print-line{display:none}
-  .btn.trio{margin-top:.4rem}
-  .foot{margin-top:.5rem}
-  .powered{margin-top:.25rem}
+  .btn.trio{margin-top:.3rem}
+  .foot{margin-top:.4rem}
+  .powered{margin-top:.2rem}
   .tabs{padding-top:.45rem;padding-bottom:calc(.45rem + env(safe-area-inset-bottom))}
   .tabs button{font-size:.78rem;gap:.15rem;min-height:3rem;padding:.2rem .5rem}
   .tabs button svg{width:1.25rem;height:1.25rem;padding:.15rem 1rem}
+  /* Settings: compact cards and a shorter history window. */
+  #set-title{font-size:1.4rem;margin-top:.2rem}
+  #signed-in .card{padding:.875rem;margin-top:.75rem}
+  #signed-in .card h2{font-size:1.2rem}
+  #signed-in label{margin:.5rem 0 .3rem}
+  #btn-signout{margin-top:.5rem}
+  .tx{max-height:10rem}
 }
 /* Landscape phones (640x360 to 915x412): the viewport is short and wide,
 so the QR screens go two-column, the code beside the words and buttons,
@@ -175,7 +202,7 @@ and scroll inside the content area, with the focused field kept in view. */
   #screen-qr>.qr-card{grid-column:1;grid-row:1/9;align-self:center;margin:0}
   #screen-qr>:not(.qr-card){grid-column:2}
   #screen-qr .row{gap:.5rem}
-  body.has-tabs #screen-qr .qr-card{width:max(13.5rem,min(17rem,calc(100vh - 8rem)));padding:.5rem}
+  body.has-tabs #screen-qr .qr-card{width:max(14rem,min(17rem,calc(100vh - 8rem)));padding:.5rem}
   /* Kiswahili button words are long: smaller trio type keeps all three
   actions on one line beside the code. */
   #screen-qr .btn.trio{font-size:.72rem;padding:.55rem .1rem;line-height:1.2}
@@ -184,7 +211,7 @@ and scroll inside the content area, with the focused field kept in view. */
   #view-invoice>.shop{grid-column:1/-1}
   #view-invoice>.qr-card{grid-column:1;grid-row:2/8;align-self:center;margin:0}
   #view-invoice>:not(.shop):not(.qr-card){grid-column:2}
-  body.pay #view-invoice .qr-card{width:max(13.5rem,min(17rem,calc(100vh - 8rem)));padding:.5rem}
+  body.pay #view-invoice .qr-card{width:max(14rem,min(17rem,calc(100vh - 8rem)));padding:.5rem}
   #view-invoice p{margin-top:.5rem;margin-bottom:0}
   #view-invoice .copy-row{margin-top:.5rem}
   /* Pay form: the shop and total left, the amount and Pay button right. */
@@ -212,9 +239,74 @@ and scroll inside the content area, with the focused field kept in view. */
 }
 @supports (height:100dvh){
   @media (orientation: landscape) and (max-height:30rem){
-    body.has-tabs #screen-qr .qr-card{width:max(13.5rem,min(17rem,calc(100dvh - 8rem)))}
-    body.pay #view-invoice .qr-card{width:max(13.5rem,min(17rem,calc(100dvh - 8rem)))}
+    body.has-tabs #screen-qr .qr-card{width:max(14rem,min(17rem,calc(100dvh - 8rem)))}
+    body.pay #view-invoice .qr-card{width:max(14rem,min(17rem,calc(100dvh - 8rem)))}
   }
+}
+/* Kiswahili footers run longer than English, so on short portrait screens
+the merchant code gives way a little further to keep every line in view. */
+@media (orientation:portrait) and (max-height:52rem){
+  html[lang="sw"] body.has-tabs #screen-qr .qr-card{width:max(14rem,min(100%,26rem,calc(100vh - 26rem)))}
+}
+@supports (height:100dvh){
+  @media (orientation:portrait) and (max-height:52rem){
+    html[lang="sw"] body.has-tabs #screen-qr .qr-card{width:max(14rem,min(100%,26rem,calc(100dvh - 26rem)))}
+  }
+}
+/* Auth tightening reaches tall phones too (390x844, 1536x864), so the
+stacked card fits there. Targets stay 48px; only gaps and the signed-out
+heading shrink. */
+@media (max-height:56rem){
+  body.signed-out #set-title{font-size:1.1rem;margin-top:.2rem}
+  #signed-out .card{padding:.875rem;margin-top:.75rem}
+  #signed-out .card h2{font-size:1.15rem}
+  #signed-out label{margin:.45rem 0 .3rem}
+  #signed-out .card .btn{margin-top:.75rem}
+  #signed-out .agree{margin-top:.75rem}
+  #signed-out>p{margin:.4rem 0}
+}
+/* Auth on short screens: the fields pair side by side so the whole card
+and its submit fit above the tab bar. Targets stay 48px. */
+@media (max-height:46.25rem) and (min-width:21rem){
+  #f-register,#f-login{display:grid;grid-template-columns:1fr 1fr;column-gap:.75rem;row-gap:.5rem;align-items:start}
+  #f-register>h2,#f-login>h2,#f-register>.agree,#f-register>.err,#f-login>.err,#f-register>.btn,#f-login>.btn{grid-column:1/-1}
+  #f-register>h2,#f-login>h2{margin-bottom:0}
+  .field>label{margin:0 0 .3rem}
+  #signed-out .agree{margin-top:0}
+  #signed-out .card .btn{margin-top:.1rem}
+}
+/* Where the form cannot fit (landscape phones, the 320px minimum): the
+log-in link moves above the card and the submit pins above the tab bar, so
+the button stays visible and tappable while the fields scroll. Nothing sits
+below a pinned submit; once log in shows, the register submit unpins. */
+@media (orientation:landscape) and (max-height:30rem),(max-width:20rem){
+  #signed-out{display:grid}
+  #signed-out>p{grid-row:1}
+  #f-register{grid-row:2}
+  #f-login{grid-row:3}
+  #btn-register,#btn-login{position:sticky;bottom:.5rem;box-shadow:0 .5rem 1rem rgba(15,27,45,.22)}
+  #signed-out:has(#f-login:not([hidden])) #btn-register{position:static}
+}
+/* Settings on wide screens: the cards pair side by side so names,
+display, PIN, history and sign out are all near the top. The QR screen and
+the auth forms keep their narrow centred column. */
+@media (min-width:48rem){
+  body.has-tabs .wrap{max-width:50rem}
+  #screen-qr,#signed-out{max-width:36rem;margin-inline:auto}
+  #signed-in{display:grid;grid-template-columns:1fr 1fr;column-gap:1.25rem;align-items:start}
+  #signed-in>.foot,#signed-in>.powered,#signed-in>.help-line{grid-column:1/-1}
+  /* Wide settings stay compact at any height, so history and sign out sit
+  near the top; the names pair side by side like the auth fields. */
+  #set-title{font-size:1.4rem;margin-top:.2rem}
+  #signed-in .card{padding:.875rem;margin-top:.75rem}
+  #signed-in .card h2{font-size:1.2rem}
+  #signed-in label{margin:.5rem 0 .3rem}
+  #btn-signout{margin-top:.5rem}
+  .tx{max-height:10rem}
+  #f-names{display:grid;grid-template-columns:1fr 1fr;column-gap:.75rem;row-gap:.6rem;align-items:start}
+  #f-names>h2,#f-names>.hint,#f-names>.err,#f-names>.ok-line,#f-names>.btn{grid-column:1/-1}
+  #f-names>h2{margin-bottom:0}
+  #f-names .field>label{margin:0 0 .3rem}
 }
 /* Pay page: the amount is the hero. */
 #amount{font:700 1.6rem "Bricolage Grotesque",Figtree,system-ui,sans-serif;min-height:4rem}
@@ -259,6 +351,7 @@ content on the default paper. Pure black on white throughout. */
   body.has-tabs .wrap,body.pay .wrap{overflow:visible}
   body.has-tabs #screen-qr .qr-card{width:auto}
   .wrap{max-width:none;padding:0}
+  body.has-tabs .wrap,body.pay .wrap{max-width:none;background:none}
   .tabs,.btn,.lang,.foot,.powered,.help-line,.secure-note,.offline-note,.no-print,.mark,.err,.top{display:none!important}
   /* Printing from a landscape phone keeps the stacked card, not the grid. */
   #screen-qr,#view-pay,#view-invoice{display:block}
