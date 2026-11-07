@@ -18,7 +18,7 @@ Docs: https://bitcoin.co.ke/send-money-to-kenya/docs/developer-api.html
 
 - `lib/ktown.js`: merchants, sessions, the Tando calls, LNURL answers, history. `api/ktown.js`: the routes. Store keys are listed at the top of lib/ktown.js. Switched on with `KTOWN=on`.
 - Registration proves the number works by reading its Tando LNURL. Receiving starts at once: money can only flow to the registered M-Pesa number, so an early QR risks nothing.
-- Identity is a 6-digit PIN (patterns refused, 5 wrong tries lock logins for 15 minutes) plus a year-long session per shop phone. Whoever holds the session may change that merchant's settings; a merchant can only ever change their own. A signed-in phone sets a new PIN without the old one. A lost phone with a forgotten PIN needs Stanley to release the record (`ktown_release`, below), then the merchant signs up again, unless the registration is still unclaimed, stale and unpaid, in which case signing up again takes it over by itself. kTown holds no money, so nothing is at risk meanwhile.
+- Identity is a 6-digit PIN (patterns refused, 5 wrong tries lock logins for 15 minutes) plus a year-long session per shop phone. Whoever holds the session may change that merchant's settings; a merchant can only ever change their own. A signed-in phone sets a new PIN without the old one. A lost phone with a forgotten PIN needs Stanley to reset the PIN (`ktown_reset_pin`, Pilot fixes below) or release the record (`ktown_release`, below), then the merchant signs up again, unless the registration is still unclaimed, stale and unpaid, in which case signing up again takes it over by itself. kTown holds no money, so nothing is at risk meanwhile.
 - LNURL: `GET /.well-known/lnurlp/k-<id>` (and `/api/ktown/lnurlp/<id>`) answers payRequest with the shop name and M-Pesa name, Tando's msat limits and the KES currency terms. The callback asks Tando for an invoice for exactly that amount and returns it unchanged.
 - Two payer paths, one promise. The pay page always prices in KES, so the merchant receives exactly the quoted shillings. A wallet scanning the printed QR directly uses KES mode when it speaks LUD-21 and plain sats otherwise; in sats mode LNURL-pay requires the invoice to equal the asked millisats, so the 1% cannot be added there and lands inside the delivery instead. kTown never grosses up: in KES mode that would overcharge the payer, in sats mode it would break the protocol. What lands short is named instead (see History).
 - Amount checks: in KES mode Tando's `converted` must equal the asked shillings and the invoice sats must sit inside a narrow band (the 1% plus drift and rounding); in msat mode the invoice must match the millisats exactly. Anything else is refused and recorded in the Security watch.
@@ -129,7 +129,40 @@ Before KTOWN=on for the 10-shop pilot, these guard the first strangers:
   a full pilot still lets it through. Health answers { ok, on, full }
   only: never the count.
 
+## Pilot fixes (20 shops)
+
+- Direct wallet payments are confirmed by the shop's own app. A wallet that
+  pays the printed QR's LNURL never opens the pay page, so nothing else asks
+  Tando about it. While the app is open and on screen, it calls
+  `POST /api/ktown/check` when History loads and about every 20 seconds.
+  The server, not the app, picks that merchant's own newest pending entries
+  (at most 5, from the last three days) and runs the same confirmation as
+  the receipt route; the answer carries the fresh History, which updates in
+  place. The caller names no hash, so no one can make kTown ask about anyone
+  else's payment. Capped at 40 checks per session and 80 per shop every 10
+  minutes.
+- Secured shops: `POST /api/admin { action: "ktown_secure", id }` marks a
+  shop claimed (`securedBy: "admin"`, `securedAt`), so the 48-hour takeover
+  can never take its number. Printing a poster (one or all) in the admin
+  kTown tab secures those shops first; a shop that can't be secured is not
+  printed. Stanley prints only for shops he visited.
+- Forgotten PIN: `POST /api/admin { action: "ktown_reset_pin", id }` keeps the
+  shop id (posters keep working), sets a random 6-digit temporary PIN
+  (crypto, never a pattern, stored only as its scrypt hash), clears the lock,
+  and ends every session of that shop (`sessionsFrom` on the merchant;
+  older sessions are refused and removed on next use). The PIN is in that
+  one reply only, shown once on Stanley's screen, never logged or stored in
+  plain text. The merchant then sets their own PIN in Settings. The app's
+  login shows "Forgot your PIN? Ask kTown help to reset it." with the help
+  contact after a failed login.
+- The pay page says "This QR code is unknown." only for a 404; other
+  failures show the server's words or "Try again in a minute."
+- Registration stores the app's language (en or sw).
+- The phone sample is the undialable 07XX XXX XXX.
+- Common server errors show in Kiswahili when the app is in Kiswahili;
+  unknown lines stay in English.
+
 ## Still open
 
-- Lost-phone recovery without Stanley (today: he releases the record and the merchant signs up again).
+- Lost-phone recovery without Stanley (today: he resets the PIN with `ktown_reset_pin`, or releases the record and the merchant signs up again).
 - If the live server ever sets proxy variables, Node sends `https.request` through the proxy and `lib/netsafe.js` can no longer pin DNS. Keep proxy variables off the live server, or teach the guard to refuse proxied requests.
