@@ -234,7 +234,7 @@ test("publicity: money keywords in the homepage title, large-image cards with th
   const pages = fs.readdirSync(root).filter((x) => x.endsWith(".html") && x !== "admin.html");
   for (const f of pages) {
     const html = read(f);
-    assert.match(html, /og:image" content="https:\/\/altradits\.com\/assets\/social-card\.png"/, `${f}: shares the wallet social card`);
+    assert.match(html, /og:image" content="https:\/\/altradits\.com\/assets\/social-card\.png"/, `${f}: shares the site social card (now the kTown card)`);
     assert.match(html, /og:image:width" content="1200"/, `${f}: card width declared`);
     assert.match(html, /twitter:card" content="summary_large_image"/, `${f}: large-image card`);
     assert.match(html, /theme-color" content="#EEF2F6"/, `${f}: theme color set`);
