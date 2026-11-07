@@ -2774,6 +2774,43 @@ document.querySelector('[data-pane="kazi"]').addEventListener("click", async (e)
   } catch (err) { toast(err.message, true, 6000); }
 });
 
+// ---- kTown shops and their A4 posters. The QR is drawn here, on Stanley's
+// screen, from the same link the shop's own app shows: nothing is sent anywhere.
+let KTOWN = [];
+function posterQr(text) {
+  const qr = window.qrcode(0, "M");
+  qr.addData(text);
+  qr.make();
+  return qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true });
+}
+function posterHtml(m) {
+  return `<section class="poster"><div><h1>Bitcoin accepted here</h1><p class="sw">Tunapokea Bitcoin</p><p class="shop">${esc(m.shop)}</p></div>`
+    + `<div class="qr">${posterQr(`${m.payUrl}?lightning=${m.lnurl}`)}</div>`
+    + `<div><p class="how">Scan with any Lightning wallet. Pay in sats.</p><p class="foot">The shop gets M-Pesa · Powered by Tando (1% fee) · altradits.com/ktown</p></div></section>`;
+}
+function printPosters(list) {
+  if (!list.length) return;
+  if (typeof window.qrcode !== "function") { toast("The QR maker didn't load. Refresh the page.", true); return; }
+  $("#posters").innerHTML = list.map(posterHtml).join("");
+  document.body.classList.add("posters-on");
+  setTimeout(() => window.print(), 50);
+}
+window.addEventListener("afterprint", () => { document.body.classList.remove("posters-on"); $("#posters").innerHTML = ""; });
+async function loadKtown() {
+  try {
+    const { shops, max } = await api("", { action: "ktown_shops" });
+    KTOWN = shops;
+    $("#ktownCount").textContent = `${shops.length} of ${max} places`;
+    $("#ktownList").innerHTML = shops.length ? `<table><thead><tr><th>Shop</th><th>M-Pesa name</th><th>Phone ends</th><th>Paid</th><th>Joined</th><th></th></tr></thead><tbody>${shops.map((m, i) =>
+      `<tr><td>${esc(m.shop)}${m.verified ? "" : ' <span class="muted sm">(not confirmed)</span>'}</td><td>${esc(m.mpesaName)}</td><td>…${esc(m.phoneEnd)}</td><td>${esc(String(m.paidCount))}</td><td>${esc(String(m.createdAt || "").slice(0, 10))}</td><td><button type="button" class="btn" data-poster="${i}">Print poster</button></td></tr>`).join("")}</tbody></table>`
+      : '<p class="sm muted">No shops yet. They appear here as soon as they register at altradits.com/ktown.</p>';
+    issue("ktown", shops.length >= max ? "soon" : null, `kTown is full: ${shops.length} of ${max} places. Raise KTOWN_MAX_MERCHANTS to let more shops in.`, "ktown:hKtown");
+  } catch (err) { $("#ktownList").innerHTML = `<p class="sm muted">${esc(err.message)}</p>`; }
+}
+$("#ktownList").addEventListener("click", (e) => { const i = e.target.closest("[data-poster]")?.dataset.poster; if (i !== undefined) printPosters([KTOWN[Number(i)]]); });
+$("#ktownPrintAll").addEventListener("click", () => printPosters(KTOWN));
+$("#ktownReload").addEventListener("click", loadKtown);
+
 async function load() {
   let D;
   $("#loginErr").textContent = "Loading… reading the node can take a few seconds.";
@@ -2786,7 +2823,7 @@ async function load() {
   renderVerify();
   await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing()]);
   if (document.querySelector('[data-pane="earn"].on') && !njiaLoaded) await loadNjia(false); // Earn visible on sign-in: first load gentle
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
+  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi(), loadKtown()]);
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
 }
 token ? load() : showLogin();

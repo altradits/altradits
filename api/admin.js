@@ -21,6 +21,7 @@
 //   POST { action: "stan_report" } | { action: "node_topup", sats } | { action: "address_qr", address } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
 //   POST { action: "trivia_create", id?, title, startsAt?, players? } | { action: "trivia_schedule", id, startsAt } | { action: "trivia_start", id, totalRounds? } | { action: "trivia_cancel", id, rule: "keep"|"return", note?, nextGame? } | { action: "trivia_payout", game, winner, to, pin }
 //   POST { action: "trivia_stake_set", id, sats } | { action: "trivia_stake_settle", id } | { action: "trivia_stake_cancel", id } (staked play: off unless TRIVIA_STAKES=on)
+//   POST { action: "ktown_shops" } -> every signed-up kTown shop with its QR link, for printing posters
 //   POST { action: "ktown_block" | "ktown_unblock" | "ktown_release", phone } (kTown squatter tools, docs/ktown.md)
 //   POST { action: "njia_lease", lease } | { action: "njia_lease_void", id, reason } | { action: "njia_price", price } | { action: "njia_settings", field, value, confirm } | { action: "njia_listing", url } (Njia records, docs/njia.md)
 import { json, readBody, clean, newId, adminAuthed, clientIp, siteUrl, EMAIL_RE } from "../lib/http.js";
@@ -637,6 +638,10 @@ export async function POST(request) {
   // Kazi board moderation: list every task (newest first, flagged ones carry
   // their reasons), approve a waiting task onto the public board, or hide a
   // task. Nothing goes public except through kazi_approve. Docs: docs/kisumu-app.md.
+  if (body.action === "ktown_shops") {
+    const kt = await import("../lib/ktown.js");
+    return json({ shops: await kt.adminShops(siteUrl(request)), max: kt.maxMerchants() });
+  }
   if (body.action === "kazi_list" || body.action === "kazi_approve" || body.action === "kazi_hide") {
     const kz = await import("../lib/kazi.js");
     try {

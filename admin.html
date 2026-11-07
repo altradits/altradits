@@ -126,7 +126,7 @@ body.quiet .see{display:none}
 .minew h3{font-size:1.05rem}
 .linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--blue);text-decoration:underline;cursor:pointer}
 dialog{width:min(30rem,calc(100vw - 2rem));border:2px solid var(--ink);border-radius:1rem;padding:1.2rem}
-@media print{body>*:not(#rcpt){display:none!important}#rcpt{position:static;border:0;width:auto;max-width:none;margin:0}#rcpt .row{display:none}}
+@media print{body>*:not(#rcpt):not(#posters){display:none!important}body.posters-on #rcpt{display:none!important}body:not(.posters-on) #posters{display:none!important}#rcpt{position:static;border:0;width:auto;max-width:none;margin:0}#rcpt .row{display:none}}
 @page{margin:16mm}
 .rcpt-head{display:flex;gap:.9rem;align-items:center;border-bottom:3px solid #274C77;padding-bottom:.7rem}
 .rcpt-head img{height:2.6rem;width:auto}
@@ -135,6 +135,8 @@ dialog{width:min(30rem,calc(100vw - 2rem));border:2px solid var(--ink);border-ra
 .rcpt-titlerow{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;border-bottom:2px solid #EA5158;padding:.55rem 0}
 .rcpt-titlerow h2{font-size:1.15rem;margin:0}
 .rcpt-no{font-size:.85rem;color:var(--muted);white-space:nowrap}
+#posters{display:none}
+@media print{@page{size:A4;margin:0}body.posters-on #posters{display:block}.poster{width:210mm;height:297mm;box-sizing:border-box;padding:16mm 14mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;page-break-after:always;break-after:page;color:#000;background:#fff;font-family:inherit}.poster:last-child{page-break-after:auto;break-after:auto}.poster h1{font-size:19mm;white-space:nowrap;line-height:1;margin:0;font-weight:800}.poster .sw{font-size:12mm;margin:3mm 0 0;font-weight:700}.poster .shop{font-size:11mm;margin:4mm 0 0;font-weight:700}.poster .qr{width:160mm;height:160mm;flex:none}.poster .qr svg{width:100%;height:100%;display:block}.poster .how{font-size:7mm;margin:0}.poster .foot{font-size:4.5mm;margin:0;color:#333}}
 #rcptBody{display:grid;grid-template-columns:8.5rem 1fr;gap:.35rem .8rem;margin:.9rem 0;font-size:.92rem}
 #rcptBody dt{color:var(--muted)}
 #rcptBody dd{margin:0;font-weight:600;overflow-wrap:anywhere}
@@ -282,7 +284,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 
   <div class="panel" id="nodeBanner" role="alert" hidden style="border-color:var(--crit)"></div>
 
-  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="developer">Developer</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="earn">Earn</button><button type="button" data-tab="kazi">Kazi</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
+  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="developer">Developer</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="earn">Earn</button><button type="button" data-tab="ktown">kTown</button><button type="button" data-tab="kazi">Kazi</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
   <div class="pane" data-pane="overview">
   <section class="panel" aria-labelledby="hCheck">
     <h2 id="hCheck">Today's checklist</h2>
@@ -708,6 +710,14 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </section>
   </div>
 
+  <div class="pane" data-pane="ktown">
+    <section class="panel" aria-labelledby="hKtown">
+      <h2 id="hKtown">kTown shops <span class="muted sm" id="ktownCount"></span></h2>
+      <div class="learn"><p>Every shop that signed up. Print its poster on A4: "Bitcoin accepted here" with the shop's own QR. The QR pays into that shop's M-Pesa. Check the shop name before you print.</p></div>
+      <div class="row"><button type="button" class="btn primary" id="ktownPrintAll">Print all posters</button><button type="button" class="btn" id="ktownReload">Refresh</button></div>
+      <div id="ktownList"><p class="sm muted">Loading…</p></div>
+    </section>
+  </div>
   <div class="pane" data-pane="kazi">
     <section class="panel" aria-labelledby="hKazi">
       <h2 id="hKazi">Kazi board moderation</h2>
@@ -1064,6 +1074,8 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="row"><button type="button" class="btn" id="rcptPrint">Print or save as PDF</button><button type="button" class="btn" id="rcptResend" hidden>Resend receipt email</button><button type="button" class="btn primary" id="rcptClose">Close</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
+<div id="posters" aria-hidden="true"></div>
+<script src="/ktown/qrcode-generator-1.4.4.js"></script>
 <script type="module" src="/assets/admin.js?v=refresh20"></script>
 </body>
 </html>
