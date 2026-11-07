@@ -2777,16 +2777,24 @@ document.querySelector('[data-pane="kazi"]').addEventListener("click", async (e)
 // ---- kTown shops and their A4 posters. The QR is drawn here, on Stanley's
 // screen, from the same link the shop's own app shows: nothing is sent anywhere.
 let KTOWN = [];
+// The poster: the Bitcoin mark (public domain) and "bitcoin" across the top,
+// "Accepted here", the shop, a large framed QR with the mark in the middle,
+// and an orange "Scan to pay" band. The QR uses level H error correction (30%)
+// so the centre mark covers well under what the code can lose and still scan.
+const BTC_MARK = '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="#F7931A"/><g transform="rotate(14 32 32)" fill="#fff"><path d="M22 14h4v6h-4zM30 14h4v6h-4zM22 44h4v6h-4zM30 44h4v6h-4z"/><path d="M18 19h17.5c6 0 9.5 3 9.5 7.6 0 3.2-1.8 5.2-4.4 6 3.4.7 5.6 3 5.6 6.8 0 5-3.8 8.6-10.2 8.6H18v-5h3.5V24H18zm9.5 5v7h7c2.4 0 3.8-1.3 3.8-3.5S36.9 24 34.5 24zm0 12v7.3h7.8c2.7 0 4.2-1.4 4.2-3.7s-1.5-3.6-4.2-3.6z"/></g></svg>';
+const PHONE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M11 18h2"/><path d="M9 7h2v2H9zM13 7h2v2h-2zM9 11h2v2H9z"/></svg>';
 function posterQr(text) {
-  const qr = window.qrcode(0, "M");
+  const qr = window.qrcode(0, "H");
   qr.addData(text);
   qr.make();
-  return qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true });
+  return qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
 }
 function posterHtml(m) {
-  return `<section class="poster"><div><h1>Bitcoin accepted here</h1><p class="sw">Tunapokea Bitcoin</p><p class="shop">${esc(m.shop)}</p></div>`
-    + `<div class="qr">${posterQr(`${m.payUrl}?lightning=${m.lnurl}`)}</div>`
-    + `<div><p class="how">Scan with any Lightning wallet. Pay in sats.</p><p class="foot">The shop gets M-Pesa · Powered by Tando (1% fee) · altradits.com/ktown</p></div></section>`;
+  return `<section class="poster"><div class="burst"></div><div class="top"><div class="brand">${BTC_MARK}<span class="word">bitcoin</span></div>`
+    + `<p class="acc">Accepted here</p><p class="shop">${esc(m.shop)}</p></div>`
+    + `<div class="frame"><div class="q">${posterQr(`${m.payUrl}?lightning=${m.lnurl}`)}</div><div class="mid">${BTC_MARK}</div></div>`
+    + `<div class="band"><div class="scan">${PHONE_ICON}Scan to pay</div><div class="fine">Tunapokea Bitcoin · Any Lightning wallet · Shop gets M-Pesa</div>`
+    + `<div class="tiny">kTown by Altradits · altradits.com/ktown · Tando 1% fee</div></div></section>`;
 }
 // Stanley prints a poster only for a shop he visited, so printing secures it
 // first (no 48-hour takeover). A shop that can't be secured is not printed.

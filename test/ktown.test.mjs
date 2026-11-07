@@ -956,3 +956,11 @@ test("the app and pay page: direct payments confirmed, forgotten PIN help, hones
   assert.match(app, /Too many wrong PINs/);
   assert.match(app, /el\.textContent = e && e\.message \? swErr\(e\.message\)/);
 });
+
+test("printed poster: Bitcoin accepted here, scan to pay, and a QR strong enough to carry the centre mark", () => {
+  const js = fs.readFileSync(new URL("../assets/admin.js", import.meta.url), "utf8");
+  const fn = js.slice(js.indexOf("function posterQr"), js.indexOf("function posterHtml"));
+  assert.match(fn, /qrcode\(0, "H"\)/, "level H error correction: the centre mark covers part of the code");
+  for (const t of ["Accepted here", "Scan to pay", "Tunapokea Bitcoin", "Shop gets M-Pesa"]) assert.ok(js.includes(t), `poster says ${t}`);
+  assert.match(js, /\$\{m\.payUrl\}\?lightning=\$\{m\.lnurl\}/, "the QR is the shop's own pay link, same as its app");
+});
