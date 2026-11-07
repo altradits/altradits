@@ -16,7 +16,8 @@ const PAGES = ["developer.html", "developer-reference.html", "developer-dashboar
 test("every page with a site nav links to Developer", async () => {
   for (const f of fs.readdirSync(ROOT).filter((x) => x.endsWith(".html"))) {
     const html = read(f);
-    if (!html.includes('<nav class="topnav"')) continue;
+    // The home page sells kTown only, so its menu leaves Developer out.
+    if (f === "index.html" || !html.includes('<nav class="topnav"')) continue;
     assert.ok(html.includes('<a href="/developer"'), `${f}: nav links to /developer`);
   }
   for (const f of PAGES) assert.ok(read(f).includes('<a href="/developer" aria-current="page">Developer</a>'), `${f}: marks Developer current`);

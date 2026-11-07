@@ -19,6 +19,7 @@ const STR = {
     youPaid: "You paid", satsUnit: "sats",
     afterPayNote: "After paying, the merchant's M-Pesa message confirms it.",
     unknownQr: "This QR code is unknown.",
+    tryLater: "Try again in a minute.",
     confirmed: "Confirmed M-Pesa name", notConfirmed: "M-Pesa name not yet confirmed",
     noConn: "No connection. Try again.", tryAgain: "Something went wrong. Try again.",
   },
@@ -36,6 +37,7 @@ const STR = {
     youPaid: "Umelipa", satsUnit: "sats",
     afterPayNote: "Baada ya kulipa, ujumbe wa M-Pesa wa muuzaji ndio uthibitisho.",
     unknownQr: "Msimbo huu haujulikani.",
+    tryLater: "Jaribu tena baada ya dakika moja.",
     confirmed: "Jina la M-Pesa limethibitishwa", notConfirmed: "Jina la M-Pesa halijathibitishwa",
     noConn: "Hakuna mtandao. Jaribu tena.", tryAgain: "Kuna tatizo. Jaribu tena.",
   },
@@ -61,8 +63,10 @@ async function get(path) {
     throw new Error(t("noConn"));
   }
   const d = await r.json().catch(() => null);
-  if (!r.ok || !d || d.status === "ERROR" || d.success === false)
-    throw new Error((d && (d.reason || d.error)) || t("tryAgain"));
+  if (!r.ok || !d || d.status === "ERROR" || d.success === false) {
+    const said = d && (d.reason || d.error);
+    throw Object.assign(new Error(said || t("tryAgain")), { status: r.status, said: typeof said === "string" ? said : "" });
+  }
   return d;
 }
 
@@ -227,8 +231,10 @@ async function boot() {
   let pay;
   try {
     pay = await get(`lnurlp/${encodeURIComponent(id)}`);
-  } catch {
-    fatal(t("unknownQr"));
+  } catch (e) {
+    // Only a 404 means the QR is unknown. Anything else (Tando down, too many
+    // requests, no connection) says what the server said, or to try again soon.
+    fatal(e.status === 404 ? t("unknownQr") : e.said || (e.status ? t("tryLater") : e.message || t("tryLater")));
     return;
   }
   try {
@@ -243,7 +249,7 @@ async function boot() {
     };
     if (!terms.shop || !(terms.kesMax >= terms.kesMin) || !(terms.mult > 0)) throw new Error("bad terms");
   } catch {
-    fatal(t("unknownQr"));
+    fatal(t("tryLater")); // a garbled answer is not an unknown QR
     return;
   }
   document.title = `${terms.shop} · Pay`;

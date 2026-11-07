@@ -5,8 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
-<title>kTown: Bitcoin payments that land as M-Pesa</title>
-<meta name="description" content="kTown: one QR on the counter. Customers pay in sats, the merchant in Kenya receives M-Pesa.">
+<title>kTown: a free QR till for Kisumu shops</title>
+<meta name="description" content="Bitcoin in. M-Pesa out. kTown is a free QR till for Kisumu shops. Customers pay in sats from any Lightning wallet. The shop gets shillings in M-Pesa.">
+<meta property="og:title" content="kTown: a free QR till for Kisumu shops">
+<meta property="og:description" content="Bitcoin in. M-Pesa out. kTown is a free QR till for Kisumu shops. Customers pay in sats from any Lightning wallet. The shop gets shillings in M-Pesa.">
+<meta property="og:url" content="https://altradits.com/ktown">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://altradits.com/assets/ktown-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="kTown. Your till takes bitcoin. You get M-Pesa. Free QR till for Kisumu shops. altradits.com/ktown">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="kTown: a free QR till for Kisumu shops">
+<meta name="twitter:description" content="Bitcoin in. M-Pesa out. kTown is a free QR till for Kisumu shops. Customers pay in sats from any Lightning wallet. The shop gets shillings in M-Pesa.">
+<meta name="twitter:image" content="https://altradits.com/assets/ktown-card.png">
+<meta name="twitter:image:alt" content="kTown. Your till takes bitcoin. You get M-Pesa. Free QR till for Kisumu shops. altradits.com/ktown">
 <link rel="icon" href="/favicon.ico">
 <link rel="apple-touch-icon" href="/ktown/icons/icon-192.png">
 <link rel="manifest" href="/ktown/manifest.webmanifest">
@@ -49,10 +62,10 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
       <form id="f-register" class="card" novalidate>
         <h2 data-i18n="register">Register</h2>
         <div class="field"><label for="r-phone" data-i18n="phone">M-Pesa number</label>
-        <input id="r-phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="0707 172 370" required></div>
+        <input id="r-phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="07XX XXX XXX" required></div>
         <div class="field"><label for="r-shop" data-i18n="shop">Shop name</label>
         <input id="r-shop" name="shop" autocomplete="organization" maxlength="60" required></div>
-        <div class="field"><label for="r-mpesa" data-i18n="mpesaName">M-Pesa name (as M-Pesa shows it)</label>
+        <div class="field"><label for="r-mpesa" data-i18n="mpesaName">M-Pesa name, exactly as M-Pesa shows it</label>
         <input id="r-mpesa" name="mpesa" autocomplete="off" maxlength="60" required></div>
         <div class="field"><label for="r-pin" data-i18n="pin">6-digit PIN</label>
         <input id="r-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="new-password" maxlength="6" required></div>
@@ -68,6 +81,7 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
         <div class="field"><label for="l-pin" data-i18n="pin">6-digit PIN</label>
         <input id="l-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="current-password" maxlength="6" required></div>
         <p class="err" id="login-err" role="alert" hidden></p>
+        <p class="hint" id="forgot-pin" hidden><span data-i18n="forgotPin">Forgot your PIN? Ask kTown help to reset it.</span> <span id="forgot-contact"></span></p>
         <button type="submit" class="btn" id="btn-login" data-i18n="loginBtn">Log in</button>
       </form>
     </div>
