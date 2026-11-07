@@ -742,6 +742,48 @@ test("the deadman acknowledgement link: hashed token, constant-time compare, sin
   assert.match(api.slice(api.indexOf("export async function POST")), /acknowledgeWatch\(/, "api/deadman.js POST: only the button tap acknowledges");
 });
 
+test("leads: free capture stays abuse-resistant, sources tracked, pipeline admin-only", () => {
+  const srv = read("server.mjs"), ht = read(".htaccess"), api = read("api/leads.js"), lb = read("lib/leads.js"), ad = read("api/admin.js");
+  assert.ok(srv.includes("start\\.html"), "server.mjs: the /start page is served as public content");
+  assert.match(srv.split("\n").find((l) => l.trim().startsWith("const page =")) || "", /\|start[|)]/, "server.mjs: /start serves the page");
+  assert.match(srv.split("\n").find((l) => l.trim().startsWith("const oldPage")) || "", /\|start[|)]/, "server.mjs: /start.html redirects to /start");
+  assert.match(ht, /\|start\)\/\?\$ \$1\.html/, ".htaccess: /start works on the Apache stack too");
+  assert.match(read("sitemap.xml"), /<loc>https:\/\/altradits\.com\/start<\/loc><lastmod>20\d\d-\d\d-\d\d<\/lastmod>/, "sitemap.xml: /start is listed with a date");
+  assert.match(api, /body\.company/, "api/leads.js: the honeypot field is checked");
+  assert.match(api, /body\.startedAt/, "api/leads.js: the time-to-submit check runs");
+  assert.ok(api.includes("rl:lead:") && api.includes("rl:lead:all"), "api/leads.js: per-IP and site-wide limits are in place");
+  assert.doesNotMatch(api, /export async function GET/, "api/leads.js: no public reads, only submits");
+  assert.match(api, /screen\(/, "api/leads.js: free words pass the word screen before anyone acts on them");
+  assert.match(lb, /export function scoreLead/, "lib/leads.js: scoring is one exported function");
+  assert.match(lb, /Math\.min\(100, score\)/, "lib/leads.js: scores cap at 100");
+  assert.doesNotMatch(lb, /clientIp\(/, "lib/leads.js: never sees the network address, so no record can carry it");
+  assert.doesNotMatch(lb, /(?<![\w.])fetch\(/, "lib/leads.js: no outside calls at all");
+  assert.match(lb, /STAGES = \["new", "qualified", "contacted", "meeting", "won", "lost", "nurture"\]/, "lib/leads.js: the seven pipeline stages");
+  assert.match(lb, /Give a reason for Lost/, "lib/leads.js: Lost needs a reason");
+  assert.match(lb, /Erased on a deletion request/, "lib/leads.js: erasure keeps an audit line");
+  assert.match(read("lib/ktown.js"), /source: cleanSource\(source\)/, "lib/ktown.js: registrations store their source");
+  assert.match(read("api/ktown.js"), /source: body\.source/, "api/ktown.js: the register route passes the source through");
+  assert.match(read("ktown/app.js"), /source: pageSource\(\)/, "ktown/app.js: the app reads ref/utm from its own address");
+  assert.match(ad, /view === "leads"/, "api/admin.js: the pipeline view sits behind the admin gate");
+  assert.match(ad, /view === "leads_csv"/, "api/admin.js: CSV export sits behind the admin gate");
+  for (const a of ["lead_stage", "lead_note", "lead_next", "lead_link", "lead_unlink", "lead_amount", "lead_archive", "lead_delete"])
+    assert.ok(ad.includes(`"${a}"`), `api/admin.js: the ${a} action exists`);
+  assert.doesNotMatch(lb, /mergedInto/, "lib/leads.js: records are linked by Stanley in the admin, never auto-joined");
+  assert.match(read("assets/admin.js"), /data-lead-stage/, "assets/admin.js: the dashboard moves stages with buttons");
+  assert.match(read("assets/admin.js"), /loadLeads\(\)/, "assets/admin.js: the pipeline loads with the rest");
+  assert.match(read("admin.html"), /data-tab="leads"/, "admin.html: the Leads tab exists");
+  assert.match(srv, /leadsDigest\(\)/, "server.mjs: the daily digest runs");
+  assert.match(read("contact.html"), /\/start\?seg=\$\{seg\}/, "contact.html: free topics link to /start with their segment");
+  assert.match(read("api/contact.js"), /yebente: \{ dept: "growth"/, "api/contact.js: the paid topics are unchanged");
+  assert.doesNotMatch(read("api/contact.js"), /ktown-shop|dev-api/, "api/contact.js: the free topics never reach the paid server");
+  const html = read("start.html");
+  assert.match(html, /connect-src 'self'/, "start.html: the form calls only this site's API");
+  assert.doesNotMatch(html, /connect-src 'self' https?:/, "start.html: no API host beside this site");
+  assert.doesNotMatch(html, /src="http/, "start.html: no outside scripts or images (store assets in the repo)");
+  assert.match(html, /0707 172 370/, "start.html: the phone placeholder is Stanley's test number");
+  assert.match(html, /5tan@altradits\.com/, "start.html: the email placeholder is Stanley's test email");
+});
+
 test("a lockdown freezes Developer top-ups but never invoice creation (receiving always works)", () => {
   const dev = read("lib/devapi.js");
   const fn = (name) => {

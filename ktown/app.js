@@ -64,6 +64,12 @@ const money = (n, code) => `${SYM[code] || `${code} `}${Number(n).toLocaleString
 let merchant = null;
 let rates = null;
 
+// The post that brought the merchant (?ref=, utm tags on our own address),
+// stored with the registration so it can be matched to its lead.
+function pageSource() {
+  const q = new URLSearchParams(location.search);
+  return { ref: q.get("ref"), utm_source: q.get("utm_source"), utm_medium: q.get("utm_medium"), utm_campaign: q.get("utm_campaign") };
+}
 async function api(path, { method = "GET", body = null, auth = false } = {}) {
   const headers = { "Content-Type": "application/json" };
   if (auth) headers.Authorization = "Bearer " + (localStorage.getItem("kt.session") || "");
@@ -284,7 +290,7 @@ async function boot() {
     setBusy($("btn-register"), true);
     try {
       const d = await api("register", { method: "POST", body: {
-        phone: $("r-phone").value, shop: $("r-shop").value, mpesaName: $("r-mpesa").value, pin: $("r-pin").value, agree: true,
+        phone: $("r-phone").value, shop: $("r-shop").value, mpesaName: $("r-mpesa").value, pin: $("r-pin").value, agree: true, source: pageSource(),
       } });
       localStorage.setItem("kt.session", d.session);
       setMerchant(d.merchant);

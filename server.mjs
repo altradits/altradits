@@ -36,7 +36,7 @@ if (!SERVER) {
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf", ".webmanifest": "application/manifest+json", ".mp3": "audio/mpeg", ".wasm": "application/wasm" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|friends\.html|plan\.html|research\.html|portfolio\.html|donate\.html|bitcoin\.html|wallet\.html|wallet-guide\.html|kazi\.html|njia\.html|bitcoin-core\.html|contact\.html|receipt\.html|developer\.html|developer-reference\.html|developer-dashboard\.html|trivia\.html|robots\.txt|sitemap\.xml|llms\.txt|yebente\/app\/(?:index\.html|manifest\.webmanifest|assets\/[\w.-]+|fonts\/[\w.-]+|icons\/[\w.-]+)|address-check\/(?:index\.html|sw\.js)|touchtype\/(?:index\.html|js\/[\w.-]+\.js|css\/[\w.-]+\.css|sound\/[\w.-]+\.mp3)|opcode-circuit\/(?:index\.html|manifest\.webmanifest|sw\.js|style\.css|game\.js|engine\/[\w.-]+\.js|sim\/[\w.-]+\.js|content\/[\w.-]+\.js|icons\/[\w.-]+\.svg)|sats-safari\/(?:index\.html|i18n\/[\w.-]+\.json|[\w.-]+\.(?:js|css))|ktown\/(?:index\.html|pay\.html|terms\.html|manifest\.webmanifest|icons\/[\w.-]+\.(?:png|svg)|[\w.-]+\.(?:js|css))|assets\/[\w.-]+|assets\/marketing\/(?:(?:\d{4}-\d{2}|templates)\/)?[\w-][\w.-]*|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|friends\.html|plan\.html|research\.html|portfolio\.html|donate\.html|bitcoin\.html|wallet\.html|wallet-guide\.html|kazi\.html|njia\.html|bitcoin-core\.html|contact\.html|receipt\.html|start\.html|developer\.html|developer-reference\.html|developer-dashboard\.html|trivia\.html|robots\.txt|sitemap\.xml|llms\.txt|yebente\/app\/(?:index\.html|manifest\.webmanifest|assets\/[\w.-]+|fonts\/[\w.-]+|icons\/[\w.-]+)|address-check\/(?:index\.html|sw\.js)|touchtype\/(?:index\.html|js\/[\w.-]+\.js|css\/[\w.-]+\.css|sound\/[\w.-]+\.mp3)|opcode-circuit\/(?:index\.html|manifest\.webmanifest|sw\.js|style\.css|game\.js|engine\/[\w.-]+\.js|sim\/[\w.-]+\.js|content\/[\w.-]+\.js|icons\/[\w.-]+\.svg)|sats-safari\/(?:index\.html|i18n\/[\w.-]+\.json|[\w.-]+\.(?:js|css))|ktown\/(?:index\.html|pay\.html|terms\.html|manifest\.webmanifest|icons\/[\w.-]+\.(?:png|svg)|[\w.-]+\.(?:js|css))|assets\/[\w.-]+|assets\/marketing\/(?:(?:\d{4}-\d{2}|templates)\/)?[\w-][\w.-]*|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
 // HSTS: browsers that have visited once only ever use HTTPS here (no includeSubDomains,
 // so other subdomains such as mail are unaffected). COOP: no other site keeps a handle
 // on our windows.
@@ -175,13 +175,13 @@ const server = http.createServer(async (req, res) => {
     const old = url.pathname.match(/^\/([a-z-]+)(?:\.html|\/)?$/);
     if (old && req.method === "GET" && old[1] in GONE) { res.writeHead(301, { Location: `/${GONE[old[1]]}` }).end(); return; }
     if (/^\/(?:r|h)\/[a-z0-9]{4,12}\/?$/.test(url.pathname) && req.method === "GET") { res.writeHead(301, { Location: "/" }).end(); return; }
-    const oldPage = url.pathname.match(/^\/(journey|library|players|friends|plan|research|portfolio|tracker|admin|donate|bitcoin|bitcoin-core|contact|receipt|wallet-guide|kazi|njia|trivia)\.html$/);
+    const oldPage = url.pathname.match(/^\/(journey|library|players|friends|plan|research|portfolio|tracker|admin|donate|bitcoin|bitcoin-core|contact|receipt|start|wallet-guide|kazi|njia|trivia)\.html$/);
     if (oldPage && req.method === "GET") { res.writeHead(301, { Location: `/${oldPage[1]}${url.search}` }).end(); return; }
     const oldDev = url.pathname.match(/^\/developer-(reference|dashboard)\.html$/);
     if (oldDev && req.method === "GET") { res.writeHead(301, { Location: `/developer/${oldDev[1]}${url.search}` }).end(); return; }
     const oldDevTop = url.pathname.match(/^\/developer\.html$/);
     if (oldDevTop && req.method === "GET") { res.writeHead(301, { Location: `/developer${url.search}` }).end(); return; }
-    const page = url.pathname.match(/^\/(journey|library|players|friends|plan|research|portfolio|tracker|admin|donate|bitcoin|bitcoin-core|contact|receipt|wallet-guide|kazi|njia|trivia)\/?$/);
+    const page = url.pathname.match(/^\/(journey|library|players|friends|plan|research|portfolio|tracker|admin|donate|bitcoin|bitcoin-core|contact|receipt|start|wallet-guide|kazi|njia|trivia)\/?$/);
     // Developer: the page at /developer, the reference and the dashboard below it.
     const dev = url.pathname.match(/^\/developer\/?$/) ? "/developer.html"
       : url.pathname.match(/^\/developer\/reference\/?$/) ? "/developer-reference.html"
@@ -239,6 +239,8 @@ async function maybeRunDaily() {
   await import("./lib/tracker.js").then((t) => t.tracker()).catch((e) => console.error("tracker", e.message)); // fresh for Stan's report
   const { sendStanReport } = await import("./lib/stan.js");
   console.log("Stan's report", await sendStanReport().then((r) => r.status).catch((e) => `failed: ${e.message}`));
+  const { leadsDigest } = await import("./lib/leads.js");
+  console.log("leads digest", await leadsDigest().then((r) => (r.sent ? `${r.due} due` : "nothing due")).catch((e) => `failed: ${e.message}`));
 }
 setInterval(() => maybeRunDaily().catch((e) => console.error("daily", e)), 10 * 60 * 1000).unref();
 // Hourly, once the node is connected: channel alerts, and whether the node can
