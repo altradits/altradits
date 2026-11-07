@@ -1,7 +1,9 @@
-// kTown fit: every phone screen fits one viewport with no page scrolling.
-// Static guards for the app shell (a 100dvh column of header, content and
-// tab bar; only a content area ever scrolls). The live proof is the headless
-// fit check with screenshots (sizes 320x568 to 412x915).
+// kTown fit: every screen fits one viewport with no page scrolling, on
+// every screen height. Static guards for the app shell (a 100dvh column of
+// header, content and tab bar; only a content area ever scrolls) and the
+// height-driven rules. The live proof is the headless height check with
+// screenshots (landscape phones, tablets, desktops, and the portrait
+// phones 320x568 to 412x915).
 // Run: npm test
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -45,6 +47,25 @@ test("kTown fit: the QR scales to the free space, forms and history stay usable"
   for (const js of ["ktown/app.js", "ktown/pay.js"])
     assert.match(read(js), /scrollIntoView\(\{ block: "nearest" \}\)/,
       `${js}: the keyboard never hides the focused field`);
+});
+
+test("kTown height: landscape phones go two-column, short screens stay scannable", () => {
+  assert.match(css, /@media \(orientation: landscape\) and \(max-height:30rem\)\{/,
+    "ktown/style.css: landscape phones get their own height-driven layout");
+  assert.match(css, /#screen-qr\{display:grid;grid-template-columns:auto 1fr/,
+    "ktown/style.css: the merchant code sits beside the shop name and buttons");
+  assert.match(css, /#view-invoice\{display:grid;grid-template-columns:auto 1fr/,
+    "ktown/style.css: the invoice code sits beside its actions");
+  assert.match(css, /#view-pay\{display:grid;grid-template-columns:1fr 1fr/,
+    "ktown/style.css: the pay form splits into shop and amount columns");
+  assert.match(css, /max\(13\.5rem,min\(17rem,calc\(100dvh - 8rem\)\)\)/,
+    "ktown/style.css: the landscape code is capped by height, floored at 200px");
+  assert.match(css, /@media screen and \(max-height:52rem\)\{/,
+    "ktown/style.css: short-screen tightening covers short landscape windows");
+  assert.match(css, /#view-invoice \.qr-card\{padding:\.75rem\}/,
+    "ktown/style.css: the invoice code stays scannable on short screens");
+  assert.match(css, /#screen-qr,#view-pay,#view-invoice\{display:block\}/,
+    "ktown/style.css: printing from a landscape phone keeps the stacked card");
 });
 
 test("kTown fit: no fixed heights that force overflow", () => {
