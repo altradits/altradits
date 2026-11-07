@@ -63,7 +63,7 @@ AddType audio/mpeg .mp3
 
 # Server code and project files are never web content. The Node router only
 # serves whitelisted paths, but Apache answers directly for existing files.
-<FilesMatch "^(\.env(\..*)?|server\.mjs|app\.cjs|README\.md|CLAUDE\.md|AGENTS\.md|DEPLOY\.md|LICENSE|package(-lock)?\.json|vercel\.json|\.gitignore|\.deploy\.lock|\.deploy-marker\.json|SECURITY\.md|CONTRIBUTING\.md|CODE_OF_CONDUCT\.md)$">
+<FilesMatch "^(\.env(\..*)?|server\.mjs|app\.cjs|README\.md|CLAUDE\.md|AGENTS\.md|DEPLOY\.md|LICENSE|package(-lock)?\.json|vercel\.json|\.gitignore|\.deploy\.lock|\.deploy-marker\.json|SECURITY\.md|CONTRIBUTING\.md|CODE_OF_CONDUCT\.md|HANDOFF\.md)$">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>
