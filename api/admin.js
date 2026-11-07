@@ -17,6 +17,10 @@
 //   GET  /api/admin?view=activity&days=30 -> Ye₿ente deposits and transactions per wallet, most active first
 //   GET  /api/admin?view=developer -> Developer API accounts, volume, fees earned, abuse flags
 //   POST { action: "dev_suspend_key", keyId } -> suspend a Developer API key
+//   GET  /api/admin?view=leads -> the /start pipeline: leads with source, score, stage, links, weekly numbers
+//   GET  /api/admin?view=leads_csv -> the same list as CSV
+//   POST { action: "lead_stage", id, stage, note?, reason? } | { action: "lead_note", id, text } | { action: "lead_next", id, text, due }
+//   POST { action: "lead_link", id, kind, target } | { action: "lead_unlink", id, kind } | { action: "lead_amount", id, amount } | { action: "lead_archive", id, archived } | { action: "lead_delete", id, confirm: "DELETE" }
 //   GET  /api/admin?view=trivia -> Mempool Mayhem games with pools; ?view=trivia_game&game= -> one game: pool, ledger, donors, payouts, live play, stakes
 //   POST { action: "stan_report" } | { action: "node_topup", sats } | { action: "address_qr", address } | { action: "ln_lesson", text } | { action: "archive_delete", name, confirm: "DELETE" }
 //   POST { action: "trivia_create", id?, title, startsAt?, players? } | { action: "trivia_schedule", id, startsAt } | { action: "trivia_start", id, totalRounds? } | { action: "trivia_cancel", id, rule: "keep"|"return", note?, nextGame? } | { action: "trivia_payout", game, winner, to, pin }
@@ -148,6 +152,17 @@ export async function GET(request) {
   if (view === "developer") {
     const { developerAdminView } = await import("../lib/devapi.js");
     return json(await developerAdminView());
+  }
+  // Leads pipeline (issue #459): every /start form with its source, score,
+  // stage, links and weekly numbers; ?view=leads_csv exports it for Stanley.
+  if (view === "leads") {
+    const { leadsView } = await import("../lib/leads.js");
+    return json(await leadsView());
+  }
+  if (view === "leads_csv") {
+    const { leadsView, leadsCsv } = await import("../lib/leads.js");
+    return new Response(leadsCsv((await leadsView()).leads), { headers: { "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="altradits-leads-${new Date().toISOString().slice(0, 10)}.csv"`, "Cache-Control": "no-store" } });
   }
   // Mempool Mayhem: games with pools (reads stay up when the switch is off).
   if (view === "trivia") {
@@ -647,6 +662,25 @@ export async function POST(request) {
       }
       if (body.action === "kazi_approve") return json({ ok: true, ...(await kz.approveTask(body.id)) });
       return json({ ok: true, ...(await kz.hideTask(body.id)) });
+    } catch (err) { return json({ error: err.message }, err.status || 400); }
+  }
+  // Leads pipeline (issue #459): stages, notes, next steps, links, archive,
+  // erasure. Reads stay in ?view=leads; these writes only touch the store.
+  if (String(body.action || "").startsWith("lead_")) {
+    const leads = await import("../lib/leads.js");
+    const id = clean(body.id, 80);
+    try {
+      if (body.action === "lead_stage") return json({ ok: true, lead: await leads.setStage(id, clean(body.stage, 20), { note: body.note, reason: body.reason }) });
+      if (body.action === "lead_note") return json({ ok: true, lead: await leads.addNote(id, body.text) });
+      if (body.action === "lead_next") return json({ ok: true, lead: await leads.setNext(id, { text: body.text, due: body.due }) });
+      if (body.action === "lead_link") return json({ ok: true, lead: await leads.linkTarget(id, clean(body.kind, 20), body.target) });
+      if (body.action === "lead_unlink") return json({ ok: true, lead: await leads.unlinkTarget(id, clean(body.kind, 20)) });
+      if (body.action === "lead_amount") return json({ ok: true, lead: await leads.setAmount(id, body.amount) });
+      if (body.action === "lead_archive") return json({ ok: true, lead: await leads.archiveLead(id, body.archived === true) });
+      if (body.action === "lead_delete") {
+        if (body.confirm !== "DELETE") return json({ error: "Type DELETE to confirm." }, 400);
+        return json({ ok: true, lead: await leads.eraseLead(id) });
+      }
     } catch (err) { return json({ error: err.message }, err.status || 400); }
   }
   if (body.action === "mkt_idea_save" || body.action === "mkt_idea_delete") {

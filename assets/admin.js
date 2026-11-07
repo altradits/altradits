@@ -657,6 +657,116 @@ $("#devAccounts").addEventListener("click", async (e) => {
   catch (err) { toast(err.message, true, 6000); }
 });
 
+// Leads pipeline: every /start form, tracked until the sale.
+let LEADS = null, leadStageFilter = "all", leadSegFilter = "all", leadShowArchived = false;
+const LEAD_SEG = { shop: "Shop (kTown)", partner: "Partner", developer: "Developer", learner: "Learner" };
+const LEAD_STAGE = { new: "New", qualified: "Qualified", contacted: "Contacted", meeting: "Meeting or Setup", won: "Won", lost: "Lost", nurture: "Nurture" };
+const leadSrc = (s) => s ? [s.ref && `ref ${s.ref}`, s.utm_source && `utm_source ${s.utm_source}`, s.utm_medium && `utm_medium ${s.utm_medium}`, s.utm_campaign && `utm_campaign ${s.utm_campaign}`].filter(Boolean).join(", ") : "";
+async function loadLeads() {
+  let D; try { D = await api("?view=leads"); } catch (err) { $("#leadList").textContent = err.message; return; }
+  LEADS = D;
+  const S = D.stats;
+  $("#leadKpis").innerHTML = kpi("New", num(S.byStage.new), S.byStage.new ? "warn" : "good", "Waiting for a first look.")
+    + kpi("Next step due", num(S.dueCount), S.dueCount ? "warn" : "good", S.dueCount ? "Due today or overdue." : "Nothing due.")
+    + kpi("Won this week", num(S.wonThisWeek), S.wonThisWeek ? "good" : "", "Sales closed in the last 7 days.")
+    + kpi("Active leads", num(S.total - S.archived), "", `${S.archived} archived.`);
+  issue("leadsnew", S.byStage.new ? "soon" : null, S.byStage.new ? `${S.byStage.new} new lead${S.byStage.new === 1 ? " needs" : "s need"} a first look.` : "", "leads:hLeads");
+  issue("leadsdue", S.dueCount ? "soon" : null, S.dueCount ? `${S.dueCount} lead next step${S.dueCount === 1 ? " needs" : "s need"} you.` : "", "leads:hLeads");
+  renderLeadFilters();
+  renderLeadList();
+  renderLeadWeek();
+}
+function renderLeadFilters() {
+  const S = LEADS.stats;
+  const chips = [`<button type="button" class="chip" data-lf-stage="all" aria-pressed="${leadStageFilter === "all"}">All (${S.total - (leadShowArchived ? 0 : S.archived)})</button>`]
+    .concat(Object.entries(LEAD_STAGE).map(([s, l]) => `<button type="button" class="chip" data-lf-stage="${s}" aria-pressed="${leadStageFilter === s}">${esc(l)} (${S.byStage[s]})</button>`)).join("");
+  $("#leadFilters").innerHTML = `${chips}<select id="leadSegFilter" aria-label="Filter by segment">${["all", "shop", "partner", "developer", "learner"].map((s) => `<option value="${s}"${leadSegFilter === s ? " selected" : ""}>${s === "all" ? "Every segment" : esc(LEAD_SEG[s])}</option>`).join("")}</select>`
+    + `<button type="button" class="chip" data-lf-arch="1" aria-pressed="${leadShowArchived}">Show archived</button>`;
+}
+$("#leadFilters").addEventListener("click", (e) => {
+  const st = e.target.closest("[data-lf-stage]")?.dataset.lfStage;
+  if (st) { leadStageFilter = st; renderLeadFilters(); renderLeadList(); return; }
+  if (e.target.closest("[data-lf-arch]")) { leadShowArchived = !leadShowArchived; renderLeadFilters(); renderLeadList(); }
+});
+$("#leadFilters").addEventListener("change", (e) => {
+  if (e.target.id === "leadSegFilter") { leadSegFilter = e.target.value; renderLeadList(); }
+});
+function leadCard(m) {
+  const src = leadSrc(m.source) || "direct (no ref or utm tags)";
+  const answers = (m.answerRows || []).map((r) => `<dt>${esc(r.label)}</dt><dd>${esc(r.value)}</dd>`).join("");
+  const reasons = (m.reasons || []).map((r) => `<li>+${r.points}: ${esc(r.text)}</li>`).join("");
+  const notes = (m.notes || []).map((n) => `<div class="ev"><span class="muted sm">${esc(n.at.slice(0, 10))} · ${esc(n.by)}</span><br>${esc(n.text)}</div>`).join("");
+  const timeline = (m.timeline || []).map((e) => `<div class="ev"><span class="muted sm">${esc(e.at.slice(0, 16).replace("T", " "))} · ${esc(e.by)}</span><br>${esc(e.text)}</div>`).join("");
+  const candK = m.candidates?.ktown, candD = m.candidates?.dev;
+  const linkK = m.linked?.ktown, linkD = m.linked?.dev;
+  const fp = m.firstPayment;
+  const stageBtns = Object.entries(LEAD_STAGE).map(([s, l]) => `<button type="button" class="chip" data-lead-stage="${s}" data-id="${esc(m.id)}" aria-pressed="${m.stage === s}"${m.stage === s ? " disabled" : ""}>${esc(l)}</button>`).join("");
+  return `<div class="secgroup" data-lead="${esc(m.id)}">`
+    + `<h3 class="sub">${esc(m.name)} <span class="muted sm">${esc(LEAD_SEG[m.segment] || m.segment)} · ${esc(m.at.slice(0, 10))}</span> `
+    + `<span class="sev ${m.stage === "won" ? "ok" : m.stage === "lost" ? "low" : m.stage === "new" ? "medium" : "low"}">${esc(LEAD_STAGE[m.stage] || m.stage)}</span> `
+    + `<span class="sev ${m.score >= 70 ? "ok" : m.score >= 40 ? "medium" : "low"}">score ${m.score}</span>`
+    + (m.held ? ` <span class="sev high">security hold</span>` : "") + (m.archived ? ` <span class="sev low">archived</span>` : "") + (m.erased ? ` <span class="sev low">erased</span>` : "") + `</h3>`
+    + `<p class="sm muted">Source: ${esc(src)}${m.phone ? ` · <a href="tel:${esc(m.phone.replace(/\s/g, ""))}">${esc(m.phone)}</a>` : ""}${m.email ? ` · <a href="mailto:${esc(m.email)}">${esc(m.email)}</a>` : ""}</p>`
+    + (answers ? `<dl>${answers}</dl>` : "") + (m.message ? `<p class="sm">${esc(m.message)}</p>` : "")
+    + (reasons ? `<details class="secmore"><summary class="sm">Why this score</summary><ul class="sm">${reasons}</ul></details>` : "")
+    + (m.held ? `<p class="sm err">On hold: the words contain ${esc(m.held.reasons.join(", "))}. Decide on this lead yourself.</p>` : "")
+    + (m.stage === "lost" && m.lostReason ? `<p class="sm">Lost reason: ${esc(m.lostReason)}</p>` : "")
+    + (m.erased ? `<p class="sm muted">Erased on a deletion request. Only this audit line stays.</p>` : `
+    ${notes}<div class="row"><input data-lead-note placeholder="Add a note" aria-label="Add a note" style="max-width:22rem"><button type="button" class="btn" data-lead-note-btn="${esc(m.id)}">Note</button></div>
+    <p class="sm">Next step: ${m.next ? `${esc(m.next.text)} (due ${esc(m.next.due)})` : "none set."}</p>
+    <div class="row"><input data-lead-next placeholder="Next step" aria-label="Next step" style="max-width:16rem" value="${m.next ? esc(m.next.text) : ""}"><input data-lead-due type="date" aria-label="Due date" style="max-width:11rem" value="${m.next ? esc(m.next.due) : ""}"><button type="button" class="btn" data-lead-next-btn="${esc(m.id)}">Set</button>${m.next ? `<button type="button" class="btn" data-lead-next-clear="${esc(m.id)}">Clear</button>` : ""}</div>
+    <div class="row" role="group" aria-label="Move stage">${stageBtns}</div>
+    <div class="row"><input data-lead-reason placeholder="Reason (needed for Lost)" aria-label="Reason for Lost" style="max-width:22rem"></div>
+    ${(linkK || candK) ? `<p class="sm">kTown: ${linkK ? (linkK.missing ? `linked ${esc(m.links.ktown)} (gone)` : `${esc(linkK.shop)} (registered ${esc(linkK.createdAt.slice(0, 10))})`) : `maybe ${esc(candK.shop)} (registered ${esc(candK.createdAt.slice(0, 10))})`}
+      ${linkK && !linkK.missing ? `<button type="button" class="btn" data-lead-unlink="ktown" data-id="${esc(m.id)}">Unlink</button>` : candK && !linkK ? `<button type="button" class="btn primary" data-lead-link="ktown" data-target="${esc(candK.id)}" data-id="${esc(m.id)}">Link</button>` : ""}</p>` : ""}
+    ${fp ? `<p class="sm ok">First payment: ${fp.kes !== null ? `KSh ${num(fp.kes)}` : ""}${fp.sats !== null ? ` (${num(fp.sats)} sats)` : ""} on ${esc(String(fp.at).slice(0, 10))}.</p>` : (linkK && !linkK.missing ? `<p class="sm muted">No payment has landed yet.</p>` : "")}
+    ${(linkD || candD) ? `<p class="sm">Developer API: ${linkD ? (linkD.missing ? `linked ${esc(m.links.dev)} (gone)` : `${esc(linkD.email)}`) : `${esc(candD.email)} (${candD.keyCount} key${candD.keyCount === 1 ? "" : "s"})`}
+      ${linkD && !linkD.missing ? `<button type="button" class="btn" data-lead-unlink="dev" data-id="${esc(m.id)}">Unlink</button>` : candD && !linkD ? `<button type="button" class="btn primary" data-lead-link="dev" data-target="${esc(candD.accountId)}" data-id="${esc(m.id)}">Link</button>` : ""}</p>` : ""}
+    ${(linkD && linkD.keys) ? `<p class="sm muted">Keys: ${linkD.keys.map((k) => `<code>${esc(k.prefix)}…</code> ${esc(k.name)}${k.revokedAt ? " (revoked)" : ""}`).join(" · ") || "none"}</p>` : ""}
+    <div class="row"><input data-lead-amount placeholder="Agreed amount (partners)" aria-label="Agreed amount" style="max-width:16rem" value="${m.links?.amount ? esc(m.links.amount) : ""}"><button type="button" class="btn" data-lead-amount-btn="${esc(m.id)}">Save amount</button></div>
+    <div class="row"><button type="button" class="btn" data-lead-arch="${esc(m.id)}" data-arch="${m.archived ? "" : "1"}">${m.archived ? "Unarchive" : "Archive"}</button>
+    <input data-lead-delcf placeholder="Type DELETE" aria-label="Type DELETE to confirm erasure" style="max-width:9rem"><button type="button" class="btn" data-lead-del="${esc(m.id)}">Erase</button></div>`)
+    + `<details class="secmore"><summary class="sm">Timeline (${(m.timeline || []).length})</summary><div class="events">${timeline}</div></details></div>`;
+}
+function renderLeadList() {
+  const list = LEADS.leads.filter((m) => (leadShowArchived || !m.archived) && (leadStageFilter === "all" || m.stage === leadStageFilter) && (leadSegFilter === "all" || m.segment === leadSegFilter));
+  $("#leadList").innerHTML = list.length ? list.map(leadCard).join("") : '<p class="muted sm">No leads match.</p>';
+}
+function renderLeadWeek() {
+  const S = LEADS.stats;
+  const conv = (n) => S.total ? `${Math.round((100 * n) / S.total)}%` : "–";
+  $("#leadWeek").innerHTML = kpi("Leads", num(S.total), "", "Every /start form so far.")
+    + kpi("Won this week", num(S.wonThisWeek), S.wonThisWeek ? "good" : "", "Sales closed in the last 7 days.")
+    + kpi("Won, all time", `${num(S.byStage.won)} (${conv(S.byStage.won)})`, "", "Share of all leads that became sales.")
+    + kpi("Lost, all time", `${num(S.byStage.lost)} (${conv(S.byStage.lost)})`, "", "Share of all leads marked lost.");
+  const tbl = (title, obj) => `<h3 class="sub">${esc(title)}</h3><table><tbody>${Object.entries(obj).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<tr><td>${esc(title === "By stage" ? (LEAD_STAGE[k] || k) : title === "By segment" ? (LEAD_SEG[k] || k) : k)}</td><td>${num(v)}</td><td class="muted">${conv(v)}</td></tr>`).join("")}</tbody></table>`;
+  $("#leadSources").innerHTML = tbl("By source", S.bySource) + tbl("By segment", S.bySegment) + tbl("By stage", S.byStage);
+}
+$("#leadCsv").addEventListener("click", () => download("?view=leads_csv", `altradits-leads-${new Date().toISOString().slice(0, 10)}.csv`));
+$("#leadList").addEventListener("click", async (e) => {
+  const card = e.target.closest("[data-lead]");
+  if (!card) return;
+  const val = (sel) => card.querySelector(sel)?.value ?? "";
+  const id = card.dataset.lead;
+  try {
+    if (e.target.closest("[data-lead-stage]")) {
+      const b = e.target.closest("[data-lead-stage]");
+      await api("", { action: "lead_stage", id: b.dataset.id, stage: b.dataset.leadStage, reason: val("[data-lead-reason]") });
+      toast("Stage moved."); loadLeads(); return;
+    }
+    const link = e.target.closest("[data-lead-link]");
+    if (link) { await api("", { action: "lead_link", id: link.dataset.id, kind: link.dataset.leadLink, target: link.dataset.target }); toast("Linked."); loadLeads(); return; }
+    const unlink = e.target.closest("[data-lead-unlink]");
+    if (unlink) { await api("", { action: "lead_unlink", id: unlink.dataset.id, kind: unlink.dataset.leadUnlink }); toast("Unlinked."); loadLeads(); return; }
+    if (e.target.dataset.leadNoteBtn) { await api("", { action: "lead_note", id, text: val("[data-lead-note]") }); toast("Note added."); loadLeads(); return; }
+    if (e.target.dataset.leadNextBtn) { await api("", { action: "lead_next", id, text: val("[data-lead-next]"), due: val("[data-lead-due]") }); toast("Next step set."); loadLeads(); return; }
+    if (e.target.dataset.leadNextClear) { await api("", { action: "lead_next", id, text: "", due: "" }); toast("Next step cleared."); loadLeads(); return; }
+    if (e.target.dataset.leadAmountBtn) { await api("", { action: "lead_amount", id, amount: val("[data-lead-amount]") }); toast("Amount saved."); loadLeads(); return; }
+    if (e.target.dataset.leadArch) { await api("", { action: "lead_archive", id, archived: e.target.dataset.arch === "1" }); toast(e.target.dataset.arch === "1" ? "Archived." : "Unarchived."); loadLeads(); return; }
+    if (e.target.dataset.leadDel) { await api("", { action: "lead_delete", id, confirm: val("[data-lead-delcf]") }); toast("Erased. The audit line stays."); loadLeads(); }
+  } catch (err) { toast(err.message, true, 6000); }
+});
+
 // Profit and loss: what the node earned and spent, and what is yours after Ye₿ente's wallet holders.
 async function loadPnl() {
   let L; try { L = await api(`?view=pnl&days=${encodeURIComponent($("#pnlDays").value)}`); } catch (err) { $("#pnlTable").textContent = err.message; return; }
@@ -2784,9 +2894,9 @@ async function load() {
   OVERVIEW = D;
   renderChecklist(D); renderStan(D.stan, D.alerts); renderNode(D); renderChain(D); renderChainLow(D); renderRouting(D); renderSettlement(D); renderGlossary(); renderBanner(D); renderBackup(D.backup);
   renderVerify();
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing()]);
+  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadLeads(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing()]);
   if (document.querySelector('[data-pane="earn"].on') && !njiaLoaded) await loadNjia(false); // Earn visible on sign-in: first load gentle
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
+  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadLeads(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
 }
 token ? load() : showLogin();

@@ -282,7 +282,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 
   <div class="panel" id="nodeBanner" role="alert" hidden style="border-color:var(--crit)"></div>
 
-  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="developer">Developer</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="earn">Earn</button><button type="button" data-tab="kazi">Kazi</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
+  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="developer">Developer</button><button type="button" data-tab="leads">Leads</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="earn">Earn</button><button type="button" data-tab="kazi">Kazi</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
   <div class="pane" data-pane="overview">
   <section class="panel" aria-labelledby="hCheck">
     <h2 id="hCheck">Today's checklist</h2>
@@ -631,6 +631,23 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <section class="panel" aria-labelledby="hDevAccts">
     <h2 id="hDevAccts">Accounts</h2>
     <div id="devAccounts" class="scroll"></div>
+  </section>
+  </div>
+
+  <div class="pane" data-pane="leads">
+  <section class="panel" aria-labelledby="hLeads">
+    <h2 id="hLeads">Leads pipeline</h2>
+    <div class="learn"><p>Every free /start form lands here with the post that brought it and an explainable score. Move each lead through the stages until the sale. Records are never deleted: archive hides them, and erasure on a request keeps only an audit line. Linking a lead to its kTown registration or API account is always your explicit click.</p></div>
+    <div class="kpis" id="leadKpis"></div>
+    <div class="row"><button type="button" class="btn" id="leadCsv">Download CSV</button></div>
+    <div class="row sm" id="leadFilters" role="group" aria-label="Filter leads"></div>
+    <div id="leadList"></div>
+  </section>
+  <section class="panel" aria-labelledby="hLeadWeek">
+    <h2 id="hLeadWeek">This week, for the Sunday scorecard</h2>
+    <div class="learn"><p>Where leads came from, who they are, where each one stands, and how many turned into sales this week.</p></div>
+    <div class="kpis" id="leadWeek"></div>
+    <div class="scroll" id="leadSources"></div>
   </section>
   </div>
 
