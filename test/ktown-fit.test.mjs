@@ -116,3 +116,19 @@ test("kTown fit: no fixed heights that force overflow", () => {
   assert.match(css, /@media print\{[\s\S]*overflow:visible/,
     "ktown/style.css: print releases the shell, so the card is never clipped");
 });
+
+test("kTown landscape auth: the whole card and its submit fit above the tab bar", () => {
+  // The headless check (667x375, 740x360) measures each primary button's
+  // bottom above the tab bar's top with no page scroll; these guard the rules.
+  const land = css.split("@media (orientation:landscape) and (max-height:30rem){").slice(1).join("\n");
+  assert.match(land, /#f-register,#f-login,#f-names\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/,
+    "ktown/style.css: landscape phones lay the auth and names fields out in three columns");
+  assert.match(land, /#f-register>\.agree,#f-register>\.btn,#f-login>\.btn,#f-names>\.btn\{grid-column:auto\}/,
+    "ktown/style.css: the submit shares the last field row instead of a row of its own");
+  assert.match(land, /#signed-out>p\{grid-row:1;grid-column:1;justify-self:end/,
+    "ktown/style.css: the log-in link rides on the register heading row");
+  assert.match(land, /body\.signed-out #set-title\{position:absolute;width:\.0625rem;height:\.0625rem;overflow:hidden;clip-path:inset\(50%\)/,
+    "ktown/style.css: the signed-out title stays for screen readers only");
+  assert.match(land, /#signed-out \.card \.btn,#f-names \.btn\{margin-top:0;min-height:3rem/,
+    "ktown/style.css: landscape submits keep a 48px target");
+});

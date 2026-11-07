@@ -287,6 +287,32 @@ below a pinned submit; once log in shows, the register submit unpins. */
   #btn-register,#btn-login{position:sticky;bottom:.5rem;box-shadow:0 .5rem 1rem rgba(15,27,45,.22)}
   #signed-out:has(#f-login:not([hidden])) #btn-register{position:static}
 }
+/* Landscape phones (667x375, 740x360): three columns, so the whole
+register card (fields, terms, submit) and the names card with Save fit
+above the tab bar without scrolling. The signed-out page title steps aside
+for screen readers only; the card heading says what the form is. */
+@media (orientation:landscape) and (max-height:30rem){
+  body.signed-out #set-title{position:absolute;width:.0625rem;height:.0625rem;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  /* The log-in link rides on the register heading row, top right. */
+  #signed-out>p{grid-row:1;grid-column:1;justify-self:end;align-self:start;z-index:1;margin:.3rem .5rem 0 0}
+  #f-register{grid-row:1;grid-column:1}
+  #f-login{grid-row:2}
+  #signed-out .link{min-height:2.75rem;padding:.4rem .5rem;font-size:.95rem}
+  #signed-out .card{margin-top:.25rem;padding:.75rem 1rem}
+  #f-register,#f-login,#f-names{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:.75rem;row-gap:.5rem;align-items:end}
+  #f-register>.agree,#f-register>.btn,#f-login>.btn,#f-names>.btn{grid-column:auto}
+  #f-names>h2,#f-names>.hint,#f-names>.err,#f-names>.ok-line{grid-column:1/-1}
+  #f-names>h2{margin-bottom:0}
+  #f-names .field>label{margin:0 0 .3rem}
+  .field>label{font-size:.9rem;line-height:1.25}
+  #signed-out .agree{align-self:center;margin:0}
+  #signed-out .card .btn,#f-names .btn{margin-top:0;min-height:3rem;padding:.5rem 1rem}
+  #btn-register,#btn-login{box-shadow:none}
+  #set-title{font-size:1.25rem;margin-top:0}
+  #signed-in .card{padding:.75rem 1rem;margin-top:.5rem}
+  #signed-in .card h2{font-size:1.15rem}
+  #f-names>.hint{grid-row:3;margin-top:0}
+}
 /* Settings on wide screens: the cards pair side by side so names,
 display, PIN, history and sign out are all near the top. The QR screen and
 the auth forms keep their narrow centred column. */
