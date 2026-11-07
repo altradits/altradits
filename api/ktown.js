@@ -144,7 +144,7 @@ export async function POST(request) {
         || (await hit(`rl:kt:regp:${phoneKey}`, 3600)) > 5
         || (await hit(`rl:kt:reg:all:${new Date().toISOString().slice(0, 13)}`, 3600)) > 100)
         return json({ success: false, error: "Too many sign-ups. Try again later." }, 429);
-      const r = await kt.registerMerchant({ phone: body.phone, shop: body.shop, mpesaName: body.mpesaName, pin: body.pin, agree: body.agree });
+      const r = await kt.registerMerchant({ phone: body.phone, shop: body.shop, mpesaName: body.mpesaName, pin: body.pin, agree: body.agree, source: body.source });
       return json({ success: true, merchant: kt.publicMerchant(r.merchant, site()), session: r.session });
     }
     if (path === "login") {
