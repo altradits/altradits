@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-OwhqLqQlQfkEyTt3yF+tMhb6BglK91KhtJzRnyHKKpc='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-PHV/+PHOwrMLZf4fD6J30DonqAM8Xo1J9lZUB7vunWU='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/contact">
 <title>Write to the team · Altradits</title>
@@ -103,8 +103,11 @@ textarea{min-height:8rem;resize:vertical}
           <option value="partner">Partnerships</option>
           <option value="funding">Grants, donations and funding</option>
           <option value="safety">Safety, abuse and phishing</option>
+          <option value="ktown-shop">kTown for my shop (free)</option>
+          <option value="dev-api">Developer API (free)</option>
           <option value="other">Something else</option>
         </select>
+        <div class="cost" id="freeBox" hidden><b>This one is free.</b> <span id="freeWhy">Shops and developers start at /start, with no $1 payment.</span> <a id="freeLink" href="/start">Start free</a></div>
         <label for="message">Message</label>
         <textarea id="message" name="message" maxlength="2000" required></textarea>
         <div class="cost"><b>Sending costs $1 in sats.</b> One small Lightning payment per message keeps bots and spam out, so a human team reads real messages. Nothing is stored until you pay. Your dollar goes further too: it funds our Lightning node, the always-on computer that carries every Ye₿ente payment. Running one takes real money and locked-up bitcoin, so every dollar keeps payments fast and nearly free for everyone. You get a receipt by email.</div>
@@ -150,8 +153,25 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
   const wanted = new URLSearchParams(location.search).get("topic");
   if (wanted && [...$("#topic").options].some((o) => o.value === wanted)) $("#topic").value = wanted;
   const topicLabel = () => $("#topic").options[$("#topic").selectedIndex].text;
+  // Shops and developers start free at /start: no $1 payment, no invoice.
+  // The paid steps below never see these topics; the server keeps only its
+  // paid topics, unchanged.
+  const FREE_TOPICS = { "ktown-shop": "shop", "dev-api": "developer" };
+  const carryQuery = ["ref", "utm_source", "utm_medium", "utm_campaign"].map((k) => {
+    const v = new URLSearchParams(location.search).get(k);
+    return v ? `${k}=${encodeURIComponent(v)}` : "";
+  }).filter(Boolean).join("&");
+  function freeTopic() {
+    const seg = FREE_TOPICS[$("#topic").value];
+    $("#freeBox").hidden = !seg;
+    if (seg) $("#freeLink").href = `/start?seg=${seg}${carryQuery ? `&${carryQuery}` : ""}`;
+    return seg;
+  }
+  $("#topic").addEventListener("change", freeTopic);
+  freeTopic();
   $("#msgForm").addEventListener("submit", async (e) => {
     e.preventDefault(); $("#err").textContent = "";
+    if (freeTopic()) return;
     fields = { name: $("#name").value.trim(), email: $("#email").value.trim(), topic: $("#topic").value, message: $("#message").value.trim() };
     if (!fields.name || !fields.email || fields.message.length < 10) { $("#err").textContent = "Fill in your name, email and a message of at least 10 characters."; return; }
     $("#toPay").disabled = true;
