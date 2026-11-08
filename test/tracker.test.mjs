@@ -55,7 +55,7 @@ test("steps tick from GitHub; the streak counts only tracked projects; the day's
   assert.equal(r.totals.mergedPast, 1, "one in past work");
   assert.equal(r.streak, 4, "today and yesterday on Bitcoin Core, plus the authored pull request and the push");
   assert.equal(r.activeDays30, 4, "his own repository doesn't count; the authored pull request does");
-  assert.equal(r.builder.started, false, "the Builder Path starts 2026-11-06, after this test's now");
+  assert.equal(r.builder.started, false, "the Builder Path starts 2026-11-09, after this test's now");
   assert.equal(r.builder.repoState, "ready");
   assert.equal(r.next.repo, "lightningnetwork/lnd", "the focus project first");
   assert.equal(r.next.focus, true);
