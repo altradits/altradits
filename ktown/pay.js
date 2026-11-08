@@ -7,15 +7,15 @@ const $ = (id) => document.getElementById(id);
 const STR = {
   en: {
     loading: "Loading…", amount: "Amount", pay: "Pay",
-    honest: "kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.",
-    poweredBy: "Powered by Tando (1% fee)", helpIs: "Help",
+    honest: "kTown holds no money. Our payout partner converts sats to M-Pesa for a 1% fee.",
+    helpIs: "Help",
     between: "Between", and: "and", receive: "Merchant receives",
     scanWith: "Scan with your wallet",
     copy: "Copy", copied: "Copied.", openWallet: "Open in wallet",
     waitingPay: "Waiting for payment…", stillWaiting: "Still waiting.",
     checkAgain: "Check again", newAmount: "New amount",
     paid: "Paid", paidRecv: "Merchant received", failedPay: "Payment failed. Try a new amount.",
-    tandoFee: "Tando fee", about: "about", pctNote: "(1%)",
+    tandoFee: "Conversion fee", about: "about", pctNote: "(1%)",
     youPaid: "You paid", satsUnit: "sats",
     afterPayNote: "After paying, the merchant's M-Pesa message confirms it.",
     unknownQr: "This QR code is unknown.",
@@ -25,15 +25,15 @@ const STR = {
   },
   sw: {
     loading: "Inapakia…", amount: "Kiasi", pay: "Lipa",
-    honest: "kTown haishiki pesa. Tando hubadilisha sats kuwa M-Pesa kwa asilimia 1.",
-    poweredBy: "Inaendeshwa na Tando (ada 1%)", helpIs: "Msaada",
+    honest: "kTown haishiki pesa. Mshirika wetu wa malipo hubadilisha sats kuwa M-Pesa kwa asilimia 1.",
+    helpIs: "Msaada",
     between: "Kati ya", and: "na", receive: "Muuzaji atapokea",
     scanWith: "Skani na pochi yako",
     copy: "Nakili", copied: "Imenakiliwa.", openWallet: "Fungua kwenye pochi",
     waitingPay: "Inasubiri malipo…", stillWaiting: "Bado inasubiri.",
     checkAgain: "Angalia tena", newAmount: "Kiasi kipya",
     paid: "Imelipwa", paidRecv: "Muuzaji alipokea", failedPay: "Malipo yameshindikana. Jaribu kiasi kipya.",
-    tandoFee: "Ada ya Tando", about: "takriban", pctNote: "(asilimia 1)",
+    tandoFee: "Ada ya kubadilisha", about: "takriban", pctNote: "(asilimia 1)",
     youPaid: "Umelipa", satsUnit: "sats",
     afterPayNote: "Baada ya kulipa, ujumbe wa M-Pesa wa muuzaji ndio uthibitisho.",
     unknownQr: "Msimbo huu haujulikani.",
@@ -110,12 +110,15 @@ function refreshReceive() {
   }
 }
 
+// The invoice in the Bitcoin QR code template, as on the shop's own QR: a
+// level H code in ink (30% kept for repairs) with the Altradits logo
+// centred on it on a white card, inside the orange frame.
 function drawQR(el, text) {
-  el.innerHTML = "";
-  const qr = qrcode(0, "M");
+  const qr = qrcode(0, "H");
   qr.addData(text);
   qr.make();
-  el.innerHTML = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
+  const svg = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true }).replace('fill="black"', 'fill="#1d1d1f"');
+  el.innerHTML = `<div class="tq">${svg}<div class="tq-mid"><img src="/assets/logo.png" alt="" width="325" height="119"></div></div>`;
 }
 
 function stopPoll() {
@@ -207,8 +210,6 @@ async function boot() {
   $("lang-en").addEventListener("click", () => { lang = "en"; localStorage.setItem("kt.paylang", lang); applyLang(); });
   $("lang-sw").addEventListener("click", () => { lang = "sw"; localStorage.setItem("kt.paylang", lang); applyLang(); });
 
-  // Static pages carry no outside addresses; the credit link is set here.
-  document.querySelectorAll(".powered a").forEach((a) => { a.href = "https://bitcoin.co.ke/"; });
   // With the keyboard open the content area scrolls, never the page: keep
   // the focused field in view.
   document.addEventListener("focusin", (ev) => {

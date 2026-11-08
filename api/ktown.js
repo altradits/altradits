@@ -50,7 +50,7 @@ async function lnurlPay(request, id) {
     return lnurlReply(kt.payRequestJson(site(), m, await kt.tandoQuote(m.phone)));
   } catch (e) {
     // Known refusals keep their words; anything unexpected stays generic.
-    return lnurlReply({ status: "ERROR", reason: e.status ? e.message : "Tando isn't reachable right now. Try again in a minute." });
+    return lnurlReply({ status: "ERROR", reason: e.status ? e.message : "The payout service isn't reachable right now. Try again in a minute." });
   }
 }
 
@@ -68,7 +68,7 @@ async function lnurlCallback(request, id) {
     const { invoice } = await kt.tandoInvoice(m, { amount: q.get("amount"), currency: q.get("currency") });
     return lnurlReply(invoice);
   } catch (e) {
-    return lnurlReply({ status: "ERROR", reason: e.status ? e.message : "Tando isn't reachable right now. Try again in a minute." });
+    return lnurlReply({ status: "ERROR", reason: e.status ? e.message : "The payout service isn't reachable right now. Try again in a minute." });
   }
 }
 
