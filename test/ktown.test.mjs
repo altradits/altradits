@@ -963,4 +963,8 @@ test("printed poster: Bitcoin accepted here, scan to pay, and a QR strong enough
   assert.match(fn, /qrcode\(0, "H"\)/, "level H error correction: the centre mark covers part of the code");
   for (const t of ["Accepted here", "Scan to pay", "Tunapokea Bitcoin", "Shop gets M-Pesa"]) assert.ok(js.includes(t), `poster says ${t}`);
   assert.match(js, /\$\{m\.payUrl\}\?lightning=\$\{m\.lnurl\}/, "the QR is the shop's own pay link, same as its app");
+  const poster = js.slice(js.indexOf("function posterHtml"), js.indexOf("// Stanley prints a poster only"));
+  assert.ok(poster.includes('src="/assets/logo.png"'), "the Altradits logo sits in the centre of the QR");
+  assert.ok(poster.includes("www.altradits.com"), "the band ends with the domain");
+  assert.doesNotMatch(poster, /tando/i, "the poster does not advertise the payout partner");
 });
