@@ -951,7 +951,7 @@ test("the app and pay page: direct payments confirmed, forgotten PIN help, hones
   assert.match(app, /agree: true, lang,/);
   // 7. Known server errors in Kiswahili; unknown lines stay as they are.
   for (const en of ["Wrong number or PIN.", "Wrong PIN. Try again in 15 minutes.", "kTown is full for now.",
-    "Tando isn't reachable right now. Try again in a minute.", "Enter an M-Pesa number, like 07XX XXX XXX."])
+    "The payout service isn't reachable right now. Try again in a minute.", "Enter an M-Pesa number, like 07XX XXX XXX."])
     assert.ok(app.includes(`"${en}":`), `Kiswahili for: ${en}`);
   assert.match(app, /Too many wrong PINs/);
   assert.match(app, /el\.textContent = e && e\.message \? swErr\(e\.message\)/);
@@ -967,4 +967,26 @@ test("printed poster: Bitcoin accepted here, scan to pay, and a QR strong enough
   assert.ok(poster.includes('src="/assets/logo.png"'), "the Altradits logo sits in the centre of the QR");
   assert.match(poster, /<div class="sign">www\.altradits\.com<\/div>/, "the band ends with the domain");
   assert.doesNotMatch(poster, /tando/i, "the poster does not advertise the payout partner");
+});
+
+test("every kTown QR is the Bitcoin QR code template, and no page markets the payout partner", () => {
+  const rd = (f) => fs.readFileSync(new URL(`../${f}`, import.meta.url), "utf8");
+  const app = rd("ktown/app.js"), pay = rd("ktown/pay.js"), css = rd("ktown/style.css");
+  for (const [f, js] of [["ktown/app.js", app], ["ktown/pay.js", pay]]) {
+    assert.match(js, /qrcode\(0, "H"\)/, `${f}: level H error correction, the centre logo covers part of the code`);
+    assert.doesNotMatch(js, /qrcode\(0, "[LMQ]"\)/, `${f}: no weaker code anywhere`);
+    assert.match(js, /class="tq-mid"><img src="(\$\{LOGO\}|\/assets\/logo\.png)"/, `${f}: the Altradits logo sits in the middle`);
+  }
+  assert.match(app, /const LOGO = "\/assets\/logo\.png"/, "ktown/app.js: the centre logo is the site's own file");
+  assert.match(css, /\.qr-card\{[^}]*border:[^;]*solid var\(--orange\)/, "ktown/style.css: the orange frame");
+  assert.match(css, /\.tq-mid\{[^}]*width:40%/, "ktown/style.css: the centre logo is 40% of the code wide");
+  assert.match(css, /\.tcard\{[^}]*print-color-adjust:exact/, "ktown/style.css: printed cards keep their colours");
+  assert.match(app, /"www\.altradits\.com"/, "ktown/app.js: the printed card ends with the site address");
+  assert.match(app, /loadImg\(LOGO\)/, "ktown/app.js: the saved PNG carries the centre logo");
+  for (const f of ["index.html", "ktown/index.html", "ktown/pay.html", "ktown/app.js", "ktown/pay.js"]) {
+    const s = rd(f).split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
+    assert.doesNotMatch(s, /Powered by Tando|class="powered"|Tando (converts|fee|hubadilisha)|Ada ya Tando/, `${f}: no payout partner marketing`);
+  }
+  assert.match(app, /Our payout partner converts sats to M-Pesa for a 1% fee\./, "the 1% fee stays disclosed");
+  assert.match(pay, /tandoFee: "Conversion fee"/, "the fee line names what it is for");
 });

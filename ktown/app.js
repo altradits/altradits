@@ -1,18 +1,26 @@
 /* kTown merchant app: the QR screen and Settings. Everything rendered comes
-through textContent; innerHTML is only the QR library's SVG and one static
-bolt icon (no scripts, no handlers). Talks only to this site's own API. */
+through textContent; innerHTML is only the QR library's SVG and the static
+icons below (no scripts, no handlers). Talks only to this site's own API. */
 "use strict";
 const $ = (id) => document.getElementById(id);
-const BOLT = '<svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8L20 9h-7l1-7z" fill="currentColor"/></svg>';
+// The Bitcoin QR code template: a level H code in ink inside an orange
+// frame, with the Altradits logo centred on it on a white card (40% of the
+// code's width, about a sixth of its height). Level H keeps 30% for repairs;
+// the logo covers under 7% of the code. The printed card's top carries the
+// Bitcoin mark (public domain) and "bitcoin".
+const LOGO = "/assets/logo.png";
+const BTC_MARK = '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="#F7931A"/><g transform="rotate(14 32 32)" fill="#fff"><path d="M22 14h4v6h-4zM30 14h4v6h-4zM22 44h4v6h-4zM30 44h4v6h-4z"/><path d="M18 19h17.5c6 0 9.5 3 9.5 7.6 0 3.2-1.8 5.2-4.4 6 3.4.7 5.6 3 5.6 6.8 0 5-3.8 8.6-10.2 8.6H18v-5h3.5V24H18zm9.5 5v7h7c2.4 0 3.8-1.3 3.8-3.5S36.9 24 34.5 24zm0 12v7.3h7.8c2.7 0 4.2-1.4 4.2-3.7s-1.5-3.6-4.2-3.6z"/></g></svg>';
+const PHONE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M11 18h2"/><path d="M9 7h2v2H9zM13 7h2v2h-2zM9 11h2v2H9z"/></svg>';
+const INK = "#1d1d1f";
 
 const STR = {
   en: {
     qr: "QR", settings: "Settings", printCard: "Print card", printSheet: "Print sheet", savePng: "Save PNG",
-    honest: "kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.",
+    honest: "kTown holds no money. Our payout partner converts sats to M-Pesa for a 1% fee.",
     register: "Register", phone: "M-Pesa number", shop: "Shop name",
     mpesaName: "M-Pesa name (as M-Pesa shows it)", pin: "6-digit PIN",
     agree1: "I agree to the", agree2: "terms", agreeFirst: "Tick 'I agree' to the terms first.",
-    poweredBy: "Powered by Tando (1% fee)", helpIs: "Help",
+    helpIs: "Help",
     registerBtn: "Register this number", havePin: "Already registered? Log in",
     login: "Log in", loginBtn: "Log in", names: "Names", save: "Save",
     prefs: "Display", currency: "Currency", language: "Language",
@@ -24,7 +32,7 @@ const STR = {
     received: "Received", waiting: "Waiting", failed: "Failed",
     payerFee: "Payer covered", pctNote: "(1%)",
     quotedWord: "Quoted", landedWord: "received",
-    histWallet: "Paid from a wallet in sats. Tando's 1% came out of the shillings.",
+    histWallet: "Paid from a wallet in sats. The payout partner's 1% came out of the shillings.",
     noConn: "No connection. Try again.",
     tryAgain: "Something went wrong. Try again.",
     offlineNote: "Offline. Showing saved data.",
@@ -33,11 +41,11 @@ const STR = {
   },
   sw: {
     qr: "QR", settings: "Mipangilio", printCard: "Chapisha kadi", printSheet: "Chapisha karatasi", savePng: "Hifadhi PNG",
-    honest: "kTown haishiki pesa. Tando hubadilisha sats kuwa M-Pesa kwa asilimia 1.",
+    honest: "kTown haishiki pesa. Mshirika wetu wa malipo hubadilisha sats kuwa M-Pesa kwa asilimia 1.",
     register: "Jisajili", phone: "Nambari ya M-Pesa", shop: "Jina la duka",
     mpesaName: "Jina la M-Pesa (kama M-Pesa)", pin: "PIN ya tarakimu 6",
     agree1: "Nakubali", agree2: "masharti", agreeFirst: "Weka tiki 'Nakubali' masharti kwanza.",
-    poweredBy: "Inaendeshwa na Tando (ada 1%)", helpIs: "Msaada",
+    helpIs: "Msaada",
     registerBtn: "Sajili nambari hii", havePin: "Umeshajisajili? Ingia",
     login: "Ingia", loginBtn: "Ingia", names: "Majina", save: "Hifadhi",
     prefs: "Muonekano", currency: "Sarafu", language: "Lugha",
@@ -49,7 +57,7 @@ const STR = {
     received: "Imepokelewa", waiting: "Inasubiri", failed: "Imeshindikana",
     payerFee: "Mlipaji alilipa", pctNote: "(asilimia 1)",
     quotedWord: "Bei", landedWord: "zimefika",
-    histWallet: "Imelipwa kutoka pochi kwa sats. Asilimia 1 ya Tando ilitoka kwenye shilingi.",
+    histWallet: "Imelipwa kutoka pochi kwa sats. Asilimia 1 ya mshirika wa malipo ilitoka kwenye shilingi.",
     noConn: "Hakuna mtandao. Jaribu tena.",
     tryAgain: "Kuna tatizo. Jaribu tena.",
     offlineNote: "Nje ya mtandao. Inaonyesha data iliyohifadhiwa.",
@@ -67,7 +75,7 @@ const SW_ERR = {
   "Wrong PIN. Try again in 15 minutes.": "PIN si sahihi. Jaribu tena baada ya dakika 15.",
   "Enter an M-Pesa number, like 07XX XXX XXX.": "Weka nambari ya M-Pesa, kama 07XX XXX XXX.",
   "kTown is full for now.": "kTown imejaa kwa sasa.",
-  "Tando isn't reachable right now. Try again in a minute.": "Tando haipatikani kwa sasa. Jaribu tena baada ya dakika moja.",
+  "The payout service isn't reachable right now. Try again in a minute.": "Huduma ya malipo haipatikani kwa sasa. Jaribu tena baada ya dakika moja.",
   "That number is already registered. Log in on the shop phone.": "Nambari hii imeshasajiliwa. Ingia kwenye simu ya duka.",
   "That number isn't set up for M-Pesa delivery.": "Nambari hii haijawekwa kupokea M-Pesa.",
   "Choose a 6-digit PIN.": "Chagua PIN ya tarakimu 6.",
@@ -127,13 +135,17 @@ function showScreen(which) {
   if (main) main.scrollTop = 0;
 }
 
-function drawQR(text) {
-  const el = $("qr");
-  el.innerHTML = "";
-  const qr = qrcode(0, "M");
+// The code in ink on white, with the logo centred on it on a white card.
+function framedQr(text) {
+  const qr = qrcode(0, "H");
   qr.addData(text);
   qr.make();
-  el.innerHTML = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
+  const svg = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true }).replace('fill="black"', `fill="${INK}"`);
+  return `<div class="tq">${svg}<div class="tq-mid"><img src="${LOGO}" alt="" width="325" height="119"></div></div>`;
+}
+
+function drawQR(text) {
+  $("qr").innerHTML = framedQr(text);
 }
 
 function renderQR() {
@@ -309,12 +321,13 @@ async function boot() {
   $("tab-settings").addEventListener("click", () => showScreen("settings"));
   $("btn-print-card").addEventListener("click", () => {
     showScreen("qr");
+    buildSheet(1);
     document.body.dataset.print = "a6";
     setTimeout(() => window.print(), 50);
   });
   $("btn-print-sheet").addEventListener("click", () => {
     showScreen("qr");
-    buildSheet();
+    buildSheet(4);
     document.body.dataset.print = "a4";
     setTimeout(() => window.print(), 50);
   });
@@ -430,8 +443,6 @@ async function boot() {
   window.addEventListener("online", () => refresh());
   window.addEventListener("offline", () => { $("offline-note").hidden = false; });
 
-  // Static pages carry no outside addresses; the credit link is set here.
-  document.querySelectorAll(".powered a").forEach((a) => { a.href = "https://bitcoin.co.ke/"; });
   // With the keyboard open the content area scrolls, never the page: keep
   // the focused field (and the submit below it) in view.
   document.addEventListener("focusin", (ev) => {
@@ -510,67 +521,96 @@ async function signOut() {
   showScreen("settings");
 }
 
-// The A4 sheet: the card four times (A6 is a quarter of A4), cut along the
-// dashed guides. Built on demand for printing, removed afterwards.
-function buildSheet() {
+// The printed card: a small Bitcoin QR code template. The Bitcoin mark and
+// "bitcoin", ACCEPTED HERE, the shop, the framed code with the logo in the
+// middle, and an orange SCAN TO PAY band ending in www.altradits.com.
+// One card prints on A6; the A4 sheet holds four (A6 is a quarter of A4),
+// cut along the dashed guides. Built on demand, removed after printing.
+function buildCard() {
+  const el = (tag, cls, text) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text) e.textContent = text;
+    return e;
+  };
+  const card = el("section", "tcard");
+  card.append(el("div", "burst"));
+  const top = el("div", "ttop");
+  const brand = el("div", "tbrand");
+  brand.innerHTML = BTC_MARK;
+  brand.append(el("span", "word", "bitcoin"));
+  top.append(brand, el("p", "acc", "Accepted here"), el("p", "tshop", merchant.shop));
+  const frame = el("div", "frame");
+  const q = $("qr").querySelector(".tq");
+  if (q) frame.append(q.cloneNode(true));
+  const band = el("div", "band");
+  const scan = el("div", "scan");
+  scan.innerHTML = PHONE_ICON;
+  scan.append("Scan to pay");
+  band.append(scan, el("div", "fine", "Tunapokea Bitcoin · Any Lightning wallet · Shop gets M-Pesa"),
+    el("div", "site", "www.altradits.com"));
+  card.append(top, frame, band);
+  return card;
+}
+
+function buildSheet(count) {
   const sheet = $("print-sheet");
   sheet.innerHTML = "";
   if (!merchant) return;
-  const svg = $("qr").querySelector("svg");
-  for (let i = 0; i < 4; i++) {
-    const card = document.createElement("div");
-    card.className = "sheet-card";
-    const shop = document.createElement("div");
-    shop.className = "shop";
-    shop.textContent = merchant.shop;
-    const mp = document.createElement("div");
-    mp.className = "mpesa-name";
-    mp.textContent = merchant.mpesaName;
-    const box = document.createElement("div");
-    box.className = "qr-card";
-    if (svg) box.append(svg.cloneNode(true));
-    const line = document.createElement("p");
-    line.className = "print-line";
-    line.textContent = "Pay with Bitcoin Lightning ";
-    const bolt = document.createElement("b");
-    bolt.innerHTML = BOLT;
-    line.append(bolt);
-    const foot = document.createElement("p");
-    foot.className = "print-foot";
-    foot.textContent = "Powered by Tando (1% fee)";
-    card.append(shop, mp, box, line, foot);
-    sheet.append(card);
-  }
+  for (let i = 0; i < count; i++) sheet.append(buildCard());
   sheet.hidden = false;
 }
 
-// The QR as a PNG file, rendered locally: no network, nothing uploaded.
+// The framed code as a PNG file, rendered locally: no network, nothing
+// uploaded. The same template as the screen: orange frame, the code in ink,
+// the logo on a white card in the middle, a wide white margin for print.
+const PNG = { S: 2048, F: 1760, B: 40, P: 90 }; // canvas, frame, frame line, inner white
+function pngSvg(qrSvg) {
+  const { S, F, B, P } = PNG;
+  const o = (S - F) / 2, Q = F - 2 * B - 2 * P, qx = o + B + P;
+  const nest = (svg, x, y, w) => svg.replace("<svg ", `<svg x="${x}" y="${y}" width="${w}" height="${w}" `);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 ${S} ${S}">`
+    + `<rect width="${S}" height="${S}" fill="#fff"/>`
+    + `<rect x="${o - 44}" y="${o - 44}" width="${F + 88}" height="${F + 88}" rx="${120 + 44}" fill="none" stroke="#F7931A" stroke-opacity=".35" stroke-width="16"/>`
+    + `<rect x="${o + B / 2}" y="${o + B / 2}" width="${F - B}" height="${F - B}" rx="100" fill="#fff" stroke="#F7931A" stroke-width="${B}"/>`
+    + nest(qrSvg, qx, qx, Q)
+    + "</svg>";
+}
+const loadImg = (src) => new Promise((res, rej) => {
+  const img = new Image();
+  img.onload = () => res(img);
+  img.onerror = rej;
+  img.src = src;
+});
+
 async function savePng() {
-  const svg = $("qr").querySelector("svg");
+  const svg = $("qr").querySelector(".tq > svg");
   const err = $("qr-err");
   err.hidden = true;
   if (!svg || !merchant) return;
   const btn = $("btn-png");
   btn.disabled = true;
   try {
-    const S = 2048, Q = 1600, M = (S - Q) / 2; // wide quiet margin, crisp in print
-    const clone = svg.cloneNode(true);
-    clone.setAttribute("width", String(Q));
-    clone.setAttribute("height", String(Q));
-    const img = new Image();
-    const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(clone));
-    await new Promise((res, rej) => {
-      img.onload = res;
-      img.onerror = rej;
-      img.src = url;
-    });
+    const { S, F, B, P } = PNG;
+    const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(pngSvg(new XMLSerializer().serializeToString(svg)));
+    const [img, logo] = await Promise.all([loadImg(url), loadImg(LOGO)]);
     const cv = document.createElement("canvas");
     cv.width = S;
     cv.height = S;
     const cx = cv.getContext("2d");
     cx.fillStyle = "#fff";
     cx.fillRect(0, 0, S, S);
-    cx.drawImage(img, M, M, Q, Q);
+    cx.drawImage(img, 0, 0, S, S);
+    // The logo card: 40% of the code wide, the logo's height plus padding.
+    const Q = F - 2 * B - 2 * P, W = Math.round(Q * 0.4), px = Math.round(Q * 0.02), py = Math.round(Q * 0.016);
+    const lw = W - 2 * px, lh = Math.round(lw * logo.naturalHeight / logo.naturalWidth), H = lh + 2 * py;
+    const x = (S - W) / 2, y = (S - H) / 2;
+    cx.fillStyle = "#fff";
+    cx.beginPath();
+    if (cx.roundRect) cx.roundRect(x, y, W, H, 24);
+    else cx.rect(x, y, W, H);
+    cx.fill();
+    cx.drawImage(logo, x + px, y + py, lw, lh);
     const blob = await new Promise((res) => cv.toBlob(res, "image/png"));
     if (!blob) throw new Error("png");
     const a = document.createElement("a");

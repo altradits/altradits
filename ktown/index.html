@@ -46,15 +46,13 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
     <p class="offline-note" id="offline-note" role="status" data-i18n="offlineNote" hidden></p>
     <div class="qr-card" id="qr" role="img" aria-label="Shop QR code"></div>
     <p class="print-line">Pay with Bitcoin Lightning <svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8L20 9h-7l1-7z" fill="currentColor"/></svg></p>
-    <p class="print-foot">Powered by Tando (1% fee)</p>
     <p class="err" id="qr-err" role="alert" hidden></p>
     <div class="row no-print">
       <button type="button" class="btn small trio" id="btn-print-card" data-i18n="printCard">Print card</button>
       <button type="button" class="btn small trio ghost" id="btn-print-sheet" data-i18n="printSheet">Print sheet</button>
       <button type="button" class="btn small trio ghost" id="btn-png" data-i18n="savePng">Save PNG</button>
     </div>
-    <p class="foot" data-i18n="honest">kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.</p>
-    <p class="powered"><a class="tando" rel="noopener" data-i18n="poweredBy">Powered by Tando (1% fee)</a></p>
+    <p class="foot" data-i18n="honest">kTown holds no money. Our payout partner converts sats to M-Pesa for a 1% fee.</p>
   </section>
   <section id="screen-settings" aria-labelledby="set-title" hidden>
     <h1 class="shop" id="set-title" data-i18n="settings">Settings</h1>
@@ -123,8 +121,7 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
         <p class="empty" id="hist-empty" hidden></p>
       </div>
       <button type="button" class="btn ghost" id="btn-signout" data-i18n="signout">Sign out</button>
-      <p class="foot" data-i18n="honest">kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.</p>
-      <p class="powered"><a class="tando" rel="noopener" data-i18n="poweredBy">Powered by Tando (1% fee)</a></p>
+      <p class="foot" data-i18n="honest">kTown holds no money. Our payout partner converts sats to M-Pesa for a 1% fee.</p>
     </div>
     <p class="help-line" id="help-app" hidden><span data-i18n="helpIs">Help</span>: <span id="help-app-contact"></span></p>
   </section>

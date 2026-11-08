@@ -63,8 +63,14 @@ body.signed-out #set-title{font-size:1.5rem;margin-top:.25rem}
 .secure-note{text-align:center;color:var(--muted);font-size:.92rem;margin:.4rem 0 0}
 .offline-note{text-align:center;font-weight:700;font-size:.92rem;margin:.4rem 0 0}
 #print-sheet{display:none}
-.qr-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-qr);
-  padding:clamp(1rem,4vw,2rem);margin:.6rem auto 0;width:min(100%,26rem);box-shadow:var(--elev-2)}
+/* The Bitcoin QR code template: the code in ink
+on white inside an orange rounded frame with a faint outer ring, and the
+Altradits logo centred on the code on a white rounded card, 40% of its
+width and about a sixth of its height. The code is level H (30% kept for
+repairs), so the logo costs it nothing a scanner needs. */
+.qr-card{background:#fff;border:.35rem solid var(--orange);border-radius:var(--r-qr);
+  padding:clamp(1rem,4vw,2rem);margin:.6rem auto 0;width:min(100%,26rem);
+  box-shadow:0 0 0 3px #fff,0 0 0 5px rgba(247,147,26,.35),var(--elev-2)}
 /* The code scales to the space left after the header, buttons and tab bar:
 full width on tall screens, capped by the viewport height on short ones.
 The merchant floor keeps the code near 200px even with the first-payment
@@ -76,6 +82,10 @@ body.pay #view-invoice .qr-card{width:max(16rem,min(100%,20rem,calc(100vh - 23.5
   body.pay #view-invoice .qr-card{width:max(16rem,min(100%,20rem,calc(100dvh - 23.5rem)))}
 }
 .qr-card svg{display:block;width:100%;height:auto}
+.tq{position:relative}
+.tq-mid{position:absolute;left:50%;top:50%;width:40%;transform:translate(-50%,-50%);
+  border-radius:.4rem;background:#fff;padding:1.6% 2%}
+.tq .tq-mid img{display:block;width:100%;height:auto}
 .print-line{text-align:center;font-size:.9rem;color:var(--muted);margin:.45rem 0 0}
 .bolt{width:1em;height:1em;vertical-align:-.12em;color:var(--orange)}
 /* Actions: orange pills do the work, outlined pills wait their turn. */
@@ -169,7 +179,6 @@ full-size chrome and full-width code would overflow by a few dozen pixels. */
   #screen-qr>.print-line{display:none}
   .btn.trio{margin-top:.3rem}
   .foot{margin-top:.4rem}
-  .powered{margin-top:.2rem}
   .tabs{padding-top:.45rem;padding-bottom:calc(.45rem + env(safe-area-inset-bottom))}
   .tabs button{font-size:.78rem;gap:.15rem;min-height:3rem;padding:.2rem .5rem}
   .tabs button svg{width:1.25rem;height:1.25rem;padding:.15rem 1rem}
@@ -225,7 +234,7 @@ and scroll inside the content area, with the focused field kept in view. */
   #view-pay>.receive{grid-column:1;grid-row:4;margin-top:.5rem;font-size:1.15rem}
   #view-pay>#pay-err,#view-pay>#btn-pay{grid-column:2}
   #view-pay>#btn-pay{margin-top:.5rem}
-  #view-pay>.foot,#view-pay>.powered,#view-pay>.help-line{grid-column:1}
+  #view-pay>.foot,#view-pay>.help-line{grid-column:1}
   #view-pay>.foot{margin-top:.5rem}
   /* Paid: smaller tick and tighter rhythm. */
   .paid{font-size:2rem;margin-top:.75rem}
@@ -320,7 +329,7 @@ the auth forms keep their narrow centred column. */
   body.has-tabs .wrap{max-width:50rem}
   #screen-qr,#signed-out{max-width:36rem;margin-inline:auto}
   #signed-in{display:grid;grid-template-columns:1fr 1fr;column-gap:1.25rem;align-items:start}
-  #signed-in>.foot,#signed-in>.powered,#signed-in>.help-line{grid-column:1/-1}
+  #signed-in>.foot,#signed-in>.help-line{grid-column:1/-1}
   /* Wide settings stay compact at any height, so history and sign out sit
   near the top; the names pair side by side like the auth fields. */
   #set-title{font-size:1.4rem;margin-top:.2rem}
@@ -346,8 +355,6 @@ body.pay .receive{margin-top:1rem}
 .paid{text-align:center;font:800 clamp(2.5rem,10vw,3.25rem)/1.15 "Bricolage Grotesque",Figtree,system-ui,sans-serif;margin:2rem 0 0}
 .mpesa-code{text-align:center;font-size:1.35rem;font-weight:800;letter-spacing:.08em;margin:.5rem 0 0}
 .foot{margin:.75rem 0 0;color:var(--muted);font-size:.8rem;text-align:center}
-.powered{margin:.3rem 0 0;color:var(--muted);font-size:.78rem;text-align:center}
-.powered a{color:var(--muted)}
 .help-line{margin:.9rem 0 0;color:var(--muted);font-size:.88rem;text-align:center}
 .agree{display:flex;gap:.6rem;align-items:flex-start;font-weight:400;margin-top:1.25rem}
 .agree input{width:1.5rem;height:1.5rem;min-height:1.5rem;flex:none;margin-top:.2rem;accent-color:var(--navy);
@@ -361,15 +368,16 @@ body.pay .receive{margin-top:1rem}
 .back{color:var(--navy);font-weight:700}
 .back::before{content:"← "}
 .version{margin-top:2rem;color:var(--muted);font-size:.88rem}
-.print-foot{display:none}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}
 }
 /* Print: an A6 counter card, or an A4 sheet of four (A6 is a quarter of A4).
 Named pages give capable browsers the exact size; the rest print the same
-content on the default paper. Pure black on white throughout. */
-@page card{size:A6;margin:6mm}
+content on the default paper. Each card is a small Bitcoin QR code template
+with its colours printed exactly. */
+/* Chrome has no A6 keyword, so the exact size follows it. */
+@page card{size:A6;size:105mm 148mm;margin:6mm}
 @page sheet{size:A4;margin:8mm}
 @media print{
   body{background:#fff}
@@ -378,23 +386,40 @@ content on the default paper. Pure black on white throughout. */
   body.has-tabs #screen-qr .qr-card{width:auto}
   .wrap{max-width:none;padding:0}
   body.has-tabs .wrap,body.pay .wrap{max-width:none;background:none}
-  .tabs,.btn,.lang,.foot,.powered,.help-line,.secure-note,.offline-note,.no-print,.mark,.err,.top{display:none!important}
+  body[data-print] .wrap{padding:0}
+  .tabs,.btn,.lang,.foot,.help-line,.secure-note,.offline-note,.no-print,.mark,.err,.top{display:none!important}
   /* Printing from a landscape phone keeps the stacked card, not the grid. */
   #screen-qr,#view-pay,#view-invoice{display:block}
-  #screen-qr{page:card}
   #screen-settings{display:none!important}
-  .qr-card{border:0;margin:0 auto;max-width:88mm;padding:0;box-shadow:none}
-  .shop{font-size:22pt;color:#000}
-  .mpesa-name{font-size:15pt;color:#000}
-  .print-line{font-size:11pt;color:#000}
-  .print-line b,.print-line .bolt{color:#000}
-  .print-foot{display:block;text-align:center;font-size:9pt;color:#000;margin:.35rem 0 0}
-  body[data-print="a4"] #screen-qr{display:none!important}
-  body[data-print="a4"] #print-sheet{display:grid!important;grid-template-columns:1fr 1fr;gap:6mm;page:sheet}
-  .sheet-card{border:1pt dashed #666;padding:4mm;text-align:center;break-inside:avoid}
-  .sheet-card .shop{font-size:16pt}
-  .sheet-card .mpesa-name{font-size:12pt}
-  .sheet-card .qr-card{max-width:68mm}
-  .sheet-card .print-line{font-size:9pt}
-  .sheet-card .print-foot{font-size:8pt}
+  .qr-card{margin:0 auto;max-width:88mm;box-shadow:none;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  /* The shop's cards print from the sheet, never the live screen. */
+  body[data-print] #screen-qr,body[data-print]>noscript{display:none!important}
+  body[data-print] #print-sheet{display:grid!important;justify-content:center}
+  body[data-print="a6"] #print-sheet{page:card}
+  body[data-print="a4"] #print-sheet{grid-template-columns:1fr 1fr;gap:6mm;page:sheet}
+  .tcard{--o:#F7931A;--o2:#FFB347;--ink:#1d1d1f;position:relative;overflow:hidden;width:92mm;height:135mm;
+    background:#fff;color:var(--ink);font-family:Figtree,sans-serif;text-align:center;break-inside:avoid;
+    print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  body[data-print="a4"] .tcard{outline:.3mm dashed #999;outline-offset:.8mm}
+  .tcard .burst{position:absolute;left:-30%;right:-30%;top:-14mm;height:62mm;
+    background:repeating-conic-gradient(from 0deg at 50% 16mm,rgba(247,147,26,.10) 0 6deg,transparent 6deg 12deg)}
+  .tcard .ttop{position:relative;padding:6mm 4mm 0}
+  .tcard .tbrand{display:inline-flex;align-items:center;gap:2.4mm}
+  .tcard .tbrand svg{width:11mm;height:11mm;flex:none;display:block}
+  .tcard .word{font:800 11.5mm/1 'Bricolage Grotesque',Figtree,sans-serif;letter-spacing:-.04em}
+  .tcard .acc{margin:1.8mm 0 0;font:800 5.4mm/1 'Bricolage Grotesque',Figtree,sans-serif;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--o)}
+  .tcard .tshop{margin:1.4mm 0 0;font:700 3.6mm/1.15 Figtree,sans-serif;color:#555;overflow-wrap:anywhere;
+    max-height:8.4mm;overflow:hidden}
+  .tcard .frame{position:relative;margin:3mm auto 0;width:62mm;height:62mm;padding:3mm;border:1mm solid var(--o);
+    border-radius:4mm;background:#fff;box-shadow:0 0 0 1.3mm #fff,0 0 0 1.8mm rgba(247,147,26,.35)}
+  .tcard .frame .tq,.tcard .frame .tq>svg{width:100%;height:100%;display:block}
+  .tcard .band{position:absolute;left:0;right:0;bottom:0;height:30mm;background:linear-gradient(180deg,var(--o2),var(--o) 45%);
+    color:#fff;display:flex;flex-direction:column;justify-content:center;gap:1.4mm}
+  .tcard .scan{font:800 7.6mm/1 'Bricolage Grotesque',Figtree,sans-serif;letter-spacing:.04em;text-transform:uppercase;
+    display:flex;align-items:center;justify-content:center;gap:2.4mm}
+  .tcard .scan svg{width:6.6mm;height:6.6mm;display:block}
+  .tcard .fine{font:700 2.6mm/1.2 Figtree,sans-serif;padding:0 3mm}
+  .tcard .site{font:700 2.8mm/1.2 Figtree,sans-serif;letter-spacing:.02em}
+  .tcard .tq-mid{border-radius:1mm}
 }
