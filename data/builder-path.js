@@ -8,7 +8,7 @@
 // on someone else's pull request), issue, pr, merged, rest (Sundays, no proof
 // needed). See docs/builder-path.md for the full rules and the sources.
 
-export const START = "2026-11-06";
+export const START = "2026-11-09"; // Monday: the path starts on a full week
 export const END = "2027-06-30"; // to confirm: move when Btrust publishes 2027 dates
 export const LEARNING_REPO = "altradits/builder-log";
 export const LOG_DIR = "days";
@@ -21,7 +21,7 @@ export const LOG_DIR = "days";
 export const BTRUST_BAR = { merged: 5, listing: "https://btrust.homerun.co/starter-grants/en" };
 
 export const PHASES = [
-  { id: 0, name: "Foundations", start: "2026-11-06", end: "2026-12-31",
+  { id: 0, name: "Foundations", start: "2026-11-09", end: "2026-12-31",
     goal: "Git, GitHub and the terminal. Go well enough to read LND. Enough C++ to build and test Bitcoin Core. Mastering Bitcoin chapters 1 to 7. Regtest bitcoind and lnd running.",
     exit: "Build bitcoind and lnd from source, with both running on regtest. Finish the Go tour. Keep the dated log complete." },
   { id: 1, name: "Reading and reviewing", start: "2027-01-01", end: "2027-02-25",
@@ -66,6 +66,7 @@ const R = {
   boss: L("BOSS challenge", "https://bosschallenge.xyz"),
   tracker: L("My tracker", "https://altradits.com/tracker"),
   plan: L("My six-month plan", "https://altradits.com/plan"),
+  practice: L("Practice plan: the lab drills", "https://altradits.com/assets/learn-5-practice-drills.pdf"),
 };
 
 const verifyFor = (type, date) => ({
@@ -92,22 +93,57 @@ const REFLECTIONS = [
   "Look back at your first log files. What can you do now that you could not do then?",
 ];
 
-const reflection = (date, phase, n) => day(date, phase, "log", `Week ${n} reflection`,
-  `Write ${LOG_DIR}/${date}.md answering this: ${REFLECTIONS[(n - 1) % REFLECTIONS.length]} Commit it today.`,
-  [R.tracker]);
+// The lab: one drill from the practice plan each Saturday, in turn, so the
+// Mac test lab is used every week, not only in Phase 0. Regtest and signet
+// first; the mainnet drills only read or restart.
+export const LAB_DRILLS = [
+  "Drill 1, build a node from zero (Polar regtest)",
+  "Drill 2, create a wallet and restore it from the seed (regtest only)",
+  "Drill 3, the read-only tour of your node",
+  "Drill 4, receive a payment (regtest)",
+  "Drill 5, withdraw safely: decode, cap the fee, pay (regtest)",
+  "Drill 6, handle a failed payment (regtest)",
+  "Drill 7, keys and permissions: an invoice key must fail to pay (regtest)",
+  "Drill 8, open and close a channel (regtest)",
+  "Drill 9, force close and watch the timelock (regtest)",
+  "Drill 10, disaster recovery from seed and channel backup (regtest)",
+  "Drill 11, restart the node and check it comes back",
+  "Drill 12, teach one drill back to someone, without notes",
+];
+
+// Dated grant milestones, each on a Saturday, added to that week's
+// reflection. Sources: the Btrust funding guide (most Starter grantees came
+// through Builders first) and the Starter Grant listing (two endorsements).
+// Program dates are to confirm: check the page before acting.
+export const MILESTONES = {
+  "2026-11-14": { text: "Grant ramp: open Btrust Builders and the BOSS challenge pages. Write their next application dates in your log, or \"not published yet\".", r: ["buildersApply", "boss"] },
+  "2026-11-28": { text: "Grant ramp: apply to the BOSS challenge or a Builders pathway as soon as one is open. Log what you sent and the date, or the date you will check again.", r: ["buildersApply", "boss"] },
+  "2026-12-12": { text: "Grant ramp: if you have not applied yet, check both pages again and log their dates.", r: ["buildersApply", "boss"] },
+  "2027-01-09": { text: "Grant ramp: log where your BOSS or Builders application stands, and what you are learning there.", r: ["builders", "boss"] },
+  "2027-03-06": { text: "Endorsements: name two mentors or LND contributors who have seen your reviews. Ask each for feedback on one review. Log who and what they said.", r: ["starterGrant", "lndPulls"] },
+  "2027-04-03": { text: "Endorsements: ask the same two people whether they will vouch for you when you apply. Log who said yes.", r: ["starterGrant"] },
+  "2027-05-29": { text: "Endorsements: confirm both people and how Btrust can reach them. Log it next to your proposal draft.", r: ["starterGrant", "fundingGuide"] },
+};
+
+const reflection = (date, phase, n) => {
+  const m = MILESTONES[date];
+  const what = `Write ${LOG_DIR}/${date}.md answering this: ${REFLECTIONS[(n - 1) % REFLECTIONS.length]}`
+    + ` Lab: do ${LAB_DRILLS[(n - 1) % LAB_DRILLS.length]} from the practice plan and log what happened.`
+    + (m ? ` ${m.text}` : "")
+    + " Commit it today.";
+  return day(date, phase, "log", `Week ${n} reflection`, what,
+    [R.tracker, R.practice, ...(m ? m.r.map((k) => R[k]) : [])]);
+};
 
 const rest = (date, phase) => day(date, phase, "rest", "Rest",
   "No deliverable. Rest keeps the streak alive. Come back tomorrow.",
   [R.tracker]);
 
 // Phase 0, week by week. Five weekday entries each; Saturday reflects,
-// Sunday rests. Week 0 starts Friday 2026-11-06, so only Friday runs.
+// Sunday rests. Week 1 starts Monday 2026-11-09.
 const P0 = [
-  [ // week 0: begin
-    { t: "log", title: "Create the learning repo", what: "Create a public repository named builder-log on your GitHub account. Public, not private. Then write days/2026-11-06.md: why you started, in your own words. Commit it today.", r: ["ghStart", "tracker"] },
-  ],
-  [ // week 1: the terminal and git
-    { t: "log", title: "The terminal, first steps", what: "Learn to move, list, read and search from the terminal: pwd, ls, cd, cat, grep. Log every command you ran and what each printed.", r: ["gitHow"] },
+  [ // week 1: begin, the terminal and git
+    { t: "log", title: "Create the learning repo", what: "Create a public repository named builder-log on your GitHub account. Public, not private. Write days/2026-11-09.md: why you started, in your own words. Then take your first terminal steps (pwd, ls, cd, cat, grep) and log each command and what it printed. Commit it today.", r: ["ghStart", "tracker"] },
     { t: "log", title: "Git: your first commits", what: "Configure git with your name and email. In builder-log, practice status, diff, add and commit. Log what each command showed.", r: ["gitHow", "proGit"] },
     { t: "log", title: "Git: branches", what: "Create a branch, change one line, commit, switch back, merge. Break it once on purpose, then fix it. Log each step and what you saw.", r: ["gitHow", "proGit"] },
     { t: "log", title: "GitHub: push and pull", what: "Push your branch to GitHub and open a pull request against your own repo. Merge it. Log the pull request link and what each button did.", r: ["ghStart"] },
@@ -158,8 +194,7 @@ const P0 = [
   [ // week 8: regtest lnd and the exit test
     { t: "log", title: "Build lnd", what: "Build lnd from source following its docs. Log the exact commands and the version it prints.", r: ["lndDocs", "lndRepo"] },
     { t: "log", title: "Regtest: lnd running", what: "Run lnd on regtest next to bitcoind. Create the wallet and check the balance. Log each step.", r: ["lndDocs"] },
-    { t: "log", title: "Regtest: open a channel", what: "Open a Lightning channel to yourself on regtest. Log each step and the channel point.", r: ["lndDocs"] },
-    { t: "log", title: "Regtest: an invoice and a payment", what: "Create an invoice and pay it on regtest. Log the invoice, the payment hash, and that it settled.", r: ["lndDocs"] },
+    { t: "log", title: "Regtest: a channel and a payment", what: "Run a second lnd on regtest. Open a channel between the two, create an invoice on one and pay it from the other. Log each step, the channel point, and that the invoice settled.", r: ["lndDocs"] },
     { t: "log", title: "Phase exit: prove it all", what: "Show the exit test in your log: bitcoind and lnd built from source, both on regtest, the Go tour finished. Link the proof files.", r: ["tracker"] },
   ],
 ];
@@ -244,7 +279,7 @@ const addDays = (date, n) => new Date(Date.parse(`${date}T12:00:00Z`) + n * 864e
 const diffDays = (a, b) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 864e5);
 const mondayOf = (date) => addDays(date, -((new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7));
 const phaseOf = (date) => PHASES.find((p) => date >= p.start && date <= p.end);
-// Monday-anchored weeks. Week 0 holds the phase's first Friday to Sunday.
+// Monday-anchored weeks, counted from the phase's first Monday.
 const weekInPhase = (date) => { const p = phaseOf(date); return Math.round(diffDays(mondayOf(p.start), mondayOf(date)) / 7); };
 const weeksLeft = (date) => { const p = phaseOf(date); return Math.floor(diffDays(date, p.end) / 7); };
 
@@ -257,11 +292,8 @@ export function dayAt(date) {
   if (dow === 6) return reflection(date, p.id, weekNo);
   const w = weekInPhase(date);
   if (p.id === 0) {
-    // Week 0 starts Friday, so Monday to Thursday entries are empty.
-    const entries = P0[w] || [];
-    const firstDow = new Date(`${p.start}T12:00:00Z`).getUTCDay();
-    const idx = w === 0 ? dow - firstDow : dow - 1;
-    const e = entries[idx];
+    // Phase 0 starts on a Monday: week w, weekday dow.
+    const e = (P0[w] || [])[dow - 1];
     if (!e) return null;
     return day(date, 0, e.t, e.title, e.what, e.r.map((k) => R[k]));
   }
