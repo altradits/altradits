@@ -292,6 +292,9 @@ test("links rendered as href come only from trusted hosts, and QR pictures carry
   const qr = read("lib/lightning.js").slice(read("lib/lightning.js").indexOf("export async function qrSvg"));
   assert.match(qr, /startsWith\("<svg"\)/, "lib/lightning.js qrSvg: check the picture starts with <svg");
   assert.match(qr, /<script\|on\\w\+/, "lib/lightning.js qrSvg: refuse scripts and event handlers in the SVG");
+  assert.match(qr, /<style\|<foreignObject\|href\|url\\\(\|data:/, "lib/lightning.js qrSvg: refuse styles, foreign objects and any link but the inline logo");
+  assert.match(read("lib/lightning.js"), /const QR_LOGO_HREF = \/<image href="data:image\\\/png;base64,\[A-Za-z0-9\+\/\]\+=\{0,2\}"\//, "lib/lightning.js qrSvg: the only allowed link is an inline base64 PNG");
+  assert.match(qr, /errorCorrectionLevel: "H"/, "lib/lightning.js qrSvg: level H, so the centre logo never breaks a scan");
 });
 
 test("every wallet read that can ask the node or confirm an email is rate-limited", () => {

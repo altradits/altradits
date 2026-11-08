@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { UserWallet, Transaction } from '../types';
 import { ArrowLeft, AlertCircle, Loader2, Copy, Check } from 'lucide-react';
 import { hasServerWallet } from '../services/altraditsWallet';
-import QRCode from 'qrcode';
 import { addressQrText } from '../services/paymentQr';
+import { templateQrDataUrl } from '../services/templateQr';
 import { SatsMotion, CountUp } from './SatsMotion';
 import { celebrate } from '../services/celebrate';
 import {
@@ -55,7 +55,7 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
   useEffect(() => {
     const text = isOpen && ownAddress ? addressQrText(ownAddress) : null;
     if (!text) { setAddressQrUrl(''); return; }
-    QRCode.toDataURL(text, { margin: 2, width: 280, color: { dark: '#000000', light: '#FFFFFF' } })
+    templateQrDataUrl(text)
       .then(setAddressQrUrl)
       .catch(() => setAddressQrUrl(''));
   }, [isOpen, ownAddress]);
@@ -149,11 +149,7 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
 
       setInvoice(res.invoice);
 
-      const qrData = await QRCode.toDataURL(res.invoice.toUpperCase(), {
-        margin: 2,
-        width: 280,
-        color: { dark: '#000000', light: '#FFFFFF' },
-      });
+      const qrData = await templateQrDataUrl(res.invoice.toUpperCase());
       setQrCodeUrl(qrData);
       setStep('invoice');
 
@@ -294,11 +290,11 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
                 </div>
                 {addressQrUrl && (
                   <div className="flex justify-center pt-1">
-                    <div className="p-2.5 bg-white rounded-2xl">
+                    <div>
                       <img
                         src={addressQrUrl}
                         alt="Lightning Address QR Code"
-                        className="w-44 h-44 rounded-lg object-contain block"
+                        className="w-44 h-44 object-contain block"
                       />
                     </div>
                   </div>
@@ -377,11 +373,11 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
               </div>
 
               {qrCodeUrl && (
-                <div className="p-3.5 bg-white rounded-3xl shadow-xl border border-white/20 my-1">
+                <div className="my-1">
                   <img
                     src={qrCodeUrl}
                     alt="Lightning Invoice QR Code"
-                    className="w-56 h-56 rounded-xl object-contain block"
+                    className="w-68 h-68 max-w-full object-contain block"
                   />
                 </div>
               )}
