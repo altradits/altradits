@@ -119,6 +119,8 @@ button.pill{cursor:pointer;font-family:inherit}
 .pill{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .8rem;border-radius:99px;font-weight:700;font-size:.88rem;background:color-mix(in srgb,var(--ok) 15%,white);color:var(--ok);border:2px solid color-mix(in srgb,var(--ok) 45%,white)}
 .pill.bad{background:color-mix(in srgb,var(--crit) 12%,white);color:var(--crit);border-color:color-mix(in srgb,var(--crit) 40%,white)}
 .see{margin:-.2rem 0 .6rem;color:var(--muted)}
+.tutorials{margin:.4rem 0 0;padding-left:1.4rem}
+.tutorials li{margin:0 0 .7rem}
 body.quiet .see{display:none}
 .sub{font-size:1rem;margin:1rem 0 .5rem}
 .h{color:var(--btc-text);font-weight:700}
@@ -1031,6 +1033,19 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </div>
 
   <div class="pane" data-pane="learn">
+  <section class="panel" aria-labelledby="hTutorials">
+    <h2 id="hTutorials">Tutorials to practise with</h2>
+    <div class="learn"><p>Six PDFs, in the order to read them. Repeat the drills in tutorial 5 on regtest (Polar) and signet until each one is boring, then on the real node with small amounts.</p><p>These are practice editions: the repo is public, so the node's public key, tunnel address, server IP and payment IDs are replaced with placeholders. The originals with the real details stay on the Mac in <code>~/Documents</code>.</p></div>
+    <ol class="tutorials">
+      <li><a href="/assets/learn-1-node-build.pdf" target="_blank" rel="noopener">How the node was built</a> <span class="sm muted">(5 pages)</span><br><span class="sm">Every setup step from config to liquidity, and why it uses Neutrino instead of a pruned Bitcoin Core.</span></li>
+      <li><a href="/assets/learn-2-node-autostart.pdf" target="_blank" rel="noopener">Start the node automatically</a> <span class="sm muted">(4 pages)</span><br><span class="sm">The launch agents that start LND and the tunnel at login, everyday commands, and how to undo it.</span></li>
+      <li><a href="/assets/learn-3-node-security.pdf" target="_blank" rel="noopener">Node security: what you can and can't do</a> <span class="sm muted">(3 pages)</span><br><span class="sm">What each key can do, who can touch the money, good habits, and the mistakes that lose funds.</span></li>
+      <li><a href="/assets/learn-4-withdrawal-example.pdf" target="_blank" rel="noopener">A real withdrawal, step by step</a> <span class="sm muted">(3 pages)</span><br><span class="sm">Two Lightning withdrawals to a phone wallet, including the attempts that failed and why no money was lost.</span></li>
+      <li><a href="/assets/learn-5-practice-drills.pdf" target="_blank" rel="noopener">Practice plan: twelve drills</a> <span class="sm muted">(3 pages)</span><br><span class="sm">From a throwaway node to disaster recovery, with a practice log to fill in.</span></li>
+      <li><a href="/assets/learn-6-earning-from-a-node.pdf" target="_blank" rel="noopener">Earning from a Lightning node</a> <span class="sm muted">(2 pages)</span><br><span class="sm">Getting paid, routing fees, selling liquidity and teaching, with the arithmetic and what this node still needs.</span></li>
+    </ol>
+  </section>
+
   <section class="panel" aria-labelledby="hVerify">
     <h2 id="hVerify">Verify every number on the Mac</h2>
     <div class="learn"><p>Make a safe shortcut (it can only read): put this line in <code>~/.zshrc</code> so every Terminal window has it, and run it once now: <code>alias ln-ro='lncli --lnddir=$HOME/.lnd-altradits --macaroonpath=$HOME/.lnd-altradits/data/chain/bitcoin/mainnet/readonly.macaroon'</code></p><p>Then compare each dashboard number with the command beside it.</p><p>Rows starting with <code>lncli</code> instead of <code>ln-ro</code> can move money, so they need the full <code>lncli</code> (admin macaroon), not the read-only shortcut.</p></div>
