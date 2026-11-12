@@ -146,7 +146,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
               <p className="text-sm text-[var(--yb-on-surface-variant)]">Enter the email on your wallet. We'll send a code; then you enter your PIN. Nothing gets reset.</p>
               <input type="email" className={field} placeholder="5tan@altradits.com" value={email} autoComplete="email" onChange={(e) => { setEmail(e.target.value.slice(0, 200)); setTypo(null); }} />
               <button type="button" className={primary} disabled={busy || !email.includes('@')}
-                onClick={() => runEmail(async (confirmTypo) => { await startLogin(email.trim(), confirmTypo); setCodeSent(true); setNote('If that email is on a Ye₿ente wallet, a code is on its way. It works for 10 minutes.'); })}>
+                onClick={() => runEmail(async (confirmTypo) => { await startLogin(email.trim(), confirmTypo); setCodeSent(true); setNote('If that email is on a Ye₿ente wallet, a code is on its way.'); })}>
                 Send me a code
               </button>
               <p className="text-xs text-[var(--yb-on-surface-variant)]">No email on your wallet? <button type="button" className={link} onClick={() => go('recover')}>Use your recovery words</button></p>
