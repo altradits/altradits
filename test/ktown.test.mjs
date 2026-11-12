@@ -990,3 +990,26 @@ test("every kTown QR is the Bitcoin QR code template, and no page markets the pa
   assert.match(app, /Our payout partner converts sats to M-Pesa for a 1% fee\./, "the 1% fee stays disclosed");
   assert.match(pay, /tandoFee: "Conversion fee"/, "the fee line names what it is for");
 });
+
+test("a Ye₿ente wallet pays a kTown QR: the shop's invoice through kTown, never a wallet handle", async () => {
+  process.env.YEBENTE_WALLETS = "on";
+  try {
+    const yw = await import("../lib/ywallet.js");
+    const s = await post("register", { agree: true, phone: "0711000990", shop: "Mama Pay Shop", mpesaName: "MAMA P", pin: "715293" });
+    assert.equal(s.status, 200, JSON.stringify(s.body));
+    const { lnurl, id } = s.body.merchant;
+    for (const to of [lnurl, `lightning:${lnurl}`, `k-${id}@altradits.test`]) {
+      const d = await yw.resolveDestination(to, 200);
+      assert.equal(d.kind, "invoice", `${to.slice(0, 20)}: paid as an invoice, not a handle`);
+      assert.equal(d.sats, 200);
+      assert.match(d.hash, /^[0-9a-f]{64}$/);
+      assert.equal(d.label, "kTown Mama Pay Shop");
+      assert.equal(lastInvoice.pr.toLowerCase(), d.pr, "the shop's own invoice from the payout partner");
+    }
+    await assert.rejects(yw.resolveDestination(`k-${"z".repeat(12)}@altradits.test`, 200), /kTown shop isn't known/);
+    // No wallet can take a k- name: it would shadow a shop.
+    const w = await import("../api/yebente.js");
+    const r = await w.POST(new Request("https://altradits.test/api/yebente/wallet/create", { method: "POST", headers: { "Content-Type": "application/json", "x-forwarded-for": "9.8.7.6" }, body: JSON.stringify({ pin: "604397", handle: "k-shopname" }) }));
+    assert.equal(r.status, 400);
+  } finally { delete process.env.YEBENTE_WALLETS; }
+});
