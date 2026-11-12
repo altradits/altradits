@@ -48,6 +48,8 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   const [fiatAmountStr, setFiatAmountStr] = useState<string>('');
   const [satsAmountStr, setSatsAmountStr] = useState<string>('');
   const [step, setStep] = useState<'input' | 'processing' | 'success' | 'error'>('input');
+  // Paid, but the partner hasn't confirmed delivery: never shown as delivered.
+  const [pending, setPending] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string>('Initiating Lightning Transfer...');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [realReference, setRealReference] = useState<string>('');
@@ -197,10 +199,12 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
       // Step 2: Settle payment off-chain: from the Altradits wallet (with the PIN),
       // or from the user's own wallet (WebLN)
       let paid: { paid: boolean; error?: string };
+      let paymentPending = false;
       if (server) {
         try {
-          await sendFromServerWallet(invoiceRes.pr, 0, pin, passkey);
+          const sent = await sendFromServerWallet(invoiceRes.pr, 0, pin, passkey);
           setPin('');
+          if (sent.status === 'pending') paymentPending = true;
           paid = { paid: true };
         } catch (err: unknown) {
           setErrorMessage(err instanceof Error ? err.message : 'Lightning payment route unavailable.');
@@ -218,7 +222,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
       setProcessingStatus(`Delivering to ${rail.name}...`);
 
       // Step 3: wait for the partner's confirmation (e.g. the M-Pesa code)
-      if (paymentHash && rail.receipt) {
+      if (paymentHash && rail.receipt && !paymentPending) {
         const pollRes = await pollReceipt(rail, paymentHash, {
           timeoutMs: 90000,
           intervalMs: 3000,
@@ -256,6 +260,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
           });
 
           celebrate({ kind: 'send', sats: totalSatsDeducted, label: `${rail.name} ${getRecipientDisplay()}`, ref: paymentHash });
+          setPending(false);
           setStep('success');
           return;
         }
@@ -287,7 +292,8 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
         note: `${rail.name} payment through ${rail.partner}`,
       });
 
-      celebrate({ kind: 'send', sats: totalSatsDeducted, label: `${rail.name} ${getRecipientDisplay()}`, ref: paymentHash });
+      // No confirmation: on its way, not delivered. No celebration.
+      setPending(true);
       setStep('success');
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Error processing transfer.');
@@ -563,17 +569,22 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
 
           {step === 'success' && (
             <div className="py-6 flex flex-col items-center text-center space-y-4">
-              <SatsMotion mode="sent" />
-              <div>
+              {pending ? <SatsMotion mode="sending" /> : <SatsMotion mode="sent" />}
+              <div className="space-y-1">
                 <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">
-                  {rail.name} delivered
+                  {pending ? `${rail.name} not confirmed yet` : `${rail.name} delivered`}
                 </h3>
+                {pending && (
+                  <p className="text-xs text-[var(--yb-on-surface-variant)]">
+                    {rail.partner} hasn't confirmed delivery yet. Check History in a few minutes.
+                  </p>
+                )}
               </div>
 
               <div className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl p-3.5 text-left font-mono text-xs space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-[var(--yb-on-surface-variant)]">Delivered</span>
-                  <span className="text-emerald-400 font-bold"><CountUp value={numericAmount} /> {currencyCode}</span>
+                  <span className="text-[var(--yb-on-surface-variant)]">{pending ? 'Amount' : 'Delivered'}</span>
+                  <span className={`${pending ? 'text-[var(--yb-secondary)]' : 'text-emerald-400'} font-bold`}><CountUp value={numericAmount} /> {currencyCode}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--yb-on-surface-variant)]">Recipient</span>

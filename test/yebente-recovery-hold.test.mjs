@@ -8,12 +8,25 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
+import https from "node:https";
+import { execFileSync } from "node:child_process";
 
 process.chdir(fs.mkdtempSync(path.join(os.tmpdir(), "altradits-hold-")));
 for (const k of ["UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "DATA_DIR", "SMTP_HOST", "RESEND_API_KEY", "EMAIL_TRANSPORT"]) delete process.env[k];
+// A node that says what it can send but never answers about a payment: sends stay pending.
+// (A node that doesn't answer at all refuses the send before anything is taken.)
+execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-subj", "/CN=localhost",
+  "-addext", "subjectAltName=DNS:localhost", "-keyout", "key.pem", "-out", "cert.pem"], { stdio: "ignore" });
+const lnd = https.createServer({ key: fs.readFileSync("key.pem"), cert: fs.readFileSync("cert.pem") }, (req, res) => {
+  if (req.url.startsWith("/v1/channels")) { res.end(JSON.stringify({ channels: [{ active: true, local_balance: "1000000", local_constraints: { chan_reserve_sat: "10000" } }] })); return; }
+  res.writeHead(503).end("{}");
+});
+await new Promise((r) => lnd.listen(0, "127.0.0.1", r));
+lnd.unref();
 Object.assign(process.env, { YEBENTE_WALLETS: "on", SITE_URL: "https://altradits.test",
   YEBENTE_MAX_BALANCE_SATS: "10000", YEBENTE_MAX_PAYMENT_SATS: "5000", YEBENTE_DAILY_SEND_SATS: "6000",
-  YEBENTE_RECOVERY_HOLD_SATS: "1000", LND_REST_URL: "https://127.0.0.1:9", YEBENTE_LND_PAY_MACAROON: "deadbeef" }); // dead node: sends stay pending
+  YEBENTE_RECOVERY_HOLD_SATS: "1000", LND_REST_URL: `https://localhost:${lnd.address().port}`, YEBENTE_LND_PAY_MACAROON: "deadbeef",
+  LND_TLS_CERT: fs.readFileSync("cert.pem").toString("base64") });
 
 const store = await import("../lib/store.js");
 const email = await import("../lib/email.js");
@@ -64,7 +77,7 @@ test("a pending send counts toward the 1,000; a failed one doesn't; reconcile mo
   await mk("holdpendpal", "719263");
   const back = await recover(a.recovery, "813592");
   const p = await (await call("POST", "wallet/send", { to: invoice(990).pr, pin: "813592" }, back.token)).json();
-  assert.equal(p.status, "pending"); // the node is down: 990 + 10 reserve debited, still counted
+  assert.equal(p.status, "pending"); // the node never answers about it: 990 + 10 reserve debited, still counted
   const blocked = await call("POST", "wallet/send", { to: "holdpendpal", sats: 1, pin: "813592" }, back.token);
   assert.equal(blocked.status, 423);
   const bal = (await yw.walletByHandle("holdpend")).balance;

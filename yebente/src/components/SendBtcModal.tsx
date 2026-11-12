@@ -51,6 +51,8 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
   const [recipient, setRecipient] = useState<string>('');
   const [satsAmountStr, setSatsAmountStr] = useState<string>('');
   const [step, setStep] = useState<'input' | 'processing' | 'success' | 'error'>('input');
+  // The node took the payment but hasn't confirmed it: never shown as sent.
+  const [pending, setPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [resolvedProvider, setResolvedProvider] = useState<string>('');
   const [recipientType, setRecipientType] = useState<'unknown' | 'lightning_address' | 'lightning_invoice' | 'invalid_onchain'>('unknown');
@@ -222,7 +224,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
         const res = await sendFromServerWallet(cleanRecipient, numericSats, pin, passkey);
         setTxReference(res.ref);
         setPin('');
-        completeTransaction(res.ref, cleanRecipient);
+        completeTransaction(res.ref, cleanRecipient, res.status === 'pending');
       } catch (err: unknown) {
         setErrorMessage(err instanceof Error ? err.message : 'Error dispatching payment');
         setStep('error');
@@ -266,13 +268,14 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     }
   };
 
-  const completeTransaction = (ref: string, targetRecipient: string) => {
-    celebrate({ kind: 'send', sats: numericSats, label: targetRecipient.length > 40 ? undefined : targetRecipient, ref });
+  const completeTransaction = (ref: string, targetRecipient: string, notYet = false) => {
+    setPending(notYet);
+    if (!notYet) celebrate({ kind: 'send', sats: numericSats, label: targetRecipient.length > 40 ? undefined : targetRecipient, ref });
     setStep('success');
     onSuccess({
       type: 'send_btc',
-      title: 'Sent Lightning Sats',
-      status: 'completed',
+      title: notYet ? 'Sending Lightning Sats' : 'Sent Lightning Sats',
+      status: notYet ? 'pending' : 'completed',
       fromCurrency: 'SATS',
       fromAmount: numericSats,
       fee: satsFee,
@@ -514,19 +517,21 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
 
           {step === 'success' && (
             <div className="text-center py-4 space-y-4">
-              <SatsMotion mode="sent" />
+              {pending ? <SatsMotion mode="sending" /> : <SatsMotion mode="sent" />}
 
               <div className="space-y-1">
-                <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">Payment Sent</h3>
+                <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">{pending ? 'Not confirmed yet' : 'Payment Sent'}</h3>
                 <p className="text-xs text-[var(--yb-on-surface-variant)]">
-                  {`Sent to ${resolvedProvider || recipient}.`}
+                  {pending
+                    ? 'The network hasn\'t confirmed this payment yet. Check History in a few minutes. If it doesn\'t go through, your sats come back.'
+                    : `Sent to ${resolvedProvider || recipient}.`}
                 </p>
               </div>
 
               <div className="p-3.5 bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl space-y-2 text-left">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-[var(--yb-on-surface-variant)]">Amount Sent</span>
-                  <span className="text-sm font-mono font-bold text-emerald-400">
+                  <span className="text-xs text-[var(--yb-on-surface-variant)]">{pending ? 'Amount' : 'Amount Sent'}</span>
+                  <span className={`text-sm font-mono font-bold ${pending ? 'text-[var(--yb-secondary)]' : 'text-emerald-400'}`}>
                     -<CountUp value={numericSats} /> Sats
                   </span>
                 </div>
