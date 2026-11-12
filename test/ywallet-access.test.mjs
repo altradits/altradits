@@ -182,3 +182,19 @@ test("an open app never pays on its own: every payment needs the PIN or a fresh 
   await setJSON(`yw:${w.id}`, { ...w, lockedUntil: null, failedPins: 0 });
   { const r = await send({ pin: "846193" }); assert.equal(r.status, 200, `with the PIN it goes: ${r.error}`); }
 });
+
+test("asking for a login code before the email is confirmed says so by email, and never sends a code", async () => {
+  const p = phone();
+  const before = mailed.length;
+  await json(await call("POST", "wallet/create", { pin: "529174", handle: "achieng", email: "achieng@example.org", device: p.spki }));
+  assert.ok(mailed.slice(before).some((m) => m.subject === "Confirm your Ye₿ente email" && m.to === "achieng@example.org"));
+  const pendingReply = await call("POST", "wallet/login/start", { email: "achieng@example.org" }).then((r) => r.json());
+  const unknownReply = await call("POST", "wallet/login/start", { email: "nobody-else@example.org" }).then((r) => r.json());
+  assert.deepEqual(pendingReply, unknownReply, "the page answers the same either way");
+  const sent = mailed.slice(before).filter((m) => m.to === "achieng@example.org");
+  assert.ok(sent.some((m) => m.subject === "Your Ye₿ente email isn't confirmed yet"), "the owner learns why no code came");
+  assert.ok(!sent.some((m) => m.subject === "Your Ye₿ente login code"), "no code to an unconfirmed address");
+  const note = sent.find((m) => m.subject === "Your Ye₿ente email isn't confirmed yet");
+  assert.ok(!/achieng(@| )|https?:\/\/|\b\d{8}\b/.test(note.text.replace("achieng@example.org", "")), "no handle, link or code in it");
+  assert.ok(!mailed.slice(before).some((m) => m.to === "nobody-else@example.org"), "an unknown address gets nothing");
+});
