@@ -170,7 +170,7 @@ export async function fetchServerHistory(): Promise<Transaction[]> {
 
 // Approved with the PIN, or with the phone's fingerprint / face (a signed passkey approval).
 export const sendFromServerWallet = (to: string, sats: number, pin: string, passkey?: unknown) =>
-  api<{ wallet: ServerWallet; ref: string }>('POST', 'send', passkey ? { to, sats, passkey } : { to, sats, pin });
+  api<{ wallet: ServerWallet; ref: string; status?: 'completed' | 'pending' }>('POST', 'send', passkey ? { to, sats, passkey } : { to, sats, pin });
 
 // A ledger entry in the shape the history list already shows.
 function entryToTransaction(e: ServerEntry): Transaction {
