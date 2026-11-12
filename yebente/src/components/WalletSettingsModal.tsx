@@ -320,11 +320,11 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
               )}
 
               {server && bioSupported && (
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center text-xs text-[var(--yb-secondary)]">
+                <details className="group space-y-2">
+                  <summary className="flex justify-between items-center text-xs text-[var(--yb-secondary)] cursor-pointer list-none py-1">
                     <span className="font-semibold flex items-center gap-1.5"><Fingerprint className="w-3.5 h-3.5" /> Fingerprint / Face</span>
-                    <span className={`font-mono text-[10px] ${bioActive ? 'text-emerald-400' : 'text-[var(--yb-on-surface-variant)]'}`}>{bioActive ? 'On for this phone' : 'Off'}</span>
-                  </div>
+                    <span className={`font-mono text-[10px] ${bioActive ? 'text-emerald-400' : 'text-[var(--yb-on-surface-variant)]'}`}>{bioActive ? 'On' : 'Off'} ›</span>
+                  </summary>
                   <div className="grid grid-cols-[1fr_7rem] gap-2">
                     <input
                       type="password"
@@ -357,16 +357,15 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                     </button>
                   </div>
                   {bioMsg && <p className="text-xs text-emerald-300 px-1">{bioMsg}</p>}
-                </div>
+                </details>
               )}
 
               {server && (
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center text-xs text-[var(--yb-secondary)]">
+                <details className="group space-y-2" open={Boolean(wallet.emailChange) || undefined}>
+                  <summary className="flex justify-between items-center text-xs text-[var(--yb-secondary)] cursor-pointer list-none py-1">
                     <span className="font-semibold">Recovery email</span>
-                    <span className="font-mono text-[10px] text-[var(--yb-on-surface-variant)]">{serverEmail}</span>
-                  </div>
-                  <p className="text-[11px] text-[var(--yb-on-surface-variant)]">A change takes 48 hours after you confirm the new address. Recovery keeps using the old address until then.</p>
+                    <span className="font-mono text-[10px] text-[var(--yb-on-surface-variant)] truncate max-w-[60%]">{serverEmail || 'Not set'} ›</span>
+                  </summary>
                   {wallet.emailChange && (
                     <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/30 space-y-2">
                       <p className="text-xs font-semibold text-amber-200">Changing to {wallet.emailChange.newEmail}</p>
@@ -430,8 +429,9 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                       Use {emailInput.trim()} anyway
                     </button>
                   )}
+                  {serverEmail && <p className="text-[11px] text-[var(--yb-on-surface-variant)] px-1">A new address takes over 48 hours after you confirm it.</p>}
                   {walletMsg && <p className="text-xs text-emerald-300 px-1">{walletMsg}</p>}
-                </div>
+                </details>
               )}
 
               {server && <PhonesAndSecurity onChanged={onServerWalletChange} />}
