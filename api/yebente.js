@@ -622,7 +622,17 @@ export async function GET(request) {
       send: wallets && connected,
       external: switchOn("YEBENTE_EXTERNAL_WALLETS"),
     };
-    return json({ status: "ok", service: "yebente", wallets, environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), buyProvider: provider, bitikaSandbox: provider === "bitika" ? bk.bitikaSandbox() : false, deposits: false, node, features, proxy: proxyShape(request), timestamp: Date.now() });
+    // Set up, but the node can't be reached right now (its tunnel drops now and
+    // then): the app keeps these buttons on screen, greyed out, instead of an
+    // empty wallet, and turns them back on when the node answers again.
+    // Only a node that is set up and silent (false), never one not set up (null).
+    const down = node === false;
+    const paused = {
+      sendMobile: railsOn().length > 0 && down,
+      receive: wallets && down,
+      send: wallets && down,
+    };
+    return json({ status: "ok", service: "yebente", wallets, environment: env("MPESA_ENVIRONMENT") === "production" ? "production" : "sandbox", configured: darajaReady(), buy: buyOn(), buyProvider: provider, bitikaSandbox: provider === "bitika" ? bk.bitikaSandbox() : false, deposits: false, node, features, paused, proxy: proxyShape(request), timestamp: Date.now() });
   }
   if (path.startsWith("lightning/invoice-status/")) return off("Create a Ye₿ente wallet first.");
   if (path === "wallet/email-confirm") {

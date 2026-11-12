@@ -26,7 +26,7 @@ import { TransactionDetailModal } from './components/TransactionDetailModal';
 import { WalletSettingsModal } from './components/WalletSettingsModal';
 import { WalletGate } from './components/WalletGate';
 import { access, Access, hasServerWallet, fetchServerWallet, fetchServerHistory, forgetServerWallet, lockServerWallet } from './services/altraditsWallet';
-import { CORE_FEATURES, FeatureFlags, fetchFeatures, visibleActions } from './services/features';
+import { FeatureFlags, fetchFeatures, pausedActions, visibleActions } from './services/features';
 
 export default function App() {
   const [wallet, setWallet] = useState<UserWallet>(getStoredWallet);
@@ -50,9 +50,17 @@ export default function App() {
 
   const [isOnline, setIsOnline] = useState<boolean>(isNetworkOnline);
 
-  // Which controls are shown: the server's features, read once at start and
-  // on resume. Until it answers (or if it fails), the core only.
-  const [features, setFeatures] = useState<FeatureFlags>(CORE_FEATURES);
+  // Which controls are shown: the server's features, read at start, on resume,
+  // and every 30 seconds while some are paused (the node reconnecting), so the
+  // buttons come back without a refresh. Until the first answer: placeholders.
+  // If it fails, the core only (fetchFeatures).
+  const [features, setFeatures] = useState<FeatureFlags | null>(null);
+  const waiting = Boolean(features?.paused?.length);
+  useEffect(() => {
+    if (!waiting) return;
+    const t = window.setInterval(() => fetchFeatures().then(setFeatures), 30_000);
+    return () => window.clearInterval(t);
+  }, [waiting]);
   useEffect(() => {
     fetchFeatures().then(setFeatures);
     const onShow = () => { if (document.visibilityState === 'visible') fetchFeatures().then(setFeatures); };
@@ -251,7 +259,7 @@ export default function App() {
           <WalletGate
             key={recoveryToken ? 'recover' : 'gate'}
             locked={walletAccess === 'locked'}
-            externalEnabled={features.external}
+            externalEnabled={Boolean(features?.external)}
             recoveryToken={recoveryToken}
             onOpen={() => { setGateOpen(false); setExternalSetup(false); setWalletAccess(access()); firstSync.current = true; syncServerWallet(); }}
             onRecoveryDone={() => setRecoveryToken('')}
@@ -298,6 +306,8 @@ export default function App() {
           {/* Core wallet and payment actions: only the server-enabled ones */}
           <ActionGrid
             actions={visibleActions(features)}
+            paused={pausedActions(features)}
+            loading={features === null}
             onBuyBtc={() => setActiveModal(hasServerWallet() ? 'buy_btc' : 'wallet_settings')}
             onSendMpesa={() => handleRequireWalletAction(() => setActiveModal('send_mpesa'))}
             onReceiveBtc={() => handleRequireWalletAction(() => setActiveModal('receive_btc'))}
@@ -369,7 +379,7 @@ export default function App() {
       <WalletSettingsModal
         isOpen={activeModal === 'wallet_settings'}
         onClose={() => setActiveModal('none')}
-        externalEnabled={features.external}
+        externalEnabled={Boolean(features?.external)}
         wallet={wallet}
         onUpdateWallet={handleUpdateWallet}
         onServerWalletChange={syncServerWallet}
