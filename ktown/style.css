@@ -24,6 +24,8 @@ h1,h2{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;line-height
 .top{max-width:36rem;margin:0 auto;padding:1.25rem 1.5rem 0;display:flex;
   align-items:center;justify-content:space-between;gap:1rem;min-height:4.25rem}
 body.has-tabs .top,body.pay .top{padding-top:calc(.75rem + env(safe-area-inset-top));min-height:3.5rem}
+.brand-link{display:block;border-radius:.375rem}
+.brand-link:focus-visible{outline:2px solid currentColor;outline-offset:3px}
 .brand{display:block;height:1.875rem;width:auto}
 .lang{display:flex;background:var(--surface);border-radius:999px;padding:.25rem}
 .lang button{border:0;background:transparent;cursor:pointer;border-radius:999px;
