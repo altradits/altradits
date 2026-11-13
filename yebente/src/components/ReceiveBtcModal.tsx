@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { UserWallet, Transaction } from '../types';
-import { ArrowLeft, AlertCircle, Loader2, Copy, Check } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Loader2, Copy, Check, Share2, Receipt } from 'lucide-react';
 import { hasServerWallet } from '../services/altraditsWallet';
 import { addressQrText } from '../services/paymentQr';
 import { templateQrDataUrl } from '../services/templateQr';
@@ -23,6 +23,31 @@ interface ReceiveBtcModalProps {
   onOpenWalletSettings: () => void;
 }
 
+type Step = 'address' | 'amount' | 'invoice' | 'success' | 'error';
+
+// One tap copies; the tick shows for two seconds.
+function useCopy() {
+  const [copied, setCopied] = useState('');
+  const copy = (key: string, text: string) => {
+    if (!text) return;
+    navigator.clipboard?.writeText(text).catch(() => {});
+    setCopied(key);
+    setTimeout(() => setCopied((c) => (c === key ? '' : c)), 2000);
+  };
+  return { copied, copy };
+}
+
+// Share sheet where the phone has one; otherwise a copy.
+async function shareText(text: string, fallback: () => void) {
+  try {
+    if (navigator.share) { await navigator.share({ text }); return; }
+  } catch { return; /* the owner closed the share sheet */ }
+  fallback();
+}
+
+// Receive, full screen: the wallet's own address as a big QR code, the address
+// right under it (one tap copies), the LNURL to copy, Share, and Create invoice.
+// An invoice then fills the screen until it is paid.
 export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
   isOpen,
   onClose,
@@ -30,14 +55,13 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
   onSuccess,
   onOpenWalletSettings,
 }) => {
-  const [step, setStep] = useState<'input' | 'invoice' | 'success' | 'error'>('input');
+  const [step, setStep] = useState<Step>('address');
   const [satsAmountStr, setSatsAmountStr] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [invoice, setInvoice] = useState<string>('');
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const [copiedInvoice, setCopiedInvoice] = useState(false);
-  const [copiedAddress, setCopiedAddress] = useState(false);
+  const { copied, copy } = useCopy();
 
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -50,41 +74,40 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
 
   // Only this wallet's own address gets a QR code (not the shared fallback address).
   const ownAddress = hasServerWallet() ? wallet.blinkAddress || '' : configuredLightningAddress;
+  const qrText = ownAddress ? addressQrText(ownAddress) : null; // LIGHTNING:LNURL1...
+  const lnurl = qrText ? qrText.replace(/^LIGHTNING:/, '') : '';
   const [addressQrUrl, setAddressQrUrl] = useState<string>('');
 
   useEffect(() => {
-    const text = isOpen && ownAddress ? addressQrText(ownAddress) : null;
-    if (!text) { setAddressQrUrl(''); return; }
-    templateQrDataUrl(text)
+    if (!isOpen || !qrText) { setAddressQrUrl(''); return; }
+    templateQrDataUrl(qrText)
       .then(setAddressQrUrl)
       .catch(() => setAddressQrUrl(''));
-  }, [isOpen, ownAddress]);
+  }, [isOpen, qrText]);
 
-  // Stop polling when modal closes or unmounts
+  // No address yet (no wallet): straight to the invoice amount.
   useEffect(() => {
-    if (!isOpen && pollIntervalRef.current) {
+    if (isOpen && !ownAddress && step === 'address') setStep('amount');
+  }, [isOpen, ownAddress, step]);
+
+  const stopPolling = () => {
+    if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
     }
+  };
 
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
-      }
-    };
+  // Stop polling when the screen closes or unmounts
+  useEffect(() => {
+    if (!isOpen) stopPolling();
+    return stopPolling;
   }, [isOpen]);
 
   const handleBack = () => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-    }
-    if (step === 'invoice' || step === 'error') {
-      setStep('input');
-      setErrorMessage('');
-    } else {
-      onClose();
-    }
+    stopPolling();
+    if (step === 'invoice') setStep('amount');
+    else if ((step === 'amount' || step === 'error') && ownAddress) { setStep('address'); setErrorMessage(''); }
+    else onClose();
   };
 
   const handleCreateLightningInvoice = async () => {
@@ -166,17 +189,12 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
   };
 
   const startPollingSettlement = (hash: string, sats: number) => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-    }
-
+    stopPolling();
     pollIntervalRef.current = setInterval(async () => {
       try {
         const res = await checkInvoiceStatus(hash);
         if (res.paid || res.settled) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-          }
+          stopPolling();
           triggerSuccess(hash, sats);
         }
       } catch {
@@ -207,287 +225,159 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
     });
   };
 
-  const handleCopyInvoice = () => {
-    if (!invoice) return;
-    navigator.clipboard.writeText(invoice);
-    setCopiedInvoice(true);
-    setTimeout(() => setCopiedInvoice(false), 2000);
-  };
-
-  const handleCopyAddress = () => {
-    if (!ownAddress) return;
-    navigator.clipboard.writeText(ownAddress);
-    setCopiedAddress(true);
-    setTimeout(() => setCopiedAddress(false), 2000);
-  };
-
   if (!isOpen) return null;
 
+  // A QR code as big as the screen allows, on white with a quiet margin, so other
+  // phones and scanners read it at a glance.
+  const bigQr = (src: string, alt: string) => (
+    <div className="bg-white rounded-3xl p-3 shadow-lg">
+      <img src={src} alt={alt} className="block w-[min(84vw,58vh)] h-[min(84vw,58vh)] max-w-[30rem] max-h-[30rem] object-contain [image-rendering:pixelated]" />
+    </div>
+  );
+  const iconBtn = 'w-12 h-12 rounded-full bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] flex items-center justify-center';
+
   return (
-    <div
-      onClick={handleBack}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-[var(--yb-surface-container-low)] border border-[var(--yb-outline-variant)] yb-sheet rounded-t-[28px] sm:rounded-[28px] w-full max-w-md overflow-hidden flex flex-col max-h-[92vh]"
-      >
-        {/* Stan Style Header with Textless Back Navigation */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--yb-outline-variant)]/60">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="p-1.5 rounded-lg text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
-            aria-label="Back"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h2 className="text-base font-bold text-[var(--yb-on-surface)]">Receive Lightning Sats</h2>
-          <div className="w-8" aria-hidden="true" />
-        </div>
+    <div className="fixed inset-0 z-50 bg-[var(--yb-surface-container-low)] flex flex-col" role="dialog" aria-modal="true" aria-label="Receive">
+      {/* Back, and the balance in digits */}
+      <div className="flex items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
+        <button type="button" onClick={handleBack} className="w-11 h-11 rounded-full flex items-center justify-center text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]" aria-label="Back">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <span className="font-mono font-bold text-[var(--yb-on-surface)]" aria-label={`${currentSats.toLocaleString()} sats`}>
+          {currentSats.toLocaleString()} <span className="text-xs font-semibold text-[var(--yb-secondary)]">sats</span>
+        </span>
+      </div>
 
-        {/* Modal Body */}
-        <div className="p-5 overflow-y-auto space-y-4 text-xs">
-          {/* Current balance readout */}
-          <div className="flex justify-between items-center px-1 text-xs">
-            <span className="text-[var(--yb-on-surface-variant)]">Current Balance</span>
-            <span className="font-mono font-bold text-[var(--yb-on-surface)]">
-              {currentSats.toLocaleString()} Sats
-            </span>
-          </div>
-
-          {/* This wallet's own Lightning address (never a stand-in) */}
-          {ownAddress && (
-            <div className="flex justify-between items-center px-1 text-[11px]">
-              <span className="text-[var(--yb-on-surface-variant)]">Lightning Address</span>
-              <span className="font-mono text-emerald-400 font-semibold">
-                {ownAddress}
-              </span>
-            </div>
-          )}
-
-          {/* STEP 1: Input */}
-          {step === 'input' && (
-            <div className="space-y-4">
-              {/* This wallet's Lightning address */}
-              {ownAddress && <div className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] p-3 rounded-2xl text-left space-y-2">
-                <div className="flex justify-between items-center text-[11px] text-[var(--yb-on-surface-variant)]">
-                  <span>Static Lightning Address</span>
-                  <span className="font-mono text-[10px] text-emerald-400">LNURL-pay</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-semibold text-[var(--yb-on-surface)] select-all">
-                    {ownAddress}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleCopyAddress}
-                    className="p-1.5 rounded-lg bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] hover:border-[var(--yb-primary)] text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
-                    title="Copy Lightning Address"
-                  >
-                    {copiedAddress ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-                {addressQrUrl && (
-                  <div className="flex justify-center pt-1">
-                    <div>
-                      <img
-                        src={addressQrUrl}
-                        alt="Lightning Address QR Code"
-                        className="w-44 h-44 object-contain block"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>}
-
-              {/* Sats to Receive */}
-              <div>
-                <label className="block text-xs font-semibold text-[var(--yb-secondary)] mb-1.5">
-                  Sats to Receive via Invoice
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="1"
-                    min="1"
-                    value={satsAmountStr}
-                    onChange={(e) => setSatsAmountStr(e.target.value)}
-                    onWheel={(e) => e.currentTarget.blur()}
-                    placeholder="1"
-                    className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-3 text-lg font-mono font-bold text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
-                  />
-                  <span className="absolute right-4 top-3.5 font-mono text-sm font-semibold text-[var(--yb-secondary)]">
-                    Sats
-                  </span>
-                </div>
-              </div>
-
-              {/* Presets */}
-              <div className="grid grid-cols-6 gap-1.5">
-                {[1, 10, 100, 500, 1000, 5000].map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setSatsAmountStr(preset.toString())}
-                    className={`py-2 rounded-xl border text-xs font-mono font-medium ${
-                      numericSats === preset
-                        ? 'bg-[var(--yb-surface-container-high)] border-[var(--yb-primary)] text-[var(--yb-on-surface)]'
-                        : 'bg-[var(--yb-surface)] border-[var(--yb-outline-variant)] text-[var(--yb-on-surface-variant)] hover:border-[#554653]'
-                    }`}
-                  >
-                    {preset === 1 ? '1 Sat' : preset.toLocaleString()}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex justify-between items-center px-1 text-xs font-mono text-[var(--yb-on-surface-variant)]">
-                <span>Routing Fee</span>
-                <span className="text-emerald-400 font-semibold">0 Sats (Sender pays routing)</span>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleCreateLightningInvoice}
-                disabled={numericSats <= 0 || isGenerating}
-                className="w-full h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center disabled:opacity-50"
-              >
-                {isGenerating ? 'Generating...' : 'Create Invoice'}
-              </button>
-            </div>
-          )}
-
-          {/* STEP 2: Lightning Invoice Display */}
-          {step === 'invoice' && (
-            <div className="space-y-4 flex flex-col items-center text-center">
-              <div className="w-full flex justify-between items-center px-1 text-xs">
-                <span className="text-[var(--yb-on-surface-variant)]">Invoice Amount</span>
-                <span className="font-mono font-bold text-lg text-[var(--yb-on-surface)]">
-                  {numericSats.toLocaleString()} Sats
-                </span>
-              </div>
-
-              <div className="w-full flex justify-between items-center px-1 text-xs">
-                <span className="text-[var(--yb-on-surface-variant)]">Receiving Fee</span>
-                <span className="font-mono font-semibold text-emerald-400">0 Sats (Free)</span>
-              </div>
-
-              {qrCodeUrl && (
-                <div className="my-1">
-                  <img
-                    src={qrCodeUrl}
-                    alt="Lightning Invoice QR Code"
-                    className="w-68 h-68 max-w-full object-contain block"
-                  />
-                </div>
+      <div className="flex-1 overflow-y-auto px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] flex flex-col items-center justify-center gap-5 text-center">
+        {/* The wallet's address: big QR, the address under it, copy, share, invoice */}
+        {step === 'address' && ownAddress && (
+          <>
+            {addressQrUrl ? bigQr(addressQrUrl, `QR code for ${ownAddress}`) : <Loader2 className="w-8 h-8 animate-spin text-[var(--yb-primary)]" />}
+            <button type="button" onClick={() => copy('address', ownAddress)} className="max-w-full font-mono text-lg sm:text-xl font-bold text-[var(--yb-on-surface)] break-all flex items-center gap-2" aria-label={`Copy ${ownAddress}`}>
+              <span>{ownAddress}</span>
+              {copied === 'address' ? <Check className="w-5 h-5 shrink-0 text-emerald-400" /> : <Copy className="w-4 h-4 shrink-0 text-[var(--yb-secondary)]" />}
+            </button>
+            <div className="flex items-center gap-4">
+              {lnurl && (
+                <button type="button" onClick={() => copy('lnurl', lnurl)} className="h-12 px-4 rounded-full bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] text-xs font-mono font-bold flex items-center gap-2" aria-label="Copy LNURL">
+                  {copied === 'lnurl' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />} LNURL
+                </button>
               )}
-
-              <div className="flex items-center gap-2 text-xs font-mono text-[var(--yb-secondary)]">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--yb-primary)]" />
-                <span>
-                  Awaiting payment...
-                </span>
-              </div>
-
-              <div className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] p-3 rounded-2xl text-left space-y-2">
-                <div className="flex justify-between items-center text-[11px] text-[var(--yb-on-surface-variant)]">
-                  <span>Lightning Invoice</span>
-                  <span className="font-mono text-[10px]">BOLT-11</span>
-                </div>
-                <div className="font-mono text-[11px] text-[var(--yb-secondary)] break-all max-h-16 overflow-y-auto select-all leading-relaxed">
-                  {invoice}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleCopyInvoice}
-                className="w-full h-11 rounded-2xl bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] hover:border-[var(--yb-primary)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center"
-              >
-                {copiedInvoice ? 'Invoice Copied' : 'Copy Invoice'}
+              <button type="button" onClick={() => shareText(lnurl ? `${ownAddress}\n${lnurl}` : ownAddress, () => copy('address', ownAddress))} className={iconBtn} aria-label="Share">
+                <Share2 className="w-5 h-5" />
               </button>
             </div>
-          )}
+            <button type="button" onClick={() => { setErrorMessage(''); setStep('amount'); }}
+              className="w-full max-w-sm h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center gap-2">
+              <Receipt className="w-4 h-4" /> Create invoice
+            </button>
+          </>
+        )}
 
-          {/* STEP 3: Success Screen */}
-          {step === 'success' && (
-            <div className="text-center py-4 space-y-4">
-              <SatsMotion mode="received" />
+        {/* The invoice amount: one empty box, no label */}
+        {step === 'amount' && (
+          <div className="w-full max-w-sm space-y-4">
+            <div className="relative">
+              <input
+                type="number"
+                inputMode="numeric"
+                step="1"
+                min="1"
+                autoFocus
+                value={satsAmountStr}
+                onChange={(e) => setSatsAmountStr(e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()}
+                onKeyDown={(e) => { if (e.key === 'Enter' && numericSats > 0 && !isGenerating) handleCreateLightningInvoice(); }}
+                aria-label="Amount in sats"
+                className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-4 text-2xl text-center font-mono font-bold text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-sm font-semibold text-[var(--yb-secondary)]">sats</span>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {[100, 500, 1000, 5000].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setSatsAmountStr(preset.toString())}
+                  className={`py-2 rounded-xl border text-xs font-mono font-medium ${
+                    numericSats === preset
+                      ? 'bg-[var(--yb-surface-container-high)] border-[var(--yb-primary)] text-[var(--yb-on-surface)]'
+                      : 'bg-[var(--yb-surface)] border-[var(--yb-outline-variant)] text-[var(--yb-on-surface-variant)]'
+                  }`}
+                >
+                  {preset.toLocaleString()}
+                </button>
+              ))}
+            </div>
+            {errorMessage && <p className="text-xs text-red-300">{errorMessage}</p>}
+            <button
+              type="button"
+              onClick={handleCreateLightningInvoice}
+              disabled={numericSats <= 0 || isGenerating}
+              className="w-full h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
+              Create invoice
+            </button>
+          </div>
+        )}
 
-              <div className="space-y-1">
-                <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">Payment Received</h3>
-              </div>
-
-              <div className="p-3.5 bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl space-y-2 text-left">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-[var(--yb-on-surface-variant)]">Amount Added</span>
-                  <span className="text-sm font-mono font-bold text-emerald-400">
-                    +<CountUp value={numericSats} /> Sats
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-[var(--yb-on-surface-variant)]">Receiving Fee</span>
-                  <span className="text-xs font-mono font-semibold text-emerald-400">
-                    0 Sats (Free)
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-[var(--yb-on-surface-variant)]">New Balance</span>
-                  <span className="text-xs font-mono font-bold text-[var(--yb-on-surface)]">
-                    {(currentSats + numericSats).toLocaleString()} Sats
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center"
-              >
-                Done
+        {/* The invoice fills the screen until it is paid */}
+        {step === 'invoice' && (
+          <>
+            <p className="font-mono text-2xl font-bold text-[var(--yb-on-surface)]">{numericSats.toLocaleString()} <span className="text-sm text-[var(--yb-secondary)]">sats</span></p>
+            {qrCodeUrl && bigQr(qrCodeUrl, 'QR code of the invoice')}
+            <button type="button" onClick={() => copy('invoice', invoice)} className="w-full max-w-sm flex items-center gap-2 text-left" aria-label="Copy invoice">
+              <span className="flex-1 min-w-0 font-mono text-[11px] text-[var(--yb-secondary)] truncate">{invoice}</span>
+              {copied === 'invoice' ? <Check className="w-5 h-5 shrink-0 text-emerald-400" /> : <Copy className="w-4 h-4 shrink-0 text-[var(--yb-secondary)]" />}
+            </button>
+            <div className="flex items-center gap-4">
+              <button type="button" onClick={() => copy('invoice', invoice)} className={iconBtn} aria-label="Copy invoice">
+                {copied === 'invoice' ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
+              </button>
+              <button type="button" onClick={() => shareText(invoice, () => copy('invoice', invoice))} className={iconBtn} aria-label="Share invoice">
+                <Share2 className="w-5 h-5" />
               </button>
             </div>
-          )}
+            <Loader2 className="w-5 h-5 animate-spin text-[var(--yb-primary)]" aria-label="Waiting for payment" />
+          </>
+        )}
 
-          {/* STEP 4: Error Screen */}
-          {step === 'error' && (
-            <div className="text-center py-4 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 flex items-center justify-center mx-auto">
-                <AlertCircle className="w-8 h-8" />
-              </div>
+        {/* Paid */}
+        {step === 'success' && (
+          <div className="w-full max-w-sm space-y-4">
+            <SatsMotion mode="received" />
+            <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">Payment Received</h3>
+            <p className="font-mono text-2xl font-bold text-emerald-400">+<CountUp value={numericSats} /> <span className="text-sm">sats</span></p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center"
+            >
+              Done
+            </button>
+          </div>
+        )}
 
-              <div className="space-y-1">
-                <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">Invoice Unavailable</h3>
-                <p className="text-xs text-red-300 px-2 leading-relaxed">
-                  {errorMessage}
-                </p>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep('input');
-                    setErrorMessage('');
-                  }}
-                  className="flex-1 h-11 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center"
-                >
-                  Retry
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onOpenWalletSettings();
-                  }}
-                  className="flex-1 h-11 rounded-2xl bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] hover:border-[var(--yb-primary)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center"
-                >
-                  Wallet Settings
-                </button>
-              </div>
+        {step === 'error' && (
+          <div className="w-full max-w-sm space-y-4">
+            <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 flex items-center justify-center mx-auto">
+              <AlertCircle className="w-8 h-8" />
             </div>
-          )}
-        </div>
+            <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">Invoice Unavailable</h3>
+            <p className="text-xs text-red-300 px-2 leading-relaxed">{errorMessage}</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => { setStep('amount'); setErrorMessage(''); }}
+                className="flex-1 h-11 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center">
+                Retry
+              </button>
+              <button type="button" onClick={() => { onClose(); onOpenWalletSettings(); }}
+                className="flex-1 h-11 rounded-2xl bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] hover:border-[var(--yb-primary)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center">
+                Wallet Settings
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
