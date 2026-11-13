@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { UserWallet, Transaction, ExchangeRates } from '../types';
-import { ArrowLeft, AlertCircle, Loader2, ScanLine, ClipboardPaste, Fingerprint } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Loader2, ScanLine, ClipboardPaste, Fingerprint, X } from 'lucide-react';
 import { payInvoiceWithWebLN,
   isLightningAddress,
   resolveLightningAddress,
@@ -64,6 +64,9 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
   const [scanning, setScanning] = useState(true);
   const amountRef = useRef<HTMLInputElement>(null);
   const [usePin, setUsePin] = useState(false);
+  // The last step before money leaves: the PIN, in its own pop-up (fingerprint first where it's on).
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmNote, setConfirmNote] = useState('');
   const server = hasServerWallet();
   // Fingerprint / face on this phone: no PIN typed on screen.
   const useBio = server && biometricOn() && !usePin;
@@ -176,6 +179,23 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     }
   };
 
+  // Pays from the Altradits wallet with the PIN or the fingerprint approval.
+  const dispatch = async (to: string, pinValue: string, passkey?: unknown) => {
+    setConfirmOpen(false);
+    setStep('processing');
+    setErrorMessage('');
+    try {
+      const res = await sendFromServerWallet(to, numericSats, pinValue, passkey);
+      setTxReference(res.ref);
+      completeTransaction(res.ref, to, res.status === 'pending');
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Error dispatching payment');
+      setStep('error');
+    } finally {
+      setPin('');
+    }
+  };
+
   const handleSend = async () => {
     const cleanRecipient = sanitizeLightningInput(recipient);
     if (!cleanRecipient) {
@@ -208,33 +228,30 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
       return;
     }
 
-    // Fingerprint / face first, before anything is shown as sending.
-    let passkey: unknown;
-    if (useBio) {
-      try {
-        passkey = await approveWithBiometric();
-      } catch (err: unknown) {
-        setErrorMessage(err instanceof Error ? err.message : 'Fingerprint not confirmed.');
+    // The Altradits wallet: approve last, after the amount. Fingerprint / face
+    // where it's on for this phone; otherwise (or if it's cancelled) the PIN pop-up.
+    if (server) {
+      if (biometricOn() && !usePin) {
+        let passkey: unknown;
+        try {
+          passkey = await approveWithBiometric();
+        } catch (err: unknown) {
+          setConfirmNote(err instanceof Error ? err.message : 'Fingerprint not confirmed.');
+          setPin('');
+          setConfirmOpen(true);
+          return;
+        }
+        await dispatch(cleanRecipient, '', passkey);
         return;
       }
+      setConfirmNote('');
+      setPin('');
+      setConfirmOpen(true);
+      return;
     }
 
     setStep('processing');
     setErrorMessage('');
-
-    // The Altradits wallet: the server pays from the ledger, with the PIN or fingerprint.
-    if (server) {
-      try {
-        const res = await sendFromServerWallet(cleanRecipient, numericSats, pin, passkey);
-        setTxReference(res.ref);
-        setPin('');
-        completeTransaction(res.ref, cleanRecipient, res.status === 'pending');
-      } catch (err: unknown) {
-        setErrorMessage(err instanceof Error ? err.message : 'Error dispatching payment');
-        setStep('error');
-      }
-      return;
-    }
 
     try {
       let finalInvoice = cleanRecipient;
@@ -298,8 +315,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     (recipientType === 'lightning_address' || recipientType === 'lightning_invoice') &&
     numericSats > 0 &&
     !isInsufficientSats &&
-    !amountlessInvoice &&
-    (!server || useBio || /^\d{6}$/.test(pin));
+    !amountlessInvoice;
 
   if (scanning) return (
     <QrScanner
@@ -442,24 +458,6 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                 ))}
               </div>}
 
-              {/* PIN for the Altradits wallet */}
-              {server && !useBio && (
-                <div>
-                  <input
-                    type="password"
-                    aria-label="PIN"
-                    inputMode="numeric"
-                    autoComplete="new-password"
-                    data-lpignore="true"
-                    data-1p-ignore="true"
-                    maxLength={6}
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-3 text-lg font-mono tracking-[0.5em] text-[var(--yb-on-surface)] focus:outline-none"
-                  />
-                </div>
-              )}
-
               {/* Real Transaction Cost Readouts (borderless typographic rows) */}
               {server && (
                 <div className="space-y-1.5 px-1 pt-1 text-xs">
@@ -496,14 +494,48 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                 {useBio && <Fingerprint className="w-4 h-4" />}
                 Send
               </button>
-              {server && biometricOn() && (
-                <button
-                  type="button"
-                  onClick={() => { setUsePin(!usePin); setPin(''); }}
-                  className="w-full text-center text-[11px] font-semibold text-[var(--yb-primary)] hover:underline"
-                >
-                  {usePin ? 'Use fingerprint instead' : 'Use PIN instead'}
-                </button>
+
+              {/* The final pop-up: the PIN, after the amount, before any money moves. */}
+              {confirmOpen && (
+                <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4" onClick={(e) => { e.stopPropagation(); setConfirmOpen(false); setPin(''); }}>
+                  <div role="dialog" aria-modal="true" aria-label="Approve payment" onClick={(e) => e.stopPropagation()}
+                    className="w-full max-w-sm bg-[var(--yb-surface-container-low)] border border-[var(--yb-outline-variant)] rounded-t-[28px] sm:rounded-[28px] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-lg font-bold font-mono text-[var(--yb-on-surface)]">{totalDeducted.toLocaleString()} Sats</p>
+                        <p className="text-xs text-[var(--yb-on-surface-variant)] truncate">{resolvedProvider && recipient.length > 40 ? resolvedProvider : sanitizeLightningInput(recipient)}</p>
+                      </div>
+                      <button type="button" onClick={() => { setConfirmOpen(false); setPin(''); }} className="p-1.5 rounded-lg text-[var(--yb-on-surface-variant)]" aria-label="Cancel">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    {confirmNote && <p className="text-xs text-amber-300">{confirmNote}</p>}
+                    <input
+                      type="password"
+                      aria-label="PIN"
+                      inputMode="numeric"
+                      autoComplete="new-password"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      autoFocus
+                      maxLength={6}
+                      value={pin}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setPin(v);
+                        // Six digits send it: no extra tap.
+                        if (v.length === 6) dispatch(sanitizeLightningInput(recipient), v);
+                      }}
+                      className="yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-3 text-center text-2xl font-mono tracking-[0.6em] text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
+                    />
+                    {biometricOn() && (
+                      <button type="button" onClick={() => { setConfirmOpen(false); setUsePin(false); setTimeout(handleSend, 0); }}
+                        className="w-full h-11 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-sm flex items-center justify-center gap-2">
+                        <Fingerprint className="w-4 h-4" /> Use fingerprint
+                      </button>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           )}

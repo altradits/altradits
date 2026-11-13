@@ -34,3 +34,14 @@ test("Send opens on the scanner, and its boxes have no visible labels or placeho
   assert.match(scan, /aria-label="Type it in"/);
   assert.match(scan, /aria-label="Choose a photo"/);
 });
+
+test("the PIN comes last: only in the pop-up opened by Send, never on the amount screen", () => {
+  const send = src("SendBtcModal.tsx");
+  const popup = send.indexOf("{confirmOpen && (");
+  assert.ok(popup > 0, "the final pop-up exists");
+  assert.equal(send.split('aria-label="PIN"').length - 1, 1, "one PIN box in the whole Send screen");
+  assert.ok(send.indexOf('aria-label="PIN"') > popup, "and it is inside the pop-up");
+  assert.doesNotMatch(send.slice(send.indexOf("const isFormValid"), send.indexOf("const isFormValid") + 300), /pin/i, "Send is enabled without a PIN typed");
+  assert.match(send, /biometricOn\(\) && !usePin[\s\S]{0,200}approveWithBiometric\(\)/, "fingerprint first where it's on");
+  assert.match(send, /v\.length === 6\) dispatch\(/, "six digits send it");
+});
