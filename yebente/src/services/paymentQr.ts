@@ -39,6 +39,19 @@ export function parsePaymentText(text: string): ScannedPayment | null {
   return { to: s };
 }
 
+// Text that is clearly a payment destination (for the clipboard offer): an invoice,
+// an LNURL, a Lightning address, or a link carrying one. Plain words never count.
+export function looksLikePayment(text: string): string | null {
+  const t = String(text || '').trim();
+  if (!t || t.length > 2000 || /\s/.test(t)) return null;
+  const p = parsePaymentText(t);
+  if (!p) return null;
+  const to = p.to.toLowerCase();
+  if (/^ln(bc|tb|bcrt)[0-9a-z]{20,}$/.test(to) || /^lnurl1[0-9a-z]{20,}$/.test(to) || /^lnurlp:\/\//.test(to)) return p.to;
+  if (/^[a-z0-9._+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(to)) return p.to;
+  return null;
+}
+
 // LNURL (LUD-01): the address's pay link in bech32, which every Lightning wallet scans.
 const BECH32 = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
 function polymod(values: number[]) {
@@ -93,24 +106,35 @@ let scratch: HTMLCanvasElement | null = null;
 
 // The text of a QR code in the image, or null. Uses the phone's own reader when it
 // has one (Android Chrome), otherwise jsQR (iPhone), loaded only when first needed.
-export async function readQr(src: HTMLVideoElement | ImageBitmap): Promise<string | null> {
+// pass: 0 = the whole frame; 1 = a sharp close-up of the middle (small, far or
+// very dense codes, like long invoices, read there when the whole frame fails).
+export async function readQr(src: HTMLVideoElement | ImageBitmap, pass = 0): Promise<string | null> {
   const native = await nativeDetector();
-  if (native) {
+  if (native && pass === 0) {
     try {
       const found = await native.detect(src);
       if (found[0]?.rawValue) return found[0].rawValue;
-      return null;
     } catch { /* fall back to jsQR */ }
   }
   const w0 = src instanceof HTMLVideoElement ? src.videoWidth : src.width;
   const h0 = src instanceof HTMLVideoElement ? src.videoHeight : src.height;
   if (!w0 || !h0) return null;
-  const scale = Math.min(1, 800 / Math.max(w0, h0));
-  const w = Math.round(w0 * scale), h = Math.round(h0 * scale);
+  // The close-up: the middle 60% of the frame at full detail (up to 1000 px).
+  const side = pass === 1 ? Math.round(Math.min(w0, h0) * 0.6) : 0;
+  const sx = pass === 1 ? Math.round((w0 - side) / 2) : 0, sy = pass === 1 ? Math.round((h0 - side) / 2) : 0;
+  const sw = pass === 1 ? side : w0, sh = pass === 1 ? side : h0;
+  const scale = Math.min(1, (pass === 1 ? 1000 : 800) / Math.max(sw, sh));
+  const w = Math.round(sw * scale), h = Math.round(sh * scale);
   scratch ||= canvas();
   scratch.width = w; scratch.height = h;
   const g = scratch.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
-  g.drawImage(src, 0, 0, w, h);
+  g.drawImage(src, sx, sy, sw, sh, 0, 0, w, h);
+  if (native && pass === 1) {
+    try {
+      const found = await native.detect(scratch);
+      if (found[0]?.rawValue) return found[0].rawValue;
+    } catch { /* jsQR below */ }
+  }
   const { default: jsQR } = await import('jsqr');
   return jsQR(g.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' })?.data || null;
 }

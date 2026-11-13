@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { UserWallet, Transaction, ExchangeRates } from '../types';
 import { ArrowLeft, AlertCircle, Loader2, ScanLine, ClipboardPaste, Fingerprint } from 'lucide-react';
 import { payInvoiceWithWebLN,
@@ -60,7 +60,9 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
   const [resolvedAddress, setResolvedAddress] = useState<string>('');
   const [txReference, setTxReference] = useState<string>('');
   const [pin, setPin] = useState<string>('');
-  const [scanning, setScanning] = useState(false);
+  // Send opens on the scanner; the amount step unfolds only once a destination is captured.
+  const [scanning, setScanning] = useState(true);
+  const amountRef = useRef<HTMLInputElement>(null);
   const [usePin, setUsePin] = useState(false);
   const server = hasServerWallet();
   // Fingerprint / face on this phone: no PIN typed on screen.
@@ -75,6 +77,8 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     setScanning(false);
     const p = parsePaymentText(text);
     if (p) setRecipient(p.to);
+    // The amount is next (an invoice brings its own).
+    setTimeout(() => amountRef.current?.focus(), 50);
   }, []);
 
   const pasteDestination = async () => {
@@ -297,7 +301,14 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     !amountlessInvoice &&
     (!server || useBio || /^\d{6}$/.test(pin));
 
-  if (scanning) return <QrScanner onResult={applyPaymentText} onClose={() => setScanning(false)} />;
+  if (scanning) return (
+    <QrScanner
+      onResult={applyPaymentText}
+      onType={() => setScanning(false)}
+      // Closing the first scan closes Send; a rescan goes back to the form.
+      onClose={() => (recipient ? setScanning(false) : onClose())}
+    />
+  );
 
   return (
     <div
@@ -318,7 +329,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h2 className="text-base font-bold text-[var(--yb-on-surface)]">Send Lightning Sats</h2>
+          <h2 className="text-base font-bold text-[var(--yb-on-surface)]">Send</h2>
           <div className="w-8" aria-hidden="true" />
         </div>
 
@@ -335,17 +346,18 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
               </div>
               {server && wallet.hold && <HoldNotice hold={wallet.hold} />}
 
-              {/* Recipient Input */}
+              {/* Destination: no label or placeholder, just the box (read aloud as "Send to") */}
               <div>
-                <label className="block text-xs font-semibold text-[var(--yb-secondary)] mb-1.5">
-                  Lightning Destination
-                </label>
                 <div className="relative">
                   <input
                     type="text"
                     value={recipient}
                     onChange={(e) => setRecipient(e.target.value)}
-                    placeholder="name@walletofsatoshi.com, a Ye₿ente name, or lnbc..."
+                    aria-label="Send to"
+                    autoFocus={!recipient}
+                    autoComplete="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
                     className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl pl-4 pr-24 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
                   />
                   <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -373,47 +385,42 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
 
                 {/* Auto-detected Recipient Badge */}
                 {resolvedProvider && (
-                  <div className={`flex items-center justify-between mt-1.5 px-1 text-[11px] font-mono ${
+                  <div className={`mt-1.5 px-1 text-[11px] font-mono text-right ${
                     recipientType === 'invalid_onchain' ? 'text-red-400' : 'text-emerald-400'
                   }`}>
-                    <span>Detected Destination</span>
-                    <span>{resolvedProvider}</span>
+                    {resolvedProvider}
                   </div>
                 )}
               </div>
 
-              {/* Sats Amount Input */}
-              <div>
-                <div className="flex justify-between items-center text-xs text-[var(--yb-secondary)] mb-1.5">
-                  <span className="font-semibold">Sats to Send</span>
+              {/* Everything after the destination unfolds once there is one. */}
+              {recipient.trim() && (<>
+              {/* Amount: no label or placeholder (read aloud as "Amount in sats") */}
+              <div className="relative">
+                <input
+                  ref={amountRef}
+                  type="number"
+                  inputMode="numeric"
+                  step="500"
+                  min="1"
+                  value={satsAmountStr}
+                  readOnly={Boolean(invoiceSats)}
+                  onChange={(e) => setSatsAmountStr(e.target.value)}
+                  onWheel={(e) => e.currentTarget.blur()}
+                  aria-label="Amount in sats"
+                  className="w-full read-only:opacity-70 bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl pl-4 pr-24 py-3 text-lg font-mono font-bold text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                   {!invoiceSats && (
                     <button
                       type="button"
-                      onClick={() => {
-                        const maxSend = Math.max(0, availableSats - satsFee);
-                        setSatsAmountStr(maxSend.toString());
-                      }}
+                      onClick={() => setSatsAmountStr(String(Math.max(0, availableSats - satsFee)))}
                       className="text-[var(--yb-secondary)] hover:underline font-mono text-[11px]"
                     >
                       MAX
                     </button>
                   )}
-                </div>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="500"
-                    min="1"
-                    value={satsAmountStr}
-                    readOnly={Boolean(invoiceSats)}
-                    onChange={(e) => setSatsAmountStr(e.target.value)}
-                    onWheel={(e) => e.currentTarget.blur()}
-                    placeholder="1000"
-                    className="w-full read-only:opacity-70 bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-3 text-lg font-mono font-bold text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)]"
-                  />
-                  <span className="absolute right-4 top-3.5 font-mono text-sm font-semibold text-[var(--yb-secondary)]">
-                    Sats
-                  </span>
+                  <span className="font-mono text-sm font-semibold text-[var(--yb-secondary)]">Sats</span>
                 </div>
               </div>
 
@@ -435,16 +442,12 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                 ))}
               </div>}
 
-              {/* Every payment is approved on its own, even while the app is open. */}
-              {server && (
-                <p className="text-[11px] text-[var(--yb-on-surface-variant)]">Every payment needs your {biometricOn() ? 'fingerprint, face or ' : ''}PIN, even while the app is open. If someone picks up your phone, they still can't send.</p>
-              )}
               {/* PIN for the Altradits wallet */}
               {server && !useBio && (
                 <div>
-                  <div className="text-xs text-[var(--yb-secondary)] mb-1.5 font-semibold">PIN</div>
                   <input
                     type="password"
+                    aria-label="PIN"
                     inputMode="numeric"
                     autoComplete="new-password"
                     data-lpignore="true"
@@ -473,6 +476,8 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                 </div>
               )}
 
+              </>)}
+
               {/* Error message */}
               {errorMessage && (
                 <div className="p-3 rounded-2xl bg-red-950/30 border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
@@ -489,7 +494,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                 className="w-full h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {useBio && <Fingerprint className="w-4 h-4" />}
-                Send Sats
+                Send
               </button>
               {server && biometricOn() && (
                 <button
