@@ -36,10 +36,11 @@ export const ActionGrid: React.FC<ActionGridProps> = ({
   onCardTopup,
 }) => {
   const tiles: { key: WalletAction; label: string; sub?: string; icon: React.ReactNode; onClick: () => void }[] = [
+    // Send and Receive side by side on top; M-Pesa below them (full width when alone).
+    { key: 'send', label: 'Send', icon: <ArrowUpRight className="w-6 h-6" />, onClick: onSendBtc },
+    { key: 'receive', label: 'Receive', icon: <ArrowDownLeft className="w-6 h-6" />, onClick: onReceiveBtc },
+    { key: 'sendMobile', label: 'M-Pesa', icon: <Smartphone className="w-6 h-6" />, onClick: onSendMpesa },
     { key: 'buy', label: 'Buy Sats', icon: <Banknote className="w-6 h-6" />, onClick: onBuyBtc },
-    { key: 'sendMobile', label: 'Send Mobile', icon: <Smartphone className="w-6 h-6" />, onClick: onSendMpesa },
-    { key: 'receive', label: 'Receive Sats', icon: <ArrowDownLeft className="w-6 h-6" />, onClick: onReceiveBtc },
-    { key: 'send', label: 'Send Sats', icon: <ArrowUpRight className="w-6 h-6" />, onClick: onSendBtc },
     { key: 'cardTopup', label: 'Top up with card', sub: 'Bank or card, on a secure page', icon: <CreditCard className="w-6 h-6" />, onClick: onCardTopup },
   ];
   if (loading) {
