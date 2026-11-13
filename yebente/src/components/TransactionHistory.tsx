@@ -17,7 +17,8 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   transactions,
   onSelectTransaction,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // Collapsed when the wallet opens: one tap shows the history.
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   const validTransactions = transactions.filter((tx) => {
     if (!tx || typeof tx !== 'object') return false;
