@@ -24,6 +24,7 @@
 //   POST { action: "ktown_shops" } -> every signed-up kTown shop with its QR link, for printing posters
 //   POST { action: "ktown_block" | "ktown_unblock" | "ktown_release", phone } (kTown squatter tools, docs/ktown.md)
 //   POST { action: "ktown_secure", id } | { action: "ktown_reset_pin", id } -> secure a visited shop; a one-time temporary PIN
+//   POST { action: "ktown_delete", id, confirm: "<shop name>" } -> archive and delete a shop (payments kept)
 //   POST { action: "njia_lease", lease } | { action: "njia_lease_void", id, reason } | { action: "njia_price", price } | { action: "njia_settings", field, value, confirm } | { action: "njia_listing", url } (Njia records, docs/njia.md)
 import { json, readBody, clean, newId, adminAuthed, clientIp, siteUrl, EMAIL_RE } from "../lib/http.js";
 import { listIds, getMany, getJSON, setJSON, pushId, usingRedis, hit, peek, listArchives } from "../lib/store.js";
@@ -646,10 +647,11 @@ export async function POST(request) {
   // kTown shop care: secure a shop Stanley visited (no 48-hour takeover), or
   // reset a forgotten PIN (same shop id, so posters keep working). The
   // temporary PIN is in this one reply only: never stored or logged in plain text.
-  if (body.action === "ktown_secure" || body.action === "ktown_reset_pin") {
+  if (body.action === "ktown_secure" || body.action === "ktown_reset_pin" || body.action === "ktown_delete") {
     const kt = await import("../lib/ktown.js");
     try {
       if (body.action === "ktown_secure") return json({ ok: true, ...(await kt.secureMerchant(body.id)) });
+      if (body.action === "ktown_delete") return json({ ok: true, ...(await kt.deleteMerchant(body.id, body.confirm)) });
       return json({ ok: true, ...(await kt.resetMerchantPin(body.id)) }); // json() sends no-store
     } catch (err) { return json({ error: err.message }, err.status || 400); }
   }
