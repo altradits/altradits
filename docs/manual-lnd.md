@@ -68,7 +68,9 @@ LND creates admin.macaroon (everything), readonly.macaroon and invoice.macaroon 
 # The website: receive only (invoices, addresses, reads). It must never be able to send.
 lncli --lnddir=$HOME/.lnd-altradits --network=mainnet bakemacaroon --root_key_id=1 --save_to=website.macaroon \
   invoices:read invoices:write address:read address:write onchain:read offchain:read info:read
-# Ye₿ente sending: Lightning payments and their status.
+# Ye₿ente sending: Lightning payments and their status. If this key can't read
+# (no offchain:read), the server reads channels and payment status with the
+# read-only key instead (lib/lightning.js readForPay); sending still needs this key.
 lncli --lnddir=$HOME/.lnd-altradits --network=mainnet bakemacaroon --root_key_id=2 --save_to=yebente-pay.macaroon offchain:read offchain:write
 # Hex for the server's settings:
 xxd -p -c 100000 website.macaroon
