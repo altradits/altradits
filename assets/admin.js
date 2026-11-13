@@ -2823,7 +2823,7 @@ function renderKtown() {
   $("#ktownList").innerHTML = shops.length ? `<table><thead><tr><th>Shop</th><th>M-Pesa name</th><th>Phone ends</th><th>Paid</th><th>Joined</th><th>Number</th><th></th></tr></thead><tbody>${shops.map((m, i) =>
     `<tr><td>${esc(m.shop)}${m.verified ? "" : ' <span class="muted sm">(not confirmed)</span>'}</td><td>${esc(m.mpesaName)}</td><td>…${esc(m.phoneEnd)}</td><td>${esc(String(m.paidCount))}</td><td>${esc(String(m.createdAt || "").slice(0, 10))}</td>`
     + `<td>${m.claimed ? "Secured" : '<span class="muted">Not secured</span>'}</td>`
-    + `<td><button type="button" class="btn" data-poster="${i}">Print poster</button> ${m.claimed ? "" : `<button type="button" class="btn" data-secure="${i}">Secure</button> `}<button type="button" class="btn" data-resetpin="${i}">Reset PIN</button></td></tr>`).join("")}</tbody></table>`
+    + `<td><button type="button" class="btn" data-poster="${i}">Print poster</button> ${m.claimed ? "" : `<button type="button" class="btn" data-secure="${i}">Secure</button> `}<button type="button" class="btn" data-resetpin="${i}">Reset PIN</button> <button type="button" class="btn" data-delshop="${i}">Delete</button></td></tr>`).join("")}</tbody></table>`
     : '<p class="sm muted">No shops yet. They appear here as soon as they register at altradits.com/ktown.</p>';
 }
 async function loadKtown() {
@@ -2836,8 +2836,21 @@ async function loadKtown() {
   } catch (err) { $("#ktownList").innerHTML = `<p class="sm muted">${esc(err.message)}</p>`; }
 }
 $("#ktownList").addEventListener("click", async (e) => {
-  const btn = e.target.closest("[data-poster],[data-secure],[data-resetpin]");
+  const btn = e.target.closest("[data-poster],[data-secure],[data-resetpin],[data-delshop]");
   if (!btn) return;
+  if (btn.dataset.delshop !== undefined) {
+    const m = KTOWN[Number(btn.dataset.delshop)];
+    if (!m) return;
+    const typed = prompt(`Delete "${m.shop}"? Its QR stops working and its phones are signed out. Its record is archived and its payments are kept. Type the shop name to confirm:`);
+    if (typed === null) return;
+    btn.disabled = true;
+    try {
+      await api("", { action: "ktown_delete", id: m.id, confirm: typed });
+      toast(`"${m.shop}" deleted. Its record is archived and its payments are kept.`);
+      loadKtown();
+    } catch (err) { toast(err.message, true, 6000); btn.disabled = false; }
+    return;
+  }
   if (btn.dataset.poster !== undefined) return printPosters([KTOWN[Number(btn.dataset.poster)]]);
   if (btn.dataset.secure !== undefined) {
     const m = KTOWN[Number(btn.dataset.secure)];

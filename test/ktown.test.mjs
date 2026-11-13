@@ -1013,3 +1013,37 @@ test("a Ye₿ente wallet pays a kTown QR: the shop's invoice through kTown, neve
     assert.equal(r.status, 400);
   } finally { delete process.env.YEBENTE_WALLETS; }
 });
+
+test("ktown_delete: the shop's name confirms it; the record is archived, payments kept, the QR and sessions end", async () => {
+  const s = await post("register", { agree: true, phone: "0711000991", shop: "Closing Shop", mpesaName: "CLOSING C", pin: "715293" });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  const id = s.body.merchant.id, session = s.body.session;
+  // A payment record for the shop, made the normal way (a QR invoice).
+  const inv = await get(`lnurlp/${id}/cb?amount=100&currency=KES`);
+  assert.ok(inv.body.pr, JSON.stringify(inv.body));
+  const entryIds = await store.listIds(`kt:tx:${id}`, 50);
+  assert.equal(entryIds.length, 1);
+
+  assert.equal((await apost({ action: "ktown_delete", id, confirm: "Closing Shop" }, "wrong-token")).status, 401);
+  assert.equal((await apost({ action: "ktown_delete", id: "nosuchshop1", confirm: "x" })).status, 404);
+  const wrong = await apost({ action: "ktown_delete", id, confirm: "closing" });
+  assert.equal(wrong.status, 400);
+  assert.ok(await store.getJSON(`kt:${id}`), "a wrong name deletes nothing");
+
+  const r = await apost({ action: "ktown_delete", id, confirm: "Closing Shop" });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.archived, true);
+  assert.equal(await store.getJSON(`kt:${id}`), null);
+  const arch = await store.getJSON(`kt:archived:${id}`);
+  assert.equal(arch.shop, "Closing Shop");
+  assert.ok(arch.deletedAt);
+  assert.equal(arch.pin, undefined, "no PIN hash in the archive");
+  assert.ok((await store.listIds("ktarchived", 100)).includes(id));
+  assert.deepEqual(await store.listIds(`kt:tx:${id}`, 50), entryIds, "payment entries kept");
+  assert.ok(await store.getJSON(`kte:${entryIds[0]}`), "the payment record itself kept");
+  assert.ok(!(await apost({ action: "ktown_shops" })).body.shops.some((m) => m.id === id), "gone from the list");
+  assert.equal((await get(`lnurlp/${id}`)).body.status, "ERROR", "its QR stops answering");
+  assert.equal((await get("me", { token: session })).status, 401, "its session ends");
+  assert.equal((await post("register", { agree: true, phone: "0711000991", shop: "New Owner", mpesaName: "NEW N", pin: "715293" })).status, 200, "the number may sign up again");
+  assert.equal((await apost({ action: "ktown_delete", id, confirm: "Closing Shop" })).status, 404, "deleting twice: already gone");
+});
