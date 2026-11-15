@@ -64,6 +64,7 @@ const R = {
   builders: L("Btrust Builders", "https://builders.btrust.tech/"),
   buildersApply: L("Builders pathways", "https://builders.btrust.tech/apply"),
   boss: L("BOSS challenge", "https://bosschallenge.xyz"),
+  lab: L("bitcoin-core-lab", "https://github.com/altradits/bitcoin-core-lab"),
   tracker: L("My tracker", "https://altradits.com/tracker"),
   plan: L("My six-month plan", "https://altradits.com/plan"),
   practice: L("Practice plan: the lab drills", "https://altradits.com/assets/learn-5-practice-drills.pdf"),
@@ -114,12 +115,19 @@ export const LAB_DRILLS = [
 // Dated grant milestones, each on a Saturday, added to that week's
 // reflection. Sources: the Btrust funding guide (most Starter grantees came
 // through Builders first) and the Starter Grant listing (two endorsements).
-// Program dates are to confirm: check the page before acting.
+// Program dates are to confirm: check the page before acting. Builders dates
+// read on 2026-11-15 from builders.btrust.tech/apply: BOSS starts in January
+// with redirections in February; Learn Bitcoin from the Command Line and
+// Mastering Bitcoin cohorts start in March; the Open Source Fellowship (by
+// invitation from live pathways, monthly stipend) starts in August.
 export const MILESTONES = {
   "2026-11-14": { text: "Grant ramp: open Btrust Builders and the BOSS challenge pages. Write their next application dates in your log, or \"not published yet\".", r: ["buildersApply", "boss"] },
-  "2026-11-28": { text: "Grant ramp: apply to the BOSS challenge or a Builders pathway as soon as one is open. Log what you sent and the date, or the date you will check again.", r: ["buildersApply", "boss"] },
-  "2026-12-12": { text: "Grant ramp: if you have not applied yet, check both pages again and log their dates.", r: ["buildersApply", "boss"] },
+  "2026-11-21": { text: "Grant ramp: join the BOSS waitlist and start the Mastering Bitcoin pathway in self-paced mode (always open, free). Log both, with the date you joined.", r: ["boss", "buildersApply"] },
+  "2026-11-28": { text: "Grant ramp: apply to the next BOSS cohort (the challenge starts in January) or a Builders pathway as soon as one is open. Log what you sent and the date, or the date you will check again.", r: ["buildersApply", "boss"] },
+  "2026-12-12": { text: "Grant ramp: practise for the BOSS preliminary challenge in Python or C++ with bitcoin-core-lab stage 10 (primitives from scratch). If you have not applied yet, check both pages again and log their dates.", r: ["boss", "lab"] },
   "2027-01-09": { text: "Grant ramp: log where your BOSS or Builders application stands, and what you are learning there.", r: ["builders", "boss"] },
+  "2027-02-13": { text: "Grant ramp: log your BOSS result. If it moves you into a Builders pathway, apply for the March cohort of Learn Bitcoin from the Command Line or Mastering Bitcoin as soon as applications open.", r: ["buildersApply", "boss"] },
+  "2027-03-13": { text: "Grant ramp: take part in your live pathway every week: speak, help others, share your reviews. The Open Source Fellowship (August, monthly stipend) invites strong contributors from live pathways; nobody applies to it.", r: ["builders", "lndPulls"] },
   "2027-03-06": { text: "Endorsements: name two mentors or LND contributors who have seen your reviews. Ask each for feedback on one review. Log who and what they said.", r: ["starterGrant", "lndPulls"] },
   "2027-04-03": { text: "Endorsements: ask the same two people whether they will vouch for you when you apply. Log who said yes.", r: ["starterGrant"] },
   "2027-05-29": { text: "Endorsements: confirm both people and how Btrust can reach them. Log it next to your proposal draft.", r: ["starterGrant", "fundingGuide"] },

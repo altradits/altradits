@@ -72,8 +72,28 @@ The BOSS challenge ("Start Your Career in BOSS") is a one-month entry run with
 Chaincode Labs. Top performers continue with Chaincode. Others move into a
 Builders pathway. The 2026 calendar starts it in January.
 
+Checked again on 2026-11-15. builders.btrust.tech/apply lists live cohorts:
+Mastering Bitcoin and Learn Bitcoin from the Command Line start in March and
+June, Rust for Bitcoiners and Language Clubs in May and October, BOSS in
+January (redirections in February), and the Fellowship in August. All
+pathways are free. bosschallenge.xyz shows only a waitlist, with no date.
+
+Btrust's older pages disagree. btrust.tech/builders and /builders/apply still
+ask for 3+ years of production experience, at least 20 hours a week and a code
+challenge, accept applications all year, and pay "a small remuneration during
+the training period". Ask Btrust which page applies before relying on either.
+
+The ramp in the dated plan (Saturday milestones): join the BOSS waitlist and
+start Mastering Bitcoin self-paced (21 Nov), apply to BOSS (28 Nov), practise
+for its preliminary challenge with bitcoin-core-lab stage 10 (12 Dec), log the
+BOSS status (9 Jan) and result (13 Feb), join a March live cohort, and take
+part every week so the Fellowship can invite you (13 Mar onwards). LND stays
+the focus project throughout.
+
 Sources: [Builders](https://builders.btrust.tech/),
 [Apply and pathways](https://builders.btrust.tech/apply),
+[Older Builders page](https://www.btrust.tech/builders/apply),
+[BOSS challenge](https://bosschallenge.xyz/),
 [2025 pipeline reflections](https://blog.btrust.tech/strengthening-africas-bitcoin-developer-pipeline-reflections-from-2025/).
 
 ### What funders look for (the funding guide)
