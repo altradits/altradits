@@ -19,6 +19,9 @@ Merging a PR into `main` is the deploy. Within 5 minutes the server picks it up.
 - **Email** goes out through the server's own mail (`EMAIL_TRANSPORT=sendmail`).
 - **Daily jobs** (backup, clean-up, Stan's report to `OWNER_EMAIL`) run inside the app after 06:00 UTC; hourly jobs
   (channel alerts, Ye₿ente solvency) once the node is connected.
+- **Builder Path reminder** (`lib/builder-reminder.js`): one email to `OWNER_EMAIL` per Nairobi hour,
+  07:00–21:00 (`BUILDER_REMINDER_HOURS`), while today's tracker task is open; one email when it is done;
+  one note on rest days. `BUILDER_REMINDERS=off` stops it.
 
 ## Configuration
 

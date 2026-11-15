@@ -256,6 +256,10 @@ async function maybeRunHourly() {
   import("./lib/bounces.js").then((b) => b.checkBounces()).then((r) => r.bounced && console.log("bounces", r)).catch((e) => console.error("bounces", e.message));
 }
 setInterval(() => maybeRunHourly().catch((e) => console.error("hourly", e)), 10 * 60 * 1000).unref();
+// Builder Path reminder to Stanley: once per Nairobi clock hour while today's
+// task is open (lib/builder-reminder.js). Checked every 5 minutes so each email
+// lands within a few minutes of the hour.
+setInterval(() => import("./lib/builder-reminder.js").then((b) => b.maybeSendBuilderReminder()).catch((e) => console.error("builder reminder", e.message)), 5 * 60 * 1000).unref();
 // Ye₿ente wallets: credit invoices paid while the app was closed, and flip email
 // changes whose 48 hours are up (every 2 minutes). The email flip needs no node.
 setInterval(() => {
@@ -287,5 +291,6 @@ function dueJobs() {
   checking = true;
   // Developer webhooks: retry queued deliveries (a cheap no-op when the queue is empty).
   const devWebhooks = import("./lib/devapi.js").then((d) => d.pumpWebhooks()).catch((e) => console.error("dev webhooks", e.message));
-  Promise.allSettled([maybeRunDaily(), maybeRunHourly(), maybeRunDeadmanChecks(), maybeRunNjiaSample(), devWebhooks]).then((r) => r.forEach((x) => x.status === "rejected" && console.error("due jobs", x.reason))).finally(() => { checking = false; });
+  const builderReminder = import("./lib/builder-reminder.js").then((b) => b.maybeSendBuilderReminder()).catch((e) => console.error("builder reminder", e.message));
+  Promise.allSettled([maybeRunDaily(), maybeRunHourly(), maybeRunDeadmanChecks(), maybeRunNjiaSample(), devWebhooks, builderReminder]).then((r) => r.forEach((x) => x.status === "rejected" && console.error("due jobs", x.reason))).finally(() => { checking = false; });
 }

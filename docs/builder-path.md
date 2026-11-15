@@ -221,6 +221,12 @@ Rules:
 
 ## 5. GitHub load and rate limits
 
+Hourly reminder: lib/builder-reminder.js emails Stanley once per Nairobi hour,
+07:00 to 21:00, with today's task, how it is proven and the time left, while
+the tracker shows the day open. The first hour it shows done, one done email,
+then nothing until tomorrow. Rest days get one note at 07:00. It reads the
+tracker's verdict and never marks a day. BUILDER_REMINDERS=off stops it.
+
 One cached computation feeds the page, the API and the morning report. It
 refreshes in the morning before the report and at most every 30 minutes on
 demand. Concurrent page views share one refresh.
