@@ -38,8 +38,9 @@ const payRequests = [], statusQueries = [];
 const ok = (body) => ({ ok: true, status: 200, json: async () => body });
 globalThis.fetch = async (url, opts = {}) => {
   const u = String(url);
-  if (u.includes("open.er-api.com")) return ok({ rates: { KES: 129 } });
-  if (u.includes("api.coinbase.com")) return ok({ data: { amount: "100000" } });
+  const host = new URL(u).hostname; // exact host, never a substring
+  if (host === "open.er-api.com") return ok({ rates: { KES: 129 } });
+  if (host === "api.coinbase.com") return ok({ data: { amount: "100000" } });
   if (u.endsWith("/oauth/v1/generate?grant_type=client_credentials")) {
     assert.equal(opts.headers.Authorization, `Basic ${Buffer.from("ck:cs").toString("base64")}`);
     return ok({ access_token: "tok", expires_in: "3599" });
@@ -79,7 +80,7 @@ const hook = async (kind, body, secret = SECRET) => (await call("POST", null, `b
 const balance = async (id) => (await getJSON(`yw:${id}`)).balance;
 
 test("rails list the direct option, and a partner that doesn't answer goes last", async () => {
-  rails.setRailFetcher(async (u) => { if (u.includes("bitcoin.co.ke")) throw new Error("down"); return { status: 200 }; });
+  rails.setRailFetcher(async (u) => { if (new URL(u).hostname === "bitcoin.co.ke") throw new Error("down"); return { status: 200 }; });
   const list = (await (await yb.GET(new Request("https://b2c.test/api/yebente/rails"))).json()).rails;
   assert.deepEqual(list.map((r) => r.id), ["mpesa-direct", "mpesa"]);
   assert.equal(list[0].direct, true);
