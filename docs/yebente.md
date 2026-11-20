@@ -72,6 +72,7 @@ When the partner is down, Send Mobile and kTown payouts stop for everyone. The d
 - The sats are taken from the wallet and the payout is written as "paying" before M-Pesa is asked. Safaricom's result either completes it with the M-Pesa code or gives the sats back (refused, no M-Pesa account, limits). Each payout settles once: repeats, late answers and unknown ids change nothing.
 - No answer (timeout, crash, network): it stays pending. Every 2 minutes the server asks Safaricom for the status of payouts older than a minute (at most once per 5 minutes each). It never sends a payout a second time.
 - A success for a different amount than asked is never marked paid; it is recorded in the Security watch.
+- A payout Safaricom never gives a final answer on stays pending (the sats stay taken, nothing is paid twice). Check it in the M-Pesa org portal by its id (OriginatorConversationID, the history entry's reference) and settle it by hand: refunding without that check could pay twice.
 - Quotes stay inside the float: the B2C account's last known funds (from Safaricom's answers, or YEBENTE_B2C_FLOAT_KES at first) less what open payouts already promised.
 - Limits: YEBENTE_B2C_MAX_KES per payout (5,000), YEBENTE_B2C_DAILY_KES per wallet (10,000), fee YEBENTE_B2C_FEE_PCT (1%). The wallet's own sats limits apply too.
 - Callbacks: POST /api/yebente/b2c/(result|status|timeout)/YEBENTE_B2C_CALLBACK_SECRET. A wrong secret is refused and recorded.

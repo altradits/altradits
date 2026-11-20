@@ -204,6 +204,17 @@ test("quotes stay inside the float, counting payouts still waiting", async () =>
   await setJSON("ywmob:float", { kes: 20000, at: new Date().toISOString() });
 });
 
+test("two sends at the same moment can't both use the last of the float", async () => {
+  const { setJSON } = await import("../lib/store.js");
+  const { removeFromList } = await import("../lib/store.js");
+  await removeFromList("ywmobopen", await (await import("../lib/store.js")).listIds("ywmobopen", 500)); // earlier tests' open payouts
+  await setJSON("ywmob:float", { kes: 1500, at: new Date().toISOString() });
+  const a = await funded("direct_race_a"), b = await funded("direct_race_b");
+  const [ra, rb] = await Promise.all([send(a.token, { phone: "0712345678", kes: 1000 }), send(b.token, { phone: "0712345678", kes: 1000 })]);
+  assert.deepEqual([ra.success, rb.success].sort(), [false, true], "exactly one fits");
+  await setJSON("ywmob:float", { kes: 20000, at: new Date().toISOString() });
+});
+
 test("bad numbers, text amounts, wrong PINs and a switched-off rail are refused before anything is taken", async () => {
   const { wallet, token } = await funded("direct_checks");
   for (const body of [{ phone: "020 123 4567", kes: 100 }, { phone: "0712345678", kes: "100" }, { phone: "0712345678", kes: 9 }, { phone: "0712345678", kes: 10.5 }]) {
