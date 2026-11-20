@@ -12,6 +12,7 @@ const ago = (iso) => { const m = (Date.now() - Date.parse(iso)) / 6e4; return m 
 const kpi = (label, v, state, why) => `<div class="kpi${state ? ` ${state}` : ""}"><small>${esc(label)}</small><div>${esc(v)}</div>${why ? `<span class="why">${esc(why)}</span>` : ""}</div>`;
 // Shillings beside sats, at the rate the dashboard last read (BTC price × USD/KES).
 let KES_PER_BTC = null;
+let FRESH = false, oldestAt = null, anyStale = false, staleTimer = null; // data freshness (#519)
 let OVERVIEW = null, lastUtxos = null;
 const ksh = (sats) => (KES_PER_BTC && sats !== null && sats !== undefined ? `KSh ${Math.round((Number(sats) / 1e8) * KES_PER_BTC).toLocaleString("en-US")}` : "");
 const satsKsh = (sats) => `${satsF(sats)}${ksh(sats) ? ` (${ksh(sats)})` : ""}`;
@@ -143,12 +144,14 @@ function trendHtml(trend) {
 }
 // end trendHtml
 async function api(path, body) {
+  if (!body && FRESH) path += (path.includes("?") ? "&" : "?") + "fresh=1";
   try {
     const res = await fetch("/api/admin" + path, { method: body ? "POST" : "GET",
       headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: body && JSON.stringify(body) });
     const data = await res.json().catch(() => ({ error: `Request failed (${res.status})` }));
     if (res.status === 401) { showLogin(data.error); throw new Error(data.error); }
     if (!res.ok) throw new Error(data.error || "Request failed");
+    if (!body && data && data._at) { const t = Date.parse(data._at); if (!oldestAt || t < oldestAt) oldestAt = t; if (data._stale) anyStale = true; }
     return data;
   } catch (err) {
     throw new Error(err.message === "Failed to fetch" ? "No connection to the server. Check your internet and try again." : err.message);
@@ -172,7 +175,9 @@ $("#refresh").addEventListener("click", async () => {
   if (b.classList.contains("busy")) return;
   b.classList.add("busy"); b.disabled = true; b.setAttribute("aria-busy", "true"); b.lastChild.textContent = "Refreshing…";
   const t0 = Date.now();
-  try { await load(); if (njiaLoaded) await loadNjia(true); } finally { // Refresh re-reads the Earn tab
+  FRESH = true; // Refresh asks the server for fresh data, not its recent copy
+  try { await load(); if (njiaLoaded) await loadNjia(true); } finally {
+    FRESH = false; // Refresh re-reads the Earn tab
     await new Promise((r) => setTimeout(r, Math.max(0, 600 - (Date.now() - t0)))); // long enough to see it worked
     b.classList.remove("busy"); b.disabled = false; b.removeAttribute("aria-busy"); b.lastChild.textContent = "Refresh";
     toast(`Updated ${new Date().toLocaleTimeString()}`);
@@ -2912,20 +2917,33 @@ $("#ktownPrintAll").addEventListener("click", () => {
 });
 $("#ktownReload").addEventListener("click", loadKtown);
 
+// Signing in shows the dashboard as soon as the token is confirmed (a quick
+// check); then the overview and every panel load at the same time, each
+// appearing when its data arrives. The server answers from a recent copy, so
+// a repeat visit is near instant; Refresh asks for fresh data (#519).
 async function load() {
-  let D;
-  $("#loginErr").textContent = "Loading… reading the node can take a few seconds.";
-  try { D = await api(""); } catch (err) { if (!$("#login").hidden) $("#loginErr").textContent = err.message; else toast(err.message, true, 8000); return; }
+  oldestAt = null; anyStale = false;
+  $("#loginErr").textContent = "Loading…";
+  try { await api("?view=b2c"); } catch (err) { if (!$("#login").hidden) $("#loginErr").textContent = err.message; else toast(err.message, true, 8000); return; }
   $("#loginErr").textContent = "";
   $("#login").hidden = true; $("#app").hidden = false;
-  KES_PER_BTC = D.kesPerBtc;
-  OVERVIEW = D;
-  renderChecklist(D); renderStan(D.stan, D.alerts); renderNode(D); renderChain(D); renderChainLow(D); renderRouting(D); renderSettlement(D); renderGlossary(); renderBanner(D); renderBackup(D.backup);
-  renderVerify();
-  loadKtown(); // the shop list needs no node: show it at once, before the slow node panels
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadB2c(), loadDestinations(), loadChoumi(), loadMarketing()]);
-  if (document.querySelector('[data-pane="earn"].on') && !njiaLoaded) await loadNjia(false); // Earn visible on sign-in: first load gentle
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadB2c(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi(), loadKtown()]);
-  $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
+  loadKtown(); // the shop list needs no node: show it at once
+  const panels = Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadB2c(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
+  const over = api("").then((D) => {
+    KES_PER_BTC = D.kesPerBtc;
+    OVERVIEW = D;
+    renderChecklist(D); renderStan(D.stan, D.alerts); renderNode(D); renderChain(D); renderChainLow(D); renderRouting(D); renderSettlement(D); renderGlossary(); renderBanner(D); renderBackup(D.backup);
+    renderVerify();
+    if (lastPower) renderMap(lastPower); // the money map needs the overview's on-chain figures
+  }).catch((err) => toast(err.message, true, 8000));
+  await over;
+  if (KES_PER_BTC) loadWallets(); // shillings appear once the rate is known (the server answers from its copy)
+  await panels;
+  if (document.querySelector('[data-pane="earn"].on') && !njiaLoaded) await loadNjia(false);
+  const mins = oldestAt ? Math.round((Date.now() - oldestAt) / 60e3) : 0;
+  $("#checked").textContent = mins >= 2 ? `Data from up to ${mins} min ago${anyStale ? ", updating" : ""}` : `Checked ${new Date().toLocaleTimeString()}`;
+  // Some parts came from an older copy while the server makes a fresh one: show the fresh one shortly.
+  clearTimeout(staleTimer);
+  if (anyStale) staleTimer = setTimeout(load, 20000);
 }
 token ? load() : showLogin();
