@@ -66,8 +66,54 @@ async function gate(request) {
 const within = (p, ms = 8000) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("The node took too long to answer.")), ms).unref?.())]);
 const settle = (p, ms = 8000) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("The node took too long to answer.")), ms).unref?.())]).then((v) => v, (e) => ({ error: e.message }));
 
+// ---- answering fast (#519)
+// The heavy read-only views take 2 to 45 seconds on shared hosting (node calls,
+// many stored records). Each is kept for a minute and answered from the copy
+// at once; an older copy (up to 30 minutes) is answered at once too while a
+// fresh one is made in the background. ?fresh=1 (the Refresh button) makes a
+// new one now. Any admin action (POST) clears every copy. Errors are kept
+// 15 seconds only. Every cached answer carries _at (when it was made) and
+// _stale (an older copy while a fresh one is coming).
+const CACHED = new Set(["", "pnl", "wallets", "destinations", "channels", "liquidity", "security", "statement", "activity", "developer", "explore", "emails", "choumi", "ai"]);
+let FRESH_MS = 60e3, ERROR_MS = 15e3, MAX_AGE_MS = 30 * 60e3;
+export const setAdminCacheTimings = (t = {}) => { ({ fresh: FRESH_MS = FRESH_MS, error: ERROR_MS = ERROR_MS, maxAge: MAX_AGE_MS = MAX_AGE_MS } = t); }; // tests
+const memo = new Map(); // query -> { at, status, body, refreshing }
+export const clearAdminCache = () => memo.clear();
+async function made(request) {
+  const res = await compute(request);
+  return { at: Date.now(), status: res.status, body: await res.text() };
+}
+function answer(e, stale = false) {
+  let body = e.body;
+  try {
+    const d = JSON.parse(body);
+    if (d && typeof d === "object" && !Array.isArray(d)) body = JSON.stringify({ ...d, _at: new Date(e.at).toISOString(), ...(stale ? { _stale: true } : {}) });
+  } catch { /* not JSON: as it is */ }
+  return new Response(body, { status: e.status, headers: { "Content-Type": e.body.startsWith("{") || e.body.startsWith("[") ? "application/json" : "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
+}
 export async function GET(request) {
   { const g = await gate(request); if (g) return g; }
+  const u = new URL(request.url);
+  const view = u.searchParams.get("view") || "";
+  if (!CACHED.has(view)) return compute(request);
+  const fresh = u.searchParams.get("fresh") === "1";
+  u.searchParams.delete("fresh");
+  const key = [...u.searchParams].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`).join("&");
+  const got = memo.get(key), age = got ? Date.now() - got.at : Infinity;
+  if (got && !fresh && age < (got.status < 500 ? FRESH_MS : ERROR_MS)) return answer(got);
+  if (got && !fresh && got.status < 500 && age < MAX_AGE_MS) {
+    if (!got.refreshing) {
+      got.refreshing = true;
+      made(request).then((e) => { if (e.status < 500 || !memo.get(key) || memo.get(key).status >= 500) memo.set(key, e); }).catch(() => {}).finally(() => { got.refreshing = false; });
+    }
+    return answer(got, true);
+  }
+  const e = await made(request);
+  memo.set(key, e);
+  return answer(e);
+}
+
+async function compute(request) {
   const view = new URL(request.url).searchParams.get("view");
 
   // The node explorer: network, channel internals, peers, payments, invoices, coins and closed channels.
@@ -322,6 +368,7 @@ async function buildChoumiView() {
 
 export async function POST(request) {
   { const g = await gate(request); if (g) return g; }
+  clearAdminCache(); // an action may change what the views show
   const body = await readBody(request);
   if (body.action === "b2c_float" || body.action === "b2c_settle") {
     const yw = await import("../lib/ywallet.js");

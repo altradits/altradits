@@ -108,6 +108,7 @@ ul.warn{list-style:none;padding:.7rem .9rem;margin:.7rem 0 0;border:1px solid va
 .tabs button{flex:none;border:2px solid var(--line);background:var(--paper);border-radius:99px;padding:.45rem 1rem;font:600 .93rem Figtree,sans-serif;cursor:pointer;min-height:2.6rem;color:var(--ink)}
 .tabs button[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:#fff}
 .pane{display:none}.pane.on{display:block}
+.panel [id$="List"]:empty::before,.panel [id$="Kpis"]:empty::before,.panel [id$="Open"]:empty::before{content:"Loading…";color:var(--muted,#667);font-size:.9rem}
 .tabs .tabgroup{flex:none;align-self:center;font:700 .68rem Figtree,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#667);padding:0 .1rem 0 .55rem;border-left:1px solid var(--line)}.tabs .tabgroup:first-child{border-left:0;padding-left:0}
 .onpage{display:flex;flex-wrap:wrap;gap:.4rem .9rem;margin:.2rem 0 1rem;font-size:.9rem}.onpage b{font-weight:700}.onpage a{color:var(--ink)}
 .group-label{font:700 .8rem Figtree,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#667);margin:1.6rem 0 .4rem}
@@ -1101,6 +1102,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <div id="posters" aria-hidden="true"></div>
 <script src="/ktown/qrcode-generator-1.4.4.js"></script>
-<script type="module" src="/assets/admin.js?v=refresh25"></script>
+<script type="module" src="/assets/admin.js?v=refresh26"></script>
 </body>
 </html>
