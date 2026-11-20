@@ -650,6 +650,19 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div id="mineList"></div>
   </section>
 
+  <section class="panel" aria-labelledby="hB2c">
+    <h2 id="hB2c">Direct M-Pesa payouts (B2C)</h2>
+    <div class="learn">
+      <p><b>What this is:</b> Ye₿ente paying a phone from your own M-Pesa shortcode, so Send Mobile works when the partner is down. The wallet's sats are taken first; Safaricom's answer completes the payout or gives the sats back.</p>
+      <p><b>The float</b> is the money in the B2C account. Quotes never go beyond it, less what open payouts already promised. After you refill it, enter the new figure here; Safaricom's next answer replaces it.</p>
+      <p><b>A stuck payout</b> has no final answer from Safaricom. Search its id in the M-Pesa org portal (it is the OriginatorConversationID). Paid: enter the M-Pesa code and press <i>Mark paid</i>. Not paid, and over an hour old: type <code>REFUND &lt;id&gt;</code> and press <i>Refund</i>. Refunding a payout M-Pesa made would pay twice, so check first. Every manual settlement emails you.</p>
+    </div>
+    <div class="kpis" id="b2cKpis"></div>
+    <div class="row"><input id="b2cFloat" type="number" inputmode="numeric" min="0" step="1" placeholder="Float in KSh after a refill" aria-label="Float in shillings" style="max-width:16rem"><button type="button" class="btn" id="b2cFloatSet">Set float</button></div>
+    <div id="b2cOpen"></div>
+    <div id="b2cRecent"></div>
+  </section>
+
   <section class="panel" aria-labelledby="hCreate">
     <h2 id="hCreate">Create a wallet, for you or someone else</h2>
     <ol class="flow">
