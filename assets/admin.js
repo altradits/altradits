@@ -815,6 +815,33 @@ async function loadWallets() {
   const first = W.mine.find((w) => !w.missing)?.handle;
   if (first) document.querySelectorAll("#cliSteps .h").forEach((x) => { x.textContent = first; });
 }
+// Direct M-Pesa payouts (#513): the float, open payouts and safe manual settlement.
+const kshF = (n) => `KSh ${num(n)}`;
+async function loadB2c() {
+  let B; try { B = await api("?view=b2c"); } catch (err) { $("#b2cOpen").textContent = err.message; return; }
+  $("#b2cKpis").innerHTML = kpi("Switch", B.on ? "On" : "Off", "", B.configured ? "Settings are in place." : "Settings missing: see the setup PDF.")
+    + kpi("Float", kshF(B.floatKes), "", B.floatAt ? `${B.floatFrom}, ${ago(B.floatAt)}` : "from the setting")
+    + kpi("Promised to open payouts", kshF(B.reservedKes), "", `${num(B.open.length)} open`)
+    + kpi("Room for new payouts", kshF(Math.max(0, B.roomKes)), "", B.roomKes <= 0 ? "Refill the float." : "");
+  $("#b2cOpen").innerHTML = B.open.length ? `<h3>Waiting for Safaricom</h3><table><thead><tr><th>Id (search in the org portal)</th><th>Shillings</th><th>Sats</th><th>To</th><th>Started</th><th>Last asked</th><th>Settle by hand</th></tr></thead><tbody>${B.open.map((r) =>
+    `<tr><td><code>${esc(r.id)}</code></td><td>${esc(kshF(r.kes))}</td><td>${esc(num(r.sats))}</td><td>${esc(r.phone)}</td><td>${esc(ago(r.at))}</td><td>${r.askedAt ? esc(ago(r.askedAt)) : '<span class="muted">not yet</span>'}</td>
+      <td><input data-b2cin="${esc(r.id)}" placeholder="M-Pesa code, or REFUND ${esc(r.id)}" aria-label="M-Pesa code or refund confirmation for ${esc(r.id)}" style="max-width:15rem"> <button type="button" class="btn sm" data-b2cpaid="${esc(r.id)}">Mark paid</button> <button type="button" class="linkbtn sm" data-b2crefund="${esc(r.id)}">Refund</button></td></tr>`).join("")}</tbody></table>`
+    : '<p class="muted sm">No payouts waiting for Safaricom.</p>';
+  $("#b2cRecent").innerHTML = B.recent.length ? `<h3>Recently finished</h3><table><thead><tr><th>Id</th><th>Shillings</th><th>To</th><th>Result</th><th>M-Pesa code</th><th>When</th></tr></thead><tbody>${B.recent.map((r) =>
+    `<tr><td><code>${esc(r.id)}</code></td><td>${esc(kshF(r.kes))}</td><td>${esc(r.phone)}</td><td>${r.result === "paid" ? '<b class="ok">Paid</b>' : "Refunded"}${r.byHand ? ' <span class="muted">(by hand)</span>' : ""}</td><td>${esc(r.receipt || "")}</td><td>${r.finishedAt ? esc(ago(r.finishedAt)) : ""}</td></tr>`).join("")}</tbody></table>` : "";
+}
+$("#b2cFloatSet").addEventListener("click", async () => {
+  try { await api("", { action: "b2c_float", kes: Number($("#b2cFloat").value) }); $("#b2cFloat").value = ""; toast("Float saved."); loadB2c(); } catch (err) { toast(err.message, true, 6000); }
+});
+$("#b2cOpen").addEventListener("click", async (e) => {
+  const paid = e.target.closest("[data-b2cpaid]")?.dataset.b2cpaid, refund = e.target.closest("[data-b2crefund]")?.dataset.b2crefund;
+  const id = paid || refund; if (!id) return;
+  const v = document.querySelector(`[data-b2cin="${CSS.escape(id)}"]`).value;
+  try {
+    const r = await api("", paid ? { action: "b2c_settle", id, outcome: "paid", receipt: v } : { action: "b2c_settle", id, outcome: "refund", confirm: v });
+    toast(r.result === "paid" ? "Marked paid." : "Refunded to the wallet."); loadB2c();
+  } catch (err) { toast(err.message, true, 8000); }
+});
 $("#mineAdd").addEventListener("click", async () => {
   try { await api("", { action: "my_wallet_add", handle: $("#mineHandle").value }); $("#mineHandle").value = ""; toast("Added."); loadWallets(); } catch (err) { toast(err.message, true, 6000); }
 });
@@ -2886,9 +2913,9 @@ async function load() {
   renderChecklist(D); renderStan(D.stan, D.alerts); renderNode(D); renderChain(D); renderChainLow(D); renderRouting(D); renderSettlement(D); renderGlossary(); renderBanner(D); renderBackup(D.backup);
   renderVerify();
   loadKtown(); // the shop list needs no node: show it at once, before the slow node panels
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing()]);
+  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadB2c(), loadDestinations(), loadChoumi(), loadMarketing()]);
   if (document.querySelector('[data-pane="earn"].on') && !njiaLoaded) await loadNjia(false); // Earn visible on sign-in: first load gentle
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi(), loadKtown()]);
+  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadB2c(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi(), loadKtown()]);
   $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
 }
 token ? load() : showLogin();

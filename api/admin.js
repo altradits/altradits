@@ -8,6 +8,8 @@
 //   GET  /api/admin?view=walletinvoice&hash= -> has a receive invoice been paid?
 //   GET  /api/admin?view=channels    -> channels, alerts and advice (lib/channels.js)
 //   GET  /api/admin?view=liquidity   -> sending power and top-up amounts
+//   GET  /api/admin?view=b2c         -> direct M-Pesa payouts: float, open and recent payouts (phones masked)
+//   POST { action: "b2c_float", kes } | { action: "b2c_settle", id, outcome: "paid", receipt } | { action: "b2c_settle", id, outcome: "refund", confirm: "REFUND <id>" }
 //   GET  /api/admin?view=topup&hash= -> a top-up's state
 //   GET  /api/admin?view=njia{&refresh=1} -> Njia Earn tab: checklist, dashboard, ledger, prices, settings (read-only)
 //   GET  /api/admin?view=njia_csv -> the Njia lease ledger as CSV
@@ -99,6 +101,7 @@ export async function GET(request) {
     return inv ? json({ state: inv.state, sats: inv.sats }) : json({ error: "No such invoice." }, 404);
   }
   if (view === "channels") { const { channelReport } = await import("../lib/channels.js"); try { return json(await within(channelReport())); } catch (err) { return json({ error: err.message }, 502); } }
+  if (view === "b2c") { const { mobileAdminView } = await import("../lib/ywallet.js"); return json(await mobileAdminView()); }
   if (view === "liquidity") { const { liquidityView } = await import("../lib/channels.js"); try { return json(await within(liquidityView())); } catch (err) { return json({ error: err.message }, 502); } }
   if (view === "topup") {
     const { topupStatus } = await import("../lib/channels.js");
@@ -320,6 +323,17 @@ async function buildChoumiView() {
 export async function POST(request) {
   { const g = await gate(request); if (g) return g; }
   const body = await readBody(request);
+  if (body.action === "b2c_float" || body.action === "b2c_settle") {
+    const yw = await import("../lib/ywallet.js");
+    try {
+      if (body.action === "b2c_float") return json({ ok: true, ...(await yw.setMobileFloat(body.kes)) });
+      const r = await yw.settleMobileByHand({ id: body.id, outcome: body.outcome, receipt: body.receipt, confirm: body.confirm });
+      const { emailOwner } = await import("../lib/email.js");
+      await emailOwner(`Ye₿ente M-Pesa payout settled by hand: ${r.result}`,
+        `Payout ${r.payout.id} (KSh ${r.payout.kes} to ${r.payout.phone}) was settled by hand from the admin page as ${body.outcome}${r.payout.receipt ? `, M-Pesa code ${r.payout.receipt}` : ""}. If that wasn't you, rotate ADMIN_TOKEN now.`, null, "trust").catch(() => {});
+      return json({ ok: true, ...r });
+    } catch (e) { return json({ error: e.message }, e.status || 500); }
+  }
   if (body.action === "node_topup") {
     const { deadmanActive } = await import("../lib/deadman.js");
     if (deadmanActive()) return json({ error: "Deadman's Switch is active: node top-ups are paused until you lift the lockdown." }, 503);
