@@ -1,5 +1,5 @@
 import { payInvoiceWithWebLN } from '../services/lightningService';
-import { hasServerWallet, sendFromServerWallet } from '../services/altraditsWallet';
+import { hasServerWallet, sendFromServerWallet, sendMobileDirect, directMobileStatus } from '../services/altraditsWallet';
 import { biometricOn, approveWithBiometric } from '../services/biometric';
 import { HoldNotice } from './HoldNotice';
 import { SatsMotion, CountUp } from './SatsMotion';
@@ -21,6 +21,7 @@ import {
   isValidNumber,
   displayNumber,
   railAddress,
+  fullNumber,
   fetchQuote,
   requestInvoice,
   pollReceipt,
@@ -175,6 +176,61 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
     setErrorMessage('');
     setMerchantRecipientName('');
     setReceiptUrl('');
+
+    // Direct M-Pesa: Ye₿ente pays the phone itself. The server takes the sats,
+    // and gives them back if Safaricom refuses.
+    if (rail.direct) {
+      if (!server) {
+        setErrorMessage('Paying M-Pesa directly needs your Ye₿ente wallet.');
+        setStep('error');
+        return;
+      }
+      try {
+        setProcessingStatus('Paying M-Pesa...');
+        let res = await sendMobileDirect(fullNumber(rail, phone), numericAmount, pin, passkey);
+        setPin('');
+        // Safaricom usually answers within seconds: wait up to 90 s for the M-Pesa code.
+        const deadline = Date.now() + 90000;
+        while (res.status === 'pending' && Date.now() < deadline) {
+          await new Promise((r) => setTimeout(r, 3000));
+          try { res = await directMobileStatus(res.id); } catch { /* a passing glitch: keep waiting */ }
+        }
+        if (res.status === 'failed') {
+          setErrorMessage(res.error || "M-Pesa didn't complete this payment. Your sats are back.");
+          setStep('error');
+          return;
+        }
+        const done = res.status === 'completed';
+        const ref = res.receipt || res.id;
+        setRealReference(ref);
+        onSuccess({
+          type: 'send_mpesa',
+          title: `Send ${rail.name}`,
+          status: done ? 'completed' : 'pending',
+          fromCurrency: 'SATS',
+          fromAmount: res.sats,
+          toCurrency: currency,
+          toAmount: res.kes,
+          fee: 0,
+          feeCurrency: 'SATS',
+          realFeeSats: 0,
+          realFeeFiat: 0,
+          realFeeCurrency: currency,
+          rateUsed: currentRate,
+          recipient: getRecipientDisplay(),
+          referenceNumber: ref,
+          walletType: 'custodial',
+          note: `${rail.name} paid directly by ${rail.partner}`,
+        });
+        if (done) celebrate({ kind: 'send', sats: res.sats, label: `${rail.name} ${getRecipientDisplay()}`, ref });
+        setPending(!done);
+        setStep('success');
+      } catch (err: unknown) {
+        setErrorMessage(err instanceof Error ? err.message : 'Error processing transfer.');
+        setStep('error');
+      }
+      return;
+    }
 
     try {
       setProcessingStatus(`Asking ${rail.partner} for an invoice...`);
@@ -366,7 +422,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                           : 'bg-[var(--yb-surface)] border-[var(--yb-outline-variant)] text-[var(--yb-on-surface-variant)]'
                       }`}
                     >
-                      {r.name} ({r.country})
+                      {r.name} ({r.country}){r.direct ? ' · direct' : ''}{r.down ? ' · not answering' : ''}
                     </button>
                   ))}
                 </div>

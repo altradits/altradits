@@ -25,6 +25,10 @@
 //   POST address/invoice {to, sats, comment?}  an exact-amount invoice from the address (open, rate-limited)
 //   POST wallet/send {to, sats, pin}      a Ye₿ente handle (free), a Lightning address
 //                                          (incl. phone@bitcoin.co.ke = M-Pesa) or an invoice
+//   POST wallet/mobile/quote {kes}        sats for a direct M-Pesa payout (YEBENTE_B2C=on, #510)
+//   POST wallet/mobile {phone, kes, pin}  Ye₿ente pays the phone from its own M-Pesa shortcode
+//   GET  wallet/mobile/<id>               pending, completed (with the M-Pesa code) or failed (sats back)
+//   POST b2c/(result|status|timeout)/<secret>  Safaricom's B2C answers (secret: YEBENTE_B2C_CALLBACK_SECRET)
 //   POST wallet/invoice {sats}            an invoice on the node for this wallet
 //   POST wallet/passkey/options|add|off   fingerprint / face approval instead of the PIN (send {passkey})
 //   GET  wallet/invoice/<hash>            credited once paid
@@ -49,10 +53,11 @@
 //   POST card/ipn/<secret>                Pesapal's payment notice (secret: PESAPAL_CALLBACK_SECRET)
 //   GET  lnurlp/<handle> (= /.well-known/lnurlp/<handle>) and lnurl/<handle>?amount=
 //                                          handle@altradits.com as a Lightning address
-// Every payout path (Lightning or on-chain disbursement, M-Pesa B2C/B2B,
-// reversals, standing orders, Telebirr) answers 501: the app keeps its balance in
-// the visitor's browser, so a server that paid on request could be emptied by
-// anyone. The visitor pays from their own wallet (WebLN) instead.
+// The old unauthenticated payout paths (Lightning or on-chain disbursement,
+// M-Pesa payout/B2B, reversals, standing orders, Telebirr) answer 501: a server
+// that paid on request could be emptied by anyone. Money leaves only from a
+// signed-in wallet with its PIN, after the ledger takes the sats (wallet/send,
+// wallet/mobile).
 import { json, readBody, clientIp, proxyShape } from "../lib/http.js";
 import { getJSON, setJSON, hit, listIds } from "../lib/store.js";
 import crypto from "node:crypto";
@@ -169,6 +174,28 @@ async function cardOrder(request, w, body) {
   const order = await pp.submitOrder({ kes: quote.kes, email: body.email || w.email, handle: w.handle, site: site() });
   await yw.startCardBuy(w, quote, order.trackingId, order.merchantRef, String(body.email || w.email || "").trim().toLowerCase(), isoOrNull(quote.expiresAt));
   return json({ success: true, trackingId: order.trackingId, redirectUrl: order.redirectUrl, satsAmount: quote.sats, kes: quote.kes, rate: quote.rate });
+}
+
+// Safaricom's B2C answers for direct Send Mobile payouts (#510). The secret
+// path is the gate; even then an answer only settles a payout this server
+// started and is still waiting on (lib/ywallet.js finishMobile). A timeout
+// notice changes nothing: the status query settles it.
+async function b2cCallback(request, kind, secret) {
+  const { callbackSecret, parseResult } = await import("../lib/mpesa-b2c.js");
+  const want = callbackSecret();
+  if (!want || secret.length !== want.length || !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(want))) {
+    if (want && secret) {
+      const { recordAttack } = await import("../lib/attacks.js");
+      await recordAttack("secret_guess", { where: "/api/yebente/b2c", detail: "wrong B2C callback secret" }).catch(() => {});
+    }
+    return json({ ResultCode: 1, ResultDesc: "Rejected" }, 403);
+  }
+  if ((await hit(`rl:yb:b2c:${ipKey(request)}`, 3600)) > 500) return json({ ResultCode: 1, ResultDesc: "Too many" }, 429);
+  if (kind !== "timeout") {
+    const r = parseResult(await readBody(request));
+    if (/^ym[\w-]{8,40}$/.test(r.originatorId)) await (await import("../lib/ywallet.js")).finishMobile(r.originatorId, r).catch((e) => console.error("yebente b2c", e.message));
+  }
+  return json({ ResultCode: 0, ResultDesc: "Accepted" });
 }
 
 // Pesapal's server-to-server payment notice: only a Completed answer for the
@@ -459,6 +486,17 @@ async function walletPost(request, action) {
     const pin = body.passkey ? await yw.passkeyPass(w, body.passkey) : body.pin;
     return json({ success: true, ...(await yw.payOut({ from: w, to: body.to, sats: body.sats, pin })) });
   }
+  if (action === "mobile/quote") {
+    const w = await me(request);
+    if ((await hit(`rl:yb:mq:${w.id}`, 600)) > 60) return json({ success: false, error: "Too many quotes. Try again later." }, 429);
+    return json({ success: true, ...(await yw.quoteMobile(w, body.kes)) });
+  }
+  if (action === "mobile") {
+    const w = await me(request);
+    if ((await hit(`rl:yb:send:${w.id}`, 3600)) > 60) return json({ success: false, error: "Too many payments. Try again later." }, 429);
+    const pin = body.passkey ? await yw.passkeyPass(w, body.passkey) : body.pin;
+    return json({ success: true, ...(await yw.sendMobile({ from: w, phone: body.phone, kes: body.kes, pin })) });
+  }
   // ---- staying signed in, safely (lib/ywallet.js "staying signed in on your own phone")
   if (action === "unlock/options") {
     if ((await hit(`rl:yb:unl:${ipKey(request)}`, 3600)) > 120) return json({ success: false, error: "Too many attempts. Try again later." }, 429);
@@ -529,6 +567,11 @@ async function walletGet(request, action) {
   }
   const bitika = action.match(/^buy\/bitika\/([\w-]{3,80})$/);
   if (bitika) return await bitikaStatus(request, w, bitika[1]);
+  const mob = action.match(/^mobile\/(ym[\w-]{8,40})$/);
+  if (mob) {
+    if ((await hit(`rl:yb:mobq:${w.id}`, 600)) > 120) return json({ success: false, error: "Too many checks. Try again later." }, 429);
+    return json({ success: true, ...(await yw.mobileView(mob[1], w.id)) });
+  }
   const card = action.match(/^card\/status\/([\w-]{8,80})$/);
   if (card) {
     const rec = await getJSON(`ywcard:${card[1]}`);
@@ -617,7 +660,8 @@ export async function GET(request) {
     const features = {
       buy: realBuy || (showTest && (bk.bitikaOn() || buyOn())),
       cardTopup: realCard || (showTest && pp.pesapalOn()),
-      sendMobile: railsOn().length > 0 && connected,
+      // Direct M-Pesa (#510) pays from the shortcode, not the node: it works with the node down.
+      sendMobile: (railsOn().length > 0 && connected) || (wallets && railsOn().some((r) => r.direct)),
       receive: wallets && connected,
       send: wallets && connected,
       external: switchOn("YEBENTE_EXTERNAL_WALLETS"),
@@ -628,7 +672,7 @@ export async function GET(request) {
     // Only a node that is set up and silent (false), never one not set up (null).
     const down = node === false;
     const paused = {
-      sendMobile: railsOn().length > 0 && down,
+      sendMobile: railsOn().length > 0 && down && !railsOn().some((r) => r.direct),
       receive: wallets && down,
       send: wallets && down,
     };
@@ -654,7 +698,7 @@ export async function GET(request) {
       `<form method="post" action="/api/yebente/wallet/freeze"><input type="hidden" name="t" value="${t}"><button style="font:600 1rem system-ui;padding:.7rem 1.2rem;border-radius:999px;border:0;background:#DDB8FF;color:#141117;cursor:pointer">Freeze sending</button></form>`);
   }
   // Send Mobile's switched-on payout options (lib/rails.js): the app draws one button each.
-  if (path === "rails") return json({ success: true, rails: (await import("../lib/rails.js")).railsOn() });
+  if (path === "rails") return json({ success: true, rails: await (await import("../lib/rails.js")).railsWithHealth() });
   // Where the card provider sends the buyer back: the state only, never amounts.
   if (path === "wallet/card/return") {
     if ((await hit(`rl:yb:cardr:${ipKey(request)}`, 3600)) > 60)
@@ -673,7 +717,7 @@ export async function GET(request) {
   }
   const lp = path.match(/^lnurlp\/([a-z0-9._-]{3,20})$/) || path.match(/^lnurl\/([a-z0-9._-]{3,20})$/);
   if (lp) return lnurlPay(request, lp[1], path.startsWith("lnurl/"));
-  const wg = path.match(/^wallet\/(me|history|security|invoice\/[0-9a-f]{64}|buy\/bitika\/[\w-]{3,80}|buy\/[\w-]{6,80}|card\/status\/[\w-]{8,80})$/);
+  const wg = path.match(/^wallet\/(me|history|security|invoice\/[0-9a-f]{64}|buy\/bitika\/[\w-]{3,80}|buy\/[\w-]{6,80}|card\/status\/[\w-]{8,80}|mobile\/ym[\w-]{8,40})$/);
   if (wg) { try { return await walletGet(request, wg[1]); } catch (e) { return json({ success: false, error: e.message }, e.status || 500); } }
   if (PAYOUTS.test(path)) return off(NO_NODE);
   return json({ success: false, error: "Not found" }, 404);
@@ -691,7 +735,7 @@ export async function POST(request) {
     if (path === "address/invoice") return await addressInvoice(request);
     if (path === "wallet/email-change-cancel") return await emailChangeCancelPost(request);
     if (path === "wallet/freeze") return await freezePost(request);
-    const wp = path.match(/^wallet\/(create|restore|send|invoice|buy\/bitika|buy|card\/order|email|email\/cancel|recover-email|recover-email\/finish|recovery\/cancel|pin\/change|passkey\/(?:options|add|off)|unlock\/options|unlock|login\/start|login\/finish|device\/register|device\/remove|lock)$/);
+    const wp = path.match(/^wallet\/(create|restore|send|mobile\/quote|mobile|invoice|buy\/bitika|buy|card\/order|email|email\/cancel|recover-email|recover-email\/finish|recovery\/cancel|pin\/change|passkey\/(?:options|add|off)|unlock\/options|unlock|login\/start|login\/finish|device\/register|device\/remove|lock)$/);
     if (wp) return await walletPost(request, wp[1]);
     const cb = path.match(/^mpesa\/callback\/([\w-]{16,128})$/);
     if (cb) return await callback(request, cb[1]);
@@ -699,6 +743,8 @@ export async function POST(request) {
     if (bwh) return await bitikaWebhook(request, bwh[1]);
     const ipn = path.match(/^card\/ipn\/([\w-]{16,128})$/);
     if (ipn) return await cardIpn(request, ipn[1]);
+    const b2c = path.match(/^b2c\/(result|status|timeout)\/([\w-]{16,128})$/);
+    if (b2c) return await b2cCallback(request, b2c[1], b2c[2]);
     if (path.startsWith("lightning/") || path.startsWith("bitcoin/")) return off(NO_NODE);
     if (PAYOUTS.test(path)) return off(NOT_CONFIGURED);
     return json({ success: false, error: "Not found" }, 404);

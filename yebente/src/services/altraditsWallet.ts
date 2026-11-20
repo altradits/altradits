@@ -78,6 +78,8 @@ export interface ServerEntry {
   ref: string;
   note?: string;
   receiptUrl?: string;
+  kes?: number; // direct M-Pesa payouts (send_mobile): the shillings sent
+  receipt?: string; // and Safaricom's M-Pesa code once paid
   at: string;
 }
 
@@ -169,12 +171,28 @@ export async function fetchServerHistory(): Promise<Transaction[]> {
 }
 
 // Approved with the PIN, or with the phone's fingerprint / face (a signed passkey approval).
+// Direct M-Pesa (Ye₿ente pays the phone itself, #510): the sats are taken now,
+// refunded if Safaricom refuses.
+export interface DirectMobile { id: string; status: 'pending' | 'completed' | 'failed'; kes: number; sats: number; receipt: string | null; error: string | null; wallet: ServerWallet }
+export const sendMobileDirect = (phone: string, kes: number, pin: string, passkey?: unknown) =>
+  api<DirectMobile>('POST', 'mobile', passkey ? { phone, kes, passkey } : { phone, kes, pin });
+export const directMobileStatus = (id: string) => api<DirectMobile>('GET', `mobile/${encodeURIComponent(id)}`);
+
 export const sendFromServerWallet = (to: string, sats: number, pin: string, passkey?: unknown) =>
   api<{ wallet: ServerWallet; ref: string; status?: 'completed' | 'pending' }>('POST', 'send', passkey ? { to, sats, passkey } : { to, sats, pin });
 
 // A ledger entry in the shape the history list already shows.
 function entryToTransaction(e: ServerEntry): Transaction {
   const incoming = e.sats > 0;
+  if (e.kind === 'send_mobile') {
+    // Paid by Ye₿ente straight to M-Pesa: shillings out, with Safaricom's code once confirmed.
+    return {
+      id: e.id, type: 'send_mpesa', title: 'Send M-Pesa', timestamp: Date.parse(e.at), status: e.status,
+      fromCurrency: 'SATS', fromAmount: Math.abs(e.sats), toCurrency: 'KES', toAmount: e.kes || 0,
+      fee: 0, feeCurrency: 'SATS', realFeeSats: 0, recipient: e.counterparty,
+      referenceNumber: e.receipt || e.ref, walletType: 'custodial', note: e.note,
+    };
+  }
   return {
     id: e.id,
     type: incoming ? 'receive_btc' : 'send_btc',
