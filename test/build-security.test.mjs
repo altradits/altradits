@@ -49,6 +49,7 @@ const FIXED_FETCH = {
   "lib/email.js": ['"https://api.resend.com/emails"'],
   "lib/tracker.js": ["`https://api.github.com${path}`"], // GitHub's public API, a constant host
   "api/yebente.js": ["`${DARAJA()}/oauth/v1/generate?grant_type=client_credentials`", "`${DARAJA()}${path}`"], // Safaricom
+  "lib/mpesa-b2c.js": ["`${BASE()}/oauth/v1/generate?grant_type=client_credentials`", "`${BASE()}${path}`"], // Safaricom B2C (fixed hosts, #510)
   "lib/pesapal.js": ["`${BASE()}/api/Auth/RequestToken`", "`${BASE()}/api/Transactions/SubmitOrderRequest`", "`${BASE()}/api/Transactions/GetTransactionStatus?orderTrackingId=${encodeURIComponent(trackingId)}`"], // Pesapal, sandbox or live by setting
 };
 // The first argument of a call, brackets and template braces balanced.

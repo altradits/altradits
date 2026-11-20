@@ -67,6 +67,19 @@ To add sending power, pay a node invoice: admin → Finance → Sending power su
 ## M-Pesa through Tando
 Send Mobile pays a Kenyan Safaricom number through Tando (bitcoin.co.ke): the app asks Tando for an invoice priced in shillings (15 to 50,000 KES, Tando's 1% fee on top), the node pays it, Tando pays the phone by M-Pesa and publishes the Safaricom receipt code, which the app shows. It needs sending power on the node.
 
+## M-Pesa paid directly by Ye₿ente (B2C, #510)
+When the partner is down, Send Mobile and kTown payouts stop for everyone. The direct option needs no partner: Ye₿ente pays the phone from its own M-Pesa B2C shortcode (lib/mpesa-b2c.js, lib/ywallet.js sendMobile).
+- The sats are taken from the wallet and the payout is written as "paying" before M-Pesa is asked. Safaricom's result either completes it with the M-Pesa code or gives the sats back (refused, no M-Pesa account, limits). Each payout settles once: repeats, late answers and unknown ids change nothing.
+- No answer (timeout, crash, network): it stays pending. Every 2 minutes the server asks Safaricom for the status of payouts older than a minute (at most once per 5 minutes each). It never sends a payout a second time.
+- A success for a different amount than asked is never marked paid; it is recorded in the Security watch.
+- Quotes stay inside the float: the B2C account's last known funds (from Safaricom's answers, or YEBENTE_B2C_FLOAT_KES at first) less what open payouts already promised.
+- Limits: YEBENTE_B2C_MAX_KES per payout (5,000), YEBENTE_B2C_DAILY_KES per wallet (10,000), fee YEBENTE_B2C_FEE_PCT (1%). The wallet's own sats limits apply too.
+- Callbacks: POST /api/yebente/b2c/(result|status|timeout)/YEBENTE_B2C_CALLBACK_SECRET. A wrong secret is refused and recorded.
+- Switch on, with no app rebuild: a Bulk Disbursement Account (or a paybill/till converted to "one account"), a separate Daraja app for B2C, an API operator, Safaricom's certificate; then set MPESA_B2C_CONSUMER_KEY, MPESA_B2C_CONSUMER_SECRET, MPESA_B2C_SHORTCODE, MPESA_B2C_INITIATOR, MPESA_B2C_INITIATOR_PASSWORD, MPESA_B2C_CERT (PEM, base64 of it, or a file path), YEBENTE_B2C_CALLBACK_SECRET (16+ characters), YEBENTE_B2C_FLOAT_KES, and YEBENTE_B2C=on. Sandbox credentials stay hidden unless YEBENTE_SHOW_TEST_FEATURES=on.
+- Law: paying out shillings for bitcoin as a business falls under Kenya's Virtual Asset Service Providers Act 2025 and its 2026 regulations. Get advice before switching it on.
+- The rails list checks each partner (cached a minute). One that doesn't answer is listed with down: true and after the working options, so the app opens on one that works.
+- Tests: test/yebente-mpesa-direct.test.mjs. Reference design with a Lightning hold-invoice version for outside wallets: https://github.com/altradits/offramp
+
 ## Send Mobile's payout options (lib/rails.js)
 Send Mobile draws one button per payout option the server lists at GET /api/yebente/rails; with one option there are no buttons, only its form. Each option pays a mobile-money number through a partner that gives every number a Lightning address (number@host) and quotes in the local currency over LNURL-pay, the way Tando does: country code, number format, currency, partner fee and receipt path all come from the list, so the app needs no change for a new one.
 - M-Pesa (Kenya, KES) through Tando is always on.
@@ -78,12 +91,12 @@ Send Mobile draws one button per payout option the server lists at GET /api/yebe
 Every hour the server compares the total of all Ye₿ente balances with what the node can send (lib/attacks.js checkSolvency). A shortfall is recorded in the Security watch and emailed to Stanley: add outbound liquidity or pause buying. This is the Mt. Gox and QuadrigaCX lesson.
 
 ## Turned off on purpose
-Sign-in-free invoices on the node, public M-Pesa status queries and every payout path that would pay on request (M-Pesa B2C, on-chain disbursement) answer 501.
+Sign-in-free invoices on the node, public M-Pesa status queries and every old payout path that would pay on request (unauthenticated M-Pesa payout/B2B, on-chain disbursement) answer 501. Money leaves only from a signed-in wallet with its PIN, after the ledger takes the sats.
 
 ## Only working features are shown
 The app shows a control only when its feature can complete for a real user right now. GET /api/yebente/health carries a `features` object of booleans, computed on the server from the same switches that gate the endpoints; the app reads it at start and on resume and renders only enabled controls (test/yebente-features.test.mjs). If the call fails, only Receive and Send show. Nothing is deleted: each feature reappears by configuration alone, with a restart, no rebuild.
 - Buy Sats: Bitika with a bk_live_ key plus YEBENTE_BITIKA_BUY=on, or Daraja with MPESA_ENVIRONMENT=production, all its credentials and YEBENTE_MPESA_BUY=on. Sandbox and bk_test_ keys stay hidden unless YEBENTE_SHOW_TEST_FEATURES=on (for testing the flow before going live).
 - Top up with card: YEBENTE_CARD_BUY=on, the Pesapal credentials and PESAPAL_ENVIRONMENT=production (same test override).
-- Send Mobile: a payout option listed (M-Pesa through Tando is always on) and the node connected.
+- Send Mobile: a payout option listed (M-Pesa through Tando is always on) and the node connected, or the direct M-Pesa option on (it needs no node).
 - Receive, Send: YEBENTE_WALLETS=on and the node connected.
 - My own Lightning wallet (start screen and Settings): YEBENTE_EXTERNAL_WALLETS=on. Hidden by default: without a WebLN wallet in the browser, its sends always fail, and it can never buy or top up.
