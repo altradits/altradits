@@ -52,6 +52,15 @@ function tabFromHash() {
   tab(h);
 }
 window.addEventListener("hashchange", tabFromHash);
+// "On this page": jump links at the top of every tab with 4 or more panels.
+document.querySelectorAll("[data-pane]").forEach((pane) => {
+  const heads = [...pane.querySelectorAll("section.panel > h2[id]")];
+  if (heads.length < 4) return;
+  const nav = document.createElement("nav");
+  nav.className = "onpage"; nav.setAttribute("aria-label", "On this page");
+  nav.innerHTML = "<b>On this page:</b>" + heads.map((h) => `<a href="#${esc(h.id)}">${esc((h.firstChild?.textContent || h.textContent).trim())}</a>`).join("");
+  pane.prepend(nav);
+});
 tabFromHash();
 
 // What needs attention, from every part of the dashboard: { key: { level, text, go: "tab:sectionId" } }.
@@ -65,7 +74,8 @@ function renderAlerts() {
 }
 function go(target) {
   const [t, id, extra] = target.split(":");
-  tab(t);
+  // The tab that actually holds the panel: panels can move between tabs without breaking a link.
+  tab(document.getElementById(id || "")?.closest("[data-pane]")?.dataset.pane || t);
   // A "What needs you" item can link straight to a filtered list, e.g. security:hSec:sev=high.
   if (t === "security" && extra && extra.startsWith("sev=")) setSecFilter(extra.slice(4), "all");
   const el = id && document.getElementById(id);
@@ -190,7 +200,7 @@ function renderChecklist(D, L) {
     [bkOk, "Channel backup copy is fresh", bkWhy],
     [null, "24 recovery words safe on paper", "Never typed into a website or a phone. Only the node's own setup asks for them."],
   ];
-  const where = ["node:hNode", "channels:hChan", "money:hPower", "money:hChain", "overview:hStan", "money:hBackup"];
+  const where = ["node:hNode", "channels:hChan", "channels:hPower", "node:hChain", "overview:hStan", "node:hBackup"];
   items.slice(0, 6).forEach(([ok, title, why], i) => issue(`check${i}`, ok === false ? (i < 3 || i === 5 ? "crit" : "warn") : null, `${title}: ${why}`, where[i]));
   $("#checklist").innerHTML = items.map(([ok, title, why]) => `<li><span class="m ${ok === null ? "u" : ok ? "y" : "n"}" aria-label="${ok === null ? "check yourself" : ok ? "fine" : "needs attention"}">${ok === null ? "○" : ok ? "✓" : "✗"}</span><span><b>${esc(title)}</b><br><span class="sm muted">${esc(why)}</span></span></li>`).join("");
 }
