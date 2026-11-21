@@ -177,6 +177,8 @@ async function fakeLnd() {
         // As LND's REST layer decodes bytes in a path: padded standard base64,
         // else padded URL-safe base64. Anything else is a 400 (the live bug of
         // 21 Nov 2026: unpadded base64url left payments open for weeks).
+        // An encoded "/" (%2F) makes another path, which the gateway doesn't route.
+        if (/%2f/i.test(track[1])) { res.writeHead(404).end("Not Found"); return; }
         const raw = decodeURIComponent(track[1]);
         const padded = raw.length % 4 === 0 && /^[A-Za-z0-9+/]*={0,2}$|^[A-Za-z0-9_-]*={0,2}$/.test(raw);
         if (!padded) { res.writeHead(400).end(JSON.stringify({ code: 3, message: "type mismatch, parameter: payment_hash, error: illegal base64 data at input byte 40" })); return; }
@@ -396,6 +398,15 @@ test("a payment whose result isn't known in time stays pending until the node an
   assert.equal((await yw.walletByHandle("slow")).balance, 2000 - 1000 - 4);
   payMode = "ok";
   void p; void w;
+});
+
+test("the node's tracker is asked in a form it routes and decodes, whatever bytes the payment hash has", async () => {
+  // "ff…" is "////…" in standard base64: as %2F it broke the route (live, 21 Nov 2026).
+  const lightning = await import("../lib/lightning.js");
+  for (const hash of ["ff".repeat(32), "fb".repeat(32), "00".repeat(32), crypto.randomBytes(32).toString("hex")]) {
+    payments.delete(hash);
+    assert.equal((await lightning.paymentStatus(hash)).status, "failed", `${hash.slice(0, 8)}…: the node says it never started`);
+  }
 });
 
 test("an address whose invoice commits to someone else's description is refused, nothing taken", async () => {
