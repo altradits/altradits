@@ -141,6 +141,27 @@ dialog{width:min(30rem,calc(100vw - 2rem));border:2px solid var(--ink);border-ra
 .rcpt-titlerow{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;border-bottom:2px solid #EA5158;padding:.55rem 0}
 .rcpt-titlerow h2{font-size:1.15rem;margin:0}
 .rcpt-no{font-size:.85rem;color:var(--muted);white-space:nowrap}
+/* The cockpit (#519): tiles that open their panel. */
+.ck{display:grid;grid-template-columns:repeat(auto-fill,minmax(14.5rem,1fr));gap:.75rem;margin-bottom:.4rem}
+.ck-tile{position:relative;display:flex;flex-direction:column;gap:.25rem;min-height:7.6rem;padding:.8rem .95rem .7rem 1.1rem;background:var(--paper);border:1px solid var(--line);border-radius:.9rem;color:var(--ink);text-decoration:none;overflow:hidden;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease}
+.ck-tile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--line)}
+.ck-tile.good::before{background:var(--ok)}.ck-tile.warn::before{background:var(--warn)}.ck-tile.crit::before{background:var(--crit)}
+a.ck-tile:hover{border-color:var(--blue);box-shadow:0 6px 18px -10px rgba(15,27,45,.45)}
+a.ck-tile:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){a.ck-tile:hover{transform:translateY(-1px)}}
+.ck-l{color:var(--muted);font-weight:700;font-size:.74rem;text-transform:uppercase;letter-spacing:.05em}
+.ck-row{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap}
+.ck-v{font:800 1.55rem/1.1 'Bricolage Grotesque',sans-serif;overflow-wrap:anywhere}
+.ck-tile.crit .ck-v{color:var(--crit)}
+.ck-d{font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap}
+.ck-d.up{color:var(--ok)}.ck-d.down{color:var(--crit)}
+.ck-s{font-size:.82rem;color:var(--muted);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ck-spark{display:block;width:100%;height:28px;margin-top:auto;padding-top:.3rem}
+.ck-line{fill:none;stroke:var(--btc);stroke-width:1.6;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.ck-area{fill:var(--btc);opacity:.12}
+.ck-wait .ck-v{color:var(--line)}
+@media (prefers-reduced-motion:no-preference){.ck-wait{animation:ckPulse 1.2s ease-in-out infinite alternate}@keyframes ckPulse{from{opacity:.55}to{opacity:1}}}
+@media (max-width:560px){.ck{grid-template-columns:1fr 1fr;gap:.5rem}.ck-tile{min-height:6.8rem;padding:.65rem .7rem .6rem .9rem}.ck-v{font-size:1.2rem}.ck-s{-webkit-line-clamp:3}}
 #posters{display:none}
 @media print{@page{size:A4;margin:0}body.posters-on #posters{display:block}}
 /* The poster itself: used by print and by the PDF, which measures it off-screen. */
@@ -294,6 +315,11 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 
   <nav class="tabs" aria-label="Dashboard sections"><span class="tabgroup" aria-hidden="true">Today</span><button type="button" data-tab="overview">Overview</button><span class="tabgroup" aria-hidden="true">Node</span><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><span class="tabgroup" aria-hidden="true">Money</span><button type="button" data-tab="money">Money</button><button type="button" data-tab="earn">Earn</button><span class="tabgroup" aria-hidden="true">Products</span><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="ktown">kTown</button><button type="button" data-tab="kazi">Kazi</button><button type="button" data-tab="developer">Developer</button><span class="tabgroup" aria-hidden="true">Team</span><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><span class="tabgroup" aria-hidden="true">Safety</span><button type="button" data-tab="security">Security</button><span class="tabgroup" aria-hidden="true">Learn</span><button type="button" data-tab="learn">Learn</button></nav>
   <div class="pane" data-pane="overview">
+  <section class="panel" aria-labelledby="hCockpit">
+    <h2 id="hCockpit">At a glance</h2>
+    <div class="ck" id="cockpit" aria-live="polite"></div>
+    <p class="sm muted" id="ckAge"></p>
+  </section>
   <section class="panel" aria-labelledby="hCheck">
     <h2 id="hCheck">Today's checklist</h2>
     <div class="learn"><p>What a node operator checks each day. Green means fine. Red means act today. Grey is something only you can check.</p></div>
@@ -1104,6 +1130,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <div id="posters" aria-hidden="true"></div>
 <script src="/ktown/qrcode-generator-1.4.4.js"></script>
-<script type="module" src="/assets/admin.js?v=refresh28"></script>
+<script type="module" src="/assets/admin.js?v=refresh29"></script>
 </body>
 </html>

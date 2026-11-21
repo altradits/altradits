@@ -74,7 +74,7 @@ const settle = (p, ms = 8000) => Promise.race([p, new Promise((_, no) => setTime
 // new one now. Any admin action (POST) clears every copy. Errors are kept
 // 15 seconds only. Every cached answer carries _at (when it was made) and
 // _stale (an older copy while a fresh one is coming).
-const CACHED = new Set(["", "pnl", "wallets", "destinations", "channels", "liquidity", "security", "statement", "activity", "developer", "explore", "emails", "choumi", "ai"]);
+const CACHED = new Set(["", "cockpit", "pnl", "wallets", "destinations", "channels", "liquidity", "security", "statement", "activity", "developer", "explore", "emails", "choumi", "ai"]);
 let FRESH_MS = 60e3, ERROR_MS = 15e3, MAX_AGE_MS = 30 * 60e3;
 export const setAdminCacheTimings = (t = {}) => { ({ fresh: FRESH_MS = FRESH_MS, error: ERROR_MS = ERROR_MS, maxAge: MAX_AGE_MS = MAX_AGE_MS } = t); }; // tests
 const memo = new Map(); // query -> { at, status, body, refreshing }
@@ -147,6 +147,8 @@ async function compute(request) {
     return inv ? json({ state: inv.state, sats: inv.sats }) : json({ error: "No such invoice." }, 404);
   }
   if (view === "channels") { const { channelReport } = await import("../lib/channels.js"); try { return json(await within(channelReport())); } catch (err) { return json({ error: err.message }, 502); } }
+  // The Overview cockpit: Ye₿ente per day, with the period before for the change.
+  if (view === "cockpit") { const { cockpitSeries } = await import("../lib/activity.js"); return json(await cockpitSeries({ days: 30 })); }
   if (view === "b2c") { const { mobileAdminView } = await import("../lib/ywallet.js"); return json(await mobileAdminView()); }
   if (view === "liquidity") { const { liquidityView } = await import("../lib/channels.js"); try { return json(await within(liquidityView())); } catch (err) { return json({ error: err.message }, 502); } }
   if (view === "topup") {

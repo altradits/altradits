@@ -14,6 +14,7 @@ const kpi = (label, v, state, why) => `<div class="kpi${state ? ` ${state}` : ""
 let KES_PER_BTC = null;
 let FRESH = false, oldestAt = null, anyStale = false, staleTimer = null; // data freshness (#519)
 let OVERVIEW = null, lastUtxos = null;
+const CK = {}; // the cockpit's data, filled in as each part loads (#519)
 const ksh = (sats) => (KES_PER_BTC && sats !== null && sats !== undefined ? `KSh ${Math.round((Number(sats) / 1e8) * KES_PER_BTC).toLocaleString("en-US")}` : "");
 const satsKsh = (sats) => `${satsF(sats)}${ksh(sats) ? ` (${ksh(sats)})` : ""}`;
 const judge = (ok) => (ok === null || ok === undefined ? "" : ok ? "good" : "warn");
@@ -71,6 +72,7 @@ function renderAlerts() {
   const list = Object.values(ISSUES).sort((a, b) => (a.level === "crit" ? 0 : 1) - (b.level === "crit" ? 0 : 1));
   $("#health").textContent = list.length ? `${list.length} thing${list.length === 1 ? "" : "s"} need${list.length === 1 ? "s" : ""} you ▾` : "All good";
   $("#health").classList.toggle("bad", list.length > 0);
+  renderCockpit();
   $("#alertList").innerHTML = list.length ? list.map((x) => `<li><a href="#${esc(x.go.split(":")[0])}" data-go="${esc(x.go)}"><span class="lv ${x.level}">${x.level === "crit" ? "Act now" : "Soon"}</span><br>${esc(x.text)}</a></li>`).join("") : '<li class="sm muted">Nothing needs you right now.</li>';
 }
 function go(target) {
@@ -420,6 +422,7 @@ function renderMap(P) {
 async function loadPower() {
   let P; try { P = await api("?view=liquidity"); } catch (err) { $("#spNote").textContent = err.message; return null; }
   lastPower = P;
+  CK.P = P; renderCockpit();
   renderMap(P);
   $("#spNote").innerHTML = `<span class="kpis" style="display:grid;margin:0 0 .6rem">${kpi("Can send now", satsF(P.spendable), judge(P.spendable >= 1000), ksh(P.spendable))}${kpi("Owed to wallets", satsF(P.owedSats), "", ksh(P.owedSats))}${kpi("Can still receive", satsF(P.inbound), "", `${ksh(P.inbound)} · after the peer's reserve`)}</span>`
     + (P.spendable < 1000 ? `<b class="err">The node can't send anything right now.</b> Ye₿ente payments out fail until you top up.`
@@ -675,6 +678,7 @@ $("#devAccounts").addEventListener("click", async (e) => {
 // Profit and loss: what the node earned and spent, and what is yours after Ye₿ente's wallet holders.
 async function loadPnl() {
   let L; try { L = await api(`?view=pnl&days=${encodeURIComponent($("#pnlDays").value)}`); } catch (err) { $("#pnlTable").textContent = err.message; return; }
+  CK.L = L; renderCockpit();
   const E = L.earned, S = L.spent;
   $("#pnlKpis").innerHTML = kpi("Earned", satsF(E.total), "", ksh(E.total)) + kpi("Spent", satsF(S.total), "", ksh(S.total))
     + kpi(L.net >= 0 ? "Profit" : "Loss", satsF(Math.abs(L.net)), L.net >= 0 ? "good" : "warn", ksh(Math.abs(L.net)));
@@ -834,6 +838,7 @@ async function loadWallets() {
 const kshF = (n) => `KSh ${num(n)}`;
 async function loadB2c() {
   let B; try { B = await api("?view=b2c"); } catch (err) { $("#b2cOpen").textContent = err.message; return; }
+  CK.B = B; renderCockpit();
   $("#b2cKpis").innerHTML = kpi("Switch", B.on ? "On" : "Off", "", B.configured ? "Settings are in place." : "Settings missing: see the setup PDF.")
     + kpi("Float", kshF(B.floatKes), "", B.floatAt ? `${B.floatFrom}, ${ago(B.floatAt)}` : "from the setting")
     + kpi("Promised to open payouts", kshF(B.reservedKes), "", `${num(B.open.length)} open`)
@@ -3038,6 +3043,7 @@ async function loadKtown() {
   try {
     const { shops, max } = await api("", { action: "ktown_shops" });
     KTOWN = shops;
+    CK.shopsLoaded = true; CK.ktownMax = max; renderCockpit();
     $("#ktownCount").textContent = `${shops.length} of ${max} places`;
     renderKtown();
     issue("ktown", shops.length >= max ? "soon" : null, `kTown is full: ${shops.length} of ${max} places. Raise KTOWN_MAX_MERCHANTS to let more shops in.`, "ktown:hKtown");
@@ -3088,6 +3094,94 @@ $("#ktownPdfAll").addEventListener("click", () => {
 });
 $("#ktownReload").addEventListener("click", loadKtown);
 
+// ---- The cockpit: the numbers that matter, at the top of the Overview (#519).
+// Each tile fills in as its data arrives (node, sending power, Ye₿ente, profit,
+// M-Pesa float, kTown), shows its change against the 30 days before and a
+// trend line, and opens the panel behind it. Nothing here asks for more data
+// than the panels already load, except one cached per-day view of Ye₿ente.
+const pctChange = (now, before) => {
+  if (now === null || now === undefined || before === null || before === undefined) return null;
+  if (!before) return now ? { text: "new", dir: 1 } : null;
+  const p = Math.round(((now - before) / before) * 100);
+  return { text: `${p > 0 ? "+" : ""}${p}%`, dir: Math.sign(p) };
+};
+// A small trend line: the area under it light, the line in Bitcoin orange.
+function spark(values, label) {
+  const v = (values || []).map((x) => Number(x) || 0);
+  if (v.length < 2) return "";
+  const max = Math.max(1, ...v), w = 100, h = 28, step = w / (v.length - 1);
+  const pts = v.map((x, i) => `${(i * step).toFixed(1)},${(h - 2 - (x / max) * (h - 4)).toFixed(1)}`);
+  return `<svg class="ck-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="${esc(label)}">`
+    + `<polygon points="0,${h} ${pts.join(" ")} ${w},${h}" class="ck-area"/><polyline points="${pts.join(" ")}" class="ck-line"/></svg>`;
+}
+// One tile. `state`: good, warn, crit or none; `change` from pctChange; `upIsBad` flips its colour.
+function ckTile({ label, value, sub, state, change, upIsBad, trend, trendLabel, go, loading, error }) {
+  if (loading) return `<div class="ck-tile ck-wait" aria-busy="true"><span class="ck-l">${esc(label)}</span><span class="ck-v">…</span><span class="ck-s">Loading</span></div>`;
+  if (error) return `<a class="ck-tile warn" href="#${esc(go.split(":")[0])}" data-go="${esc(go)}"><span class="ck-l">${esc(label)}</span><span class="ck-v">–</span><span class="ck-s">${esc(error)}</span></a>`;
+  const good = change && change.dir !== 0 ? (change.dir > 0) !== Boolean(upIsBad) : null;
+  const chip = change ? `<span class="ck-d ${good === null ? "" : good ? "up" : "down"}" title="Change against the 30 days before">${change.dir > 0 ? "▲" : change.dir < 0 ? "▼" : "•"} ${esc(change.text)}</span>` : "";
+  return `<a class="ck-tile${state ? ` ${state}` : ""}" href="#${esc(go.split(":")[0])}" data-go="${esc(go)}">`
+    + `<span class="ck-l">${esc(label)}</span><span class="ck-row"><span class="ck-v">${esc(value)}</span>${chip}</span>`
+    + (sub ? `<span class="ck-s">${esc(sub)}</span>` : "") + (trend ? spark(trend, trendLabel || label) : "") + `</a>`;
+}
+const CK_DAYS = 30;
+function renderCockpit() {
+  const box = document.getElementById("cockpit");
+  if (!box) return;
+  const { D, P, L, B, C } = CK, tiles = [];
+  // The node: is it synced and connected?
+  const N = D?.node;
+  tiles.push(!D ? ckTile({ label: "Node", loading: !CK.Derr, error: CK.Derr, go: "node:hNode" })
+    : !N || N.error ? ckTile({ label: "Node", value: "Offline", state: "crit", sub: N?.error ? "The node didn't answer. Wake the Mac and check LND." : "Not connected.", go: "node:hNode" })
+    : ckTile({ label: "Node", value: N.synced ? "Synced" : "Catching up", state: N.synced && N.activeChannels > 0 ? "good" : "warn", sub: `Block ${num(N.blockHeight)} · ${num(N.activeChannels)} channel${N.activeChannels === 1 ? "" : "s"} active · ${num(N.peers)} peer${N.peers === 1 ? "" : "s"}`, go: "node:hNode" }));
+  // What needs Stanley.
+  const open = Object.values(ISSUES), crit = open.filter((x) => x.level === "crit").length;
+  tiles.push(ckTile({ label: "Needs you", value: open.length ? `${open.length} thing${open.length === 1 ? "" : "s"}` : "All good", state: crit ? "crit" : open.length ? "warn" : "good", sub: open.length ? open[0].text : "Nothing to act on.", go: "alerts:" }));
+  // Sending power: can the node pay every wallet out?
+  tiles.push(!P ? ckTile({ label: "Sending power", loading: true, go: "channels:hPower" })
+    : ckTile({ label: "Sending power", value: satsF(P.spendable), state: P.spendable < 1000 ? "crit" : P.covered ? "good" : "warn", sub: `${P.covered ? "Covers" : "Short of"} the ${satsF(P.owedSats)} held for wallets${ksh(P.spendable) ? ` · ${ksh(P.spendable)}` : ""}`, go: "channels:hPower" }));
+  // Ye₿ente, from the per-day view.
+  if (!C) for (const label of ["Held for Ye₿ente wallets", "New wallets", "Active wallets", "Money in", "Money out"]) tiles.push(ckTile({ label, loading: !CK.Cerr, error: CK.Cerr, go: "yebente:hAll" }));
+  else {
+    const S = C.series, T = C.totals, Pv = C.previous, col = (k) => S.map((d) => d[k]);
+    tiles.push(ckTile({ label: "Held for Ye₿ente wallets", value: satsF(C.heldSats), sub: `Across ${num(C.wallets)} wallets${ksh(C.heldSats) ? ` · ${ksh(C.heldSats)}` : ""}. Users' money: the node must cover it.`, go: "yebente:hAll" }));
+    tiles.push(ckTile({ label: `New wallets, ${CK_DAYS} days`, value: num(T.newWallets), sub: `${num(Pv.newWallets)} in the ${CK_DAYS} days before`, change: pctChange(T.newWallets, Pv.newWallets), trend: col("newWallets"), trendLabel: `New wallets per day, last ${CK_DAYS} days`, go: "yebente:hAll" }));
+    tiles.push(ckTile({ label: `Active wallets, ${CK_DAYS} days`, value: num(T.active), sub: `${num(Pv.active)} in the ${CK_DAYS} days before`, change: pctChange(T.active, Pv.active), trend: col("active"), trendLabel: `Wallets active per day, last ${CK_DAYS} days`, go: "yebente:hAct" }));
+    tiles.push(ckTile({ label: `Money in, ${CK_DAYS} days`, value: satsF(T.depositSats), sub: `${num(T.deposits)} deposit${T.deposits === 1 ? "" : "s"}${ksh(T.depositSats) ? ` · ${ksh(T.depositSats)}` : ""}`, change: pctChange(T.depositSats, Pv.depositSats), trend: col("depositSats"), trendLabel: `Sats deposited per day, last ${CK_DAYS} days`, go: "yebente:hAct" }));
+    const tried = T.sends + T.failedSends, failPct = tried ? Math.round((T.failedSends / tried) * 100) : 0;
+    tiles.push(ckTile({ label: `Money out, ${CK_DAYS} days`, value: satsF(T.sentSats), state: failPct >= 20 ? "warn" : "", sub: `${num(T.sends)} payment${T.sends === 1 ? "" : "s"}${T.failedSends ? ` · ${num(T.failedSends)} failed (${failPct}%)` : ""}`, change: pctChange(T.sentSats, Pv.sentSats), trend: col("sentSats"), trendLabel: `Sats sent per day, last ${CK_DAYS} days`, go: "yebente:hDest" }));
+  }
+  // Profit, over the period chosen in Profit and loss, with routing fees per day.
+  tiles.push(!L ? ckTile({ label: "Profit", loading: true, go: "money:hPnl" })
+    : ckTile({ label: `${L.net >= 0 ? "Profit" : "Loss"}, ${L.days} days`, value: satsF(Math.abs(L.net)), state: L.net >= 0 ? "good" : "warn", sub: `Earned ${satsF(L.earned.total)} · spent ${satsF(L.spent.total)}${L.nodeRead ? "" : " · node not read"}`, trend: L.trend ? L.trend.map((d) => d.fees) : null, trendLabel: "Routing fees per day", go: "money:hPnl" }));
+  // Direct M-Pesa payouts: room left in the float.
+  if (B) tiles.push(ckTile({ label: "M-Pesa payout float", value: B.configured ? kshF(Math.max(0, B.roomKes)) : "Not set up", state: !B.configured || !B.on ? "" : B.roomKes <= 0 ? "crit" : B.open.length ? "warn" : "good", sub: B.configured ? `Room for new payouts · ${num(B.open.length)} waiting for Safaricom${B.on ? "" : " · switched off"}` : "Settings missing: see the setup PDF.", go: "yebente:hB2c" }));
+  // kTown: shops, and new ones per day.
+  if (CK.shopsLoaded) {
+    const since = Date.now() - CK_DAYS * 864e5, perDay = Array(CK_DAYS).fill(0);
+    let paid = 0, fresh = 0;
+    for (const m of KTOWN) {
+      paid += Number(m.paidCount) || 0;
+      const t = Date.parse(m.createdAt);
+      if (t >= since) { fresh++; perDay[Math.min(CK_DAYS - 1, Math.floor((t - since) / 864e5))]++; }
+    }
+    tiles.push(ckTile({ label: "kTown shops", value: CK.ktownMax ? `${num(KTOWN.length)} of ${num(CK.ktownMax)}` : num(KTOWN.length), state: CK.ktownMax && KTOWN.length >= CK.ktownMax ? "warn" : "", sub: `${num(fresh)} new in ${CK_DAYS} days · ${num(paid)} payment${paid === 1 ? "" : "s"} received`, trend: perDay, trendLabel: `New kTown shops per day, last ${CK_DAYS} days`, go: "ktown:hKtown" }));
+  }
+  box.innerHTML = tiles.join("");
+  if (C) $("#ckAge").textContent = `Ye₿ente figures from ${new Date(C.at).toLocaleTimeString()} · changes compare with the ${CK_DAYS} days before.`;
+}
+async function loadCockpit() {
+  try { CK.C = await api("?view=cockpit"); CK.Cerr = null; } catch (err) { CK.Cerr = err.message; }
+  renderCockpit();
+}
+$("#cockpit").addEventListener("click", (e) => {
+  const a = e.target.closest("[data-go]");
+  if (!a) return;
+  e.preventDefault();
+  if (a.dataset.go === "alerts:") { $("#health").click(); return; }
+  go(a.dataset.go);
+});
+
 // Signing in shows the dashboard as soon as the token is confirmed (a quick
 // check); then the overview and every panel load at the same time, each
 // appearing when its data arrives. The server answers from a recent copy, so
@@ -3099,14 +3193,15 @@ async function load() {
   $("#loginErr").textContent = "";
   $("#login").hidden = true; $("#app").hidden = false;
   loadKtown(); // the shop list needs no node: show it at once
-  const panels = Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadB2c(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
+  const panels = Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadB2c(), loadCockpit(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
   const over = api("").then((D) => {
     KES_PER_BTC = D.kesPerBtc;
     OVERVIEW = D;
+    CK.D = D; CK.Derr = null; renderCockpit();
     renderChecklist(D); renderStan(D.stan, D.alerts); renderNode(D); renderChain(D); renderChainLow(D); renderRouting(D); renderSettlement(D); renderGlossary(); renderBanner(D); renderBackup(D.backup);
     renderVerify();
     if (lastPower) renderMap(lastPower); // the money map needs the overview's on-chain figures
-  }).catch((err) => toast(err.message, true, 8000));
+  }).catch((err) => { CK.Derr = err.message; renderCockpit(); toast(err.message, true, 8000); });
   await over;
   if (KES_PER_BTC) loadWallets(); // shillings appear once the rate is known (the server answers from its copy)
   await panels;
