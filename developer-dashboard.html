@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-NiVCq+LXZrKwkza+t1AqR+mPOfSge3Yf09WbohYQWbU='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/dE/5BDKc5kKywxsv/9b4CrSgd0vZ2wYiiSqBxoEqoQ='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <meta name="theme-color" content="#EEF2F6">
 <link rel="canonical" href="https://altradits.com/developer/dashboard">
@@ -295,6 +295,14 @@ async function loadDests() {
     const code = document.createElement("code");
     code.textContent = d.verified ? `verified (${d.proof})` : "unverified";
     li.appendChild(code);
+    // The id is what POST /invoices takes as destinationId, so show it with a copy button.
+    const idLine = document.createElement("div");
+    idLine.className = "acts";
+    const idCode = document.createElement("code");
+    idCode.textContent = `id ${d.id}`;
+    idLine.appendChild(idCode);
+    idLine.appendChild(btn("Copy id", "ghost", (e) => copyText(d.id, e.target)));
+    li.appendChild(idLine);
     if (!d.verified) {
       const acts = document.createElement("div");
       acts.className = "acts";
