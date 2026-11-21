@@ -69,3 +69,21 @@ test("posters: A4 with no margins by default, and a real A4 PDF to download or s
   assert.equal(pdf.slice(xref, xref + 4), "xref", "the index points at itself");
   for (const [, n, off] of pdf.slice(xref).matchAll(/^(\d{10}) 00000 n $/gm).map((m, i) => [m, i + 1, Number(m[1])])) assert.equal(pdf.slice(off, off + `${n} 0 obj`.length), `${n} 0 obj`, `object ${n} is where the index says`);
 });
+
+test("dark mode covers every colour token, printing stays light, and every table can be sorted and filtered", () => {
+  const html = fs.readFileSync(new URL("../admin.html", import.meta.url), "utf8");
+  const js = fs.readFileSync(new URL("../assets/admin.js", import.meta.url), "utf8");
+  const light = /:root\{([^}]*)\}/.exec(html)[1];
+  const dark = /:root\[data-theme=dark\]\{([^}]*)\}/.exec(html)[1];
+  const names = (b) => [...b.matchAll(/--([\w-]+):/g)].map((m) => m[1]);
+  for (const n of names(light)) assert.ok(names(dark).includes(n), `--${n} has a dark value`);
+  assert.match(html, /@media \(prefers-color-scheme:dark\)\{:root:not\(\[data-theme=light\]\)\{/, "Auto follows the device");
+  assert.match(html, /@media print\{:root,:root\[data-theme=dark\]\{--bg:#fff/, "printing is always light");
+  assert.match(html, /id="theme"/);
+  // Text on a dark (ink) fill uses the token that flips with it, never a fixed white.
+  assert.doesNotMatch(html.replace(/\.poster[^{]*\{[^}]*\}/g, "").replace(/\.ck-tip\{[^}]*\}/g, ""), /background:var\(--ink\);[^}]*color:#fff/, "text on ink uses --on-ink");
+  assert.match(js, /function enhanceTable\(table\)/);
+  assert.match(js, /th\.setAttribute\("aria-sort", "none"\)/, "sortable headings say how they're sorted");
+  assert.match(js, /if \(body\.rows\.length > 8\)/, "long tables get a filter");
+  assert.match(js, /table\.closest\("#posters,#rcpt"\)/, "printed posters and receipts are left alone");
+});

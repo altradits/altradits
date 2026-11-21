@@ -3356,6 +3356,91 @@ $("#cockpit").addEventListener("click", (e) => {
   go(a.dataset.go);
 });
 
+// ---- Dashboard visual system (#519, step 3): colour theme and tables.
+// Theme: Auto follows the device; Light or Dark sticks on this browser.
+const THEMES = ["auto", "light", "dark"];
+function applyTheme(t) {
+  if (t === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.dataset.theme = t;
+  const b = document.getElementById("theme");
+  if (b) b.textContent = `Theme: ${t[0].toUpperCase()}${t.slice(1)}`;
+}
+let THEME = "auto";
+try { THEME = THEMES.includes(localStorage.getItem("altra.theme")) ? localStorage.getItem("altra.theme") : "auto"; } catch { /* private mode */ }
+applyTheme(THEME);
+document.getElementById("theme")?.addEventListener("click", () => {
+  THEME = THEMES[(THEMES.indexOf(THEME) + 1) % THEMES.length];
+  try { localStorage.setItem("altra.theme", THEME); } catch { /* private mode */ }
+  applyTheme(THEME);
+});
+
+// Tables: click (or Enter on) a heading to sort by it; a filter box on tables
+// longer than 8 rows; wide tables scroll sideways inside their panel. Applied
+// to every table as the panels draw them, so no panel needs its own code.
+const cellValue = (td) => {
+  const t = (td?.innerText || "").trim();
+  const n = t.replace(/[,\s]|sats?|KSh|%/gi, "");
+  if (/^[-+−]?\d+(\.\d+)?$/.test(n.replace("−", "-"))) return Number(n.replace("−", "-"));
+  const ago = /^(\d+)([mhd]) ago$/.exec(t);
+  if (ago) return -Number(ago[1]) * { m: 1, h: 60, d: 1440 }[ago[2]]; // newer first when ascending is "most recent"
+  return t.toLowerCase();
+};
+function enhanceTable(table) {
+  if (table.dataset.enh || table.closest("#posters,#rcpt")) return;
+  table.dataset.enh = "1";
+  if (!table.parentElement.classList.contains("tscroll")) {
+    const wrap = document.createElement("div");
+    wrap.className = "tscroll";
+    table.replaceWith(wrap);
+    wrap.append(table);
+  }
+  const body = table.tBodies[0];
+  const heads = table.tHead ? [...table.tHead.rows[0].cells] : [];
+  if (!body || body.rows.length < 2) return;
+  heads.forEach((th, col) => {
+    if (!th.textContent.trim()) return; // action columns
+    th.classList.add("sortable");
+    th.tabIndex = 0;
+    th.setAttribute("aria-sort", "none");
+    const sort = () => {
+      const dir = th.getAttribute("aria-sort") === "ascending" ? "descending" : "ascending";
+      heads.forEach((h) => h.classList.contains("sortable") && h.setAttribute("aria-sort", "none"));
+      th.setAttribute("aria-sort", dir);
+      const rows = [...body.rows].sort((a, b) => {
+        const x = cellValue(a.cells[col]), y = cellValue(b.cells[col]);
+        const c = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y));
+        return dir === "ascending" ? c : -c;
+      });
+      body.append(...rows);
+    };
+    th.addEventListener("click", sort);
+    th.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sort(); } });
+  });
+  if (body.rows.length > 8) {
+    const box = Object.assign(document.createElement("input"), { type: "search", className: "tfilter", placeholder: `Filter these ${body.rows.length} rows` });
+    box.setAttribute("aria-label", "Filter the table below");
+    const none = Object.assign(document.createElement("p"), { className: "tfilter-none", hidden: true, textContent: "No rows match." });
+    table.parentElement.before(box);
+    table.parentElement.after(none);
+    box.addEventListener("input", () => {
+      const q = box.value.trim().toLowerCase();
+      let shown = 0;
+      for (const r of body.rows) { const hit = !q || r.innerText.toLowerCase().includes(q); r.hidden = !hit; if (hit) shown++; }
+      none.hidden = shown > 0;
+    });
+  }
+}
+// Panels replace their HTML when data arrives (which also drops an old
+// table's filter box): enhance whatever they draw.
+let enhPending = false;
+new MutationObserver(() => {
+  if (enhPending) return;
+  enhPending = true;
+  requestAnimationFrame(() => {
+    enhPending = false;
+    document.querySelectorAll("#app .panel table:not([data-enh])").forEach(enhanceTable);
+  });
+}).observe(document.getElementById("app"), { childList: true, subtree: true });
+
 // Signing in shows the dashboard as soon as the token is confirmed (a quick
 // check); then the overview and every panel load at the same time, each
 // appearing when its data arrives. The server answers from a recent copy, so
