@@ -701,6 +701,11 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </div>
 
   <div class="pane" data-pane="yebente">
+<section class="panel" aria-labelledby="hOpenPay">
+    <h2 id="hOpenPay">Lightning payments out still open</h2>
+    <div class="learn"><p>A payment out stays open until the node says it was paid or failed; the server asks every 2 minutes. Here is what the node says about each one right now. <b>Ask the node now</b> settles it the same way: refunded only when the node says it failed or never started.</p></div>
+    <div id="openPay"><p class="sm muted">Loading…</p></div>
+  </section>
 <section class="panel" aria-labelledby="hAll">
     <h2 id="hAll">All wallet balances</h2>
     <p class="see sm">Verify on the Mac: the “Wallets owed” row in Learn → Verify (set ADMIN_TOKEN from the server's settings first). These balances live on the server, not the node.</p>
@@ -1161,6 +1166,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <div id="posters" aria-hidden="true"></div>
 <script src="/ktown/qrcode-generator-1.4.4.js"></script>
-<script type="module" src="/assets/admin.js?v=refresh32"></script>
+<script type="module" src="/assets/admin.js?v=refresh33"></script>
 </body>
 </html>
