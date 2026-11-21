@@ -172,9 +172,15 @@ async function fakeLnd() {
         res.end(JSON.stringify({ payments: [...payments].map(([h, st]) => ({ payment_hash: h, status: st, fee_sat: "4" })) }));
         return;
       }
-      const track = req.url.match(/^\/v2\/router\/track\/([\w-]+)/);
+      const track = req.url.match(/^\/v2\/router\/track\/([^?]+)/);
       if (track) {
-        const h = Buffer.from(track[1], "base64url").toString("hex");
+        // As LND's REST layer decodes bytes in a path: padded standard base64,
+        // else padded URL-safe base64. Anything else is a 400 (the live bug of
+        // 21 Nov 2026: unpadded base64url left payments open for weeks).
+        const raw = decodeURIComponent(track[1]);
+        const padded = raw.length % 4 === 0 && /^[A-Za-z0-9+/]*={0,2}$|^[A-Za-z0-9_-]*={0,2}$/.test(raw);
+        if (!padded) { res.writeHead(400).end(JSON.stringify({ code: 3, message: "type mismatch, parameter: payment_hash, error: illegal base64 data at input byte 40" })); return; }
+        const h = Buffer.from(raw.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("hex");
         if (!payments.has(h)) { res.writeHead(500).end(JSON.stringify({ code: 5, message: "payment isn't initiated" })); return; }
         res.end(JSON.stringify({ result: { payment_hash: h, status: payments.get(h), fee_sat: "4" } }) + "\n");
         return;
