@@ -3441,6 +3441,62 @@ new MutationObserver(() => {
   });
 }).observe(document.getElementById("app"), { childList: true, subtree: true });
 
+// ---- Quick search (#519, step 4): Ctrl/Cmd+K or the Search button finds any
+// panel (or tab) by name and goes there. The list is built from the page
+// itself, so a new panel is searchable with no extra code.
+function qsIndex() {
+  const tabName = (pane) => document.querySelector(`[data-tab="${pane}"]`)?.textContent.trim() || pane;
+  const out = [...document.querySelectorAll("[data-tab]")].map((b) => ({ label: b.textContent.trim(), where: "Tab", go: b.dataset.tab }));
+  for (const h of document.querySelectorAll(".pane .panel h2[id]")) {
+    const pane = h.closest("[data-pane]")?.dataset.pane;
+    if (!pane) continue;
+    // Searchable by what the panel says, not only its title: its sub-headings and its explanation.
+    const panel = h.closest(".panel");
+    const more = panel ? [...panel.querySelectorAll("h3, .learn, label, .kpi small")].map((x) => x.textContent).join(" ").slice(0, 1500) : "";
+    out.push({ label: h.childNodes[0]?.textContent.trim() || h.textContent.trim(), where: tabName(pane), go: `${pane}:${h.id}`, keys: more });
+  }
+  return out;
+}
+let QS = [], qsPick = 0;
+function qsRender() {
+  const q = $("#qsInput").value.trim().toLowerCase();
+  const words = q.split(/\s+/).filter(Boolean);
+  // Title matches first, then panels that only mention the words.
+  const has = (x, inKeys) => words.every((w) => `${x.label} ${x.where}${inKeys ? ` ${x.keys || ""}` : ""}`.toLowerCase().includes(w));
+  const hits = [...QS.filter((x) => has(x, false)), ...QS.filter((x) => !has(x, false) && has(x, true))].slice(0, 30);
+  qsPick = Math.min(qsPick, Math.max(0, hits.length - 1));
+  $("#qsList").innerHTML = hits.length ? hits.map((x, i) => `<li role="option" id="qs${i}" data-go="${esc(x.go)}" aria-selected="${i === qsPick}">${esc(x.label)}<span>${esc(x.where)}</span></li>`).join("")
+    : '<li aria-disabled="true">Nothing matches.</li>';
+  $("#qsInput").setAttribute("aria-activedescendant", hits.length ? `qs${qsPick}` : "");
+  document.getElementById(`qs${qsPick}`)?.scrollIntoView({ block: "nearest" });
+}
+function qsOpen() {
+  QS = qsIndex(); qsPick = 0;
+  $("#qsInput").value = "";
+  qsRender();
+  $("#qs").showModal();
+  $("#qsInput").focus();
+}
+function qsGo(li) {
+  if (!li?.dataset.go) return;
+  $("#qs").close();
+  const t = li.dataset.go;
+  if (t.includes(":")) go(t); else tab(t);
+}
+$("#qsOpen").addEventListener("click", qsOpen);
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k" && !$("#app").hidden) { e.preventDefault(); $("#qs").open ? $("#qs").close() : qsOpen(); }
+});
+$("#qsInput").addEventListener("input", () => { qsPick = 0; qsRender(); });
+$("#qsInput").addEventListener("keydown", (e) => {
+  const n = $("#qsList").querySelectorAll("li[data-go]").length;
+  if (e.key === "ArrowDown") { e.preventDefault(); qsPick = Math.min(n - 1, qsPick + 1); qsRender(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); qsPick = Math.max(0, qsPick - 1); qsRender(); }
+  else if (e.key === "Enter") { e.preventDefault(); qsGo(document.getElementById(`qs${qsPick}`)); }
+});
+$("#qsList").addEventListener("click", (e) => qsGo(e.target.closest("li")));
+$("#qs").addEventListener("click", (e) => { if (e.target === $("#qs")) $("#qs").close(); }); // a click on the backdrop closes it
+
 // Signing in shows the dashboard as soon as the token is confirmed (a quick
 // check); then the overview and every panel load at the same time, each
 // appearing when its data arrives. The server answers from a recent copy, so

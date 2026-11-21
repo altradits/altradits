@@ -146,6 +146,34 @@ dialog{width:min(30rem,calc(100vw - 2rem));border:2px solid var(--ink);border-ra
 .rcpt-titlerow{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;border-bottom:2px solid #EA5158;padding:.55rem 0}
 .rcpt-titlerow h2{font-size:1.15rem;margin:0}
 .rcpt-no{font-size:.85rem;color:var(--muted);white-space:nowrap}
+/* Every table: sortable headings, a filter on long ones, sideways scroll on narrow screens. */
+.tscroll{overflow-x:auto;max-width:100%}
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}th.sortable::after{content:"↕";opacity:.35;margin-left:.3rem;font-size:.8em}
+th.sortable[aria-sort=ascending]::after{content:"↑";opacity:1}th.sortable[aria-sort=descending]::after{content:"↓";opacity:1}
+th.sortable:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+.tfilter{display:block;width:100%;max-width:22rem;margin:.2rem 0 .5rem;padding:.45rem .65rem;border:1px solid var(--line);border-radius:.5rem;background:var(--paper);color:var(--ink);font:inherit;font-size:.88rem}
+.tfilter-none{font-size:.85rem;color:var(--muted);padding:.4rem 0}
+/* Step 4 (#519): a sidebar on wide screens, and quick search. */
+@media (min-width:1180px){
+  .wrap{display:grid;grid-template-columns:12.5rem minmax(0,1fr);column-gap:1.6rem;max-width:92rem}
+  .wrap>*{grid-column:2;min-width:0}
+  .wrap>nav.tabs{grid-column:1;grid-row:1/span 999;align-self:start;position:sticky;top:1rem;flex-direction:column;align-items:stretch;gap:.2rem;overflow:visible;max-height:calc(100vh - 2rem);overflow-y:auto;padding:.4rem 0;margin:0;box-shadow:none}
+  body.scrolled .wrap>nav.tabs{box-shadow:none}
+  .wrap>nav.tabs .tabgroup{display:block;margin:.9rem .9rem .25rem;padding:0;text-align:left;align-self:stretch}
+  .wrap>nav.tabs .tabgroup:first-child{margin-top:0}
+  .wrap>nav.tabs button{text-align:left;border-radius:.6rem;min-height:2.4rem;padding:.4rem .9rem;border-color:transparent;background:transparent}
+  .wrap>nav.tabs button:hover{background:var(--paper);border-color:var(--line)}
+  .wrap>nav.tabs button[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:var(--on-ink)}
+}
+kbd{font:600 .72rem Figtree,sans-serif;border:1px solid var(--line);border-radius:.3rem;padding:.05rem .3rem;margin-left:.35rem;color:var(--muted)}
+#qs{width:min(34rem,calc(100vw - 2rem));margin:12vh auto auto;padding:0;border:1px solid var(--line);border-radius:.9rem;background:var(--paper);color:var(--ink)}
+#qs::backdrop{background:rgba(15,27,45,.45)}
+#qsInput{display:block;width:100%;box-sizing:border-box;border:0;border-bottom:1px solid var(--line);padding:1rem 1.1rem;font:500 1.05rem Figtree,sans-serif;background:transparent;color:var(--ink);outline:none}
+#qsList{list-style:none;margin:0;padding:.35rem;max-height:52vh;overflow-y:auto}
+#qsList li{display:flex;justify-content:space-between;gap:1rem;padding:.55rem .75rem;border-radius:.5rem;cursor:pointer}
+#qsList li span{color:var(--muted);font-size:.82rem;white-space:nowrap}
+#qsList li[aria-selected=true]{background:var(--ink);color:var(--on-ink)}#qsList li[aria-selected=true] span{color:var(--on-ink);opacity:.75}
+.qs-hint{margin:0;padding:.5rem 1.1rem .7rem;border-top:1px solid var(--line)}
 /* The cockpit (#519): tiles that open their panel (one glance), details below. */
 #hCockpit{margin:0}.ck-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;margin-bottom:.9rem}.ck-head p{margin:0}
 .ck{display:grid;grid-template-columns:repeat(auto-fill,minmax(14.5rem,1fr));gap:.75rem;margin-bottom:.4rem}
@@ -199,13 +227,6 @@ a.ck-tile:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .ck-tip{position:absolute;z-index:70;pointer-events:none;background:var(--ink);color:#fff;font:600 .8rem/1.3 Figtree,sans-serif;padding:.35rem .55rem;border-radius:6px;white-space:nowrap;font-variant-numeric:tabular-nums}
 @media (max-width:760px){.ck-two,.ck-open{grid-template-columns:1fr}.ck-table thead th:nth-child(3),.ck-table td:nth-child(3){display:none}.ck-table td:last-child{width:5.5rem}}
 @media (max-width:560px){.ck{grid-template-columns:1fr 1fr;gap:.5rem}.ck-tile{min-height:7rem;padding:.65rem .7rem .6rem .9rem}.ck-v{font-size:1.25rem}.ck-s{-webkit-line-clamp:3}.ck-l{flex-wrap:wrap}.ck-table th,.ck-table td{padding:.45rem .35rem}.ck-table td:last-child{width:4rem}.ck-meters li{grid-template-columns:minmax(0,1fr) auto}.ck-mb{display:none}}
-/* Every table: sortable headings, a filter on long ones, sideways scroll on narrow screens. */
-.tscroll{overflow-x:auto;max-width:100%}
-th.sortable{cursor:pointer;user-select:none;white-space:nowrap}th.sortable::after{content:"↕";opacity:.35;margin-left:.3rem;font-size:.8em}
-th.sortable[aria-sort=ascending]::after{content:"↑";opacity:1}th.sortable[aria-sort=descending]::after{content:"↓";opacity:1}
-th.sortable:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
-.tfilter{display:block;width:100%;max-width:22rem;margin:.2rem 0 .5rem;padding:.45rem .65rem;border:1px solid var(--line);border-radius:.5rem;background:var(--paper);color:var(--ink);font:inherit;font-size:.88rem}
-.tfilter-none{font-size:.85rem;color:var(--muted);padding:.4rem 0}
 #posters{display:none}
 @media print{@page{size:A4;margin:0}body.posters-on #posters{display:block}}
 /* The poster itself: used by print and by the PDF, which measures it off-screen. */
@@ -350,9 +371,14 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 </form>
 
 <div class="wrap" id="app" hidden>
+<dialog id="qs" aria-label="Go to a panel">
+  <input id="qsInput" type="search" placeholder="Go to… (a panel or a tab)" autocomplete="off" aria-controls="qsList" aria-label="Search panels">
+  <ul id="qsList" role="listbox" aria-label="Panels"></ul>
+  <p class="sm muted qs-hint">↑ ↓ to choose · Enter to open · Esc to close</p>
+</dialog>
   <header>
     <div class="brand"><a href="/"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><h1>Node dashboard</h1><span style="position:relative"><button type="button" class="pill" id="health" aria-expanded="false" aria-controls="alerts">Checking…</button><div class="alerts" id="alerts" hidden><h3>What needs you</h3><ul id="alertList"></ul></div></span></div>
-    <div class="row"><label class="switch"><input type="checkbox" id="explain" checked> Explain everything</label><span class="sm muted" id="checked"></span><button type="button" class="btn" id="theme" aria-label="Colour theme">Theme: Auto</button><button type="button" class="btn" id="refresh"><span class="spin" aria-hidden="true">↻</span>Refresh</button><button type="button" class="btn" id="logout">Sign out</button></div>
+    <div class="row"><label class="switch"><input type="checkbox" id="explain" checked> Explain everything</label><span class="sm muted" id="checked"></span><button type="button" class="btn" id="qsOpen" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K">Search <kbd>Ctrl K</kbd></button><button type="button" class="btn" id="theme" aria-label="Colour theme">Theme: Auto</button><button type="button" class="btn" id="refresh"><span class="spin" aria-hidden="true">↻</span>Refresh</button><button type="button" class="btn" id="logout">Sign out</button></div>
   </header>
 
   <div class="panel" id="nodeBanner" role="alert" hidden style="border-color:var(--crit)"></div>
@@ -1183,6 +1209,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <div id="posters" aria-hidden="true"></div>
 <script src="/ktown/qrcode-generator-1.4.4.js"></script>
-<script type="module" src="/assets/admin.js?v=refresh35"></script>
+<script type="module" src="/assets/admin.js?v=refresh36"></script>
 </body>
 </html>

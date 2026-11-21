@@ -87,3 +87,16 @@ test("dark mode covers every colour token, printing stays light, and every table
   assert.match(js, /if \(body\.rows\.length > 8\)/, "long tables get a filter");
   assert.match(js, /table\.closest\("#posters,#rcpt"\)/, "printed posters and receipts are left alone");
 });
+
+test("wide screens get a sidebar; quick search reaches every panel by its title or its words", () => {
+  const html = fs.readFileSync(new URL("../admin.html", import.meta.url), "utf8");
+  const js = fs.readFileSync(new URL("../assets/admin.js", import.meta.url), "utf8");
+  assert.match(html, /@media \(min-width:1180px\)\{[\s\S]*?\.wrap>nav\.tabs\{grid-column:1;/, "the tabs become a sidebar on wide screens");
+  assert.match(html, /<dialog id="qs"/);
+  assert.match(html, /aria-keyshortcuts="Control\+K Meta\+K"/);
+  assert.match(js, /\(e\.ctrlKey \|\| e\.metaKey\) && e\.key\.toLowerCase\(\) === "k"/);
+  assert.match(js, /document\.querySelectorAll\("\.pane \.panel h2\[id\]"\)/, "built from the page, so new panels are found");
+  // Every panel heading has an id, so search (and alert links) can reach it.
+  const panels = [...html.matchAll(/<section class="panel"[^>]*aria-labelledby="([^"]+)"/g)].map((m) => m[1]);
+  for (const id of panels) assert.match(html, new RegExp(`id="${id}"`), `${id} exists`);
+});
