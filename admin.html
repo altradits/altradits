@@ -706,6 +706,11 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div class="learn"><p>A payment out stays open until the node says it was paid or failed; the server asks every 2 minutes. Here is what the node says about each one right now. <b>Ask the node now</b> settles it the same way: refunded only when the node says it failed or never started.</p></div>
     <div id="openPay"><p class="sm muted">Loading…</p></div>
   </section>
+<section class="panel" aria-labelledby="hRecentPay">
+    <h2 id="hRecentPay">Recent Lightning payments out</h2>
+    <div class="learn"><p>Who each payment was meant for. An invoice names no person, but it carries the payee's node and usually a description; the node adds the node's public name when it has one. Payments sent before 21 Nov 2026 kept only "Lightning invoice".</p></div>
+    <div id="recentPay"><p class="sm muted">Loading…</p></div>
+  </section>
 <section class="panel" aria-labelledby="hAll">
     <h2 id="hAll">All wallet balances</h2>
     <p class="see sm">Verify on the Mac: the “Wallets owed” row in Learn → Verify (set ADMIN_TOKEN from the server's settings first). These balances live on the server, not the node.</p>
@@ -1166,6 +1171,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <div id="posters" aria-hidden="true"></div>
 <script src="/ktown/qrcode-generator-1.4.4.js"></script>
-<script type="module" src="/assets/admin.js?v=refresh33"></script>
+<script type="module" src="/assets/admin.js?v=refresh34"></script>
 </body>
 </html>
