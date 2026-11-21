@@ -99,3 +99,29 @@ test("the cockpit is interactive and live, and never polls from a hidden tab", (
   assert.match(js, /if \(ckBusy \|\| document\.hidden \|\| \$\("#app"\)\.hidden\) return;/, "not while hidden, signed out or already reading");
   assert.match(js, /if \(!ckBox\.contains\(document\.activeElement\) && ckTip\.hidden\) renderCockpit\(\)/, "never redraws under the pointer or the keyboard");
 });
+
+test("needs you: open payments list the node's answer; kTown unpaid invoices aren't an alert; self-cleared watches settle their alarms", async () => {
+  // No node in tests: every open payment shows "unknown" with the reason, and nothing is settled.
+  const yw = await import("../lib/ywallet.js");
+  await store.setJSON("yw:op1", { id: "op1", handle: "opener", balance: 0, createdAt: new Date().toISOString() });
+  await store.setJSON("ywe:ope1", { id: "ope1", walletId: "op1", kind: "send", sats: -500, status: "pending", counterparty: "someone@wallet.example", at: new Date().toISOString() });
+  const hash = "ab".repeat(32);
+  await store.setJSON(`ywpay:${hash}`, { walletId: "op1", entryId: "ope1", sats: 500, fee: 3, at: new Date(Date.now() - 3600e3).toISOString(), done: false });
+  await store.pushId("ywpayopen", hash);
+  const r = await yw.openPaymentsAdmin();
+  const row = r.open.find((x) => x.hash === hash);
+  assert.ok(row, "the open payment is listed");
+  assert.equal(row.node.status, "unknown");
+  assert.match(row.node.why, /didn't answer/);
+  const again = await yw.openPaymentsAdmin({ check: hash });
+  assert.ok(again.open.some((x) => x.hash === hash), "an unknown answer never settles or refunds");
+  assert.equal((await store.getJSON(`ywpay:${hash}`)).done, false);
+  // kTown: off means no sweep; the sweep is wired into the hourly jobs.
+  const kt = await import("../lib/ktown.js");
+  delete process.env.KTOWN;
+  assert.deepEqual(await kt.confirmAllPending(), { skipped: "off" });
+  assert.match(fs.readFileSync(new URL("../server.mjs", import.meta.url), "utf8"), /async function maybeRunHourly[\s\S]*?confirmAllPending\(\)/);
+  const js = fs.readFileSync(new URL("../assets/admin.js", import.meta.url), "utf8");
+  assert.match(js, /issue\("ktstuck", null\)/, "unpaid kTown invoices never nag");
+  assert.match(js, /h\.outcome === "resolved" \|\| h\.outcome === "acknowledged"/, "a watch that cleared on its own, or that Stanley confirmed, settles its alarms");
+});

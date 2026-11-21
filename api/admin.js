@@ -156,6 +156,8 @@ async function compute(request) {
     const [series, open, ktown] = await Promise.all([cockpitSeries({ days: 30 }), openItems(), ktownSeries({ days: 30 })]);
     return json({ ...series, open, ktown, reach, reachOn: njiaOn() });
   }
+  // Lightning payments out still open, with the node's answer for each (live, never cached).
+  if (view === "openpay") { const { openPaymentsAdmin } = await import("../lib/ywallet.js"); try { return json(await within(openPaymentsAdmin(), 45000)); } catch (err) { return json({ error: err.message }, 502); } }
   if (view === "b2c") { const { mobileAdminView } = await import("../lib/ywallet.js"); return json(await mobileAdminView()); }
   if (view === "liquidity") { const { liquidityView } = await import("../lib/channels.js"); try { return json(await within(liquidityView())); } catch (err) { return json({ error: err.message }, 502); } }
   if (view === "topup") {
@@ -379,6 +381,12 @@ export async function POST(request) {
   { const g = await gate(request); if (g) return g; }
   clearAdminCache(); // an action may change what the views show
   const body = await readBody(request);
+  // Ask the node about one open payment now, and settle it as the background check would.
+  if (body.action === "ypay_check") {
+    if (!/^[0-9a-f]{64}$/.test(String(body.hash || ""))) return json({ error: "No such payment." }, 400);
+    const { openPaymentsAdmin } = await import("../lib/ywallet.js");
+    try { return json({ ok: true, ...(await within(openPaymentsAdmin({ check: body.hash }), 45000)) }); } catch (err) { return json({ error: err.message }, 502); }
+  }
   if (body.action === "b2c_float" || body.action === "b2c_settle") {
     const yw = await import("../lib/ywallet.js");
     try {

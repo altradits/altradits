@@ -498,15 +498,25 @@ $("#lnAdd").addEventListener("click", async () => {
 const SEC_RESOLVABLE = ["file_tampering", "unexplained_balance_drop", "admin_compromise"];
 const SEC_SEV_WORD = { high: "High", medium: "Medium", low: "Low" };
 const secSevOf = (e, T) => T[e.kind]?.severity || "low";
-function secLifts(deadman) {
+function secLiftsOnly(deadman) {
   const out = [];
   for (const l of deadman?.liftHistory || []) if (l?.liftedAt) out.push({ at: l.liftedAt, note: l.note || "", forced: Boolean(l.forced) });
   if (deadman?.liftedAt && !out.some((l) => l.at === deadman.liftedAt)) out.push({ at: deadman.liftedAt, note: deadman?.liftNote || "", forced: Boolean(deadman?.forcedLift) });
   return out.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
 }
+// A watch that closed after an event settles it too: the signal cleared on its
+// own (the files matched the deploy again), or Stanley said "this was me".
+// Without this, a watch that resolved itself kept "What needs you" nagging all day.
+function secLifts(deadman) {
+  const out = secLiftsOnly(deadman);
+  for (const h of deadman?.history || []) {
+    if (h?.closedAt && (h.outcome === "resolved" || h.outcome === "acknowledged")) out.push({ at: h.closedAt, note: h.outcome === "resolved" ? "The signal cleared on its own: the files matched the deploy again." : "You confirmed this was you.", forced: false, kind: h.kind });
+  }
+  return out.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+}
 function secResolved(e, lifts) {
   if (!SEC_RESOLVABLE.includes(e.kind)) return null;
-  return (lifts || []).filter((l) => l.at > e.at).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))[0] || null;
+  return (lifts || []).filter((l) => l.at > e.at && (!l.kind || l.kind === e.kind)).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))[0] || null;
 }
 function secIssueText(open, resolved, T) {
   const byKind = {};
@@ -3184,10 +3194,10 @@ function renderCockpit() {
     : ckTile({ label: `${L.net >= 0 ? "Profit" : "Loss"}, ${L.days} days`, value: satsF(Math.abs(L.net)), state: L.net >= 0 ? "good" : "warn", sub: `Earned ${satsF(L.earned.total)} · spent ${satsF(L.spent.total)}`, trend: L.trend ? L.trend.map((d) => ({ label: dayLabel(d.day), v: d.fees })) : null, fmt: satsF, trendLabel: "Routing fees per day", go: "money:hPnl" }));
   if (C?.ktown) {
     const K = C.ktown;
-    tiles.push(ckTile({ label: "kTown payments, 30 days", value: satsF(K.total.sats), state: K.stuck ? "warn" : "", change: pctChange(K.total.sats, K.previous.sats), sub: `${num(K.total.payments)} paid${CK.shopsLoaded ? ` · ${num(KTOWN.length)}${CK.ktownMax ? ` of ${num(CK.ktownMax)}` : ""} shops` : ""}${K.stuck ? ` · ${num(K.stuck)} unconfirmed` : ""}`, trend: K.series.map((d) => ({ label: dayLabel(d.day), v: d.sats })), fmt: satsF, trendLabel: "kTown sats paid per day", go: "ktown:hKtown" }));
+    tiles.push(ckTile({ label: "kTown payments, 30 days", value: satsF(K.total.sats), state: "", change: pctChange(K.total.sats, K.previous.sats), sub: `${num(K.total.payments)} paid${CK.shopsLoaded ? ` · ${num(KTOWN.length)}${CK.ktownMax ? ` of ${num(CK.ktownMax)}` : ""} shops` : ""}${K.stuck ? ` · ${num(K.stuck)} invoices unpaid` : ""}`, trend: K.series.map((d) => ({ label: dayLabel(d.day), v: d.sats })), fmt: satsF, trendLabel: "kTown sats paid per day", go: "ktown:hKtown" }));
   }
   if (C?.open) {
-    const O = C.open, count = O.payments.count + O.buys.count + O.payouts.count + (C.ktown?.stuck || 0), late = O.payments.late + O.buys.late + O.payouts.late + (C.ktown?.stuck || 0);
+    const O = C.open, count = O.payments.count + O.buys.count + O.payouts.count, late = O.payments.late + O.buys.late + O.payouts.late;
     tiles.push(ckTile({ label: "Open right now", value: count ? `${num(count)} waiting` : "Nothing waiting", state: late ? "warn" : "good", sub: late ? `${num(late)} longer than usual. Details below.` : `${num(O.payments.count)} payments out · ${num(O.buys.count)} buys · ${num(O.payouts.count)} payouts`, go: "overview:hCockpit", opens: true }));
   }
   if (B?.configured) tiles.push(ckTile({ label: "M-Pesa payout float", value: kshF(Math.max(0, B.roomKes)), state: !B.on ? "" : B.roomKes <= 0 ? "crit" : B.open.length ? "warn" : "good", sub: `${num(B.open.length)} waiting for Safaricom${B.on ? "" : " · switched off"}`, go: "yebente:hB2c" }));
@@ -3219,7 +3229,7 @@ function renderCockpit() {
     const O = C.open, K = C.ktown || { stuck: 0 };
     const line = (label, g, unit, late, go) => `<li class="${g.late ? "late" : ""}"><a href="#${esc(go.split(":")[0])}" data-go="${esc(go)}">${esc(label)}</a><span>${g.count ? `${esc(num(g.count))}${unit ? ` · ${esc(unit(g.amount))}` : ""}${g.late ? ` · <b>${esc(num(g.late))} over ${esc(late)}</b>` : ""}` : '<span class="muted">none</span>'}</span></li>`;
     const openNow = O ? `<ul class="ck-open">${line("Lightning payments out in progress", O.payments, satsF, "10 min", "yebente:hAll")}${line("M-Pesa and card buys waiting", O.buys, kshF, "30 min", "yebente:hAll")}${line("Direct M-Pesa payouts waiting", O.payouts, kshF, "15 min", "yebente:hB2c")}`
-      + `<li class="${K.stuck ? "late" : ""}"><a href="#ktown" data-go="ktown:hKtown">kTown payments not confirmed after 1 hour</a><span>${K.stuck ? `<b>${esc(num(K.stuck))}</b>` : '<span class="muted">none</span>'}</span></li></ul>` : "";
+      + `<li><a href="#ktown" data-go="ktown:hKtown">kTown invoices not paid after 1 hour</a><span>${K.stuck ? `${esc(num(K.stuck))} <span class="muted">(usually abandoned; paid ones are confirmed hourly)</span>` : '<span class="muted">none</span>'}</span></li></ul>` : "";
     const earned = !L ? '<p class="sm muted">Loading…</p>' : meterList([
       { name: "Routing fees", v: L.earned.routing, note: `${num(L.earned.routed)} routed` },
       { name: "M-Pesa buy spread", v: L.earned.spread, note: L.earned.spreadPct ? `${L.earned.spreadPct}% on ${num(L.earned.buys)} buys` : "off" },
@@ -3237,14 +3247,36 @@ function renderCockpit() {
   if (C) $("#ckAge").textContent = `${CK.live ? "Live, updates every 30 seconds. " : ""}Figures from ${new Date(C.at).toLocaleTimeString()}.`;
 }
 
+// Lightning payments out still open, with the node's answer for each.
+function openPayHtml(r) {
+  if (!r.open.length) return '<p class="sm muted">None: every payment out has finished.</p>';
+  return `<table><thead><tr><th>Started</th><th>From</th><th>To</th><th>Sats</th><th>What the node says</th><th></th></tr></thead><tbody>${r.open.map((p) =>
+    `<tr><td>${esc(ago(p.at))}</td><td>${esc(p.handle)}</td><td class="sm">${esc(String(p.to).slice(0, 40))}</td><td>${esc(num(p.sats))}</td><td class="sm"><b>${esc(p.node.status.replace("_", " "))}</b><br>${esc(p.node.why)}</td>`
+    + `<td><button type="button" class="btn" data-paycheck="${esc(p.hash)}">Ask the node now</button></td></tr>`).join("")}</tbody></table>`;
+}
+async function loadOpenPay() {
+  try { $("#openPay").innerHTML = openPayHtml(await api("?view=openpay")); } catch (err) { $("#openPay").innerHTML = `<p class="sm err">${esc(err.message)}</p>`; }
+}
+$("#openPay").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-paycheck]");
+  if (!b) return;
+  b.disabled = true; b.textContent = "Asking…";
+  try {
+    const r = await api("", { action: "ypay_check", hash: b.dataset.paycheck });
+    const done = r.closed.find((x) => x.hash === b.dataset.paycheck);
+    toast(done ? `Settled: ${done.result === "succeeded" ? "paid" : "failed and refunded"}.` : "Still open: the node hasn't given a final answer.");
+    $("#openPay").innerHTML = openPayHtml(r);
+    loadCockpit();
+  } catch (err) { toast(err.message, true, 6000); b.disabled = false; b.textContent = "Ask the node now"; }
+});
 async function loadCockpit() {
   try { CK.C = await api("?view=cockpit"); CK.Cerr = null; } catch (err) { CK.Cerr = err.message; }
   renderCockpit();
   // Anything stuck, and a node that is often unreachable, also join "needs you".
   const O = CK.C?.open, K = CK.C?.ktown, R = CK.C?.reach;
   const late = O ? [[O.payments, "Lightning payment out"], [O.buys, "M-Pesa or card buy"], [O.payouts, "direct M-Pesa payout"]].filter(([g]) => g.late) : [];
-  issue("stuck", late.length ? "soon" : null, late.map(([g, what]) => `${g.late} ${what}${g.late === 1 ? "" : "s"} waiting longer than usual.`).join(" ") + " Check them in the Ye₿ente tab.", "yebente:hAll");
-  issue("ktstuck", K?.stuck ? "soon" : null, `${K?.stuck} kTown payment${K?.stuck === 1 ? "" : "s"} not confirmed after an hour. Check the shop's M-Pesa.`, "ktown:hKtown");
+  issue("stuck", late.length ? "soon" : null, late.map(([g, what]) => `${g.late} ${what}${g.late === 1 ? "" : "s"} waiting longer than usual.`).join(" ") + " See what the node says in the Ye₿ente tab.", O?.payments.late ? "yebente:hOpenPay" : "yebente:hAll");
+  issue("ktstuck", null); // kTown invoices left pending are almost always unpaid; the server confirms paid ones hourly
   const last = R?.days?.at(-1);
   issue("offline", last?.checks >= 12 && last.ok / last.checks < 0.9 ? "soon" : null, `The node answered only ${last ? Math.round((last.ok / last.checks) * 100) : 0}% of checks today. Payments fail while it's unreachable: check the Mac, the internet and the tunnel.`, "overview:hCockpit");
 }
@@ -3326,7 +3358,7 @@ async function load() {
   $("#loginErr").textContent = "";
   $("#login").hidden = true; $("#app").hidden = false;
   loadKtown(); // the shop list needs no node: show it at once
-  const panels = Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadB2c(), loadCockpit(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
+  const panels = Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadB2c(), loadCockpit(), loadOpenPay(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
   const over = api("").then((D) => {
     KES_PER_BTC = D.kesPerBtc;
     OVERVIEW = D;

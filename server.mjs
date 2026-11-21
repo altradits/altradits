@@ -254,6 +254,8 @@ async function maybeRunHourly() {
   // Njia: the hourly public summary and daily forwarding snapshot (no-op unless NJIA=on).
   import("./lib/njia.js").then((m) => m.hourly()).catch((e) => console.error("njia hourly", e.message));
   import("./lib/bounces.js").then((b) => b.checkBounces()).then((r) => r.bounced && console.log("bounces", r)).catch((e) => console.error("bounces", e.message));
+  // kTown: confirm recent pending payments for every shop, not only when a shop opens its app.
+  import("./lib/ktown.js").then((k) => k.confirmAllPending()).catch((e) => console.error("ktown confirm", e.message));
 }
 setInterval(() => maybeRunHourly().catch((e) => console.error("hourly", e)), 10 * 60 * 1000).unref();
 // Builder Path reminder to Stanley: once per Nairobi clock hour while today's
