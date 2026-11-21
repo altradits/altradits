@@ -591,6 +591,12 @@ async function walletGet(request, action) {
     const state = await yw.settleInvoice(inv[1]);
     return json({ success: true, settled: state === "settled", paid: state === "settled", state, satsAmount: rec.sats });
   }
+  // One payment out's result: the app asks while it waits, so nobody is left guessing.
+  const pay = action.match(/^payment\/([0-9a-f]{64})$/);
+  if (pay) {
+    if ((await hit(`rl:yb:pay:${w.id}`, 3600)) > 2000) return json({ success: false, error: "Too many checks. Try again later." }, 429);
+    return json({ success: true, ...(await yw.paymentForWallet(w.id, pay[1])) });
+  }
   if (action === "history") return json({ success: true, entries: await yw.history(w.id) });
   if (action === "security") return json({ success: true, ...yw.securityInfo(w, yw.sessionOf(w)?.deviceId), hold: await yw.holdInfo(w.id) });
   return json({ success: false, error: "Not found" }, 404);
@@ -717,7 +723,7 @@ export async function GET(request) {
   }
   const lp = path.match(/^lnurlp\/([a-z0-9._-]{3,20})$/) || path.match(/^lnurl\/([a-z0-9._-]{3,20})$/);
   if (lp) return lnurlPay(request, lp[1], path.startsWith("lnurl/"));
-  const wg = path.match(/^wallet\/(me|history|security|invoice\/[0-9a-f]{64}|buy\/bitika\/[\w-]{3,80}|buy\/[\w-]{6,80}|card\/status\/[\w-]{8,80}|mobile\/ym[\w-]{8,40})$/);
+  const wg = path.match(/^wallet\/(me|history|security|payment\/[0-9a-f]{64}|invoice\/[0-9a-f]{64}|buy\/bitika\/[\w-]{3,80}|buy\/[\w-]{6,80}|card\/status\/[\w-]{8,80}|mobile\/ym[\w-]{8,40})$/);
   if (wg) { try { return await walletGet(request, wg[1]); } catch (e) { if (!e.status) throw e; return json({ success: false, error: e.message }, e.status); } }
   if (PAYOUTS.test(path)) return off(NO_NODE);
   return json({ success: false, error: "Not found" }, 404);

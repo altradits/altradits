@@ -105,6 +105,19 @@ export async function api<T>(method: 'GET' | 'POST', path: string, body?: unknow
   }
   return data as T;
 }
+// One Lightning payment out: paid, failed (and refunded) or still on its way.
+// While it waits the server asks the node directly, so the answer comes as
+// soon as the node has one.
+export interface PaymentResult { status: 'completed' | 'failed' | 'pending'; sats: number; fee: number; error: string | null }
+export const paymentResult = (hash: string) => api<PaymentResult & { success: true }>('GET', `payment/${hash}`);
+
+// Which settled payments the person has already been told about (this phone).
+const TOLD = 'yb.paymentsTold';
+export function wasTold(hash: string): boolean { try { return (JSON.parse(localStorage.getItem(TOLD) || '[]') as string[]).includes(hash); } catch { return false; } }
+export function markTold(hash: string): void {
+  try { const l = (JSON.parse(localStorage.getItem(TOLD) || '[]') as string[]).filter((h) => h !== hash); l.push(hash); localStorage.setItem(TOLD, JSON.stringify(l.slice(-100))); } catch { /* private mode */ }
+}
+
 // The server's spelling suggestion on a refused email, if it gave one.
 export const typoHintOf = (err: unknown): string | null =>
   err instanceof Error ? (err as Error & { typoHint?: string }).typoHint || null : null;

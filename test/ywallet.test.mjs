@@ -398,6 +398,37 @@ test("a payment whose result isn't known in time stays pending until the node an
   void p; void w;
 });
 
+test("the sender's app learns the result the moment the node has one: paid, or never started and refunded", async () => {
+  const token = (await (await call("POST", "wallet/create", { pin: "528193", handle: "watcher" })).json()).token;
+  const me = await yw.walletByHandle("watcher");
+  await yw.credit({ walletId: me.id, sats: 5000, kind: "receive", ref: "fund-watcher" });
+  payMode = "hang";
+  const a = invoice(1000), b = invoice(700);
+  void call("POST", "wallet/send", { to: a.pr, pin: "528193" }, token);
+  await new Promise((r) => setTimeout(r, 300));
+  // Young: still on its way, and the node isn't asked while the send request may still be running.
+  let r = await (await call("GET", `wallet/payment/${a.hash}`, null, token)).json();
+  assert.deepEqual([r.success, r.status], [true, "pending"]);
+  await assert.rejects(yw.paymentForWallet((await yw.walletByHandle("payer")).id, a.hash), /isn't in this wallet/, "only the sender can look");
+  yw.setPayTimings({ settleAfterMs: 0 });
+  payments.set(a.hash, "SUCCEEDED");
+  r = await yw.paymentForWallet(me.id, a.hash);
+  assert.deepEqual([r.status, r.fee, r.error], ["completed", 4, null]);
+  // One that never reached the node: the tracker says it never started, so it fails and the sats come back at once.
+  yw.setPayTimings({ settleAfterMs: 3 * 60e3 });
+  void call("POST", "wallet/send", { to: b.pr, pin: "528193" }, token);
+  await new Promise((res) => setTimeout(res, 300));
+  const before = (await yw.walletByHandle("watcher")).balance;
+  payments.delete(b.hash);
+  yw.setPayTimings({ settleAfterMs: 0 });
+  r = await yw.paymentForWallet(me.id, b.hash);
+  assert.equal(r.status, "failed");
+  assert.ok(r.error);
+  assert.equal((await yw.walletByHandle("watcher")).balance, before + 700 + 10, "the amount and its fee reserve are back");
+  yw.setPayTimings({ settleAfterMs: 3 * 60e3 });
+  payMode = "ok";
+});
+
 test("an address whose invoice commits to someone else's description is refused, nothing taken", async () => {
   const realFetch = globalThis.fetch;
   const meta = JSON.stringify([["text/plain", "Pay shop@desc.example"]]);

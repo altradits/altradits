@@ -7,7 +7,7 @@ import { payInvoiceWithWebLN,
   createLightningInvoice,
 } from '../services/lightningService';
 import { isNetworkOnline } from '../services/offlineService';
-import { hasServerWallet, sendFromServerWallet } from '../services/altraditsWallet';
+import { hasServerWallet, sendFromServerWallet, paymentResult, markTold } from '../services/altraditsWallet';
 import { parsePaymentText, bolt11Sats } from '../services/paymentQr';
 import { QrScanner } from './QrScanner';
 import { HoldNotice } from './HoldNotice';
@@ -290,6 +290,36 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
     }
   };
 
+  // A payment the node hasn't finished yet: ask every few seconds and show the
+  // result the moment it settles. If this closes first, the app tells them.
+  const [waitedSec, setWaitedSec] = useState(0);
+  useEffect(() => {
+    if (step !== 'success' || !pending || !/^[0-9a-f]{64}$/.test(txReference)) return;
+    let stop = false, busy = false;
+    const started = Date.now();
+    const tick = async () => {
+      setWaitedSec(Math.round((Date.now() - started) / 1000));
+      if (busy || stop) return;
+      busy = true;
+      try {
+        const r = await paymentResult(txReference);
+        if (stop) return;
+        if (r.status === 'completed') {
+          markTold(txReference);
+          setPending(false);
+          celebrate({ kind: 'send', sats: numericSats, label: recipient.length > 40 ? undefined : recipient, ref: txReference });
+        } else if (r.status === 'failed') {
+          markTold(txReference);
+          setErrorMessage(`${r.error || 'The payment failed.'} Your ${(r.sats + 0).toLocaleString()} sats are back in your wallet.`);
+          setStep('error');
+        }
+      } catch { /* offline for a moment: keep asking */ } finally { busy = false; }
+    };
+    const t = window.setInterval(tick, 3000);
+    tick();
+    return () => { stop = true; window.clearInterval(t); };
+  }, [step, pending, txReference, numericSats, recipient]);
+
   const completeTransaction = (ref: string, targetRecipient: string, notYet = false) => {
     setPending(notYet);
     if (!notYet) celebrate({ kind: 'send', sats: numericSats, label: targetRecipient.length > 40 ? undefined : targetRecipient, ref });
@@ -558,10 +588,10 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
               {pending ? <SatsMotion mode="sending" /> : <SatsMotion mode="sent" />}
 
               <div className="space-y-1">
-                <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">{pending ? 'Not confirmed yet' : 'Payment Sent'}</h3>
+                <h3 className="text-lg font-bold text-[var(--yb-on-surface)]" aria-live="polite">{pending ? 'Sending…' : 'Payment Sent'}</h3>
                 <p className="text-xs text-[var(--yb-on-surface-variant)]">
                   {pending
-                    ? 'The network hasn\'t confirmed this payment yet. Check History in a few minutes. If it doesn\'t go through, your sats come back.'
+                    ? `Still on its way. We're asking the node and will show the result here the moment it settles${waitedSec >= 5 ? ` (${waitedSec}s)` : ''}. You can close this: we'll tell you when it's done. If it doesn't go through, your sats come back.`
                     : `Sent to ${resolvedProvider || recipient}.`}
                 </p>
               </div>
