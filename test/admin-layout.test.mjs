@@ -36,3 +36,36 @@ test("element ids are unique on the page", () => {
   const dup = ids.filter((x, i) => ids.indexOf(x) !== i);
   assert.deepEqual(dup, []);
 });
+
+test("the printed poster's header isn't styled by the dashboard's own header rules", () => {
+  // 21 Nov 2026: once the page was scrolled, "body.scrolled .top" drew the
+  // dashboard header's shadow as a grey line under the shop name on the poster.
+  const js = fs.readFileSync(new URL("../assets/admin.js", import.meta.url), "utf8");
+  const html = fs.readFileSync(new URL("../admin.html", import.meta.url), "utf8");
+  const poster = js.slice(js.indexOf("function posterHtml"), js.indexOf("async function secureShops"));
+  assert.ok(poster.length > 100, "posterHtml found");
+  assert.match(html, /body\.scrolled \.top/, "the dashboard header still has its scroll shadow");
+  for (const cls of ["top", "tabs", "topnav"]) assert.doesNotMatch(poster, new RegExp(`class="${cls}"`), `the poster doesn't reuse the page's .${cls}`);
+  assert.match(html, /\.poster \.ptop\{/, "the poster header has its own class");
+});
+
+test("posters: A4 with no margins by default, and a real A4 PDF to download or share", async () => {
+  const js = fs.readFileSync(new URL("../assets/admin.js", import.meta.url), "utf8");
+  const html = fs.readFileSync(new URL("../admin.html", import.meta.url), "utf8");
+  assert.match(html, /@page\{size:A4;margin:0\}/, "printing defaults to A4, no margins");
+  assert.match(html, /id="ktownPdfAll"/, "all posters as one PDF");
+  assert.match(js, /data-pdf="\$\{i\}"/, "a PDF button on each shop");
+  assert.match(js, /navigator\.share\(\{ files: \[file\]/, "the admin can share the file");
+  assert.match(js, /posterPdf\(list\) \{[\s\S]*?await secureShops\(list\)/, "a PDF secures the shop, like printing");
+  // The PDF writer itself, run here: two pages, each a full-bleed A4 JPEG.
+  const src = js.slice(js.indexOf("function pdfFromJpegs"), js.indexOf("const slugOf"));
+  const make = new Function("A4_PT", `${src}; return pdfFromJpegs;`)([595.28, 841.89]);
+  const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
+  const pdf = Buffer.from(await make([{ w: 10, h: 14, jpeg }, { w: 10, h: 14, jpeg }]).arrayBuffer()).toString("latin1");
+  assert.ok(pdf.startsWith("%PDF-1.4") && pdf.trimEnd().endsWith("%%EOF"));
+  assert.match(pdf, /\/Count 2/);
+  assert.equal((pdf.match(/\/MediaBox \[0 0 595\.28 841\.89\]/g) || []).length, 2, "every page is A4");
+  const xref = Number(/startxref\n(\d+)/.exec(pdf)[1]);
+  assert.equal(pdf.slice(xref, xref + 4), "xref", "the index points at itself");
+  for (const [, n, off] of pdf.slice(xref).matchAll(/^(\d{10}) 00000 n $/gm).map((m, i) => [m, i + 1, Number(m[1])])) assert.equal(pdf.slice(off, off + `${n} 0 obj`.length), `${n} 0 obj`, `object ${n} is where the index says`);
+});
