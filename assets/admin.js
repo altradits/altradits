@@ -3105,23 +3105,26 @@ const pctChange = (now, before) => {
   const p = Math.round(((now - before) / before) * 100);
   return { text: `${p > 0 ? "+" : ""}${p}%`, dir: Math.sign(p) };
 };
-// A per-day line: muted ink, today's point in Bitcoin orange; hover a day for its value.
+// A per-day line: muted ink, today's point in Bitcoin orange. Hover (or focus
+// and use the arrow keys) to read any day: a guide, a dot and the value appear.
 function spark(points, label, fmt = num) {
   if (!points || points.length < 2) return "";
   const v = points.map((p) => Number(p.v) || 0), max = Math.max(1, ...v), w = 120, h = 26, step = w / (v.length - 1);
-  const xy = v.map((x, i) => [i * step, h - 3 - (x / max) * (h - 6)]);
+  const xy = v.map((x, i) => [+(i * step).toFixed(1), +(h - 3 - (x / max) * (h - 6)).toFixed(1)]);
   const last = xy[xy.length - 1];
-  const hits = points.map((p, i) => `<rect x="${Math.max(0, i * step - step / 2).toFixed(1)}" y="0" width="${step.toFixed(1)}" height="${h}" fill="transparent"><title>${esc(p.label)}: ${esc(fmt(p.v))}</title></rect>`).join("");
-  return `<svg class="ck-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="${esc(label)}">`
-    + `<polyline points="${xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ")}"/>`
-    + `<circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.4"/>${hits}</svg>`;
+  const data = JSON.stringify(points.map((p, i) => [p.label, fmt(p.v), xy[i][0], xy[i][1]]));
+  return `<svg class="ck-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" tabindex="0" role="img" aria-label="${esc(label)}. Use the arrow keys to read each day." data-pts="${esc(data)}">`
+    + `<polyline points="${xy.map(([x, y]) => `${x},${y}`).join(" ")}"/><line class="ck-guide" x1="0" x2="0" y1="0" y2="${h}" visibility="hidden"/>`
+    + `<circle class="ck-now" cx="${last[0]}" cy="${last[1]}" r="2.4"/><circle class="ck-hov" r="2.8" visibility="hidden"/></svg>`;
 }
 const dayLabel = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
 const statusWord = (s) => (s ? `<span class="ck-st ${s}">${s === "good" ? "Good" : s === "warn" ? "Watch" : "Act"}</span>` : "");
+// The number large, its unit small beside it, so "1,650,000 sats" stays on one line.
+const unitHtml = (v) => { const t = String(v), m = /^([\d.,]+) (sats)$/.exec(t) || /^(KSh) ([\d.,]+)$/.exec(t); return `<span class="ck-n">${!m ? esc(t) : m[1] === "KSh" ? `<span class="ck-u">KSh</span>${esc(m[2])}` : `${esc(m[1])}<span class="ck-u">${m[2]}</span>`}</span>`; };
 // One cell of the health strip.
 function ckCell({ label, value, status, sub, extra = "", go, wait }) {
   const inner = `<span class="ck-l">${esc(label)}</span>`
-    + `<span class="ck-v">${wait ? '<span class="ck-wait">…</span>' : esc(value)}${wait ? "" : statusWord(status)}</span>`
+    + `<span class="ck-v">${wait ? '<span class="ck-wait">…</span>' : unitHtml(value)}${wait ? "" : statusWord(status)}</span>`
     + (sub ? `<span class="ck-s">${esc(sub)}</span>` : "") + extra;
   return go ? `<a class="ck-cell" href="#${esc(go.split(":")[0])}" data-go="${esc(go)}">${inner}</a>` : `<div class="ck-cell">${inner}</div>`;
 }
@@ -3129,7 +3132,7 @@ function ckCell({ label, value, status, sub, extra = "", go, wait }) {
 function meterList(rows, fmt, empty) {
   const max = Math.max(1, ...rows.map((r) => r.v || 0));
   return rows.length ? `<ul class="ck-meters">${rows.map((r) => `<li><span class="ck-mn">${esc(r.name)}${r.note ? ` <span class="muted">${esc(r.note)}</span>` : ""}</span>`
-    + `<span class="ck-mb" aria-hidden="true"><i style="width:${r.v ? Math.max(2, Math.round((r.v / max) * 100)) : 0}%"></i></span><span class="ck-mf">${esc(fmt(r.v))}</span></li>`).join("")}</ul>`
+    + `<span class="ck-mb" data-tip="${esc(r.name)}: ${esc(fmt(r.v))}"><i style="width:${r.v ? Math.max(2, Math.round((r.v / max) * 100)) : 0}%"></i></span><span class="ck-mf">${esc(fmt(r.v))}</span></li>`).join("")}</ul>`
     : `<p class="sm muted">${esc(empty)}</p>`;
 }
 function renderCockpit() {
@@ -3145,17 +3148,17 @@ function renderCockpit() {
   if (!C) cells.push(ckCell({ label: "Online, last 14 days", wait: !CK.Cerr, value: "–", go: "earn:" }));
   else if (!C.reachOn || !R?.samples) cells.push(ckCell({ label: "Online, last 14 days", value: "Not measured", sub: "Set NJIA=on in DirectAdmin: the server then checks the node every 5 minutes.", go: "earn:" }));
   else {
-    const days = R.days.filter((d) => d.checks), bars = days.map((d) => { const p = Math.round((d.ok / d.checks) * 100); return `<i style="height:${Math.max(4, p)}%" title="${esc(dayLabel(d.day))}: ${p}% (${num(d.ok)} of ${num(d.checks)} checks)"></i>`; }).join("");
+    const days = R.days.filter((d) => d.checks), bars = days.map((d) => { const p = Math.round((d.ok / d.checks) * 100); return `<i style="height:${Math.max(4, p)}%" tabindex="0" data-tip="${esc(dayLabel(d.day))}: ${p}% reached (${num(d.ok)} of ${num(d.checks)} checks)"></i>`; }).join("");
     const last3 = R.days.slice(-3).filter((d) => d.checks), recent = last3.length ? Math.round((last3.reduce((t, d) => t + d.ok, 0) / last3.reduce((t, d) => t + d.checks, 0)) * 100) : null;
     cells.push(ckCell({ label: "Online, last 14 days", value: `${R.pct}%`, status: R.pct >= 98 ? "good" : R.pct >= 90 ? "warn" : "crit",
       sub: `${recent === null ? "" : `Last 3 days ${recent}%. `}Routing and leases need 98% or more.`,
-      extra: `<span class="ck-days" role="img" aria-label="Share of checks that reached the node, per day">${bars}<b class="ck-goal" style="bottom:98%" title="98%: needed for routing"></b></span>`, go: "earn:" }));
+      extra: `<span class="ck-days" role="img" aria-label="Share of checks that reached the node, per day">${bars}<b class="ck-goal" style="bottom:98%"></b></span>`, go: "earn:" }));
   }
   cells.push(!P ? ckCell({ label: "Sending power", wait: true, value: "–", go: "channels:hPower" }) : (() => {
     const share = P.spendable > 0 ? Math.min(100, Math.round((P.owedSats / P.spendable) * 100)) : 100;
     return ckCell({ label: "Sending power", value: satsF(P.spendable), status: P.spendable < 1000 || !P.covered ? "crit" : share > 80 ? "warn" : "good",
       sub: `Wallets hold ${satsF(P.owedSats)}: ${P.covered ? `${share}% of it` : "more than the node can send"}.`,
-      extra: `<span class="ck-meter" role="img" aria-label="Wallet balances use ${share}% of sending power"><i style="width:${share}%"></i></span>`, go: "channels:hPower" });
+      extra: `<span class="ck-meter" role="img" aria-label="Wallet balances use ${share}% of sending power" data-tip="Wallet balances use ${share}% of what the node can send"><i style="width:${share}%"></i></span>`, go: "channels:hPower" });
   })());
   const on = OVERVIEW?.details?.onchain;
   cells.push(!on ? ckCell({ label: "On-chain", wait: !D || !CK.Derr, value: "–", go: "money:" })
@@ -3212,7 +3215,7 @@ function renderCockpit() {
     + `<div class="ck-block">${table}</div>`
     + (openNow ? `<div class="ck-block"><h3>Open right now</h3>${openNow}</div>` : "")
     + `<div class="ck-two"><div class="ck-block"><h3>Earned${L ? `, last ${L.days} days` : ""}</h3>${earned}</div><div class="ck-block"><h3>Why payments out failed, last ${CK_DAYS} days</h3>${failed}</div></div>`;
-  if (C) $("#ckAge").textContent = `Figures from ${new Date(C.at).toLocaleTimeString()}. Days are Kenyan days.`;
+  if (C) $("#ckAge").textContent = `${CK.live ? "Live, updates every 30 seconds. " : ""}Figures from ${new Date(C.at).toLocaleTimeString()}. Days are Kenyan days.`;
 }
 async function loadCockpit() {
   try { CK.C = await api("?view=cockpit"); CK.Cerr = null; } catch (err) { CK.Cerr = err.message; }
@@ -3225,6 +3228,64 @@ async function loadCockpit() {
   const last = R?.days?.at(-1);
   issue("offline", last?.checks >= 12 && last.ok / last.checks < 0.9 ? "soon" : null, `The node answered only ${last ? Math.round((last.ok / last.checks) * 100) : 0}% of checks today. Payments fail while it's unreachable: check the Mac, the internet and the tunnel.`, "overview:hCockpit");
 }
+// Live: while the dashboard is open and in front, the cockpit's parts are read
+// again every 30 seconds (the server answers from its recent copy, so this is
+// cheap and never queues work on the node). Hidden tabs don't poll.
+let ckTimer = null, ckBusy = false;
+async function ckTick() {
+  if (ckBusy || document.hidden || $("#app").hidden) return;
+  ckBusy = true;
+  try {
+    const [c, d, p, b] = await Promise.allSettled([api("?view=cockpit"), api(""), api("?view=liquidity"), api("?view=b2c")]);
+    if (c.status === "fulfilled") { CK.C = c.value; CK.Cerr = null; }
+    if (d.status === "fulfilled") { CK.D = d.value; OVERVIEW = d.value; }
+    if (p.status === "fulfilled") CK.P = p.value;
+    if (b.status === "fulfilled") CK.B = b.value;
+    CK.live = true;
+    if (!ckBox.contains(document.activeElement) && ckTip.hidden) renderCockpit(); // never redraw under the pointer or the keyboard
+  } finally { ckBusy = false; }
+}
+function ckLive() { clearInterval(ckTimer); ckTimer = setInterval(ckTick, 30e3); }
+document.addEventListener("visibilitychange", () => { if (!document.hidden && ckTimer) ckTick(); });
+// One tooltip for the whole cockpit: trend lines, online bars and meters.
+const ckTip = Object.assign(document.createElement("div"), { className: "ck-tip", role: "status" });
+ckTip.hidden = true; document.body.append(ckTip);
+function tipAt(text, x, y) {
+  ckTip.textContent = text; ckTip.hidden = false;
+  const r = ckTip.getBoundingClientRect();
+  ckTip.style.left = `${Math.min(innerWidth - r.width - 8, Math.max(8, x - r.width / 2)) + scrollX}px`;
+  ckTip.style.top = `${Math.max(8, y - r.height - 12) + scrollY}px`;
+}
+function sparkAt(svg, i) {
+  const pts = JSON.parse(svg.dataset.pts), k = Math.max(0, Math.min(pts.length - 1, i)), [label, val, x, y] = pts[k];
+  svg.dataset.i = k;
+  const g = svg.querySelector(".ck-guide"), d = svg.querySelector(".ck-hov");
+  g.setAttribute("x1", x); g.setAttribute("x2", x); g.setAttribute("visibility", "visible");
+  d.setAttribute("cx", x); d.setAttribute("cy", y); d.setAttribute("visibility", "visible");
+  const box = svg.getBoundingClientRect();
+  tipAt(`${label}: ${val}`, box.left + (x / 120) * box.width, box.top);
+}
+function sparkOff(svg) { svg.querySelector(".ck-guide")?.setAttribute("visibility", "hidden"); svg.querySelector(".ck-hov")?.setAttribute("visibility", "hidden"); ckTip.hidden = true; }
+const ckBox = $("#cockpit");
+ckBox.addEventListener("pointermove", (e) => {
+  const svg = e.target.closest(".ck-spark");
+  if (svg) { const b = svg.getBoundingClientRect(), n = JSON.parse(svg.dataset.pts).length; sparkAt(svg, Math.round(((e.clientX - b.left) / b.width) * (n - 1))); return; }
+  const t = e.target.closest("[data-tip]");
+  if (t) tipAt(t.dataset.tip, e.clientX, t.getBoundingClientRect().top); else ckTip.hidden = true;
+});
+ckBox.addEventListener("pointerout", (e) => { const svg = e.target.closest(".ck-spark"); if (svg && !svg.contains(e.relatedTarget)) sparkOff(svg); else if (!e.relatedTarget?.closest?.("[data-tip]")) ckTip.hidden = true; });
+ckBox.addEventListener("focusin", (e) => {
+  if (e.target.matches(".ck-spark")) sparkAt(e.target, JSON.parse(e.target.dataset.pts).length - 1);
+  else if (e.target.matches("[data-tip]")) { const r = e.target.getBoundingClientRect(); tipAt(e.target.dataset.tip, r.left + r.width / 2, r.top); }
+});
+ckBox.addEventListener("focusout", (e) => { if (e.target.matches(".ck-spark")) sparkOff(e.target); else ckTip.hidden = true; });
+ckBox.addEventListener("keydown", (e) => {
+  const svg = e.target.closest(".ck-spark");
+  if (!svg || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+  e.preventDefault();
+  const n = JSON.parse(svg.dataset.pts).length, i = Number(svg.dataset.i ?? n - 1);
+  sparkAt(svg, e.key === "Home" ? 0 : e.key === "End" ? n - 1 : i + (e.key === "ArrowLeft" ? -1 : 1));
+});
 $("#cockpit").addEventListener("click", (e) => {
   const a = e.target.closest("[data-go]");
   if (!a) return;
@@ -3255,6 +3316,7 @@ async function load() {
   await over;
   if (KES_PER_BTC) loadWallets(); // shillings appear once the rate is known (the server answers from its copy)
   await panels;
+  ckLive();
   if (document.querySelector('[data-pane="earn"].on') && !njiaLoaded) await loadNjia(false);
   const mins = oldestAt ? Math.round((Date.now() - oldestAt) / 60e3) : 0;
   $("#checked").textContent = mins >= 2 ? `Data from up to ${mins} min ago${anyStale ? ", updating" : ""}` : `Checked ${new Date().toLocaleTimeString()}`;

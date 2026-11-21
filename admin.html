@@ -148,13 +148,13 @@ dialog{width:min(30rem,calc(100vw - 2rem));border:2px solid var(--ink);border-ra
 .ck-cell{display:flex;flex-direction:column;gap:.3rem;padding:.85rem 1rem;color:var(--ink);text-decoration:none;border-right:1px solid var(--line);margin-right:-1px;border-bottom:1px solid var(--line);margin-bottom:-1px;min-width:0}
 a.ck-cell:hover{background:var(--bg)}a.ck-cell:focus-visible,.ck-table a:focus-visible{outline:3px solid var(--blue);outline-offset:-3px}
 .ck-l{font-size:.82rem;font-weight:600;color:var(--muted)}
-.ck-v{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font:700 1.35rem/1.15 'Bricolage Grotesque',sans-serif;font-variant-numeric:tabular-nums}
-.ck-s{font-size:.8rem;color:var(--muted);line-height:1.4}
+.ck-v{display:flex;align-items:baseline;gap:0 .5rem;flex-wrap:wrap;font:800 1.9rem/1.1 'Bricolage Grotesque',sans-serif;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.ck-s{font-size:.8rem;color:var(--muted);line-height:1.4}.ck-u{font:600 .9rem Figtree,sans-serif;color:var(--muted);margin:0 .3rem 0 .15rem;letter-spacing:0}.ck-v .ck-u:first-child{margin:0 .15rem 0 0}.ck-st{align-self:center}
 .ck-st{font:600 .72rem/1 Figtree,sans-serif;padding:.2rem .45rem;border-radius:999px;border:1px solid currentColor}
 .ck-st.good{color:var(--ok)}.ck-st.warn{color:var(--warn)}.ck-st.crit{color:var(--crit)}
 .ck-meter{display:block;height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:.15rem}.ck-meter i{display:block;height:100%;background:var(--ink);border-radius:3px}
 .ck-days{position:relative;display:flex;align-items:flex-end;gap:2px;height:30px;margin-top:.15rem}
-.ck-days i{flex:1;background:var(--muted);opacity:.55;border-radius:2px 2px 0 0}.ck-days i:hover{opacity:1}
+.ck-days i{flex:1;background:var(--muted);opacity:.5;border-radius:2px 2px 0 0;cursor:default}.ck-days i:hover,.ck-days i:focus-visible{opacity:1;outline:none}
 .ck-goal{position:absolute;left:0;right:0;height:0;border-top:1px solid var(--ok)}
 .ck-block{margin-top:1.1rem}.ck-block h3{font-size:.95rem;margin:0 0 .5rem}
 .ck-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
@@ -165,8 +165,9 @@ a.ck-cell:hover{background:var(--bg)}a.ck-cell:focus-visible,.ck-table a:focus-v
 .ck-table th[scope=row] a{color:var(--ink);font-weight:600;text-decoration:none}.ck-table th[scope=row] a:hover{text-decoration:underline}
 .ck-table th[scope=row] span{display:block;font-size:.78rem;font-weight:400;color:var(--muted)}
 .ck-table td:last-child{width:9rem}
+.ck-table td:nth-child(2){font:700 1.05rem/1.2 'Bricolage Grotesque',sans-serif;color:var(--ink)}
 .ck-ch{font-weight:600}.ck-ch.up{color:var(--ok)}.ck-ch.down{color:var(--crit)}
-.ck-spark{display:block;width:100%;height:26px}.ck-spark polyline{fill:none;stroke:var(--muted);stroke-width:1.5;vector-effect:non-scaling-stroke;stroke-linejoin:round}.ck-spark circle{fill:var(--btc)}
+.ck-spark{display:block;width:100%;height:30px;cursor:crosshair}.ck-spark:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:2px}.ck-spark polyline{fill:none;stroke:var(--muted);stroke-width:1.5;vector-effect:non-scaling-stroke;stroke-linejoin:round}.ck-now{fill:var(--btc)}.ck-hov{fill:var(--ink)}.ck-guide{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke}
 .ck-two{display:grid;grid-template-columns:1fr 1fr;gap:0 2rem}
 .ck-meters{list-style:none;margin:0;padding:0}
 .ck-meters li{display:grid;grid-template-columns:minmax(0,1fr) 6rem auto;align-items:center;gap:.75rem;padding:.4rem 0;border-bottom:1px solid var(--line);font-size:.88rem}
@@ -180,8 +181,9 @@ a.ck-cell:hover{background:var(--bg)}a.ck-cell:focus-visible,.ck-table a:focus-v
 .ck-open a{color:var(--ink);text-decoration:none}.ck-open a:hover{text-decoration:underline}
 .ck-open li span{font-variant-numeric:tabular-nums;white-space:nowrap}.ck-open li.late b{color:var(--warn)}
 .ck-wait{color:var(--muted)}
+.ck-tip{position:absolute;z-index:70;pointer-events:none;background:var(--ink);color:#fff;font:600 .8rem/1.3 Figtree,sans-serif;padding:.35rem .55rem;border-radius:6px;white-space:nowrap;font-variant-numeric:tabular-nums}
 @media (max-width:760px){.ck-two{grid-template-columns:1fr}.ck-table thead th:nth-child(3),.ck-table td:nth-child(3){display:none}.ck-table td:last-child{width:5.5rem}}
-@media (max-width:480px){.ck-health{grid-template-columns:1fr 1fr}.ck-cell{padding:.7rem .75rem}.ck-v{font-size:1.1rem}.ck-table th,.ck-table td{padding:.45rem .35rem}.ck-table td:last-child{width:4rem}.ck-meters li{grid-template-columns:minmax(0,1fr) auto}.ck-mb{display:none}}
+@media (max-width:480px){.ck-health{grid-template-columns:1fr 1fr}.ck-cell{padding:.7rem .75rem}.ck-v{font-size:1.3rem}.ck-table th,.ck-table td{padding:.45rem .35rem}.ck-table td:last-child{width:4rem}.ck-meters li{grid-template-columns:minmax(0,1fr) auto}.ck-mb{display:none}}
 #posters{display:none}
 @media print{@page{size:A4;margin:0}body.posters-on #posters{display:block}}
 /* The poster itself: used by print and by the PDF, which measures it off-screen. */
@@ -1149,6 +1151,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <div id="posters" aria-hidden="true"></div>
 <script src="/ktown/qrcode-generator-1.4.4.js"></script>
-<script type="module" src="/assets/admin.js?v=refresh30"></script>
+<script type="module" src="/assets/admin.js?v=refresh31"></script>
 </body>
 </html>

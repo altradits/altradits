@@ -88,3 +88,12 @@ test("the cockpit doesn't decorate: no coloured edge stripes, words beside every
   assert.match(js, /"Good" : s === "warn" \? "Watch" : "Act"/, "status colours always come with a word");
   assert.match(js, /title="Nothing in the 30 days before to compare with">New</, "no percentage when there's nothing to compare");
 });
+
+test("the cockpit is interactive and live, and never polls from a hidden tab", () => {
+  const js = fs.readFileSync(new URL("../assets/admin.js", import.meta.url), "utf8");
+  assert.match(js, /class="ck-spark"[^`]*tabindex="0"/, "trend lines take keyboard focus");
+  assert.match(js, /\["ArrowLeft", "ArrowRight", "Home", "End"\]/, "and the arrow keys read each day");
+  assert.match(js, /ckTimer = setInterval\(ckTick, 30e3\)/, "updates every 30 seconds");
+  assert.match(js, /if \(ckBusy \|\| document\.hidden \|\| \$\("#app"\)\.hidden\) return;/, "not while hidden, signed out or already reading");
+  assert.match(js, /if \(!ckBox\.contains\(document\.activeElement\) && ckTip\.hidden\) renderCockpit\(\)/, "never redraws under the pointer or the keyboard");
+});
