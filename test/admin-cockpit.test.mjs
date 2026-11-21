@@ -47,3 +47,44 @@ test("the dashboard: the cockpit sits first on the Overview and its view is cach
   assert.match(js, /loadCockpit\(\)/);
   for (const part of ["CK.P = P", "CK.L = L", "CK.B = B", "CK.D = D", "CK.shopsLoaded = true"]) assert.ok(js.includes(part), `the cockpit updates when ${part.split(" ")[0]} loads`);
 });
+
+test("why payments failed (last period only), what is stuck now, and kTown payments per day", async () => {
+  const { openItems, ktownSeries } = await import("../lib/activity.js");
+  const now = Date.parse("2026-11-21T09:00:00Z"), at = (min) => new Date(now - min * 60e3).toISOString();
+  // Failure reasons: their first sentence, most frequent first.
+  await store.setJSON("yw:f1", { id: "f1", handle: "fails", balance: 0, createdAt: at(60 * 24 * 5) }); await store.pushId("ywallets", "f1");
+  let n = 0;
+  for (const [mins, error] of [[60, "No path to the recipient's wallet was found for this amount. Nothing was taken."], [120, "No path to the recipient's wallet was found for this amount. Nothing was taken."], [180, "This invoice has expired. Nothing was taken."], [60 * 24 * 40, "Old reason. Not counted."]]) {
+    const id = `fx${++n}`; await store.setJSON(`ywe:${id}`, { id, walletId: "f1", kind: "send", sats: -100, status: "failed", error, at: at(mins) }); await store.pushId("ywtx:f1", id);
+  }
+  const r = await cockpitSeries({ days: 30, now });
+  assert.deepEqual(r.failReasons.slice(0, 2), [{ why: "No path to the recipient's wallet was found for this amount.", count: 2 }, { why: "This invoice has expired.", count: 1 }]);
+  assert.ok(!r.failReasons.some((x) => /Old reason/.test(x.why)), "only the last 30 days");
+  // Open right now: late means past the usual time.
+  await store.setJSON("ywpay:h1", { walletId: "f1", sats: 500, at: at(30), done: false }); await store.pushId("ywpayopen", "h1");
+  await store.setJSON("ywpay:h2", { walletId: "f1", sats: 300, at: at(2), done: false }); await store.pushId("ywpayopen", "h2");
+  await store.setJSON("ywpay:h3", { walletId: "f1", sats: 900, at: at(90), done: true }); await store.pushId("ywpayopen", "h3");
+  await store.setJSON("ywbuy:b1", { walletId: "f1", kes: 200, at: at(45), state: "pending" }); await store.pushId("ywbuyopen", "b1");
+  await store.setJSON("ywbuy:b2", { walletId: "f1", kes: 100, at: at(45), state: "completed" }); await store.pushId("ywbuyopen", "b2");
+  const o = await openItems({ now });
+  assert.deepEqual([o.payments.count, o.payments.late, o.payments.amount], [2, 1, 800], "done payments don't count; one over 10 minutes");
+  assert.deepEqual([o.buys.count, o.buys.late, o.buys.amount], [1, 1, 200]);
+  assert.equal(o.payouts.count, 0);
+  // kTown: paid, failed and stuck.
+  await store.pushId("ktowns", "m1");
+  for (const [id, mins, status, sats] of [["k1", 30, "completed", 1500], ["k2", 60 * 24, "failed", 800], ["k3", 120, "pending", 400], ["k4", 60 * 24 * 35, "completed", 999]]) {
+    await store.setJSON(`kte:${id}`, { id, merchantId: "m1", at: at(mins), status, sats }); await store.pushId("kt:tx:m1", id);
+  }
+  const k = await ktownSeries({ days: 30, now });
+  assert.deepEqual(k.total, { payments: 1, sats: 1500, failed: 1 });
+  assert.deepEqual(k.previous, { payments: 1, sats: 999, failed: 0 });
+  assert.equal(k.stuck, 1, "pending for over an hour");
+});
+
+test("the cockpit doesn't decorate: no coloured edge stripes, words beside every status colour", () => {
+  const html = fs.readFileSync(new URL("../admin.html", import.meta.url), "utf8");
+  const js = fs.readFileSync(new URL("../assets/admin.js", import.meta.url), "utf8");
+  assert.doesNotMatch(html, /\.ck-tile::before/, "no status stripe down the side of every card");
+  assert.match(js, /"Good" : s === "warn" \? "Watch" : "Act"/, "status colours always come with a word");
+  assert.match(js, /title="Nothing in the 30 days before to compare with">New</, "no percentage when there's nothing to compare");
+});

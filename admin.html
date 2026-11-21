@@ -141,27 +141,47 @@ dialog{width:min(30rem,calc(100vw - 2rem));border:2px solid var(--ink);border-ra
 .rcpt-titlerow{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;border-bottom:2px solid #EA5158;padding:.55rem 0}
 .rcpt-titlerow h2{font-size:1.15rem;margin:0}
 .rcpt-no{font-size:.85rem;color:var(--muted);white-space:nowrap}
-/* The cockpit (#519): tiles that open their panel. */
-.ck{display:grid;grid-template-columns:repeat(auto-fill,minmax(14.5rem,1fr));gap:.75rem;margin-bottom:.4rem}
-.ck-tile{position:relative;display:flex;flex-direction:column;gap:.25rem;min-height:7.6rem;padding:.8rem .95rem .7rem 1.1rem;background:var(--paper);border:1px solid var(--line);border-radius:.9rem;color:var(--ink);text-decoration:none;overflow:hidden;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease}
-.ck-tile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--line)}
-.ck-tile.good::before{background:var(--ok)}.ck-tile.warn::before{background:var(--warn)}.ck-tile.crit::before{background:var(--crit)}
-a.ck-tile:hover{border-color:var(--blue);box-shadow:0 6px 18px -10px rgba(15,27,45,.45)}
-a.ck-tile:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
-@media (prefers-reduced-motion:no-preference){a.ck-tile:hover{transform:translateY(-1px)}}
-.ck-l{color:var(--muted);font-weight:700;font-size:.74rem;text-transform:uppercase;letter-spacing:.05em}
-.ck-row{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap}
-.ck-v{font:800 1.55rem/1.1 'Bricolage Grotesque',sans-serif;overflow-wrap:anywhere}
-.ck-tile.crit .ck-v{color:var(--crit)}
-.ck-d{font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap}
-.ck-d.up{color:var(--ok)}.ck-d.down{color:var(--crit)}
-.ck-s{font-size:.82rem;color:var(--muted);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.ck-spark{display:block;width:100%;height:28px;margin-top:auto;padding-top:.3rem}
-.ck-line{fill:none;stroke:var(--btc);stroke-width:1.6;vector-effect:non-scaling-stroke;stroke-linejoin:round}
-.ck-area{fill:var(--btc);opacity:.12}
-.ck-wait .ck-v{color:var(--line)}
-@media (prefers-reduced-motion:no-preference){.ck-wait{animation:ckPulse 1.2s ease-in-out infinite alternate}@keyframes ckPulse{from{opacity:.55}to{opacity:1}}}
-@media (max-width:560px){.ck{grid-template-columns:1fr 1fr;gap:.5rem}.ck-tile{min-height:6.8rem;padding:.65rem .7rem .6rem .9rem}.ck-v{font-size:1.2rem}.ck-s{-webkit-line-clamp:3}}
+/* The cockpit (#519): a health strip, a 30-day table, earnings and failures. */
+#hCockpit{margin:0}.ck-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;margin-bottom:.9rem}
+.ck-head p{margin:0}
+.ck-health{display:grid;grid-template-columns:repeat(auto-fit,minmax(12.5rem,1fr));border:1px solid var(--line);border-radius:.8rem;background:var(--paper);overflow:hidden}
+.ck-cell{display:flex;flex-direction:column;gap:.3rem;padding:.85rem 1rem;color:var(--ink);text-decoration:none;border-right:1px solid var(--line);margin-right:-1px;border-bottom:1px solid var(--line);margin-bottom:-1px;min-width:0}
+a.ck-cell:hover{background:var(--bg)}a.ck-cell:focus-visible,.ck-table a:focus-visible{outline:3px solid var(--blue);outline-offset:-3px}
+.ck-l{font-size:.82rem;font-weight:600;color:var(--muted)}
+.ck-v{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font:700 1.35rem/1.15 'Bricolage Grotesque',sans-serif;font-variant-numeric:tabular-nums}
+.ck-s{font-size:.8rem;color:var(--muted);line-height:1.4}
+.ck-st{font:600 .72rem/1 Figtree,sans-serif;padding:.2rem .45rem;border-radius:999px;border:1px solid currentColor}
+.ck-st.good{color:var(--ok)}.ck-st.warn{color:var(--warn)}.ck-st.crit{color:var(--crit)}
+.ck-meter{display:block;height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:.15rem}.ck-meter i{display:block;height:100%;background:var(--ink);border-radius:3px}
+.ck-days{position:relative;display:flex;align-items:flex-end;gap:2px;height:30px;margin-top:.15rem}
+.ck-days i{flex:1;background:var(--muted);opacity:.55;border-radius:2px 2px 0 0}.ck-days i:hover{opacity:1}
+.ck-goal{position:absolute;left:0;right:0;height:0;border-top:1px solid var(--ok)}
+.ck-block{margin-top:1.1rem}.ck-block h3{font-size:.95rem;margin:0 0 .5rem}
+.ck-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.ck-table th,.ck-table td{padding:.5rem .6rem;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;vertical-align:middle}
+.ck-table th{text-transform:none;letter-spacing:normal;font-size:inherit;color:inherit}
+.ck-table thead th{font-size:.8rem;font-weight:600;color:var(--muted);border-bottom-color:var(--ink)}
+.ck-table th[scope=row],.ck-table thead th:first-child{text-align:left;white-space:normal}
+.ck-table th[scope=row] a{color:var(--ink);font-weight:600;text-decoration:none}.ck-table th[scope=row] a:hover{text-decoration:underline}
+.ck-table th[scope=row] span{display:block;font-size:.78rem;font-weight:400;color:var(--muted)}
+.ck-table td:last-child{width:9rem}
+.ck-ch{font-weight:600}.ck-ch.up{color:var(--ok)}.ck-ch.down{color:var(--crit)}
+.ck-spark{display:block;width:100%;height:26px}.ck-spark polyline{fill:none;stroke:var(--muted);stroke-width:1.5;vector-effect:non-scaling-stroke;stroke-linejoin:round}.ck-spark circle{fill:var(--btc)}
+.ck-two{display:grid;grid-template-columns:1fr 1fr;gap:0 2rem}
+.ck-meters{list-style:none;margin:0;padding:0}
+.ck-meters li{display:grid;grid-template-columns:minmax(0,1fr) 6rem auto;align-items:center;gap:.75rem;padding:.4rem 0;border-bottom:1px solid var(--line);font-size:.88rem}
+.ck-mn{min-width:0;overflow-wrap:anywhere}.ck-mn .muted{font-size:.78rem}
+.ck-mb{height:6px;border-radius:3px;background:var(--line);overflow:hidden}.ck-mb i{display:block;height:100%;background:var(--ink);border-radius:3px}
+.ck-mf{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;min-width:5.5rem}
+.ck-net{margin:.5rem 0 0}
+.ck-open{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:0 2rem}
+@media (max-width:760px){.ck-open{grid-template-columns:1fr}}
+.ck-open li{display:flex;justify-content:space-between;gap:1rem;padding:.4rem 0;border-bottom:1px solid var(--line);font-size:.88rem}
+.ck-open a{color:var(--ink);text-decoration:none}.ck-open a:hover{text-decoration:underline}
+.ck-open li span{font-variant-numeric:tabular-nums;white-space:nowrap}.ck-open li.late b{color:var(--warn)}
+.ck-wait{color:var(--muted)}
+@media (max-width:760px){.ck-two{grid-template-columns:1fr}.ck-table thead th:nth-child(3),.ck-table td:nth-child(3){display:none}.ck-table td:last-child{width:5.5rem}}
+@media (max-width:480px){.ck-health{grid-template-columns:1fr 1fr}.ck-cell{padding:.7rem .75rem}.ck-v{font-size:1.1rem}.ck-table th,.ck-table td{padding:.45rem .35rem}.ck-table td:last-child{width:4rem}.ck-meters li{grid-template-columns:minmax(0,1fr) auto}.ck-mb{display:none}}
 #posters{display:none}
 @media print{@page{size:A4;margin:0}body.posters-on #posters{display:block}}
 /* The poster itself: used by print and by the PDF, which measures it off-screen. */
@@ -316,9 +336,8 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <nav class="tabs" aria-label="Dashboard sections"><span class="tabgroup" aria-hidden="true">Today</span><button type="button" data-tab="overview">Overview</button><span class="tabgroup" aria-hidden="true">Node</span><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><span class="tabgroup" aria-hidden="true">Money</span><button type="button" data-tab="money">Money</button><button type="button" data-tab="earn">Earn</button><span class="tabgroup" aria-hidden="true">Products</span><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="ktown">kTown</button><button type="button" data-tab="kazi">Kazi</button><button type="button" data-tab="developer">Developer</button><span class="tabgroup" aria-hidden="true">Team</span><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><span class="tabgroup" aria-hidden="true">Safety</span><button type="button" data-tab="security">Security</button><span class="tabgroup" aria-hidden="true">Learn</span><button type="button" data-tab="learn">Learn</button></nav>
   <div class="pane" data-pane="overview">
   <section class="panel" aria-labelledby="hCockpit">
-    <h2 id="hCockpit">At a glance</h2>
-    <div class="ck" id="cockpit" aria-live="polite"></div>
-    <p class="sm muted" id="ckAge"></p>
+    <div class="ck-head"><h2 id="hCockpit">At a glance</h2><p class="sm muted" id="ckAge"></p></div>
+    <div id="cockpit"></div>
   </section>
   <section class="panel" aria-labelledby="hCheck">
     <h2 id="hCheck">Today's checklist</h2>
@@ -1130,6 +1149,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <div id="posters" aria-hidden="true"></div>
 <script src="/ktown/qrcode-generator-1.4.4.js"></script>
-<script type="module" src="/assets/admin.js?v=refresh29"></script>
+<script type="module" src="/assets/admin.js?v=refresh30"></script>
 </body>
 </html>

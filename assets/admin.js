@@ -3094,91 +3094,141 @@ $("#ktownPdfAll").addEventListener("click", () => {
 });
 $("#ktownReload").addEventListener("click", loadKtown);
 
-// ---- The cockpit: the numbers that matter, at the top of the Overview (#519).
-// Each tile fills in as its data arrives (node, sending power, Ye₿ente, profit,
-// M-Pesa float, kTown), shows its change against the 30 days before and a
-// trend line, and opens the panel behind it. Nothing here asks for more data
-// than the panels already load, except one cached per-day view of Ye₿ente.
+// ---- The cockpit: what matters, first on the Overview (#519).
+// A health strip (node, online time, sending power, on-chain), one table of
+// Ye₿ente and kTown over the last 30 days against the 30 before, earnings by
+// source, and why payments out failed. Each part fills in as its data arrives.
+// Trends show only where there is something to compare; colours carry a word.
+const CK_DAYS = 30;
 const pctChange = (now, before) => {
-  if (now === null || now === undefined || before === null || before === undefined) return null;
-  if (!before) return now ? { text: "new", dir: 1 } : null;
+  if (now === null || now === undefined || !before) return null; // nothing to compare yet
   const p = Math.round(((now - before) / before) * 100);
   return { text: `${p > 0 ? "+" : ""}${p}%`, dir: Math.sign(p) };
 };
-// A small trend line: the area under it light, the line in Bitcoin orange.
-function spark(values, label) {
-  const v = (values || []).map((x) => Number(x) || 0);
-  if (v.length < 2) return "";
-  const max = Math.max(1, ...v), w = 100, h = 28, step = w / (v.length - 1);
-  const pts = v.map((x, i) => `${(i * step).toFixed(1)},${(h - 2 - (x / max) * (h - 4)).toFixed(1)}`);
+// A per-day line: muted ink, today's point in Bitcoin orange; hover a day for its value.
+function spark(points, label, fmt = num) {
+  if (!points || points.length < 2) return "";
+  const v = points.map((p) => Number(p.v) || 0), max = Math.max(1, ...v), w = 120, h = 26, step = w / (v.length - 1);
+  const xy = v.map((x, i) => [i * step, h - 3 - (x / max) * (h - 6)]);
+  const last = xy[xy.length - 1];
+  const hits = points.map((p, i) => `<rect x="${Math.max(0, i * step - step / 2).toFixed(1)}" y="0" width="${step.toFixed(1)}" height="${h}" fill="transparent"><title>${esc(p.label)}: ${esc(fmt(p.v))}</title></rect>`).join("");
   return `<svg class="ck-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="${esc(label)}">`
-    + `<polygon points="0,${h} ${pts.join(" ")} ${w},${h}" class="ck-area"/><polyline points="${pts.join(" ")}" class="ck-line"/></svg>`;
+    + `<polyline points="${xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ")}"/>`
+    + `<circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.4"/>${hits}</svg>`;
 }
-// One tile. `state`: good, warn, crit or none; `change` from pctChange; `upIsBad` flips its colour.
-function ckTile({ label, value, sub, state, change, upIsBad, trend, trendLabel, go, loading, error }) {
-  if (loading) return `<div class="ck-tile ck-wait" aria-busy="true"><span class="ck-l">${esc(label)}</span><span class="ck-v">…</span><span class="ck-s">Loading</span></div>`;
-  if (error) return `<a class="ck-tile warn" href="#${esc(go.split(":")[0])}" data-go="${esc(go)}"><span class="ck-l">${esc(label)}</span><span class="ck-v">–</span><span class="ck-s">${esc(error)}</span></a>`;
-  const good = change && change.dir !== 0 ? (change.dir > 0) !== Boolean(upIsBad) : null;
-  const chip = change ? `<span class="ck-d ${good === null ? "" : good ? "up" : "down"}" title="Change against the 30 days before">${change.dir > 0 ? "▲" : change.dir < 0 ? "▼" : "•"} ${esc(change.text)}</span>` : "";
-  return `<a class="ck-tile${state ? ` ${state}` : ""}" href="#${esc(go.split(":")[0])}" data-go="${esc(go)}">`
-    + `<span class="ck-l">${esc(label)}</span><span class="ck-row"><span class="ck-v">${esc(value)}</span>${chip}</span>`
-    + (sub ? `<span class="ck-s">${esc(sub)}</span>` : "") + (trend ? spark(trend, trendLabel || label) : "") + `</a>`;
+const dayLabel = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+const statusWord = (s) => (s ? `<span class="ck-st ${s}">${s === "good" ? "Good" : s === "warn" ? "Watch" : "Act"}</span>` : "");
+// One cell of the health strip.
+function ckCell({ label, value, status, sub, extra = "", go, wait }) {
+  const inner = `<span class="ck-l">${esc(label)}</span>`
+    + `<span class="ck-v">${wait ? '<span class="ck-wait">…</span>' : esc(value)}${wait ? "" : statusWord(status)}</span>`
+    + (sub ? `<span class="ck-s">${esc(sub)}</span>` : "") + extra;
+  return go ? `<a class="ck-cell" href="#${esc(go.split(":")[0])}" data-go="${esc(go)}">${inner}</a>` : `<div class="ck-cell">${inner}</div>`;
 }
-const CK_DAYS = 30;
+// Bars on one scale, one hue, the figure on the right.
+function meterList(rows, fmt, empty) {
+  const max = Math.max(1, ...rows.map((r) => r.v || 0));
+  return rows.length ? `<ul class="ck-meters">${rows.map((r) => `<li><span class="ck-mn">${esc(r.name)}${r.note ? ` <span class="muted">${esc(r.note)}</span>` : ""}</span>`
+    + `<span class="ck-mb" aria-hidden="true"><i style="width:${r.v ? Math.max(2, Math.round((r.v / max) * 100)) : 0}%"></i></span><span class="ck-mf">${esc(fmt(r.v))}</span></li>`).join("")}</ul>`
+    : `<p class="sm muted">${esc(empty)}</p>`;
+}
 function renderCockpit() {
   const box = document.getElementById("cockpit");
   if (!box) return;
-  const { D, P, L, B, C } = CK, tiles = [];
-  // The node: is it synced and connected?
+  const { D, P, L, B, C } = CK, cells = [];
+  // Health.
   const N = D?.node;
-  tiles.push(!D ? ckTile({ label: "Node", loading: !CK.Derr, error: CK.Derr, go: "node:hNode" })
-    : !N || N.error ? ckTile({ label: "Node", value: "Offline", state: "crit", sub: N?.error ? "The node didn't answer. Wake the Mac and check LND." : "Not connected.", go: "node:hNode" })
-    : ckTile({ label: "Node", value: N.synced ? "Synced" : "Catching up", state: N.synced && N.activeChannels > 0 ? "good" : "warn", sub: `Block ${num(N.blockHeight)} · ${num(N.activeChannels)} channel${N.activeChannels === 1 ? "" : "s"} active · ${num(N.peers)} peer${N.peers === 1 ? "" : "s"}`, go: "node:hNode" }));
-  // What needs Stanley.
-  const open = Object.values(ISSUES), crit = open.filter((x) => x.level === "crit").length;
-  tiles.push(ckTile({ label: "Needs you", value: open.length ? `${open.length} thing${open.length === 1 ? "" : "s"}` : "All good", state: crit ? "crit" : open.length ? "warn" : "good", sub: open.length ? open[0].text : "Nothing to act on.", go: "alerts:" }));
-  // Sending power: can the node pay every wallet out?
-  tiles.push(!P ? ckTile({ label: "Sending power", loading: true, go: "channels:hPower" })
-    : ckTile({ label: "Sending power", value: satsF(P.spendable), state: P.spendable < 1000 ? "crit" : P.covered ? "good" : "warn", sub: `${P.covered ? "Covers" : "Short of"} the ${satsF(P.owedSats)} held for wallets${ksh(P.spendable) ? ` · ${ksh(P.spendable)}` : ""}`, go: "channels:hPower" }));
-  // Ye₿ente, from the per-day view.
-  if (!C) for (const label of ["Held for Ye₿ente wallets", "New wallets", "Active wallets", "Money in", "Money out"]) tiles.push(ckTile({ label, loading: !CK.Cerr, error: CK.Cerr, go: "yebente:hAll" }));
+  cells.push(!D ? ckCell({ label: "Node", wait: !CK.Derr, value: "–", sub: CK.Derr || "", go: "node:hNode" })
+    : !N || N.error ? ckCell({ label: "Node", value: "Not answering", status: "crit", sub: "Wake the Mac and check LND and the tunnel.", go: "node:hNode" })
+    : ckCell({ label: "Node", value: N.synced ? "Synced" : "Catching up", status: N.synced && N.activeChannels > 0 ? "good" : "warn", sub: `Block ${num(N.blockHeight)} · ${num(N.activeChannels)} channel${N.activeChannels === 1 ? "" : "s"} · ${num(N.peers)} peer${N.peers === 1 ? "" : "s"}`, go: "node:hNode" }));
+  const R = C?.reach;
+  if (!C) cells.push(ckCell({ label: "Online, last 14 days", wait: !CK.Cerr, value: "–", go: "earn:" }));
+  else if (!C.reachOn || !R?.samples) cells.push(ckCell({ label: "Online, last 14 days", value: "Not measured", sub: "Set NJIA=on in DirectAdmin: the server then checks the node every 5 minutes.", go: "earn:" }));
   else {
-    const S = C.series, T = C.totals, Pv = C.previous, col = (k) => S.map((d) => d[k]);
-    tiles.push(ckTile({ label: "Held for Ye₿ente wallets", value: satsF(C.heldSats), sub: `Across ${num(C.wallets)} wallets${ksh(C.heldSats) ? ` · ${ksh(C.heldSats)}` : ""}. Users' money: the node must cover it.`, go: "yebente:hAll" }));
-    tiles.push(ckTile({ label: `New wallets, ${CK_DAYS} days`, value: num(T.newWallets), sub: `${num(Pv.newWallets)} in the ${CK_DAYS} days before`, change: pctChange(T.newWallets, Pv.newWallets), trend: col("newWallets"), trendLabel: `New wallets per day, last ${CK_DAYS} days`, go: "yebente:hAll" }));
-    tiles.push(ckTile({ label: `Active wallets, ${CK_DAYS} days`, value: num(T.active), sub: `${num(Pv.active)} in the ${CK_DAYS} days before`, change: pctChange(T.active, Pv.active), trend: col("active"), trendLabel: `Wallets active per day, last ${CK_DAYS} days`, go: "yebente:hAct" }));
-    tiles.push(ckTile({ label: `Money in, ${CK_DAYS} days`, value: satsF(T.depositSats), sub: `${num(T.deposits)} deposit${T.deposits === 1 ? "" : "s"}${ksh(T.depositSats) ? ` · ${ksh(T.depositSats)}` : ""}`, change: pctChange(T.depositSats, Pv.depositSats), trend: col("depositSats"), trendLabel: `Sats deposited per day, last ${CK_DAYS} days`, go: "yebente:hAct" }));
-    const tried = T.sends + T.failedSends, failPct = tried ? Math.round((T.failedSends / tried) * 100) : 0;
-    tiles.push(ckTile({ label: `Money out, ${CK_DAYS} days`, value: satsF(T.sentSats), state: failPct >= 20 ? "warn" : "", sub: `${num(T.sends)} payment${T.sends === 1 ? "" : "s"}${T.failedSends ? ` · ${num(T.failedSends)} failed (${failPct}%)` : ""}`, change: pctChange(T.sentSats, Pv.sentSats), trend: col("sentSats"), trendLabel: `Sats sent per day, last ${CK_DAYS} days`, go: "yebente:hDest" }));
+    const days = R.days.filter((d) => d.checks), bars = days.map((d) => { const p = Math.round((d.ok / d.checks) * 100); return `<i style="height:${Math.max(4, p)}%" title="${esc(dayLabel(d.day))}: ${p}% (${num(d.ok)} of ${num(d.checks)} checks)"></i>`; }).join("");
+    const last3 = R.days.slice(-3).filter((d) => d.checks), recent = last3.length ? Math.round((last3.reduce((t, d) => t + d.ok, 0) / last3.reduce((t, d) => t + d.checks, 0)) * 100) : null;
+    cells.push(ckCell({ label: "Online, last 14 days", value: `${R.pct}%`, status: R.pct >= 98 ? "good" : R.pct >= 90 ? "warn" : "crit",
+      sub: `${recent === null ? "" : `Last 3 days ${recent}%. `}Routing and leases need 98% or more.`,
+      extra: `<span class="ck-days" role="img" aria-label="Share of checks that reached the node, per day">${bars}<b class="ck-goal" style="bottom:98%" title="98%: needed for routing"></b></span>`, go: "earn:" }));
   }
-  // Profit, over the period chosen in Profit and loss, with routing fees per day.
-  tiles.push(!L ? ckTile({ label: "Profit", loading: true, go: "money:hPnl" })
-    : ckTile({ label: `${L.net >= 0 ? "Profit" : "Loss"}, ${L.days} days`, value: satsF(Math.abs(L.net)), state: L.net >= 0 ? "good" : "warn", sub: `Earned ${satsF(L.earned.total)} · spent ${satsF(L.spent.total)}${L.nodeRead ? "" : " · node not read"}`, trend: L.trend ? L.trend.map((d) => d.fees) : null, trendLabel: "Routing fees per day", go: "money:hPnl" }));
-  // Direct M-Pesa payouts: room left in the float.
-  if (B) tiles.push(ckTile({ label: "M-Pesa payout float", value: B.configured ? kshF(Math.max(0, B.roomKes)) : "Not set up", state: !B.configured || !B.on ? "" : B.roomKes <= 0 ? "crit" : B.open.length ? "warn" : "good", sub: B.configured ? `Room for new payouts · ${num(B.open.length)} waiting for Safaricom${B.on ? "" : " · switched off"}` : "Settings missing: see the setup PDF.", go: "yebente:hB2c" }));
-  // kTown: shops, and new ones per day.
-  if (CK.shopsLoaded) {
-    const since = Date.now() - CK_DAYS * 864e5, perDay = Array(CK_DAYS).fill(0);
-    let paid = 0, fresh = 0;
-    for (const m of KTOWN) {
-      paid += Number(m.paidCount) || 0;
-      const t = Date.parse(m.createdAt);
-      if (t >= since) { fresh++; perDay[Math.min(CK_DAYS - 1, Math.floor((t - since) / 864e5))]++; }
+  cells.push(!P ? ckCell({ label: "Sending power", wait: true, value: "–", go: "channels:hPower" }) : (() => {
+    const share = P.spendable > 0 ? Math.min(100, Math.round((P.owedSats / P.spendable) * 100)) : 100;
+    return ckCell({ label: "Sending power", value: satsF(P.spendable), status: P.spendable < 1000 || !P.covered ? "crit" : share > 80 ? "warn" : "good",
+      sub: `Wallets hold ${satsF(P.owedSats)}: ${P.covered ? `${share}% of it` : "more than the node can send"}.`,
+      extra: `<span class="ck-meter" role="img" aria-label="Wallet balances use ${share}% of sending power"><i style="width:${share}%"></i></span>`, go: "channels:hPower" });
+  })());
+  const on = OVERVIEW?.details?.onchain;
+  cells.push(!on ? ckCell({ label: "On-chain", wait: !D || !CK.Derr, value: "–", go: "money:" })
+    : ckCell({ label: "On-chain", value: satsF(Number(on.confirmed) || 0), status: (Number(on.confirmed) || 0) >= 10000 ? "good" : "warn", sub: (Number(on.confirmed) || 0) >= 10000 ? "Enough for fees if a channel closes." : "Keep 10,000 sats or more here for fees if a channel ever closes.", go: "money:" }));
+  if (B?.configured) cells.push(ckCell({ label: "M-Pesa payout float", value: kshF(Math.max(0, B.roomKes)), status: !B.on ? "" : B.roomKes <= 0 ? "crit" : B.open.length ? "warn" : "good", sub: `${num(B.open.length)} waiting for Safaricom${B.on ? "" : " · switched off"}`, go: "yebente:hB2c" }));
+  // The last 30 days against the 30 before.
+  let table = '<p class="sm muted ck-wait">Loading the last 30 days…</p>';
+  if (CK.Cerr) table = `<p class="sm err">${esc(CK.Cerr)}</p>`;
+  else if (C) {
+    const S = C.series, T = C.totals, Pv = C.previous;
+    const col = (k) => S.map((d) => ({ label: dayLabel(d.day), v: d[k] }));
+    const rows = [
+      { name: "New wallets", go: "yebente:hAll", now: T.newWallets, before: Pv.newWallets, pts: col("newWallets") },
+      { name: "Active wallets", go: "yebente:hAct", now: T.active, before: Pv.active, pts: col("active"), note: "used at least once" },
+      { name: "Money in", go: "yebente:hAct", now: T.depositSats, before: Pv.depositSats, pts: col("depositSats"), fmt: satsF, note: `${num(T.deposits)} deposits` },
+      { name: "Money out", go: "yebente:hDest", now: T.sentSats, before: Pv.sentSats, pts: col("sentSats"), fmt: satsF, note: `${num(T.sends)} payments` },
+      { name: "Failed payments out", go: "yebente:hDest", now: T.failedSends, before: Pv.failedSends, pts: col("failedSends"), upIsBad: true, note: T.sends + T.failedSends ? `${Math.round((T.failedSends / (T.sends + T.failedSends)) * 100)}% of tries` : "" },
+    ];
+    if (C.ktown) {
+      const K = C.ktown;
+      rows.push({ name: "kTown payments", go: "ktown:hKtown", now: K.total.sats, before: K.previous.sats, pts: K.series.map((d) => ({ label: dayLabel(d.day), v: d.sats })), fmt: satsF, note: `${num(K.total.payments)} paid${K.total.failed ? ` · ${num(K.total.failed)} failed` : ""}` });
     }
-    tiles.push(ckTile({ label: "kTown shops", value: CK.ktownMax ? `${num(KTOWN.length)} of ${num(CK.ktownMax)}` : num(KTOWN.length), state: CK.ktownMax && KTOWN.length >= CK.ktownMax ? "warn" : "", sub: `${num(fresh)} new in ${CK_DAYS} days · ${num(paid)} payment${paid === 1 ? "" : "s"} received`, trend: perDay, trendLabel: `New kTown shops per day, last ${CK_DAYS} days`, go: "ktown:hKtown" }));
+    if (CK.shopsLoaded) {
+      const start = Date.parse(`${S[0].day}T00:00:00+03:00`), per = S.map((d) => ({ label: dayLabel(d.day), v: 0 })); let before = 0;
+      for (const m of KTOWN) { const t = Date.parse(m.createdAt), i = Math.floor((t - start) / 864e5); if (i >= 0 && i < per.length) per[i].v++; else if (i < 0 && i >= -CK_DAYS) before++; }
+      rows.push({ name: "New kTown shops", go: "ktown:hKtown", now: per.reduce((t, p) => t + p.v, 0), before, pts: per, note: CK.ktownMax ? `${num(KTOWN.length)} of ${num(CK.ktownMax)} places` : "" });
+    }
+    table = `<table class="ck-table"><thead><tr><th scope="col">Last ${CK_DAYS} days</th><th scope="col">Total</th><th scope="col">${CK_DAYS} days before</th><th scope="col">Change</th><th scope="col">Per day</th></tr></thead><tbody>`
+      + rows.map((r) => {
+        const f = r.fmt || num, ch = pctChange(r.now, r.before), good = ch && ch.dir ? (ch.dir > 0) !== Boolean(r.upIsBad) : null;
+        return `<tr><th scope="row"><a href="#${esc(r.go.split(":")[0])}" data-go="${esc(r.go)}">${esc(r.name)}</a>${r.note ? `<span class="muted">${esc(r.note)}</span>` : ""}</th>`
+          + `<td>${esc(f(r.now))}</td><td class="muted">${esc(f(r.before))}</td>`
+          + `<td>${ch ? `<span class="ck-ch ${good === null ? "" : good ? "up" : "down"}">${ch.dir > 0 ? "↑" : ch.dir < 0 ? "↓" : ""} ${esc(ch.text)}</span>` : '<span class="muted" title="Nothing in the 30 days before to compare with">New</span>'}</td>`
+          + `<td>${spark(r.pts, `${r.name} per day, last ${CK_DAYS} days`, f)}</td></tr>`;
+      }).join("") + "</tbody></table>";
   }
-  box.innerHTML = tiles.join("");
-  if (C) $("#ckAge").textContent = `Ye₿ente figures from ${new Date(C.at).toLocaleTimeString()} · changes compare with the ${CK_DAYS} days before.`;
+  // Earned, by source, and why payments out failed.
+  const earned = !L ? '<p class="sm muted ck-wait">Loading…</p>' : meterList([
+    { name: "Routing fees", v: L.earned.routing, note: `${num(L.earned.routed)} routed` },
+    { name: "M-Pesa buy spread", v: L.earned.spread, note: L.earned.spreadPct ? `${L.earned.spreadPct}% on ${num(L.earned.buys)} buys` : "off" },
+    { name: "Support payments", v: L.earned.support, note: `${num(L.earned.supportCount)} on /donate` },
+    { name: "Channel leases", v: L.earned.leases || 0, note: `${num(L.earned.leaseCount || 0)} recorded` },
+  ], satsF, "") + `<p class="sm ck-net">${L.net >= 0 ? "Profit" : "Loss"} <b>${esc(satsF(Math.abs(L.net)))}</b> after ${esc(satsF(L.spent.total))} spent${L.nodeRead ? "" : " · the node couldn't be read"}.</p>`;
+  // Open right now: anything waiting longer than it normally takes.
+  let openNow = "";
+  if (C?.open) {
+    const O = C.open, line = (label, g, unit, late, go) => `<li class="${g.late ? "late" : ""}"><a href="#${esc(go.split(":")[0])}" data-go="${esc(go)}">${esc(label)}</a><span>${g.count ? `${esc(num(g.count))}${unit ? ` · ${esc(unit(g.amount))}` : ""}${g.late ? ` · <b>${esc(num(g.late))} over ${esc(late)}</b>` : ""}` : '<span class="muted">none</span>'}</span></li>`;
+    const K = C.ktown || { stuck: 0 };
+    openNow = `<ul class="ck-open">${line("Lightning payments out in progress", O.payments, satsF, "10 min", "yebente:hAll")}${line("M-Pesa and card buys waiting", O.buys, kshF, "30 min", "yebente:hAll")}${line("Direct M-Pesa payouts waiting", O.payouts, kshF, "15 min", "yebente:hB2c")}`
+      + `<li class="${K.stuck ? "late" : ""}"><a href="#ktown" data-go="ktown:hKtown">kTown payments not confirmed after 1 hour</a><span>${K.stuck ? `<b>${esc(num(K.stuck))}</b>` : '<span class="muted">none</span>'}</span></li></ul>`;
+  }
+  const failed = !C ? '<p class="sm muted ck-wait">Loading…</p>' : meterList((C.failReasons || []).map((r) => ({ name: r.why, v: r.count })), num, "No payments out failed.");
+  box.innerHTML = `<div class="ck-health">${cells.join("")}</div>`
+    + `<div class="ck-block">${table}</div>`
+    + (openNow ? `<div class="ck-block"><h3>Open right now</h3>${openNow}</div>` : "")
+    + `<div class="ck-two"><div class="ck-block"><h3>Earned${L ? `, last ${L.days} days` : ""}</h3>${earned}</div><div class="ck-block"><h3>Why payments out failed, last ${CK_DAYS} days</h3>${failed}</div></div>`;
+  if (C) $("#ckAge").textContent = `Figures from ${new Date(C.at).toLocaleTimeString()}. Days are Kenyan days.`;
 }
 async function loadCockpit() {
   try { CK.C = await api("?view=cockpit"); CK.Cerr = null; } catch (err) { CK.Cerr = err.message; }
   renderCockpit();
+  // Anything stuck, and a node that is often unreachable, also join "needs you".
+  const O = CK.C?.open, K = CK.C?.ktown, R = CK.C?.reach;
+  const late = O ? [[O.payments, "Lightning payment out"], [O.buys, "M-Pesa or card buy"], [O.payouts, "direct M-Pesa payout"]].filter(([g]) => g.late) : [];
+  issue("stuck", late.length ? "soon" : null, late.map(([g, what]) => `${g.late} ${what}${g.late === 1 ? "" : "s"} waiting longer than usual.`).join(" ") + " Check them in the Ye₿ente tab.", "yebente:hAll");
+  issue("ktstuck", K?.stuck ? "soon" : null, `${K?.stuck} kTown payment${K?.stuck === 1 ? "" : "s"} not confirmed after an hour. Check the shop's M-Pesa.`, "ktown:hKtown");
+  const last = R?.days?.at(-1);
+  issue("offline", last?.checks >= 12 && last.ok / last.checks < 0.9 ? "soon" : null, `The node answered only ${last ? Math.round((last.ok / last.checks) * 100) : 0}% of checks today. Payments fail while it's unreachable: check the Mac, the internet and the tunnel.`, "overview:hCockpit");
 }
 $("#cockpit").addEventListener("click", (e) => {
   const a = e.target.closest("[data-go]");
   if (!a) return;
   e.preventDefault();
-  if (a.dataset.go === "alerts:") { $("#health").click(); return; }
   go(a.dataset.go);
 });
 
