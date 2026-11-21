@@ -81,10 +81,12 @@ test("why payments failed (last period only), what is stuck now, and kTown payme
   assert.equal(k.stuck, 1, "pending for over an hour");
 });
 
-test("the cockpit doesn't decorate: no coloured edge stripes, words beside every status colour", () => {
+test("the cockpit doesn't decorate: no glow on hover, a word beside every status colour", () => {
   const html = fs.readFileSync(new URL("../admin.html", import.meta.url), "utf8");
   const js = fs.readFileSync(new URL("../assets/admin.js", import.meta.url), "utf8");
-  assert.doesNotMatch(html, /\.ck-tile::before/, "no status stripe down the side of every card");
+  const css = html.slice(html.indexOf("/* The cockpit (#519)"), html.indexOf("#posters{display:none}"));
+  assert.doesNotMatch(css, /box-shadow|text-shadow|filter:\s*drop-shadow|glow/i, "no glows or shadows");
+  assert.match(js, /\$\{esc\(label\)\}\$\{statusWord\(state\)\}/, "each tile's status colour comes with its word");
   assert.match(js, /"Good" : s === "warn" \? "Watch" : "Act"/, "status colours always come with a word");
   assert.match(js, /title="Nothing in the 30 days before to compare with">New</, "no percentage when there's nothing to compare");
 });
