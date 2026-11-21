@@ -141,7 +141,8 @@ test("shortfalls and suspensions are flagged", async () => {
   acct.suspended = true;
   await store.setJSON(`dev:acct:${id}`, acct);
 
-  const v = await adminCall("GET", "?view=developer");
+  // Fresh data, as the Refresh button asks for: the dashboard keeps a recent copy for a minute (#519).
+  const v = await adminCall("GET", "?view=developer&fresh=1");
   const kinds = v.json.flags.map((f) => f.kind).sort();
   assert.ok(kinds.includes("shortfall"), "the shortfall account is flagged");
   assert.ok(kinds.includes("suspended"), "the suspended account is flagged");

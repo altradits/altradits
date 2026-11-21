@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Smartphone, ShieldCheck } from 'lucide-react';
 import { fetchSecurity, removeDevice, cancelEmailRecovery, changeServerPin, SecurityInfo } from '../services/altraditsWallet';
+import { readableError } from '../services/errorText';
 
 // The phones signed in to this wallet and what happened to it lately, so the
 // owner can spot a phone or a recovery they don't recognise and remove it.
@@ -29,14 +30,14 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
   const remove = async () => {
     setBusy(true); setError('');
     try { await removeDevice(removing, pin); setRemoving(''); setPin(''); await load(); onChanged?.(); }
-    catch (err: unknown) { setError(err instanceof Error ? err.message : 'Could not remove that phone.'); }
+    catch (err: unknown) { setError(readableError(err, 'Could not remove that phone.')); }
     finally { setBusy(false); }
   };
 
   const cancel = async () => {
     setBusy(true); setError(''); setCancelNote('');
     try { await cancelEmailRecovery(cancelPin); setCancelling(false); setCancelPin(''); setCancelNote('Recovery cancelled. Its links no longer work.'); await load(); onChanged?.(); }
-    catch (err: unknown) { setError(err instanceof Error ? err.message : 'Could not cancel the recovery.'); }
+    catch (err: unknown) { setError(readableError(err, 'Could not cancel the recovery.')); }
     finally { setBusy(false); }
   };
 
@@ -48,7 +49,7 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
       setChanging(false); setOldPin(''); setNewPin(''); setNewPin2('');
       setPinNote('PIN changed. Older sign-ins ended.'); await load(); onChanged?.();
     }
-    catch (err: unknown) { setError(err instanceof Error ? err.message : 'Could not change the PIN.'); }
+    catch (err: unknown) { setError(readableError(err, 'Could not change the PIN.')); }
     finally { setBusy(false); }
   };
   const pinBox = 'yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.3em]';

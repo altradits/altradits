@@ -12,7 +12,9 @@ const ago = (iso) => { const m = (Date.now() - Date.parse(iso)) / 6e4; return m 
 const kpi = (label, v, state, why) => `<div class="kpi${state ? ` ${state}` : ""}"><small>${esc(label)}</small><div>${esc(v)}</div>${why ? `<span class="why">${esc(why)}</span>` : ""}</div>`;
 // Shillings beside sats, at the rate the dashboard last read (BTC price × USD/KES).
 let KES_PER_BTC = null;
+let FRESH = false, oldestAt = null, anyStale = false, staleTimer = null; // data freshness (#519)
 let OVERVIEW = null, lastUtxos = null;
+const CK = {}; // the cockpit's data, filled in as each part loads (#519)
 const ksh = (sats) => (KES_PER_BTC && sats !== null && sats !== undefined ? `KSh ${Math.round((Number(sats) / 1e8) * KES_PER_BTC).toLocaleString("en-US")}` : "");
 const satsKsh = (sats) => `${satsF(sats)}${ksh(sats) ? ` (${ksh(sats)})` : ""}`;
 const judge = (ok) => (ok === null || ok === undefined ? "" : ok ? "good" : "warn");
@@ -52,6 +54,15 @@ function tabFromHash() {
   tab(h);
 }
 window.addEventListener("hashchange", tabFromHash);
+// "On this page": jump links at the top of every tab with 4 or more panels.
+document.querySelectorAll("[data-pane]").forEach((pane) => {
+  const heads = [...pane.querySelectorAll("section.panel > h2[id]")];
+  if (heads.length < 4) return;
+  const nav = document.createElement("nav");
+  nav.className = "onpage"; nav.setAttribute("aria-label", "On this page");
+  nav.innerHTML = "<b>On this page:</b>" + heads.map((h) => `<a href="#${esc(h.id)}">${esc((h.firstChild?.textContent || h.textContent).trim())}</a>`).join("");
+  pane.prepend(nav);
+});
 tabFromHash();
 
 // What needs attention, from every part of the dashboard: { key: { level, text, go: "tab:sectionId" } }.
@@ -61,11 +72,13 @@ function renderAlerts() {
   const list = Object.values(ISSUES).sort((a, b) => (a.level === "crit" ? 0 : 1) - (b.level === "crit" ? 0 : 1));
   $("#health").textContent = list.length ? `${list.length} thing${list.length === 1 ? "" : "s"} need${list.length === 1 ? "s" : ""} you ▾` : "All good";
   $("#health").classList.toggle("bad", list.length > 0);
+  renderCockpit();
   $("#alertList").innerHTML = list.length ? list.map((x) => `<li><a href="#${esc(x.go.split(":")[0])}" data-go="${esc(x.go)}"><span class="lv ${x.level}">${x.level === "crit" ? "Act now" : "Soon"}</span><br>${esc(x.text)}</a></li>`).join("") : '<li class="sm muted">Nothing needs you right now.</li>';
 }
 function go(target) {
   const [t, id, extra] = target.split(":");
-  tab(t);
+  // The tab that actually holds the panel: panels can move between tabs without breaking a link.
+  tab(document.getElementById(id || "")?.closest("[data-pane]")?.dataset.pane || t);
   // A "What needs you" item can link straight to a filtered list, e.g. security:hSec:sev=high.
   if (t === "security" && extra && extra.startsWith("sev=")) setSecFilter(extra.slice(4), "all");
   const el = id && document.getElementById(id);
@@ -133,12 +146,14 @@ function trendHtml(trend) {
 }
 // end trendHtml
 async function api(path, body) {
+  if (!body && FRESH) path += (path.includes("?") ? "&" : "?") + "fresh=1";
   try {
     const res = await fetch("/api/admin" + path, { method: body ? "POST" : "GET",
       headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: body && JSON.stringify(body) });
     const data = await res.json().catch(() => ({ error: `Request failed (${res.status})` }));
     if (res.status === 401) { showLogin(data.error); throw new Error(data.error); }
     if (!res.ok) throw new Error(data.error || "Request failed");
+    if (!body && data && data._at) { const t = Date.parse(data._at); if (!oldestAt || t < oldestAt) oldestAt = t; if (data._stale) anyStale = true; }
     return data;
   } catch (err) {
     throw new Error(err.message === "Failed to fetch" ? "No connection to the server. Check your internet and try again." : err.message);
@@ -162,7 +177,9 @@ $("#refresh").addEventListener("click", async () => {
   if (b.classList.contains("busy")) return;
   b.classList.add("busy"); b.disabled = true; b.setAttribute("aria-busy", "true"); b.lastChild.textContent = "Refreshing…";
   const t0 = Date.now();
-  try { await load(); if (njiaLoaded) await loadNjia(true); } finally { // Refresh re-reads the Earn tab
+  FRESH = true; // Refresh asks the server for fresh data, not its recent copy
+  try { await load(); if (njiaLoaded) await loadNjia(true); } finally {
+    FRESH = false; // Refresh re-reads the Earn tab
     await new Promise((r) => setTimeout(r, Math.max(0, 600 - (Date.now() - t0)))); // long enough to see it worked
     b.classList.remove("busy"); b.disabled = false; b.removeAttribute("aria-busy"); b.lastChild.textContent = "Refresh";
     toast(`Updated ${new Date().toLocaleTimeString()}`);
@@ -190,7 +207,7 @@ function renderChecklist(D, L) {
     [bkOk, "Channel backup copy is fresh", bkWhy],
     [null, "24 recovery words safe on paper", "Never typed into a website or a phone. Only the node's own setup asks for them."],
   ];
-  const where = ["node:hNode", "channels:hChan", "money:hPower", "money:hChain", "overview:hStan", "money:hBackup"];
+  const where = ["node:hNode", "channels:hChan", "channels:hPower", "node:hChain", "overview:hStan", "node:hBackup"];
   items.slice(0, 6).forEach(([ok, title, why], i) => issue(`check${i}`, ok === false ? (i < 3 || i === 5 ? "crit" : "warn") : null, `${title}: ${why}`, where[i]));
   $("#checklist").innerHTML = items.map(([ok, title, why]) => `<li><span class="m ${ok === null ? "u" : ok ? "y" : "n"}" aria-label="${ok === null ? "check yourself" : ok ? "fine" : "needs attention"}">${ok === null ? "○" : ok ? "✓" : "✗"}</span><span><b>${esc(title)}</b><br><span class="sm muted">${esc(why)}</span></span></li>`).join("");
 }
@@ -405,6 +422,7 @@ function renderMap(P) {
 async function loadPower() {
   let P; try { P = await api("?view=liquidity"); } catch (err) { $("#spNote").textContent = err.message; return null; }
   lastPower = P;
+  CK.P = P; renderCockpit();
   renderMap(P);
   $("#spNote").innerHTML = `<span class="kpis" style="display:grid;margin:0 0 .6rem">${kpi("Can send now", satsF(P.spendable), judge(P.spendable >= 1000), ksh(P.spendable))}${kpi("Owed to wallets", satsF(P.owedSats), "", ksh(P.owedSats))}${kpi("Can still receive", satsF(P.inbound), "", `${ksh(P.inbound)} · after the peer's reserve`)}</span>`
     + (P.spendable < 1000 ? `<b class="err">The node can't send anything right now.</b> Ye₿ente payments out fail until you top up.`
@@ -480,15 +498,25 @@ $("#lnAdd").addEventListener("click", async () => {
 const SEC_RESOLVABLE = ["file_tampering", "unexplained_balance_drop", "admin_compromise"];
 const SEC_SEV_WORD = { high: "High", medium: "Medium", low: "Low" };
 const secSevOf = (e, T) => T[e.kind]?.severity || "low";
-function secLifts(deadman) {
+function secLiftsOnly(deadman) {
   const out = [];
   for (const l of deadman?.liftHistory || []) if (l?.liftedAt) out.push({ at: l.liftedAt, note: l.note || "", forced: Boolean(l.forced) });
   if (deadman?.liftedAt && !out.some((l) => l.at === deadman.liftedAt)) out.push({ at: deadman.liftedAt, note: deadman?.liftNote || "", forced: Boolean(deadman?.forcedLift) });
   return out.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
 }
+// A watch that closed after an event settles it too: the signal cleared on its
+// own (the files matched the deploy again), or Stanley said "this was me".
+// Without this, a watch that resolved itself kept "What needs you" nagging all day.
+function secLifts(deadman) {
+  const out = secLiftsOnly(deadman);
+  for (const h of deadman?.history || []) {
+    if (h?.closedAt && (h.outcome === "resolved" || h.outcome === "acknowledged")) out.push({ at: h.closedAt, note: h.outcome === "resolved" ? "The signal cleared on its own: the files matched the deploy again." : "You confirmed this was you.", forced: false, kind: h.kind });
+  }
+  return out.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+}
 function secResolved(e, lifts) {
   if (!SEC_RESOLVABLE.includes(e.kind)) return null;
-  return (lifts || []).filter((l) => l.at > e.at).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))[0] || null;
+  return (lifts || []).filter((l) => l.at > e.at && (!l.kind || l.kind === e.kind)).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))[0] || null;
 }
 function secIssueText(open, resolved, T) {
   const byKind = {};
@@ -660,6 +688,7 @@ $("#devAccounts").addEventListener("click", async (e) => {
 // Profit and loss: what the node earned and spent, and what is yours after Ye₿ente's wallet holders.
 async function loadPnl() {
   let L; try { L = await api(`?view=pnl&days=${encodeURIComponent($("#pnlDays").value)}`); } catch (err) { $("#pnlTable").textContent = err.message; return; }
+  CK.L = L; renderCockpit();
   const E = L.earned, S = L.spent;
   $("#pnlKpis").innerHTML = kpi("Earned", satsF(E.total), "", ksh(E.total)) + kpi("Spent", satsF(S.total), "", ksh(S.total))
     + kpi(L.net >= 0 ? "Profit" : "Loss", satsF(Math.abs(L.net)), L.net >= 0 ? "good" : "warn", ksh(Math.abs(L.net)));
@@ -815,6 +844,34 @@ async function loadWallets() {
   const first = W.mine.find((w) => !w.missing)?.handle;
   if (first) document.querySelectorAll("#cliSteps .h").forEach((x) => { x.textContent = first; });
 }
+// Direct M-Pesa payouts (#513): the float, open payouts and safe manual settlement.
+const kshF = (n) => `KSh ${num(n)}`;
+async function loadB2c() {
+  let B; try { B = await api("?view=b2c"); } catch (err) { $("#b2cOpen").textContent = err.message; return; }
+  CK.B = B; renderCockpit();
+  $("#b2cKpis").innerHTML = kpi("Switch", B.on ? "On" : "Off", "", B.configured ? "Settings are in place." : "Settings missing: see the setup PDF.")
+    + kpi("Float", kshF(B.floatKes), "", B.floatAt ? `${B.floatFrom}, ${ago(B.floatAt)}` : "from the setting")
+    + kpi("Promised to open payouts", kshF(B.reservedKes), "", `${num(B.open.length)} open`)
+    + kpi("Room for new payouts", kshF(Math.max(0, B.roomKes)), "", B.roomKes <= 0 ? "Refill the float." : "");
+  $("#b2cOpen").innerHTML = B.open.length ? `<h3>Waiting for Safaricom</h3><table><thead><tr><th>Id (search in the org portal)</th><th>Shillings</th><th>Sats</th><th>To</th><th>Started</th><th>Last asked</th><th>Settle by hand</th></tr></thead><tbody>${B.open.map((r) =>
+    `<tr><td><code>${esc(r.id)}</code></td><td>${esc(kshF(r.kes))}</td><td>${esc(num(r.sats))}</td><td>${esc(r.phone)}</td><td>${esc(ago(r.at))}</td><td>${r.askedAt ? esc(ago(r.askedAt)) : '<span class="muted">not yet</span>'}</td>
+      <td><input data-b2cin="${esc(r.id)}" placeholder="M-Pesa code, or REFUND ${esc(r.id)}" aria-label="M-Pesa code or refund confirmation for ${esc(r.id)}" style="max-width:15rem"> <button type="button" class="btn sm" data-b2cpaid="${esc(r.id)}">Mark paid</button> <button type="button" class="linkbtn sm" data-b2crefund="${esc(r.id)}">Refund</button></td></tr>`).join("")}</tbody></table>`
+    : '<p class="muted sm">No payouts waiting for Safaricom.</p>';
+  $("#b2cRecent").innerHTML = B.recent.length ? `<h3>Recently finished</h3><table><thead><tr><th>Id</th><th>Shillings</th><th>To</th><th>Result</th><th>M-Pesa code</th><th>When</th></tr></thead><tbody>${B.recent.map((r) =>
+    `<tr><td><code>${esc(r.id)}</code></td><td>${esc(kshF(r.kes))}</td><td>${esc(r.phone)}</td><td>${r.result === "paid" ? '<b class="ok">Paid</b>' : "Refunded"}${r.byHand ? ' <span class="muted">(by hand)</span>' : ""}</td><td>${esc(r.receipt || "")}</td><td>${r.finishedAt ? esc(ago(r.finishedAt)) : ""}</td></tr>`).join("")}</tbody></table>` : "";
+}
+$("#b2cFloatSet").addEventListener("click", async () => {
+  try { await api("", { action: "b2c_float", kes: Number($("#b2cFloat").value) }); $("#b2cFloat").value = ""; toast("Float saved."); loadB2c(); } catch (err) { toast(err.message, true, 6000); }
+});
+$("#b2cOpen").addEventListener("click", async (e) => {
+  const paid = e.target.closest("[data-b2cpaid]")?.dataset.b2cpaid, refund = e.target.closest("[data-b2crefund]")?.dataset.b2crefund;
+  const id = paid || refund; if (!id) return;
+  const v = document.querySelector(`[data-b2cin="${CSS.escape(id)}"]`).value;
+  try {
+    const r = await api("", paid ? { action: "b2c_settle", id, outcome: "paid", receipt: v } : { action: "b2c_settle", id, outcome: "refund", confirm: v });
+    toast(r.result === "paid" ? "Marked paid." : "Refunded to the wallet."); loadB2c();
+  } catch (err) { toast(err.message, true, 8000); }
+});
 $("#mineAdd").addEventListener("click", async () => {
   try { await api("", { action: "my_wallet_add", handle: $("#mineHandle").value }); $("#mineHandle").value = ""; toast("Added."); loadWallets(); } catch (err) { toast(err.message, true, 6000); }
 });
@@ -2791,7 +2848,7 @@ function posterQr(text) {
   return qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
 }
 function posterHtml(m) {
-  return `<section class="poster"><div class="burst"></div><div class="top"><div class="brand">${BTC_MARK}<span class="word">bitcoin</span></div>`
+  return `<section class="poster"><div class="burst"></div><div class="ptop"><div class="brand">${BTC_MARK}<span class="word">bitcoin</span></div>`
     + `<p class="acc">Accepted here</p><p class="shop">${esc(m.shop)}</p></div>`
     + `<div class="frame"><div class="q">${posterQr(`${m.payUrl}?lightning=${m.lnurl}`)}</div><div class="mid"><img src="/assets/logo.png" alt="Altradits"></div></div>`
     + `<div class="band"><div class="scan">${PHONE_ICON}Scan to pay</div><div class="fine">Tunapokea Bitcoin · Any Lightning wallet · Shop gets M-Pesa</div>`
@@ -2816,6 +2873,172 @@ async function printPosters(list) {
   setTimeout(() => window.print(), 50);
 }
 window.addEventListener("afterprint", () => { document.body.classList.remove("posters-on"); $("#posters").innerHTML = ""; });
+
+// ---- The poster as a ready-to-print A4 PDF: download it, or share it from a
+// phone, and print with no settings to change (A4, no margins, full colour).
+// The poster is laid out off-screen with the same HTML and styles the print
+// uses, each part's place is measured, and the parts are drawn on an A4 canvas
+// at 200 dpi. The canvas becomes a JPEG page in a small PDF written here: no
+// library, nothing sent anywhere.
+const A4_PT = [595.28, 841.89], PDF_DPI = 200;
+const loadImage = (src) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error("An image for the poster didn't load.")); i.src = src; });
+const svgImage = (svg) => loadImage("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.includes("xmlns=") ? svg : svg.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"')));
+function roundRect(cx, x, y, w, h, r) { cx.beginPath(); if (cx.roundRect) cx.roundRect(x, y, w, h, r); else cx.rect(x, y, w, h); }
+// Text centred in its box, wrapped the way the page wrapped it.
+function drawText(cx, el, box, k) {
+  const st = getComputedStyle(el);
+  cx.font = `${st.fontWeight} ${parseFloat(st.fontSize) * k}px ${st.fontFamily}`;
+  cx.fillStyle = st.color;
+  if ("letterSpacing" in cx) cx.letterSpacing = st.letterSpacing === "normal" ? "0px" : `${parseFloat(st.letterSpacing) * k}px`;
+  cx.textAlign = "center"; cx.textBaseline = "middle";
+  const text = st.textTransform === "uppercase" ? el.textContent.toUpperCase() : el.textContent;
+  const lines = [];
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const last = lines[lines.length - 1];
+    if (last !== undefined && cx.measureText(`${last} ${word}`).width <= box.w + 1) lines[lines.length - 1] = `${last} ${word}`;
+    else lines.push(word);
+  }
+  const lh = box.h / Math.max(1, lines.length);
+  lines.forEach((l, n) => cx.fillText(l, box.x + box.w / 2, box.y + lh * (n + .5)));
+}
+async function posterCanvas(m, logo) {
+  const host = document.createElement("div");
+  host.style.cssText = "position:fixed;left:-400mm;top:0;pointer-events:none";
+  host.setAttribute("aria-hidden", "true");
+  host.innerHTML = posterHtml(m);
+  document.body.append(host);
+  try {
+    await document.fonts.ready;
+    const p = host.querySelector(".poster"), P = p.getBoundingClientRect();
+    const W = Math.round(210 / 25.4 * PDF_DPI), H = Math.round(297 / 25.4 * PDF_DPI), k = W / P.width, mm = P.width / 210;
+    const at = (el) => { const r = el.getBoundingClientRect(); return { x: (r.left - P.left) * k, y: (r.top - P.top) * k, w: r.width * k, h: r.height * k }; };
+    const q = (s) => p.querySelector(s);
+    const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    const cx = cv.getContext("2d");
+    cx.fillStyle = "#fff"; cx.fillRect(0, 0, W, H);
+    // The sunburst: 6-degree orange rays from 40 mm below the top of its area.
+    const b = at(q(".burst")), ox = b.x + b.w / 2, oy = b.y + 40 * mm * k, R = Math.hypot(W, H);
+    // Drawn on its own layer, then faded out towards its lower edge (as the page's mask does).
+    const rays = document.createElement("canvas"); rays.width = W; rays.height = H;
+    const rx = rays.getContext("2d");
+    rx.fillStyle = "rgba(247,147,26,.22)";
+    for (let a = 0; a < 360; a += 12) {
+      const t0 = (a - 90) * Math.PI / 180, t1 = (a + 6 - 90) * Math.PI / 180;
+      rx.beginPath(); rx.moveTo(ox, oy); rx.lineTo(ox + R * Math.cos(t0), oy + R * Math.sin(t0)); rx.lineTo(ox + R * Math.cos(t1), oy + R * Math.sin(t1)); rx.closePath(); rx.fill();
+    }
+    const fade = rx.createLinearGradient(0, b.y, 0, b.y + b.h);
+    fade.addColorStop(0, "#000"); fade.addColorStop(.55, "#000"); fade.addColorStop(1, "rgba(0,0,0,0)");
+    rx.globalCompositeOperation = "destination-in"; rx.fillStyle = fade; rx.fillRect(0, 0, W, H);
+    cx.drawImage(rays, 0, 0);
+    // The Bitcoin mark, "bitcoin", "Accepted here" and the shop's name.
+    const mark = q(".brand svg"), mb = at(mark);
+    cx.drawImage(await svgImage(mark.outerHTML), mb.x, mb.y, mb.w, mb.h);
+    for (const s of [".word", ".acc", ".shop"]) drawText(cx, q(s), at(q(s)), k);
+    // The frame: a pale orange ring, a white gap, the orange border, then the code.
+    const f = at(q(".frame")), r = 9 * mm * k, bw = 2.2 * mm * k;
+    const ring = (d, rr, colour) => { roundRect(cx, f.x - d, f.y - d, f.w + 2 * d, f.h + 2 * d, rr); cx.fillStyle = colour; cx.fill(); };
+    ring(4 * mm * k, r + 4 * mm * k, "rgba(247,147,26,.6)");
+    ring(3 * mm * k, r + 3 * mm * k, "#fff");
+    ring(0, r, "#F7931A");
+    roundRect(cx, f.x + bw, f.y + bw, f.w - 2 * bw, f.h - 2 * bw, Math.max(0, r - bw)); cx.fillStyle = "#fff"; cx.fill();
+    const code = q(".q svg"), cb = at(code);
+    cx.imageSmoothingEnabled = false; // crisp modules
+    cx.drawImage(await svgImage(code.outerHTML), cb.x, cb.y, cb.w, cb.h);
+    cx.imageSmoothingEnabled = true;
+    const mid = at(q(".mid")), lb = at(q(".mid img"));
+    roundRect(cx, mid.x, mid.y, mid.w, mid.h, 4 * mm * k); cx.fillStyle = "#fff"; cx.fill();
+    cx.drawImage(logo, lb.x, lb.y, lb.w, lb.h);
+    // The orange band: "Scan to pay" with the phone, the fine print, the website.
+    const band = at(q(".band")), g = cx.createLinearGradient(0, band.y, 0, band.y + band.h);
+    g.addColorStop(0, "#FFA02E"); g.addColorStop(.45, "#F7931A"); g.addColorStop(1, "#F7931A");
+    cx.fillStyle = g; cx.fillRect(band.x, band.y, band.w, band.h);
+    const phone = q(".scan svg");
+    if (phone) { const pb = at(phone); cx.drawImage(await svgImage(phone.outerHTML), pb.x, pb.y, pb.w, pb.h); }
+    // "Scan to pay" sits right of the phone: draw it in the text's own box.
+    const scan = q(".scan"), sr = document.createRange(); sr.selectNodeContents(scan); if (phone) sr.setStartAfter(phone);
+    const tr = sr.getBoundingClientRect();
+    drawText(cx, scan, { x: (tr.left - P.left) * k, y: (tr.top - P.top) * k, w: tr.width * k, h: tr.height * k }, k);
+    for (const s of [".fine", ".sign"]) drawText(cx, q(s), at(q(s)), k);
+    return cv;
+  } finally { host.remove(); }
+}
+// A PDF with one full-bleed A4 page per JPEG.
+function pdfFromJpegs(pages) {
+  const enc = new TextEncoder(), parts = [], offsets = [];
+  let length = 0;
+  const put = (x) => { const b = typeof x === "string" ? enc.encode(x) : x; parts.push(b); length += b.length; };
+  const obj = (n, body, stream) => {
+    offsets[n] = length;
+    put(`${n} 0 obj\n${body}\n`);
+    if (stream) { put("stream\n"); put(stream); put("\nendstream\n"); }
+    put("endobj\n");
+  };
+  put("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+  const [pw, ph] = A4_PT, kids = pages.map((_, n) => `${3 + n * 3} 0 R`).join(" ");
+  obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+  obj(2, `<< /Type /Pages /Kids [${kids}] /Count ${pages.length} >>`);
+  pages.forEach((pg, n) => {
+    const page = 3 + n * 3, content = page + 1, image = page + 2;
+    const draw = enc.encode(`q ${pw} 0 0 ${ph} 0 0 cm /Im0 Do Q`);
+    obj(page, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im0 ${image} 0 R >> >> /Contents ${content} 0 R >>`);
+    obj(content, `<< /Length ${draw.length} >>`, draw);
+    obj(image, `<< /Type /XObject /Subtype /Image /Width ${pg.w} /Height ${pg.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${pg.jpeg.length} >>`, pg.jpeg);
+  });
+  const count = 3 + pages.length * 3, xref = length;
+  put(`xref\n0 ${count}\n0000000000 65535 f \n${offsets.slice(1).map((o) => `${String(o).padStart(10, "0")} 00000 n \n`).join("")}`);
+  put(`trailer\n<< /Size ${count} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  return new Blob(parts, { type: "application/pdf" });
+}
+const slugOf = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "shop";
+// The finished PDF: Download and Share buttons, so each starts from a click
+// (a browser shares only straight after one, and the PDF takes a moment).
+function pdfReady(file) {
+  document.getElementById("pdfReady")?.remove();
+  const box = document.createElement("div");
+  box.id = "pdfReady";
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-label", "Poster PDF ready");
+  box.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:60;max-width:min(420px,calc(100vw - 32px));background:var(--card,#fff);color:inherit;border:1px solid var(--line,#ddd);border-radius:14px;padding:14px 16px;box-shadow:0 12px 32px -12px rgba(15,27,45,.45)";
+  const canShare = !!navigator.canShare?.({ files: [file] });
+  box.innerHTML = `<p style="margin:0 0 4px;font-weight:700">PDF ready</p><p class="sm muted" style="margin:0 0 10px">${esc(file.name)} · A4, no margins: it prints as it is.${canShare ? "" : " This browser can't share files: download it, then send it."}</p>`
+    + `<div class="row"><button type="button" class="btn primary" data-pdf-act="download">Download</button>${canShare ? '<button type="button" class="btn" data-pdf-act="share">Share</button>' : ""}<button type="button" class="btn" data-pdf-act="close">Close</button></div>`;
+  box.addEventListener("click", async (e) => {
+    const act = e.target.closest("[data-pdf-act]")?.dataset.pdfAct;
+    if (act === "download") {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(file); a.download = file.name;
+      document.body.append(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+      toast(`Downloaded ${file.name}.`);
+    } else if (act === "share") {
+      try { await navigator.share({ files: [file], title: file.name }); toast("Shared."); }
+      catch (err) { if (err?.name !== "AbortError") toast(`Not shared: ${err.message || "this browser refused"}. Download it instead.`, true, 6000); }
+    } else if (act === "close") box.remove();
+  });
+  document.body.append(box);
+  box.querySelector("[data-pdf-act]").focus();
+  toast("PDF ready.");
+}
+async function posterPdf(list) {
+  if (!list.length) return;
+  if (typeof window.qrcode !== "function") { toast("The QR maker didn't load. Refresh the page.", true); return; }
+  try { await secureShops(list); } catch (err) { toast(`No PDF made: ${err.message}`, true, 6000); loadKtown(); return; }
+  renderKtown();
+  toast(list.length > 1 ? `Making the PDF of ${list.length} posters…` : "Making the PDF…", false, 0);
+  try {
+    const logo = await loadImage("/assets/logo.png");
+    const pages = [];
+    for (const m of list) {
+      const cv = await posterCanvas(m, logo);
+      const blob = await new Promise((ok) => cv.toBlob(ok, "image/jpeg", .95));
+      if (!blob) throw new Error("This browser couldn't draw the poster.");
+      pages.push({ w: cv.width, h: cv.height, jpeg: new Uint8Array(await blob.arrayBuffer()) });
+    }
+    const name = list.length > 1 ? `ktown-posters-${new Date().toISOString().slice(0, 10)}.pdf` : `ktown-poster-${slugOf(list[0].shop)}.pdf`;
+    const file = new File([pdfFromJpegs(pages)], name, { type: "application/pdf" });
+    pdfReady(new File([pdfFromJpegs(pages)], name, { type: "application/pdf" }));
+  } catch (err) { toast(`No PDF made: ${err.message}`, true, 6000); }
+}
 // Secured: Stanley secured it, or a matched first payment claimed it. Either
 // way the 48-hour takeover can't take the number.
 function renderKtown() {
@@ -2823,20 +3046,21 @@ function renderKtown() {
   $("#ktownList").innerHTML = shops.length ? `<table><thead><tr><th>Shop</th><th>M-Pesa name</th><th>Phone ends</th><th>Paid</th><th>Joined</th><th>Number</th><th></th></tr></thead><tbody>${shops.map((m, i) =>
     `<tr><td>${esc(m.shop)}${m.verified ? "" : ' <span class="muted sm">(not confirmed)</span>'}</td><td>${esc(m.mpesaName)}</td><td>…${esc(m.phoneEnd)}</td><td>${esc(String(m.paidCount))}</td><td>${esc(String(m.createdAt || "").slice(0, 10))}</td>`
     + `<td>${m.claimed ? "Secured" : '<span class="muted">Not secured</span>'}</td>`
-    + `<td><button type="button" class="btn" data-poster="${i}">Print poster</button> ${m.claimed ? "" : `<button type="button" class="btn" data-secure="${i}">Secure</button> `}<button type="button" class="btn" data-resetpin="${i}">Reset PIN</button> <button type="button" class="btn" data-delshop="${i}">Delete</button></td></tr>`).join("")}</tbody></table>`
+    + `<td><button type="button" class="btn" data-poster="${i}">Print poster</button> <button type="button" class="btn" data-pdf="${i}">PDF</button> ${m.claimed ? "" : `<button type="button" class="btn" data-secure="${i}">Secure</button> `}<button type="button" class="btn" data-resetpin="${i}">Reset PIN</button> <button type="button" class="btn" data-delshop="${i}">Delete</button></td></tr>`).join("")}</tbody></table>`
     : '<p class="sm muted">No shops yet. They appear here as soon as they register at altradits.com/ktown.</p>';
 }
 async function loadKtown() {
   try {
     const { shops, max } = await api("", { action: "ktown_shops" });
     KTOWN = shops;
+    CK.shopsLoaded = true; CK.ktownMax = max; renderCockpit();
     $("#ktownCount").textContent = `${shops.length} of ${max} places`;
     renderKtown();
     issue("ktown", shops.length >= max ? "soon" : null, `kTown is full: ${shops.length} of ${max} places. Raise KTOWN_MAX_MERCHANTS to let more shops in.`, "ktown:hKtown");
   } catch (err) { $("#ktownList").innerHTML = `<p class="sm muted">${esc(err.message)}</p>`; }
 }
 $("#ktownList").addEventListener("click", async (e) => {
-  const btn = e.target.closest("[data-poster],[data-secure],[data-resetpin],[data-delshop]");
+  const btn = e.target.closest("[data-poster],[data-pdf],[data-secure],[data-resetpin],[data-delshop]");
   if (!btn) return;
   if (btn.dataset.delshop !== undefined) {
     const m = KTOWN[Number(btn.dataset.delshop)];
@@ -2852,6 +3076,7 @@ $("#ktownList").addEventListener("click", async (e) => {
     return;
   }
   if (btn.dataset.poster !== undefined) return printPosters([KTOWN[Number(btn.dataset.poster)]]);
+  if (btn.dataset.pdf !== undefined) { btn.disabled = true; await posterPdf([KTOWN[Number(btn.dataset.pdf)]]); btn.disabled = false; return; }
   if (btn.dataset.secure !== undefined) {
     const m = KTOWN[Number(btn.dataset.secure)];
     if (!m || !confirm(`Secure "${m.shop}"? Do this only for a shop you visited. Its number can then never be taken over.`)) return;
@@ -2873,22 +3098,284 @@ $("#ktownPrintAll").addEventListener("click", () => {
   if (KTOWN.some((m) => !m.claimed) && !confirm("Printing secures every shop listed here: their numbers can never be taken over. Print only for shops you visited. Go on?")) return;
   printPosters(KTOWN);
 });
+$("#ktownPdfAll").addEventListener("click", () => {
+  if (KTOWN.some((m) => !m.claimed) && !confirm("Making the PDF secures every shop listed here: their numbers can never be taken over. Do this only for shops you visited. Go on?")) return;
+  posterPdf(KTOWN);
+});
 $("#ktownReload").addEventListener("click", loadKtown);
 
+// ---- The cockpit: what matters, first on the Overview (#519).
+// A health strip (node, online time, sending power, on-chain), one table of
+// Ye₿ente and kTown over the last 30 days against the 30 before, earnings by
+// source, and why payments out failed. Each part fills in as its data arrives.
+// Trends show only where there is something to compare; colours carry a word.
+const CK_DAYS = 30;
+const pctChange = (now, before) => {
+  if (now === null || now === undefined || !before) return null; // nothing to compare yet
+  const p = Math.round(((now - before) / before) * 100);
+  return { text: `${p > 0 ? "+" : ""}${p}%`, dir: Math.sign(p) };
+};
+// A per-day line: muted ink, today's point in Bitcoin orange. Hover (or focus
+// and use the arrow keys) to read any day: a guide, a dot and the value appear.
+function spark(points, label, fmt = num) {
+  if (!points || points.length < 2) return "";
+  const v = points.map((p) => Number(p.v) || 0), max = Math.max(1, ...v), w = 120, h = 26, step = w / (v.length - 1);
+  const xy = v.map((x, i) => [+(i * step).toFixed(1), +(h - 3 - (x / max) * (h - 6)).toFixed(1)]);
+  const last = xy[xy.length - 1];
+  const data = JSON.stringify(points.map((p, i) => [p.label, fmt(p.v), xy[i][0], xy[i][1]]));
+  return `<svg class="ck-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" tabindex="0" role="img" aria-label="${esc(label)}. Use the arrow keys to read each day." data-pts="${esc(data)}">`
+    + `<polygon class="ck-area" points="0,${h} ${xy.map(([x, y]) => `${x},${y}`).join(" ")} ${w},${h}"/><polyline points="${xy.map(([x, y]) => `${x},${y}`).join(" ")}"/><line class="ck-guide" x1="0" x2="0" y1="0" y2="${h}" visibility="hidden"/>`
+    + `<circle class="ck-now" cx="${last[0]}" cy="${last[1]}" r="2.4"/><circle class="ck-hov" r="2.8" visibility="hidden"/></svg>`;
+}
+const dayLabel = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+const statusWord = (s) => (s ? `<span class="ck-st ${s}">${s === "good" ? "Good" : s === "warn" ? "Watch" : "Act"}</span>` : "");
+// The number large, its unit small beside it, so "1,650,000 sats" stays on one line.
+const unitHtml = (v) => { const t = String(v), m = /^([\d.,]+) (sats)$/.exec(t) || /^(KSh) ([\d.,]+)$/.exec(t); return `<span class="ck-n">${!m ? esc(t) : m[1] === "KSh" ? `<span class="ck-u">KSh</span>${esc(m[2])}` : `${esc(m[1])}<span class="ck-u">${m[2]}</span>`}</span>`; };
+// One tile of the at-a-glance grid (the merged design, #525): a status edge,
+// the label, the number with its change, a line of context, and a trend or bar
+// that can be read by hover or keyboard. A word always sits beside the colour.
+function ckTile({ label, value, sub, state, change, upIsBad, trend, trendLabel, fmt, extra = "", go, wait, error, opens }) {
+  if (wait) return `<div class="ck-tile ck-wait" aria-busy="true"><span class="ck-l">${esc(label)}</span><span class="ck-v">…</span><span class="ck-s">Loading</span></div>`;
+  if (error) return `<a class="ck-tile warn" href="#${esc(go.split(":")[0])}" data-go="${esc(go)}"><span class="ck-l">${esc(label)}</span><span class="ck-v">–</span><span class="ck-s">${esc(error)}</span></a>`;
+  const good = change && change.dir ? (change.dir > 0) !== Boolean(upIsBad) : null;
+  const chip = change ? `<span class="ck-d ${good === null ? "" : good ? "up" : "down"}" title="Against the 30 days before">${change.dir > 0 ? "↑" : change.dir < 0 ? "↓" : ""} ${esc(change.text)}</span>` : "";
+  return `<a class="ck-tile${state ? ` ${state}` : ""}" href="#${esc(go.split(":")[0])}" data-go="${esc(go)}"${opens ? ' data-opens="1"' : ""}>`
+    + `<span class="ck-l">${esc(label)}${statusWord(state)}</span><span class="ck-row"><span class="ck-v">${unitHtml(value)}</span>${chip}</span>`
+    + (sub ? `<span class="ck-s">${esc(sub)}</span>` : "") + extra + (trend ? spark(trend, trendLabel || label, fmt) : "") + `</a>`;
+}
+// Bars on one scale, one hue, the figure on the right.
+function meterList(rows, fmt, empty) {
+  const max = Math.max(1, ...rows.map((r) => r.v || 0));
+  return rows.length ? `<ul class="ck-meters">${rows.map((r) => `<li><span class="ck-mn">${esc(r.name)}${r.note ? ` <span class="muted">${esc(r.note)}</span>` : ""}</span>`
+    + `<span class="ck-mb" data-tip="${esc(r.name)}: ${esc(fmt(r.v))}"><i style="width:${r.v ? Math.max(2, Math.round((r.v / max) * 100)) : 0}%"></i></span><span class="ck-mf">${esc(fmt(r.v))}</span></li>`).join("")}</ul>`
+    : `<p class="sm muted">${esc(empty)}</p>`;
+}
+function renderCockpit() {
+  const box = document.getElementById("cockpit");
+  if (!box) return;
+  const { D, P, L, B, C } = CK, tiles = [];
+  const col = (k) => C.series.map((d) => ({ label: dayLabel(d.day), v: d[k] }));
+  // Row 1: is everything working right now?
+  const N = D?.node;
+  tiles.push(!D ? ckTile({ label: "Node", wait: !CK.Derr, error: CK.Derr, go: "node:hNode" })
+    : !N || N.error ? ckTile({ label: "Node", value: "Not answering", state: "crit", sub: "Wake the Mac and check LND and the tunnel.", go: "node:hNode" })
+    : ckTile({ label: "Node", value: N.synced ? "Synced" : "Catching up", state: N.synced && N.activeChannels > 0 ? "good" : "warn", sub: `Block ${num(N.blockHeight)} · ${num(N.activeChannels)} channel${N.activeChannels === 1 ? "" : "s"} · ${num(N.peers)} peer${N.peers === 1 ? "" : "s"}`, go: "node:hNode" }));
+  const R = C?.reach;
+  if (!C) tiles.push(ckTile({ label: "Online, 14 days", wait: !CK.Cerr, error: CK.Cerr, go: "earn:" }));
+  else if (!C.reachOn || !R?.samples) tiles.push(ckTile({ label: "Online, 14 days", value: "Not measured", sub: "Set NJIA=on in DirectAdmin: the server then checks the node every 5 minutes.", go: "earn:" }));
+  else {
+    const bars = R.days.filter((d) => d.checks).map((d) => { const p = Math.round((d.ok / d.checks) * 100); return `<i style="height:${Math.max(4, p)}%" tabindex="0" data-tip="${esc(dayLabel(d.day))}: ${p}% reached (${num(d.ok)} of ${num(d.checks)} checks)"></i>`; }).join("");
+    const last3 = R.days.slice(-3).filter((d) => d.checks), recent = last3.length ? Math.round((last3.reduce((t, d) => t + d.ok, 0) / last3.reduce((t, d) => t + d.checks, 0)) * 100) : null;
+    tiles.push(ckTile({ label: "Online, 14 days", value: `${R.pct}%`, state: R.pct >= 98 ? "good" : R.pct >= 90 ? "warn" : "crit", sub: `${recent === null ? "" : `Last 3 days ${recent}%. `}Routing needs 98%.`,
+      extra: `<span class="ck-days" role="img" aria-label="Share of checks that reached the node, per day">${bars}<b class="ck-goal" style="bottom:98%"></b></span>`, go: "earn:" }));
+  }
+  tiles.push(!P ? ckTile({ label: "Sending power", wait: true, go: "channels:hPower" }) : (() => {
+    const share = P.spendable > 0 ? Math.min(100, Math.round((P.owedSats / P.spendable) * 100)) : 100;
+    return ckTile({ label: "Sending power", value: satsF(P.spendable), state: P.spendable < 1000 || !P.covered ? "crit" : share > 80 ? "warn" : "good",
+      sub: P.covered ? `Covers the ${satsF(P.owedSats)} wallets hold (${share}%).` : `Short: wallets hold ${satsF(P.owedSats)}.`,
+      extra: `<span class="ck-meter" role="img" aria-label="Wallet balances use ${share}% of sending power" data-tip="Wallet balances use ${share}% of what the node can send"><i style="width:${share}%"></i></span>`, go: "channels:hPower" });
+  })());
+  const on = OVERVIEW?.details?.onchain, onSats = Number(on?.confirmed) || 0;
+  tiles.push(!on ? ckTile({ label: "On-chain", wait: !D || !CK.Derr, error: D ? null : CK.Derr, go: "money:" })
+    : ckTile({ label: "On-chain", value: satsF(onSats), state: onSats >= 10000 ? "good" : "warn", sub: onSats >= 10000 ? "Enough for fees if a channel closes." : "Keep 10,000 sats here for fees if a channel ever closes.", go: "money:" }));
+  // Row 2: Ye₿ente, last 30 days.
+  if (!C) for (const label of ["Held for wallets", "New wallets", "Active wallets", "Money in"]) tiles.push(ckTile({ label, wait: !CK.Cerr, error: CK.Cerr, go: "yebente:hAll" }));
+  else {
+    const T = C.totals, Pv = C.previous;
+    tiles.push(ckTile({ label: "Held for wallets", value: satsF(C.heldSats), sub: `${num(C.wallets)} wallets${ksh(C.heldSats) ? ` · ${ksh(C.heldSats)}` : ""}. Users' money.`, go: "yebente:hAll" }));
+    tiles.push(ckTile({ label: "New wallets, 30 days", value: num(T.newWallets), change: pctChange(T.newWallets, Pv.newWallets), sub: Pv.newWallets ? `${num(Pv.newWallets)} the 30 days before` : "First 30 days measured", trend: col("newWallets"), trendLabel: "New wallets per day", go: "yebente:hAll" }));
+    tiles.push(ckTile({ label: "Active wallets, 30 days", value: num(T.active), change: pctChange(T.active, Pv.active), sub: "Used at least once", trend: col("active"), trendLabel: "Wallets active per day", go: "yebente:hAct" }));
+    tiles.push(ckTile({ label: "Money in, 30 days", value: satsF(T.depositSats), change: pctChange(T.depositSats, Pv.depositSats), sub: `${num(T.deposits)} deposits${ksh(T.depositSats) ? ` · ${ksh(T.depositSats)}` : ""}`, trend: col("depositSats"), fmt: satsF, trendLabel: "Sats deposited per day", go: "yebente:hAct" }));
+    // Row 3: money out, earnings, kTown, what is stuck.
+    const tried = T.sends + T.failedSends, failPct = tried ? Math.round((T.failedSends / tried) * 100) : 0;
+    tiles.push(ckTile({ label: "Money out, 30 days", value: satsF(T.sentSats), state: failPct >= 20 ? "crit" : failPct >= 10 ? "warn" : "", change: pctChange(T.sentSats, Pv.sentSats), sub: `${num(T.sends)} paid · ${num(T.failedSends)} failed (${failPct}%)`, trend: col("sentSats"), fmt: satsF, trendLabel: "Sats sent per day", go: "yebente:hDest" }));
+  }
+  tiles.push(!L ? ckTile({ label: "Profit", wait: true, go: "money:hPnl" })
+    : ckTile({ label: `${L.net >= 0 ? "Profit" : "Loss"}, ${L.days} days`, value: satsF(Math.abs(L.net)), state: L.net >= 0 ? "good" : "warn", sub: `Earned ${satsF(L.earned.total)} · spent ${satsF(L.spent.total)}`, trend: L.trend ? L.trend.map((d) => ({ label: dayLabel(d.day), v: d.fees })) : null, fmt: satsF, trendLabel: "Routing fees per day", go: "money:hPnl" }));
+  if (C?.ktown) {
+    const K = C.ktown;
+    tiles.push(ckTile({ label: "kTown payments, 30 days", value: satsF(K.total.sats), state: "", change: pctChange(K.total.sats, K.previous.sats), sub: `${num(K.total.payments)} paid${CK.shopsLoaded ? ` · ${num(KTOWN.length)}${CK.ktownMax ? ` of ${num(CK.ktownMax)}` : ""} shops` : ""}${K.stuck ? ` · ${num(K.stuck)} invoices unpaid` : ""}`, trend: K.series.map((d) => ({ label: dayLabel(d.day), v: d.sats })), fmt: satsF, trendLabel: "kTown sats paid per day", go: "ktown:hKtown" }));
+  }
+  if (C?.open) {
+    const O = C.open, count = O.payments.count + O.buys.count + O.payouts.count, late = O.payments.late + O.buys.late + O.payouts.late;
+    tiles.push(ckTile({ label: "Open right now", value: count ? `${num(count)} waiting` : "Nothing waiting", state: late ? "warn" : "good", sub: late ? `${num(late)} longer than usual. Details below.` : `${num(O.payments.count)} payments out · ${num(O.buys.count)} buys · ${num(O.payouts.count)} payouts`, go: "overview:hCockpit", opens: true }));
+  }
+  if (B?.configured) tiles.push(ckTile({ label: "M-Pesa payout float", value: kshF(Math.max(0, B.roomKes)), state: !B.on ? "" : B.roomKes <= 0 ? "crit" : B.open.length ? "warn" : "good", sub: `${num(B.open.length)} waiting for Safaricom${B.on ? "" : " · switched off"}`, go: "yebente:hB2c" }));
+  // The details, below the glance: the full comparison, what is open, earnings and failures.
+  let details = "";
+  if (C) {
+    const S = C.series, T = C.totals, Pv = C.previous;
+    const rows = [
+      { name: "New wallets", go: "yebente:hAll", now: T.newWallets, before: Pv.newWallets, pts: col("newWallets") },
+      { name: "Active wallets", go: "yebente:hAct", now: T.active, before: Pv.active, pts: col("active") },
+      { name: "Money in", go: "yebente:hAct", now: T.depositSats, before: Pv.depositSats, pts: col("depositSats"), fmt: satsF, note: `${num(T.deposits)} deposits` },
+      { name: "Money out", go: "yebente:hDest", now: T.sentSats, before: Pv.sentSats, pts: col("sentSats"), fmt: satsF, note: `${num(T.sends)} payments` },
+      { name: "Failed payments out", go: "yebente:hDest", now: T.failedSends, before: Pv.failedSends, pts: col("failedSends"), upIsBad: true },
+    ];
+    if (C.ktown) rows.push({ name: "kTown payments", go: "ktown:hKtown", now: C.ktown.total.sats, before: C.ktown.previous.sats, pts: C.ktown.series.map((d) => ({ label: dayLabel(d.day), v: d.sats })), fmt: satsF, note: `${num(C.ktown.total.payments)} paid` });
+    if (CK.shopsLoaded) {
+      const start = Date.parse(`${S[0].day}T00:00:00+03:00`), per = S.map((d) => ({ label: dayLabel(d.day), v: 0 })); let before = 0;
+      for (const m of KTOWN) { const i = Math.floor((Date.parse(m.createdAt) - start) / 864e5); if (i >= 0 && i < per.length) per[i].v++; else if (i < 0 && i >= -CK_DAYS) before++; }
+      rows.push({ name: "New kTown shops", go: "ktown:hKtown", now: per.reduce((t, p) => t + p.v, 0), before, pts: per });
+    }
+    const table = `<table class="ck-table"><thead><tr><th scope="col">Last ${CK_DAYS} days</th><th scope="col">Total</th><th scope="col">${CK_DAYS} days before</th><th scope="col">Change</th><th scope="col">Per day</th></tr></thead><tbody>`
+      + rows.map((r) => {
+        const f = r.fmt || num, ch = pctChange(r.now, r.before), good = ch && ch.dir ? (ch.dir > 0) !== Boolean(r.upIsBad) : null;
+        return `<tr><th scope="row"><a href="#${esc(r.go.split(":")[0])}" data-go="${esc(r.go)}">${esc(r.name)}</a>${r.note ? `<span>${esc(r.note)}</span>` : ""}</th>`
+          + `<td>${esc(f(r.now))}</td><td class="muted">${esc(f(r.before))}</td>`
+          + `<td>${ch ? `<span class="ck-ch ${good === null ? "" : good ? "up" : "down"}">${ch.dir > 0 ? "↑" : ch.dir < 0 ? "↓" : ""} ${esc(ch.text)}</span>` : '<span class="muted" title="Nothing in the 30 days before to compare with">New</span>'}</td>`
+          + `<td>${spark(r.pts, `${r.name} per day, last ${CK_DAYS} days`, f)}</td></tr>`;
+      }).join("") + "</tbody></table>";
+    const O = C.open, K = C.ktown || { stuck: 0 };
+    const line = (label, g, unit, late, go) => `<li class="${g.late ? "late" : ""}"><a href="#${esc(go.split(":")[0])}" data-go="${esc(go)}">${esc(label)}</a><span>${g.count ? `${esc(num(g.count))}${unit ? ` · ${esc(unit(g.amount))}` : ""}${g.late ? ` · <b>${esc(num(g.late))} over ${esc(late)}</b>` : ""}` : '<span class="muted">none</span>'}</span></li>`;
+    const openNow = O ? `<ul class="ck-open">${line("Lightning payments out in progress", O.payments, satsF, "10 min", "yebente:hAll")}${line("M-Pesa and card buys waiting", O.buys, kshF, "30 min", "yebente:hAll")}${line("Direct M-Pesa payouts waiting", O.payouts, kshF, "15 min", "yebente:hB2c")}`
+      + `<li><a href="#ktown" data-go="ktown:hKtown">kTown invoices not paid after 1 hour</a><span>${K.stuck ? `${esc(num(K.stuck))} <span class="muted">(usually abandoned; paid ones are confirmed hourly)</span>` : '<span class="muted">none</span>'}</span></li></ul>` : "";
+    const earned = !L ? '<p class="sm muted">Loading…</p>' : meterList([
+      { name: "Routing fees", v: L.earned.routing, note: `${num(L.earned.routed)} routed` },
+      { name: "M-Pesa buy spread", v: L.earned.spread, note: L.earned.spreadPct ? `${L.earned.spreadPct}% on ${num(L.earned.buys)} buys` : "off" },
+      { name: "Support payments", v: L.earned.support, note: `${num(L.earned.supportCount)} on /donate` },
+      { name: "Channel leases", v: L.earned.leases || 0, note: `${num(L.earned.leaseCount || 0)} recorded` },
+    ], satsF, "") + `<p class="sm ck-net">${L.net >= 0 ? "Profit" : "Loss"} <b>${esc(satsF(Math.abs(L.net)))}</b> after ${esc(satsF(L.spent.total))} spent.</p>`;
+    const failed = meterList((C.failReasons || []).map((r) => ({ name: r.why, v: r.count })), num, "No payments out failed.");
+    details = `<details class="ck-more" ${CK.open ? "open" : ""}><summary>Details: the last 30 days against the 30 before, what's open, earnings and failures</summary>`
+      + `<div class="ck-block">${table}</div>`
+      + (openNow ? `<div class="ck-block"><h3 id="hCkOpen">Open right now</h3>${openNow}</div>` : "")
+      + `<div class="ck-two"><div class="ck-block"><h3>Earned${L ? `, last ${L.days} days` : ""}</h3>${earned}</div><div class="ck-block"><h3>Why payments out failed, last ${CK_DAYS} days</h3>${failed}</div></div></details>`;
+  }
+  box.innerHTML = `<div class="ck">${tiles.join("")}</div>${details}`;
+  box.querySelector(".ck-more")?.addEventListener("toggle", (e) => { CK.open = e.target.open; });
+  if (C) $("#ckAge").textContent = `${CK.live ? "Live, updates every 30 seconds. " : ""}Figures from ${new Date(C.at).toLocaleTimeString()}.`;
+}
+
+// Lightning payments out still open, with the node's answer for each.
+function openPayHtml(r) {
+  if (!r.open.length) return '<p class="sm muted">None: every payment out has finished.</p>';
+  return `<table><thead><tr><th>Started</th><th>From</th><th>To</th><th>Sats</th><th>What the node says</th><th></th></tr></thead><tbody>${r.open.map((p) =>
+    `<tr><td>${esc(ago(p.at))}</td><td>${esc(p.handle)}</td><td class="sm">${esc(String(p.to).slice(0, 40))}</td><td>${esc(num(p.sats))}</td><td class="sm"><b>${esc(p.node.status.replace("_", " "))}</b><br>${esc(p.node.why)}</td>`
+    + `<td><button type="button" class="btn" data-paycheck="${esc(p.hash)}">Ask the node now</button></td></tr>`).join("")}</tbody></table>`;
+}
+async function loadOpenPay() {
+  try { $("#openPay").innerHTML = openPayHtml(await api("?view=openpay")); } catch (err) { $("#openPay").innerHTML = `<p class="sm err">${esc(err.message)}</p>`; }
+}
+$("#openPay").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-paycheck]");
+  if (!b) return;
+  b.disabled = true; b.textContent = "Asking…";
+  try {
+    const r = await api("", { action: "ypay_check", hash: b.dataset.paycheck });
+    const done = r.closed.find((x) => x.hash === b.dataset.paycheck);
+    toast(done ? `Settled: ${done.result === "succeeded" ? "paid" : "failed and refunded"}.` : "Still open: the node hasn't given a final answer.");
+    $("#openPay").innerHTML = openPayHtml(r);
+    loadCockpit();
+  } catch (err) { toast(err.message, true, 6000); b.disabled = false; b.textContent = "Ask the node now"; }
+});
+async function loadCockpit() {
+  try { CK.C = await api("?view=cockpit"); CK.Cerr = null; } catch (err) { CK.Cerr = err.message; }
+  renderCockpit();
+  // Anything stuck, and a node that is often unreachable, also join "needs you".
+  const O = CK.C?.open, K = CK.C?.ktown, R = CK.C?.reach;
+  const late = O ? [[O.payments, "Lightning payment out"], [O.buys, "M-Pesa or card buy"], [O.payouts, "direct M-Pesa payout"]].filter(([g]) => g.late) : [];
+  issue("stuck", late.length ? "soon" : null, late.map(([g, what]) => `${g.late} ${what}${g.late === 1 ? "" : "s"} waiting longer than usual.`).join(" ") + " See what the node says in the Ye₿ente tab.", O?.payments.late ? "yebente:hOpenPay" : "yebente:hAll");
+  issue("ktstuck", null); // kTown invoices left pending are almost always unpaid; the server confirms paid ones hourly
+  const last = R?.days?.at(-1);
+  issue("offline", last?.checks >= 12 && last.ok / last.checks < 0.9 ? "soon" : null, `The node answered only ${last ? Math.round((last.ok / last.checks) * 100) : 0}% of checks today. Payments fail while it's unreachable: check the Mac, the internet and the tunnel.`, "overview:hCockpit");
+}
+// Live: while the dashboard is open and in front, the cockpit's parts are read
+// again every 30 seconds (the server answers from its recent copy, so this is
+// cheap and never queues work on the node). Hidden tabs don't poll.
+let ckTimer = null, ckBusy = false;
+async function ckTick() {
+  if (ckBusy || document.hidden || $("#app").hidden) return;
+  ckBusy = true;
+  try {
+    const [c, d, p, b] = await Promise.allSettled([api("?view=cockpit"), api(""), api("?view=liquidity"), api("?view=b2c")]);
+    if (c.status === "fulfilled") { CK.C = c.value; CK.Cerr = null; }
+    if (d.status === "fulfilled") { CK.D = d.value; OVERVIEW = d.value; }
+    if (p.status === "fulfilled") CK.P = p.value;
+    if (b.status === "fulfilled") CK.B = b.value;
+    CK.live = true;
+    if (!ckBox.contains(document.activeElement) && ckTip.hidden) renderCockpit(); // never redraw under the pointer or the keyboard
+  } finally { ckBusy = false; }
+}
+function ckLive() { clearInterval(ckTimer); ckTimer = setInterval(ckTick, 30e3); }
+document.addEventListener("visibilitychange", () => { if (!document.hidden && ckTimer) ckTick(); });
+// One tooltip for the whole cockpit: trend lines, online bars and meters.
+const ckTip = Object.assign(document.createElement("div"), { className: "ck-tip", role: "status" });
+ckTip.hidden = true; document.body.append(ckTip);
+function tipAt(text, x, y) {
+  ckTip.textContent = text; ckTip.hidden = false;
+  const r = ckTip.getBoundingClientRect();
+  ckTip.style.left = `${Math.min(innerWidth - r.width - 8, Math.max(8, x - r.width / 2)) + scrollX}px`;
+  ckTip.style.top = `${Math.max(8, y - r.height - 12) + scrollY}px`;
+}
+function sparkAt(svg, i) {
+  const pts = JSON.parse(svg.dataset.pts), k = Math.max(0, Math.min(pts.length - 1, i)), [label, val, x, y] = pts[k];
+  svg.dataset.i = k;
+  const g = svg.querySelector(".ck-guide"), d = svg.querySelector(".ck-hov");
+  g.setAttribute("x1", x); g.setAttribute("x2", x); g.setAttribute("visibility", "visible");
+  d.setAttribute("cx", x); d.setAttribute("cy", y); d.setAttribute("visibility", "visible");
+  const box = svg.getBoundingClientRect();
+  tipAt(`${label}: ${val}`, box.left + (x / 120) * box.width, box.top);
+}
+function sparkOff(svg) { svg.querySelector(".ck-guide")?.setAttribute("visibility", "hidden"); svg.querySelector(".ck-hov")?.setAttribute("visibility", "hidden"); ckTip.hidden = true; }
+const ckBox = $("#cockpit");
+ckBox.addEventListener("pointermove", (e) => {
+  const svg = e.target.closest(".ck-spark");
+  if (svg) { const b = svg.getBoundingClientRect(), n = JSON.parse(svg.dataset.pts).length; sparkAt(svg, Math.round(((e.clientX - b.left) / b.width) * (n - 1))); return; }
+  const t = e.target.closest("[data-tip]");
+  if (t) tipAt(t.dataset.tip, e.clientX, t.getBoundingClientRect().top); else ckTip.hidden = true;
+});
+ckBox.addEventListener("pointerout", (e) => { const svg = e.target.closest(".ck-spark"); if (svg && !svg.contains(e.relatedTarget)) sparkOff(svg); else if (!e.relatedTarget?.closest?.("[data-tip]")) ckTip.hidden = true; });
+ckBox.addEventListener("focusin", (e) => {
+  if (e.target.matches(".ck-spark")) sparkAt(e.target, JSON.parse(e.target.dataset.pts).length - 1);
+  else if (e.target.matches("[data-tip]")) { const r = e.target.getBoundingClientRect(); tipAt(e.target.dataset.tip, r.left + r.width / 2, r.top); }
+});
+ckBox.addEventListener("focusout", (e) => { if (e.target.matches(".ck-spark")) sparkOff(e.target); else ckTip.hidden = true; });
+ckBox.addEventListener("keydown", (e) => {
+  const svg = e.target.closest(".ck-spark");
+  if (!svg || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+  e.preventDefault();
+  const n = JSON.parse(svg.dataset.pts).length, i = Number(svg.dataset.i ?? n - 1);
+  sparkAt(svg, e.key === "Home" ? 0 : e.key === "End" ? n - 1 : i + (e.key === "ArrowLeft" ? -1 : 1));
+});
+$("#cockpit").addEventListener("click", (e) => {
+  const a = e.target.closest("[data-go]");
+  if (!a) return;
+  e.preventDefault();
+  const more = a.dataset.opens && $("#cockpit .ck-more");
+  if (more) { more.open = true; CK.open = true; setTimeout(() => $("#hCkOpen")?.scrollIntoView({ block: "center" }), 80); }
+  go(a.dataset.go);
+});
+
+// Signing in shows the dashboard as soon as the token is confirmed (a quick
+// check); then the overview and every panel load at the same time, each
+// appearing when its data arrives. The server answers from a recent copy, so
+// a repeat visit is near instant; Refresh asks for fresh data (#519).
 async function load() {
-  let D;
-  $("#loginErr").textContent = "Loading… reading the node can take a few seconds.";
-  try { D = await api(""); } catch (err) { if (!$("#login").hidden) $("#loginErr").textContent = err.message; else toast(err.message, true, 8000); return; }
+  oldestAt = null; anyStale = false;
+  $("#loginErr").textContent = "Loading…";
+  try { await api("?view=b2c"); } catch (err) { if (!$("#login").hidden) $("#loginErr").textContent = err.message; else toast(err.message, true, 8000); return; }
   $("#loginErr").textContent = "";
   $("#login").hidden = true; $("#app").hidden = false;
-  KES_PER_BTC = D.kesPerBtc;
-  OVERVIEW = D;
-  renderChecklist(D); renderStan(D.stan, D.alerts); renderNode(D); renderChain(D); renderChainLow(D); renderRouting(D); renderSettlement(D); renderGlossary(); renderBanner(D); renderBackup(D.backup);
-  renderVerify();
-  loadKtown(); // the shop list needs no node: show it at once, before the slow node panels
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing()]);
-  if (document.querySelector('[data-pane="earn"].on') && !njiaLoaded) await loadNjia(false); // Earn visible on sign-in: first load gentle
-  await Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi(), loadKtown()]);
-  $("#checked").textContent = `Checked ${new Date().toLocaleTimeString()}`;
+  loadKtown(); // the shop list needs no node: show it at once
+  const panels = Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadB2c(), loadCockpit(), loadOpenPay(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
+  const over = api("").then((D) => {
+    KES_PER_BTC = D.kesPerBtc;
+    OVERVIEW = D;
+    CK.D = D; CK.Derr = null; renderCockpit();
+    renderChecklist(D); renderStan(D.stan, D.alerts); renderNode(D); renderChain(D); renderChainLow(D); renderRouting(D); renderSettlement(D); renderGlossary(); renderBanner(D); renderBackup(D.backup);
+    renderVerify();
+    if (lastPower) renderMap(lastPower); // the money map needs the overview's on-chain figures
+  }).catch((err) => { CK.Derr = err.message; renderCockpit(); toast(err.message, true, 8000); });
+  await over;
+  if (KES_PER_BTC) loadWallets(); // shillings appear once the rate is known (the server answers from its copy)
+  await panels;
+  ckLive();
+  if (document.querySelector('[data-pane="earn"].on') && !njiaLoaded) await loadNjia(false);
+  const mins = oldestAt ? Math.round((Date.now() - oldestAt) / 60e3) : 0;
+  $("#checked").textContent = mins >= 2 ? `Data from up to ${mins} min ago${anyStale ? ", updating" : ""}` : `Checked ${new Date().toLocaleTimeString()}`;
+  // Some parts came from an older copy while the server makes a fresh one: show the fresh one shortly.
+  clearTimeout(staleTimer);
+  if (anyStale) staleTimer = setTimeout(load, 20000);
 }
 token ? load() : showLogin();

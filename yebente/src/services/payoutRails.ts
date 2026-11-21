@@ -1,3 +1,4 @@
+import { readableError } from './errorText';
 // Send Mobile's payout options, as the server lists them (lib/rails.js): each
 // pays a mobile-money number through a partner that gives every number a
 // Lightning address (number@host) and quotes in the local currency over
@@ -18,6 +19,8 @@ export interface Rail {
   digits: number; // subscriber digits after the country code
   starts: string[]; // accepted first digits
   example: string; // 707 172 370
+  direct?: boolean; // paid by Ye₿ente itself (wallet/mobile), no partner or Lightning address
+  down?: boolean; // the partner isn't answering right now: listed last
 }
 
 let listed: Promise<Rail[]> | null = null;
@@ -68,6 +71,7 @@ const getJson = async (url: string, ms: number) => {
 
 export async function fetchQuote(rail: Rail, phone: string): Promise<RailQuote> {
   if (!isValidNumber(rail, phone)) return { success: false, callback: '', error: `Enter a valid ${rail.name} number.` };
+  if (rail.direct) return { success: true, callback: '' }; // no partner to ask: the server quotes when sending
   const url = `https://${rail.host}/.well-known/lnurlp/${fullNumber(rail, phone)}`;
   try {
     const { ok, status, data } = await getJson(url, 7000);
@@ -81,7 +85,7 @@ export async function fetchQuote(rail: Rail, phone: string): Promise<RailQuote> 
         : undefined,
     };
   } catch (err: unknown) {
-    return { success: false, callback: '', error: err instanceof Error ? err.message : `Could not reach ${rail.partner}.` };
+    return { success: false, callback: '', error: readableError(err, `Could not reach ${rail.partner}.`, true) };
   }
 }
 
@@ -105,7 +109,7 @@ export async function requestInvoice(rail: Rail, p: { phone: string; amount: num
     const last = receiptUrl?.split('/').pop() || '';
     return { success: true, pr: data.pr, receiptUrl, paymentHash: /^[0-9a-f]{64}$/i.test(last) ? last : undefined };
   } catch (err: unknown) {
-    return { success: false, error: err instanceof Error ? err.message : `Could not reach ${rail.partner}.` };
+    return { success: false, error: readableError(err, `Could not reach ${rail.partner}.`, true) };
   }
 }
 

@@ -25,7 +25,8 @@ import { SendMpesaModal } from './components/SendMpesaModal';
 import { TransactionDetailModal } from './components/TransactionDetailModal';
 import { WalletSettingsModal } from './components/WalletSettingsModal';
 import { WalletGate } from './components/WalletGate';
-import { access, Access, hasServerWallet, fetchServerWallet, fetchServerHistory, forgetServerWallet, lockServerWallet } from './services/altraditsWallet';
+import { access, Access, hasServerWallet, fetchServerWallet, fetchServerHistory, forgetServerWallet, lockServerWallet, paymentResult, wasTold, markTold } from './services/altraditsWallet';
+import { PaymentNotice, Notice } from './components/PaymentNotice';
 import { FeatureFlags, fetchFeatures, pausedActions, visibleActions } from './services/features';
 
 export default function App() {
@@ -205,6 +206,43 @@ export default function App() {
     return () => clearInterval(interval);
   }, [syncServerWallet]);
 
+  // Payments out still on their way: ask every 5 seconds and tell the person
+  // the moment one settles, even if they closed the send screen. Up to three
+  // at a time; each is told once (this phone remembers).
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const closeNotice = useCallback(() => setNotice(null), []);
+  const sendsWaiting = transactions
+    .filter((t) => t.type === 'send_btc' && t.status === 'pending' && /^[0-9a-f]{64}$/.test(t.referenceNumber || '') && !wasTold(t.referenceNumber as string))
+    .slice(0, 3).map((t) => ({ hash: t.referenceNumber as string, to: t.recipient || '' }));
+  const waitingKey = sendsWaiting.map((w) => w.hash).join(',');
+  useEffect(() => {
+    if (!waitingKey) return;
+    let stop = false, busy = false;
+    const tick = async () => {
+      if (busy || stop) return;
+      busy = true;
+      try {
+        for (const w of sendsWaiting) {
+          const r = await paymentResult(w.hash).catch(() => null);
+          if (stop || !r || r.status === 'pending' || wasTold(w.hash)) continue;
+          markTold(w.hash);
+          const to = w.to && w.to.length <= 40 ? ` to ${w.to}` : '';
+          if (r.status === 'completed') {
+            celebrate({ kind: 'send', sats: r.sats, label: w.to && w.to.length <= 40 ? w.to : undefined, ref: w.hash });
+            setNotice({ id: w.hash, ok: true, title: 'Payment sent', text: `${r.sats.toLocaleString()} sats${to} went through.` });
+          } else {
+            setNotice({ id: w.hash, ok: false, title: 'Payment didn\'t go through', text: `${r.error || 'The payment failed.'} Your ${r.sats.toLocaleString()} sats are back in your wallet.` });
+          }
+          syncServerWallet();
+        }
+      } finally { busy = false; }
+    };
+    const t = window.setInterval(tick, 5000);
+    tick();
+    return () => { stop = true; window.clearInterval(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waitingKey, syncServerWallet]);
+
   // The Offline badge in the top bar.
   useEffect(() => onNetworkChange(setIsOnline), []);
 
@@ -370,6 +408,7 @@ export default function App() {
       />
 
       {show && <SatsCelebration key={show.id} c={show.c} onDone={() => setShow(null)} />}
+      {notice && <PaymentNotice key={notice.id} notice={notice} onClose={closeNotice} />}
 
       <TransactionDetailModal
         transaction={selectedTx}

@@ -16,6 +16,7 @@ import {
   Check,
   AlertCircle,
 } from 'lucide-react';
+import { readableError } from '../services/errorText';
 
 interface WalletSettingsModalProps {
   isOpen: boolean;
@@ -71,7 +72,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
       const r = await setRecoveryEmail(emailInput.trim(), emailPin, confirmTypo);
       setWalletMsg(`Check ${r.emailPending} to confirm.`); setEmailInput(''); setEmailPin(''); onServerWalletChange?.();
     } catch (err: unknown) {
-      setValidationError(err instanceof Error ? err.message : 'Wallet service unavailable.');
+      setValidationError(readableError(err, 'Wallet service unavailable.'));
       const hint = !confirmTypo && typoHintOf(err);
       if (hint) setEmailTypo(hint);
     } finally { setWalletBusy(false); }
@@ -348,7 +349,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                           if (bioActive) { await disableBiometric(bioPin); setBioActive(false); setBioMsg('Payments now need the PIN.'); }
                           else { await enableBiometric(bioPin); setBioActive(true); setBioMsg('Approve payments with your fingerprint or face.'); }
                           setBioPin(''); onServerWalletChange?.();
-                        } catch (err: unknown) { setValidationError(err instanceof Error ? err.message : 'Fingerprint could not be set up.'); }
+                        } catch (err: unknown) { setValidationError(readableError(err, 'Fingerprint could not be set up.')); }
                         finally { setWalletBusy(false); }
                       }}
                       className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50"
@@ -376,7 +377,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                         onClick={async () => {
                           setWalletBusy(true); setValidationError(''); setWalletMsg('');
                           try { await cancelPendingEmailChange(emailPin); setWalletMsg('Email change cancelled.'); setEmailPin(''); onServerWalletChange?.(); }
-                          catch (err: unknown) { setValidationError(err instanceof Error ? err.message : 'Wallet service unavailable.'); }
+                          catch (err: unknown) { setValidationError(readableError(err, 'Wallet service unavailable.')); }
                           finally { setWalletBusy(false); }
                         }}
                         className="w-full h-10 rounded-full border border-amber-500/60 text-amber-100 font-semibold text-xs flex items-center justify-center disabled:opacity-50"

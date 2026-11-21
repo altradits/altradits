@@ -254,6 +254,8 @@ async function maybeRunHourly() {
   // Njia: the hourly public summary and daily forwarding snapshot (no-op unless NJIA=on).
   import("./lib/njia.js").then((m) => m.hourly()).catch((e) => console.error("njia hourly", e.message));
   import("./lib/bounces.js").then((b) => b.checkBounces()).then((r) => r.bounced && console.log("bounces", r)).catch((e) => console.error("bounces", e.message));
+  // kTown: confirm recent pending payments for every shop, not only when a shop opens its app.
+  import("./lib/ktown.js").then((k) => k.confirmAllPending()).catch((e) => console.error("ktown confirm", e.message));
 }
 setInterval(() => maybeRunHourly().catch((e) => console.error("hourly", e)), 10 * 60 * 1000).unref();
 // Builder Path reminder to Stanley: once per Nairobi clock hour while today's
@@ -266,6 +268,8 @@ setInterval(() => {
   if (!["on", "true", "yes", "1"].includes(String(process.env.YEBENTE_WALLETS || "").trim().replace(/^["']|["']$/g, "").toLowerCase())) return;
   import("./lib/ywallet.js").then((y) => y.effectiveEmailChanges()).catch((e) => console.error("yebente email changes", e.message));
   if (process.env.LND_REST_URL) import("./lib/ywallet.js").then((y) => Promise.all([y.settleOpen(), y.reconcilePayments()])).catch((e) => console.error("yebente settle", e.message));
+  // Direct M-Pesa payouts with no answer yet: ask Safaricom for their status (#510). Needs no node.
+  import("./lib/mpesa-b2c.js").then((b) => b.b2cConfigured() && import("./lib/ywallet.js").then((y) => y.reconcileMobile())).catch((e) => console.error("yebente b2c", e.message));
 }, 2 * 60 * 1000).unref();
 // Every 5 minutes (and on every /healthz ping from deploy/cron.sh): Deadman's
 // Switch file/.htaccess integrity check and node total balance check.

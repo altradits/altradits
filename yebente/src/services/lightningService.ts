@@ -59,6 +59,7 @@ export function decodeLnurl(lnurlStr: string): string | null {
 }
 
 import { formatKenyanPhone, isValidKenyanPhone } from './mpesaService';
+import { readableError, serverError } from './errorText';
 
 /**
  * Checks if input is a valid Lightning Address (user@domain.com), encoded LNURL (lnurl1...),
@@ -174,8 +175,7 @@ export async function resolveLightningAddress(
       commentAllowed: Number(data.commentAllowed) || 0,
     };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Network error';
-    return fail(`Network error connecting to ${defaultDomain}: ${message}`);
+    return fail(readableError(err, `Could not look up ${clean}.`));
   }
 }
 
@@ -218,7 +218,7 @@ export async function createLightningInvoice(
       invoice: data.invoice,
     };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to reach invoice generator';
+    const message = readableError(err, 'Failed to reach invoice generator');
     return {
       success: false,
       error: message,
@@ -253,7 +253,7 @@ export async function queryWebLNBalance(): Promise<WebLNBalanceResult> {
     }
     return { available: true };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'User rejected WebLN connection';
+    const message = readableError(err, 'User rejected WebLN connection');
     return {
       available: false,
       error: message,
@@ -307,12 +307,12 @@ export async function createDepositInvoice(
           }),
         });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.success) {
       return {
         success: false,
         configured: data.configured,
-        error: data.error || 'Failed to create Lightning invoice.',
+        error: serverError(res.status, data, false),
       };
     }
 
@@ -324,7 +324,7 @@ export async function createDepositInvoice(
       satsAmount: data.satsAmount,
     };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Network error creating invoice.';
+    const message = readableError(err, 'Network error creating invoice.');
     return {
       success: false,
       error: message,
@@ -343,13 +343,13 @@ export async function checkInvoiceStatus(
     const res = token
       ? await fetch(`/api/yebente/wallet/invoice/${encodeURIComponent(paymentHash)}`, { headers: { Authorization: `Bearer ${token}` } })
       : await fetch(`/api/yebente/lightning/invoice-status/${encodeURIComponent(paymentHash)}`);
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       return {
         success: false,
         settled: false,
         paid: false,
-        error: data.error || 'Failed to query invoice status.',
+        error: serverError(res.status, data, false),
       };
     }
 
@@ -361,7 +361,7 @@ export async function checkInvoiceStatus(
       preimage: data.preimage,
     };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Network error checking invoice.';
+    const message = readableError(err, 'Network error checking invoice.');
     return {
       success: false,
       settled: false,
@@ -389,6 +389,6 @@ export async function payInvoiceWithWebLN(
     const res = await anyWindow.webln.sendPayment(invoice);
     return { paid: Boolean(res && res.preimage), preimage: res?.preimage };
   } catch (err: unknown) {
-    return { paid: false, error: err instanceof Error ? err.message : String(err) };
+    return { paid: false, error: readableError(err, 'The wallet in this browser could not pay.') };
   }
 }

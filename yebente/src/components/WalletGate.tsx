@@ -6,6 +6,7 @@ import {
 } from '../services/altraditsWallet';
 import { biometricOn, approveUnlock } from '../services/biometric';
 import { downloadRecoveryCard, shareRecoveryCard, canShareCard } from '../services/recoveryCard';
+import { readableError } from '../services/errorText';
 
 // The screen before the wallet. One secret for people: the 6-digit PIN (or the
 // fingerprint once it's on). Log in comes first; recovery is only for a lost
@@ -67,7 +68,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
   const go = (m: Mode) => { setMode(m); setError(''); setNote(''); setPin(''); setPin2(''); setTypo(null); };
   const run = async (fn: () => Promise<void>) => {
     setBusy(true); setError('');
-    try { await fn(); } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Something went wrong. Try again.'); } finally { setBusy(false); }
+    try { await fn(); } catch (err: unknown) { setError(readableError(err, 'Something went wrong. Try again.')); } finally { setBusy(false); }
   };
   // Sending to an email: when the server flags a misspelt domain, offer the
   // typed address anyway (some real domains look like typos).
@@ -76,7 +77,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
       setBusy(true); setError(''); setTypo(null);
       fn(confirm).catch((err: unknown) => {
         const hint = !confirm && typoHintOf(err);
-        setError(err instanceof Error ? err.message : 'Something went wrong. Try again.');
+        setError(readableError(err, 'Something went wrong. Try again.'));
         if (hint) setTypo({ hint, address: email.trim(), resend: () => attempt(true) });
       }).finally(() => setBusy(false));
     };
@@ -230,10 +231,11 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
           </div>
           <div className="space-y-2 pt-2 border-t border-[var(--yb-outline-variant)]/60">
             <span className="block text-xs font-semibold text-[var(--yb-secondary)] pt-2">With your 12 recovery words</span>
-            <textarea rows={3} className={`yb-sensitive ${field} font-mono resize-none`} value={words} autoComplete="off" spellCheck={false} onChange={(e) => setWords(e.target.value)} />
+            <textarea rows={3} className={`yb-sensitive ${field} font-mono resize-none`} value={words} autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck={false} onChange={(e) => setWords(e.target.value)} />
+            <p className="text-[11px] text-[var(--yb-on-surface-variant)]">In order: 1 to 6 down the left of your card, then 7 to 12 down the right. Commas, numbers and capitals are fine.</p>
             <PinInput value={pin} onChange={setPin} label="New PIN" name="yb-words-pin" />
             <PinInput value={pin2} onChange={setPin2} label="The same new PIN again" name="yb-words-pin2" />
-            <button type="button" className={primary} disabled={busy || words.trim().split(/\s+/).length < 12}
+            <button type="button" className={primary} disabled={busy || (words.match(/[a-z]+/gi) || []).length < 12}
               onClick={() => run(async () => { twoPins(); await restoreServerWallet(words, pin); setWords(''); setPin(''); setPin2(''); onOpen(); })}>Recover with my words</button>
           </div>
           {note && <p className="text-sm text-emerald-300">{note}</p>}

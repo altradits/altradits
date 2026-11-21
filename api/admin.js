@@ -8,6 +8,8 @@
 //   GET  /api/admin?view=walletinvoice&hash= -> has a receive invoice been paid?
 //   GET  /api/admin?view=channels    -> channels, alerts and advice (lib/channels.js)
 //   GET  /api/admin?view=liquidity   -> sending power and top-up amounts
+//   GET  /api/admin?view=b2c         -> direct M-Pesa payouts: float, open and recent payouts (phones masked)
+//   POST { action: "b2c_float", kes } | { action: "b2c_settle", id, outcome: "paid", receipt } | { action: "b2c_settle", id, outcome: "refund", confirm: "REFUND <id>" }
 //   GET  /api/admin?view=topup&hash= -> a top-up's state
 //   GET  /api/admin?view=njia{&refresh=1} -> Njia Earn tab: checklist, dashboard, ledger, prices, settings (read-only)
 //   GET  /api/admin?view=njia_csv -> the Njia lease ledger as CSV
@@ -64,8 +66,54 @@ async function gate(request) {
 const within = (p, ms = 8000) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("The node took too long to answer.")), ms).unref?.())]);
 const settle = (p, ms = 8000) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("The node took too long to answer.")), ms).unref?.())]).then((v) => v, (e) => ({ error: e.message }));
 
+// ---- answering fast (#519)
+// The heavy read-only views take 2 to 45 seconds on shared hosting (node calls,
+// many stored records). Each is kept for a minute and answered from the copy
+// at once; an older copy (up to 30 minutes) is answered at once too while a
+// fresh one is made in the background. ?fresh=1 (the Refresh button) makes a
+// new one now. Any admin action (POST) clears every copy. Errors are kept
+// 15 seconds only. Every cached answer carries _at (when it was made) and
+// _stale (an older copy while a fresh one is coming).
+const CACHED = new Set(["", "cockpit", "pnl", "wallets", "destinations", "channels", "liquidity", "security", "statement", "activity", "developer", "explore", "emails", "choumi", "ai"]);
+let FRESH_MS = 60e3, ERROR_MS = 15e3, MAX_AGE_MS = 30 * 60e3;
+export const setAdminCacheTimings = (t = {}) => { ({ fresh: FRESH_MS = FRESH_MS, error: ERROR_MS = ERROR_MS, maxAge: MAX_AGE_MS = MAX_AGE_MS } = t); }; // tests
+const memo = new Map(); // query -> { at, status, body, refreshing }
+export const clearAdminCache = () => memo.clear();
+async function made(request) {
+  const res = await compute(request);
+  return { at: Date.now(), status: res.status, body: await res.text() };
+}
+function answer(e, stale = false) {
+  let body = e.body;
+  try {
+    const d = JSON.parse(body);
+    if (d && typeof d === "object" && !Array.isArray(d)) body = JSON.stringify({ ...d, _at: new Date(e.at).toISOString(), ...(stale ? { _stale: true } : {}) });
+  } catch { /* not JSON: as it is */ }
+  return new Response(body, { status: e.status, headers: { "Content-Type": e.body.startsWith("{") || e.body.startsWith("[") ? "application/json" : "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
+}
 export async function GET(request) {
   { const g = await gate(request); if (g) return g; }
+  const u = new URL(request.url);
+  const view = u.searchParams.get("view") || "";
+  if (!CACHED.has(view)) return compute(request);
+  const fresh = u.searchParams.get("fresh") === "1";
+  u.searchParams.delete("fresh");
+  const key = [...u.searchParams].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`).join("&");
+  const got = memo.get(key), age = got ? Date.now() - got.at : Infinity;
+  if (got && !fresh && age < (got.status < 500 ? FRESH_MS : ERROR_MS)) return answer(got);
+  if (got && !fresh && got.status < 500 && age < MAX_AGE_MS) {
+    if (!got.refreshing) {
+      got.refreshing = true;
+      made(request).then((e) => { if (e.status < 500 || !memo.get(key) || memo.get(key).status >= 500) memo.set(key, e); }).catch(() => {}).finally(() => { got.refreshing = false; });
+    }
+    return answer(got, true);
+  }
+  const e = await made(request);
+  memo.set(key, e);
+  return answer(e);
+}
+
+async function compute(request) {
   const view = new URL(request.url).searchParams.get("view");
 
   // The node explorer: network, channel internals, peers, payments, invoices, coins and closed channels.
@@ -99,6 +147,18 @@ export async function GET(request) {
     return inv ? json({ state: inv.state, sats: inv.sats }) : json({ error: "No such invoice." }, 404);
   }
   if (view === "channels") { const { channelReport } = await import("../lib/channels.js"); try { return json(await within(channelReport())); } catch (err) { return json({ error: err.message }, 502); } }
+  // The Overview cockpit: Ye₿ente per day, with the period before for the change.
+  if (view === "cockpit") {
+    const { cockpitSeries, openItems, ktownSeries } = await import("../lib/activity.js");
+    const { reachSummary, njiaOn } = await import("../lib/njia.js");
+    // The node's online record: the 5-minute checks the server makes when NJIA is on.
+    const reach = await reachSummary(14).catch(() => null);
+    const [series, open, ktown] = await Promise.all([cockpitSeries({ days: 30 }), openItems(), ktownSeries({ days: 30 })]);
+    return json({ ...series, open, ktown, reach, reachOn: njiaOn() });
+  }
+  // Lightning payments out still open, with the node's answer for each (live, never cached).
+  if (view === "openpay") { const { openPaymentsAdmin } = await import("../lib/ywallet.js"); try { return json(await within(openPaymentsAdmin(), 45000)); } catch (err) { return json({ error: err.message }, 502); } }
+  if (view === "b2c") { const { mobileAdminView } = await import("../lib/ywallet.js"); return json(await mobileAdminView()); }
   if (view === "liquidity") { const { liquidityView } = await import("../lib/channels.js"); try { return json(await within(liquidityView())); } catch (err) { return json({ error: err.message }, 502); } }
   if (view === "topup") {
     const { topupStatus } = await import("../lib/channels.js");
@@ -319,7 +379,25 @@ async function buildChoumiView() {
 
 export async function POST(request) {
   { const g = await gate(request); if (g) return g; }
+  clearAdminCache(); // an action may change what the views show
   const body = await readBody(request);
+  // Ask the node about one open payment now, and settle it as the background check would.
+  if (body.action === "ypay_check") {
+    if (!/^[0-9a-f]{64}$/.test(String(body.hash || ""))) return json({ error: "No such payment." }, 400);
+    const { openPaymentsAdmin } = await import("../lib/ywallet.js");
+    try { return json({ ok: true, ...(await within(openPaymentsAdmin({ check: body.hash }), 45000)) }); } catch (err) { return json({ error: err.message }, 502); }
+  }
+  if (body.action === "b2c_float" || body.action === "b2c_settle") {
+    const yw = await import("../lib/ywallet.js");
+    try {
+      if (body.action === "b2c_float") return json({ ok: true, ...(await yw.setMobileFloat(body.kes)) });
+      const r = await yw.settleMobileByHand({ id: body.id, outcome: body.outcome, receipt: body.receipt, confirm: body.confirm });
+      const { emailOwner } = await import("../lib/email.js");
+      await emailOwner(`Ye₿ente M-Pesa payout settled by hand: ${r.result}`,
+        `Payout ${r.payout.id} (KSh ${r.payout.kes} to ${r.payout.phone}) was settled by hand from the admin page as ${body.outcome}${r.payout.receipt ? `, M-Pesa code ${r.payout.receipt}` : ""}. If that wasn't you, rotate ADMIN_TOKEN now.`, null, "trust").catch(() => {});
+      return json({ ok: true, ...r });
+    } catch (e) { return json({ error: e.message }, e.status || 500); }
+  }
   if (body.action === "node_topup") {
     const { deadmanActive } = await import("../lib/deadman.js");
     if (deadmanActive()) return json({ error: "Deadman's Switch is active: node top-ups are paused until you lift the lockdown." }, 503);

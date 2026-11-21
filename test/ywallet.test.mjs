@@ -172,9 +172,17 @@ async function fakeLnd() {
         res.end(JSON.stringify({ payments: [...payments].map(([h, st]) => ({ payment_hash: h, status: st, fee_sat: "4" })) }));
         return;
       }
-      const track = req.url.match(/^\/v2\/router\/track\/([\w-]+)/);
+      const track = req.url.match(/^\/v2\/router\/track\/([^?]+)/);
       if (track) {
-        const h = Buffer.from(track[1], "base64url").toString("hex");
+        // As LND's REST layer decodes bytes in a path: padded standard base64,
+        // else padded URL-safe base64. Anything else is a 400 (the live bug of
+        // 21 Nov 2026: unpadded base64url left payments open for weeks).
+        // An encoded "/" (%2F) makes another path, which the gateway doesn't route.
+        if (/%2f/i.test(track[1])) { res.writeHead(404).end("Not Found"); return; }
+        const raw = decodeURIComponent(track[1]);
+        const padded = raw.length % 4 === 0 && /^[A-Za-z0-9+/]*={0,2}$|^[A-Za-z0-9_-]*={0,2}$/.test(raw);
+        if (!padded) { res.writeHead(400).end(JSON.stringify({ code: 3, message: "type mismatch, parameter: payment_hash, error: illegal base64 data at input byte 40" })); return; }
+        const h = Buffer.from(raw.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("hex");
         if (!payments.has(h)) { res.writeHead(500).end(JSON.stringify({ code: 5, message: "payment isn't initiated" })); return; }
         res.end(JSON.stringify({ result: { payment_hash: h, status: payments.get(h), fee_sat: "4" } }) + "\n");
         return;
@@ -286,8 +294,12 @@ test("send to an invoice: paid by the node, unused fee reserve refunded; failure
   payMode = "fail";
   r = await call("POST", "wallet/send", { to: invoice(500).pr, pin: "129847" }, w.token);
   assert.equal(r.status, 502);
+  // The node's real reason (NO_ROUTE), in words: not "the payment failed".
+  assert.match((await r.json()).error, /No path to the recipient's wallet.*Nothing was taken/);
   assert.equal((await yw.walletByHandle("payer")).balance, 2997);
-  assert.equal((await (await call("GET", "wallet/history", null, w.token)).json()).entries[0].status, "failed");
+  const failed = (await (await call("GET", "wallet/history", null, w.token)).json()).entries[0];
+  assert.equal(failed.status, "failed");
+  assert.match(failed.error || "", /No path/, "the history keeps the same reason");
   payMode = "ok";
   // An amountless invoice, or the wrong amount, is refused before anything is taken.
   assert.equal((await call("POST", "wallet/send", { to: "lnbc1qqqqqq", pin: "129847" }, w.token)).status, 400);
@@ -386,6 +398,46 @@ test("a payment whose result isn't known in time stays pending until the node an
   assert.equal((await yw.walletByHandle("slow")).balance, 2000 - 1000 - 4);
   payMode = "ok";
   void p; void w;
+});
+
+test("the sender's app learns the result the moment the node has one: paid, or never started and refunded", async () => {
+  const token = (await (await call("POST", "wallet/create", { pin: "528193", handle: "watcher" })).json()).token;
+  const me = await yw.walletByHandle("watcher");
+  await yw.credit({ walletId: me.id, sats: 5000, kind: "receive", ref: "fund-watcher" });
+  payMode = "hang";
+  const a = invoice(1000), b = invoice(700);
+  void call("POST", "wallet/send", { to: a.pr, pin: "528193" }, token);
+  await new Promise((r) => setTimeout(r, 300));
+  // Young: still on its way, and the node isn't asked while the send request may still be running.
+  let r = await (await call("GET", `wallet/payment/${a.hash}`, null, token)).json();
+  assert.deepEqual([r.success, r.status], [true, "pending"]);
+  await assert.rejects(yw.paymentForWallet((await yw.walletByHandle("payer")).id, a.hash), /isn't in this wallet/, "only the sender can look");
+  yw.setPayTimings({ settleAfterMs: 0 });
+  payments.set(a.hash, "SUCCEEDED");
+  r = await yw.paymentForWallet(me.id, a.hash);
+  assert.deepEqual([r.status, r.fee, r.error], ["completed", 4, null]);
+  // One that never reached the node: the tracker says it never started, so it fails and the sats come back at once.
+  yw.setPayTimings({ settleAfterMs: 3 * 60e3 });
+  void call("POST", "wallet/send", { to: b.pr, pin: "528193" }, token);
+  await new Promise((res) => setTimeout(res, 300));
+  const before = (await yw.walletByHandle("watcher")).balance;
+  payments.delete(b.hash);
+  yw.setPayTimings({ settleAfterMs: 0 });
+  r = await yw.paymentForWallet(me.id, b.hash);
+  assert.equal(r.status, "failed");
+  assert.ok(r.error);
+  assert.equal((await yw.walletByHandle("watcher")).balance, before + 700 + 10, "the amount and its fee reserve are back");
+  yw.setPayTimings({ settleAfterMs: 3 * 60e3 });
+  payMode = "ok";
+});
+
+test("the node's tracker is asked in a form it routes and decodes, whatever bytes the payment hash has", async () => {
+  // "ff…" is "////…" in standard base64: as %2F it broke the route (live, 21 Nov 2026).
+  const lightning = await import("../lib/lightning.js");
+  for (const hash of ["ff".repeat(32), "fb".repeat(32), "00".repeat(32), crypto.randomBytes(32).toString("hex")]) {
+    payments.delete(hash);
+    assert.equal((await lightning.paymentStatus(hash)).status, "failed", `${hash.slice(0, 8)}…: the node says it never started`);
+  }
 });
 
 test("an address whose invoice commits to someone else's description is refused, nothing taken", async () => {
