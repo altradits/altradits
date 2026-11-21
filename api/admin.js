@@ -148,7 +148,14 @@ async function compute(request) {
   }
   if (view === "channels") { const { channelReport } = await import("../lib/channels.js"); try { return json(await within(channelReport())); } catch (err) { return json({ error: err.message }, 502); } }
   // The Overview cockpit: Ye₿ente per day, with the period before for the change.
-  if (view === "cockpit") { const { cockpitSeries } = await import("../lib/activity.js"); return json(await cockpitSeries({ days: 30 })); }
+  if (view === "cockpit") {
+    const { cockpitSeries, openItems, ktownSeries } = await import("../lib/activity.js");
+    const { reachSummary, njiaOn } = await import("../lib/njia.js");
+    // The node's online record: the 5-minute checks the server makes when NJIA is on.
+    const reach = await reachSummary(14).catch(() => null);
+    const [series, open, ktown] = await Promise.all([cockpitSeries({ days: 30 }), openItems(), ktownSeries({ days: 30 })]);
+    return json({ ...series, open, ktown, reach, reachOn: njiaOn() });
+  }
   if (view === "b2c") { const { mobileAdminView } = await import("../lib/ywallet.js"); return json(await mobileAdminView()); }
   if (view === "liquidity") { const { liquidityView } = await import("../lib/channels.js"); try { return json(await within(liquidityView())); } catch (err) { return json({ error: err.message }, 502); } }
   if (view === "topup") {
