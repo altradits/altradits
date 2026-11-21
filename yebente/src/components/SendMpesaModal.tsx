@@ -28,6 +28,7 @@ import {
 } from '../services/payoutRails';
 import { isNetworkOnline } from '../services/offlineService';
 import { PhoneInput } from './PhoneInput';
+import { readableError } from '../services/errorText';
 
 interface SendMpesaModalProps {
   isOpen: boolean;
@@ -166,7 +167,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
       try {
         passkey = await approveWithBiometric();
       } catch (err: unknown) {
-        setErrorMessage(err instanceof Error ? err.message : 'Fingerprint not confirmed.');
+        setErrorMessage(readableError(err, 'Fingerprint not confirmed.', true));
         setStep('error');
         return;
       }
@@ -226,7 +227,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
         setPending(!done);
         setStep('success');
       } catch (err: unknown) {
-        setErrorMessage(err instanceof Error ? err.message : 'Error processing transfer.');
+        setErrorMessage(readableError(err, 'Error processing transfer.', true));
         setStep('error');
       }
       return;
@@ -263,7 +264,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
           if (sent.status === 'pending') paymentPending = true;
           paid = { paid: true };
         } catch (err: unknown) {
-          setErrorMessage(err instanceof Error ? err.message : 'Lightning payment route unavailable.');
+          setErrorMessage(readableError(err, 'Lightning payment route unavailable.', true));
           setStep('error');
           return;
         }
@@ -352,7 +353,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
       setPending(true);
       setStep('success');
     } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : 'Error processing transfer.');
+      setErrorMessage(readableError(err, 'Error processing transfer.', true));
       setStep('error');
     }
   };

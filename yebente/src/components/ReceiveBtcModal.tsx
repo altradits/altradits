@@ -14,6 +14,7 @@ import {
   resolveLightningAddress,
 } from '../services/lightningService';
 import { isNetworkOnline } from '../services/offlineService';
+import { readableError } from '../services/errorText';
 
 interface ReceiveBtcModalProps {
   isOpen: boolean;
@@ -180,7 +181,7 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
         startPollingSettlement(res.paymentHash, numericSats);
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error generating invoice';
+      const message = readableError(err, 'Error generating invoice');
       setErrorMessage(message);
       setStep('error');
     } finally {

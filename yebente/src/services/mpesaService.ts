@@ -1,4 +1,5 @@
 import { getWalletToken } from './altraditsWallet';
+import { readableError, serverError } from './errorText';
 export interface StkPushParams {
   phone: string;
   amount: number;
@@ -95,32 +96,12 @@ export function formatKenyanDisplayPhone(phone: string): string {
  * Safely parses response body as JSON without throwing unhandled exceptions if the server returns HTML/502
  */
 async function parseSafeJson<T = any>(response: Response): Promise<{ ok: boolean; data: T }> {
+  // No JSON (a gateway page or an empty body): say what the status means.
+  const text = await response.text().catch(() => '');
   try {
-    const text = await response.text();
-    if (!text || text.trim() === '') {
-      return {
-        ok: false,
-        data: {
-          error:
-            response.status === 502 || response.status === 504 || response.status === 503
-              ? `Backend Daraja bridge is unreachable (${response.status}). Please run 'node server.js' to start the backend.`
-              : `Empty response from server (Status ${response.status}).`,
-        } as T,
-      };
-    }
-    const json = JSON.parse(text);
-    return { ok: response.ok, data: json };
-  } catch {
-    const isProxyDown = response.status === 502 || response.status === 504 || response.status === 503;
-    return {
-      ok: false,
-      data: {
-        error: isProxyDown
-          ? 'Backend Daraja bridge on port 3002 is offline. Start it with `node server.js`.'
-          : `Server returned non-JSON response (Status ${response.status}).`,
-      } as T,
-    };
-  }
+    if (text.trim()) return { ok: response.ok, data: JSON.parse(text) };
+  } catch { /* not JSON */ }
+  return { ok: false, data: { error: serverError(response.status, null, true) } as T };
 }
 
 /**
@@ -159,7 +140,7 @@ export async function initiateStkPush(params: StkPushParams): Promise<StkPushRes
       customerMessage: data.customerMessage,
     };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Network error reaching M-Pesa bridge';
+    const message = readableError(err, "Couldn't start the M-Pesa payment.", true);
     return {
       success: false,
       error: message,
@@ -191,7 +172,7 @@ export async function queryStkStatus(checkoutRequestId: string): Promise<StkQuer
       error: data?.error,
     };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Network error querying M-Pesa status';
+    const message = readableError(err, "Couldn't check the M-Pesa payment.", false);
     return {
       success: false,
       error: message,

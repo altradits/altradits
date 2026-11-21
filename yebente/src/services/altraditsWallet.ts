@@ -1,6 +1,7 @@
 import { Transaction } from '../types';
 
 import { devicePublicKey, signWithDevice, forgetDeviceKey } from './deviceKey';
+import { httpTrouble, serverError } from './errorText';
 
 // The Ye₿ente wallet kept by Altradits (custodial, on the Altradits node). The
 // balance and history live on the server. This phone keeps:
@@ -85,15 +86,20 @@ export interface ServerEntry {
 
 export async function api<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
   const token = getWalletToken();
-  const res = await fetch(`/api/yebente/wallet/${path}`, {
-    method,
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`/api/yebente/wallet/${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new Error(httpTrouble(0, method === 'POST')); // offline, DNS, a dropped connection
+  }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && session()) lockLocally(); // the session ended: lock, never forget the wallet
   if (!res.ok || !data.success) {
-    const err = new Error(data.error || 'Wallet service unavailable.') as Error & { typoHint?: string };
+    const err = new Error(serverError(res.status, data, method === 'POST')) as Error & { typoHint?: string };
     if (typeof data.typoHint === 'string') err.typoHint = data.typoHint; // a misspelt domain: offer "use anyway"
     throw err;
   }
