@@ -14,7 +14,7 @@ for (const k of ["UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "DATA_DIR"]) delet
 Object.assign(process.env, { YEBENTE_WALLETS: "on", SITE_URL: "https://altradits.test", YEBENTE_MAX_BALANCE_SATS: "10000", YEBENTE_MAX_PAYMENT_SATS: "5000", YEBENTE_DAILY_SEND_SATS: "6000" });
 
 const yw = await import("../lib/ywallet.js");
-const { setJSON } = await import("../lib/store.js");
+const { setJSON, getJSON } = await import("../lib/store.js");
 yw.setLnurlFetcher((u, o) => globalThis.fetch(u, o)); // the tests stand in for the outside servers
 yw.setPayTimings({ recheckMs: 20 });
 const { bolt11PaymentHash } = await import("../lib/lightning.js");
@@ -438,6 +438,45 @@ test("the node's tracker is asked in a form it routes and decodes, whatever byte
     payments.delete(hash);
     assert.equal((await lightning.paymentStatus(hash)).status, "failed", `${hash.slice(0, 8)}…: the node says it never started`);
   }
+});
+
+// An invoice that names its payee ("n") and says what it's for ("d").
+function invoiceFor(sats, { description, payee }, hash = crypto.randomBytes(32).toString("hex")) {
+  const w5 = (buf, n) => [...buf].map((b) => b.toString(2).padStart(8, "0")).join("").padEnd(n * 5, "0").match(/.{5}/g).map((b) => parseInt(b, 2));
+  const field = (type, buf) => { const n = Math.ceil((buf.length * 8) / 5); return [type, n >> 5, n & 31, ...w5(buf, n)]; };
+  const words = [...Array(7).fill(0), ...field(1, Buffer.from(hash, "hex")), ...field(13, Buffer.from(description)), ...field(19, Buffer.from(payee, "hex")), ...Array(104).fill(0)];
+  return { pr: `lnbc${sats * 10}n1` + words.map((w) => BECH[w]).join("") + "qqqqqq", hash };
+}
+
+test("a payment out keeps who it was meant for; one that never reached the node says so plainly", async () => {
+  const lightning = await import("../lib/lightning.js");
+  const payee = "02" + "ab".repeat(32);
+  const inv = invoiceFor(300, { description: "Coffee at Mama Njeri", payee });
+  assert.deepEqual(lightning.bolt11Fields(inv.pr), { description: "Coffee at Mama Njeri", payee });
+  assert.deepEqual(lightning.bolt11Fields("lnbc1qqqqqq"), { description: null, payee: null });
+  const token = (await (await call("POST", "wallet/create", { pin: "639201", handle: "meant" })).json()).token;
+  const me = await yw.walletByHandle("meant");
+  await yw.credit({ walletId: me.id, sats: 2000, kind: "receive", ref: "fund-meant" });
+  payMode = "ok";
+  const r = await (await call("POST", "wallet/send", { to: inv.pr, pin: "639201" }, token)).json();
+  assert.equal(r.status, "completed");
+  const e = (await (await call("GET", "wallet/history", null, token)).json()).entries.find((x) => x.ref === inv.hash);
+  assert.deepEqual([e.description, e.payee], ["Coffee at Mama Njeri", payee]);
+  assert.equal((await getJSON(`ywpay:${inv.hash}`)).pr, inv.pr.toLowerCase(), "the invoice is kept, so the node can tell the rest later");
+  const recent = (await yw.recentPaymentsAdmin()).payments.find((x) => x.hash === inv.hash);
+  assert.deepEqual([recent.from, recent.description, recent.payee, recent.status], ["meant", "Coffee at Mama Njeri", payee, "completed"]);
+  // Never started: the tracker says so, and the history says it in plain words.
+  payMode = "hang";
+  const b = invoice(400);
+  void call("POST", "wallet/send", { to: b.pr, pin: "639201" }, token);
+  await new Promise((res) => setTimeout(res, 300));
+  payments.delete(b.hash);
+  yw.setPayTimings({ settleAfterMs: 0 });
+  const st = await yw.paymentForWallet(me.id, b.hash);
+  yw.setPayTimings({ settleAfterMs: 3 * 60e3 });
+  payMode = "ok";
+  assert.equal(st.status, "failed");
+  assert.equal(st.error, lightning.NEVER_STARTED);
 });
 
 test("an address whose invoice commits to someone else's description is refused, nothing taken", async () => {
