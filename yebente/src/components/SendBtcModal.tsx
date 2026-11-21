@@ -14,6 +14,7 @@ import { HoldNotice } from './HoldNotice';
 import { SatsMotion, CountUp } from './SatsMotion';
 import { celebrate } from '../services/celebrate';
 import { biometricOn, approveWithBiometric } from '../services/biometric';
+import { readableError } from '../services/errorText';
 
 // A Ye₿ente wallet handle (another Altradits wallet): sent through the ledger, free.
 const isYebenteHandle = (s: string) => /^[a-z0-9][a-z0-9._-]{1,18}[a-z0-9]$/i.test(s.trim());
@@ -189,7 +190,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
       setTxReference(res.ref);
       completeTransaction(res.ref, to, res.status === 'pending');
     } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : 'Error dispatching payment');
+      setErrorMessage(readableError(err, 'Error dispatching payment', true));
       setStep('error');
     } finally {
       setPin('');
@@ -236,7 +237,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
         try {
           passkey = await approveWithBiometric();
         } catch (err: unknown) {
-          setConfirmNote(err instanceof Error ? err.message : 'Fingerprint not confirmed.');
+          setConfirmNote(readableError(err, 'Fingerprint not confirmed.', true));
           setPin('');
           setConfirmOpen(true);
           return;
@@ -283,7 +284,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
       setErrorMessage(ownWallet.error || 'No Lightning wallet was found in this browser. Pay from your own wallet app, or use a Ye₿ente wallet.');
       setStep('error');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error dispatching payment';
+      const message = readableError(err, 'Error dispatching payment', true);
       setErrorMessage(message);
       setStep('error');
     }

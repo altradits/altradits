@@ -1,3 +1,4 @@
+import { readableError } from './errorText';
 // Send Mobile's payout options, as the server lists them (lib/rails.js): each
 // pays a mobile-money number through a partner that gives every number a
 // Lightning address (number@host) and quotes in the local currency over
@@ -84,7 +85,7 @@ export async function fetchQuote(rail: Rail, phone: string): Promise<RailQuote> 
         : undefined,
     };
   } catch (err: unknown) {
-    return { success: false, callback: '', error: err instanceof Error ? err.message : `Could not reach ${rail.partner}.` };
+    return { success: false, callback: '', error: readableError(err, `Could not reach ${rail.partner}.`, true) };
   }
 }
 
@@ -108,7 +109,7 @@ export async function requestInvoice(rail: Rail, p: { phone: string; amount: num
     const last = receiptUrl?.split('/').pop() || '';
     return { success: true, pr: data.pr, receiptUrl, paymentHash: /^[0-9a-f]{64}$/i.test(last) ? last : undefined };
   } catch (err: unknown) {
-    return { success: false, error: err instanceof Error ? err.message : `Could not reach ${rail.partner}.` };
+    return { success: false, error: readableError(err, `Could not reach ${rail.partner}.`, true) };
   }
 }
 

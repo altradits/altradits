@@ -286,8 +286,12 @@ test("send to an invoice: paid by the node, unused fee reserve refunded; failure
   payMode = "fail";
   r = await call("POST", "wallet/send", { to: invoice(500).pr, pin: "129847" }, w.token);
   assert.equal(r.status, 502);
+  // The node's real reason (NO_ROUTE), in words: not "the payment failed".
+  assert.match((await r.json()).error, /No path to the recipient's wallet.*Nothing was taken/);
   assert.equal((await yw.walletByHandle("payer")).balance, 2997);
-  assert.equal((await (await call("GET", "wallet/history", null, w.token)).json()).entries[0].status, "failed");
+  const failed = (await (await call("GET", "wallet/history", null, w.token)).json()).entries[0];
+  assert.equal(failed.status, "failed");
+  assert.match(failed.error || "", /No path/, "the history keeps the same reason");
   payMode = "ok";
   // An amountless invoice, or the wrong amount, is refused before anything is taken.
   assert.equal((await call("POST", "wallet/send", { to: "lnbc1qqqqqq", pin: "129847" }, w.token)).status, 400);

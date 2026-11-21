@@ -6,6 +6,7 @@ import {
 } from '../services/altraditsWallet';
 import { biometricOn, approveUnlock } from '../services/biometric';
 import { downloadRecoveryCard, shareRecoveryCard, canShareCard } from '../services/recoveryCard';
+import { readableError } from '../services/errorText';
 
 // The screen before the wallet. One secret for people: the 6-digit PIN (or the
 // fingerprint once it's on). Log in comes first; recovery is only for a lost
@@ -67,7 +68,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
   const go = (m: Mode) => { setMode(m); setError(''); setNote(''); setPin(''); setPin2(''); setTypo(null); };
   const run = async (fn: () => Promise<void>) => {
     setBusy(true); setError('');
-    try { await fn(); } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Something went wrong. Try again.'); } finally { setBusy(false); }
+    try { await fn(); } catch (err: unknown) { setError(readableError(err, 'Something went wrong. Try again.')); } finally { setBusy(false); }
   };
   // Sending to an email: when the server flags a misspelt domain, offer the
   // typed address anyway (some real domains look like typos).
@@ -76,7 +77,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
       setBusy(true); setError(''); setTypo(null);
       fn(confirm).catch((err: unknown) => {
         const hint = !confirm && typoHintOf(err);
-        setError(err instanceof Error ? err.message : 'Something went wrong. Try again.');
+        setError(readableError(err, 'Something went wrong. Try again.'));
         if (hint) setTypo({ hint, address: email.trim(), resend: () => attempt(true) });
       }).finally(() => setBusy(false));
     };

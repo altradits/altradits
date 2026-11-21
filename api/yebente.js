@@ -555,7 +555,7 @@ async function walletGet(request, action) {
   const buy = action.match(/^buy\/([\w-]{6,80})$/);
   if (buy) {
     const rec = await getJSON(`ywbuy:${buy[1]}`);
-    if (!rec || rec.walletId !== w.id) return json({ success: false, error: "Not found" }, 404);
+    if (!rec || rec.walletId !== w.id) return json({ success: false, error: "That M-Pesa purchase isn't in this wallet." }, 404);
     // Each check asks Daraja: a few a minute per wallet is plenty.
     if (rec.state === "pending" && buyOn() && (await hit(`rl:yb:bq:${w.id}`, 600)) <= 60) {
       // Safaricom's callback may not have arrived: ask Daraja directly.
@@ -575,7 +575,7 @@ async function walletGet(request, action) {
   const card = action.match(/^card\/status\/([\w-]{8,80})$/);
   if (card) {
     const rec = await getJSON(`ywcard:${card[1]}`);
-    if (!rec || rec.walletId !== w.id) return json({ success: false, error: "Not found" }, 404);
+    if (!rec || rec.walletId !== w.id) return json({ success: false, error: "That card top-up isn't in this wallet." }, 404);
     if ((await hit(`rl:yb:cardq:${w.id}`, 600)) > 60) return json({ success: false, error: "Too many checks. Try again later." }, 429);
     const pp = await import("../lib/pesapal.js");
     let st = { state: "pending", kes: null };
@@ -586,7 +586,7 @@ async function walletGet(request, action) {
   const inv = action.match(/^invoice\/([0-9a-f]{64})$/);
   if (inv) {
     const rec = await getJSON(`ywinv:${inv[1]}`);
-    if (!rec || rec.walletId !== w.id) return json({ success: false, error: "Not found" }, 404);
+    if (!rec || rec.walletId !== w.id) return json({ success: false, error: "That invoice isn't in this wallet." }, 404);
     if ((await hit(`rl:yb:invq:${w.id}`, 600)) > 60) return json({ success: false, error: "Too many checks. Try again later." }, 429);
     const state = await yw.settleInvoice(inv[1]);
     return json({ success: true, settled: state === "settled", paid: state === "settled", state, satsAmount: rec.sats });
@@ -718,7 +718,7 @@ export async function GET(request) {
   const lp = path.match(/^lnurlp\/([a-z0-9._-]{3,20})$/) || path.match(/^lnurl\/([a-z0-9._-]{3,20})$/);
   if (lp) return lnurlPay(request, lp[1], path.startsWith("lnurl/"));
   const wg = path.match(/^wallet\/(me|history|security|invoice\/[0-9a-f]{64}|buy\/bitika\/[\w-]{3,80}|buy\/[\w-]{6,80}|card\/status\/[\w-]{8,80}|mobile\/ym[\w-]{8,40})$/);
-  if (wg) { try { return await walletGet(request, wg[1]); } catch (e) { return json({ success: false, error: e.message }, e.status || 500); } }
+  if (wg) { try { return await walletGet(request, wg[1]); } catch (e) { if (!e.status) throw e; return json({ success: false, error: e.message }, e.status); } }
   if (PAYOUTS.test(path)) return off(NO_NODE);
   return json({ success: false, error: "Not found" }, 404);
 }
@@ -750,7 +750,9 @@ export async function POST(request) {
     return json({ success: false, error: "Not found" }, 404);
   } catch (err) {
     if (err.status) return json({ success: false, error: err.message, ...(err.typoHint ? { typoHint: err.typoHint } : {}) }, err.status);
-    console.error("yebente", path, err.message);
-    return json({ success: false, error: "Internal server error." }, 500);
+    // An unexpected fault: a short reference ties what the person saw to the log line.
+    const ref = crypto.randomBytes(4).toString("hex").toUpperCase();
+    console.error("yebente", ref, path, err.message);
+    return json({ success: false, ref, error: `Ye₿ente hit an unexpected problem on its side (reference ${ref}). Check your balance and history before trying again. If it keeps happening, send this reference to support.` }, 500);
   }
 }

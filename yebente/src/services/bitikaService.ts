@@ -1,4 +1,5 @@
 import { getWalletToken } from './altraditsWallet';
+import { readableError } from './errorText';
 
 export type BuyProvider = 'bitika' | 'mpesa' | null;
 
@@ -62,7 +63,7 @@ export async function startBitikaBuy(kes: number, phone: string): Promise<Bitika
     }
     return { success: true, code: data.code, sats: data.sats, feeKes: data.feeKes, kes: data.kes };
   } catch (err: unknown) {
-    return { success: false, error: err instanceof Error ? err.message : 'Network error reaching the wallet server.' };
+    return { success: false, error: readableError(err, 'Network error reaching the wallet server.', true) };
   }
 }
 
@@ -85,6 +86,6 @@ export async function bitikaStatus(code: string): Promise<BitikaStatusResponse> 
       message: data.message,
     };
   } catch (err: unknown) {
-    return { success: false, error: err instanceof Error ? err.message : 'Network error checking the payment.' };
+    return { success: false, error: readableError(err, 'Network error checking the payment.', true) };
   }
 }
