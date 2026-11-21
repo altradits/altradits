@@ -2833,7 +2833,7 @@ function posterQr(text) {
   return qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
 }
 function posterHtml(m) {
-  return `<section class="poster"><div class="burst"></div><div class="top"><div class="brand">${BTC_MARK}<span class="word">bitcoin</span></div>`
+  return `<section class="poster"><div class="burst"></div><div class="ptop"><div class="brand">${BTC_MARK}<span class="word">bitcoin</span></div>`
     + `<p class="acc">Accepted here</p><p class="shop">${esc(m.shop)}</p></div>`
     + `<div class="frame"><div class="q">${posterQr(`${m.payUrl}?lightning=${m.lnurl}`)}</div><div class="mid"><img src="/assets/logo.png" alt="Altradits"></div></div>`
     + `<div class="band"><div class="scan">${PHONE_ICON}Scan to pay</div><div class="fine">Tunapokea Bitcoin · Any Lightning wallet · Shop gets M-Pesa</div>`
@@ -2858,6 +2858,172 @@ async function printPosters(list) {
   setTimeout(() => window.print(), 50);
 }
 window.addEventListener("afterprint", () => { document.body.classList.remove("posters-on"); $("#posters").innerHTML = ""; });
+
+// ---- The poster as a ready-to-print A4 PDF: download it, or share it from a
+// phone, and print with no settings to change (A4, no margins, full colour).
+// The poster is laid out off-screen with the same HTML and styles the print
+// uses, each part's place is measured, and the parts are drawn on an A4 canvas
+// at 200 dpi. The canvas becomes a JPEG page in a small PDF written here: no
+// library, nothing sent anywhere.
+const A4_PT = [595.28, 841.89], PDF_DPI = 200;
+const loadImage = (src) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error("An image for the poster didn't load.")); i.src = src; });
+const svgImage = (svg) => loadImage("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.includes("xmlns=") ? svg : svg.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"')));
+function roundRect(cx, x, y, w, h, r) { cx.beginPath(); if (cx.roundRect) cx.roundRect(x, y, w, h, r); else cx.rect(x, y, w, h); }
+// Text centred in its box, wrapped the way the page wrapped it.
+function drawText(cx, el, box, k) {
+  const st = getComputedStyle(el);
+  cx.font = `${st.fontWeight} ${parseFloat(st.fontSize) * k}px ${st.fontFamily}`;
+  cx.fillStyle = st.color;
+  if ("letterSpacing" in cx) cx.letterSpacing = st.letterSpacing === "normal" ? "0px" : `${parseFloat(st.letterSpacing) * k}px`;
+  cx.textAlign = "center"; cx.textBaseline = "middle";
+  const text = st.textTransform === "uppercase" ? el.textContent.toUpperCase() : el.textContent;
+  const lines = [];
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const last = lines[lines.length - 1];
+    if (last !== undefined && cx.measureText(`${last} ${word}`).width <= box.w + 1) lines[lines.length - 1] = `${last} ${word}`;
+    else lines.push(word);
+  }
+  const lh = box.h / Math.max(1, lines.length);
+  lines.forEach((l, n) => cx.fillText(l, box.x + box.w / 2, box.y + lh * (n + .5)));
+}
+async function posterCanvas(m, logo) {
+  const host = document.createElement("div");
+  host.style.cssText = "position:fixed;left:-400mm;top:0;pointer-events:none";
+  host.setAttribute("aria-hidden", "true");
+  host.innerHTML = posterHtml(m);
+  document.body.append(host);
+  try {
+    await document.fonts.ready;
+    const p = host.querySelector(".poster"), P = p.getBoundingClientRect();
+    const W = Math.round(210 / 25.4 * PDF_DPI), H = Math.round(297 / 25.4 * PDF_DPI), k = W / P.width, mm = P.width / 210;
+    const at = (el) => { const r = el.getBoundingClientRect(); return { x: (r.left - P.left) * k, y: (r.top - P.top) * k, w: r.width * k, h: r.height * k }; };
+    const q = (s) => p.querySelector(s);
+    const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    const cx = cv.getContext("2d");
+    cx.fillStyle = "#fff"; cx.fillRect(0, 0, W, H);
+    // The sunburst: 6-degree orange rays from 40 mm below the top of its area.
+    const b = at(q(".burst")), ox = b.x + b.w / 2, oy = b.y + 40 * mm * k, R = Math.hypot(W, H);
+    // Drawn on its own layer, then faded out towards its lower edge (as the page's mask does).
+    const rays = document.createElement("canvas"); rays.width = W; rays.height = H;
+    const rx = rays.getContext("2d");
+    rx.fillStyle = "rgba(247,147,26,.22)";
+    for (let a = 0; a < 360; a += 12) {
+      const t0 = (a - 90) * Math.PI / 180, t1 = (a + 6 - 90) * Math.PI / 180;
+      rx.beginPath(); rx.moveTo(ox, oy); rx.lineTo(ox + R * Math.cos(t0), oy + R * Math.sin(t0)); rx.lineTo(ox + R * Math.cos(t1), oy + R * Math.sin(t1)); rx.closePath(); rx.fill();
+    }
+    const fade = rx.createLinearGradient(0, b.y, 0, b.y + b.h);
+    fade.addColorStop(0, "#000"); fade.addColorStop(.55, "#000"); fade.addColorStop(1, "rgba(0,0,0,0)");
+    rx.globalCompositeOperation = "destination-in"; rx.fillStyle = fade; rx.fillRect(0, 0, W, H);
+    cx.drawImage(rays, 0, 0);
+    // The Bitcoin mark, "bitcoin", "Accepted here" and the shop's name.
+    const mark = q(".brand svg"), mb = at(mark);
+    cx.drawImage(await svgImage(mark.outerHTML), mb.x, mb.y, mb.w, mb.h);
+    for (const s of [".word", ".acc", ".shop"]) drawText(cx, q(s), at(q(s)), k);
+    // The frame: a pale orange ring, a white gap, the orange border, then the code.
+    const f = at(q(".frame")), r = 9 * mm * k, bw = 2.2 * mm * k;
+    const ring = (d, rr, colour) => { roundRect(cx, f.x - d, f.y - d, f.w + 2 * d, f.h + 2 * d, rr); cx.fillStyle = colour; cx.fill(); };
+    ring(4 * mm * k, r + 4 * mm * k, "rgba(247,147,26,.6)");
+    ring(3 * mm * k, r + 3 * mm * k, "#fff");
+    ring(0, r, "#F7931A");
+    roundRect(cx, f.x + bw, f.y + bw, f.w - 2 * bw, f.h - 2 * bw, Math.max(0, r - bw)); cx.fillStyle = "#fff"; cx.fill();
+    const code = q(".q svg"), cb = at(code);
+    cx.imageSmoothingEnabled = false; // crisp modules
+    cx.drawImage(await svgImage(code.outerHTML), cb.x, cb.y, cb.w, cb.h);
+    cx.imageSmoothingEnabled = true;
+    const mid = at(q(".mid")), lb = at(q(".mid img"));
+    roundRect(cx, mid.x, mid.y, mid.w, mid.h, 4 * mm * k); cx.fillStyle = "#fff"; cx.fill();
+    cx.drawImage(logo, lb.x, lb.y, lb.w, lb.h);
+    // The orange band: "Scan to pay" with the phone, the fine print, the website.
+    const band = at(q(".band")), g = cx.createLinearGradient(0, band.y, 0, band.y + band.h);
+    g.addColorStop(0, "#FFA02E"); g.addColorStop(.45, "#F7931A"); g.addColorStop(1, "#F7931A");
+    cx.fillStyle = g; cx.fillRect(band.x, band.y, band.w, band.h);
+    const phone = q(".scan svg");
+    if (phone) { const pb = at(phone); cx.drawImage(await svgImage(phone.outerHTML), pb.x, pb.y, pb.w, pb.h); }
+    // "Scan to pay" sits right of the phone: draw it in the text's own box.
+    const scan = q(".scan"), sr = document.createRange(); sr.selectNodeContents(scan); if (phone) sr.setStartAfter(phone);
+    const tr = sr.getBoundingClientRect();
+    drawText(cx, scan, { x: (tr.left - P.left) * k, y: (tr.top - P.top) * k, w: tr.width * k, h: tr.height * k }, k);
+    for (const s of [".fine", ".sign"]) drawText(cx, q(s), at(q(s)), k);
+    return cv;
+  } finally { host.remove(); }
+}
+// A PDF with one full-bleed A4 page per JPEG.
+function pdfFromJpegs(pages) {
+  const enc = new TextEncoder(), parts = [], offsets = [];
+  let length = 0;
+  const put = (x) => { const b = typeof x === "string" ? enc.encode(x) : x; parts.push(b); length += b.length; };
+  const obj = (n, body, stream) => {
+    offsets[n] = length;
+    put(`${n} 0 obj\n${body}\n`);
+    if (stream) { put("stream\n"); put(stream); put("\nendstream\n"); }
+    put("endobj\n");
+  };
+  put("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+  const [pw, ph] = A4_PT, kids = pages.map((_, n) => `${3 + n * 3} 0 R`).join(" ");
+  obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+  obj(2, `<< /Type /Pages /Kids [${kids}] /Count ${pages.length} >>`);
+  pages.forEach((pg, n) => {
+    const page = 3 + n * 3, content = page + 1, image = page + 2;
+    const draw = enc.encode(`q ${pw} 0 0 ${ph} 0 0 cm /Im0 Do Q`);
+    obj(page, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im0 ${image} 0 R >> >> /Contents ${content} 0 R >>`);
+    obj(content, `<< /Length ${draw.length} >>`, draw);
+    obj(image, `<< /Type /XObject /Subtype /Image /Width ${pg.w} /Height ${pg.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${pg.jpeg.length} >>`, pg.jpeg);
+  });
+  const count = 3 + pages.length * 3, xref = length;
+  put(`xref\n0 ${count}\n0000000000 65535 f \n${offsets.slice(1).map((o) => `${String(o).padStart(10, "0")} 00000 n \n`).join("")}`);
+  put(`trailer\n<< /Size ${count} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  return new Blob(parts, { type: "application/pdf" });
+}
+const slugOf = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "shop";
+// The finished PDF: Download and Share buttons, so each starts from a click
+// (a browser shares only straight after one, and the PDF takes a moment).
+function pdfReady(file) {
+  document.getElementById("pdfReady")?.remove();
+  const box = document.createElement("div");
+  box.id = "pdfReady";
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-label", "Poster PDF ready");
+  box.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:60;max-width:min(420px,calc(100vw - 32px));background:var(--card,#fff);color:inherit;border:1px solid var(--line,#ddd);border-radius:14px;padding:14px 16px;box-shadow:0 12px 32px -12px rgba(15,27,45,.45)";
+  const canShare = !!navigator.canShare?.({ files: [file] });
+  box.innerHTML = `<p style="margin:0 0 4px;font-weight:700">PDF ready</p><p class="sm muted" style="margin:0 0 10px">${esc(file.name)} · A4, no margins: it prints as it is.${canShare ? "" : " This browser can't share files: download it, then send it."}</p>`
+    + `<div class="row"><button type="button" class="btn primary" data-pdf-act="download">Download</button>${canShare ? '<button type="button" class="btn" data-pdf-act="share">Share</button>' : ""}<button type="button" class="btn" data-pdf-act="close">Close</button></div>`;
+  box.addEventListener("click", async (e) => {
+    const act = e.target.closest("[data-pdf-act]")?.dataset.pdfAct;
+    if (act === "download") {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(file); a.download = file.name;
+      document.body.append(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+      toast(`Downloaded ${file.name}.`);
+    } else if (act === "share") {
+      try { await navigator.share({ files: [file], title: file.name }); toast("Shared."); }
+      catch (err) { if (err?.name !== "AbortError") toast(`Not shared: ${err.message || "this browser refused"}. Download it instead.`, true, 6000); }
+    } else if (act === "close") box.remove();
+  });
+  document.body.append(box);
+  box.querySelector("[data-pdf-act]").focus();
+  toast("PDF ready.");
+}
+async function posterPdf(list) {
+  if (!list.length) return;
+  if (typeof window.qrcode !== "function") { toast("The QR maker didn't load. Refresh the page.", true); return; }
+  try { await secureShops(list); } catch (err) { toast(`No PDF made: ${err.message}`, true, 6000); loadKtown(); return; }
+  renderKtown();
+  toast(list.length > 1 ? `Making the PDF of ${list.length} posters…` : "Making the PDF…", false, 0);
+  try {
+    const logo = await loadImage("/assets/logo.png");
+    const pages = [];
+    for (const m of list) {
+      const cv = await posterCanvas(m, logo);
+      const blob = await new Promise((ok) => cv.toBlob(ok, "image/jpeg", .95));
+      if (!blob) throw new Error("This browser couldn't draw the poster.");
+      pages.push({ w: cv.width, h: cv.height, jpeg: new Uint8Array(await blob.arrayBuffer()) });
+    }
+    const name = list.length > 1 ? `ktown-posters-${new Date().toISOString().slice(0, 10)}.pdf` : `ktown-poster-${slugOf(list[0].shop)}.pdf`;
+    const file = new File([pdfFromJpegs(pages)], name, { type: "application/pdf" });
+    pdfReady(new File([pdfFromJpegs(pages)], name, { type: "application/pdf" }));
+  } catch (err) { toast(`No PDF made: ${err.message}`, true, 6000); }
+}
 // Secured: Stanley secured it, or a matched first payment claimed it. Either
 // way the 48-hour takeover can't take the number.
 function renderKtown() {
@@ -2865,7 +3031,7 @@ function renderKtown() {
   $("#ktownList").innerHTML = shops.length ? `<table><thead><tr><th>Shop</th><th>M-Pesa name</th><th>Phone ends</th><th>Paid</th><th>Joined</th><th>Number</th><th></th></tr></thead><tbody>${shops.map((m, i) =>
     `<tr><td>${esc(m.shop)}${m.verified ? "" : ' <span class="muted sm">(not confirmed)</span>'}</td><td>${esc(m.mpesaName)}</td><td>…${esc(m.phoneEnd)}</td><td>${esc(String(m.paidCount))}</td><td>${esc(String(m.createdAt || "").slice(0, 10))}</td>`
     + `<td>${m.claimed ? "Secured" : '<span class="muted">Not secured</span>'}</td>`
-    + `<td><button type="button" class="btn" data-poster="${i}">Print poster</button> ${m.claimed ? "" : `<button type="button" class="btn" data-secure="${i}">Secure</button> `}<button type="button" class="btn" data-resetpin="${i}">Reset PIN</button> <button type="button" class="btn" data-delshop="${i}">Delete</button></td></tr>`).join("")}</tbody></table>`
+    + `<td><button type="button" class="btn" data-poster="${i}">Print poster</button> <button type="button" class="btn" data-pdf="${i}">PDF</button> ${m.claimed ? "" : `<button type="button" class="btn" data-secure="${i}">Secure</button> `}<button type="button" class="btn" data-resetpin="${i}">Reset PIN</button> <button type="button" class="btn" data-delshop="${i}">Delete</button></td></tr>`).join("")}</tbody></table>`
     : '<p class="sm muted">No shops yet. They appear here as soon as they register at altradits.com/ktown.</p>';
 }
 async function loadKtown() {
@@ -2878,7 +3044,7 @@ async function loadKtown() {
   } catch (err) { $("#ktownList").innerHTML = `<p class="sm muted">${esc(err.message)}</p>`; }
 }
 $("#ktownList").addEventListener("click", async (e) => {
-  const btn = e.target.closest("[data-poster],[data-secure],[data-resetpin],[data-delshop]");
+  const btn = e.target.closest("[data-poster],[data-pdf],[data-secure],[data-resetpin],[data-delshop]");
   if (!btn) return;
   if (btn.dataset.delshop !== undefined) {
     const m = KTOWN[Number(btn.dataset.delshop)];
@@ -2894,6 +3060,7 @@ $("#ktownList").addEventListener("click", async (e) => {
     return;
   }
   if (btn.dataset.poster !== undefined) return printPosters([KTOWN[Number(btn.dataset.poster)]]);
+  if (btn.dataset.pdf !== undefined) { btn.disabled = true; await posterPdf([KTOWN[Number(btn.dataset.pdf)]]); btn.disabled = false; return; }
   if (btn.dataset.secure !== undefined) {
     const m = KTOWN[Number(btn.dataset.secure)];
     if (!m || !confirm(`Secure "${m.shop}"? Do this only for a shop you visited. Its number can then never be taken over.`)) return;
@@ -2914,6 +3081,10 @@ $("#ktownList").addEventListener("click", async (e) => {
 $("#ktownPrintAll").addEventListener("click", () => {
   if (KTOWN.some((m) => !m.claimed) && !confirm("Printing secures every shop listed here: their numbers can never be taken over. Print only for shops you visited. Go on?")) return;
   printPosters(KTOWN);
+});
+$("#ktownPdfAll").addEventListener("click", () => {
+  if (KTOWN.some((m) => !m.claimed) && !confirm("Making the PDF secures every shop listed here: their numbers can never be taken over. Do this only for shops you visited. Go on?")) return;
+  posterPdf(KTOWN);
 });
 $("#ktownReload").addEventListener("click", loadKtown);
 
