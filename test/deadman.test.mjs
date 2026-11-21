@@ -677,6 +677,33 @@ test("deadman: a DirectAdmin env save never trips, never watches", async () => {
   await resetDeadman();
 });
 
+// The panel also drops blank lines when it rewrites .htaccess (25 false
+// alarms, 6-21 Nov 2026). Blank lines can't change a rule; a changed rule
+// still trips.
+test("deadman: blank lines dropped by the panel never trip; a changed rule still does", async () => {
+  await resetDeadman();
+  const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), "altradits-blank-"));
+  fs.mkdirSync(path.join(repoDir, "lib"), { recursive: true });
+  const panel = `# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN\nPassengerAppType node\n# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END\n`;
+  const rules = `# Clean URLs\n\n\n<FilesMatch "^(server\\.mjs)$">\n\nRequire all denied\n</FilesMatch>\n\n`;
+  fs.writeFileSync(path.join(repoDir, ".htaccess"), panel + rules);
+  fs.writeFileSync(path.join(repoDir, "lib", ".htaccess"), "Require all denied\n");
+  fs.writeFileSync(path.join(repoDir, "server.mjs"), "export const v = 1;\n");
+  execFileSync("git", ["init", "-q"], { cwd: repoDir });
+  execFileSync("git", ["add", "."], { cwd: repoDir });
+  execFileSync("git", ["-c", "user.name=altradits", "-c", "user.email=altradits@gmail.com", "commit", "-q", "-m", "Initial"], { cwd: repoDir });
+  const envBlock = `# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION BEGIN\nSetEnv NODE_ENV production\n# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION END\n`;
+  fs.writeFileSync(path.join(repoDir, ".htaccess"), panel + rules.replace(/\n{2,}/g, "\n").replace(/\n/g, "  \n") + envBlock);
+  const quiet = await deadman.runDeadmanChecks({ rootDir: repoDir, force: true });
+  assert.equal(quiet.files.ok, true, "blank lines and trailing spaces are not tampering");
+  assert.equal(quiet.level, 0);
+  fs.writeFileSync(path.join(repoDir, ".htaccess"), panel + rules.replace("Require all denied", "Require all granted") + envBlock);
+  const loud = await deadman.runDeadmanChecks({ rootDir: repoDir, force: true });
+  assert.equal(loud.files.ok, false, "a changed rule still trips");
+  assert.match(loud.files.detail, /line 3 differs from git HEAD/);
+  await resetDeadman();
+});
+
 test("deadman: deployStatus reads the lock and the marker; a stale marker resumes checks", async () => {
   await resetDeadman();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "altradits-deploystatus-"));
