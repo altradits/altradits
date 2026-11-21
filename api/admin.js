@@ -156,6 +156,8 @@ async function compute(request) {
     const [series, open, ktown] = await Promise.all([cockpitSeries({ days: 30 }), openItems(), ktownSeries({ days: 30 })]);
     return json({ ...series, open, ktown, reach, reachOn: njiaOn() });
   }
+  // The latest payments out across wallets, with who each was meant for (the node decodes the payee).
+  if (view === "recentpay") { const { recentPaymentsAdmin } = await import("../lib/ywallet.js"); try { return json(await within(recentPaymentsAdmin({ decode: true }), 45000)); } catch (err) { return json({ error: err.message }, 502); } }
   // Lightning payments out still open, with the node's answer for each (live, never cached).
   if (view === "openpay") { const { openPaymentsAdmin } = await import("../lib/ywallet.js"); try { return json(await within(openPaymentsAdmin(), 45000)); } catch (err) { return json({ error: err.message }, 502); } }
   if (view === "b2c") { const { mobileAdminView } = await import("../lib/ywallet.js"); return json(await mobileAdminView()); }

@@ -3254,6 +3254,15 @@ function openPayHtml(r) {
     `<tr><td>${esc(ago(p.at))}</td><td>${esc(p.handle)}</td><td class="sm">${esc(String(p.to).slice(0, 40))}</td><td>${esc(num(p.sats))}</td><td class="sm"><b>${esc(p.node.status.replace("_", " "))}</b><br>${esc(p.node.why)}</td>`
     + `<td><button type="button" class="btn" data-paycheck="${esc(p.hash)}">Ask the node now</button></td></tr>`).join("")}</tbody></table>`;
 }
+// Recent payments out, with who each was meant for.
+async function loadRecentPay() {
+  let r; try { r = await api("?view=recentpay"); } catch (err) { $("#recentPay").innerHTML = `<p class="sm err">${esc(err.message)}</p>`; return; }
+  const short = (k) => (k ? `${k.slice(0, 10)}…${k.slice(-4)}` : "");
+  $("#recentPay").innerHTML = r.payments.length ? `<table><thead><tr><th>When</th><th>From</th><th>Meant for</th><th>Sats</th><th>Result</th></tr></thead><tbody>${r.payments.map((p) =>
+    `<tr><td>${esc(ago(p.at))}</td><td>${esc(p.from)}</td><td class="sm">${esc(p.to)}${p.alias ? `<br><b>${esc(p.alias)}</b>` : ""}${p.description ? `<br>“${esc(p.description)}”` : ""}${p.payee ? `<br><span class="muted" title="${esc(p.payee)}">node ${esc(short(p.payee))}</span>` : ""}</td>`
+    + `<td>${esc(num(p.sats))}</td><td class="sm">${p.status === "completed" ? '<b class="ok">Paid</b>' : p.status === "failed" ? `<b class="err">Failed</b><br>${esc(p.error || "")}` : "Pending"}</td></tr>`).join("")}</tbody></table>`
+    : '<p class="sm muted">No payments out yet.</p>';
+}
 async function loadOpenPay() {
   try { $("#openPay").innerHTML = openPayHtml(await api("?view=openpay")); } catch (err) { $("#openPay").innerHTML = `<p class="sm err">${esc(err.message)}</p>`; }
 }
@@ -3499,7 +3508,7 @@ async function load() {
   $("#loginErr").textContent = "";
   $("#login").hidden = true; $("#app").hidden = false;
   loadKtown(); // the shop list needs no node: show it at once
-  const panels = Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadB2c(), loadCockpit(), loadOpenPay(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
+  const panels = Promise.allSettled([loadPower(), loadChannels(), loadSecurity(), loadMoney(), loadDeveloper(), loadActivity(), loadExplorer(), loadPnl(), loadWallets(), loadB2c(), loadCockpit(), loadOpenPay(), loadRecentPay(), loadDestinations(), loadChoumi(), loadMarketing(), loadKazi()]);
   const over = api("").then((D) => {
     KES_PER_BTC = D.kesPerBtc;
     OVERVIEW = D;

@@ -75,6 +75,7 @@ export interface ServerEntry {
   sats: number;
   fee?: number;
   counterparty?: string;
+  description?: string; // a Lightning invoice's own description, when it had one
   status: 'completed' | 'pending' | 'failed';
   ref: string;
   note?: string;
@@ -225,7 +226,8 @@ function entryToTransaction(e: ServerEntry): Transaction {
     fee: e.fee || 0,
     feeCurrency: 'SATS',
     realFeeSats: e.fee || 0,
-    recipient: e.counterparty,
+    // "Lightning invoice" alone says little: the invoice's description says what it was for.
+    recipient: e.counterparty === 'Lightning invoice' && e.description ? `${e.description} (Lightning invoice)` : e.counterparty,
     referenceNumber: e.ref,
     walletType: 'custodial',
     note: e.note,
