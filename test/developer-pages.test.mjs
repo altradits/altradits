@@ -90,3 +90,11 @@ test("routes: Node, Apache and the sitemap serve the three addresses", async () 
     assert.match(sm, new RegExp(`<loc>${loc}<\\/loc><lastmod>20\\d\\d-\\d\\d-\\d\\d<\\/lastmod>`), `sitemap dates ${loc}`);
   assert.match(read("llms.txt"), /developer\/reference/, "llms.txt points at the API reference");
 });
+
+test("the dashboard shows each destination's id with a copy button", async () => {
+  // POST /invoices needs destinationId, and only a session can list destinations,
+  // so the dashboard is the one place a developer can find it.
+  const html = read("developer-dashboard.html");
+  assert.match(html, /idCode\.textContent = `id \$\{d\.id\}`/);
+  assert.match(html, /btn\("Copy id", "ghost", \(e\) => copyText\(d\.id, e\.target\)\)/);
+});
