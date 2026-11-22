@@ -50,9 +50,9 @@ npm run build                         # rebuilds yebente/app (commit it too)
 
 ## How this is built
 
-I build Altradits with AI coding assistants. They help me write code, tests and docs, and they taught me concepts that would have taken me years to learn alone.
+Altradits uses AI. I learn by building: AI coding assistants help me write code, tests and docs, and they teach me the concepts behind them while I implement and test each piece.
 
-I decide what gets built. Every change goes through a pull request, the full test suite, CodeQL and a security review before I merge it, and every merge is signed by my key. The instructions the assistants follow are public in [AGENTS.md](AGENTS.md).
+Everything I push is verified by me. Each change goes through a pull request, the full test suite, CodeQL and a security review before I merge it, and every merge is signed by my key. The instructions the assistants follow are public in [AGENTS.md](AGENTS.md).
 
 My contributions to other people's projects, such as reviews and pull requests on [LND](https://github.com/lightningnetwork/lnd), are written and tested by me without AI, following each project's own rules. The [tracker](https://altradits.com/tracker) shows them as GitHub records them.
 
