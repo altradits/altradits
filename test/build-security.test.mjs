@@ -887,6 +887,14 @@ test("brand clarity: home and guide say what the three names are", () => {
   }
 });
 
+test("top bar links the wallet guide from the main screen", () => {
+  const top = read("yebente/src/components/TopBar.tsx");
+  assert.match(top, /<a[^>]*href="\/wallet-guide"/, "top bar: the help icon opens the guide");
+  assert.match(top, /aria-label="Help"/, "top bar: the icon is labelled for screen readers");
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("Help"), "yebente/app: the built bundle carries the help icon (rebuild: cd yebente && npm run build)");
+});
+
 test("kTown starts with the QR screen hidden, so no empty code flashes", () => {
   assert.ok(read("ktown/index.html").includes('<section id="screen-qr" aria-labelledby="qr-shop" hidden>'), "kTown: the QR screen starts hidden");
   assert.match(read("ktown/app.js"), /\$\("screen-qr"\)\.hidden = which !== "qr"/, "kTown: boot shows the right screen");
