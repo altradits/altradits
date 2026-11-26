@@ -538,7 +538,12 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
 
           {/* This phone: lock or forget the Ye₿ente wallet; disconnect or wipe an external one */}
           {server ? (
-            <div className="pt-2 border-t border-[var(--yb-outline-variant)]/60 grid grid-cols-2 gap-2">
+            <details className="group pt-2 border-t border-[var(--yb-outline-variant)]/60">
+              <summary className="flex justify-between items-center text-xs text-[var(--yb-secondary)] cursor-pointer list-none py-1">
+                <span className="font-semibold">This phone</span>
+                <span className="font-mono text-[10px] text-[var(--yb-on-surface-variant)]">›</span>
+              </summary>
+              <div className="grid grid-cols-2 gap-2 pt-1">
               <button
                 type="button"
                 onClick={async () => { await lockServerWallet(); onClose(); }}
@@ -557,9 +562,15 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
               >
                 Remove from this phone
               </button>
-            </div>
+              </div>
+            </details>
           ) : wallet.isConnected && (
-            <div className="pt-2 border-t border-[var(--yb-outline-variant)]/60 grid grid-cols-2 gap-2">
+            <details className="group pt-2 border-t border-[var(--yb-outline-variant)]/60">
+              <summary className="flex justify-between items-center text-xs text-[var(--yb-secondary)] cursor-pointer list-none py-1">
+                <span className="font-semibold">This phone</span>
+                <span className="font-mono text-[10px] text-[var(--yb-on-surface-variant)]">›</span>
+              </summary>
+              <div className="grid grid-cols-2 gap-2 pt-1">
               <button
                 type="button"
                 onClick={handleEject}
@@ -575,7 +586,8 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
               >
                 Wipe Wallet
               </button>
-            </div>
+              </div>
+            </details>
           )}
           <p className="text-center text-xs text-[var(--yb-on-surface-variant)] pt-1">Need help? <a href="/wallet-guide" className="font-semibold text-[var(--yb-primary)] hover:underline">See the wallet guide</a></p>
         </div>

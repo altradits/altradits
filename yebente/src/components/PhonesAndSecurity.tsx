@@ -55,8 +55,11 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
   const pinBox = 'yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.3em]';
 
   return (
-    <div className="space-y-2">
-      <span className="font-semibold text-xs text-[var(--yb-secondary)] flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Phones and security</span>
+    <details className="group space-y-2" open={Boolean(info.pendingRecovery || info.hold) || undefined}>
+      <summary className="flex justify-between items-center text-xs text-[var(--yb-secondary)] cursor-pointer list-none py-1">
+        <span className="font-semibold flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Phones and security</span>
+        <span className="font-mono text-[10px] text-[var(--yb-on-surface-variant)]">›</span>
+      </summary>
       {info.pendingRecovery && (
         <div className="p-2.5 rounded-xl bg-red-950/40 border border-red-500/30 space-y-2">
           <p className="text-xs font-semibold text-red-200">Recovery in progress</p>
@@ -133,6 +136,6 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
           </ul>
         </details>
       )}
-    </div>
+    </details>
   );
 };
