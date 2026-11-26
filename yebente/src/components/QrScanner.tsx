@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useEscape } from '../hooks/useEscape';
+import { useFocusReturn } from '../hooks/useFocusReturn';
 import { X, Image as ImageIcon, Loader2, ClipboardPaste, Keyboard, Flashlight, FlashlightOff } from 'lucide-react';
 import { readQr, looksLikePayment } from '../services/paymentQr';
 
@@ -24,6 +25,7 @@ const apply = (track: MediaStreamTrack | null, c: Extra) => track?.applyConstrai
 // only if the owner taps Paste).
 export const QrScanner: React.FC<QrScannerProps> = ({ onResult, onClose, onType }) => {
   useEscape(onClose);
+  useFocusReturn();
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const trackRef = useRef<MediaStreamTrack | null>(null);

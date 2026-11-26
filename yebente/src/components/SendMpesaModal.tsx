@@ -3,6 +3,7 @@ import { hasServerWallet, sendFromServerWallet, sendMobileDirect, directMobileSt
 import { biometricOn, approveWithBiometric } from '../services/biometric';
 import { HoldNotice } from './HoldNotice';
 import { useEscape } from '../hooks/useEscape';
+import { useFocusReturn } from '../hooks/useFocusReturn';
 import { SatsMotion, CountUp } from './SatsMotion';
 import { celebrate } from '../services/celebrate';
 import React, { useState, useEffect } from 'react';
@@ -47,6 +48,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   onSuccess,
 }) => {
   useEscape(onClose, isOpen);
+  useFocusReturn(isOpen);
   const [amountMode, setAmountMode] = useState<'fiat' | 'sats'>('fiat');
   const [phone, setPhone] = useState<string>('');
   const [fiatAmountStr, setFiatAmountStr] = useState<string>('');

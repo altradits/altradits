@@ -911,3 +911,26 @@ test("kTown starts with the QR screen hidden, so no empty code flashes", () => {
   assert.match(read("ktown/app.js"), /\$\("screen-qr"\)\.hidden = which !== "qr"/, "kTown: boot shows the right screen");
 });
 
+test("navigation parity: wallet guide opens on Ye₿ente, stale wallet links point to /yebente, both stacks serve contact/receipt, and TouchType links home", () => {
+  const guide = read("wallet-guide.html");
+  assert.match(guide, /<a class="launch" href="\/yebente">Open Ye₿ente<\/a>/, "wallet-guide.html: top CTA opens Ye₿ente");
+  assert.match(guide, /<h1>Open a free Bitcoin wallet/, "wallet-guide.html: hero is about the Ye₿ente wallet, not kTown");
+  for (const f of ["bitcoin.html", "journey.html"]) {
+    assert.doesNotMatch(read(f), /<a\b[^>]*href="\/"[^>]*>[^<]*(?:wallet|Ye₿ente)[^<]*<\/a>/i, `${f}: wallet links go to /yebente, never /`);
+  }
+  const ht = read(".htaccess");
+  assert.match(ht, /\bcontact\|receipt\b/, ".htaccess: /contact and /receipt have explicit rewrites like server.mjs");
+  assert.match(read("touchtype/index.html"), /<a href="\/"[^>]*>Altradits<\/a>/, "touchtype/index.html: players can return to Altradits");
+});
+
+test("closing a modal returns focus to its opener", () => {
+  const hook = read("yebente/src/hooks/useFocusReturn.ts");
+  assert.match(hook, /document\.activeElement/, "useFocusReturn: remembers the opener");
+  assert.match(hook, /prev\?\.focus\?\.\(\)/, "useFocusReturn: focuses it again on close");
+  for (const f of ["BuyBtcModal", "CardTopupModal", "PaymentNotice", "QrScanner", "ReceiveBtcModal", "SendBtcModal", "SendMpesaModal", "TransactionDetailModal", "WalletSettingsModal"])
+    assert.match(read(`yebente/src/components/${f}.tsx`), /useFocusReturn\(/, `${f}: focus returns on close`);
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  const hits = bundle && read(`yebente/app/assets/${bundle}`).match(/activeElement/g);
+  assert.ok(hits && hits.length >= 7, "yebente/app: the built bundle carries focus return (rebuild: cd yebente && npm run build)");
+});
+
