@@ -240,3 +240,14 @@ test("another wallet can't read someone's payout", async () => {
   const r = await send(a.token, { phone: "0712345678", kes: 100 });
   assert.equal((await call("GET", b.token, `wallet/mobile/${r.id}`)).status, 404);
 });
+
+test("refusals name the documented cause, never a guessed one", async () => {
+  const { refusalText } = await import("../lib/mpesa-b2c.js");
+  assert.match(refusalText(1), /out of float/, "float: says so");
+  assert.match(refusalText(2001), /Ye₿ente's M-Pesa link/, "link failure: our side, not the user's number");
+  for (const code of [2, 3, 4, 8, 2040, 9999]) {
+    const t = refusalText(code);
+    assert.match(t, /didn't complete/, `code ${code}: honest, no guessed blame`);
+    assert.match(t, /sats are back/, `code ${code}: the refund is promised`);
+  }
+});

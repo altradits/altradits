@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useEscape } from '../hooks/useEscape';
+import { useFocusReturn } from '../hooks/useFocusReturn';
 import { UserWallet, ExchangeRates, Transaction } from '../types';
 import { ArrowLeft, Smartphone, CheckCircle2, Loader2, AlertTriangle, Zap, Copy, Check, RefreshCw } from 'lucide-react';
 import {
@@ -31,6 +32,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
   onSuccess,
 }) => {
   useEscape(onClose, isOpen);
+  useFocusReturn(isOpen);
   const [amountFiat, setAmountFiat] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [step, setStep] = useState<'input' | 'processing' | 'awaiting_pin' | 'waiting_sats' | 'success' | 'error'>('input');
