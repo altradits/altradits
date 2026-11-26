@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserWallet } from '../types';
-import { Settings, WifiOff } from 'lucide-react';
+import { Settings, WifiOff, CircleHelp } from 'lucide-react';
 
 interface TopBarProps {
   wallet: UserWallet;
@@ -43,6 +43,16 @@ export const TopBar: React.FC<TopBarProps> = ({
               <span>Offline</span>
             </div>
           )}
+
+          {/* Help: the wallet guide, one tap from the main screen */}
+          <a
+            href="/wallet-guide"
+            className="w-9 h-9 rounded-xl bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] hover:border-[var(--yb-primary)] flex items-center justify-center text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)] active:scale-95"
+            title="Wallet guide"
+            aria-label="Help"
+          >
+            <CircleHelp className="w-4 h-4" />
+          </a>
 
           {/* Wallet State: Connected (Settings) or Connect */}
           {wallet.isConnected ? (
