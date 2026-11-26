@@ -169,7 +169,7 @@ const server = http.createServer(async (req, res) => {
     // Clean addresses: /library, /journey… for pages. Old *.html addresses
     // redirect to the clean ones; pages that sold tasks and kits (the agency
     // moved to altradits/chouMi) redirect to their nearest page here.
-    const GONE = { cv: "journey", products: "library", templates: "library", va: "", hunt: "", join: "", team: "", portal: "", proposal: "", collect: "", hourly: "", "bitcoin-setup": "bitcoin", lightning: "bitcoin", wallet: "yebente",
+    const GONE = { cv: "journey", products: "library", templates: "library", va: "", hunt: "", join: "", team: "", portal: "", proposal: "", collect: "", hourly: "", "bitcoin-setup": "bitcoin", lightning: "bitcoin", wallet: "",
       // Old order links (one per task), shared in posts and emails: home.
       ...Object.fromEntries(OLD_ORDERS.map((s) => [s, ""])) };
     const old = url.pathname.match(/^\/([a-z-]+)(?:\.html|\/)?$/);
