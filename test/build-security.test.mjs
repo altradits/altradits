@@ -560,6 +560,10 @@ test("guide links: home, wallet settings and kTown all point at guidance", () =>
   const appJs = read("ktown/app.js");
   assert.match(appJs, /helpLink: "Questions and answers"/, "kTown: the help link reads plain in English");
   assert.match(appJs, /helpLink: "Maswali na majibu"/, "kTown: the help link reads plain in Kiswahili");
+  assert.ok(read("ktown/pay.html").includes('<a href="/wallet-guide" data-i18n="learnLink">'), "pay page: newcomers reach the guide");
+  const payJs = read("ktown/pay.js");
+  assert.match(payJs, /learnLink: "Learn more"/, "pay page: the guide link reads plain in English");
+  assert.match(payJs, /learnLink: "Jifunze zaidi"/, "pay page: the guide link reads plain in Kiswahili");
 });
 
 test("settings fold into grouped details, urgent states stay open", () => {
@@ -851,6 +855,13 @@ test("masked entry: PINs, codes and words never show while typed, and hide with 
   assert.match(read("yebente/src/index.css"), /html\[data-private\] \.yb-sensitive/, "wallet: the veil style survives");
 });
 
+test("reduced motion stops the celebration animations", () => {
+  const css = read("yebente/src/index.css");
+  assert.match(css, /\.yb-chant, \.yb-slam, \.yb-slam-sub, \.yb-rise \{ animation: none !important; \}/, "wallet: celebrations rest under reduced motion");
+  const built = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.css$/.test(f));
+  assert.ok(built && read(`yebente/app/assets/${built}`).includes(".yb-chant,.yb-slam"), "yebente/app: the built styles carry the guard (rebuild: cd yebente && npm run build)");
+});
+
 test("a wrong address answers our 404 page, still a 404, with links out", () => {
   const nf = read("404.html");
   assert.match(nf, /<meta name="robots" content="noindex">/, "404.html: never indexed");
@@ -861,6 +872,19 @@ test("a wrong address answers our 404 page, still a 404, with links out", () => 
   assert.ok(srv.includes('404\\.html|index\\.html'), "server.mjs: /404.html serves directly");
   assert.ok(srv.includes('readFileSync(path.join(ROOT, "404.html"))'), "server.mjs: a page miss answers the 404 page");
   assert.match(read(".htaccess"), /^ErrorDocument 404 \/404\.html$/m, ".htaccess: Apache answers the same page");
+});
+
+test("brand clarity: home and guide say what the three names are", () => {
+  const home = read("index.html");
+  for (const [name, href] of [["Altradits", "/portfolio"], ["Ye₿ente", "/wallet-guide"], ["kTown", "/ktown"]]) {
+    assert.ok(home.includes(`<b>${name}</b>`), `home: names ${name}`);
+    assert.ok(home.includes(`href="${href}"`), `home: links ${name} onward`);
+  }
+  const guide = read("wallet-guide.html");
+  for (const [name, href] of [["Altradits", "/portfolio"], ["Ye₿ente", "/yebente#create"], ["kTown", "/ktown"]]) {
+    assert.ok(guide.includes(`<h3>${name}</h3>`), `guide: names ${name}`);
+    assert.ok(guide.includes(`href="${href}"`), `guide: links ${name} onward`);
+  }
 });
 
 test("top bar links the wallet guide from the main screen", () => {
