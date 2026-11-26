@@ -746,6 +746,9 @@ test("Opcode Circuit: same route on both stacks, install manifest, versioned off
   assert.ok(srv.includes('"/opcode-circuit/index.html"'), "server.mjs: /opcode-circuit serves the game");
   assert.match(srv, /opcode-circuit\\\/\(\?:[^)]*manifest\\.webmanifest[^)]*icons\\\/\[\\w\.-\]\+/, "server.mjs: the game path serves its manifest and icons");
   assert.ok(ht.includes("opcode-circuit/index.html"), ".htaccess: the same route on the Apache stack");
+  assert.ok(srv.includes("\\/opcode-circuit\\/(sandbox|achievements)"), "server.mjs: the game sub-pages serve the game");
+  assert.ok(ht.includes("opcode-circuit/(sandbox|achievements)/"), ".htaccess: the same sub-pages on the Apache stack");
+  assert.ok(read("opcode-circuit/game.js").includes('endsWith("/sandbox")'), "game.js: a fresh load opens the view the address names");
   const mani = JSON.parse(read("opcode-circuit/manifest.webmanifest"));
   assert.equal(mani.start_url, "/opcode-circuit", "the game installs at /opcode-circuit");
   assert.equal(mani.scope, "/opcode-circuit", "installed scope stays inside the game");

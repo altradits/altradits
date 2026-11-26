@@ -194,7 +194,8 @@ const server = http.createServer(async (req, res) => {
       : url.pathname.match(/^\/ktown\/terms\/?$/) ? "/ktown/terms.html"
       : url.pathname.match(/^\/k\/[A-Za-z0-9_-]{1,80}\/?$/) ? "/ktown/pay.html" : null;
     // Opcode Circuit: the developer game at /opcode-circuit.
-    const oc = url.pathname.match(/^\/opcode-circuit(?:\/(?:index\.html)?)?$/) ? "/opcode-circuit/index.html" : null;
+    const oc = url.pathname.match(/^\/opcode-circuit(?:\/(?:index\.html)?)?$/) ? "/opcode-circuit/index.html"
+      : url.pathname.match(/^\/opcode-circuit\/(sandbox|achievements)\/?$/) ? "/opcode-circuit/index.html" : null;
     // TouchType: the typing game at /touchtype, built from the touchtype
     // repo (plain JS, fully offline) into touchtype/.
     const tt = url.pathname.match(/^\/touchtype(?:\/(?:index\.html)?)?$/) ? "/touchtype/index.html" : null;
