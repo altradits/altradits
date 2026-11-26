@@ -135,6 +135,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
             {externalEnabled && (
               <div><button type="button" className="text-[11px] text-[var(--yb-on-surface-variant)] hover:underline" onClick={onUseExternal}>Use my own Lightning wallet instead</button></div>
             )}
+            <p className="text-xs text-[var(--yb-on-surface-variant)]">New to Bitcoin? <a className={link} href="/wallet-guide">See the 1-minute guide</a></p>
           </div>
         </>
       )}

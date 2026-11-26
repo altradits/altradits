@@ -22,7 +22,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
 
   const validTransactions = transactions.filter((tx) => {
     if (!tx || typeof tx !== 'object') return false;
-    if (tx.status !== 'completed') return false;
+    if (tx.status !== 'completed' && tx.status !== 'pending' && tx.status !== 'failed') return false;
     if (!tx.referenceNumber || typeof tx.referenceNumber !== 'string' || !tx.referenceNumber.trim()) return false;
     const fromAmt = Number(tx.fromAmount || 0);
     const toAmt = Number(tx.toAmount || 0);
@@ -106,6 +106,11 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                         <span className="text-sm font-semibold text-[var(--yb-on-surface)] group-hover:text-[var(--yb-secondary)]">
                           {TYPE_TITLES[tx.type] || tx.title.replace(/\s*\(\+?\d[\d ]*\)$/, '')}
                         </span>
+                        {tx.status !== 'completed' && (
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${tx.status === 'pending' ? 'bg-amber-950/40 text-amber-300 border-amber-500/30' : 'bg-red-950/40 text-red-300 border-red-500/40'}`}>
+                            {tx.status === 'pending' ? 'Pending' : 'Failed'}
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-[var(--yb-on-surface-variant)] font-mono mt-0.5">
                         {formatDate(tx.timestamp)}

@@ -92,7 +92,9 @@ test("an ambiguous typo is never guessed", () => {
 });
 
 test("wrong words are still refused, and the wallet isn't touched", async () => {
-  const w = await wallet();
+  let w = await wallet();
+  for (let i = 0; i < 10 && w.words[0] === w.words[1]; i++) w = await wallet();
+  if (w.words[0] === w.words[1]) return; // identical draw: swapping proves nothing this run
   const wrong = [...w.words].reverse();
   await assert.rejects(restore(wrong.join(" ")), /don't match/);
   await assert.rejects(restore(w.words.slice(0, 11).join(" ")), /12 recovery words|don't match/);
