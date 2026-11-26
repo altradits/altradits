@@ -95,13 +95,16 @@ export async function api<T>(method: 'GET' | 'POST', path: string, body?: unknow
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new Error(httpTrouble(0, method === 'POST')); // offline, DNS, a dropped connection
+    const err = new Error(httpTrouble(0, method === 'POST')) as Error & { status?: number }; // offline, DNS, a dropped connection
+    err.status = 0;
+    throw err;
   }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && session()) lockLocally(); // the session ended: lock, never forget the wallet
   if (!res.ok || !data.success) {
-    const err = new Error(serverError(res.status, data, method === 'POST')) as Error & { typoHint?: string };
+    const err = new Error(serverError(res.status, data, method === 'POST')) as Error & { typoHint?: string; status?: number };
     if (typeof data.typoHint === 'string') err.typoHint = data.typoHint; // a misspelt domain: offer "use anyway"
+    err.status = res.status;
     throw err;
   }
   return data as T;

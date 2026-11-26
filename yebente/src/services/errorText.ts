@@ -34,6 +34,14 @@ export function serverError(status: number, data: unknown, writing: boolean): st
   return httpTrouble(status >= 200 && status < 300 ? 500 : status, writing);
 }
 
+// A send whose outcome is unknown (the request may have reached the server):
+// never invite a blind retry, which could pay twice. Plain refusals (4xx
+// with the server's words) refused before anything moved, so retry stays.
+export function sendUncertain(err: unknown): boolean {
+  const s = (err as { status?: unknown } | null)?.status;
+  return s === undefined || s === 0 || (typeof s === 'number' && s >= 500);
+}
+
 // A caught error, in words people can act on. Messages written by Ye₿ente
 // (the server's, or the app's own) pass through; the browser's raw network,
 // timeout and parsing errors are translated.
