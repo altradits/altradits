@@ -564,6 +564,8 @@ test("guide links: home, wallet settings and kTown all point at guidance", () =>
   const payJs = read("ktown/pay.js");
   assert.match(payJs, /learnLink: "Learn more"/, "pay page: the guide link reads plain in English");
   assert.match(payJs, /learnLink: "Jifunze zaidi"/, "pay page: the guide link reads plain in Kiswahili");
+  const gate = read("yebente/src/components/WalletGate.tsx");
+  assert.equal((gate.match(/See the 1-minute guide<\/a>/g) || []).length, 2, "gate: start and create screens both link the guide");
 });
 
 test("settings fold into grouped details, urgent states stay open", () => {
