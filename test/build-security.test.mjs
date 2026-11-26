@@ -900,3 +900,15 @@ test("kTown starts with the QR screen hidden, so no empty code flashes", () => {
   assert.match(read("ktown/app.js"), /\$\("screen-qr"\)\.hidden = which !== "qr"/, "kTown: boot shows the right screen");
 });
 
+test("navigation parity: wallet guide opens on Ye₿ente, stale wallet links point to /yebente, both stacks serve contact/receipt, and TouchType links home", () => {
+  const guide = read("wallet-guide.html");
+  assert.match(guide, /<a class="launch" href="\/yebente">Open Ye₿ente<\/a>/, "wallet-guide.html: top CTA opens Ye₿ente");
+  assert.match(guide, /<h1>Open a free Bitcoin wallet/, "wallet-guide.html: hero is about the Ye₿ente wallet, not kTown");
+  for (const f of ["bitcoin.html", "journey.html"]) {
+    assert.doesNotMatch(read(f), /<a\b[^>]*href="\/"[^>]*>[^<]*(?:wallet|Ye₿ente)[^<]*<\/a>/i, `${f}: wallet links go to /yebente, never /`);
+  }
+  const ht = read(".htaccess");
+  assert.match(ht, /\bcontact\|receipt\b/, ".htaccess: /contact and /receipt have explicit rewrites like server.mjs");
+  assert.match(read("touchtype/index.html"), /<a href="\/"[^>]*>Altradits<\/a>/, "touchtype/index.html: players can return to Altradits");
+});
+
