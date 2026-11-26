@@ -560,6 +560,10 @@ test("guide links: home, wallet settings and kTown all point at guidance", () =>
   const appJs = read("ktown/app.js");
   assert.match(appJs, /helpLink: "Questions and answers"/, "kTown: the help link reads plain in English");
   assert.match(appJs, /helpLink: "Maswali na majibu"/, "kTown: the help link reads plain in Kiswahili");
+  assert.ok(read("ktown/pay.html").includes('<a href="/wallet-guide" data-i18n="learnLink">'), "pay page: newcomers reach the guide");
+  const payJs = read("ktown/pay.js");
+  assert.match(payJs, /learnLink: "Learn more"/, "pay page: the guide link reads plain in English");
+  assert.match(payJs, /learnLink: "Jifunze zaidi"/, "pay page: the guide link reads plain in Kiswahili");
 });
 
 test("settings fold into grouped details, urgent states stay open", () => {
