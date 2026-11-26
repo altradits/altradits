@@ -863,3 +863,11 @@ test("a wrong address answers our 404 page, still a 404, with links out", () => 
   assert.match(read(".htaccess"), /^ErrorDocument 404 \/404\.html$/m, ".htaccess: Apache answers the same page");
 });
 
+test("top bar links the wallet guide from the main screen", () => {
+  const top = read("yebente/src/components/TopBar.tsx");
+  assert.match(top, /<a[^>]*href="\/wallet-guide"/, "top bar: the help icon opens the guide");
+  assert.match(top, /aria-label="Help"/, "top bar: the icon is labelled for screen readers");
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("Help"), "yebente/app: the built bundle carries the help icon (rebuild: cd yebente && npm run build)");
+});
+
