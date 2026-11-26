@@ -863,3 +863,8 @@ test("a wrong address answers our 404 page, still a 404, with links out", () => 
   assert.match(read(".htaccess"), /^ErrorDocument 404 \/404\.html$/m, ".htaccess: Apache answers the same page");
 });
 
+test("kTown starts with the QR screen hidden, so no empty code flashes", () => {
+  assert.ok(read("ktown/index.html").includes('<section id="screen-qr" aria-labelledby="qr-shop" hidden>'), "kTown: the QR screen starts hidden");
+  assert.match(read("ktown/app.js"), /\$\("screen-qr"\)\.hidden = which !== "qr"/, "kTown: boot shows the right screen");
+});
+
