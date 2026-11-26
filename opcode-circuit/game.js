@@ -74,7 +74,8 @@ function achievementsView() {
   renderAchievements(app, state);
 }
 function route() {
-  const h = location.hash || "#/";
+  const here = location.pathname.replace(/\/+$/, "");
+  const h = location.hash || (here.endsWith("/sandbox") ? "#/sandbox" : here.endsWith("/achievements") ? "#/achievements" : "#/");
   window.scrollTo(0, 0);
   let m = h.match(/^#\/chapter\/([\w-]+)/);
   if (m) { chapterView(m[1]); return; }

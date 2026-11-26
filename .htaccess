@@ -47,6 +47,7 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
   RewriteRule ^touchtype/?$ touchtype/index.html [L]
   # Opcode Circuit: the developer game at /opcode-circuit.
   RewriteRule ^opcode-circuit/?$ opcode-circuit/index.html [L]
+  RewriteRule ^opcode-circuit/(sandbox|achievements)/?$ opcode-circuit/index.html [L]
 </IfModule>
 
 # Pages are checked on every visit, so an update shows at once (an unchanged
