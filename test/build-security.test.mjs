@@ -762,3 +762,19 @@ test("a lockdown freezes Developer top-ups but never invoice creation (receiving
   assert.match(dev, /lockdown_freeze/, "lib/devapi.js: the freeze still has its stable error code");
 });
 
+test("masked entry: PINs, codes and words never show while typed, and hide with the page", () => {
+  const gate = read("yebente/src/components/WalletGate.tsx");
+  assert.match(gate, /<input type="password"[^>]*autoComplete="one-time-code"/, "WalletGate: the login code masks while typed, SMS fill still on");
+  assert.match(gate, /<input type="password"[^>]*value=\{words\}/, "WalletGate: recovery words mask while typed");
+  assert.doesNotMatch(gate, /<textarea[^>]*value=\{words\}/, "WalletGate: words are never typed into a visible box");
+  for (const f of ["yebente/src/components/SendBtcModal.tsx", "yebente/src/components/SendMpesaModal.tsx", "yebente/src/components/PhonesAndSecurity.tsx"])
+    assert.match(read(f), /type="password"/, `${f}: PIN boxes mask`);
+  assert.equal((read("ktown/index.html").match(/type="password"/g) || []).length, 3, "kTown: all three PIN boxes mask");
+  assert.match(read("admin.html"), /id="tok" type="password"/, "admin: the token box masks");
+  const main = read("yebente/src/main.tsx");
+  assert.match(main, /dataset\.private = '1'/, "wallet: secrets blur when the page hides");
+  assert.match(main, /delete .*dataset\.private/, "wallet: secrets return when the page shows");
+  assert.match(main, /visibilitychange/, "wallet: hiding the page veils secrets");
+  assert.match(read("yebente/src/index.css"), /html\[data-private\] \.yb-sensitive/, "wallet: the veil style survives");
+});
+

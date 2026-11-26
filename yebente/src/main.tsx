@@ -38,3 +38,11 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 );
+
+// Screen recordings and app-switcher snapshots must not catch secrets: while
+// hidden, blur every .yb-sensitive box (PINs, codes, words). Shown again on return.
+const veil = () => { document.documentElement.dataset.private = '1'; };
+const unveil = () => { delete document.documentElement.dataset.private; };
+document.addEventListener('visibilitychange', () => { if (document.hidden) veil(); else unveil(); });
+window.addEventListener('pagehide', veil);
+window.addEventListener('pageshow', unveil);
