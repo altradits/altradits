@@ -10,6 +10,8 @@ PassengerAppLogFile "/home/altradit/logs/passenger.log"
 # otherwise delete this block and every request would 404 at Apache.)
 # On production Apache serves existing .html files directly, so clean page
 # URLs need explicit aliases instead of relying on the local Node router.
+# A wrong address answers our 404 page (still a 404), never Apache's default.
+ErrorDocument 404 /404.html
 <IfModule mod_rewrite.c>
   RewriteEngine On
 

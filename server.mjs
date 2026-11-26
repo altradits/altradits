@@ -36,7 +36,7 @@ if (!SERVER) {
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf", ".webmanifest": "application/manifest+json", ".mp3": "audio/mpeg", ".pdf": "application/pdf", ".wasm": "application/wasm" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|friends\.html|plan\.html|research\.html|portfolio\.html|donate\.html|bitcoin\.html|wallet\.html|wallet-guide\.html|kazi\.html|njia\.html|bitcoin-core\.html|contact\.html|receipt\.html|developer\.html|developer-reference\.html|developer-dashboard\.html|trivia\.html|robots\.txt|sitemap\.xml|llms\.txt|yebente\/app\/(?:index\.html|manifest\.webmanifest|sw\.js|assets\/[\w.-]+|fonts\/[\w.-]+|icons\/[\w.-]+)|address-check\/(?:index\.html|sw\.js)|touchtype\/(?:index\.html|js\/[\w.-]+\.js|css\/[\w.-]+\.css|sound\/[\w.-]+\.mp3)|opcode-circuit\/(?:index\.html|manifest\.webmanifest|sw\.js|style\.css|game\.js|engine\/[\w.-]+\.js|sim\/[\w.-]+\.js|content\/[\w.-]+\.js|icons\/[\w.-]+\.svg)|sats-safari\/(?:index\.html|i18n\/[\w.-]+\.json|[\w.-]+\.(?:js|css))|ktown\/(?:index\.html|pay\.html|terms\.html|manifest\.webmanifest|icons\/[\w.-]+\.(?:png|svg)|[\w.-]+\.(?:js|css))|assets\/[\w.-]+|assets\/marketing\/(?:(?:\d{4}-\d{2}|templates)\/)?[\w-][\w.-]*|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(404\.html|index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|friends\.html|plan\.html|research\.html|portfolio\.html|donate\.html|bitcoin\.html|wallet\.html|wallet-guide\.html|kazi\.html|njia\.html|bitcoin-core\.html|contact\.html|receipt\.html|developer\.html|developer-reference\.html|developer-dashboard\.html|trivia\.html|robots\.txt|sitemap\.xml|llms\.txt|yebente\/app\/(?:index\.html|manifest\.webmanifest|sw\.js|assets\/[\w.-]+|fonts\/[\w.-]+|icons\/[\w.-]+)|address-check\/(?:index\.html|sw\.js)|touchtype\/(?:index\.html|js\/[\w.-]+\.js|css\/[\w.-]+\.css|sound\/[\w.-]+\.mp3)|opcode-circuit\/(?:index\.html|manifest\.webmanifest|sw\.js|style\.css|game\.js|engine\/[\w.-]+\.js|sim\/[\w.-]+\.js|content\/[\w.-]+\.js|icons\/[\w.-]+\.svg)|sats-safari\/(?:index\.html|i18n\/[\w.-]+\.json|[\w.-]+\.(?:js|css))|ktown\/(?:index\.html|pay\.html|terms\.html|manifest\.webmanifest|icons\/[\w.-]+\.(?:png|svg)|[\w.-]+\.(?:js|css))|assets\/[\w.-]+|assets\/marketing\/(?:(?:\d{4}-\d{2}|templates)\/)?[\w-][\w.-]*|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
 // HSTS: browsers that have visited once only ever use HTTPS here (no includeSubDomains,
 // so other subdomains such as mail are unaffected). COOP: no other site keeps a handle
 // on our windows.
@@ -210,7 +210,18 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === "/sats-safari") { res.writeHead(301, { Location: `/sats-safari/${url.search}` }).end(); return; }
     const ss = url.pathname.match(/^\/sats-safari\/(?:index\.html)?$/) ? "/sats-safari/index.html" : null;
     const rel = kt ? kt : dev ? dev : ss ? ss : ac ? ac : tt ? tt : oc ? oc : yb ? (yb.startsWith("/") ? yb : `/yebente/app/${yb}`) : page ? `/${page[1]}.html` : url.pathname === "/" ? "/index.html" : url.pathname;
-    if (!PUBLIC.test(rel)) { res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found"); return; }
+    // Unknown addresses: a page miss answers our 404 page (still a 404); a
+    // missing file answers plain text, as before.
+    if (!PUBLIC.test(rel)) {
+      const last = url.pathname.split("/").pop() || "";
+      if (!last.includes(".") || last.endsWith(".html")) {
+        res.writeHead(404, { ...SECURITY, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" });
+        res.end(req.method === "HEAD" ? undefined : fs.readFileSync(path.join(ROOT, "404.html")));
+        return;
+      }
+      res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found");
+      return;
+    }
     const file = path.join(ROOT, rel);
     const headers = { ...SECURITY, "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" };
     if (rel === "/admin.html") Object.assign(headers, { "X-Robots-Tag": "noindex", "Content-Security-Policy": cspFor(file) });

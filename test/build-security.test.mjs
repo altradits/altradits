@@ -851,3 +851,15 @@ test("masked entry: PINs, codes and words never show while typed, and hide with 
   assert.match(read("yebente/src/index.css"), /html\[data-private\] \.yb-sensitive/, "wallet: the veil style survives");
 });
 
+test("a wrong address answers our 404 page, still a 404, with links out", () => {
+  const nf = read("404.html");
+  assert.match(nf, /<meta name="robots" content="noindex">/, "404.html: never indexed");
+  for (const href of ["/", "/wallet-guide", "/ktown", "/yebente"])
+    assert.ok(nf.includes(`href="${href}"`), `404.html: links ${href}`);
+  assert.doesNotMatch(nf, /—/, "404.html: no em-dashes");
+  const srv = read("server.mjs");
+  assert.ok(srv.includes('404\\.html|index\\.html'), "server.mjs: /404.html serves directly");
+  assert.ok(srv.includes('readFileSync(path.join(ROOT, "404.html"))'), "server.mjs: a page miss answers the 404 page");
+  assert.match(read(".htaccess"), /^ErrorDocument 404 \/404\.html$/m, ".htaccess: Apache answers the same page");
+});
+
