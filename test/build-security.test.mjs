@@ -867,3 +867,16 @@ test("a wrong address answers our 404 page, still a 404, with links out", () => 
   assert.match(read(".htaccess"), /^ErrorDocument 404 \/404\.html$/m, ".htaccess: Apache answers the same page");
 });
 
+test("brand clarity: home and guide say what the three names are", () => {
+  const home = read("index.html");
+  for (const [name, href] of [["Altradits", "/portfolio"], ["Ye₿ente", "/wallet-guide"], ["kTown", "/ktown"]]) {
+    assert.ok(home.includes(`<b>${name}</b>`), `home: names ${name}`);
+    assert.ok(home.includes(`href="${href}"`), `home: links ${name} onward`);
+  }
+  const guide = read("wallet-guide.html");
+  for (const [name, href] of [["Altradits", "/portfolio"], ["Ye₿ente", "/yebente#create"], ["kTown", "/ktown"]]) {
+    assert.ok(guide.includes(`<h3>${name}</h3>`), `guide: names ${name}`);
+    assert.ok(guide.includes(`href="${href}"`), `guide: links ${name} onward`);
+  }
+});
+
