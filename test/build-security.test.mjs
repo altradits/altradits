@@ -895,3 +895,8 @@ test("top bar links the wallet guide from the main screen", () => {
   assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("Help"), "yebente/app: the built bundle carries the help icon (rebuild: cd yebente && npm run build)");
 });
 
+test("kTown starts with the QR screen hidden, so no empty code flashes", () => {
+  assert.ok(read("ktown/index.html").includes('<section id="screen-qr" aria-labelledby="qr-shop" hidden>'), "kTown: the QR screen starts hidden");
+  assert.match(read("ktown/app.js"), /\$\("screen-qr"\)\.hidden = which !== "qr"/, "kTown: boot shows the right screen");
+});
+
