@@ -851,6 +851,13 @@ test("masked entry: PINs, codes and words never show while typed, and hide with 
   assert.match(read("yebente/src/index.css"), /html\[data-private\] \.yb-sensitive/, "wallet: the veil style survives");
 });
 
+test("reduced motion stops the celebration animations", () => {
+  const css = read("yebente/src/index.css");
+  assert.match(css, /\.yb-chant, \.yb-slam, \.yb-slam-sub, \.yb-rise \{ animation: none !important; \}/, "wallet: celebrations rest under reduced motion");
+  const built = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.css$/.test(f));
+  assert.ok(built && read(`yebente/app/assets/${built}`).includes(".yb-chant,.yb-slam"), "yebente/app: the built styles carry the guard (rebuild: cd yebente && npm run build)");
+});
+
 test("a wrong address answers our 404 page, still a 404, with links out", () => {
   const nf = read("404.html");
   assert.match(nf, /<meta name="robots" content="noindex">/, "404.html: never indexed");

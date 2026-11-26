@@ -126,6 +126,7 @@ input:focus, textarea:focus { border-color: var(--yb-primary) !important; }
 @media (prefers-reduced-motion: reduce) {
   .yb-motion *, .yb-motion { animation: none !important; }
   .yb-coin, .yb-ripple { display: none; }
+  .yb-chant, .yb-slam, .yb-slam-sub, .yb-rise { animation: none !important; }
 }
 
 /* Privacy: PINs and the recovery phrase blur whenever the app is not in front
