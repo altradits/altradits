@@ -910,5 +910,4 @@ test("closing a modal returns focus to its opener", () => {
   const hits = bundle && read(`yebente/app/assets/${bundle}`).match(/activeElement/g);
   assert.ok(hits && hits.length >= 7, "yebente/app: the built bundle carries focus return (rebuild: cd yebente && npm run build)");
 });
-});
 
