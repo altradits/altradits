@@ -157,7 +157,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
               {note && <p className="text-sm text-emerald-300">{note}</p>}
               <label className="block">
                 <span className="block text-xs text-[var(--yb-on-surface-variant)] mb-1.5">Code from the email</span>
-                <input inputMode="numeric" className={`${field} font-mono tracking-[0.3em] text-center`} value={code} autoComplete="one-time-code" onChange={(e) => setCode(digits(e.target.value, 8))} />
+                <input type="password" inputMode="numeric" className={`yb-sensitive ${field} font-mono tracking-[0.3em] text-center`} value={code} autoComplete="one-time-code" autoCorrect="off" autoCapitalize="none" spellCheck={false} onChange={(e) => setCode(digits(e.target.value, 8))} />
               </label>
               <PinInput value={pin} onChange={setPin} label="Your PIN" name="yb-login-pin" />
               <button type="button" className={primary} disabled={busy || code.length !== 8 || pin.length !== 6}
@@ -231,7 +231,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
           </div>
           <div className="space-y-2 pt-2 border-t border-[var(--yb-outline-variant)]/60">
             <span className="block text-xs font-semibold text-[var(--yb-secondary)] pt-2">With your 12 recovery words</span>
-            <textarea rows={3} className={`yb-sensitive ${field} font-mono resize-none`} value={words} autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck={false} onChange={(e) => setWords(e.target.value)} />
+            <input type="password" className={`yb-sensitive ${field} font-mono`} value={words} autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck={false} onChange={(e) => setWords(e.target.value)} />
             <p className="text-[11px] text-[var(--yb-on-surface-variant)]">In order: 1 to 6 down the left of your card, then 7 to 12 down the right. Commas, numbers and capitals are fine.</p>
             <PinInput value={pin} onChange={setPin} label="New PIN" name="yb-words-pin" />
             <PinInput value={pin2} onChange={setPin2} label="The same new PIN again" name="yb-words-pin2" />
