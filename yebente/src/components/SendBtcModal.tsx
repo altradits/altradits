@@ -16,7 +16,7 @@ import { HoldNotice } from './HoldNotice';
 import { SatsMotion, CountUp } from './SatsMotion';
 import { celebrate } from '../services/celebrate';
 import { biometricOn, approveWithBiometric } from '../services/biometric';
-import { readableError } from '../services/errorText';
+import { readableError, sendUncertain } from '../services/errorText';
 
 // A Ye₿ente wallet handle (another Altradits wallet): sent through the ledger, free.
 const isYebenteHandle = (s: string) => /^[a-z0-9][a-z0-9._-]{1,18}[a-z0-9]$/i.test(s.trim());
@@ -59,6 +59,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
   // The node took the payment but hasn't confirmed it: never shown as sent.
   const [pending, setPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [fatal, setFatal] = useState(false); // outcome unknown: Done, never a blind retry
   const [resolvedProvider, setResolvedProvider] = useState<string>('');
   const [recipientType, setRecipientType] = useState<'unknown' | 'lightning_address' | 'lightning_invoice' | 'invalid_onchain'>('unknown');
   const [isResolving, setIsResolving] = useState(false);
@@ -177,6 +178,11 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
   const handleBack = () => {
     if (step === 'processing') return;
     if (step === 'error') {
+      if (fatal) {
+        setFatal(false);
+        onClose();
+        return;
+      }
       setStep('input');
       setErrorMessage('');
     } else {
@@ -194,7 +200,10 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
       setTxReference(res.ref);
       completeTransaction(res.ref, to, res.status === 'pending');
     } catch (err: unknown) {
-      setErrorMessage(readableError(err, 'Error dispatching payment', true));
+      const unknown = sendUncertain(err);
+      const m = readableError(err, 'Error dispatching payment', true);
+      setErrorMessage(unknown && !m.includes('History') ? `${m} Check History before trying again: it may have gone through.` : m);
+      setFatal(unknown);
       setStep('error');
     } finally {
       setPin('');
@@ -648,12 +657,17 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
+                    if (fatal) {
+                      setFatal(false);
+                      onClose();
+                      return;
+                    }
                     setStep('input');
                     setErrorMessage('');
                   }}
                   className="w-full h-11 rounded-2xl bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] hover:border-[var(--yb-primary)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center"
                 >
-                  Retry
+                  {fatal ? 'Done' : 'Retry'}
                 </button>
               </div>
             </div>
