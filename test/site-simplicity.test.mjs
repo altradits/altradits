@@ -48,3 +48,15 @@ test("sitemap ranks kTown and home first, and demotes switched-off features", ()
     assert.match(sm, new RegExp(`<loc>https://altradits\\.com/${off}</loc><lastmod>[^<]+</lastmod><priority>0\\.2</priority>`), `sitemap: switched-off /${off} stays at 0.2`);
   }
 });
+
+test("portfolio leads with the three core products and folds experiments into details", () => {
+  const html = read("portfolio.html");
+  const split = html.indexOf('<details class="more-apps">');
+  assert.ok(split > 0, "portfolio.html: secondary apps fold inside details");
+  const top = html.slice(0, split);
+  for (const href of ["/ktown", "/yebente", "/developer"]) {
+    assert.ok(top.includes(`href="${href}"`), `portfolio.html: core grid features ${href}`);
+  }
+  const topCards = [...top.matchAll(/<a class="card"/g)].length;
+  assert.equal(topCards, 3, "portfolio.html: top grid stays focused at the 3 core products");
+});
