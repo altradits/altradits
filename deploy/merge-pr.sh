@@ -1,10 +1,10 @@
 #!/bin/sh
 # Merge a pull request the way Bitcoin Core maintainers do with
 # contrib/devtools/github-merge.py: fetch exactly the reviewed commit, refuse
-# if anything changed, the checks didn't pass, or a commit names an AI
-# co-author, make a signed merge commit with a one-line message (signed when
-# this machine has the key), run the tests on the merged result, and only
-# push when told to.
+# if anything changed, the checks didn't pass, a commit names an AI
+# co-author, or this machine can't sign, make a signed merge commit with a
+# one-line message, run the tests and the signature check on the merged
+# result, and only push when told to.
 #
 #   sh deploy/merge-pr.sh 177          prepare and check the merge locally
 #   sh deploy/merge-pr.sh 177 --push   ... and push it (this deploys)
@@ -16,6 +16,7 @@ HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 die() { echo "merge-pr: $*" >&2; exit 1; }
 
 [ -z "$(git status --porcelain)" ] || die "the working tree has changes; commit or stash them first."
+[ -d node_modules ] || die "node_modules is missing; run npm ci first (the merge runs the tests)."
 git checkout -q main
 git fetch -q origin main
 git merge -q --ff-only origin/main || die "local main has diverged from origin/main."
@@ -39,22 +40,24 @@ echo "== Merging #$PR: $TITLE"
 git log --oneline "main..$HEAD"
 git diff --stat "main...$HEAD" | tail -1
 
-# Signed when this machine has the signing key; unsigned otherwise (allowed for now).
-# Signing runs through deploy/ssh-sign.sh when present: plain ssh-keygen needs
-# a login user, which sandboxed shells don't have, and an unsigned merge fails
-# the signed-commits check on main.
+# Signed merges only: unsigned code fails the signed-commits check on main,
+# so refusing here saves a wasted merge. Signing runs through
+# deploy/ssh-sign.sh when present: plain ssh-keygen needs a login user,
+# which sandboxed shells don't have.
 KEY=$(git config --get user.signingkey || true)
+[ -n "$KEY" ] && [ -f "$KEY" ] || die "no signing key found (set user.signingkey); merges to main must be signed."
 SIGNC=""
-if [ -n "$KEY" ] && [ -f "$KEY" ]; then SIGN="-S"; else SIGN="--no-gpg-sign"; fi
-if [ "$SIGN" = "-S" ] && command -v node >/dev/null 2>&1 && [ -x "$HERE/ssh-sign.sh" ]; then SIGNC="-c gpg.ssh.program=$HERE/ssh-sign.sh"; fi
+if command -v node >/dev/null 2>&1 && [ -x "$HERE/ssh-sign.sh" ]; then SIGNC="-c gpg.ssh.program=$HERE/ssh-sign.sh"; fi
 # shellcheck disable=SC2086
-git $ID $SIGNC merge -q --no-ff $SIGN "$HEAD" -m "Merge #$PR: $TITLE" || { git merge --abort 2>/dev/null; die "the merge didn't apply cleanly; rebase the PR and review again."; }
+git $ID $SIGNC merge -q --no-ff -S "$HEAD" -m "Merge #$PR: $TITLE" || { git merge --abort 2>/dev/null; die "the merge didn't apply cleanly; rebase the PR and review again."; }
 echo "== Tests on the merged result"
 if ! npm test --silent >/tmp/merge-pr-$PR.log 2>&1; then
   git reset -q --merge ORIG_HEAD
   die "tests failed on the merged result (log: /tmp/merge-pr-$PR.log). Nothing was merged."
 fi
 grep -E "^ℹ (pass|fail)" "/tmp/merge-pr-$PR.log" || true
+echo "== Verifying signatures on the merged result"
+sh "$HERE/verify-commits.sh" HEAD || die "the merged result fails the signature check. Nothing was pushed."
 
 if [ "$PUSH" = "--push" ]; then
   git push origin main

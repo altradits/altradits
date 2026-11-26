@@ -912,3 +912,12 @@ test("navigation parity: wallet guide opens on Ye₿ente, stale wallet links poi
   assert.match(read("touchtype/index.html"), /<a href="\/"[^>]*>Altradits<\/a>/, "touchtype/index.html: players can return to Altradits");
 });
 
+test("merges stay signed, tested and verified; kTown ranks with the front pages", () => {
+  const sh = read("deploy/merge-pr.sh");
+  assert.ok(sh.includes('[ -d node_modules ]'), "merge-pr.sh: refuses without dependencies installed");
+  assert.doesNotMatch(sh, /--no-gpg-sign/, "merge-pr.sh: no unsigned fallback");
+  assert.match(sh, /merge -q --no-ff -S/, "merge-pr.sh: the merge itself is signed");
+  assert.ok(sh.includes('verify-commits.sh" HEAD'), "merge-pr.sh: the merged result passes the signature check");
+  assert.match(read("sitemap.xml"), /ktown<\/loc><lastmod>[^<]*<\/lastmod><priority>1\.0<\/priority>/, "sitemap.xml: kTown ranks with the front pages");
+});
+
