@@ -701,6 +701,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                         type="button"
                         onClick={handleCopyRef}
                         className="p-1 text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
+                        aria-label="Copy code"
                         title="Copy code"
                       >
                         {copiedRef ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}

@@ -102,6 +102,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
               <button
                 type="button"
                 onClick={handleClear}
+                aria-label="Clear phone number"
                 title="Clear phone number"
                 className="w-5 h-5 rounded-full bg-[var(--yb-surface-container-high)] text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)] hover:bg-[#3D2B50] flex items-center justify-center"
               >
