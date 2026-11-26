@@ -564,6 +564,8 @@ test("guide links: home, wallet settings and kTown all point at guidance", () =>
   const payJs = read("ktown/pay.js");
   assert.match(payJs, /learnLink: "Learn more"/, "pay page: the guide link reads plain in English");
   assert.match(payJs, /learnLink: "Jifunze zaidi"/, "pay page: the guide link reads plain in Kiswahili");
+  const gate = read("yebente/src/components/WalletGate.tsx");
+  assert.equal((gate.match(/See the 1-minute guide<\/a>/g) || []).length, 2, "gate: start and create screens both link the guide");
 });
 
 test("settings fold into grouped details, urgent states stay open", () => {
@@ -862,6 +864,17 @@ test("reduced motion stops the celebration animations", () => {
   assert.ok(built && read(`yebente/app/assets/${built}`).includes(".yb-chant,.yb-slam"), "yebente/app: the built styles carry the guard (rebuild: cd yebente && npm run build)");
 });
 
+test("M-Pesa failures say what happened and never invite a double spend", () => {
+  const modal = read("yebente/src/components/SendMpesaModal.tsx");
+  assert.match(modal, /statusFails >= 3/, "direct: repeated check failures stop the wait");
+  assert.match(modal, /pollRes\.terminal/, "rail: a refused payout shows as failed, not pending");
+  assert.match(modal, /fatal \? 'Done' : 'Try Again'/, "moved money never offers a blind retry");
+  assert.match(modal, /may have gone through/, "unknown outcomes point at History");
+  assert.match(read("yebente/src/services/payoutRails.ts"), /terminal: true/, "rail: failures are marked terminal");
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("may have gone through"), "yebente/app: the built bundle carries the failure words (rebuild: cd yebente && npm run build)");
+});
+
 test("a wrong address answers our 404 page, still a 404, with links out", () => {
   const nf = read("404.html");
   assert.match(nf, /<meta name="robots" content="noindex">/, "404.html: never indexed");
@@ -910,5 +923,31 @@ test("navigation parity: wallet guide opens on Ye₿ente, stale wallet links poi
   const ht = read(".htaccess");
   assert.match(ht, /\bcontact\|receipt\b/, ".htaccess: /contact and /receipt have explicit rewrites like server.mjs");
   assert.match(read("touchtype/index.html"), /<a href="\/"[^>]*>Altradits<\/a>/, "touchtype/index.html: players can return to Altradits");
+});
+
+test("closing a modal returns focus to its opener", () => {
+  const hook = read("yebente/src/hooks/useFocusReturn.ts");
+  assert.match(hook, /document\.activeElement/, "useFocusReturn: remembers the opener");
+  assert.match(hook, /prev\?\.focus\?\.\(\)/, "useFocusReturn: focuses it again on close");
+  for (const f of ["BuyBtcModal", "CardTopupModal", "PaymentNotice", "QrScanner", "ReceiveBtcModal", "SendBtcModal", "SendMpesaModal", "TransactionDetailModal", "WalletSettingsModal"])
+    assert.match(read(`yebente/src/components/${f}.tsx`), /useFocusReturn\(/, `${f}: focus returns on close`);
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  const hits = bundle && read(`yebente/app/assets/${bundle}`).match(/activeElement/g);
+  assert.ok(hits && hits.length >= 7, "yebente/app: the built bundle carries focus return (rebuild: cd yebente && npm run build)");
+});
+
+test("merges stay signed, tested and verified; kTown ranks with the front pages", () => {
+  const sh = read("deploy/merge-pr.sh");
+  assert.ok(sh.includes('[ -d node_modules ]'), "merge-pr.sh: refuses without dependencies installed");
+  assert.doesNotMatch(sh, /--no-gpg-sign/, "merge-pr.sh: no unsigned fallback");
+  assert.match(sh, /merge -q --no-ff -S/, "merge-pr.sh: the merge itself is signed");
+  assert.ok(sh.includes('verify-commits.sh" HEAD'), "merge-pr.sh: the merged result passes the signature check");
+  assert.match(read("sitemap.xml"), /ktown<\/loc><lastmod>[^<]*<\/lastmod><priority>1\.0<\/priority>/, "sitemap.xml: kTown ranks with the front pages");
+});
+
+test("README states plainly how the site is built", () => {
+  const md = read("README.md");
+  assert.match(md, /AI coding assistants help write this site/, "README: AI help is disclosed");
+  assert.match(md, /solved without AI/, "README: upstream work without AI is separated");
 });
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useEscape } from '../hooks/useEscape';
+import { useFocusReturn } from '../hooks/useFocusReturn';
 import { UserWallet, Transaction, ExchangeRates } from '../types';
 import { ArrowLeft, AlertCircle, Loader2, ScanLine, ClipboardPaste, Fingerprint, X } from 'lucide-react';
 import { payInvoiceWithWebLN,
@@ -51,6 +52,7 @@ export const SendBtcModal: React.FC<SendBtcModalProps> = ({
   onSuccess,
 }) => {
   useEscape(onClose, isOpen);
+  useFocusReturn(isOpen);
   const [recipient, setRecipient] = useState<string>('');
   const [satsAmountStr, setSatsAmountStr] = useState<string>('');
   const [step, setStep] = useState<'input' | 'processing' | 'success' | 'error'>('input');
