@@ -562,6 +562,18 @@ test("guide links: home, wallet settings and kTown all point at guidance", () =>
   assert.match(appJs, /helpLink: "Maswali na majibu"/, "kTown: the help link reads plain in Kiswahili");
 });
 
+test("settings fold into grouped details, urgent states stay open", () => {
+  const set = read("yebente/src/components/WalletSettingsModal.tsx");
+  assert.equal(set.split('<span className="font-semibold">This phone</span>').length - 1, 2, "settings: both phone groups fold under This phone");
+  assert.ok(set.indexOf("Your Lightning address") < set.indexOf("<details"), "settings: the address stays one tap away");
+  assert.ok(set.includes("Save Settings"), "settings: saving stays one tap away");
+  const ph = read("yebente/src/components/PhonesAndSecurity.tsx");
+  assert.match(ph, /open=\{[^}]*pendingRecovery[^}]*hold/, "phones: the group opens itself while something needs attention");
+  assert.ok(ph.includes("Phones and security"), "phones: the folded group keeps its plain title");
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("This phone"), "yebente/app: the built bundle carries the groups (rebuild: cd yebente && npm run build)");
+});
+
 test("Kazi board: switched off by default, moderated publishing, limits on every route, words rendered inert", () => {
   const kz = read("lib/kazi.js"), api = read("api/kazi.js"), srv = read("server.mjs"), ad = read("api/admin.js");
   assert.match(kz, /switchOn\("KAZI"\)/, "lib/kazi.js: everything waits on the KAZI switch");
