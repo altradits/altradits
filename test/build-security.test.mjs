@@ -945,3 +945,9 @@ test("merges stay signed, tested and verified; kTown ranks with the front pages"
   assert.match(read("sitemap.xml"), /ktown<\/loc><lastmod>[^<]*<\/lastmod><priority>1\.0<\/priority>/, "sitemap.xml: kTown ranks with the front pages");
 });
 
+test("README states plainly how the site is built", () => {
+  const md = read("README.md");
+  assert.match(md, /AI coding assistants help write this site/, "README: AI help is disclosed");
+  assert.match(md, /solved without AI/, "README: upstream work without AI is separated");
+});
+
