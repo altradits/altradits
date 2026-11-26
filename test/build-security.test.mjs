@@ -262,7 +262,7 @@ test("Ye₿ente installs as an app: manifest linked and served with icons on bot
   assert.ok(fs.existsSync(path.join(root, "yebente/app/manifest.webmanifest")), "rebuilt app ships the manifest (rebuild: cd yebente && npm run build)");
   const srv = read("server.mjs"), ht = read(".htaccess");
   assert.match(srv, /yebente\\\/app\\\/\(\?:[^)]*manifest\\.webmanifest[^)]*icons\\\/\[\\w\.-\]\+/, "Node serves the manifest and icons");
-  assert.match(srv, /manifest\\.webmanifest\|\(\?:assets\|fonts\|icons\)/, "Node maps the manifest and icons paths");
+  assert.match(srv, /manifest\\.webmanifest\|sw\\.js\|\(\?:assets\|fonts\|icons\)/, "Node maps the manifest, worker and icons paths");
   assert.match(ht, /\^yebente\/\(\(assets\|fonts\|icons\)\//, "Apache maps the icons path too");
   assert.match(ht, /\^yebente\/manifest\\.webmanifest\$/, "Apache maps the manifest too");
   assert.match(read("yebente/public/.htaccess"), /AddType application\/manifest\+json \.webmanifest/, "Apache serves the manifest MIME type");
@@ -526,6 +526,26 @@ test("link audit: the guide target, favicons and offline terms stay fixed", () =
   assert.match(read("yebente/src/components/WalletGate.tsx"), /href="\/wallet-guide"/, "WalletGate: the 1-minute guide points at the wallet guide");
   const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
   assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("/wallet-guide"), "yebente/app: the built bundle carries the guide link (rebuild: cd yebente && npm run build)");
+});
+
+test("Ye₿ente worker: versioned shell, served on both stacks, never cached long, API never cached", () => {
+  const yb = read("yebente/public/sw.js");
+  assert.match(yb, /const CACHE = "yebente-v\d+"/, "yebente/public/sw.js: a versioned cache (bump it when cached files change)");
+  const disk = { "/yebente/": "yebente/app/index.html", "/yebente/manifest.webmanifest": "yebente/app/manifest.webmanifest",
+    "/yebente/icons/icon-192.png": "yebente/app/icons/icon-192.png", "/yebente/icons/icon-512.png": "yebente/app/icons/icon-512.png",
+    "/yebente/fonts/BananaYeti-Extrabold.ttf": "yebente/app/fonts/BananaYeti-Extrabold.ttf" };
+  for (const m of yb.match(/const SHELL = \[([\s\S]*?)\];/)[1].matchAll(/"([^"]+)"/g))
+    assert.ok(disk[m[1]] && fs.existsSync(path.join(root, disk[m[1]])), `yebente/public/sw.js: precached ${m[1]} exists (one 404 breaks the whole install)`);
+  assert.match(yb, /u\.origin !== self\.location\.origin/, "yebente/public/sw.js: same-site reads only");
+  assert.match(yb, /startsWith\("\/api\/"/, "yebente/public/sw.js: live API data is never cached");
+  assert.match(yb, /caches\.match\("\/yebente\/"\)/, "yebente/public/sw.js: failed reads fall back to the shell");
+  assert.match(read("yebente/src/main.tsx"), /navigator\.serviceWorker\.register\(['"]\/yebente\/sw\.js['"]\)/, "yebente/src/main.tsx: the app installs its worker");
+  assert.ok(read("server.mjs").includes("manifest\\.webmanifest|sw\\.js|"), "server.mjs: /yebente/sw.js reaches the built worker");
+  assert.ok(read(".htaccess").includes("yebente/sw\\.js$ yebente/app/sw.js"), ".htaccess: the same worker route on the Apache stack");
+  assert.equal(JSON.parse(read("yebente/app/manifest.webmanifest")).scope, "/yebente/", "yebente/: worker scope and manifest scope agree");
+  const yht = read("yebente/public/.htaccess");
+  assert.ok(yht.indexOf("sw\\.js") > yht.indexOf("max-age=31536000, immutable"), "yebente/public/.htaccess: the worker is never cached long");
+  assert.ok(fs.existsSync(path.join(root, "yebente/app/sw.js")), "yebente/app: the built worker is shipped (rebuild: cd yebente && npm run build)");
 });
 
 test("Kazi board: switched off by default, moderated publishing, limits on every route, words rendered inert", () => {
