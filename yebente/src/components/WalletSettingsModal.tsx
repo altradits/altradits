@@ -577,6 +577,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
               </button>
             </div>
           )}
+          <p className="text-center text-xs text-[var(--yb-on-surface-variant)] pt-1">Need help? <a href="/wallet-guide" className="font-semibold text-[var(--yb-primary)] hover:underline">See the wallet guide</a></p>
         </div>
       </div>
     </div>

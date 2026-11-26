@@ -23,6 +23,10 @@ if (window.top !== window.self) {
   throw new Error('Not shown inside a frame.');
 }
 
+// Offline shell and install prompt: the worker caches the app shell only,
+// never API answers (see yebente/public/sw.js).
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/yebente/sw.js').catch(() => {});
+
 // Tell the Security watch when the page's script lock blocks something that isn't ours.
 let reported = 0;
 document.addEventListener('securitypolicyviolation', (e) => {

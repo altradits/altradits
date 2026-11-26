@@ -262,7 +262,7 @@ test("Ye₿ente installs as an app: manifest linked and served with icons on bot
   assert.ok(fs.existsSync(path.join(root, "yebente/app/manifest.webmanifest")), "rebuilt app ships the manifest (rebuild: cd yebente && npm run build)");
   const srv = read("server.mjs"), ht = read(".htaccess");
   assert.match(srv, /yebente\\\/app\\\/\(\?:[^)]*manifest\\.webmanifest[^)]*icons\\\/\[\\w\.-\]\+/, "Node serves the manifest and icons");
-  assert.match(srv, /manifest\\.webmanifest\|\(\?:assets\|fonts\|icons\)/, "Node maps the manifest and icons paths");
+  assert.match(srv, /manifest\\.webmanifest\|sw\\.js\|\(\?:assets\|fonts\|icons\)/, "Node maps the manifest, worker and icons paths");
   assert.match(ht, /\^yebente\/\(\(assets\|fonts\|icons\)\//, "Apache maps the icons path too");
   assert.match(ht, /\^yebente\/manifest\\.webmanifest\$/, "Apache maps the manifest too");
   assert.match(read("yebente/public/.htaccess"), /AddType application\/manifest\+json \.webmanifest/, "Apache serves the manifest MIME type");
@@ -490,7 +490,7 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
   for (const f of ["/ktown/index.html", "/ktown/style.css", "/ktown/app.js", "/ktown/qrcode-generator-1.4.4.js", "figtree-latin.woff2"])
     assert.ok(sw.includes(f), `ktown/sw.js: the offline shell precaches ${f}`);
   for (const m of sw.match(/const SHELL = \[([\s\S]*?)\];/)[1].matchAll(/"([^"]+)"/g)) {
-    const p = m[1] === "/ktown" ? "ktown/index.html" : m[1].replace(/^\//, "");
+    const p = { "/ktown": "ktown/index.html", "/ktown/terms": "ktown/terms.html" }[m[1]] || m[1].replace(/^\//, "");
     assert.ok(fs.existsSync(path.join(root, p)), `ktown/sw.js: precached ${m[1]} exists (one 404 breaks the whole install)`);
   }
   assert.match(sw, /u\.origin !== self\.location\.origin/, "ktown/sw.js: same-site reads only");
@@ -514,6 +514,52 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
   assert.match(kt, /if \(nameMatch && !merchant\.claimed\)/, "lib/ktown.js: a matched receipt claims the number, and nothing unclaims it");
   assert.match(kt, /takeoverEligible/, "lib/ktown.js: a stale unclaimed number with no paid receipt can be taken over");
   assert.match(kt, /deleteKeys\(\[`kt:\$\{old\.id\}`\]\)/, "lib/ktown.js: a takeover ends the old record, so its sessions and QR die with it");
+});
+
+test("link audit: the guide target, favicons and offline terms stay fixed", () => {
+  for (const page of ["ktown/index.html", "ktown/pay.html", "ktown/terms.html"]) {
+    const html = read(page);
+    assert.doesNotMatch(html, /href="\/favicon\.ico"/, `${page}: no root favicon (it 404s; the shared assets icons are used)`);
+    assert.match(html, /href="\/assets\/favicon\.svg"/, `${page}: the shared svg icon is linked`);
+  }
+  assert.ok(read("ktown/sw.js").includes('"/ktown/terms"'), "ktown/sw.js: the clean terms address is cached, not the .html file");
+  assert.match(read("yebente/src/components/WalletGate.tsx"), /href="\/wallet-guide"/, "WalletGate: the 1-minute guide points at the wallet guide");
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("/wallet-guide"), "yebente/app: the built bundle carries the guide link (rebuild: cd yebente && npm run build)");
+});
+
+test("Ye₿ente worker: versioned shell, served on both stacks, never cached long, API never cached", () => {
+  const yb = read("yebente/public/sw.js");
+  assert.match(yb, /const CACHE = "yebente-v\d+"/, "yebente/public/sw.js: a versioned cache (bump it when cached files change)");
+  const disk = { "/yebente/": "yebente/app/index.html", "/yebente/manifest.webmanifest": "yebente/app/manifest.webmanifest",
+    "/yebente/icons/icon-192.png": "yebente/app/icons/icon-192.png", "/yebente/icons/icon-512.png": "yebente/app/icons/icon-512.png",
+    "/yebente/fonts/BananaYeti-Extrabold.ttf": "yebente/app/fonts/BananaYeti-Extrabold.ttf" };
+  for (const m of yb.match(/const SHELL = \[([\s\S]*?)\];/)[1].matchAll(/"([^"]+)"/g))
+    assert.ok(disk[m[1]] && fs.existsSync(path.join(root, disk[m[1]])), `yebente/public/sw.js: precached ${m[1]} exists (one 404 breaks the whole install)`);
+  assert.match(yb, /u\.origin !== self\.location\.origin/, "yebente/public/sw.js: same-site reads only");
+  assert.match(yb, /startsWith\("\/api\/"/, "yebente/public/sw.js: live API data is never cached");
+  assert.match(yb, /caches\.match\("\/yebente\/"\)/, "yebente/public/sw.js: failed reads fall back to the shell");
+  assert.match(read("yebente/src/main.tsx"), /navigator\.serviceWorker\.register\(['"]\/yebente\/sw\.js['"]\)/, "yebente/src/main.tsx: the app installs its worker");
+  assert.ok(read("server.mjs").includes("manifest\\.webmanifest|sw\\.js|"), "server.mjs: /yebente/sw.js reaches the built worker");
+  assert.ok(read(".htaccess").includes("yebente/sw\\.js$ yebente/app/sw.js"), ".htaccess: the same worker route on the Apache stack");
+  assert.equal(JSON.parse(read("yebente/app/manifest.webmanifest")).scope, "/yebente/", "yebente/: worker scope and manifest scope agree");
+  const yht = read("yebente/public/.htaccess");
+  assert.ok(yht.indexOf("sw\\.js") > yht.indexOf("max-age=31536000, immutable"), "yebente/public/.htaccess: the worker is never cached long");
+  assert.ok(fs.existsSync(path.join(root, "yebente/app/sw.js")), "yebente/app: the built worker is shipped (rebuild: cd yebente && npm run build)");
+});
+
+test("guide links: home, wallet settings and kTown all point at guidance", () => {
+  const home = read("index.html");
+  assert.ok(home.includes('<a href="/wallet-guide">Guide</a>'), "home: the nav links the guide");
+  assert.ok(home.includes('<a href="/yebente">Ye₿ente wallet</a>'), "home: the footer links the wallet");
+  assert.ok(home.includes('<a href="/wallet-guide">Ye₿ente guide</a>'), "home: the footer links the guide");
+  assert.match(read("yebente/src/components/WalletSettingsModal.tsx"), /href="\/wallet-guide"/, "wallet settings: signed-in users reach the guide");
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("See the wallet guide"), "yebente/app: the built bundle carries the settings guide link (rebuild: cd yebente && npm run build)");
+  assert.ok(read("ktown/index.html").includes('<a href="/#answers" data-i18n="helpLink">'), "kTown settings: merchants reach the questions");
+  const appJs = read("ktown/app.js");
+  assert.match(appJs, /helpLink: "Questions and answers"/, "kTown: the help link reads plain in English");
+  assert.match(appJs, /helpLink: "Maswali na majibu"/, "kTown: the help link reads plain in Kiswahili");
 });
 
 test("Kazi board: switched off by default, moderated publishing, limits on every route, words rendered inert", () => {
