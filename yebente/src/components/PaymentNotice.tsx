@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useEscape } from '../hooks/useEscape';
 import { X } from 'lucide-react';
 
 // Tells the person the moment a payment they sent earlier settles, wherever
@@ -7,6 +8,7 @@ import { X } from 'lucide-react';
 export interface Notice { id: string; ok: boolean; title: string; text: string }
 
 export const PaymentNotice: React.FC<{ notice: Notice; onClose: () => void }> = ({ notice, onClose }) => {
+  useEscape(onClose);
   useEffect(() => {
     const t = window.setTimeout(onClose, notice.ok ? 8000 : 20000);
     return () => window.clearTimeout(t);

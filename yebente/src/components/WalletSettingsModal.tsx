@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useEscape } from '../hooks/useEscape';
 import { UserWallet, WalletType } from '../types';
 import {
   isLightningAddress,
@@ -41,6 +42,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   onEjectWallet,
   onWipeWallet,
 }) => {
+  useEscape(onClose, isOpen);
   const [selectedType, setSelectedType] = useState<WalletType>(wallet.type || 'custodial');
   const [address, setAddress] = useState(
     wallet.type === 'non-custodial' ? wallet.nonCustodialAddress : ''

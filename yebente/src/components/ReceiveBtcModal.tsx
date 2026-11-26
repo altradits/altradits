@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useEscape } from '../hooks/useEscape';
 import { UserWallet, Transaction } from '../types';
 import { ArrowLeft, AlertCircle, Loader2, Copy, Check, Share2, Receipt } from 'lucide-react';
 import { hasServerWallet } from '../services/altraditsWallet';
@@ -56,6 +57,7 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
   onSuccess,
   onOpenWalletSettings,
 }) => {
+  useEscape(onClose, isOpen);
   const [step, setStep] = useState<Step>('address');
   const [satsAmountStr, setSatsAmountStr] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);

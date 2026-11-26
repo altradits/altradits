@@ -2,6 +2,7 @@ import { payInvoiceWithWebLN } from '../services/lightningService';
 import { hasServerWallet, sendFromServerWallet, sendMobileDirect, directMobileStatus } from '../services/altraditsWallet';
 import { biometricOn, approveWithBiometric } from '../services/biometric';
 import { HoldNotice } from './HoldNotice';
+import { useEscape } from '../hooks/useEscape';
 import { SatsMotion, CountUp } from './SatsMotion';
 import { celebrate } from '../services/celebrate';
 import React, { useState, useEffect } from 'react';
@@ -45,6 +46,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   rates,
   onSuccess,
 }) => {
+  useEscape(onClose, isOpen);
   const [amountMode, setAmountMode] = useState<'fiat' | 'sats'>('fiat');
   const [phone, setPhone] = useState<string>('');
   const [fiatAmountStr, setFiatAmountStr] = useState<string>('');

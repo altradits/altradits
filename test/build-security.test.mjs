@@ -574,6 +574,18 @@ test("settings fold into grouped details, urgent states stay open", () => {
   assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("This phone"), "yebente/app: the built bundle carries the groups (rebuild: cd yebente && npm run build)");
 });
 
+test("modals close on Escape, top-first when stacked", () => {
+  const hook = read("yebente/src/hooks/useEscape.ts");
+  assert.match(hook, /e\.key === 'Escape'/, "useEscape: Escape is the key");
+  assert.match(hook, /stack\[stack\.length - 1\] === close/, "useEscape: only the top modal answers");
+  assert.match(hook, /removeEventListener\('keydown'/, "useEscape: the listener is removed");
+  for (const f of ["BuyBtcModal", "CardTopupModal", "PaymentNotice", "QrScanner", "ReceiveBtcModal", "SendBtcModal", "SendMpesaModal", "TransactionDetailModal", "WalletSettingsModal"])
+    assert.match(read(`yebente/src/components/${f}.tsx`), /useEscape\(onClose/, `${f}: Escape closes it`);
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  const keys = bundle && read(`yebente/app/assets/${bundle}`).match(/keydown/g);
+  assert.ok(keys && keys.length >= 4, "yebente/app: the built bundle carries Escape handling (rebuild: cd yebente && npm run build)");
+});
+
 test("Kazi board: switched off by default, moderated publishing, limits on every route, words rendered inert", () => {
   const kz = read("lib/kazi.js"), api = read("api/kazi.js"), srv = read("server.mjs"), ad = read("api/admin.js");
   assert.match(kz, /switchOn\("KAZI"\)/, "lib/kazi.js: everything waits on the KAZI switch");

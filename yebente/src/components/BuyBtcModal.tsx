@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useEscape } from '../hooks/useEscape';
 import { UserWallet, ExchangeRates, Transaction } from '../types';
 import { ArrowLeft, Smartphone, CheckCircle2, Loader2, AlertTriangle, Zap, Copy, Check, RefreshCw } from 'lucide-react';
 import {
@@ -29,6 +30,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
   rates,
   onSuccess,
 }) => {
+  useEscape(onClose, isOpen);
   const [amountFiat, setAmountFiat] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [step, setStep] = useState<'input' | 'processing' | 'awaiting_pin' | 'waiting_sats' | 'success' | 'error'>('input');
