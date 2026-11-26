@@ -863,3 +863,17 @@ test("a wrong address answers our 404 page, still a 404, with links out", () => 
   assert.match(read(".htaccess"), /^ErrorDocument 404 \/404\.html$/m, ".htaccess: Apache answers the same page");
 });
 
+test("navigation parity: wallet guide opens on YeBente, stale wallet links point to /yebente, both stacks serve contact/receipt, and TouchType links home", () => {
+  const guide = read("wallet-guide.html");
+  assert.match(guide, /<a class="launch" href="\/yebente">Open Ye₿ente<\/a>/, "wallet-guide.html: top CTA opens Ye₿ente");
+  assert.match(guide, /<h1>Open a free Bitcoin wallet/, "wallet-guide.html: hero is about the Ye₿ente wallet, not kTown");
+  for (const f of ["bitcoin.html", "journey.html"]) {
+    assert.doesNotMatch(read(f), /<a\b[^>]*href="\/"[^>]*>[^<]*(?:wallet|Ye₿ente)[^<]*<\/a>/i, `${f}: wallet links go to /yebente, never /`);
+  }
+  const ht = read(".htaccess"), srv = read("server.mjs");
+  assert.match(ht, /RewriteRule \^wallet\(\\\.html\)\?\/\?\$ \/yebente \[R=301,L\]/, ".htaccess: /wallet redirects to /yebente");
+  assert.match(srv, /\bwallet:\s*"yebente"/, "server.mjs: /wallet redirects to /yebente");
+  assert.match(ht, /\bcontact\|receipt\b/, ".htaccess: /contact and /receipt have explicit rewrites like server.mjs");
+  assert.match(read("touchtype/index.html"), /<a href="\/"[^>]*>Altradits<\/a>/, "touchtype/index.html: players can return to Altradits");
+});
+
