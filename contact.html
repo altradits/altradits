@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-OwhqLqQlQfkEyTt3yF+tMhb6BglK91KhtJzRnyHKKpc='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-OymE4LCdmN5zfGhMzeuFh52gk5hrjFQ0RQaO12zqLoY='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/contact">
 <title>Write to the team · Altradits</title>
@@ -119,6 +119,7 @@ textarea{min-height:8rem;resize:vertical}
         <textarea id="bolt" readonly rows="3" aria-label="Lightning invoice"></textarea>
         <div class="ctas"><button type="button" class="btn ghost" id="copy">Copy invoice</button><a class="btn ghost" id="open" href="#">Open in wallet</a></div>
         <p id="state" role="status">Waiting for payment…</p>
+        <p><button type="button" class="btn ghost" id="backToWrite">Back to your message</button></p>
       </fieldset>
       <fieldset id="stepSend" hidden>
         <legend>3. Send it</legend>
@@ -178,6 +179,7 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
     }, 4000);
   });
   $("#copy").addEventListener("click", () => navigator.clipboard?.writeText($("#bolt").value).then(() => { $("#copy").textContent = "Copied"; }));
+  $("#backToWrite").addEventListener("click", () => { clearInterval(poll); quote = null; $("#stepPay").hidden = true; $("#stepWrite").hidden = false; $("#toPay").disabled = false; $("#err").textContent = ""; });
   async function sendMessage(confirmed) {
     $("#err2").textContent = ""; $("#typoBtn").hidden = true; $("#sendBtn").disabled = true;
     let r;
