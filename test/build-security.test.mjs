@@ -548,6 +548,20 @@ test("Ye₿ente worker: versioned shell, served on both stacks, never cached lon
   assert.ok(fs.existsSync(path.join(root, "yebente/app/sw.js")), "yebente/app: the built worker is shipped (rebuild: cd yebente && npm run build)");
 });
 
+test("guide links: home, wallet settings and kTown all point at guidance", () => {
+  const home = read("index.html");
+  assert.ok(home.includes('<a href="/wallet-guide">Guide</a>'), "home: the nav links the guide");
+  assert.ok(home.includes('<a href="/yebente">Ye₿ente wallet</a>'), "home: the footer links the wallet");
+  assert.ok(home.includes('<a href="/wallet-guide">Ye₿ente guide</a>'), "home: the footer links the guide");
+  assert.match(read("yebente/src/components/WalletSettingsModal.tsx"), /href="\/wallet-guide"/, "wallet settings: signed-in users reach the guide");
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("See the wallet guide"), "yebente/app: the built bundle carries the settings guide link (rebuild: cd yebente && npm run build)");
+  assert.ok(read("ktown/index.html").includes('<a href="/#answers" data-i18n="helpLink">'), "kTown settings: merchants reach the questions");
+  const appJs = read("ktown/app.js");
+  assert.match(appJs, /helpLink: "Questions and answers"/, "kTown: the help link reads plain in English");
+  assert.match(appJs, /helpLink: "Maswali na majibu"/, "kTown: the help link reads plain in Kiswahili");
+});
+
 test("Kazi board: switched off by default, moderated publishing, limits on every route, words rendered inert", () => {
   const kz = read("lib/kazi.js"), api = read("api/kazi.js"), srv = read("server.mjs"), ad = read("api/admin.js");
   assert.match(kz, /switchOn\("KAZI"\)/, "lib/kazi.js: everything waits on the KAZI switch");
