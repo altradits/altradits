@@ -128,7 +128,7 @@ export async function pollReceipt(
   rail: Rail,
   paymentHash: string,
   { intervalMs = 3000, timeoutMs = 120000, onUpdate }: { intervalMs?: number; timeoutMs?: number; onUpdate?: (p: RailPayment) => void } = {}
-): Promise<{ success: boolean; payment?: RailPayment; error?: string }> {
+): Promise<{ success: boolean; payment?: RailPayment; error?: string; terminal?: boolean }> {
   if (!rail.receipt) return { success: false, error: 'No receipt from this partner.' };
   const url = `https://${rail.host}${rail.receipt}${paymentHash}`;
   const deadline = Date.now() + timeoutMs;
@@ -137,14 +137,14 @@ export async function pollReceipt(
     try {
       const res = await fetch(url);
       if (res.status === 404) {
-        if (++missing > 7) return { success: false, error: `${rail.partner} doesn't know this payment.` };
+        if (++missing > 7) return { success: false, terminal: true, error: `${rail.partner} doesn't know this payment.` };
       } else if (res.ok) {
         missing = 0;
         const payment: RailPayment | undefined = (await res.json()).transaction;
         if (payment) {
           onUpdate?.(payment);
           if (payment.status === 'completed' && payment.isPaid && payment.paymentNetworkReceipt) return { success: true, payment };
-          if (payment.status === 'failed') return { success: false, payment, error: `${rail.name} payout failed: ${payment.failureReason || 'declined'}` };
+          if (payment.status === 'failed') return { success: false, payment, terminal: true, error: `${rail.name} payout failed: ${payment.failureReason || 'declined'}` };
         }
       }
     } catch {

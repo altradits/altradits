@@ -39,6 +39,10 @@ cd yebente && npm ci && npm run dev   # http://localhost:5173
 npm run build                         # rebuilds yebente/app (commit it too)
 ```
 
+## How it is built
+
+AI coding assistants help write this site, under human review: every change is tested, reviewed in the open, and merged by Stanley. That is separate from the tracker: the upstream Bitcoin and Lightning challenges there are solved without AI, following each project's own rules.
+
 ## Docs
 
 - `DEPLOY.md`: hosting the site and connecting the node.

@@ -3,6 +3,7 @@ import { hasServerWallet, sendFromServerWallet, sendMobileDirect, directMobileSt
 import { biometricOn, approveWithBiometric } from '../services/biometric';
 import { HoldNotice } from './HoldNotice';
 import { useEscape } from '../hooks/useEscape';
+import { useFocusReturn } from '../hooks/useFocusReturn';
 import { SatsMotion, CountUp } from './SatsMotion';
 import { celebrate } from '../services/celebrate';
 import React, { useState, useEffect } from 'react';
@@ -47,6 +48,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   onSuccess,
 }) => {
   useEscape(onClose, isOpen);
+  useFocusReturn(isOpen);
   const [amountMode, setAmountMode] = useState<'fiat' | 'sats'>('fiat');
   const [phone, setPhone] = useState<string>('');
   const [fiatAmountStr, setFiatAmountStr] = useState<string>('');
@@ -56,6 +58,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   const [pending, setPending] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string>('Initiating Lightning Transfer...');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [fatal, setFatal] = useState(false); // the money already moved: no blind retry, only Done
   const [realReference, setRealReference] = useState<string>('');
   const [merchantRecipientName, setMerchantRecipientName] = useState<string>('');
   const [receiptUrl, setReceiptUrl] = useState<string>('');
@@ -142,6 +145,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
 
   const handleConfirm = async () => {
     if (numericAmount <= 0) return;
+    setFatal(false);
 
     if (!isPhoneValid) {
       setErrorMessage(`Enter a valid ${rail.name} number in ${rail.country}, like +${rail.dial} ${rail.example}.`);
@@ -193,10 +197,24 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
         let res = await sendMobileDirect(fullNumber(rail, phone), numericAmount, pin, passkey);
         setPin('');
         // Safaricom usually answers within seconds: wait up to 90 s for the M-Pesa code.
+        // Three straight check failures stop the wait: the payment may have gone
+        // through, so this error never offers a retry.
         const deadline = Date.now() + 90000;
+        let statusFails = 0;
         while (res.status === 'pending' && Date.now() < deadline) {
           await new Promise((r) => setTimeout(r, 3000));
-          try { res = await directMobileStatus(res.id); } catch { /* a passing glitch: keep waiting */ }
+          try {
+            res = await directMobileStatus(res.id);
+            statusFails = 0;
+          } catch (err: unknown) {
+            if (++statusFails >= 3) {
+              const m = readableError(err, "Couldn't check this payment.", true);
+              setErrorMessage(m.includes('History') ? m : `${m} Check History before trying again: it may have gone through.`);
+              setFatal(true);
+              setStep('error');
+              return;
+            }
+          }
         }
         if (res.status === 'failed') {
           setErrorMessage(res.error || "M-Pesa didn't complete this payment. Your sats are back.");
@@ -323,6 +341,16 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
           setStep('success');
           return;
         }
+        // The partner refused or lost it: the sats already left, so this error
+        // never offers a retry. Only a wait still pending shows as pending.
+        if (pollRes.terminal) {
+          const ref = paymentHash.slice(0, 10).toUpperCase();
+          setRealReference(ref);
+          setErrorMessage(`${pollRes.error || `${rail.partner} could not pay out.`} Your sats left the wallet. Note ${ref} and check History: if they don't return, contact us from the Contact page.`);
+          setFatal(true);
+          setStep('error');
+          return;
+        }
       }
 
       // No confirmation yet: the payout is still on its way on the partner's side
@@ -363,11 +391,16 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   const handleResetAndClose = () => {
     setStep('input');
     setErrorMessage('');
+    setFatal(false);
     onClose();
   };
 
   const handleBack = () => {
     if (step === 'error') {
+      if (fatal) {
+        handleResetAndClose();
+        return;
+      }
       setStep('input');
       setErrorMessage('');
       return;
@@ -617,10 +650,10 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
               <div className="flex gap-2 w-full">
                 <button
                   type="button"
-                  onClick={() => setStep('input')}
+                  onClick={() => (fatal ? handleResetAndClose() : setStep('input'))}
                   className="flex-1 h-11 rounded-2xl bg-[var(--yb-surface-container)] hover:bg-[var(--yb-surface-container-high)] text-[var(--yb-on-surface)] font-medium text-xs"
                 >
-                  Try Again
+                  {fatal ? 'Done' : 'Try Again'}
                 </button>
               </div>
             </div>
