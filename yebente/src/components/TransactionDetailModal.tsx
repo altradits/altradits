@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useEscape } from '../hooks/useEscape';
+import { useFocusReturn } from '../hooks/useFocusReturn';
 import { Transaction } from '../types';
 import { ArrowLeft, Copy, Check, ExternalLink } from 'lucide-react';
 
@@ -19,6 +20,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   onClose,
 }) => {
   useEscape(onClose, transaction !== null);
+  useFocusReturn(transaction !== null);
   const [copiedRef, setCopiedRef] = useState(false);
 
   if (!transaction) return null;
