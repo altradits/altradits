@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useEscape } from '../hooks/useEscape';
+import { useFocusReturn } from '../hooks/useFocusReturn';
 import { ArrowLeft, CheckCircle2, Loader2, AlertTriangle, CreditCard, ExternalLink } from 'lucide-react';
 import { Transaction } from '../types';
 import { orderCardTopup, cardTopupStatus } from '../services/cardService';
@@ -17,6 +18,7 @@ interface CardTopupModalProps {
 // this screen waits for the provider's own confirmation.
 export const CardTopupModal: React.FC<CardTopupModalProps> = ({ isOpen, onClose, onSuccess }) => {
   useEscape(onClose, isOpen);
+  useFocusReturn(isOpen);
   const [kes, setKes] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [step, setStep] = useState<'input' | 'waiting' | 'success' | 'error'>('input');

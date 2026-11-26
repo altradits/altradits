@@ -871,3 +871,14 @@ test("top bar links the wallet guide from the main screen", () => {
   assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("Help"), "yebente/app: the built bundle carries the help icon (rebuild: cd yebente && npm run build)");
 });
 
+test("closing a modal returns focus to its opener", () => {
+  const hook = read("yebente/src/hooks/useFocusReturn.ts");
+  assert.match(hook, /document\.activeElement/, "useFocusReturn: remembers the opener");
+  assert.match(hook, /prev\?\.focus\?\.\(\)/, "useFocusReturn: focuses it again on close");
+  for (const f of ["BuyBtcModal", "CardTopupModal", "PaymentNotice", "QrScanner", "ReceiveBtcModal", "SendBtcModal", "SendMpesaModal", "TransactionDetailModal", "WalletSettingsModal"])
+    assert.match(read(`yebente/src/components/${f}.tsx`), /useFocusReturn\(/, `${f}: focus returns on close`);
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  const hits = bundle && read(`yebente/app/assets/${bundle}`).match(/activeElement/g);
+  assert.ok(hits && hits.length >= 7, "yebente/app: the built bundle carries focus return (rebuild: cd yebente && npm run build)");
+});
+
