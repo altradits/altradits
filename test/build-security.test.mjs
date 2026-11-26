@@ -912,3 +912,9 @@ test("navigation parity: wallet guide opens on Ye₿ente, stale wallet links poi
   assert.match(read("touchtype/index.html"), /<a href="\/"[^>]*>Altradits<\/a>/, "touchtype/index.html: players can return to Altradits");
 });
 
+test("README states plainly how the site is built", () => {
+  const md = read("README.md");
+  assert.match(md, /AI coding assistants help write this site/, "README: AI help is disclosed");
+  assert.match(md, /solved without AI/, "README: upstream work without AI is separated");
+});
+
