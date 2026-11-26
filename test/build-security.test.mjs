@@ -862,6 +862,17 @@ test("reduced motion stops the celebration animations", () => {
   assert.ok(built && read(`yebente/app/assets/${built}`).includes(".yb-chant,.yb-slam"), "yebente/app: the built styles carry the guard (rebuild: cd yebente && npm run build)");
 });
 
+test("M-Pesa failures say what happened and never invite a double spend", () => {
+  const modal = read("yebente/src/components/SendMpesaModal.tsx");
+  assert.match(modal, /statusFails >= 3/, "direct: repeated check failures stop the wait");
+  assert.match(modal, /pollRes\.terminal/, "rail: a refused payout shows as failed, not pending");
+  assert.match(modal, /fatal \? 'Done' : 'Try Again'/, "moved money never offers a blind retry");
+  assert.match(modal, /may have gone through/, "unknown outcomes point at History");
+  assert.match(read("yebente/src/services/payoutRails.ts"), /terminal: true/, "rail: failures are marked terminal");
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("may have gone through"), "yebente/app: the built bundle carries the failure words (rebuild: cd yebente && npm run build)");
+});
+
 test("a wrong address answers our 404 page, still a 404, with links out", () => {
   const nf = read("404.html");
   assert.match(nf, /<meta name="robots" content="noindex">/, "404.html: never indexed");
