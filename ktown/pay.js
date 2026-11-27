@@ -43,6 +43,7 @@ const STR = {
   },
 };
 let lang = localStorage.getItem("kt.paylang") || "en";
+let fatalKey = null; // the fatal message's i18n key, when it has one
 const t = (k) => (STR[lang] && STR[lang][k]) || STR.en[k] || k;
 const kesFmt = (n) => `KSh ${Number(n).toLocaleString("en-US")}`;
 // An about figure with at most two decimals, zeros trimmed: 20.2, not 20.20.
@@ -70,11 +71,12 @@ async function get(path) {
   return d;
 }
 
-function fatal(msg) {
+function fatal(msg, key) {
   $("loading").hidden = true;
   const el = $("fatal");
   el.textContent = msg;
   el.hidden = false;
+  fatalKey = key || null;
 }
 
 function kesOfInput() {
@@ -199,6 +201,7 @@ async function boot() {
     $("lang-en").setAttribute("aria-pressed", String(lang === "en"));
     $("lang-sw").setAttribute("aria-pressed", String(lang === "sw"));
     $("loading").textContent = t("loading");
+    if (!$("fatal").hidden && fatalKey) fatal(t(fatalKey), fatalKey);
     if (terms) {
       const mark = $("pay-mark");
       mark.textContent = terms.verified ? "✓ " + t("confirmed") : t("notConfirmed");
@@ -224,7 +227,7 @@ async function boot() {
   }).catch(() => { /* no help contact set, or offline: nothing shows */ });
 
   if (!id) {
-    fatal(t("unknownQr"));
+    fatal(t("unknownQr"), "unknownQr");
     applyLang();
     return;
   }
@@ -235,7 +238,7 @@ async function boot() {
   } catch (e) {
     // Only a 404 means the QR is unknown. Anything else (Tando down, too many
     // requests, no connection) says what the server said, or to try again soon.
-    fatal(e.status === 404 ? t("unknownQr") : e.said || (e.status ? t("tryLater") : e.message || t("tryLater")));
+    fatal(e.status === 404 ? t("unknownQr") : e.said || (e.status ? t("tryLater") : e.message || t("tryLater")), e.status === 404 ? "unknownQr" : null);
     return;
   }
   try {
@@ -250,7 +253,7 @@ async function boot() {
     };
     if (!terms.shop || !(terms.kesMax >= terms.kesMin) || !(terms.mult > 0)) throw new Error("bad terms");
   } catch {
-    fatal(t("tryLater")); // a garbled answer is not an unknown QR
+    fatal(t("tryLater"), "tryLater"); // a garbled answer is not an unknown QR
     return;
   }
   document.title = `${terms.shop} · Pay`;

@@ -6,6 +6,13 @@ export const HoldNotice: React.FC<{ hold: { until: string; total: number; left: 
   try {
     ends = new Date(hold.until).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   } catch { ends = 'soon'; }
+  if (hold.left <= 0) {
+    return (
+      <p className="text-[11px] text-amber-300/90 px-1">
+        Recovery hold: sending resumes after {ends}.
+      </p>
+    );
+  }
   return (
     <p className="text-[11px] text-amber-300/90 px-1">
       Recovery hold: {hold.left.toLocaleString()} of {hold.total.toLocaleString()} sats can still be sent, until {ends}.
