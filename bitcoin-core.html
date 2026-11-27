@@ -46,24 +46,19 @@ a{color:var(--blue)}
 .topnav{display:flex;gap:.35rem;flex-wrap:wrap;row-gap:.35rem;align-items:center}
 .topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.45rem .95rem;border-radius:99px}
 .topnav a:hover{color:var(--ink);background:rgba(15,27,45,.08)}
-.topnav a[aria-current]{color:#fff;background:var(--ink)}
 @media (max-width:420px){.topnav{gap:.25rem}.topnav a{font-size:.9rem;padding:.4rem .7rem}.top img{height:1.9rem}}
 /* When space runs out, the menu moves under the logo (and wraps) instead of spilling off the screen */
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .hero{padding:2.25rem 0 2rem}
-.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:44rem}
+.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:44rem;text-wrap:balance}
 .hero h1 em{font-style:normal;color:var(--btc-text)}
 .lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:36rem}
-.ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
-.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none}
-.btn.ghost{background:transparent;border-color:var(--ink)}
 h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:2.2rem 0 .4rem}
 .intro{color:var(--muted);margin:0 0 1.2rem;max-width:40rem}
 .sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:2rem}
 .sitefoot a{color:var(--muted);display:inline-block;padding:.6rem 0}.soc{color:var(--muted)}a.soc:hover{color:var(--ink)}.soc svg{width:20px;height:20px;vertical-align:-4px}
 .sitefoot .wp{margin:0 0 .6rem}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top,.tabs{transition:box-shadow .25s ease}body.scrolled .top,body.scrolled .tabs{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.cards .links a,.more a,.foot nav a,.pager a{transition:color .18s ease}.more a{display:inline-block;transition:transform .18s ease,color .18s ease}.more a:hover{transform:translateX(4px)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top{transition:box-shadow .25s ease}body.scrolled .top{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
 
 .wrap.read > :not(.top){max-width:46rem}
 h3{font:800 1.15rem 'Bricolage Grotesque',sans-serif;margin:1.4rem 0 .4rem}
