@@ -37,7 +37,6 @@
 
 :root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--paper:#fff}
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
 a{color:var(--blue)}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
@@ -50,7 +49,6 @@ a{color:var(--blue)}
 @media (max-width:420px){.topnav{gap:.25rem}.topnav a{font-size:.9rem;padding:.4rem .7rem}.top img{height:1.9rem}}
 /* When space runs out, the menu moves under the logo (and wraps) instead of spilling off the screen */
 .topnav a:hover{color:var(--ink);background:rgba(15,27,45,.08)}
-.topnav a[aria-current]{color:#fff;background:var(--ink)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.85rem 1.3rem;border-radius:.75rem;font:700 1rem Figtree,sans-serif;text-decoration:none;border:2px solid var(--ink);color:var(--ink);background:transparent}
 .btn.dark{background:var(--ink);color:#fff}
 .ctas{display:flex;flex-wrap:wrap;gap:.6rem}
@@ -75,18 +73,18 @@ h2{font:800 clamp(1.6rem,4vw,2.2rem)/1.1 'Bricolage Grotesque',sans-serif;margin
 .friend.yb span:last-child{color:#EBD9F5;font-weight:600}
 /* Hero: the same on every page: headline, one line, at most one button. No motion anywhere. */
 .hero{position:static;display:block;max-width:none;margin:0;padding:2.25rem 0 2rem}
-.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:44rem;color:var(--ink)}
+.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:44rem;color:var(--ink);text-wrap:balance}
 .hero h1 em{font-style:normal;color:var(--blue)}
 .hero .lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:36rem}
 .hero .btn{padding:.9rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif}
 .hero .ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
 .sitefoot .wrap{padding-top:0;padding-bottom:0}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top{transition:box-shadow .25s ease}body.scrolled .top{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.more a{display:inline-block;transition:transform .18s ease,color .18s ease}.more a:hover{transform:translateX(4px)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
-a:hover,.btn:hover,button:hover{transform:none!important}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top{transition:box-shadow .25s ease}body.scrolled .top{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.more a{display:inline-block;transition:transform .18s ease,color .18s ease}.more a:hover{transform:translateX(4px)}.stage,.card{transition:border-color .18s ease}.stage:hover,.card:hover{border-color:var(--ink)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
+.btn:hover,button:hover{transform:none!important}
 /* Bitcoin knowledge page */
 .stages{display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(15.5rem,1fr));margin-top:1rem}
-.stage{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.2rem;display:flex;flex-direction:column;gap:.35rem}
+.stage{background:var(--paper);border:2px solid var(--line);border-radius:1rem;padding:1.2rem;display:flex;flex-direction:column;gap:.35rem}
 .stage .n{font:800 .85rem Figtree,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--btc-text)}
 .stage b{font:800 1.2rem 'Bricolage Grotesque',sans-serif}
 .stage ul{margin:.2rem 0 .5rem;padding-left:1.1rem;color:var(--muted);font-size:.96rem}
@@ -96,7 +94,7 @@ a:hover,.btn:hover,button:hover{transform:none!important}
 .principles b{display:block;font:800 1.05rem 'Bricolage Grotesque',sans-serif}
 .principles span{color:var(--muted)}
 .cols{display:grid;gap:1.4rem;grid-template-columns:repeat(auto-fit,minmax(19rem,1fr));margin-top:1rem}
-.card{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.3rem}
+.card{background:var(--paper);border:2px solid var(--line);border-radius:1rem;padding:1.3rem}
 .card h3{font:800 1.25rem 'Bricolage Grotesque',sans-serif;margin:0 0 .4rem}
 .card p{margin:.4rem 0;color:var(--muted)}
 .card p b{color:var(--ink)}

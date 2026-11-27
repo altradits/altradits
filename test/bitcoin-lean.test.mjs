@@ -37,6 +37,24 @@ test("kept motion sits inside the motion-allowed guard", () => {
   }
 });
 
+test("smooth scroll and current-page styles live once, in the right place", () => {
+  assert.equal(css.match(/html\{scroll-behavior:smooth\}/g).length, 1, "smooth scroll only inside the guard");
+  assert.ok(!css.includes("[aria-current]"), "no current-page style without the attribute");
+  assert.ok(!css.includes("a:hover,.btn:hover"), "no blanket transform kill over link hovers");
+});
+
+test("stages and cards rest calm and ink on guarded hover", () => {
+  assert.ok(css.includes("text-wrap:balance"), "the hero heading balances");
+  for (const sel of [".stage{background:", ".card{background:"]) {
+    const at = css.indexOf(sel);
+    const end = css.indexOf("}", at);
+    assert.ok(css.slice(at, end).includes("border:2px solid var(--line)"), `${sel} rests on the line color`);
+  }
+  const guardAt = css.indexOf("@media (prefers-reduced-motion:no-preference)");
+  const hover = ".stage:hover,.card:hover{border-color:var(--ink)}";
+  assert.ok(css.indexOf(hover) > guardAt, "hover inks inside the guard");
+});
+
 test("every section survives", () => {
   assert.equal(page.match(/<div class="stage">/g).length, 4, "4 stages stay");
   assert.equal(page.match(/<div class="card">/g).length, 3, "3 cards stay");
