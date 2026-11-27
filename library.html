@@ -35,7 +35,7 @@
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 @font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 
-:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff}
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--paper:#fff}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
 a{color:var(--blue)}
@@ -49,26 +49,24 @@ a{color:var(--blue)}
 .topnav a[aria-current]{color:#fff;background:var(--ink)}
 @media (max-width:420px){.topnav{gap:.25rem}.topnav a{font-size:.9rem;padding:.4rem .7rem}.top img{height:1.9rem}}
 .hero{padding:2.25rem 0 1.5rem}
-.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem}
+.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem;text-wrap:balance}
 .hero h1 em{font-style:normal;color:var(--btc-text)}
 .lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:38rem}
 h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:2.4rem 0 .4rem}
-h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .intro{color:var(--muted);margin:0 0 1.2rem;max-width:42rem}
 .sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
 .sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}.soc{color:var(--muted)}a.soc:hover{color:var(--ink)}.soc svg{width:20px;height:20px;vertical-align:-4px}
 .sitefoot .wp{margin:0 0 .6rem}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top{transition:box-shadow .25s ease}body.scrolled .top{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}}
-.stage{scroll-margin-top:1rem}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top{transition:box-shadow .25s ease}body.scrolled .top{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.reads li{transition:border-color .18s ease}.reads li:hover{border-color:var(--ink)}}
+.stage{scroll-margin-top:5rem}
 .reads{list-style:none;padding:0;margin:0;display:grid;gap:.6rem;max-width:46rem}
-.reads li{background:var(--paper);border:2px solid var(--line);border-radius:.9rem;padding:.8rem 1rem}
+.reads li{background:var(--paper);border:2px solid var(--line);border-radius:.9rem;padding:.8rem 1rem;display:grid;grid-template-columns:auto 1fr;gap:.1rem .7rem}
 .reads a{text-decoration:none}.reads a:hover{text-decoration:underline}.reads a b{font-size:1.05rem}
 .reads .by{font-size:.85rem;font-weight:600;color:var(--btc-text)}
 .reads span{color:var(--muted);font-size:.95rem}
 .share{font-size:.9rem;margin:.2rem 0 .6rem}
-.reads li{display:grid;grid-template-columns:auto 1fr;gap:.1rem .7rem}
-.reads li input{grid-row:span 3;width:1.2rem;height:1.2rem;margin-top:.25rem}
+.reads li input{grid-row:span 3;width:1.2rem;height:1.2rem;margin-top:.25rem;accent-color:var(--btc-text)}
 .topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
 .topnav a.launch:hover{color:var(--ink);background:#ffa94d}
 </style>

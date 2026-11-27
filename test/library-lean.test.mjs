@@ -25,6 +25,8 @@ test("dead rules stay out of the stylesheet", () => {
     ".cards p{",
     ".cards .links",
     ".tag{",
+    "h3{",
+    "--ok",
     ".sr-only{",
     ".tabs",
     ".more a",
@@ -35,6 +37,20 @@ test("dead rules stay out of the stylesheet", () => {
     assert.ok(!css.includes(dead), `stylesheet carries no ${dead}`);
   }
   assert.doesNotMatch(css, /\.reads li\{[^}]*display:flex/, "one layout wins for read rows");
+  assert.ok(css.includes("padding:.8rem 1rem;display:grid"), "surface and grid live in one rule");
+  assert.doesNotMatch(css, /\.reads li\{display:grid/, "no split grid-only rule remains");
+});
+
+test("anchors clear the sticky header and details feel finished", () => {
+  assert.ok(css.includes(".stage{scroll-margin-top:5rem}"), "stage headings land below the sticky bar");
+  assert.ok(css.includes("text-wrap:balance"), "the hero heading balances");
+  assert.ok(css.includes("accent-color:var(--btc-text)"), "ticks wear the brand color");
+  const guardAt = css.indexOf("@media (prefers-reduced-motion:no-preference)");
+  assert.ok(guardAt > 0, "the motion-allowed guard is present");
+  for (const m of css.matchAll(/\.reads li:hover/g)) {
+    assert.ok(m.index > guardAt, "no read-row hover escapes the guard");
+  }
+  assert.ok(css.includes(".reads li:hover{border-color:var(--ink)}"), "hover inks the row edge");
 });
 
 test("read links underline on hover", () => {
