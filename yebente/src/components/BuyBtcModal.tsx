@@ -752,7 +752,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
                     {lightningInvoice}
                   </p>
                   <p className="text-[10px] text-[var(--yb-on-surface-variant)] leading-relaxed">
-                    Sats have been credited to your Ye₿ente vault balance. Automated node settlement requires configuring LNBITS_URL or LND_REST_URL in .env.
+                    Sats have been credited to your Ye₿ente vault balance.
                   </p>
                 </div>
               ) : (
