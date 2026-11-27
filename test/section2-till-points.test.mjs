@@ -55,6 +55,11 @@ test("till-points: row hover lives inside the reduced-motion guard", () => {
   assert.ok(!reduceLine.includes("till-rows"), "nothing till-specific in the kill rule");
 });
 
+test("till-points: shared rail spine and no double hairline", () => {
+  assert.match(home, /@media \(min-width:860px\)\{\.till-points\{display:grid;grid-template-columns:minmax\(14rem,19rem\) minmax\(0,1fr\);gap:clamp\(2rem,5vw,4rem\)/, "rail locks onto the shared homepage spine");
+  assert.ok(home.includes(".till-rows article:first-child{border-top:0;padding-top:0}"), "first row drops its top hairline");
+});
+
 test("till-points: neighbors untouched (hero, FAQs, closing CTA)", () => {
   assert.ok(home.includes("<h1>Take bitcoin. <em>Get M-Pesa.</em></h1>"), "6-word hero kept");
   const faq = home.slice(home.indexOf('<div class="faq"'), home.indexOf('<section class="closing"'));

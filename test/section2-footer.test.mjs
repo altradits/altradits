@@ -37,11 +37,14 @@ test("footer reads as three groups: credit line, labelled nav, social row", () =
 });
 
 test("desktop gets the editorial grid, small screens stack through one query", () => {
-  assert.ok(css.includes(".sitefoot .footgrid{display:grid;grid-template-columns:minmax(13rem,19rem) 1fr;"),
-    "narrow rail plus wide content");
-  assert.ok(css.includes(".sitefoot .footgrid{grid-template-columns:1fr}"), "small screens stack");
+  assert.ok(css.includes(".sitefoot .footgrid{display:grid;grid-template-columns:1fr;gap:clamp(1.75rem,4vw,3.5rem);align-items:start}"),
+    "mobile-first single column with a fluid gap");
+  assert.ok(css.includes("@media (min-width:860px){.sitefoot .footgrid{grid-template-columns:minmax(14rem,19rem) minmax(0,1fr)}}"),
+    "desktop rail locks onto the shared spine");
   assert.equal((css.match(/@media \(max-width:859px\)/g) || []).length, 1, "one small-screen query");
-  assert.ok(css.includes("gap:clamp(1.75rem,4vw,3.5rem)"), "fluid gap between rail and content");
+  assert.ok(!/@media \(max-width:859px\)[^@]*sitefoot/.test(css), "footer needs no max-width override");
+  assert.ok(css.includes(".sitefoot .socials{display:flex;flex-wrap:wrap;gap:.6rem;margin-left:-.75rem}"),
+    "social glyphs align flush with the nav above");
 });
 
 test("tap targets are padded and the section opens with a rule", () => {
