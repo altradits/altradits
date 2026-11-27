@@ -17,9 +17,11 @@ test("every modal sheet carries its dialog name", () => {
     ["SendMpesaModal.tsx", "M-Pesa"],
     ["TransactionDetailModal.tsx", "Details"],
     ["WalletSettingsModal.tsx", "Settings"],
+    ["QrScanner.tsx", "Scan QR code"],
   ]) {
     const src = read(`yebente/src/components/${f}`);
     assert.ok(src.includes('role="dialog"'), `${f}: announces as a dialog`);
+    assert.ok(src.includes('aria-modal="true"'), `${f}: marked modal`);
     assert.ok(src.includes(`aria-label="${label}"`), `${f}: named ${label}`);
   }
   assert.match(read("yebente/src/components/PaymentNotice.tsx"), /role=\{(notice\.ok \? 'status' : 'alert')\}/, "the notice stays a live region, not a dialog");

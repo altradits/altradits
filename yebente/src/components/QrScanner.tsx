@@ -172,7 +172,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onResult, onClose, onType 
   const iconBtn = 'w-14 h-14 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center';
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black flex flex-col" onClick={(e) => e.stopPropagation()}>
+    <div role="dialog" aria-modal="true" aria-label="Scan QR code" className="fixed inset-0 z-[60] bg-black flex flex-col" onClick={(e) => e.stopPropagation()}>
       <div className="relative flex-1 flex items-center justify-center overflow-hidden" onPointerUp={focusAt}>
         <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover" />
         <div className="relative w-[70vmin] h-[70vmin] max-w-80 max-h-80 rounded-3xl border-4 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]" aria-hidden="true" />
