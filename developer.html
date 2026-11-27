@@ -35,57 +35,98 @@
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 @font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 
-:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff}
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff;--sky:#E6EFF8}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
 a{color:var(--blue)}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
-.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0 -1rem;padding:.8rem 1rem;flex-wrap:wrap;row-gap:.5rem;position:sticky;top:0;z-index:50;background:rgba(238,242,246,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0 -1rem;padding:.8rem 1rem;flex-wrap:wrap;row-gap:.5rem;position:sticky;top:0;z-index:50;background:rgba(238,242,246,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .top img{height:2.5rem;width:auto;display:block}
 .topnav{display:flex;gap:.35rem;flex-wrap:wrap;row-gap:.35rem;align-items:center}
 .topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.45rem .95rem;border-radius:99px}
 .topnav a:hover{color:var(--ink);background:rgba(15,27,45,.08)}
 .topnav a[aria-current]{color:#fff;background:var(--ink)}
+.topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
+.topnav a.launch:hover{color:var(--ink);background:#ffa94d}
 @media (max-width:420px){.topnav{gap:.25rem}.topnav a{font-size:.9rem;padding:.4rem .7rem}.top img{height:1.9rem}}
-.hero{padding:2.25rem 0 1.5rem}
-.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem}
+
+.hero{padding:2.75rem 0 2rem;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.95fr);gap:2rem;align-items:center}
+@media (max-width:860px){.hero{grid-template-columns:1fr;padding:2.2rem 0 1.5rem}}
+.eyebrow{display:inline-flex;align-items:center;gap:.45rem;margin:0 0 .9rem;padding:.3rem .8rem;border-radius:99px;background:var(--sky);border:1.5px solid #B7D0EA;font-size:.82rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em}
+.hero h1{font:800 clamp(2.15rem,5.4vw,3.4rem)/1.05 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.025em;margin:0}
 .hero h1 em{font-style:normal;color:var(--btc-text)}
-.lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:.9rem 0 0;max-width:38rem}
-.ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
-.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none}
+.lead{font-size:1.12rem;line-height:1.58;color:var(--muted);margin:1.1rem 0 0;max-width:36rem}
+.ctas{display:flex;flex-wrap:wrap;gap:.65rem;margin-top:1.65rem}
+.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.95rem;padding:.8rem 1.4rem;border-radius:.8rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none}
+.btn:hover{background:#ffa94d;border-color:#ffa94d}
+.btn:active{transform:translateY(1px)}
 .btn.ghost{background:transparent;border-color:var(--ink)}
-h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:2.4rem 0 .4rem}
+.btn.ghost:hover{background:rgba(15,27,45,.06);border-color:var(--ink)}
+.proofs{list-style:none;padding:0;margin:1.35rem 0 0;display:flex;flex-wrap:wrap;gap:.45rem}
+.proofs li{font-size:.86rem;font-weight:600;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:99px;padding:.28rem .75rem}
+
+.term{background:var(--ink);color:#E8EEF5;border:2px solid var(--ink);border-radius:1.25rem;overflow:hidden;box-shadow:8px 8px 0 var(--blue)}
+.term-head{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.7rem 1rem;background:#16273F;border-bottom:1px solid rgba(255,255,255,.1);font:600 .8rem ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#A9C0DA}
+.term-badge{background:rgba(11,122,95,.25);color:#6EE7B7;padding:.18rem .55rem;border-radius:99px;font-size:.72rem;font-weight:700}
+.term pre{margin:0;border-radius:0;background:transparent;padding:1rem 1.1rem;font-size:.84rem;line-height:1.55;max-width:none}
+.term-foot{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;padding:.7rem 1rem;background:#0A1320;border-top:1px solid rgba(255,255,255,.08);font-size:.84rem;color:#C9D3DF}
+.term-foot b{color:#FFB24C}
+.kw{color:#93C5FD}.str{color:#FCD34D}.okt{color:#6EE7B7}
+
+::selection{background:#F7931A66}
+h2{font:800 clamp(1.55rem,3.8vw,2.1rem)/1.14 'Bricolage Grotesque',sans-serif;margin:3rem 0 .45rem;letter-spacing:-.015em}
 h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
-.intro{color:var(--muted);margin:0 0 1.2rem;max-width:42rem}
-.cards{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem}
-.cards>li{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem}
-.cards p{margin:0;color:var(--muted);font-size:.97rem}
-.steps{max-width:44rem;padding-left:1.3rem;color:var(--muted)}
+.intro{color:var(--muted);margin:0 0 1.3rem;max-width:44rem}
+.cards{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(15.5rem,100%),1fr));gap:1rem}
+.cards>li{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.2rem;display:flex;flex-direction:column;gap:.5rem}
+.cards p{margin:0;color:var(--muted);font-size:.96rem}
+.cards .pain{align-self:flex-start;font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:.2rem .65rem;border-radius:99px;background:var(--sky);color:var(--blue)}
+
+.stepcards{list-style:none;padding:0;margin:0 0 1.25rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(15rem,100%),1fr));gap:1rem}
+.stepcards li{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.15rem;display:flex;flex-direction:column;gap:.45rem}
+.stepcards .n{width:2rem;height:2rem;border-radius:99px;background:var(--ink);color:var(--btc);font:800 1rem 'Bricolage Grotesque',sans-serif;display:inline-flex;align-items:center;justify-content:center}
+.stepcards b{color:var(--ink);font:800 1.05rem/1.25 'Bricolage Grotesque',sans-serif}
+.stepcards span{color:var(--muted);font-size:.95rem}
+
+.steps{max-width:46rem;padding-left:1.3rem;color:var(--muted)}
 .steps li{margin:.5rem 0}
 .steps b{color:var(--ink)}
-pre{background:var(--ink);color:#E8EEF5;border-radius:.75rem;padding:1rem 1.1rem;overflow-x:auto;font:400 .9rem/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;max-width:46rem}
+pre{background:var(--ink);color:#E8EEF5;border-radius:.85rem;padding:1rem 1.15rem;overflow-x:auto;font:400 .88rem/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;max-width:48rem}
 pre .c{color:#9FB2C8}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
 p code,li code,td code{background:rgba(15,27,45,.08);border-radius:.3rem;padding:.05rem .3rem}
-table{border-collapse:collapse;max-width:46rem;width:100%;background:var(--paper);border:2px solid var(--ink);border-radius:.75rem;overflow:hidden}
-th,td{text-align:left;padding:.6rem .8rem;border-bottom:1px solid var(--line);font-size:.95rem;vertical-align:top}
+.tablewrap{overflow-x:auto;max-width:52rem;border:2px solid var(--ink);border-radius:1rem;background:var(--paper)}
+table{border-collapse:collapse;width:100%;background:var(--paper)}
+th,td{text-align:left;padding:.7rem .9rem;border-bottom:1px solid var(--line);font-size:.95rem;vertical-align:top}
 tr:last-child th,tr:last-child td{border-bottom:0}
-th{font-family:'Bricolage Grotesque',sans-serif}
-.pill{display:inline-block;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-radius:99px;padding:.15rem .6rem;background:rgba(11,122,95,.12);color:var(--ok)}
+th{font-family:'Bricolage Grotesque',sans-serif;background:#F6F9FC}
+.pill{display:inline-block;font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-radius:99px;padding:.18rem .65rem;background:rgba(11,122,95,.12);color:var(--ok);white-space:nowrap}
 .pill.sandbox{background:rgba(42,90,143,.12);color:var(--blue)}
 .pill.planned{background:rgba(15,27,45,.08);color:var(--muted)}
-.diagram{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1rem;max-width:46rem}
+.diagram{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.15rem;max-width:52rem}
 .diagram svg{display:block;width:100%;height:auto}
-.note{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1rem 1.1rem;max-width:46rem;color:var(--muted)}
+.note{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.25rem 1.35rem;max-width:52rem;color:var(--muted);box-shadow:5px 5px 0 var(--ink)}
 .note b{color:var(--ink)}
+.twocol{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(20rem,100%),1fr));gap:1rem;margin-top:2.25rem}
+.box{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.25rem 1.35rem}
+.box h2{margin:0 0 .65rem;font-size:1.45rem}
+.box ul{margin:0;padding-left:1.2rem;color:var(--muted)}
+.box li{margin:.4rem 0}
+
+.closing{margin-top:3rem;background:var(--ink);color:#fff;border-radius:1.35rem;padding:2rem 1.75rem;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:1.5rem}
+.closing h2{margin:0 0 .4rem;color:#fff}
+.closing p{margin:0;color:#C9D3DF;max-width:34rem}
+.closing a{color:#FFB24C}
+.closing .ctas{margin-top:0}
+.closing .btn.ghost{color:#fff;border-color:#9FB2C8}
+.closing .btn.ghost:hover{background:rgba(255,255,255,.1)}
+
 .sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
 .sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}.soc{color:var(--muted)}a.soc:hover{color:var(--ink)}.soc svg{width:20px;height:20px;vertical-align:-4px}
 .sitefoot .wp{margin:0 0 .6rem}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top,.tabs{transition:box-shadow .25s ease}body.scrolled .top,body.scrolled .tabs{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}}
-.topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
-.topnav a.launch:hover{color:var(--ink);background:#ffa94d}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top{transition:box-shadow .25s ease}body.scrolled .top{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a,.cards>li,.stepcards li{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease,transform .18s ease}.cards>li:hover,.stepcards li:hover{transform:translateY(-2px);box-shadow:4px 4px 0 var(--ink)}}
 </style>
 </head>
 <body>
@@ -93,10 +134,42 @@ th{font-family:'Bricolage Grotesque',sans-serif}
   <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/ktown">kTown</a><a href="/wallet-guide">Ye₿ente</a><a href="/developer" aria-current="page">Developer</a><a href="/library">Library</a><a class="launch" href="/ktown">Get kTown</a></nav></div>
 
   <header class="hero">
-    <h1>Power your app <em>with Lightning.</em></h1>
-    <p class="lead">Create invoices to your own Lightning address. Verify settlement. Get webhooks. Your customers pay you straight. Altradits never holds their money.</p>
-    <div class="ctas"><a class="btn" href="#quickstart">Start in the sandbox</a><a class="btn ghost" href="/developer/reference">Read the reference</a></div>
+    <div>
+      <p class="eyebrow">Altradits Developer · Non-custodial Lightning API</p>
+      <h1>Power your app <em>with Lightning.</em></h1>
+      <p class="lead">You want to accept Bitcoin in your app, not babysit channels, liquidity, or user custody. Create invoices to your own Lightning address, verify settlement, and get signed webhooks. Your customers pay you straight. Altradits never holds their money.</p>
+      <div class="ctas"><a class="btn" href="#quickstart">Start in the sandbox</a><a class="btn ghost" href="/developer/reference">Read the reference</a></div>
+      <ul class="proofs" aria-label="Key guarantees">
+        <li>Zero custody</li>
+        <li>Free sandbox</li>
+        <li>0.5% live only</li>
+      </ul>
+    </div>
+    <div class="term" aria-label="Sample invoice request and response">
+      <div class="term-head"><span>POST /api/dev/v1/invoices</span><span class="term-badge">201 Created</span></div>
+      <pre><span class="c">// 1. Your server requests an invoice</span>
+{
+  <span class="kw">"destinationId"</span>: <span class="str">"dest_your_wallet"</span>,
+  <span class="kw">"sats"</span>: 5000,
+  <span class="kw">"memo"</span>: <span class="str">"order 123"</span>
+}
+
+<span class="c">// 2. Sats settle straight to your address</span>
+{
+  <span class="kw">"status"</span>: <span class="okt">"settled"</span>,
+  <span class="kw">"webhook"</span>: <span class="str">"invoice.settled"</span>
+}</pre>
+      <div class="term-foot"><span>Sandbox key starts with <b>ak_test_</b></span><span>Nothing real moves</span></div>
+    </div>
   </header>
+
+  <h2>Why builders skip running a node</h2>
+  <p class="intro">Spend your week shipping your product, not wrestling inbound liquidity or holding other people's balances.</p>
+  <ul class="cards">
+    <li><span class="pain">No node upkeep</span><h3>Keep your own wallet</h3><p>Point the API at your existing Lightning address. No channel balancing, no server backups, no liquidity headaches.</p></li>
+    <li><span class="pain">No custody risk</span><h3>Paid straight to you</h3><p>Every invoice comes from your address. Sats flow directly from payer to your wallet while the API verifies settlement.</p></li>
+    <li><span class="pain">Zero risk to test</span><h3>Build in the free sandbox</h3><p>Test keys, simulated invoices, and real signed webhooks let you wire your checkout end to end before spending a sat.</p></li>
+  </ul>
 
   <h2 id="build">What you can build</h2>
   <p class="intro">Anything that takes Lightning payments, without running a node.</p>
@@ -108,11 +181,11 @@ th{font-family:'Bricolage Grotesque',sans-serif}
   </ul>
 
   <h2 id="how">How it works</h2>
-  <ol class="steps">
-    <li><b>Register your own Lightning address.</b> Prove it with a 1 sat challenge payment from the wallet behind it.</li>
-    <li><b>Your app asks the API for an invoice.</b> It fetches one from your address and checks the exact amount and description.</li>
-    <li><b>Your customer pays your address straight.</b> The sats never pass through Altradits.</li>
-    <li><b>You poll settlement or wait for a webhook.</b> Signed, retried, logged.</li>
+  <ol class="stepcards">
+    <li><span class="n">1</span><b>Register your Lightning address</b><span>Prove ownership with a 1 sat challenge payment from the wallet behind it.</span></li>
+    <li><span class="n">2</span><b>Ask the API for an invoice</b><span>It fetches one from your address and checks the exact amount and description.</span></li>
+    <li><span class="n">3</span><b>Customer pays you straight</b><span>The sats never pass through Altradits.</span></li>
+    <li><span class="n">4</span><b>Poll or catch the webhook</b><span>Signed, retried, and logged with a request id.</span></li>
   </ol>
   <div class="diagram">
     <svg viewBox="0 0 640 232" role="img" aria-labelledby="flowtitle flowdesc">
@@ -176,6 +249,7 @@ const { invoice } = await res.json();
 
   <h2 id="endpoints">Endpoints</h2>
   <p class="intro">Every endpoint is in the <a href="/developer/reference">reference</a>. Every reply carries a request id. Every error carries a stable code.</p>
+  <div class="tablewrap">
   <table>
     <tr><th>Group</th><th>Status</th><th>What it does</th></tr>
     <tr><td>Accounts, keys, destinations</td><td><span class="pill">Live</span></td><td>Email sign-in, scoped API keys, your own addresses with ownership proof.</td></tr>
@@ -185,26 +259,36 @@ const { invoice } = await res.json();
     <tr><td>Sandbox simulator</td><td><span class="pill sandbox">Sandbox only</span></td><td>Free test destination and one-call settlement. Test keys only.</td></tr>
     <tr><td>Account close and refund payout</td><td><span class="pill planned">Planned</span></td><td>Self-serve close with the unused balance paid out. For now, ask through the <a href="/contact">contact form</a> (a $1 spam shield applies).</td></tr>
   </table>
+  </div>
 
-  <h2 id="limits">Limits</h2>
-  <ul class="steps" style="list-style:disc">
-    <li>1 to 100,000,000 sats per invoice.</li>
-    <li>100 invoices an hour per key. 2,000 invoices and 20 top-ups a day per account.</li>
-    <li>Webhook retries after 1 minute, 5 minutes, 30 minutes, 2 hours and 12 hours. Then the delivery is marked dead.</li>
-    <li>Past a limit, the API answers 429. Wait and retry.</li>
-  </ul>
+  <div class="twocol">
+    <section class="box" id="limits">
+      <h2>Limits</h2>
+      <ul>
+        <li>1 to 100,000,000 sats per invoice.</li>
+        <li>100 invoices an hour per key. 2,000 invoices and 20 top-ups a day per account.</li>
+        <li>Webhook retries after 1 minute, 5 minutes, 30 minutes, 2 hours and 12 hours. Then the delivery is marked dead.</li>
+        <li>Past a limit, the API answers 429. Wait and retry.</li>
+      </ul>
+    </section>
+    <section class="box" id="security">
+      <h2>Security</h2>
+      <ul>
+        <li>Keys are shown once, stored hashed, and scoped: invoices, webhooks, or both.</li>
+        <li>Secrets never land in logs. Abuse is watched and guessing is locked out.</li>
+        <li>The site key that issues top-up and challenge invoices can only receive. It can never spend.</li>
+        <li>In a security lockdown, new top-ups freeze. Invoices, reads and retries continue.</li>
+      </ul>
+    </section>
+  </div>
 
-  <h2 id="security">Security</h2>
-  <ul class="steps" style="list-style:disc">
-    <li>Keys are shown once, stored hashed, and scoped: invoices, webhooks, or both.</li>
-    <li>Secrets never land in logs. Abuse is watched and guessing is locked out.</li>
-    <li>The site key that issues top-up and challenge invoices can only receive. It can never spend.</li>
-    <li>In a security lockdown, new top-ups freeze. Invoices, reads and retries continue.</li>
-  </ul>
-
-  <h2 id="support">Support</h2>
-  <p class="intro">Questions about the API: write through the <a href="/contact">contact form</a> (a $1 spam shield applies) and quote the request id from the reply. The <a href="/api/dev/v1/health">health endpoint</a> names whether the API and the sandbox are on.</p>
-  <div class="ctas"><a class="btn" href="/developer/dashboard">Open the dashboard</a><a class="btn ghost" href="/developer/reference">Read the reference</a></div>
+  <section class="closing" id="support" aria-labelledby="dev-support">
+    <div>
+      <h2 id="dev-support">Ready to test your first invoice?</h2>
+      <p>Questions about the API: write through the <a href="/contact">contact form</a> (a $1 spam shield applies) and quote the request id from the reply. The <a href="/api/dev/v1/health">health endpoint</a> names whether the API and the sandbox are on.</p>
+    </div>
+    <div class="ctas"><a class="btn" href="/developer/dashboard">Open the dashboard</a><a class="btn ghost" href="/developer/reference">Read the reference</a></div>
+  </section>
 
 </div>
 
