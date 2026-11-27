@@ -48,4 +48,5 @@ test("pinned page facts still hold", () => {
   const foot = (html.match(/<footer class="sitefoot">[\s\S]*?<\/footer>/) || [""])[0];
   assert.equal([...foot.matchAll(/<a\b/g)].length, 11, "footer stays 11");
   assert.ok(!html.includes("—"), "no em-dashes in copy");
+  assert.ok(html.includes("max-width:46rem;text-wrap:balance}"), "headline balanced");
 });
