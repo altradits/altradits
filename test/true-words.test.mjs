@@ -30,8 +30,6 @@ test("boot fatals keep tryLater so it re-renders on switch", () => {
 
 test("the wallet cache is bumped with the rebuilt shell", () => {
   for (const f of ["yebente/public/sw.js", "yebente/app/sw.js"]) {
-    const m = read(f).match(/const CACHE = "yebente-v(\d+)";/);
-    assert.ok(m, `${f}: a versioned cache constant exists`);
-    assert.ok(Number(m[1]) > 1, `${f}: returning users get the new shell`);
+    assert.ok(read(f).includes('const CACHE = "yebente-v4";'), `${f}: past main and the other pending shells`);
   }
 });
