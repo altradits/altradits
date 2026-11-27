@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useEscape } from '../hooks/useEscape';
 import { useFocusReturn } from '../hooks/useFocusReturn';
+import { useClipboardCopy } from '../hooks/useClipboardCopy';
 import { UserWallet, ExchangeRates, Transaction } from '../types';
 import { ArrowLeft, Smartphone, CheckCircle2, Loader2, AlertTriangle, Zap, Copy, Check, RefreshCw } from 'lucide-react';
 import {
@@ -43,7 +44,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
   const [pinSecondsLeft, setPinSecondsLeft] = useState<number>(120);
   const [inFlightStatus, setInFlightStatus] = useState<string>('Safaricom has dispatched a payment prompt to your phone.');
   const [lightningInvoice, setLightningInvoice] = useState<string>('');
-  const [copiedInvoice, setCopiedInvoice] = useState(false);
+  const { copied: copiedInvoice, failed: copyInvoiceFailed, copy: copyInvoice, reset: resetCopyInvoice } = useClipboardCopy();
   // Bitika (M-Pesa or Airtel Money through a partner) while the server offers
   // it; otherwise the Daraja STK flow below runs unchanged.
   const [provider, setProvider] = useState<BuyProvider | 'loading'>('loading');
@@ -94,9 +95,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
 
   const handleCopyInvoice = () => {
     if (lightningInvoice) {
-      navigator.clipboard.writeText(lightningInvoice);
-      setCopiedInvoice(true);
-      setTimeout(() => setCopiedInvoice(false), 2000);
+      void copyInvoice(lightningInvoice);
     }
   };
 
@@ -441,7 +440,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
     setLightningInvoice('');
     setActiveCheckoutId('');
     setBitikaCode('');
-    setCopiedInvoice(false);
+    resetCopyInvoice();
     setPaidTimedOut(false);
     onClose();
   };
@@ -745,7 +744,7 @@ export const BuyBtcModal: React.FC<BuyBtcModalProps> = ({
                       className="px-2 py-1 rounded-lg bg-[var(--yb-surface-container)] border border-[var(--yb-outline-variant)] text-[11px] font-mono text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)] flex items-center gap-1"
                     >
                       {copiedInvoice ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                      <span>{copiedInvoice ? 'Copied' : 'Copy'}</span>
+                      <span aria-live="polite">{copiedInvoice ? 'Copied' : copyInvoiceFailed ? 'Copy failed' : 'Copy'}</span>
                     </button>
                   </div>
                   <p className="font-mono text-[10px] text-[var(--yb-on-surface-variant)] break-all select-all bg-[#0E0A13] p-2 rounded-xl border border-[var(--yb-surface-container-high)]">

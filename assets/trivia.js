@@ -201,6 +201,12 @@
       $("join-ok").textContent = `Seat taken as ${r.player.name}. Good luck.`;
       pollPlay();
     });
+    function endDonor(message) {
+      clearInterval(S.donorTimer);
+      $("fund-state").textContent = message;
+      $("fund-copy").disabled = true; $("fund-open").removeAttribute("href"); $("fund-open").setAttribute("aria-disabled", "true");
+      $("fund-again").hidden = false; $("fund-again").focus();
+    }
     $("fund-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       $("fund-err").textContent = "";
@@ -215,19 +221,26 @@
       $("fund-qr").innerHTML = r.qr;
       $("fund-bolt").value = r.bolt11;
       $("fund-open").href = `lightning:${r.bolt11}`;
-      $("fund-invoice").hidden = false;
+      $("fund-open").removeAttribute("aria-disabled"); $("fund-copy").disabled = false; $("fund-copy").textContent = "Copy invoice";
+      $("fund-invoice").hidden = false; $("fund-again").hidden = true;
       $("fund-state").textContent = "Waiting for payment.";
       clearInterval(S.donorTimer);
       S.donorTimer = setInterval(async () => {
-        if (Date.parse(r.expiresAt) < Date.now()) { clearInterval(S.donorTimer); $("fund-state").textContent = "This invoice expired. Make a new one."; return; }
+        if (Date.parse(r.expiresAt) < Date.now()) { endDonor("This invoice expired."); return; }
         try {
           const s = await call(`/api/trivia?view=donor&hash=${r.hash}`);
-          if (s.state === "paid") { clearInterval(S.donorTimer); $("fund-state").textContent = "Received. Thank you."; loadPool(); }
+          if (s.state === "paid") { endDonor("Received. Thank you."); loadPool(); }
         } catch { /* keep waiting */ }
       }, 4000);
     });
     $("fund-copy").addEventListener("click", () => {
-      if (navigator.clipboard) navigator.clipboard.writeText($("fund-bolt").value).then(() => { $("fund-copy").textContent = "Copied"; }).catch(() => {});
+      if (navigator.clipboard) navigator.clipboard.writeText($("fund-bolt").value).then(() => { $("fund-copy").textContent = "Copied"; }, () => { $("fund-copy").textContent = "Copy failed"; });
+      else $("fund-copy").textContent = "Copy failed";
+    });
+    $("fund-again").addEventListener("click", () => {
+      clearInterval(S.donorTimer); $("fund-invoice").hidden = true; $("fund-again").hidden = true;
+      $("fund-qr").innerHTML = ""; $("fund-bolt").value = ""; $("fund-copy").disabled = false; $("fund-copy").textContent = "Copy invoice";
+      $("fund-sats").focus();
     });
     $("books-btn").addEventListener("click", loadBooks);
     pollPlay();
