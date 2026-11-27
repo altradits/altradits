@@ -329,10 +329,14 @@ async function boot() {
   });
   $("link-paid-new").addEventListener("click", () => {
     stopPoll();
+    payHash = "";
+    $("amount").value = "";
+    hideErr("pay-err");
     $("view-paid").hidden = true;
     $("view-pay").hidden = false;
     refreshReceive();
     toTop();
+    $("amount").focus();
   });
 }
 

@@ -130,6 +130,7 @@ function showScreen(which) {
   $("screen-qr").hidden = which !== "qr";
   $("screen-settings").hidden = which !== "settings";
   $("tab-qr").hidden = !merchant;
+  document.querySelector(".tabs").hidden = !merchant;
   $("tab-qr").setAttribute("aria-selected", String(which === "qr"));
   $("tab-settings").setAttribute("aria-selected", String(which === "settings"));
   const main = document.querySelector("main");
