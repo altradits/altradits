@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-E+wQU48XCjF3Tj/ZDr/LjfqfMsLWpT4/raJU9RMYyNk='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-ApdnBqh/Z/YV3hI2kTu4FokhvQub4UXbE2XftIuVVDQ='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/tracker">
 <title>Open-source tracker · Altradits</title>
@@ -222,6 +222,10 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
   <h2>Where I've already contributed</h2>
   <ul class="proj" id="done"></ul>
 
+  <h2>Review log</h2>
+  <p class="intro">Every review I ran: what I tested, what I saw, and what happened to the change since. Status reads live from GitHub.</p>
+  <ul class="proj" id="reviews"></ul>
+
   <p class="intro sm" id="updated"></p>
   <p class="intro sm">Follow along on <a href="https://github.com/altradits">GitHub</a>. Want to mentor or review? See <a href="/journey">my journey</a>.</p>
 
@@ -322,6 +326,14 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
     <div class="links"><a href="https://github.com/${esc(p.repo)}">Repository</a>${p.guide ? `<a href="${esc(p.guide)}">Contributing guide</a>` : ""}${p.start ? `<a href="${esc(p.start)}">First tasks</a>` : ""}</div></li>`;
   $("#projects").innerHTML = T.projects.map((p) => card(p, true)).join("");
   $("#done").innerHTML = T.done.map((p) => card(p, false)).join("");
+  const PILL = { merged: "Merged", open: "Open", closed: "Closed", unknown: "Status unknown" };
+  const RKIND = { review: "Review", research: "Research" };
+  if (T.reviews) {
+    $("#reviews").innerHTML = T.reviews.map((r) => `<li><div class="who"><div><h3>${esc(RKIND[r.kind] || r.kind)}: ${esc(r.title)}</h3><small>${esc(r.repo)}#${r.number} · ${esc(r.date)}${r.commit ? ` · <code>${esc(r.commit)}</code>` : ""}</small> <span class="tag">${esc(PILL[r.status] || r.status)}</span></div></div>
+      <ul>${r.ran.map((t) => `<li><code>${esc(t.run)}</code><br><span>${esc(t.saw)}</span></li>`).join("")}</ul>
+      <p>${esc(r.note || "")}</p>
+      <div class="links"><a href="${esc(r.comment)}">My comment</a><a href="https://github.com/${esc(r.repo)}/${r.kind === "research" ? "issues" : "pull"}/${r.number}">On GitHub</a></div></li>`).join("");
+  }
   $("#updated").textContent = `Read from GitHub ${new Date(T.updatedAt).toLocaleString()}${T.stale ? " (GitHub didn't answer just now; showing the last result)" : ""}. Refreshes every 30 minutes.`;
 })();
 </script>
