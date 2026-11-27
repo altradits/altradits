@@ -19,9 +19,16 @@ test("dead CSS rules are gone", () => {
     ".sr-only{", ".sm{", ".proof{", ".months{", ".check{", "ul.proof", "ol.check",
     "pre{background", "p code", "table{", "th,td", "button{", "button:hover",
     "details{border-bottom", "summary{font-weight", ".intro{", "a[aria-current]",
-    "h3{font:800"]) {
+    "h3{font:800", ".tabs", ".more a", ".foot nav", ".pager a",
+    "details::details-content", "--ok:", ".noprint"]) {
     assert.ok(!html.includes(rule), `dead rule gone: ${rule}`);
   }
+});
+
+test("motion line keeps only live selectors, note and headline tightened", () => {
+  assert.ok(html.includes("@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top{transition:box-shadow .25s ease}body.scrolled .top{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}}"), "trimmed motion line kept");
+  assert.ok(html.includes(".note p{margin:0}"), "note paragraph margins reset");
+  assert.ok(html.includes("max-width:46rem;text-wrap:balance}"), "headline balanced");
 });
 
 test("one h2 rule styles the three headings", () => {
