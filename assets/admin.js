@@ -1930,13 +1930,14 @@ $("#mktPosts").addEventListener("click", async (e) => {
   const p = MKT_POSTS[Number(c ? c.dataset.mktCopy : t.dataset.mktTxt)];
   if (!p) return;
   if (c) {
-    try { await navigator.clipboard.writeText(p.caption); }
+    let ok = false;
+    try { await navigator.clipboard.writeText(p.caption); ok = true; }
     catch {
       const ta = document.createElement("textarea");
       ta.value = p.caption; document.body.appendChild(ta); ta.select();
-      document.execCommand("copy"); ta.remove();
+      try { ok = document.execCommand("copy"); } catch { /* old browser */ } ta.remove();
     }
-    toast("Caption copied.");
+    toast(ok ? "Caption copied." : "Caption not copied.");
   } else {
     const base = String(p.image).split("/").pop().replace(/\.jpg$/, "");
     const a = document.createElement("a");

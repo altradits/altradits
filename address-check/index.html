@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-RP7IrJTVi1KB4LWxhB/cH6Kwbw4sfZDOtjYxH0nH9zo='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-nepZNSPj9A+QWwqhfbroxh+t3ZQtVR0aC58yee+ddnM='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <title>Bitcoin address checker: verify before you send · Altradits</title>
 <meta name="description" content="Free Bitcoin address checker. Paste any address: the checksum is verified on your device and you see what it pays to. Nothing leaves your browser. Works offline.">
@@ -558,8 +558,9 @@ if (typeof document !== "undefined") {
       copy.type = "button";
       copy.addEventListener("click", () => {
         const done = () => { copy.textContent = "Copied."; };
-        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(r.canonical).then(done, done);
-        else { box.value = r.canonical; box.select(); try { document.execCommand("copy"); } catch (e) { /* old browser */ } done(); }
+        const failed = () => { copy.textContent = "Copy failed."; };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(r.canonical).then(done, failed);
+        else { box.value = r.canonical; box.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (e) { /* old browser */ } if (ok) done(); else failed(); }
       });
       card.appendChild(copy);
       const dl = el("dl", "steps");
