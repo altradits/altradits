@@ -7,7 +7,6 @@ import { logBalance, getStoredTransactions } from '../services/storageService';
 interface BalanceCardProps {
   wallet: UserWallet;
   rates: ExchangeRates;
-  onOpenWalletSettings: () => void;
   onUpdateWallet?: (updated: UserWallet) => void;
   onRefreshServer?: () => Promise<void>; // the Ye₿ente wallet: ask the server again
 }
@@ -15,7 +14,6 @@ interface BalanceCardProps {
 export const BalanceCard: React.FC<BalanceCardProps> = ({
   wallet,
   rates,
-  onOpenWalletSettings,
   onUpdateWallet,
   onRefreshServer,
 }) => {

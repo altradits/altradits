@@ -45,7 +45,8 @@ The check recognises three expected changes and never punishes them.
 ## What freezes, and what never does
 
 Frozen at level 3: Ye₿ente outbound sends, internal transfers, M-Pesa buys
-(new quotes only; a prompt already on its way still settles), trivia payouts,
+and cash-outs (new quotes only; payments already on their way still settle),
+trivia payouts,
 node top-ups, Developer API top-up creation, and non-security outbound email.
 
 Always live, even at level 3: receiving (invoices, LNURL, Lightning
