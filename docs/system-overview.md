@@ -1,7 +1,9 @@
 # System overview
 
 altradits.com is Stanley Chege Thuita's open-source Bitcoin home: free tools, a free
-library, and his journey towards full-time open-source work. Nothing is sold.
+library, and his journey towards full-time open-source work. The tools and
+library are free. Contact messages cost $1, and the Developer API takes a 0.5%
+service charge.
 
 **Pages**
 - `/` home and Ye₿ente manual · `/yebente` the wallet app · `/library` free resources in reading order
@@ -19,7 +21,7 @@ dashboard all use it. See `docs/manual-lnd.md` and `docs/manual-tunnel.md`.
 
 **Stan** (`lib/stan.js`)
 Stan stayed for security and communication. He keeps the security watch,
-emails Stanley every alert, and sends a short report each morning: the node
+emails Stanley every high-severity alert, and sends a short report each morning: the node
 against the chain tip, sending power, Ye₿ente's balances, and what was turned
 away. Admin → "Email me Stan's report now" sends one on demand.
 
