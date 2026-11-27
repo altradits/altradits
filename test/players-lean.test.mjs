@@ -36,6 +36,28 @@ test("card link motion stays inside the motion-allowed guard", () => {
   assert.ok(css.indexOf(rule) > guardAt, "the transition sits inside the guard");
 });
 
+test("cards rest calm and lift only where motion is allowed", () => {
+  assert.ok(
+    css.includes(".cards>li{background:var(--paper);border:2px solid var(--line);"),
+    "cards rest on the quiet line color"
+  );
+  const guardAt = css.indexOf("@media (prefers-reduced-motion:no-preference)");
+  assert.ok(guardAt > 0, "the motion-allowed guard is present");
+  for (const m of css.matchAll(/\.cards>li:hover/g)) {
+    assert.ok(m.index > guardAt, "no card hover escapes the guard");
+  }
+  assert.ok(
+    css.includes(".cards>li:hover{border-color:var(--ink);transform:translateY(-2px)}"),
+    "hover inks the edge and lifts the card"
+  );
+  assert.ok(css.includes("text-wrap:balance"), "the hero heading balances");
+  assert.ok(css.includes(".cards .links a{text-decoration:none}"), "visit links rest plain");
+  assert.ok(
+    css.includes(".cards .links a:hover{color:var(--ink);text-decoration:underline}"),
+    "visit links ink and underline on hover"
+  );
+});
+
 test("all 5 sections with 30 cards survive", () => {
   assert.equal(page.match(/<ul class="cards">/g).length, 5, "5 card sections stay");
   assert.equal(page.match(/<li><div class="who">/g).length, 30, "all 30 cards stay");
