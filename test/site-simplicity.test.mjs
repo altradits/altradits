@@ -32,11 +32,14 @@ test("every public page shares one concise mission footer without switched-off c
     for (const href of ["/ktown", "/ktown/terms", "/yebente", "/wallet-guide", "/developer", "/contact"]) {
       assert.ok(foot.includes(`href="${href}"`), `${f}: footer links ${href}`);
     }
+    for (const href of ["https://github.com/altradits", "https://x.com/altradits", "https://www.tiktok.com/@5tan_lee", "https://www.linkedin.com/in/stanmobitech/"]) {
+      assert.ok(foot.includes(`href="${href}"`), `${f}: footer links social ${href}`);
+    }
     for (const off of ["/kazi", "/trivia", "/njia"]) {
       assert.ok(!foot.includes(`href="${off}"`), `${f}: footer omits switched-off ${off}`);
     }
     const links = [...foot.matchAll(/<a\b/g)].length;
-    assert.equal(links, 9, `${f}: footer stays concise (whitepaper + 8 core links)`);
+    assert.equal(links, 11, `${f}: footer stays concise (whitepaper + 6 core links + 4 social icons)`);
   }
 });
 
