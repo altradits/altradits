@@ -64,6 +64,11 @@ test("the saved hash and quote are validated before use", () => {
     "contact.html: a corrupt quote is dropped instead of rendered");
 });
 
+test("starting over drops the dead quote but keeps the words", () => {
+  assert.match(html, /\$\("#freshBtn"\)\.addEventListener\("click", \(\) => \{ clearInterval\(poll\); quote = null; resumed = false; saveDraft\(\{ fields: readFields\(\) \}\);/,
+    "contact.html: a fresh start drops the dead quote and keeps the words");
+});
+
 test("going back keeps the live quote stashed, never mints from the draft", () => {
   assert.match(html, /stashWords\(\); \$\("#toPay"\)\.disabled = false/, "contact.html: going back stashes words");
   assert.match(html, /saveDraft\({ fields: readFields\(\), \.\.\.\(d\.quote \? \{ quote: d\.quote \} : \{\}\) \}\)/,

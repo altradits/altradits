@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-H9DqALvjDP/2KCqsBnXRT0Zfxz8/G7vq6Igv3FtNSJ8='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-gpLCFL7v08cla1zsF+CfHpilplYnFyPAuhaErm/HEdI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/contact">
 <title>Write to the team · Altradits</title>
@@ -252,7 +252,7 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
   }
   $("#sendBtn").addEventListener("click", () => sendMessage(false));
   $("#typoBtn").addEventListener("click", () => sendMessage(true));
-  $("#freshBtn").addEventListener("click", () => { clearInterval(poll); quote = null; $("#stepSend").hidden = true; $("#stepWrite").hidden = false; $("#toPay").disabled = false; $("#err").textContent = ""; $("#err2").textContent = ""; $("#freshBtn").hidden = true; $("#toPay").focus(); });
+  $("#freshBtn").addEventListener("click", () => { clearInterval(poll); quote = null; resumed = false; saveDraft({ fields: readFields() }); $("#stepSend").hidden = true; $("#stepWrite").hidden = false; $("#toPay").disabled = false; $("#err").textContent = ""; $("#err2").textContent = ""; $("#freshBtn").hidden = true; $("#toPay").focus(); });
 })();
 </script>
 </body>
