@@ -4,6 +4,7 @@ import { biometricOn, approveWithBiometric } from '../services/biometric';
 import { HoldNotice } from './HoldNotice';
 import { useEscape } from '../hooks/useEscape';
 import { useFocusReturn } from '../hooks/useFocusReturn';
+import { useClipboardCopy } from '../hooks/useClipboardCopy';
 import { SatsMotion, CountUp } from './SatsMotion';
 import { celebrate } from '../services/celebrate';
 import React, { useState, useEffect } from 'react';
@@ -62,7 +63,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   const [realReference, setRealReference] = useState<string>('');
   const [merchantRecipientName, setMerchantRecipientName] = useState<string>('');
   const [receiptUrl, setReceiptUrl] = useState<string>('');
-  const [copiedRef, setCopiedRef] = useState<boolean>(false);
+  const { copied: copiedRef, failed: copyRefFailed, copy: copyRef } = useClipboardCopy();
   const [pin, setPin] = useState<string>('');
   const server = hasServerWallet();
   const [usePin, setUsePin] = useState(false);
@@ -410,9 +411,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
 
   const handleCopyRef = () => {
     if (!realReference) return;
-    navigator.clipboard.writeText(realReference);
-    setCopiedRef(true);
-    setTimeout(() => setCopiedRef(false), 2000);
+    void copyRef(realReference);
   };
 
   const headerTitle = `Send ${rail.name}`;
@@ -701,11 +700,12 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                         type="button"
                         onClick={handleCopyRef}
                         className="p-1 text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
-                        aria-label="Copy code"
-                        title="Copy code"
+                        aria-label={copyRefFailed ? 'Copy failed. Long-press the code to copy it.' : 'Copy code'}
+                        title={copyRefFailed ? 'Copy failed. Long-press the code to copy it.' : 'Copy code'}
                       >
                         {copiedRef ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
+                      {copyRefFailed && <span role="status" className="text-[11px] text-red-300">Copy failed</span>}
                     </div>
                   </div>
                 )}

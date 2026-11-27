@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useEscape } from '../hooks/useEscape';
 import { useFocusReturn } from '../hooks/useFocusReturn';
+import { useClipboardCopy } from '../hooks/useClipboardCopy';
 import { UserWallet, WalletType } from '../types';
 import {
   isLightningAddress,
@@ -57,8 +58,8 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   const [weblnStatusMessage, setWeblnStatusMessage] = useState<string>('');
   const [validationError, setValidationError] = useState<string>('');
 
-  const [copiedOwn, setCopiedOwn] = useState(false);
-  const [copiedExternal, setCopiedExternal] = useState(false);
+  const { copied: copiedOwn, failed: copyOwnFailed, copy: copyOwn } = useClipboardCopy();
+  const { copied: copiedExternal, failed: copyExternalFailed, copy: copyExternal } = useClipboardCopy();
   const [isVerifying, setIsVerifying] = useState(false);
   const [lightningResult, setLightningResult] = useState<LightningAddressDetails | null>(null);
 
@@ -311,16 +312,15 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                     />
                     <button
                       type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(ownAddress);
-                        setCopiedOwn(true);
-                        setTimeout(() => setCopiedOwn(false), 2000);
-                      }}
+                      onClick={() => { void copyOwn(ownAddress); }}
                       className="absolute right-3 top-3 text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
+                      aria-label={copyOwnFailed ? 'Copy failed. Long-press the address to copy it.' : 'Copy Lightning address'}
+                      title={copyOwnFailed ? 'Copy failed. Long-press the address to copy it.' : 'Copy Lightning address'}
                     >
                       {copiedOwn ? <Check className="w-3.5 h-3.5 text-[var(--yb-secondary)]" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                   </div>
+                  {copyOwnFailed && <p role="status" className="text-[11px] text-red-300 mt-1 px-1">Copy failed</p>}
                 </div>
               )}
 
@@ -466,17 +466,16 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                   {address && (
                     <button
                       type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(address);
-                        setCopiedExternal(true);
-                        setTimeout(() => setCopiedExternal(false), 2000);
-                      }}
+                      onClick={() => { void copyExternal(address); }}
                       className="absolute right-3 top-3 text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
+                      aria-label={copyExternalFailed ? 'Copy failed. Long-press the address to copy it.' : 'Copy outside address'}
+                      title={copyExternalFailed ? 'Copy failed. Long-press the address to copy it.' : 'Copy outside address'}
                     >
                       {copiedExternal ? <Check className="w-3.5 h-3.5 text-[var(--yb-secondary)]" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                   )}
                 </div>
+                {copyExternalFailed && <p role="status" className="text-[11px] text-red-300 mt-1 px-1">Copy failed</p>}
               </div>
 
               {/* Verification Actions */}
