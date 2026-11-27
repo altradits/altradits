@@ -112,12 +112,20 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .till-rows p{margin:.45rem 0 0;color:var(--muted);max-width:38rem}
 @media (min-width:860px){.till-points{display:grid;grid-template-columns:minmax(14rem,19rem) minmax(0,1fr);gap:clamp(2rem,5vw,4rem);align-items:start}.till-points h2{margin-bottom:0}}
 
-.family{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(16rem,100%),1fr));gap:1rem}
-.family li{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.2rem 1.3rem;display:flex;flex-direction:column;gap:.45rem}
-.family b{font:800 1.2rem/1.2 'Bricolage Grotesque',sans-serif;color:var(--ink)}
-.family p{margin:0;color:var(--muted);font-size:.97rem}
-.family a{margin-top:auto;padding-top:.45rem;font-weight:700;text-decoration:none}
-.family a:hover{text-decoration:underline}
+.names{border-top:1px solid var(--line);margin-top:clamp(2.5rem,5vw,3.5rem);padding-top:clamp(1.25rem,3vw,2rem)}
+.names h2{margin:0 0 .5rem;text-wrap:balance}
+.names .intro{margin:0}
+.names-list{margin:clamp(1.5rem,4vw,2.5rem) 0 0;padding:0}
+.names-row{padding:clamp(1.1rem,2.6vw,1.6rem) .25rem;border-top:1px solid var(--line)}
+.names-row:last-child{border-bottom:1px solid var(--line)}
+.names-term{margin:0}
+.names-term b{font:800 clamp(1.3rem,2.6vw,1.6rem)/1.2 'Bricolage Grotesque',sans-serif;color:var(--ink)}
+.names-detail{margin:.35rem 0 0;padding:0;color:var(--muted);max-width:38rem}
+.names-link{margin:.55rem 0 0;padding:0}
+.names-link a{display:inline-block;padding:.55rem 0;font-weight:700;text-decoration:none}
+.names-link a:hover{text-decoration:underline}
+@media (min-width:560px){.names-row{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:1.5rem;align-items:baseline}.names-term{grid-column:1;grid-row:1}.names-link{grid-column:2;grid-row:1;margin:0;text-align:right}.names-link a{padding:0}.names-detail{grid-column:1;grid-row:2}}
+@media (min-width:860px){.names{display:grid;grid-template-columns:minmax(14rem,19rem) minmax(0,1fr);gap:clamp(2rem,5vw,4rem);align-items:start}.names-list{margin:0}}
 
 .faq{margin-top:3.25rem;max-width:48rem}
 .faq details{background:var(--paper);border:1.5px solid var(--line);border-radius:.85rem;padding:.85rem 1.1rem;margin-bottom:.6rem}
@@ -145,7 +153,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .sitefoot .soc{color:var(--muted);display:inline-flex;align-items:center;justify-content:center;min-width:2.75rem;min-height:2.75rem}
 .sitefoot .soc svg{width:20px;height:20px;display:block}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top{transition:box-shadow .25s ease}body.scrolled .top{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a,.family li{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease,transform .18s ease}.family li:hover{transform:translateY(-2px);box-shadow:4px 4px 0 var(--ink)}.steps .n{transition:color .18s ease}.steps li:hover .n{color:var(--ink)}.till-rows article{transition:border-color .18s ease}.till-rows article:hover{border-color:var(--ink)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}.sitefoot a{transition:color .18s ease}.sitefoot .footnav a:hover,.sitefoot .wp a:hover{color:var(--ink)}.sitefoot .footnav a:hover{text-decoration:underline}a.soc:hover{color:var(--ink)}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top{transition:box-shadow .25s ease}body.scrolled .top{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.names-row{transition:background-color .18s ease}.names-row:hover{background:rgba(15,27,45,.045)}.names-link a{transition:color .18s ease}.names-link a:hover{color:var(--ink)}.steps .n{transition:color .18s ease}.steps li:hover .n{color:var(--ink)}.till-rows article{transition:border-color .18s ease}.till-rows article:hover{border-color:var(--ink)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}.sitefoot a{transition:color .18s ease}.sitefoot .footnav a:hover,.sitefoot .wp a:hover{color:var(--ink)}.sitefoot .footnav a:hover{text-decoration:underline}a.soc:hover{color:var(--ink)}}
 </style>
 </head>
 <body>
@@ -204,13 +212,29 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
     </div>
   </section>
 
-  <h2>Three names, one project</h2>
-  <p class="intro">Built in Kisumu for everyday Bitcoin use, from the shop counter to your pocket.</p>
-  <ul class="family">
-    <li><b>Altradits</b><p>The project. Free Bitcoin tools, apps and learning built in Kisumu.</p><a href="/portfolio">See all products →</a></li>
-    <li><b>Ye₿ente</b><p>The starter Bitcoin wallet. Open one in a minute, send, receive and cash out to M-Pesa.</p><a href="/wallet-guide">Read the guide →</a></li>
-    <li><b>kTown</b><p>The free QR till for shops. Customers pay in sats, shops get shillings in M-Pesa.</p><a href="/ktown">Get kTown →</a></li>
-  </ul>
+  <section class="names" aria-labelledby="names-h">
+    <div class="names-rail">
+      <h2 id="names-h">Three names, one project</h2>
+      <p class="intro">Built in Kisumu for everyday Bitcoin use.</p>
+    </div>
+    <dl class="names-list">
+      <div class="names-row">
+        <dt class="names-term"><b>Altradits</b></dt>
+        <dd class="names-detail">The project. Free tools and learning.</dd>
+        <dd class="names-link"><a href="/portfolio">See all apps</a></dd>
+      </div>
+      <div class="names-row">
+        <dt class="names-term"><b>Ye₿ente</b></dt>
+        <dd class="names-detail">The starter wallet. Open one in a minute, cash out to M-Pesa.</dd>
+        <dd class="names-link"><a href="/wallet-guide">Ye₿ente guide</a></dd>
+      </div>
+      <div class="names-row">
+        <dt class="names-term"><b>kTown</b></dt>
+        <dd class="names-detail">The shop till. Sales arrive as M-Pesa.</dd>
+        <dd class="names-link"><a href="/ktown">Get kTown</a></dd>
+      </div>
+    </dl>
+  </section>
 
   <div class="faq" id="answers">
   <h2>Questions</h2>
