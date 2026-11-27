@@ -72,6 +72,17 @@ test("row hover lives inside the reduced-motion guard only", () => {
   assert.ok(!outside.includes(".names-row:hover"), "no row hover outside the guard");
 });
 
+test("rail matches the page spine, mobile links fill the touch target", () => {
+  assert.ok(
+    home.includes(".names{display:grid;grid-template-columns:minmax(14rem,19rem)"),
+    "rail column shares the page spine",
+  );
+  assert.ok(home.includes(".names-link a{display:inline-block;padding:.45rem 0"), "mobile links fill the tap target");
+  assert.ok(home.includes(".names-link a{padding:0}"), "padding resets on desktop rows");
+  const guard = (home.match(/@media \(prefers-reduced-motion:no-preference\)\{.*/) || [""])[0];
+  assert.ok(guard.includes(".names-link a:hover{color:var(--ink)}"), "link hover matches in the motion-allowed block");
+});
+
 test("section copy stays short with no em-dashes", () => {
   assert.ok(!section.includes("—"), "no em-dashes in the section");
   for (const d of [...section.matchAll(/<dd class="names-detail">(.*?)<\/dd>/g)].map((m) => m[1])) {
