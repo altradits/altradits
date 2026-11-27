@@ -45,9 +45,14 @@ test("closing styling is calm: top hairline, clamp padding, no dark panel", () =
 });
 
 test("closing uses an explicit editorial grid at desktop widths", () => {
-  assert.match(css, /@media \(min-width:860px\)\{\.closing\{display:grid;grid-template-columns:minmax\(12rem,17rem\) 1fr/);
+  assert.match(css, /@media \(min-width:860px\)\{\.closing\{display:grid;grid-template-columns:minmax\(14rem,19rem\) minmax\(0,1fr\);gap:0 clamp\(2rem,5vw,4rem\)/);
   assert.match(css, /\.closing h2\{[^}]*grid-row:1\/3/);
   assert.match(css, /\.closing \.btn\{grid-column:2;justify-self:start\}/);
+});
+
+test("closing rides the shared rail with a balanced head and pill CTA", () => {
+  assert.match(css, /\.closing h2\{[^}]*text-wrap:balance/);
+  assert.ok(css.includes(".closing .btn{border-radius:99px;min-height:3.2rem;padding:.9rem 1.85rem}"), "closing CTA echoes the hero pill");
 });
 
 test("closing adds no motion and no em-dashes", () => {
