@@ -34,6 +34,7 @@ test("the fresh start reopens the message with the typed words kept", () => {
   assert.match(wire[1], /\$\("#stepWrite"\)\.hidden = false/, "message step reopens");
   assert.match(wire[1], /\$\("#toPay"\)\.disabled = false/, "payment step can run again");
   assert.doesNotMatch(wire[1], /\.value/, "typed name, email and message are kept");
+  assert.match(wire[1], /\$\("#toPay"\)\.focus\(\)/, "focus lands on the payment step, not the void");
   const send = html.slice(html.indexOf('id="stepSend"'), html.indexOf('id="stepSend"') + html.slice(html.indexOf('id="stepSend"')).indexOf("</fieldset>"));
   assert.doesNotMatch(send, /backToWrite|Back to your message/, "paid step stays one-way: restart, not back");
 });
@@ -50,6 +51,7 @@ test("the receipt success state links home without touching print", () => {
   assert.match(html, /id="okBack" hidden><a href="\/">Back to the homepage<\/a>/, "success way home");
   assert.match(html, /getElementById\("okBack"\)\.hidden = false/, "success reveals the way home");
   assert.match(html, /class="noprint" id="okBack"/, "way home skips print");
+  assert.match(html, /a\{color:var\(--navy\)\}/, "recovery links keep the page palette");
   assert.match(html, /class="noprint" id="errBack"/, "error links skip print");
   assert.match(html, /@media print\{[^}]*\.noprint/, "print still hides them");
 });
@@ -59,7 +61,8 @@ test("the paid and expired donation states offer a fresh invoice", () => {
   assert.match(html, /id="again" hidden>Make another invoice</, "button starts hidden with plain words");
   assert.match(html, /Received\. Thank you ."; \$\("#again"\)\.hidden = false/, "paid reveals it");
   assert.match(html, /Make a new one\."; \$\("#again"\)\.hidden = false/, "expired reveals it");
-  assert.match(html, /\$\("#again"\)\.hidden = true; \$\("#state"\)\.textContent = "Waiting/, "a new invoice hides it again");
+  assert.match(html, /\$\("#again"\)\.hidden = true; \$\("#copy"\)\.textContent/, "a new invoice hides it again");
+  assert.match(html, /\$\("#copy"\)\.textContent = "Copy invoice"; \$\("#state"\)/, "a new invoice resets the copy label");
 });
 
 test("the fresh invoice returns to the amount with the value kept", () => {
