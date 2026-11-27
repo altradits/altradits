@@ -7,17 +7,17 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-sQpKGgukFbxW6AsF7Dy+ipVkpHHewGkqONnfkf8OubM='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-zlUcSi2BrdXbQoOiKhQN+Jxw6nKJcD/GPHRBaTgkoKg='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <script src="/assets/report.js" defer></script>
 <script src="/assets/practice.js" defer></script>
 <link rel="canonical" href="https://altradits.com/tracker">
 <title>Open-source tracker · Altradits</title>
-<meta name="description" content="Stanley's public open-source tracker: six Bitcoin and Lightning projects, one challenge each, solved without AI. Progress updates itself from GitHub.">
+<meta name="description" content="Stanley's public open-source tracker: seven Bitcoin and Lightning projects, one challenge each, solved without AI. Progress updates itself from GitHub.">
 <link rel="preload" as="font" type="font/woff2" href="/assets/bricolage-grotesque-latin.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/assets/figtree-latin.woff2" crossorigin>
 <meta property="og:title" content="Open-source tracker · Altradits">
-<meta property="og:description" content="Stanley's public open-source tracker: six Bitcoin and Lightning projects, one challenge each, solved without AI. Progress updates itself from GitHub.">
+<meta property="og:description" content="Stanley's public open-source tracker: seven Bitcoin and Lightning projects, one challenge each, solved without AI. Progress updates itself from GitHub.">
 <meta property="og:url" content="https://altradits.com/tracker">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://altradits.com/assets/social-card.png">
@@ -26,7 +26,7 @@
 <meta property="og:image:alt" content="Stanley open-source tracker progress">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Open-source tracker · Altradits">
-<meta name="twitter:description" content="Stanley's public open-source tracker: six Bitcoin and Lightning projects, one challenge each, solved without AI. Progress updates itself from GitHub.">
+<meta name="twitter:description" content="Stanley's public open-source tracker: seven Bitcoin and Lightning projects, one challenge each, solved without AI. Progress updates itself from GitHub.">
 <meta name="twitter:image" content="https://altradits.com/assets/social-card.png">
 <meta name="twitter:image:alt" content="Stanley open-source tracker progress">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Open-source tracker", "url": "https://altradits.com/tracker"}</script>
@@ -251,6 +251,7 @@ button:disabled{opacity:.5;cursor:default}
 
   <h2>Where I've already contributed</h2>
   <ul class="proj" id="done"></ul>
+  <div class="links sm" id="minmoLinks"><span class="muted">Minmo:</span> <a href="https://github.com/minmoto/payment-channels">Repo</a> <a href="https://github.com/minmoto/payment-channels/issues">Open issues</a> <a href="https://github.com/minmoto/payment-channels/issues/56">Issue #56</a> <a href="https://github.com/minmoto">All repos</a> <a href="https://github.com/okjodom">Maintainer</a> <a href="https://minmo.to/">Website</a></div>
 
   <h2>Review log</h2>
   <p class="intro">Every review I ran: what I tested, what I saw, and what happened to the change since. Status reads live from GitHub.</p>
@@ -263,7 +264,7 @@ button:disabled{opacity:.5;cursor:default}
   <ul class="proj" id="billboard"></ul>
 
   <h2>Journey</h2>
-  <p class="intro">From the first contribution to full time. Ranks count logged reviews on the six projects; merges follow the milestone chain above.</p>
+  <p class="intro">From the first contribution to full time. Ranks count logged reviews on the seven projects; merges follow the milestone chain above.</p>
   <ul class="proj" id="journey"></ul>
 
   <h2>In Remembrance</h2>
@@ -387,7 +388,7 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
   const n = T.next;
   $("#today").innerHTML = n ? `<span class="tag">${n.focus ? "Today's task · my focus" : "Today's task"}</span><h2>${esc(n.name)}: ${esc(n.step.title)}</h2><p>${esc(n.step.text)}</p><p><b>Challenge:</b> ${esc(n.challenge)}</p><div class="links"><a href="${esc(n.start)}">Find a task</a><a href="${esc(n.guide)}">Read the guide</a><a href="/plan">My six-month plan</a></div>`
     : `<span class="tag">All steps done</span><h2>Every challenge is complete.</h2><p>Time to pick harder ones.</p>`;
-  $("#stats").innerHTML = [[`${T.totals.steps} of ${T.totals.of}`, "steps done on the six projects"], [T.streak, `day${T.streak === 1 ? "" : "s"} in a row`], [T.activeDays30, "active days, last 30"], [T.totals.merged, `pull requests merged, everywhere (${T.totals.mergedProjects} on the six projects)`]]
+  $("#stats").innerHTML = [[`${T.totals.steps} of ${T.totals.of}`, "steps done on the seven projects"], [T.streak, `day${T.streak === 1 ? "" : "s"} in a row`], [T.activeDays30, "active days, last 30"], [T.totals.merged, `pull requests merged, everywhere (${T.totals.mergedProjects} on the seven projects)`]]
     .map(([b, s]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join("");
   $("#rules").innerHTML = T.rules.map((r) => `<li>${esc(r)}</li>`).join("");
   const card = (p, withChallenge) => `<li><div class="who">${p.logo ? `<img src="/assets/players/${esc(p.logo)}.png" alt="" width="44" height="44">` : ""}<div><h3>${esc(p.name)}</h3><small>${esc(p.repo)}</small>${p.repo === T.focus ? '<span class="tag">My focus</span>' : ""}</div></div>
@@ -481,7 +482,7 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
     const d = (iso) => String(iso || "").slice(0, 10);
     const first = (label, b) => b ? `<li><b>${esc(label)}:</b> <a href="${esc(b.url)}">${esc(b.title)}</a> <small class="muted">${esc(b.repo)}#${esc(String(b.number))} · ${esc(d(b.at))}</small></li>` : `<li><b>${esc(label)}:</b> <span class="muted">Not yet.</span></li>`;
     const r = J.rank;
-    $("#journey").innerHTML = `<li><div class="who"><div><h3>${esc(r.title)}</h3><small>${r.reviews} reviews logged on the six projects</small></div></div>
+    $("#journey").innerHTML = `<li><div class="who"><div><h3>${esc(r.title)}</h3><small>${r.reviews} reviews logged on the seven projects</small></div></div>
       <ul>${[["Genesis", J.genesis], ["First review", J.firstReview], ["First issue", J.firstIssue], ["First pull request", J.firstPr], ["First merge", J.firstMerge]].map(([l, b]) => first(l, b)).join("")}</ul>
       <p>${r.next ? `Next: <b>${esc(r.next.title)}</b>, ${r.next.toGo} review${r.next.toGo === 1 ? "" : "s"} to go. ${esc(r.next.text)}` : "Top rank reached."}</p></li>`;
   }

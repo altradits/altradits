@@ -51,7 +51,7 @@ test("steps tick from GitHub; the streak counts only tracked projects; the day's
   assert.equal(r.done[0].steps.find((s) => s.key === "merged").count, 1);
   assert.equal(r.totals.steps, 2);
   assert.equal(r.totals.merged, 1, "merged everywhere outside his own repositories");
-  assert.equal(r.totals.mergedProjects, 0, "none on the six projects");
+  assert.equal(r.totals.mergedProjects, 0, "none on the seven projects");
   assert.equal(r.totals.mergedPast, 1, "one in past work");
   assert.equal(r.streak, 4, "today and yesterday on Bitcoin Core, plus the authored pull request and the push");
   assert.equal(r.activeDays30, 4, "his own repository doesn't count; the authored pull request does");
