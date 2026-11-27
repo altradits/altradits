@@ -65,7 +65,7 @@ test("the saved hash and quote are validated before use", () => {
 });
 
 test("starting over drops the dead quote but keeps the words", () => {
-  assert.match(html, /\$\("#freshBtn"\)\.addEventListener\("click", \(\) => \{ clearInterval\(poll\); quote = null; resumed = false; saveDraft\(\{ fields: readFields\(\) \}\);/,
+  assert.match(html, /\$\("#toPay"\)\.focus\(\); resumed = false; saveDraft\(\{ fields: readFields\(\) \}\); \}\);/,
     "contact.html: a fresh start drops the dead quote and keeps the words");
 });
 
