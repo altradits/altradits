@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-OymE4LCdmN5zfGhMzeuFh52gk5hrjFQ0RQaO12zqLoY='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-M3Jizsq6DkQDYvkJj+KhCQ+qyO1l/Os0xUzPo/T0+mM='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/contact">
 <title>Write to the team · Altradits</title>
@@ -73,7 +73,7 @@ input,select,textarea{width:100%;padding:.7rem .8rem;border:2px solid var(--line
 textarea{min-height:8rem;resize:vertical}
 .cost{background:var(--bg);border:2px dashed var(--btc-text);border-radius:.8rem;padding:.8rem 1rem;margin:1rem 0;font-size:.97rem}
 .cost b{color:var(--btc-text)}
-.qr{max-width:17rem;margin:1rem 0 .5rem}.qr svg{display:block;width:100%;height:auto}
+.qr{max-width:17rem;margin:1rem 0 .5rem}.qr img{display:block;width:100%;height:auto}
 #bolt{font:12px ui-monospace,Menlo,monospace}
 .err{color:#B42318}
 .okflag{display:inline-block;background:var(--ok);color:#fff;font-weight:700;border-radius:99px;padding:.3rem .9rem;margin-bottom:.6rem}
@@ -128,6 +128,7 @@ textarea{min-height:8rem;resize:vertical}
         <p class="intro" id="review"></p>
         <button class="btn" type="button" id="sendBtn">Send message</button>
         <button class="btn ghost" type="button" id="typoBtn" hidden></button>
+        <p><button class="btn ghost" type="button" id="freshBtn" hidden>Start a new message</button></p>
         <p class="err" id="err2" role="alert"></p>
       </fieldset>
     </form>
@@ -149,13 +150,77 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
 <script>
 (() => {
   const $ = (s) => document.querySelector(s);
-  let poll = null, quote = null, fields = null;
-  const wanted = new URLSearchParams(location.search).get("topic");
-  if (wanted && [...$("#topic").options].some((o) => o.value === wanted)) $("#topic").value = wanted;
+  let poll = null, quote = null, fields = null, resumed = true;
+  // A refresh or a closed tab must not strand a paid visitor. The draft
+  // (typed words plus the live quote) lives in this browser only; the server
+  // still stores nothing until the message is sent.
+  const DRAFT_KEY = "altradits-contact-draft-v1";
+  const loadDraft = () => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch { return null; } };
+  const saveDraft = (d) => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch {} };
+  const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch {} };
+  const readFields = () => ({ name: $("#name").value.trim(), email: $("#email").value.trim(), topic: $("#topic").value, message: $("#message").value.trim() });
+  const setTopic = (v) => { if (v && [...$("#topic").options].some((o) => o.value === v)) $("#topic").value = v; };
+  const stashWords = () => { const d = loadDraft() || {}; saveDraft({ fields: readFields(), ...(d.quote ? { quote: d.quote } : {}) }); };
   const topicLabel = () => $("#topic").options[$("#topic").selectedIndex].text;
+  // The QR picture renders as an inert image, never as markup: SVG written
+  // straight into the page could run a stored script, while an image cannot.
+  const showQr = (svg) => {
+    const pic = document.createElement("img");
+    pic.alt = "Lightning invoice QR code";
+    pic.src = "data:image/svg+xml," + encodeURIComponent(svg);
+    $("#qr").replaceChildren(pic);
+  };
+  const showPay = (q) => {
+    showQr(q.qr); $("#bolt").value = q.bolt11; $("#open").href = "lightning:" + encodeURIComponent(q.bolt11);
+    $("#payNote").textContent = `Scan with any Lightning wallet: $${q.usd} (${Number(q.sats).toLocaleString("en-US")} sats).`;
+    $("#stepWrite").hidden = true; $("#stepPay").hidden = false; $("#stepSend").hidden = true; $("#state").textContent = "Waiting for payment…";
+  };
+  const showSend = () => {
+    setTopic(fields.topic);
+    $("#stepWrite").hidden = true; $("#stepPay").hidden = true; $("#stepSend").hidden = false;
+    $("#review").textContent = `From ${fields.name} (${fields.email}), about ${topicLabel()}.`;
+  };
+  const startPoll = () => {
+    clearInterval(poll);
+    poll = setInterval(async () => {
+      if (Date.parse(quote.expiresAt) < Date.now()) { clearInterval(poll); $("#state").textContent = "This invoice expired. Go back and start again."; return; }
+      try {
+        const s = await (await fetch("/api/contact?hash=" + encodeURIComponent(quote.hash))).json();
+        if (s.paid) { clearInterval(poll); showSend(); }
+      } catch {}
+    }, 4000);
+  };
+  const draft = loadDraft();
+  if (draft?.fields) {
+    $("#name").value = draft.fields.name || "";
+    $("#email").value = draft.fields.email || "";
+    setTopic(draft.fields.topic);
+    $("#message").value = draft.fields.message || "";
+  }
+  setTopic(new URLSearchParams(location.search).get("topic"));
+  ["name", "email", "topic", "message"].forEach((id) => $("#" + id).addEventListener("input", stashWords));
+  // Resume rechecks the saved quote with the server first: paid returns to
+  // Send, fresh returns to Pay, expired returns to the kept words. Send never
+  // opens on a stored claim alone.
+  if (draft?.quote?.hash && /^[0-9a-f]{64}$/i.test(draft.quote.hash) && draft?.fields) {
+    (async () => {
+      fields = draft.fields;
+      let paid = false;
+      try { paid = (await (await fetch("/api/contact?hash=" + encodeURIComponent(draft.quote.hash))).json()).paid === true; } catch {}
+      if (!resumed) return;
+      fields = readFields();
+      if (paid) { quote = draft.quote; showSend(); return; }
+      if (Date.parse(draft.quote.expiresAt) >= Date.now()) {
+        if (typeof draft.quote.qr !== "string" || typeof draft.quote.bolt11 !== "string") { saveDraft({ fields }); return; }
+        quote = draft.quote; showPay(quote); startPoll(); return;
+      }
+      saveDraft({ fields });
+      $("#err").textContent = "Your last invoice expired. Check your words and continue when ready.";
+    })();
+  } else if (draft?.quote) { saveDraft({ fields: draft.fields || null }); }
   $("#msgForm").addEventListener("submit", async (e) => {
-    e.preventDefault(); $("#err").textContent = "";
-    fields = { name: $("#name").value.trim(), email: $("#email").value.trim(), topic: $("#topic").value, message: $("#message").value.trim() };
+    e.preventDefault(); resumed = false; $("#err").textContent = "";
+    fields = readFields();
     if (!fields.name || !fields.email || fields.message.length < 10) { $("#err").textContent = "Fill in your name, email and a message of at least 10 characters."; return; }
     $("#toPay").disabled = true;
     let r;
@@ -163,26 +228,13 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
     catch { $("#err").textContent = "No connection. Try again."; $("#toPay").disabled = false; return; }
     if (r.error) { $("#err").textContent = r.error; $("#toPay").disabled = false; return; }
     quote = r;
-    $("#qr").innerHTML = r.qr; $("#bolt").value = r.bolt11; $("#open").href = "lightning:" + r.bolt11;
-    $("#payNote").textContent = `Scan with any Lightning wallet: $${r.usd} (${Number(r.sats).toLocaleString("en-US")} sats).`;
-    $("#stepWrite").hidden = true; $("#stepPay").hidden = false; $("#state").textContent = "Waiting for payment…";
-    clearInterval(poll);
-    poll = setInterval(async () => {
-      if (Date.parse(quote.expiresAt) < Date.now()) { clearInterval(poll); $("#state").textContent = "This invoice expired. Go back and start again."; return; }
-      try {
-        const s = await (await fetch("/api/contact?hash=" + quote.hash)).json();
-        if (s.paid) {
-          clearInterval(poll);
-          $("#stepPay").hidden = true; $("#stepSend").hidden = false;
-          $("#review").textContent = `From ${fields.name} (${fields.email}), about ${topicLabel()}.`;
-        }
-      } catch {}
-    }, 4000);
+    saveDraft({ fields, quote: { hash: r.hash, bolt11: r.bolt11, qr: r.qr, sats: r.sats, usd: r.usd, expiresAt: r.expiresAt } });
+    showPay(r); startPoll();
   });
   $("#copy").addEventListener("click", () => navigator.clipboard?.writeText($("#bolt").value).then(() => { $("#copy").textContent = "Copied"; }));
-  $("#backToWrite").addEventListener("click", () => { clearInterval(poll); quote = null; $("#stepPay").hidden = true; $("#stepWrite").hidden = false; $("#toPay").disabled = false; $("#err").textContent = ""; });
+  $("#backToWrite").addEventListener("click", () => { clearInterval(poll); resumed = false; quote = null; $("#stepPay").hidden = true; $("#stepWrite").hidden = false; stashWords(); $("#toPay").disabled = false; $("#err").textContent = ""; });
   async function sendMessage(confirmed) {
-    $("#err2").textContent = ""; $("#typoBtn").hidden = true; $("#sendBtn").disabled = true;
+    $("#err2").textContent = ""; $("#typoBtn").hidden = true; $("#freshBtn").hidden = true; $("#sendBtn").disabled = true;
     let r;
     try {
       r = await (await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" },
@@ -191,12 +243,16 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
     if (!r.ok) {
       $("#err2").textContent = r.error || "Could not send.";
       if (r.typoHint) { $("#typoBtn").textContent = `Use ${fields.email} anyway`; $("#typoBtn").hidden = false; }
+      // A used or expired quote can never send: offer a fresh start instead of a hopeless retry.
+      if (/Start a new message for a fresh one\./.test(r.error || "")) $("#freshBtn").hidden = false;
       $("#sendBtn").disabled = false; return;
     }
+    clearDraft();
     $("#msgForm").hidden = true; $("#done").hidden = false;
   }
   $("#sendBtn").addEventListener("click", () => sendMessage(false));
   $("#typoBtn").addEventListener("click", () => sendMessage(true));
+  $("#freshBtn").addEventListener("click", () => { clearInterval(poll); quote = null; $("#stepSend").hidden = true; $("#stepWrite").hidden = false; $("#toPay").disabled = false; $("#err").textContent = ""; $("#err2").textContent = ""; $("#freshBtn").hidden = true; $("#toPay").focus(); resumed = false; saveDraft({ fields: readFields() }); });
 })();
 </script>
 </body>

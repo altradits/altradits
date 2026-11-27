@@ -335,7 +335,6 @@ export default function App() {
             <BalanceCard
               wallet={wallet}
               rates={rates}
-              onOpenWalletSettings={() => setActiveModal('wallet_settings')}
               onUpdateWallet={handleUpdateWallet}
               onRefreshServer={syncServerWallet}
             />
