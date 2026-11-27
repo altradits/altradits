@@ -19,4 +19,10 @@ test("the receipt link names its real host", () => {
   const tx = read("yebente/src/components/TransactionDetailModal.tsx");
   assert.doesNotMatch(tx, /<span>bitcoin\.co\.ke<\/span>/, "no hardcoded host");
   assert.match(tx, /receiptHost\(transaction\.receiptUrl/, "the label follows the link");
+  assert.match(tx, /u\.protocol !== "https:" && u\.protocol !== "http:"/, "non-HTTP URLs fall back to Receipt");
+});
+
+test("the worker cache is bumped in source and bundle", () => {
+  assert.match(read("yebente/public/sw.js"), /const CACHE = "yebente-v3"/, "worker source carries v3");
+  assert.match(read("yebente/app/sw.js"), /const CACHE = "yebente-v3"/, "built bundle carries v3");
 });

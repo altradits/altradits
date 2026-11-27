@@ -18,7 +18,9 @@ const TYPE_TITLES: Record<string, string> = {
 // The receipt lives on a partner page: show where the link actually goes.
 const receiptHost = (url: string): string => {
   try {
-    return new URL(url).hostname.replace(/^www\./, "");
+    const u = new URL(url);
+    if (u.protocol !== "https:" && u.protocol !== "http:") return "Receipt";
+    return u.hostname.replace(/^www\./, "") || "Receipt";
   } catch {
     return "Receipt";
   }
