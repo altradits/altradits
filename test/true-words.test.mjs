@@ -29,7 +29,11 @@ test("boot fatals keep tryLater so it re-renders on switch", () => {
 });
 
 test("the wallet cache is bumped with the rebuilt shell", () => {
-  for (const f of ["yebente/public/sw.js", "yebente/app/sw.js"]) {
-    assert.ok(read(f).includes('const CACHE = "yebente-v6";'), `${f}: past main and the other pending shells`);
-  }
+  const versions = ["yebente/public/sw.js", "yebente/app/sw.js"].map((f) => {
+    const m = read(f).match(/const CACHE = "yebente-v(\d+)";/);
+    assert.ok(m, `${f}: carries a versioned cache`);
+    return Number(m[1]);
+  });
+  assert.equal(versions[0], versions[1], "source and bundle shells match");
+  assert.ok(versions[0] >= 7, "cache sits past main and the open v6 lane");
 });
