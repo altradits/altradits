@@ -352,7 +352,7 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
               <Loader2 className="w-5 h-5 animate-spin text-[var(--yb-primary)]" aria-label="Waiting for payment" />
             ) : (
               <>
-                <p className="max-w-sm text-xs text-[var(--yb-on-surface-variant)] leading-relaxed">YeBente cannot watch this invoice. It will not flip to paid by itself. Press Done to close.</p>
+                <p className="max-w-sm text-xs text-[var(--yb-on-surface-variant)] leading-relaxed">Ye₿ente cannot watch this invoice. It will not flip to paid by itself. Press Done to close.</p>
                 <button
                   type="button"
                   onClick={onClose}

@@ -15,7 +15,7 @@ test("untracked invoices get a plain note and Done, tracked ones keep the spinne
   assert.match(r, /setTrackedHash\(res\.paymentHash \|\| null\)/, "a hash-less invoice records null");
   assert.match(r, /if \(res\.paymentHash\)/, "polling starts only with a hash");
   assert.match(r, /\{trackedHash \? \(/, "the invoice screen branches on tracked or not");
-  assert.match(r, /YeBente cannot watch this invoice\. It will not flip to paid by itself\. Press Done to close\./, "the plain note");
+  assert.match(r, /Ye₿ente cannot watch this invoice\. It will not flip to paid by itself\. Press Done to close\./, "the plain note");
   assert.match(r, /aria-label="Waiting for payment"/, "tracked invoices keep the spinner");
   const untracked = r.match(/\{trackedHash \? \([\s\S]*?onClick=\{onClose\}[\s\S]*?>\s*Done\s*</);
   assert.ok(untracked, "the untracked branch ends in a Done button that closes");
