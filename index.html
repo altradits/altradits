@@ -76,14 +76,16 @@ h2{font:800 clamp(1.55rem,3.8vw,2.1rem)/1.14 'Bricolage Grotesque',sans-serif;ma
 h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .intro{color:var(--muted);margin:0 0 1.4rem;max-width:44rem}
 
-.pilot{padding:clamp(4rem,9vw,7rem) 0}
-.pilot h2{margin:0 0 clamp(2rem,4.5vw,3rem);max-width:16ch}
-.pilot ol{list-style:none;margin:0;padding:0;max-width:44rem}
+.pilot{padding:clamp(3.25rem,6.5vw,5rem) 0;border-top:1.5px solid var(--line)}
+.pilot h2{margin:0 0 clamp(2rem,4.5vw,3rem);max-width:13ch}
+.pilot ol{list-style:none;margin:0;padding:0;max-width:none}
 .pilot li{display:flex;gap:clamp(1rem,3vw,1.75rem);align-items:baseline;padding:clamp(1.4rem,3vw,1.9rem) 0;border-top:1.5px solid var(--line)}
 .pilot li:last-child{border-bottom:1.5px solid var(--line)}
 .pilot .i{font:600 .82rem/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.14em;color:var(--btc-text);flex:none}
-.pilot p{margin:0;color:var(--ink)}
-.pilot p b{display:block;font:800 clamp(1.15rem,2.6vw,1.4rem)/1.25 'Bricolage Grotesque',sans-serif;margin-bottom:.25rem}
+.pilot p{margin:0;color:var(--muted)}
+.pilot p b{display:block;font:800 clamp(1.15rem,2.6vw,1.4rem)/1.25 'Bricolage Grotesque',sans-serif;color:var(--ink);margin-bottom:.25rem}
+@media (min-width:860px){.pilot{display:grid;grid-template-columns:.78fr 1.22fr;gap:clamp(2rem,5vw,4rem);align-items:start}.pilot h2{margin:0}}
+@media (prefers-reduced-motion:no-preference){.pilot li{transition:background-color .18s ease,border-color .18s ease}.pilot .i{transition:transform .18s ease}.pilot li:hover{background-color:rgba(15,27,45,.04);border-top-color:var(--ink)}.pilot li:hover .i{transform:translateX(4px)}}
 
 .steps{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(17rem,100%),1fr));gap:1rem}
 .steps li{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.25rem;display:flex;flex-direction:column;gap:.7rem}
@@ -148,9 +150,9 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
   <section class="pilot" aria-labelledby="pilot-h">
     <h2 id="pilot-h">Free for Kisumu shops</h2>
     <ol>
-      <li><span class="i" aria-hidden="true">01</span><p><b>The pilot is open.</b> Shops can join now.</p></li>
-      <li><span class="i" aria-hidden="true">02</span><p><b>Joining costs nothing.</b> Zero fees to start.</p></li>
-      <li><span class="i" aria-hidden="true">03</span><p><b>Setup takes minutes.</b> Register, print one QR, show it at the counter.</p></li>
+      <li><span class="i" aria-hidden="true">01</span><p><b>Open now in Kisumu.</b> Limited places. Nothing to buy or install.</p></li>
+      <li><span class="i" aria-hidden="true">02</span><p><b>Keep your full price.</b> The customer covers the 1% fee.</p></li>
+      <li><span class="i" aria-hidden="true">03</span><p><b>Straight to M-Pesa.</b> kTown never holds money. No BTC exposure.</p></li>
     </ol>
   </section>
 
