@@ -49,8 +49,8 @@ test("till-points: top rule, hairline rows, editorial grid at >=860px", () => {
 });
 
 test("till-points: row hover lives inside the reduced-motion guard", () => {
-  const motionLine = home.split("\n").find((l) => l.includes("prefers-reduced-motion:no-preference"));
-  assert.ok(motionLine.includes(".till-rows article:hover"), "hover rule inside the motion-allowed guard");
+  const motionLines = home.split("\n").filter((l) => l.includes("prefers-reduced-motion:no-preference")).join("\n");
+  assert.ok(motionLines.includes(".till-rows article:hover"), "hover rule inside the motion-allowed guard");
   const reduceLine = home.split("\n").find((l) => l.includes("prefers-reduced-motion:reduce"));
   assert.ok(!reduceLine.includes("till-rows"), "nothing till-specific in the kill rule");
 });
