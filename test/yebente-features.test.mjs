@@ -55,9 +55,9 @@ test("fetchFeatures: the server's booleans, or the core on any failure", async (
   const realFetch = globalThis.fetch;
   try {
     globalThis.fetch = async () => ({ json: async () => ({ features: { buy: true, cardTopup: false, sendMobile: true, receive: true, send: true, external: false } }) });
-    assert.deepEqual(await fetchFeatures(), { buy: true, cardTopup: false, sendMobile: true, receive: true, send: true, external: false });
+    assert.deepEqual(await fetchFeatures(), { buy: true, cardTopup: false, sendMobile: true, receive: true, send: true, external: false, paused: [] });
     globalThis.fetch = async () => ({ json: async () => ({ features: { receive: true } }) });
-    assert.deepEqual(await fetchFeatures(), { buy: false, cardTopup: false, sendMobile: false, receive: true, send: false, external: false },
+    assert.deepEqual(await fetchFeatures(), { buy: false, cardTopup: false, sendMobile: false, receive: true, send: false, external: false, paused: [] },
       "a partial answer: only explicit true enables a control");
     globalThis.fetch = async () => ({ json: async () => ({ status: "ok" }) });
     assert.deepEqual(await fetchFeatures(), CORE_FEATURES, "no features: the core");
@@ -78,6 +78,7 @@ test("wallets on and the node connected: core plus Send Mobile, nothing to buy w
   assert.equal(h.node, true);
   assert.equal(h.buyProvider, null);
   assert.deepEqual(h.features, { buy: false, cardTopup: false, sendMobile: true, receive: true, send: true, external: false });
+  assert.deepEqual(h.paused, { sendMobile: false, receive: false, send: false }, "nothing paused while the node answers");
 });
 
 test("Daraja sandbox: no real prompt reaches a phone, so Buy stays hidden unless testing", async () => {
@@ -167,6 +168,7 @@ test("node down: Receive, Send and Send Mobile hide; the rest is untouched", asy
   const h = await health();
   assert.equal(h.node, null);
   assert.deepEqual(h.features, { buy: false, cardTopup: false, sendMobile: false, receive: false, send: false, external: false });
+  assert.deepEqual(h.paused, { sendMobile: false, receive: false, send: false }, "no node set up: nothing to wait for");
   process.env.YEBENTE_BITIKA_BUY = "on";
   process.env.BITIKA_API_KEY = "bk_live_local_fake_key_2";
   try { assert.equal((await health()).features.buy, true, "buying needs no node to be offered"); }

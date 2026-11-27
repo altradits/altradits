@@ -769,3 +769,281 @@ test("admin shop list: needs the token, lists each shop with its QR link, phone 
   assert.ok(!JSON.stringify(r.body).includes('"pin"'), "no PIN hash in the list");
   assert.equal(r.body.max, 1000);
 });
+
+// --- pilot fixes ------------------------------------------------------------
+
+test("check: the shop's app confirms a payment made straight from a wallet (no pay page)", async () => {
+  const s = await post("register", { agree: true, phone: "0711000901", shop: "Direct Shop", mpesaName: "DIRECT D", pin: "715293" });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  const { id } = s.body.merchant, session = s.body.session;
+  // A wallet scans the printed QR and pays in sats: only the LNURL callback runs.
+  const inv = await get(`lnurlp/${id}/cb?amount=200000`);
+  assert.equal(inv.status, 200, JSON.stringify(inv.body));
+  const hash = inv.body.successAction.url.split("/").pop();
+  assert.equal((await get("history", { token: session })).body.entries[0].status, "pending");
+  tando.receipts.set(hash, receiptTx({ payToAccount: "254711000901", merchantName: "DIRECT D", currencyAmountSent: 19, paymentNetworkReceipt: "DIR1CT0001" }));
+  assert.equal((await post("check", {})).status, 401, "signed in only");
+  assert.equal((await post("check", {}, { token: "x".repeat(32) })).status, 401);
+  const r = await post("check", {}, { token: session });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.checked, 1);
+  const e = r.body.entries.find((x) => x.hash === hash);
+  assert.equal(e.status, "completed", "History shows it at once, no reload");
+  assert.equal(e.mpesaCode, "DIR1CT0001");
+  assert.equal(r.body.merchant.claimed, true, "the matched payment claims the number");
+  assert.equal(r.body.merchant.verified, true);
+  assert.ok(!JSON.stringify(r.body).includes("711000901"), "no phone number in the answer");
+  // Nothing pending any more: Tando is not asked again.
+  const before = tando.receiptCalls;
+  assert.equal((await post("check", {}, { token: session })).body.checked, 0);
+  assert.equal(tando.receiptCalls, before);
+});
+
+test("check: only the merchant's own newest pending payments, at most 5, recent ones only", async () => {
+  const a = await post("register", { agree: true, phone: "0711000902", shop: "Many Shop", mpesaName: "MANY M", pin: "715293" });
+  const b = await post("register", { agree: true, phone: "0711000903", shop: "Other Shop", mpesaName: "OTHER O", pin: "715293" });
+  assert.equal(a.status, 200, JSON.stringify(a.body));
+  assert.equal(b.status, 200, JSON.stringify(b.body));
+  const hashes = [];
+  for (let i = 0; i < 7; i++) hashes.push((await get(`lnurlp/${a.body.merchant.id}/cb?amount=${100 + i}&currency=KES`)).body.successAction.url.split("/").pop());
+  const other = (await get(`lnurlp/${b.body.merchant.id}/cb?amount=100&currency=KES`)).body.successAction.url.split("/").pop();
+  // The oldest of A's is four days old: an invoice nobody paid is not asked about forever.
+  const oldId = await store.getJSON(`kt:pay:${hashes[0]}`);
+  const old = await store.getJSON(`kte:${oldId}`);
+  old.at = new Date(Date.now() - 4 * 864e5).toISOString();
+  await store.setJSON(`kte:${oldId}`, old);
+  const asked = [];
+  const spy = async (raw) => {
+    const m = new URL(String(raw)).pathname.match(/^\/api\/payment\/([0-9a-f]{64})$/);
+    if (m) asked.push(m[1]);
+    return mockTando(raw);
+  };
+  kt.setKtownFetcher(spy);
+  try {
+    // A merchant names no hash: anything the app sends is ignored, so B's payment is never asked about.
+    const r = await post("check", { hashes: [other], hash: other }, { token: a.body.session });
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.equal(asked.length, 5, "at most 5 per check");
+    assert.deepEqual(new Set(asked), new Set(hashes.slice(2).reverse()), "the 5 newest of A's own, nothing of B's");
+    assert.ok(!asked.includes(other));
+    assert.ok(!asked.includes(hashes[0]), "the stale one is left alone");
+    assert.ok(r.body.entries.every((e) => hashes.includes(e.hash)), "History lists A's own entries only");
+  } finally {
+    kt.setKtownFetcher(mockTando);
+  }
+});
+
+test("check: capped per session so the app can't hammer Tando", async () => {
+  const s = await post("register", { agree: true, phone: "0711000904", shop: "Busy Shop", mpesaName: "BUSY B", pin: "715293" });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  for (let i = 0; i < 40; i++) assert.equal((await post("check", {}, { token: s.body.session })).status, 200, `check ${i}`);
+  const capped = await post("check", {}, { token: s.body.session });
+  assert.equal(capped.status, 429);
+  assert.match(capped.body.error, /Too many checks/);
+  // A second phone of the same shop gets its own session budget, under the shop-wide cap.
+  const two = await post("login", { phone: "0711000904", pin: "715293" });
+  assert.equal((await post("check", {}, { token: two.body.session })).status, 200);
+  const api_ = fs.readFileSync(path.join(import.meta.dirname, "..", "api", "ktown.js"), "utf8");
+  assert.match(api_, /rl:kt:chkm:\$\{m\.id\}/, "a shop-wide cap too");
+});
+
+test("ktown_secure: Stanley secures a visited shop, and the 48-hour takeover can't take it", async () => {
+  const s = await post("register", { agree: true, phone: "0711000905", shop: "Visited Shop", mpesaName: "VISITED V", pin: "715293" });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  const id = s.body.merchant.id;
+  assert.equal((await apost({ action: "ktown_secure", id }, "wrong-token")).status, 401);
+  assert.equal((await apost({ action: "ktown_secure", id: "nosuchshop1" })).status, 404);
+  assert.equal((await apost({ action: "ktown_secure", id: "../x" })).status, 404);
+  let list = (await apost({ action: "ktown_shops" })).body.shops.find((m) => m.id === id);
+  assert.equal(list.claimed, false);
+  assert.equal(list.securedAt, null);
+  const r = await apost({ action: "ktown_secure", id });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.claimed, true);
+  assert.equal(r.body.securedBy, "admin");
+  assert.ok(r.body.securedAt);
+  const again = await apost({ action: "ktown_secure", id });
+  assert.equal(again.body.securedAt, r.body.securedAt, "securing twice keeps the first time");
+  list = (await apost({ action: "ktown_shops" })).body.shops.find((m) => m.id === id);
+  assert.equal(list.claimed, true);
+  assert.equal(list.securedBy, "admin");
+  // Old, unpaid and secured: a new sign-up for the number is still refused.
+  const rec = await store.getJSON(`kt:${id}`);
+  rec.createdAt = new Date(Date.now() - 5 * 864e5).toISOString();
+  await store.setJSON(`kt:${id}`, rec);
+  assert.equal((await post("register", { agree: true, phone: "0711000905", shop: "Squat", mpesaName: "SQUAT", pin: "482916" })).status, 409);
+  const { securityView } = await import("../lib/attacks.js");
+  assert.ok((await securityView()).events.some((e) => e.where === "kTown secure 254711000905"), "logged in the Security watch");
+});
+
+test("ktown_reset_pin: same shop and QR, a one-time temporary PIN, lock cleared, every session ended", async () => {
+  const s = await post("register", { agree: true, phone: "0711000906", shop: "Forgot Shop", mpesaName: "FORGOT F", pin: "715293" });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  const id = s.body.merchant.id;
+  const second = (await post("login", { phone: "0711000906", pin: "715293" })).body.session;
+  for (let i = 0; i < 5; i++) await post("login", { phone: "0711000906", pin: "000000" });
+  assert.equal((await post("login", { phone: "0711000906", pin: "715293" })).status, 429, "locked out");
+  assert.equal((await apost({ action: "ktown_reset_pin", id }, "wrong-token")).status, 401);
+  assert.equal((await apost({ action: "ktown_reset_pin", id: "nosuchshop1" })).status, 404);
+  const r = await apost({ action: "ktown_reset_pin", id });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.id, id, "the shop keeps its id, so its posters keep working");
+  assert.match(r.body.pin, /^\d{6}$/);
+  const pin = r.body.pin;
+  const rec = await store.getJSON(`kt:${id}`);
+  assert.equal(rec.failedPins, 0);
+  assert.equal(rec.lockedUntil, null);
+  assert.ok(!JSON.stringify(rec).includes(`"${pin}"`), "the temporary PIN is stored only as its hash");
+  assert.ok(rec.pin.salt && rec.pin.hash);
+  const { securityView } = await import("../lib/attacks.js");
+  assert.ok(!JSON.stringify(await securityView()).includes(pin), "the PIN is never logged");
+  assert.equal((await get("me", { token: s.body.session })).status, 401, "every session ends");
+  assert.equal((await get("me", { token: second })).status, 401);
+  assert.equal((await post("login", { phone: "0711000906", pin: "715293" })).status, 403, "the old PIN is gone");
+  const login = await post("login", { phone: "0711000906", pin });
+  assert.equal(login.status, 200, JSON.stringify(login.body));
+  assert.equal(login.body.merchant.id, id);
+  assert.equal((await get("me", { token: login.body.session })).status, 200, "a new session works");
+  assert.equal((await get(`lnurlp/${id}`)).status, 200, "the printed QR still answers");
+  assert.equal((await post("pin", { pin: "482916" }, { token: login.body.session })).status, 200, "the owner sets their own");
+  // Many resets: always 6 digits, never a pattern.
+  const seen = new Set();
+  for (let i = 0; i < 20; i++) seen.add((await apost({ action: "ktown_reset_pin", id })).body.pin);
+  assert.ok(seen.size > 15, "random every time");
+  for (const p of seen) assert.ok(!/^(\d)\1{5}$/.test(p) && p !== "123456");
+});
+
+test("register stores the app's language; anything else falls back to English", async () => {
+  const sw = await post("register", { agree: true, phone: "0711000907", shop: "Duka Sw", mpesaName: "SW S", pin: "715293", lang: "sw" });
+  assert.equal(sw.status, 200, JSON.stringify(sw.body));
+  assert.equal(sw.body.merchant.lang, "sw");
+  const odd = await post("register", { agree: true, phone: "0711000908", shop: "Odd", mpesaName: "ODD O", pin: "715293", lang: "<b>" });
+  assert.equal(odd.body.merchant.lang, "en");
+  const none = await post("register", { agree: true, phone: "0711000909", shop: "None", mpesaName: "NONE N", pin: "715293" });
+  assert.equal(none.body.merchant.lang, "en");
+});
+
+test("phone samples are the undialable 07XX XXX XXX", async () => {
+  const r = await post("register", { agree: true, phone: "12", shop: "S", mpesaName: "M", pin: "715293" });
+  assert.equal(r.body.error, "Enter an M-Pesa number, like 07XX XXX XXX.");
+  const html = fs.readFileSync(path.join(import.meta.dirname, "..", "ktown", "index.html"), "utf8");
+  assert.match(html, /placeholder="07XX XXX XXX"/);
+});
+
+test("the app and pay page: direct payments confirmed, forgotten PIN help, honest load errors, Kiswahili errors", () => {
+  const read = (f) => fs.readFileSync(path.join(import.meta.dirname, "..", f), "utf8");
+  const app = read("ktown/app.js"), pay = read("ktown/pay.js"), html = read("ktown/index.html");
+  // 1. The app asks the server to check pending payments, only while visible, about every 20 s.
+  assert.match(app, /api\("check", \{ method: "POST", auth: true \}\)/);
+  assert.match(app, /document\.visibilityState !== "visible"/);
+  assert.match(app, /CHECK_EVERY = 20e3/);
+  assert.match(app, /renderHistory\(d\.entries\)/);
+  // 3. Forgotten PIN line, both languages, plus the help contact.
+  assert.match(app, /"Forgot your PIN\? Ask kTown help to reset it\."/);
+  assert.match(app, /"Umesahau PIN\? Omba msaada wa kTown uiweke upya\."/);
+  assert.match(html, /id="forgot-pin"/);
+  assert.match(app, /\$\("forgot-contact"\)\.textContent = /, "the contact is text, never HTML");
+  // 4. Unknown only for a 404.
+  assert.match(pay, /e\.status === 404 \? t\("unknownQr"\)/);
+  assert.equal((pay.match(/t\("unknownQr"\)/g) || []).length, 2, "the 404 and the missing id, nothing else");
+  assert.match(pay, /tryLater: "Try again in a minute\."/);
+  // 5. Registration sends the app's language.
+  assert.match(app, /agree: true, lang,/);
+  // 7. Known server errors in Kiswahili; unknown lines stay as they are.
+  for (const en of ["Wrong number or PIN.", "Wrong PIN. Try again in 15 minutes.", "kTown is full for now.",
+    "The payout service isn't reachable right now. Try again in a minute.", "Enter an M-Pesa number, like 07XX XXX XXX."])
+    assert.ok(app.includes(`"${en}":`), `Kiswahili for: ${en}`);
+  assert.match(app, /Too many wrong PINs/);
+  assert.match(app, /el\.textContent = e && e\.message \? swErr\(e\.message\)/);
+});
+
+test("printed poster: Bitcoin accepted here, scan to pay, and a QR strong enough to carry the centre mark", () => {
+  const js = fs.readFileSync(new URL("../assets/admin.js", import.meta.url), "utf8");
+  const fn = js.slice(js.indexOf("function posterQr"), js.indexOf("function posterHtml"));
+  assert.match(fn, /qrcode\(0, "H"\)/, "level H error correction: the centre mark covers part of the code");
+  for (const t of ["Accepted here", "Scan to pay", "Tunapokea Bitcoin", "Shop gets M-Pesa"]) assert.ok(js.includes(t), `poster says ${t}`);
+  assert.match(js, /\$\{m\.payUrl\}\?lightning=\$\{m\.lnurl\}/, "the QR is the shop's own pay link, same as its app");
+  const poster = js.slice(js.indexOf("function posterHtml"), js.indexOf("// Stanley prints a poster only"));
+  assert.ok(poster.includes('src="/assets/logo.png"'), "the Altradits logo sits in the centre of the QR");
+  assert.match(poster, /<div class="sign">www\.altradits\.com<\/div>/, "the band ends with the domain");
+  assert.doesNotMatch(poster, /tando/i, "the poster does not advertise the payout partner");
+});
+
+test("every kTown QR is the Bitcoin QR code template, and no page markets the payout partner", () => {
+  const rd = (f) => fs.readFileSync(new URL(`../${f}`, import.meta.url), "utf8");
+  const app = rd("ktown/app.js"), pay = rd("ktown/pay.js"), css = rd("ktown/style.css");
+  for (const [f, js] of [["ktown/app.js", app], ["ktown/pay.js", pay]]) {
+    assert.match(js, /qrcode\(0, "H"\)/, `${f}: level H error correction, the centre logo covers part of the code`);
+    assert.doesNotMatch(js, /qrcode\(0, "[LMQ]"\)/, `${f}: no weaker code anywhere`);
+    assert.match(js, /class="tq-mid"><img src="(\$\{LOGO\}|\/assets\/logo\.png)"/, `${f}: the Altradits logo sits in the middle`);
+  }
+  assert.match(app, /const LOGO = "\/assets\/logo\.png"/, "ktown/app.js: the centre logo is the site's own file");
+  assert.match(css, /\.qr-card\{[^}]*border:[^;]*solid var\(--orange\)/, "ktown/style.css: the orange frame");
+  assert.match(css, /\.tq-mid\{[^}]*width:40%/, "ktown/style.css: the centre logo is 40% of the code wide");
+  assert.match(css, /\.tcard\{[^}]*print-color-adjust:exact/, "ktown/style.css: printed cards keep their colours");
+  assert.match(app, /"www\.altradits\.com"/, "ktown/app.js: the printed card ends with the site address");
+  assert.match(app, /loadImg\(LOGO\)/, "ktown/app.js: the saved PNG carries the centre logo");
+  for (const f of ["index.html", "ktown/index.html", "ktown/pay.html", "ktown/app.js", "ktown/pay.js"]) {
+    const s = rd(f).split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
+    assert.doesNotMatch(s, /Powered by Tando|class="powered"|Tando (converts|fee|hubadilisha)|Ada ya Tando/, `${f}: no payout partner marketing`);
+  }
+  assert.match(app, /Our payout partner converts sats to M-Pesa for a 1% fee\./, "the 1% fee stays disclosed");
+  assert.match(pay, /tandoFee: "Conversion fee"/, "the fee line names what it is for");
+});
+
+test("a Ye₿ente wallet pays a kTown QR: the shop's invoice through kTown, never a wallet handle", async () => {
+  process.env.YEBENTE_WALLETS = "on";
+  try {
+    const yw = await import("../lib/ywallet.js");
+    const s = await post("register", { agree: true, phone: "0711000990", shop: "Mama Pay Shop", mpesaName: "MAMA P", pin: "715293" });
+    assert.equal(s.status, 200, JSON.stringify(s.body));
+    const { lnurl, id } = s.body.merchant;
+    for (const to of [lnurl, `lightning:${lnurl}`, `k-${id}@altradits.test`]) {
+      const d = await yw.resolveDestination(to, 200);
+      assert.equal(d.kind, "invoice", `${to.slice(0, 20)}: paid as an invoice, not a handle`);
+      assert.equal(d.sats, 200);
+      assert.match(d.hash, /^[0-9a-f]{64}$/);
+      assert.equal(d.label, "kTown Mama Pay Shop");
+      assert.equal(lastInvoice.pr.toLowerCase(), d.pr, "the shop's own invoice from the payout partner");
+    }
+    await assert.rejects(yw.resolveDestination(`k-${"z".repeat(12)}@altradits.test`, 200), /kTown shop isn't known/);
+    // No wallet can take a k- name: it would shadow a shop.
+    const w = await import("../api/yebente.js");
+    const r = await w.POST(new Request("https://altradits.test/api/yebente/wallet/create", { method: "POST", headers: { "Content-Type": "application/json", "x-forwarded-for": "9.8.7.6" }, body: JSON.stringify({ pin: "604397", handle: "k-shopname" }) }));
+    assert.equal(r.status, 400);
+  } finally { delete process.env.YEBENTE_WALLETS; }
+});
+
+test("ktown_delete: the shop's name confirms it; the record is archived, payments kept, the QR and sessions end", async () => {
+  const s = await post("register", { agree: true, phone: "0711000991", shop: "Closing Shop", mpesaName: "CLOSING C", pin: "715293" });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  const id = s.body.merchant.id, session = s.body.session;
+  // A payment record for the shop, made the normal way (a QR invoice).
+  const inv = await get(`lnurlp/${id}/cb?amount=100&currency=KES`);
+  assert.ok(inv.body.pr, JSON.stringify(inv.body));
+  const entryIds = await store.listIds(`kt:tx:${id}`, 50);
+  assert.equal(entryIds.length, 1);
+
+  assert.equal((await apost({ action: "ktown_delete", id, confirm: "Closing Shop" }, "wrong-token")).status, 401);
+  assert.equal((await apost({ action: "ktown_delete", id: "nosuchshop1", confirm: "x" })).status, 404);
+  const wrong = await apost({ action: "ktown_delete", id, confirm: "closing" });
+  assert.equal(wrong.status, 400);
+  assert.ok(await store.getJSON(`kt:${id}`), "a wrong name deletes nothing");
+
+  const r = await apost({ action: "ktown_delete", id, confirm: "Closing Shop" });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.archived, true);
+  assert.equal(await store.getJSON(`kt:${id}`), null);
+  const arch = await store.getJSON(`kt:archived:${id}`);
+  assert.equal(arch.shop, "Closing Shop");
+  assert.ok(arch.deletedAt);
+  assert.equal(arch.pin, undefined, "no PIN hash in the archive");
+  assert.ok((await store.listIds("ktarchived", 100)).includes(id));
+  assert.deepEqual(await store.listIds(`kt:tx:${id}`, 50), entryIds, "payment entries kept");
+  assert.ok(await store.getJSON(`kte:${entryIds[0]}`), "the payment record itself kept");
+  assert.ok(!(await apost({ action: "ktown_shops" })).body.shops.some((m) => m.id === id), "gone from the list");
+  assert.equal((await get(`lnurlp/${id}`)).body.status, "ERROR", "its QR stops answering");
+  assert.equal((await get("me", { token: session })).status, 401, "its session ends");
+  assert.equal((await post("register", { agree: true, phone: "0711000991", shop: "New Owner", mpesaName: "NEW N", pin: "715293" })).status, 200, "the number may sign up again");
+  assert.equal((await apost({ action: "ktown_delete", id, confirm: "Closing Shop" })).status, 404, "deleting twice: already gone");
+});

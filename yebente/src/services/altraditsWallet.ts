@@ -1,6 +1,7 @@
 import { Transaction } from '../types';
 
 import { devicePublicKey, signWithDevice, forgetDeviceKey } from './deviceKey';
+import { httpTrouble, serverError } from './errorText';
 
 // The Ye₿ente wallet kept by Altradits (custodial, on the Altradits node). The
 // balance and history live on the server. This phone keeps:
@@ -74,29 +75,53 @@ export interface ServerEntry {
   sats: number;
   fee?: number;
   counterparty?: string;
+  description?: string; // a Lightning invoice's own description, when it had one
   status: 'completed' | 'pending' | 'failed';
   ref: string;
   note?: string;
   receiptUrl?: string;
+  kes?: number; // direct M-Pesa payouts (send_mobile): the shillings sent
+  receipt?: string; // and Safaricom's M-Pesa code once paid
   at: string;
 }
 
 export async function api<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
   const token = getWalletToken();
-  const res = await fetch(`/api/yebente/wallet/${path}`, {
-    method,
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`/api/yebente/wallet/${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    const err = new Error(httpTrouble(0, method === 'POST')) as Error & { status?: number }; // offline, DNS, a dropped connection
+    err.status = 0;
+    throw err;
+  }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && session()) lockLocally(); // the session ended: lock, never forget the wallet
   if (!res.ok || !data.success) {
-    const err = new Error(data.error || 'Wallet service unavailable.') as Error & { typoHint?: string };
+    const err = new Error(serverError(res.status, data, method === 'POST')) as Error & { typoHint?: string; status?: number };
     if (typeof data.typoHint === 'string') err.typoHint = data.typoHint; // a misspelt domain: offer "use anyway"
+    err.status = res.status;
     throw err;
   }
   return data as T;
 }
+// One Lightning payment out: paid, failed (and refunded) or still on its way.
+// While it waits the server asks the node directly, so the answer comes as
+// soon as the node has one.
+export interface PaymentResult { status: 'completed' | 'failed' | 'pending'; sats: number; fee: number; error: string | null }
+export const paymentResult = (hash: string) => api<PaymentResult & { success: true }>('GET', `payment/${hash}`);
+
+// Which settled payments the person has already been told about (this phone).
+const TOLD = 'yb.paymentsTold';
+export function wasTold(hash: string): boolean { try { return (JSON.parse(localStorage.getItem(TOLD) || '[]') as string[]).includes(hash); } catch { return false; } }
+export function markTold(hash: string): void {
+  try { const l = (JSON.parse(localStorage.getItem(TOLD) || '[]') as string[]).filter((h) => h !== hash); l.push(hash); localStorage.setItem(TOLD, JSON.stringify(l.slice(-100))); } catch { /* private mode */ }
+}
+
 // The server's spelling suggestion on a refused email, if it gave one.
 export const typoHintOf = (err: unknown): string | null =>
   err instanceof Error ? (err as Error & { typoHint?: string }).typoHint || null : null;
@@ -169,12 +194,28 @@ export async function fetchServerHistory(): Promise<Transaction[]> {
 }
 
 // Approved with the PIN, or with the phone's fingerprint / face (a signed passkey approval).
+// Direct M-Pesa (Ye₿ente pays the phone itself, #510): the sats are taken now,
+// refunded if Safaricom refuses.
+export interface DirectMobile { id: string; status: 'pending' | 'completed' | 'failed'; kes: number; sats: number; receipt: string | null; error: string | null; wallet: ServerWallet }
+export const sendMobileDirect = (phone: string, kes: number, pin: string, passkey?: unknown) =>
+  api<DirectMobile>('POST', 'mobile', passkey ? { phone, kes, passkey } : { phone, kes, pin });
+export const directMobileStatus = (id: string) => api<DirectMobile>('GET', `mobile/${encodeURIComponent(id)}`);
+
 export const sendFromServerWallet = (to: string, sats: number, pin: string, passkey?: unknown) =>
-  api<{ wallet: ServerWallet; ref: string }>('POST', 'send', passkey ? { to, sats, passkey } : { to, sats, pin });
+  api<{ wallet: ServerWallet; ref: string; status?: 'completed' | 'pending' }>('POST', 'send', passkey ? { to, sats, passkey } : { to, sats, pin });
 
 // A ledger entry in the shape the history list already shows.
 function entryToTransaction(e: ServerEntry): Transaction {
   const incoming = e.sats > 0;
+  if (e.kind === 'send_mobile') {
+    // Paid by Ye₿ente straight to M-Pesa: shillings out, with Safaricom's code once confirmed.
+    return {
+      id: e.id, type: 'send_mpesa', title: 'Send M-Pesa', timestamp: Date.parse(e.at), status: e.status,
+      fromCurrency: 'SATS', fromAmount: Math.abs(e.sats), toCurrency: 'KES', toAmount: e.kes || 0,
+      fee: 0, feeCurrency: 'SATS', realFeeSats: 0, recipient: e.counterparty,
+      referenceNumber: e.receipt || e.ref, walletType: 'custodial', note: e.note,
+    };
+  }
   return {
     id: e.id,
     type: incoming ? 'receive_btc' : 'send_btc',
@@ -188,7 +229,8 @@ function entryToTransaction(e: ServerEntry): Transaction {
     fee: e.fee || 0,
     feeCurrency: 'SATS',
     realFeeSats: e.fee || 0,
-    recipient: e.counterparty,
+    // "Lightning invoice" alone says little: the invoice's description says what it was for.
+    recipient: e.counterparty === 'Lightning invoice' && e.description ? `${e.description} (Lightning invoice)` : e.counterparty,
     referenceNumber: e.ref,
     walletType: 'custodial',
     note: e.note,

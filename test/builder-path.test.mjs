@@ -67,9 +67,10 @@ const verdict = (b, date) => b.calendar.find((c) => c.date === date);
 test("log days: the dated file plus a commit on that Nairobi day, neither alone", async () => {
   const b = (await t.computeTracker(NOW)).builder;
   assert.equal(b.repoState, "ready");
-  assert.deepEqual([verdict(b, "2026-11-06").status, verdict(b, "2026-11-06").provedAs], ["done", "log"]);
-  assert.equal(verdict(b, "2026-11-06").proof.url, "https://github.com/altradits/builder-log/blob/HEAD/days/2026-11-06.md");
-  assert.equal(verdict(b, "2026-11-07").status, "done");
+  assert.deepEqual([verdict(b, "2026-11-10").status, verdict(b, "2026-11-10").provedAs], ["done", "log"]);
+  assert.equal(verdict(b, "2026-11-10").proof.url, "https://github.com/altradits/builder-log/blob/HEAD/days/2026-11-10.md");
+  assert.deepEqual([verdict(b, "2026-11-09").status, verdict(b, "2026-11-09").provedAs], ["done", "issue"], "day 1: stronger upstream evidence (an issue) proves it");
+  assert.equal(verdict(b, "2026-11-06"), undefined, "the path starts Monday 2026-11-09: earlier days are not part of it");
   assert.equal(verdict(b, "2026-11-11").status, "missed", "a commit without the dated file proves nothing");
   assert.equal(verdict(b, "2026-11-12").status, "missed", "nothing at all");
   assert.equal(b.today, "2026-11-18", "Nairobi day, not UTC");
@@ -111,7 +112,6 @@ test("issue comments and untracked repos never satisfy a review day", async () =
 
 test("rest days need no proof; the streak skips them and today never ends it", async () => {
   const b = (await t.computeTracker(NOW)).builder;
-  assert.equal(verdict(b, "2026-11-08").status, "rest");
   assert.equal(verdict(b, "2026-11-15").status, "rest");
   assert.equal(verdict(b, "2026-11-18").status, "open", "today has no evidence yet but is not missed");
   assert.equal(b.streak, 4, "Nov 13, 14, 16, 17: the rest day keeps it, Nov 12 ends it");
@@ -127,7 +127,7 @@ test("today's deliverable, the phase and the distance to the Btrust bar", async 
   assert.ok(b.phase.goal.length > 0 && b.phase.exit.length > 0);
   assert.deepEqual(b.bar, { merged: 0, need: 5, listing: "https://btrust.homerun.co/starter-grants/en",
     project: "lightningnetwork/lnd", short: "LND" }, "past-work merges never move the focus bar");
-  assert.equal(b.dayNo, 13);
+  assert.equal(b.dayNo, 10, "Monday 9 to Wednesday 18 November");
   assert.equal(b.first.title, "Create the learning repo");
 });
 
@@ -259,10 +259,28 @@ test("the morning report carries the day, yesterday's verdict and the reviews", 
           proof: { title: "fix a typo", url: "https://github.com/lightningnetwork/lnd/pull/100" } },
         streak: 4, weekReviews: 1, done: 9, missed: 2 } } };
   const r = stanReportText(s, NOW);
-  assert.match(r.text, /Builder Path day 13 of 237 \(Foundations\): Mastering Bitcoin 2/);
+  assert.match(r.text, /Builder Path day 13 of 234 \(Foundations\): Mastering Bitcoin 2/);
   assert.match(r.text, /Yesterday: done\. Proof: fix a typo https:\/\/github\.com\/lightningnetwork\/lnd\/pull\/100/);
   assert.match(r.text, /Builder streak: 4 days\. Reviews this week: 1\./);
   const missed = stanReportText({ ...s, openSource: { ...s.openSource,
     builder: { ...s.openSource.builder, yesterday: { date: "2026-11-17", title: "GitHub: issues", verdict: "missed", proof: null } } } }, NOW);
   assert.match(missed.text, /Yesterday: missed \(GitHub: issues\)\. No proof found on GitHub\./);
+});
+
+test("watchtower additions: every Saturday reflection has a lab drill, and every grant milestone lands on one", async () => {
+  const m = await import(path.join(path.dirname(new URL(import.meta.url).pathname), "..", "data", "builder-path.js"));
+  const sats = m.DAYS.filter((d) => new Date(`${d.date}T12:00:00Z`).getUTCDay() === 6);
+  assert.ok(sats.length > 30, "Saturdays exist through the program");
+  for (const d of sats) {
+    assert.equal(d.type, "log", `${d.date}: Saturday stays a log day, proven the same way`);
+    assert.match(d.what, /Lab: do Drill \d+/, `${d.date}: names a lab drill`);
+  }
+  for (const [date, ms] of Object.entries(m.MILESTONES)) {
+    const d = m.DAYS.find((x) => x.date === date);
+    assert.ok(d && /reflection/.test(d.title), `${date}: a milestone sits on a Saturday reflection`);
+    assert.ok(d.what.includes(ms.text), `${date}: the milestone text is in the day's task`);
+    for (const r of d.resources) assert.match(r.url, /^https:\/\//, `${date}: every resource is an https link`);
+  }
+  assert.ok(Object.values(m.MILESTONES).some((x) => /BOSS|Builders/.test(x.text)), "the grant ramp (Builders or BOSS) is scheduled");
+  assert.ok(Object.values(m.MILESTONES).some((x) => /Endorsements/.test(x.text)), "the two endorsements are scheduled");
 });

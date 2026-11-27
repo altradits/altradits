@@ -34,9 +34,9 @@ if (!SERVER) {
   if (process.env.ADMIN_TOKEN && process.env.ADMIN_TOKEN.length < 24) console.error("ADMIN_TOKEN is short: use a long random one (openssl rand -hex 32).");
 }
 
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf", ".webmanifest": "application/manifest+json", ".mp3": "audio/mpeg", ".wasm": "application/wasm" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf", ".webmanifest": "application/manifest+json", ".mp3": "audio/mpeg", ".pdf": "application/pdf", ".wasm": "application/wasm" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|friends\.html|plan\.html|research\.html|portfolio\.html|donate\.html|bitcoin\.html|wallet\.html|wallet-guide\.html|kazi\.html|njia\.html|bitcoin-core\.html|contact\.html|receipt\.html|developer\.html|developer-reference\.html|developer-dashboard\.html|trivia\.html|robots\.txt|sitemap\.xml|llms\.txt|yebente\/app\/(?:index\.html|manifest\.webmanifest|assets\/[\w.-]+|fonts\/[\w.-]+|icons\/[\w.-]+)|address-check\/(?:index\.html|sw\.js)|touchtype\/(?:index\.html|js\/[\w.-]+\.js|css\/[\w.-]+\.css|sound\/[\w.-]+\.mp3)|opcode-circuit\/(?:index\.html|manifest\.webmanifest|sw\.js|style\.css|game\.js|engine\/[\w.-]+\.js|sim\/[\w.-]+\.js|content\/[\w.-]+\.js|icons\/[\w.-]+\.svg)|sats-safari\/(?:index\.html|i18n\/[\w.-]+\.json|[\w.-]+\.(?:js|css))|ktown\/(?:index\.html|pay\.html|terms\.html|manifest\.webmanifest|icons\/[\w.-]+\.(?:png|svg)|[\w.-]+\.(?:js|css))|assets\/[\w.-]+|assets\/marketing\/(?:(?:\d{4}-\d{2}|templates)\/)?[\w-][\w.-]*|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(404\.html|index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|friends\.html|plan\.html|research\.html|portfolio\.html|donate\.html|bitcoin\.html|wallet\.html|wallet-guide\.html|kazi\.html|njia\.html|bitcoin-core\.html|contact\.html|receipt\.html|developer\.html|developer-reference\.html|developer-dashboard\.html|trivia\.html|robots\.txt|sitemap\.xml|llms\.txt|yebente\/app\/(?:index\.html|manifest\.webmanifest|sw\.js|assets\/[\w.-]+|fonts\/[\w.-]+|icons\/[\w.-]+)|address-check\/(?:index\.html|sw\.js)|touchtype\/(?:index\.html|js\/[\w.-]+\.js|css\/[\w.-]+\.css|sound\/[\w.-]+\.mp3)|opcode-circuit\/(?:index\.html|manifest\.webmanifest|sw\.js|style\.css|game\.js|engine\/[\w.-]+\.js|sim\/[\w.-]+\.js|content\/[\w.-]+\.js|icons\/[\w.-]+\.svg)|sats-safari\/(?:index\.html|i18n\/[\w.-]+\.json|[\w.-]+\.(?:js|css))|ktown\/(?:index\.html|pay\.html|terms\.html|manifest\.webmanifest|icons\/[\w.-]+\.(?:png|svg)|[\w.-]+\.(?:js|css))|assets\/[\w.-]+|assets\/marketing\/(?:(?:\d{4}-\d{2}|templates)\/)?[\w-][\w.-]*|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
 // HSTS: browsers that have visited once only ever use HTTPS here (no includeSubDomains,
 // so other subdomains such as mail are unaffected). COOP: no other site keeps a handle
 // on our windows.
@@ -187,14 +187,15 @@ const server = http.createServer(async (req, res) => {
       : url.pathname.match(/^\/developer\/reference\/?$/) ? "/developer-reference.html"
       : url.pathname.match(/^\/developer\/dashboard\/?$/) ? "/developer-dashboard.html" : null;
     // Ye₿ente: the built app in yebente/app, served at /yebente.
-    const yb = url.pathname.match(/^\/yebente(?:\/(?:index\.html)?)?$/) ? "/yebente/app/index.html" : url.pathname.match(/^\/yebente\/(manifest\.webmanifest|(?:assets|fonts|icons)\/[\w.-]+)$/)?.[1];
+    const yb = url.pathname.match(/^\/yebente(?:\/(?:index\.html)?)?$/) ? "/yebente/app/index.html" : url.pathname.match(/^\/yebente\/(manifest\.webmanifest|sw\.js|(?:assets|fonts|icons)\/[\w.-]+)$/)?.[1];
     // kTown: the merchant app at /ktown, the terms at /ktown/terms, the pay
     // page at /k/<id> (any id shape; unknown ids show "unknown" on the page).
     const kt = url.pathname.match(/^\/ktown(?:\/(?:index\.html)?)?$/) ? "/ktown/index.html"
       : url.pathname.match(/^\/ktown\/terms\/?$/) ? "/ktown/terms.html"
       : url.pathname.match(/^\/k\/[A-Za-z0-9_-]{1,80}\/?$/) ? "/ktown/pay.html" : null;
     // Opcode Circuit: the developer game at /opcode-circuit.
-    const oc = url.pathname.match(/^\/opcode-circuit(?:\/(?:index\.html)?)?$/) ? "/opcode-circuit/index.html" : null;
+    const oc = url.pathname.match(/^\/opcode-circuit(?:\/(?:index\.html)?)?$/) ? "/opcode-circuit/index.html"
+      : url.pathname.match(/^\/opcode-circuit\/(sandbox|achievements)\/?$/) ? "/opcode-circuit/index.html" : null;
     // TouchType: the typing game at /touchtype, built from the touchtype
     // repo (plain JS, fully offline) into touchtype/.
     const tt = url.pathname.match(/^\/touchtype(?:\/(?:index\.html)?)?$/) ? "/touchtype/index.html" : null;
@@ -209,7 +210,18 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === "/sats-safari") { res.writeHead(301, { Location: `/sats-safari/${url.search}` }).end(); return; }
     const ss = url.pathname.match(/^\/sats-safari\/(?:index\.html)?$/) ? "/sats-safari/index.html" : null;
     const rel = kt ? kt : dev ? dev : ss ? ss : ac ? ac : tt ? tt : oc ? oc : yb ? (yb.startsWith("/") ? yb : `/yebente/app/${yb}`) : page ? `/${page[1]}.html` : url.pathname === "/" ? "/index.html" : url.pathname;
-    if (!PUBLIC.test(rel)) { res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found"); return; }
+    // Unknown addresses: a page miss answers our 404 page (still a 404); a
+    // missing file answers plain text, as before.
+    if (!PUBLIC.test(rel)) {
+      const last = url.pathname.split("/").pop() || "";
+      if (!last.includes(".") || last.endsWith(".html")) {
+        res.writeHead(404, { ...SECURITY, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" });
+        res.end(req.method === "HEAD" ? undefined : fs.readFileSync(path.join(ROOT, "404.html")));
+        return;
+      }
+      res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found");
+      return;
+    }
     const file = path.join(ROOT, rel);
     const headers = { ...SECURITY, "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" };
     if (rel === "/admin.html") Object.assign(headers, { "X-Robots-Tag": "noindex", "Content-Security-Policy": cspFor(file) });
@@ -254,14 +266,22 @@ async function maybeRunHourly() {
   // Njia: the hourly public summary and daily forwarding snapshot (no-op unless NJIA=on).
   import("./lib/njia.js").then((m) => m.hourly()).catch((e) => console.error("njia hourly", e.message));
   import("./lib/bounces.js").then((b) => b.checkBounces()).then((r) => r.bounced && console.log("bounces", r)).catch((e) => console.error("bounces", e.message));
+  // kTown: confirm recent pending payments for every shop, not only when a shop opens its app.
+  import("./lib/ktown.js").then((k) => k.confirmAllPending()).catch((e) => console.error("ktown confirm", e.message));
 }
 setInterval(() => maybeRunHourly().catch((e) => console.error("hourly", e)), 10 * 60 * 1000).unref();
+// Builder Path reminder to Stanley: once per Nairobi clock hour while today's
+// task is open (lib/builder-reminder.js). Checked every 5 minutes so each email
+// lands within a few minutes of the hour.
+setInterval(() => import("./lib/builder-reminder.js").then((b) => b.maybeSendBuilderReminder()).catch((e) => console.error("builder reminder", e.message)), 5 * 60 * 1000).unref();
 // Ye₿ente wallets: credit invoices paid while the app was closed, and flip email
 // changes whose 48 hours are up (every 2 minutes). The email flip needs no node.
 setInterval(() => {
   if (!["on", "true", "yes", "1"].includes(String(process.env.YEBENTE_WALLETS || "").trim().replace(/^["']|["']$/g, "").toLowerCase())) return;
   import("./lib/ywallet.js").then((y) => y.effectiveEmailChanges()).catch((e) => console.error("yebente email changes", e.message));
   if (process.env.LND_REST_URL) import("./lib/ywallet.js").then((y) => Promise.all([y.settleOpen(), y.reconcilePayments()])).catch((e) => console.error("yebente settle", e.message));
+  // Direct M-Pesa payouts with no answer yet: ask Safaricom for their status (#510). Needs no node.
+  import("./lib/mpesa-b2c.js").then((b) => b.b2cConfigured() && import("./lib/ywallet.js").then((y) => y.reconcileMobile())).catch((e) => console.error("yebente b2c", e.message));
 }, 2 * 60 * 1000).unref();
 // Every 5 minutes (and on every /healthz ping from deploy/cron.sh): Deadman's
 // Switch file/.htaccess integrity check and node total balance check.
@@ -287,5 +307,6 @@ function dueJobs() {
   checking = true;
   // Developer webhooks: retry queued deliveries (a cheap no-op when the queue is empty).
   const devWebhooks = import("./lib/devapi.js").then((d) => d.pumpWebhooks()).catch((e) => console.error("dev webhooks", e.message));
-  Promise.allSettled([maybeRunDaily(), maybeRunHourly(), maybeRunDeadmanChecks(), maybeRunNjiaSample(), devWebhooks]).then((r) => r.forEach((x) => x.status === "rejected" && console.error("due jobs", x.reason))).finally(() => { checking = false; });
+  const builderReminder = import("./lib/builder-reminder.js").then((b) => b.maybeSendBuilderReminder()).catch((e) => console.error("builder reminder", e.message));
+  Promise.allSettled([maybeRunDaily(), maybeRunHourly(), maybeRunDeadmanChecks(), maybeRunNjiaSample(), devWebhooks, builderReminder]).then((r) => r.forEach((x) => x.status === "rejected" && console.error("due jobs", x.reason))).finally(() => { checking = false; });
 }

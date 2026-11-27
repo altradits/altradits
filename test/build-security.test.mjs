@@ -49,6 +49,7 @@ const FIXED_FETCH = {
   "lib/email.js": ['"https://api.resend.com/emails"'],
   "lib/tracker.js": ["`https://api.github.com${path}`"], // GitHub's public API, a constant host
   "api/yebente.js": ["`${DARAJA()}/oauth/v1/generate?grant_type=client_credentials`", "`${DARAJA()}${path}`"], // Safaricom
+  "lib/mpesa-b2c.js": ["`${BASE()}/oauth/v1/generate?grant_type=client_credentials`", "`${BASE()}${path}`"], // Safaricom B2C (fixed hosts, #510)
   "lib/pesapal.js": ["`${BASE()}/api/Auth/RequestToken`", "`${BASE()}/api/Transactions/SubmitOrderRequest`", "`${BASE()}/api/Transactions/GetTransactionStatus?orderTrackingId=${encodeURIComponent(trackingId)}`"], // Pesapal, sandbox or live by setting
 };
 // The first argument of a call, brackets and template braces balanced.
@@ -234,7 +235,7 @@ test("publicity: money keywords in the homepage title, large-image cards with th
   const pages = fs.readdirSync(root).filter((x) => x.endsWith(".html") && x !== "admin.html");
   for (const f of pages) {
     const html = read(f);
-    assert.match(html, /og:image" content="https:\/\/altradits\.com\/assets\/social-card\.png"/, `${f}: shares the wallet social card`);
+    assert.match(html, /og:image" content="https:\/\/altradits\.com\/assets\/social-card\.png"/, `${f}: shares the site social card (now the kTown card)`);
     assert.match(html, /og:image:width" content="1200"/, `${f}: card width declared`);
     assert.match(html, /twitter:card" content="summary_large_image"/, `${f}: large-image card`);
     assert.match(html, /theme-color" content="#EEF2F6"/, `${f}: theme color set`);
@@ -261,7 +262,7 @@ test("Ye₿ente installs as an app: manifest linked and served with icons on bot
   assert.ok(fs.existsSync(path.join(root, "yebente/app/manifest.webmanifest")), "rebuilt app ships the manifest (rebuild: cd yebente && npm run build)");
   const srv = read("server.mjs"), ht = read(".htaccess");
   assert.match(srv, /yebente\\\/app\\\/\(\?:[^)]*manifest\\.webmanifest[^)]*icons\\\/\[\\w\.-\]\+/, "Node serves the manifest and icons");
-  assert.match(srv, /manifest\\.webmanifest\|\(\?:assets\|fonts\|icons\)/, "Node maps the manifest and icons paths");
+  assert.match(srv, /manifest\\.webmanifest\|sw\\.js\|\(\?:assets\|fonts\|icons\)/, "Node maps the manifest, worker and icons paths");
   assert.match(ht, /\^yebente\/\(\(assets\|fonts\|icons\)\//, "Apache maps the icons path too");
   assert.match(ht, /\^yebente\/manifest\\.webmanifest\$/, "Apache maps the manifest too");
   assert.match(read("yebente/public/.htaccess"), /AddType application\/manifest\+json \.webmanifest/, "Apache serves the manifest MIME type");
@@ -292,6 +293,9 @@ test("links rendered as href come only from trusted hosts, and QR pictures carry
   const qr = read("lib/lightning.js").slice(read("lib/lightning.js").indexOf("export async function qrSvg"));
   assert.match(qr, /startsWith\("<svg"\)/, "lib/lightning.js qrSvg: check the picture starts with <svg");
   assert.match(qr, /<script\|on\\w\+/, "lib/lightning.js qrSvg: refuse scripts and event handlers in the SVG");
+  assert.match(qr, /<style\|<foreignObject\|href\|url\\\(\|data:/, "lib/lightning.js qrSvg: refuse styles, foreign objects and any link but the inline logo");
+  assert.match(read("lib/lightning.js"), /const QR_LOGO_HREF = \/<image href="data:image\\\/png;base64,\[A-Za-z0-9\+\/\]\+=\{0,2\}"\//, "lib/lightning.js qrSvg: the only allowed link is an inline base64 PNG");
+  assert.match(qr, /errorCorrectionLevel: "H"/, "lib/lightning.js qrSvg: level H, so the centre logo never breaks a scan");
 });
 
 test("every wallet read that can ask the node or confirm an email is rate-limited", () => {
@@ -486,7 +490,7 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
   for (const f of ["/ktown/index.html", "/ktown/style.css", "/ktown/app.js", "/ktown/qrcode-generator-1.4.4.js", "figtree-latin.woff2"])
     assert.ok(sw.includes(f), `ktown/sw.js: the offline shell precaches ${f}`);
   for (const m of sw.match(/const SHELL = \[([\s\S]*?)\];/)[1].matchAll(/"([^"]+)"/g)) {
-    const p = m[1] === "/ktown" ? "ktown/index.html" : m[1].replace(/^\//, "");
+    const p = { "/ktown": "ktown/index.html", "/ktown/terms": "ktown/terms.html" }[m[1]] || m[1].replace(/^\//, "");
     assert.ok(fs.existsSync(path.join(root, p)), `ktown/sw.js: precached ${m[1]} exists (one 404 breaks the whole install)`);
   }
   assert.match(sw, /u\.origin !== self\.location\.origin/, "ktown/sw.js: same-site reads only");
@@ -510,6 +514,82 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
   assert.match(kt, /if \(nameMatch && !merchant\.claimed\)/, "lib/ktown.js: a matched receipt claims the number, and nothing unclaims it");
   assert.match(kt, /takeoverEligible/, "lib/ktown.js: a stale unclaimed number with no paid receipt can be taken over");
   assert.match(kt, /deleteKeys\(\[`kt:\$\{old\.id\}`\]\)/, "lib/ktown.js: a takeover ends the old record, so its sessions and QR die with it");
+});
+
+test("link audit: the guide target, favicons and offline terms stay fixed", () => {
+  for (const page of ["ktown/index.html", "ktown/pay.html", "ktown/terms.html"]) {
+    const html = read(page);
+    assert.doesNotMatch(html, /href="\/favicon\.ico"/, `${page}: no root favicon (it 404s; the shared assets icons are used)`);
+    assert.match(html, /href="\/assets\/favicon\.svg"/, `${page}: the shared svg icon is linked`);
+  }
+  assert.ok(read("ktown/sw.js").includes('"/ktown/terms"'), "ktown/sw.js: the clean terms address is cached, not the .html file");
+  assert.match(read("yebente/src/components/WalletGate.tsx"), /href="\/wallet-guide"/, "WalletGate: the 1-minute guide points at the wallet guide");
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("/wallet-guide"), "yebente/app: the built bundle carries the guide link (rebuild: cd yebente && npm run build)");
+});
+
+test("Ye₿ente worker: versioned shell, served on both stacks, never cached long, API never cached", () => {
+  const yb = read("yebente/public/sw.js");
+  assert.match(yb, /const CACHE = "yebente-v\d+"/, "yebente/public/sw.js: a versioned cache (bump it when cached files change)");
+  const disk = { "/yebente/": "yebente/app/index.html", "/yebente/manifest.webmanifest": "yebente/app/manifest.webmanifest",
+    "/yebente/icons/icon-192.png": "yebente/app/icons/icon-192.png", "/yebente/icons/icon-512.png": "yebente/app/icons/icon-512.png",
+    "/yebente/fonts/BananaYeti-Extrabold.ttf": "yebente/app/fonts/BananaYeti-Extrabold.ttf" };
+  for (const m of yb.match(/const SHELL = \[([\s\S]*?)\];/)[1].matchAll(/"([^"]+)"/g))
+    assert.ok(disk[m[1]] && fs.existsSync(path.join(root, disk[m[1]])), `yebente/public/sw.js: precached ${m[1]} exists (one 404 breaks the whole install)`);
+  assert.match(yb, /u\.origin !== self\.location\.origin/, "yebente/public/sw.js: same-site reads only");
+  assert.match(yb, /startsWith\("\/api\/"/, "yebente/public/sw.js: live API data is never cached");
+  assert.match(yb, /caches\.match\("\/yebente\/"\)/, "yebente/public/sw.js: failed reads fall back to the shell");
+  assert.match(read("yebente/src/main.tsx"), /navigator\.serviceWorker\.register\(['"]\/yebente\/sw\.js['"]\)/, "yebente/src/main.tsx: the app installs its worker");
+  assert.ok(read("server.mjs").includes("manifest\\.webmanifest|sw\\.js|"), "server.mjs: /yebente/sw.js reaches the built worker");
+  assert.ok(read(".htaccess").includes("yebente/sw\\.js$ yebente/app/sw.js"), ".htaccess: the same worker route on the Apache stack");
+  assert.equal(JSON.parse(read("yebente/app/manifest.webmanifest")).scope, "/yebente/", "yebente/: worker scope and manifest scope agree");
+  const yht = read("yebente/public/.htaccess");
+  assert.ok(yht.indexOf("sw\\.js") > yht.indexOf("max-age=31536000, immutable"), "yebente/public/.htaccess: the worker is never cached long");
+  assert.ok(fs.existsSync(path.join(root, "yebente/app/sw.js")), "yebente/app: the built worker is shipped (rebuild: cd yebente && npm run build)");
+});
+
+test("guide links: home, wallet settings and kTown all point at guidance", () => {
+  const home = read("index.html");
+  assert.ok(home.includes('<a href="/wallet-guide">Guide</a>'), "home: the nav links the guide");
+  assert.ok(home.includes('<a href="/yebente">Ye₿ente wallet</a>'), "home: the footer links the wallet");
+  assert.ok(home.includes('<a href="/wallet-guide">Ye₿ente guide</a>'), "home: the footer links the guide");
+  assert.match(read("yebente/src/components/WalletSettingsModal.tsx"), /href="\/wallet-guide"/, "wallet settings: signed-in users reach the guide");
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("See the wallet guide"), "yebente/app: the built bundle carries the settings guide link (rebuild: cd yebente && npm run build)");
+  assert.ok(read("ktown/index.html").includes('<a href="/#answers" data-i18n="helpLink">'), "kTown settings: merchants reach the questions");
+  const appJs = read("ktown/app.js");
+  assert.match(appJs, /helpLink: "Questions and answers"/, "kTown: the help link reads plain in English");
+  assert.match(appJs, /helpLink: "Maswali na majibu"/, "kTown: the help link reads plain in Kiswahili");
+  assert.ok(read("ktown/pay.html").includes('<a href="/wallet-guide" data-i18n="learnLink">'), "pay page: newcomers reach the guide");
+  const payJs = read("ktown/pay.js");
+  assert.match(payJs, /learnLink: "Learn more"/, "pay page: the guide link reads plain in English");
+  assert.match(payJs, /learnLink: "Jifunze zaidi"/, "pay page: the guide link reads plain in Kiswahili");
+  const gate = read("yebente/src/components/WalletGate.tsx");
+  assert.equal((gate.match(/See the 1-minute guide<\/a>/g) || []).length, 2, "gate: start and create screens both link the guide");
+});
+
+test("settings fold into grouped details, urgent states stay open", () => {
+  const set = read("yebente/src/components/WalletSettingsModal.tsx");
+  assert.equal(set.split('<span className="font-semibold">This phone</span>').length - 1, 2, "settings: both phone groups fold under This phone");
+  assert.ok(set.indexOf("Your Lightning address") < set.indexOf("<details"), "settings: the address stays one tap away");
+  assert.ok(set.includes("Save Settings"), "settings: saving stays one tap away");
+  const ph = read("yebente/src/components/PhonesAndSecurity.tsx");
+  assert.match(ph, /open=\{[^}]*pendingRecovery[^}]*hold/, "phones: the group opens itself while something needs attention");
+  assert.ok(ph.includes("Phones and security"), "phones: the folded group keeps its plain title");
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("This phone"), "yebente/app: the built bundle carries the groups (rebuild: cd yebente && npm run build)");
+});
+
+test("modals close on Escape, top-first when stacked", () => {
+  const hook = read("yebente/src/hooks/useEscape.ts");
+  assert.match(hook, /e\.key === 'Escape'/, "useEscape: Escape is the key");
+  assert.match(hook, /stack\[stack\.length - 1\] === close/, "useEscape: only the top modal answers");
+  assert.match(hook, /removeEventListener\('keydown'/, "useEscape: the listener is removed");
+  for (const f of ["BuyBtcModal", "CardTopupModal", "PaymentNotice", "QrScanner", "ReceiveBtcModal", "SendBtcModal", "SendMpesaModal", "TransactionDetailModal", "WalletSettingsModal"])
+    assert.match(read(`yebente/src/components/${f}.tsx`), /useEscape\(onClose/, `${f}: Escape closes it`);
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  const keys = bundle && read(`yebente/app/assets/${bundle}`).match(/keydown/g);
+  assert.ok(keys && keys.length >= 4, "yebente/app: the built bundle carries Escape handling (rebuild: cd yebente && npm run build)");
 });
 
 test("Kazi board: switched off by default, moderated publishing, limits on every route, words rendered inert", () => {
@@ -597,8 +677,12 @@ test("sample contacts anyone can see or copy are Stanley's own, never a stranger
   // user-visible samples are Stanley's test number (a wrong payment to it can
   // be refunded) and his test email.
   const EMAIL = "5tan@altradits.com";
-  assert.match(read("ktown/index.html"), /placeholder="0707 172 370"/, "ktown/index.html: the phone placeholder is Stanley's test number");
-  assert.match(read("lib/ktown.js"), /like 0707 172 370\./, "lib/ktown.js: the M-Pesa error names Stanley's test number");
+  // kTown's merchants are strangers on the street: its sample is a pattern no
+  // one can dial or pay, and no real number (not even Stanley's) is shown.
+  assert.match(read("ktown/index.html"), /placeholder="07XX XXX XXX"/, "ktown/index.html: the phone placeholder is the undialable 07XX XXX XXX");
+  assert.match(read("lib/ktown.js"), /like 07XX XXX XXX\./, "lib/ktown.js: the M-Pesa error shows the undialable 07XX XXX XXX");
+  for (const f of ["ktown/index.html", "ktown/app.js", "ktown/pay.html", "ktown/pay.js", "lib/ktown.js", "api/ktown.js"])
+    assert.doesNotMatch(read(f), /(?:\+?254|\b0)\s?(?:7|1[14])\d{2}\s?\d{3}\s?\d{3}\b/, `${f}: no real phone number in kTown's public text`);
   assert.match(read("lib/rails.js"), /example: "707 172 370"/, "lib/rails.js: the M-Pesa example is Stanley's test number");
   assert.match(read("yebente/src/components/BuyBtcModal.tsx"), /example="707 172 370"/, "BuyBtcModal: the M-Pesa example is Stanley's test number");
   for (const f of ["yebente/src/components/WalletGate.tsx", "yebente/src/components/WalletSettingsModal.tsx", "yebente/src/components/CardTopupModal.tsx"])
@@ -692,6 +776,9 @@ test("Opcode Circuit: same route on both stacks, install manifest, versioned off
   assert.ok(srv.includes('"/opcode-circuit/index.html"'), "server.mjs: /opcode-circuit serves the game");
   assert.match(srv, /opcode-circuit\\\/\(\?:[^)]*manifest\\.webmanifest[^)]*icons\\\/\[\\w\.-\]\+/, "server.mjs: the game path serves its manifest and icons");
   assert.ok(ht.includes("opcode-circuit/index.html"), ".htaccess: the same route on the Apache stack");
+  assert.ok(srv.includes("\\/opcode-circuit\\/(sandbox|achievements)"), "server.mjs: the game sub-pages serve the game");
+  assert.ok(ht.includes("opcode-circuit/(sandbox|achievements)/"), ".htaccess: the same sub-pages on the Apache stack");
+  assert.ok(read("opcode-circuit/game.js").includes('endsWith("/sandbox")'), "game.js: a fresh load opens the view the address names");
   const mani = JSON.parse(read("opcode-circuit/manifest.webmanifest"));
   assert.equal(mani.start_url, "/opcode-circuit", "the game installs at /opcode-circuit");
   assert.equal(mani.scope, "/opcode-circuit", "installed scope stays inside the game");
@@ -752,5 +839,115 @@ test("a lockdown freezes Developer top-ups but never invoice creation (receiving
   assert.doesNotMatch(fn("createInvoice"), /checkLockdown\(\)/, "lib/devapi.js createInvoice: receiving stays live during a lockdown");
   assert.match(fn("createTopup"), /await checkLockdown\(\)/, "lib/devapi.js createTopup: top-ups freeze during a lockdown");
   assert.match(dev, /lockdown_freeze/, "lib/devapi.js: the freeze still has its stable error code");
+});
+
+test("masked entry: PINs, codes and words never show while typed, and hide with the page", () => {
+  const gate = read("yebente/src/components/WalletGate.tsx");
+  assert.match(gate, /<input type="password"[^>]*autoComplete="one-time-code"/, "WalletGate: the login code masks while typed, SMS fill still on");
+  assert.match(gate, /<input type="password"[^>]*value=\{words\}/, "WalletGate: recovery words mask while typed");
+  assert.doesNotMatch(gate, /<textarea[^>]*value=\{words\}/, "WalletGate: words are never typed into a visible box");
+  for (const f of ["yebente/src/components/SendBtcModal.tsx", "yebente/src/components/SendMpesaModal.tsx", "yebente/src/components/PhonesAndSecurity.tsx"])
+    assert.match(read(f), /type="password"/, `${f}: PIN boxes mask`);
+  assert.equal((read("ktown/index.html").match(/type="password"/g) || []).length, 3, "kTown: all three PIN boxes mask");
+  assert.match(read("admin.html"), /id="tok" type="password"/, "admin: the token box masks");
+  const main = read("yebente/src/main.tsx");
+  assert.match(main, /dataset\.private = '1'/, "wallet: secrets blur when the page hides");
+  assert.match(main, /delete .*dataset\.private/, "wallet: secrets return when the page shows");
+  assert.match(main, /visibilitychange/, "wallet: hiding the page veils secrets");
+  assert.match(read("yebente/src/index.css"), /html\[data-private\] \.yb-sensitive/, "wallet: the veil style survives");
+});
+
+test("reduced motion stops the celebration animations", () => {
+  const css = read("yebente/src/index.css");
+  assert.match(css, /\.yb-chant, \.yb-slam, \.yb-slam-sub, \.yb-rise \{ animation: none !important; \}/, "wallet: celebrations rest under reduced motion");
+  const built = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.css$/.test(f));
+  assert.ok(built && read(`yebente/app/assets/${built}`).includes(".yb-chant,.yb-slam"), "yebente/app: the built styles carry the guard (rebuild: cd yebente && npm run build)");
+});
+
+test("M-Pesa failures say what happened and never invite a double spend", () => {
+  const modal = read("yebente/src/components/SendMpesaModal.tsx");
+  assert.match(modal, /statusFails >= 3/, "direct: repeated check failures stop the wait");
+  assert.match(modal, /pollRes\.terminal/, "rail: a refused payout shows as failed, not pending");
+  assert.match(modal, /fatal \? 'Done' : 'Try Again'/, "moved money never offers a blind retry");
+  assert.match(modal, /may have gone through/, "unknown outcomes point at History");
+  assert.match(read("yebente/src/services/payoutRails.ts"), /terminal: true/, "rail: failures are marked terminal");
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("may have gone through"), "yebente/app: the built bundle carries the failure words (rebuild: cd yebente && npm run build)");
+});
+
+test("a wrong address answers our 404 page, still a 404, with links out", () => {
+  const nf = read("404.html");
+  assert.match(nf, /<meta name="robots" content="noindex">/, "404.html: never indexed");
+  for (const href of ["/", "/wallet-guide", "/ktown", "/yebente"])
+    assert.ok(nf.includes(`href="${href}"`), `404.html: links ${href}`);
+  assert.doesNotMatch(nf, /—/, "404.html: no em-dashes");
+  const srv = read("server.mjs");
+  assert.ok(srv.includes('404\\.html|index\\.html'), "server.mjs: /404.html serves directly");
+  assert.ok(srv.includes('readFileSync(path.join(ROOT, "404.html"))'), "server.mjs: a page miss answers the 404 page");
+  assert.match(read(".htaccess"), /^ErrorDocument 404 \/404\.html$/m, ".htaccess: Apache answers the same page");
+});
+
+test("brand clarity: home and guide say what the three names are", () => {
+  const home = read("index.html");
+  for (const [name, href] of [["Altradits", "/portfolio"], ["Ye₿ente", "/wallet-guide"], ["kTown", "/ktown"]]) {
+    assert.ok(home.includes(`<b>${name}</b>`), `home: names ${name}`);
+    assert.ok(home.includes(`href="${href}"`), `home: links ${name} onward`);
+  }
+  const guide = read("wallet-guide.html");
+  for (const [name, href] of [["Altradits", "/portfolio"], ["Ye₿ente", "/yebente#create"], ["kTown", "/ktown"]]) {
+    assert.ok(guide.includes(`<h3>${name}</h3>`), `guide: names ${name}`);
+    assert.ok(guide.includes(`href="${href}"`), `guide: links ${name} onward`);
+  }
+});
+
+test("top bar links the wallet guide from the main screen", () => {
+  const top = read("yebente/src/components/TopBar.tsx");
+  assert.match(top, /<a[^>]*href="\/wallet-guide"/, "top bar: the help icon opens the guide");
+  assert.match(top, /aria-label="Help"/, "top bar: the icon is labelled for screen readers");
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  assert.ok(bundle && read(`yebente/app/assets/${bundle}`).includes("Help"), "yebente/app: the built bundle carries the help icon (rebuild: cd yebente && npm run build)");
+});
+
+test("kTown starts with the QR screen hidden, so no empty code flashes", () => {
+  assert.ok(read("ktown/index.html").includes('<section id="screen-qr" aria-labelledby="qr-shop" hidden>'), "kTown: the QR screen starts hidden");
+  assert.match(read("ktown/app.js"), /\$\("screen-qr"\)\.hidden = which !== "qr"/, "kTown: boot shows the right screen");
+});
+
+test("navigation parity: wallet guide opens on Ye₿ente, stale wallet links point to /yebente, both stacks serve contact/receipt, and TouchType links home", () => {
+  const guide = read("wallet-guide.html");
+  assert.match(guide, /<a class="launch" href="\/yebente">Open Ye₿ente<\/a>/, "wallet-guide.html: top CTA opens Ye₿ente");
+  assert.match(guide, /<h1>Open a free Bitcoin wallet/, "wallet-guide.html: hero is about the Ye₿ente wallet, not kTown");
+  for (const f of ["bitcoin.html", "journey.html"]) {
+    assert.doesNotMatch(read(f), /<a\b[^>]*href="\/"[^>]*>[^<]*(?:wallet|Ye₿ente)[^<]*<\/a>/i, `${f}: wallet links go to /yebente, never /`);
+  }
+  const ht = read(".htaccess");
+  assert.match(ht, /\bcontact\|receipt\b/, ".htaccess: /contact and /receipt have explicit rewrites like server.mjs");
+  assert.match(read("touchtype/index.html"), /<a href="\/"[^>]*>Altradits<\/a>/, "touchtype/index.html: players can return to Altradits");
+});
+
+test("closing a modal returns focus to its opener", () => {
+  const hook = read("yebente/src/hooks/useFocusReturn.ts");
+  assert.match(hook, /document\.activeElement/, "useFocusReturn: remembers the opener");
+  assert.match(hook, /prev\?\.focus\?\.\(\)/, "useFocusReturn: focuses it again on close");
+  for (const f of ["BuyBtcModal", "CardTopupModal", "PaymentNotice", "QrScanner", "ReceiveBtcModal", "SendBtcModal", "SendMpesaModal", "TransactionDetailModal", "WalletSettingsModal"])
+    assert.match(read(`yebente/src/components/${f}.tsx`), /useFocusReturn\(/, `${f}: focus returns on close`);
+  const bundle = fs.readdirSync(path.join(root, "yebente/app/assets")).find((f) => /^index-[\w-]+\.js$/.test(f));
+  const hits = bundle && read(`yebente/app/assets/${bundle}`).match(/activeElement/g);
+  assert.ok(hits && hits.length >= 7, "yebente/app: the built bundle carries focus return (rebuild: cd yebente && npm run build)");
+});
+
+test("merges stay signed, tested and verified; kTown ranks with the front pages", () => {
+  const sh = read("deploy/merge-pr.sh");
+  assert.ok(sh.includes('[ -d node_modules ]'), "merge-pr.sh: refuses without dependencies installed");
+  assert.doesNotMatch(sh, /--no-gpg-sign/, "merge-pr.sh: no unsigned fallback");
+  assert.match(sh, /merge -q --no-ff -S/, "merge-pr.sh: the merge itself is signed");
+  assert.ok(sh.includes('verify-commits.sh" HEAD'), "merge-pr.sh: the merged result passes the signature check");
+  assert.match(read("sitemap.xml"), /ktown<\/loc><lastmod>[^<]*<\/lastmod><priority>1\.0<\/priority>/, "sitemap.xml: kTown ranks with the front pages");
+});
+
+test("README states plainly how the site is built", () => {
+  const md = read("README.md");
+  assert.match(md, /AI coding assistants help write this site/, "README: AI help is disclosed");
+  assert.match(md, /solved without AI/, "README: upstream work without AI is separated");
 });
 

@@ -15,6 +15,8 @@ Object.assign(process.env, { YEBENTE_WALLETS: "on", SITE_URL: "https://altradits
 
 const yw = await import("../lib/ywallet.js");
 const api = await import("../api/yebente.js");
+// Partner health checks never reach the network in tests: every partner answers.
+(await import("../lib/rails.js")).setRailFetcher(async () => ({ status: 200 }));
 const email = await import("../lib/email.js");
 email.setMailer({ sendMail: async () => {} });
 

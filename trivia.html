@@ -6,6 +6,7 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M8tDPMlxnvsf4hDvxurBDKKAyghQnTK4DtVSVb0TQ5g=' 'sha256-sXj1Yn+HCN7zxDSBjiAd1AMzRqXzV/wG8dXCtFc/kSc='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <meta name="theme-color" content="#EEF2F6">
@@ -70,7 +71,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:1.6rem 0 .4rem}
 .topnav a.launch:hover{color:var(--ink);background:#ffa94d}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top,.tabs{transition:box-shadow .25s ease}body.scrolled .top,body.scrolled .tabs{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}}
-.qr{max-width:16rem;background:#fff;padding:.5rem;border-radius:.6rem;margin:1rem 0 .5rem}.qr svg{display:block;width:100%;height:auto}
+.qr{max-width:17rem;margin:1rem 0 .5rem}.qr svg{display:block;width:100%;height:auto}
 </style>
 </head>
 <body>
@@ -78,7 +79,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:1.6rem 0 .4rem}
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 </script>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/library">Library</a><a href="/friends">Friends</a><a href="/developer">Developer</a><a class="launch" href="/yebente">Open Ye₿ente</a></nav></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/ktown">kTown</a><a href="/wallet-guide">Ye₿ente</a><a href="/developer">Developer</a><a href="/library">Library</a><a class="launch" href="/ktown">Get kTown</a></nav></div>
 
   <header class="hero">
     <h1>Mempool Mayhem. <em>A free sats trivia battle.</em></h1>
@@ -188,7 +189,7 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
 
 </div>
 
-<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/yebente">Open Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin questions</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/trivia">Trivia</a> · <a href="/donate">Support my work</a> · <a href="/contact">Contact</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="https://x.com/altradits">X</a> · <a href="https://www.tiktok.com/@5tan_lee">TikTok</a></div></footer>
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/ktown">Get kTown</a> · <a href="/ktown/terms">kTown terms</a> · <a href="/yebente">Ye₿ente wallet</a> · <a href="/wallet-guide">Ye₿ente guide</a> · <a href="/developer">Developer</a> · <a href="/contact">Contact</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="https://x.com/altradits">X</a> · <a href="https://www.tiktok.com/@5tan_lee">TikTok</a></div></footer>
 <script src="/assets/trivia.js"></script>
 <script>
 addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY>24)},{passive:true});document.body.classList.toggle("scrolled",scrollY>24); // nav shadow on scroll

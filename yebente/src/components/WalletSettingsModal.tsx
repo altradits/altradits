@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useEscape } from '../hooks/useEscape';
+import { useFocusReturn } from '../hooks/useFocusReturn';
 import { UserWallet, WalletType } from '../types';
 import {
   isLightningAddress,
@@ -16,6 +18,7 @@ import {
   Check,
   AlertCircle,
 } from 'lucide-react';
+import { readableError } from '../services/errorText';
 
 interface WalletSettingsModalProps {
   isOpen: boolean;
@@ -40,6 +43,8 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
   onEjectWallet,
   onWipeWallet,
 }) => {
+  useEscape(onClose, isOpen);
+  useFocusReturn(isOpen);
   const [selectedType, setSelectedType] = useState<WalletType>(wallet.type || 'custodial');
   const [address, setAddress] = useState(
     wallet.type === 'non-custodial' ? wallet.nonCustodialAddress : ''
@@ -71,7 +76,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
       const r = await setRecoveryEmail(emailInput.trim(), emailPin, confirmTypo);
       setWalletMsg(`Check ${r.emailPending} to confirm.`); setEmailInput(''); setEmailPin(''); onServerWalletChange?.();
     } catch (err: unknown) {
-      setValidationError(err instanceof Error ? err.message : 'Wallet service unavailable.');
+      setValidationError(readableError(err, 'Wallet service unavailable.'));
       const hint = !confirmTypo && typoHintOf(err);
       if (hint) setEmailTypo(hint);
     } finally { setWalletBusy(false); }
@@ -320,11 +325,11 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
               )}
 
               {server && bioSupported && (
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center text-xs text-[var(--yb-secondary)]">
+                <details className="group space-y-2">
+                  <summary className="flex justify-between items-center text-xs text-[var(--yb-secondary)] cursor-pointer list-none py-1">
                     <span className="font-semibold flex items-center gap-1.5"><Fingerprint className="w-3.5 h-3.5" /> Fingerprint / Face</span>
-                    <span className={`font-mono text-[10px] ${bioActive ? 'text-emerald-400' : 'text-[var(--yb-on-surface-variant)]'}`}>{bioActive ? 'On for this phone' : 'Off'}</span>
-                  </div>
+                    <span className={`font-mono text-[10px] ${bioActive ? 'text-emerald-400' : 'text-[var(--yb-on-surface-variant)]'}`}>{bioActive ? 'On' : 'Off'} ›</span>
+                  </summary>
                   <div className="grid grid-cols-[1fr_7rem] gap-2">
                     <input
                       type="password"
@@ -348,7 +353,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                           if (bioActive) { await disableBiometric(bioPin); setBioActive(false); setBioMsg('Payments now need the PIN.'); }
                           else { await enableBiometric(bioPin); setBioActive(true); setBioMsg('Approve payments with your fingerprint or face.'); }
                           setBioPin(''); onServerWalletChange?.();
-                        } catch (err: unknown) { setValidationError(err instanceof Error ? err.message : 'Fingerprint could not be set up.'); }
+                        } catch (err: unknown) { setValidationError(readableError(err, 'Fingerprint could not be set up.')); }
                         finally { setWalletBusy(false); }
                       }}
                       className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50"
@@ -357,16 +362,15 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                     </button>
                   </div>
                   {bioMsg && <p className="text-xs text-emerald-300 px-1">{bioMsg}</p>}
-                </div>
+                </details>
               )}
 
               {server && (
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center text-xs text-[var(--yb-secondary)]">
+                <details className="group space-y-2" open={Boolean(wallet.emailChange) || undefined}>
+                  <summary className="flex justify-between items-center text-xs text-[var(--yb-secondary)] cursor-pointer list-none py-1">
                     <span className="font-semibold">Recovery email</span>
-                    <span className="font-mono text-[10px] text-[var(--yb-on-surface-variant)]">{serverEmail}</span>
-                  </div>
-                  <p className="text-[11px] text-[var(--yb-on-surface-variant)]">A change takes 48 hours after you confirm the new address. Recovery keeps using the old address until then.</p>
+                    <span className="font-mono text-[10px] text-[var(--yb-on-surface-variant)] truncate max-w-[60%]">{serverEmail || 'Not set'} ›</span>
+                  </summary>
                   {wallet.emailChange && (
                     <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/30 space-y-2">
                       <p className="text-xs font-semibold text-amber-200">Changing to {wallet.emailChange.newEmail}</p>
@@ -377,7 +381,7 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                         onClick={async () => {
                           setWalletBusy(true); setValidationError(''); setWalletMsg('');
                           try { await cancelPendingEmailChange(emailPin); setWalletMsg('Email change cancelled.'); setEmailPin(''); onServerWalletChange?.(); }
-                          catch (err: unknown) { setValidationError(err instanceof Error ? err.message : 'Wallet service unavailable.'); }
+                          catch (err: unknown) { setValidationError(readableError(err, 'Wallet service unavailable.')); }
                           finally { setWalletBusy(false); }
                         }}
                         className="w-full h-10 rounded-full border border-amber-500/60 text-amber-100 font-semibold text-xs flex items-center justify-center disabled:opacity-50"
@@ -430,8 +434,9 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                       Use {emailInput.trim()} anyway
                     </button>
                   )}
+                  {serverEmail && <p className="text-[11px] text-[var(--yb-on-surface-variant)] px-1">A new address takes over 48 hours after you confirm it.</p>}
                   {walletMsg && <p className="text-xs text-emerald-300 px-1">{walletMsg}</p>}
-                </div>
+                </details>
               )}
 
               {server && <PhonesAndSecurity onChanged={onServerWalletChange} />}
@@ -537,7 +542,12 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
 
           {/* This phone: lock or forget the Ye₿ente wallet; disconnect or wipe an external one */}
           {server ? (
-            <div className="pt-2 border-t border-[var(--yb-outline-variant)]/60 grid grid-cols-2 gap-2">
+            <details className="group pt-2 border-t border-[var(--yb-outline-variant)]/60">
+              <summary className="flex justify-between items-center text-xs text-[var(--yb-secondary)] cursor-pointer list-none py-1">
+                <span className="font-semibold">This phone</span>
+                <span className="font-mono text-[10px] text-[var(--yb-on-surface-variant)]">›</span>
+              </summary>
+              <div className="grid grid-cols-2 gap-2 pt-1">
               <button
                 type="button"
                 onClick={async () => { await lockServerWallet(); onClose(); }}
@@ -556,9 +566,15 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
               >
                 Remove from this phone
               </button>
-            </div>
+              </div>
+            </details>
           ) : wallet.isConnected && (
-            <div className="pt-2 border-t border-[var(--yb-outline-variant)]/60 grid grid-cols-2 gap-2">
+            <details className="group pt-2 border-t border-[var(--yb-outline-variant)]/60">
+              <summary className="flex justify-between items-center text-xs text-[var(--yb-secondary)] cursor-pointer list-none py-1">
+                <span className="font-semibold">This phone</span>
+                <span className="font-mono text-[10px] text-[var(--yb-on-surface-variant)]">›</span>
+              </summary>
+              <div className="grid grid-cols-2 gap-2 pt-1">
               <button
                 type="button"
                 onClick={handleEject}
@@ -574,8 +590,10 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
               >
                 Wipe Wallet
               </button>
-            </div>
+              </div>
+            </details>
           )}
+          <p className="text-center text-xs text-[var(--yb-on-surface-variant)] pt-1">Need help? <a href="/wallet-guide" className="font-semibold text-[var(--yb-primary)] hover:underline">See the wallet guide</a></p>
         </div>
       </div>
     </div>

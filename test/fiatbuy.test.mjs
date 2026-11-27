@@ -185,3 +185,21 @@ test("provider sign-in is asked once and reused while fresh", async () => {
   await pep.submitOrder({ email: "5tan@altradits.com", kes: 100 });
   assert.equal(ppTokenHits, before);
 });
+
+test("M-Pesa buy: the callback and a status poll finishing together credit once", async () => {
+  // Safaricom's callback carries the receipt; the Daraja status query usually
+  // doesn't. Both finishing the same buy at once must still credit it once.
+  const { wallet } = await mkWallet("buyrace");
+  const quote = { kes: 200, sats: 3000, rate: 6_600_000, spreadPct: 0 };
+  await yw.startBuy(wallet, quote, "ws_CO_race_1");
+  const [a, b] = await Promise.all([
+    yw.finishBuy("ws_CO_race_1", { resultCode: 0, receipt: "SKR4T2ABCD" }),
+    yw.finishBuy("ws_CO_race_1", { resultCode: 0, receipt: null }),
+  ]);
+  assert.deepEqual([a, b].sort(), ["paid", "paid"]);
+  const w = await getJSON(`yw:${wallet.id}`);
+  assert.equal(w.balance, 3000, "credited once, not twice");
+  const buy = await getJSON("ywbuy:ws_CO_race_1");
+  assert.equal(buy.state, "paid");
+  assert.equal(buy.receipt, "SKR4T2ABCD", "the M-Pesa receipt is kept whichever path finished first");
+});

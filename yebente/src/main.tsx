@@ -23,6 +23,10 @@ if (window.top !== window.self) {
   throw new Error('Not shown inside a frame.');
 }
 
+// Offline shell and install prompt: the worker caches the app shell only,
+// never API answers (see yebente/public/sw.js).
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/yebente/sw.js').catch(() => {});
+
 // Tell the Security watch when the page's script lock blocks something that isn't ours.
 let reported = 0;
 document.addEventListener('securitypolicyviolation', (e) => {
@@ -38,3 +42,11 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 );
+
+// Screen recordings and app-switcher snapshots must not catch secrets: while
+// hidden, blur every .yb-sensitive box (PINs, codes, words). Shown again on return.
+const veil = () => { document.documentElement.dataset.private = '1'; };
+const unveil = () => { delete document.documentElement.dataset.private; };
+document.addEventListener('visibilitychange', () => { if (document.hidden) veil(); else unveil(); });
+window.addEventListener('pagehide', veil);
+window.addEventListener('pageshow', unveil);

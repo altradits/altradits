@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useEscape } from '../hooks/useEscape';
+import { useFocusReturn } from '../hooks/useFocusReturn';
 import { ArrowLeft, CheckCircle2, Loader2, AlertTriangle, CreditCard, ExternalLink } from 'lucide-react';
 import { Transaction } from '../types';
 import { orderCardTopup, cardTopupStatus } from '../services/cardService';
 import { celebrate } from '../services/celebrate';
+import { readableError } from '../services/errorText';
 
 interface CardTopupModalProps {
   isOpen: boolean;
@@ -14,6 +17,8 @@ interface CardTopupModalProps {
 // opens a provider order; the buyer pays on the provider's secure page while
 // this screen waits for the provider's own confirmation.
 export const CardTopupModal: React.FC<CardTopupModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  useEscape(onClose, isOpen);
+  useFocusReturn(isOpen);
   const [kes, setKes] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [step, setStep] = useState<'input' | 'waiting' | 'success' | 'error'>('input');
@@ -41,7 +46,7 @@ export const CardTopupModal: React.FC<CardTopupModalProps> = ({ isOpen, onClose,
     try {
       order = await orderCardTopup(amount, email.trim());
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Card top-ups are unavailable right now.');
+      setMessage(readableError(err, 'Card top-ups are unavailable right now.', true));
       setStep('error');
       return;
     }

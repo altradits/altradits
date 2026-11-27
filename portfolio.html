@@ -6,6 +6,7 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
 <meta name="theme-color" content="#EEF2F6">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
@@ -74,37 +75,46 @@ a{color:var(--blue)}
 .shot{display:block;max-width:36rem;margin:1rem 0;border:2px solid var(--ink);border-radius:1rem;overflow:hidden}
 .shot img{display:block;width:100%;height:auto}
 .topnav a.launch:hover{color:var(--ink);background:#ffa94d}
+.more-apps{margin-top:2.25rem;border-top:1px solid var(--line);padding-top:1.25rem}
+.more-apps summary{cursor:pointer;font:700 1.05rem 'Bricolage Grotesque',sans-serif;color:var(--ink);padding:.4rem 0}
+.more-apps .gallery{margin-top:1.25rem}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/library">Library</a><a href="/friends">Friends</a><a href="/portfolio" aria-current="page">Portfolio</a><a href="/developer">Developer</a><a class="launch" href="/ktown">Get kTown</a></nav></div>
+  <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="/ktown">kTown</a><a href="/wallet-guide">Ye₿ente</a><a href="/developer">Developer</a><a href="/library">Library</a><a class="launch" href="/ktown">Get kTown</a></nav></div>
 
   <header class="hero">
-    <h1>Apps by Altradits. <em>Built by Stanley.</em></h1>
-    <p class="lead">Designed, built and run in Kisumu, Kenya. Tap a card to open the app.</p>
+    <h1>Three core products. <em>Built in Kisumu.</em></h1>
+    <p class="lead">kTown for shops, Ye₿ente for everyday sats, and Altradits Developer for Bitcoin apps. Tap any card to open.</p>
   </header>
 
   <ul class="gallery">
     <li><a class="card" href="/ktown"><span class="thumb"><img src="/assets/card-ktown.svg" alt="kTown: a printed QR till that customers scan to pay" width="800" height="624" loading="lazy"></span><span class="body"><span class="status">Pilot in Kisumu · Open</span><h2>kTown</h2><span>A free QR till for shops.</span></span></a></li>
     <li><a class="card" href="/yebente"><span class="thumb"><img src="/assets/yebente-shot.png" alt="Ye₿ente app: the start screen with Log in and Create a wallet" width="390" height="844" loading="lazy" class="mid"></span><span class="body"><span class="status">Early access</span><h2>Ye₿ente</h2><span>A starter Bitcoin wallet.</span></span></a></li>
-    <li><a class="card" href="/kazi"><span class="thumb"><img src="/assets/card-kazi.svg" alt="The Kazi board: small paid tasks in Kisumu, paid in sats or M-Pesa" width="800" height="624" loading="lazy"></span><span class="body"><span class="status">Pilot in Kisumu</span><h2>Kazi</h2><span>Small paid tasks. Earn sats or M-Pesa.</span></span></a></li>
-      <li><a class="card" href="/sats-safari/"><span class="thumb"><img src="/assets/sats-safari-card.png" alt="Sats Safari: a smiling sun above the Start the safari button" width="800" height="620" loading="lazy" class="mid"></span><span class="body"><span class="status">Free · For kids</span><h2>Sats Safari</h2><span>A Bitcoin game for kids.</span></span></a></li>
-    <li><a class="card" href="/njia"><span class="thumb"><img src="/assets/njia-shot.png" alt="Njia: the five steps of the node's path to earning, none done yet" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Not earning yet · Private</span><h2>Njia</h2><span>A small Lightning node, learning to earn.</span></span></a></li>
-    <li><a class="card" href="/trivia"><span class="thumb"><img src="/assets/trivia-shot.png" alt="Mempool Mayhem: a sats trivia battle" width="1280" height="800" loading="lazy"></span><span class="body"><span class="status">Free to enter</span><h2>Mempool Mayhem</h2><span>A sats trivia battle.</span></span></a></li>
-    <li><a class="card" href="/developer"><span class="thumb"><img src="/assets/developer-shot.png" alt="Altradits Developer page on a phone" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">New</span><h2>Altradits Developer</h2><span>A Lightning API for Bitcoin apps. Sandbox free.</span></span></a></li>
-    <li><a class="card" href="https://github.com/altradits/kabuna"><span class="thumb"><img src="/assets/kabuna-shot.jpg" alt="Kabuna shop: the Ethiopian coffee storefront homepage" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">In build · Open source</span><h2>Kabuna</h2><span>Ethiopian coffee and gifts, paid in Lightning.</span></span></a></li>
-    <li><a class="card" href="https://yebobank.vercel.app"><span class="thumb"><img src="/assets/yebobank-shot.png" alt="YeboBank demo: the savings dashboard with the test sats banner" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Demo (test network)</span><h2>YeboBank</h2><span>A Bitcoin savings demo. Test sats only, no real money.</span></span></a></li>
-    <li><a class="card" href="/address-check/"><span class="thumb"><img src="/assets/address-check-shot.png" alt="Address Check: a pasted address verified as P2WPKH on Bitcoin mainnet" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Free tool · Works offline</span><h2>Address Check</h2><span>Verify any Bitcoin address before you send.</span></span></a></li>
-    <li><a class="card" href="/touchtype"><span class="thumb"><img class="low" src="/assets/touchtype-shot.png" alt="TouchType game: a typing lesson with combo streak and on-screen keyboard" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Free game · Works offline</span><h2>TouchType</h2><span>An arcade typing game. No account, nothing to install.</span></span></a></li>
-  <li><a class="card" href="/opcode-circuit"><span class="thumb"><img src="/assets/opcode-circuit-shot.png" alt="Opcode Circuit: the campaign screen with 8 chapter cards" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Open</span><h2>Opcode Circuit</h2><span>A Bitcoin puzzle game for developers.</span></span></a></li>
+    <li><a class="card" href="/developer"><span class="thumb"><img src="/assets/developer-shot.png" alt="Altradits Developer page on a phone" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Live · Sandbox free</span><h2>Altradits Developer</h2><span>A Lightning API for Bitcoin apps. Sandbox free.</span></span></a></li>
   </ul>
+
+  <details class="more-apps">
+    <summary>Games, tools and experiments (9)</summary>
+    <ul class="gallery">
+      <li><a class="card" href="/address-check/"><span class="thumb"><img src="/assets/address-check-shot.png" alt="Address Check: a pasted address verified as P2WPKH on Bitcoin mainnet" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Free tool · Works offline</span><h2>Address Check</h2><span>Verify any Bitcoin address before you send.</span></span></a></li>
+      <li><a class="card" href="/opcode-circuit"><span class="thumb"><img src="/assets/opcode-circuit-shot.png" alt="Opcode Circuit: the campaign screen with 8 chapter cards" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Open</span><h2>Opcode Circuit</h2><span>A Bitcoin puzzle game for developers.</span></span></a></li>
+      <li><a class="card" href="/sats-safari/"><span class="thumb"><img src="/assets/sats-safari-card.png" alt="Sats Safari: a smiling sun above the Start the safari button" width="800" height="620" loading="lazy" class="mid"></span><span class="body"><span class="status">Free · For kids</span><h2>Sats Safari</h2><span>A Bitcoin game for kids.</span></span></a></li>
+      <li><a class="card" href="/touchtype"><span class="thumb"><img class="low" src="/assets/touchtype-shot.png" alt="TouchType game: a typing lesson with combo streak and on-screen keyboard" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Free game · Works offline</span><h2>TouchType</h2><span>An arcade typing game. No account, nothing to install.</span></span></a></li>
+      <li><a class="card" href="https://github.com/altradits/kabuna"><span class="thumb"><img src="/assets/kabuna-shot.jpg" alt="Kabuna shop: the Ethiopian coffee storefront homepage" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">In build · Open source</span><h2>Kabuna</h2><span>Ethiopian coffee and gifts, paid in Lightning.</span></span></a></li>
+      <li><a class="card" href="https://yebobank.vercel.app"><span class="thumb"><img src="/assets/yebobank-shot.png" alt="YeboBank demo: the savings dashboard with the test sats banner" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Demo (test network)</span><h2>YeboBank</h2><span>A Bitcoin savings demo. Test sats only, no real money.</span></span></a></li>
+      <li><a class="card" href="/kazi"><span class="thumb"><img src="/assets/card-kazi.svg" alt="The Kazi board: small paid tasks in Kisumu, paid in sats or M-Pesa" width="800" height="624" loading="lazy"></span><span class="body"><span class="status">Experiment · Off by default</span><h2>Kazi</h2><span>Small paid tasks. Earn sats or M-Pesa.</span></span></a></li>
+      <li><a class="card" href="/njia"><span class="thumb"><img src="/assets/njia-shot.png" alt="Njia: the five steps of the node's path to earning, none done yet" width="390" height="844" loading="lazy"></span><span class="body"><span class="status">Experiment · Private</span><h2>Njia</h2><span>A small Lightning node, learning to earn.</span></span></a></li>
+      <li><a class="card" href="/trivia"><span class="thumb"><img src="/assets/trivia-shot.png" alt="Mempool Mayhem: a sats trivia battle" width="1280" height="800" loading="lazy"></span><span class="body"><span class="status">Experiment · Off by default</span><h2>Mempool Mayhem</h2><span>A sats trivia battle.</span></span></a></li>
+    </ul>
+  </details>
 
 
 
 </div>
 
-<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/yebente">Open Ye₿ente</a> · <a href="/library">Library</a> · <a href="/bitcoin-core">Bitcoin Core guide</a> · <a href="/bitcoin">Bitcoin questions</a> · <a href="/wallet-guide">Ye₿ente guide</a> · <a href="/players">Players</a> · <a href="/friends">Friends</a> · <a href="/tracker">Tracker</a> · <a href="/journey">Journey</a> · <a href="/plan">Plan</a> · <a href="/research">Research</a> · <a href="/portfolio">Portfolio</a> · <a href="/donate">Support my work</a> · <a href="/contact">Contact</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="https://x.com/altradits">X</a> · <a href="https://www.tiktok.com/@5tan_lee">TikTok</a></div></footer>
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/ktown">Get kTown</a> · <a href="/ktown/terms">kTown terms</a> · <a href="/yebente">Ye₿ente wallet</a> · <a href="/wallet-guide">Ye₿ente guide</a> · <a href="/developer">Developer</a> · <a href="/contact">Contact</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a> · <a href="https://x.com/altradits">X</a> · <a href="https://www.tiktok.com/@5tan_lee">TikTok</a></div></footer>
 <script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY>24)},{passive:true});document.body.classList.toggle("scrolled",scrollY>24); // nav shadow on scroll

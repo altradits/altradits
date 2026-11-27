@@ -50,7 +50,7 @@ const invoice = (msats, hashHex, dhashHex) => {
 // --- stub destination wallet ---------------------------------------------------
 const META = (id) => JSON.stringify([["text/plain", `Pay ${id}`], ["text/identifier", id]]);
 const J = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
-const wallet = { settled: new Map(), lastPr: null, lastComment: null, freeze: false, frozen: null };
+const wallet = { settled: new Map(), pre: new Map(), lastPr: null, lastComment: null, freeze: false, frozen: null };
 dev.setDevapiFetcher(async (raw) => {
   const u = new URL(String(raw));
   if (u.hostname !== "wallet.test") throw new Error(`unexpected host ${u.hostname}`);
@@ -67,7 +67,9 @@ dev.setDevapiFetcher(async (raw) => {
     wallet.lastComment = u.searchParams.get("comment");
     if (cb[1] === "err") return J({ status: "ERROR", reason: "Till closed." });
     if (wallet.freeze && wallet.frozen) { wallet.lastPr = wallet.frozen.pr; return J(wallet.frozen); }
-    const hash = crypto.randomBytes(32).toString("hex");
+    const pre = crypto.randomBytes(32).toString("hex");
+    const hash = crypto.createHash("sha256").update(Buffer.from(pre, "hex")).digest("hex");
+    wallet.pre.set(hash, cb[1] === "badproof" ? "22".repeat(32) : cb[1] === "noproof" ? null : pre);
     const dhash = cb[1] === "wronghash" ? crypto.createHash("sha256").update("something else").digest("hex")
       : crypto.createHash("sha256").update(META(id)).digest("hex");
     const pr = cb[1] === "nohash" ? `lnbc${msats / 100}n1${"q".repeat(200)}` : invoice(cb[1] === "wrongamt" ? msats + 1000 : msats, hash, dhash);
@@ -79,7 +81,7 @@ dev.setDevapiFetcher(async (raw) => {
     return J(out);
   }
   const v = u.pathname.match(/^\/verify\/([0-9a-f]{64})$/);
-  if (v) return J({ settled: wallet.settled.get(v[1]) === true, preimage: wallet.settled.get(v[1]) === true ? "11".repeat(32) : null });
+  if (v) return J({ settled: wallet.settled.get(v[1]) === true, preimage: wallet.settled.get(v[1]) === true ? wallet.pre.get(v[1]) : null });
   return J({ status: "ERROR", reason: "No." }, 404);
 });
 
@@ -237,7 +239,7 @@ test("settlement: verify settles, silence stays pending, hashes verify", async (
   const done = await call("GET", `v1/invoices/${id}`, { token: c.key });
   assert.equal(done.json.invoice.status, "settled");
   assert.ok(done.json.invoice.settledAt);
-  assert.equal(done.json.invoice.preimage, "11".repeat(32));
+  assert.equal(crypto.createHash("sha256").update(Buffer.from(done.json.invoice.preimage, "hex")).digest("hex"), hash, "the stored preimage proves the payment");
   const byHash = await call("GET", `v1/verify/${hash}`, { token: c.key });
   assert.equal(byHash.json.invoice.status, "settled");
   assert.equal((await call("GET", `v1/verify/${"ab".repeat(32)}`, { token: c.key })).status, 404);
@@ -442,4 +444,17 @@ test("the retry pump is wired to the health pings and the spec covers v1", async
   assert.equal(spec.openapi, "3.1.0");
   for (const p of ["/invoices", "/invoices/{id}", "/verify/{hash}", "/webhooks", "/webhooks/{id}/disable", "/webhooks/{id}/deliveries"])
     assert.ok(spec.paths[p], `spec documents ${p}`);
+});
+
+test("settlement needs proof: a wrong or missing preimage keeps the invoice pending", async () => {
+  const c = await ctx();
+  for (const name of ["badproof", "noproof"]) {
+    const d = await dest(c, name);
+    const made = await call("POST", "v1/invoices", { token: c.key, body: { destinationId: d.id, sats: 300 } });
+    wallet.settled.set(made.json.invoice.paymentHash, true);
+    const r = await call("GET", `v1/invoices/${made.json.invoice.id}`, { token: c.key });
+    assert.equal(r.json.invoice.status, "pending", `${name}: a settled claim without valid proof doesn't settle`);
+    assert.match(r.json.note, /no valid proof/);
+    assert.equal((await call("GET", `v1/verify/${made.json.invoice.paymentHash}`, { token: c.key })).json.invoice.status, "pending");
+  }
 });

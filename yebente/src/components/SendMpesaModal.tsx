@@ -1,7 +1,9 @@
 import { payInvoiceWithWebLN } from '../services/lightningService';
-import { hasServerWallet, sendFromServerWallet } from '../services/altraditsWallet';
+import { hasServerWallet, sendFromServerWallet, sendMobileDirect, directMobileStatus } from '../services/altraditsWallet';
 import { biometricOn, approveWithBiometric } from '../services/biometric';
 import { HoldNotice } from './HoldNotice';
+import { useEscape } from '../hooks/useEscape';
+import { useFocusReturn } from '../hooks/useFocusReturn';
 import { SatsMotion, CountUp } from './SatsMotion';
 import { celebrate } from '../services/celebrate';
 import React, { useState, useEffect } from 'react';
@@ -21,12 +23,14 @@ import {
   isValidNumber,
   displayNumber,
   railAddress,
+  fullNumber,
   fetchQuote,
   requestInvoice,
   pollReceipt,
 } from '../services/payoutRails';
 import { isNetworkOnline } from '../services/offlineService';
 import { PhoneInput } from './PhoneInput';
+import { readableError } from '../services/errorText';
 
 interface SendMpesaModalProps {
   isOpen: boolean;
@@ -43,13 +47,18 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   rates,
   onSuccess,
 }) => {
+  useEscape(onClose, isOpen);
+  useFocusReturn(isOpen);
   const [amountMode, setAmountMode] = useState<'fiat' | 'sats'>('fiat');
   const [phone, setPhone] = useState<string>('');
   const [fiatAmountStr, setFiatAmountStr] = useState<string>('');
   const [satsAmountStr, setSatsAmountStr] = useState<string>('');
   const [step, setStep] = useState<'input' | 'processing' | 'success' | 'error'>('input');
+  // Paid, but the partner hasn't confirmed delivery: never shown as delivered.
+  const [pending, setPending] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string>('Initiating Lightning Transfer...');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [fatal, setFatal] = useState(false); // the money already moved: no blind retry, only Done
   const [realReference, setRealReference] = useState<string>('');
   const [merchantRecipientName, setMerchantRecipientName] = useState<string>('');
   const [receiptUrl, setReceiptUrl] = useState<string>('');
@@ -136,6 +145,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
 
   const handleConfirm = async () => {
     if (numericAmount <= 0) return;
+    setFatal(false);
 
     if (!isPhoneValid) {
       setErrorMessage(`Enter a valid ${rail.name} number in ${rail.country}, like +${rail.dial} ${rail.example}.`);
@@ -163,7 +173,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
       try {
         passkey = await approveWithBiometric();
       } catch (err: unknown) {
-        setErrorMessage(err instanceof Error ? err.message : 'Fingerprint not confirmed.');
+        setErrorMessage(readableError(err, 'Fingerprint not confirmed.', true));
         setStep('error');
         return;
       }
@@ -173,6 +183,75 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
     setErrorMessage('');
     setMerchantRecipientName('');
     setReceiptUrl('');
+
+    // Direct M-Pesa: Ye₿ente pays the phone itself. The server takes the sats,
+    // and gives them back if Safaricom refuses.
+    if (rail.direct) {
+      if (!server) {
+        setErrorMessage('Paying M-Pesa directly needs your Ye₿ente wallet.');
+        setStep('error');
+        return;
+      }
+      try {
+        setProcessingStatus('Paying M-Pesa...');
+        let res = await sendMobileDirect(fullNumber(rail, phone), numericAmount, pin, passkey);
+        setPin('');
+        // Safaricom usually answers within seconds: wait up to 90 s for the M-Pesa code.
+        // Three straight check failures stop the wait: the payment may have gone
+        // through, so this error never offers a retry.
+        const deadline = Date.now() + 90000;
+        let statusFails = 0;
+        while (res.status === 'pending' && Date.now() < deadline) {
+          await new Promise((r) => setTimeout(r, 3000));
+          try {
+            res = await directMobileStatus(res.id);
+            statusFails = 0;
+          } catch (err: unknown) {
+            if (++statusFails >= 3) {
+              const m = readableError(err, "Couldn't check this payment.", true);
+              setErrorMessage(m.includes('History') ? m : `${m} Check History before trying again: it may have gone through.`);
+              setFatal(true);
+              setStep('error');
+              return;
+            }
+          }
+        }
+        if (res.status === 'failed') {
+          setErrorMessage(res.error || "M-Pesa didn't complete this payment. Your sats are back.");
+          setStep('error');
+          return;
+        }
+        const done = res.status === 'completed';
+        const ref = res.receipt || res.id;
+        setRealReference(ref);
+        onSuccess({
+          type: 'send_mpesa',
+          title: `Send ${rail.name}`,
+          status: done ? 'completed' : 'pending',
+          fromCurrency: 'SATS',
+          fromAmount: res.sats,
+          toCurrency: currency,
+          toAmount: res.kes,
+          fee: 0,
+          feeCurrency: 'SATS',
+          realFeeSats: 0,
+          realFeeFiat: 0,
+          realFeeCurrency: currency,
+          rateUsed: currentRate,
+          recipient: getRecipientDisplay(),
+          referenceNumber: ref,
+          walletType: 'custodial',
+          note: `${rail.name} paid directly by ${rail.partner}`,
+        });
+        if (done) celebrate({ kind: 'send', sats: res.sats, label: `${rail.name} ${getRecipientDisplay()}`, ref });
+        setPending(!done);
+        setStep('success');
+      } catch (err: unknown) {
+        setErrorMessage(readableError(err, 'Error processing transfer.', true));
+        setStep('error');
+      }
+      return;
+    }
 
     try {
       setProcessingStatus(`Asking ${rail.partner} for an invoice...`);
@@ -197,13 +276,15 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
       // Step 2: Settle payment off-chain: from the Altradits wallet (with the PIN),
       // or from the user's own wallet (WebLN)
       let paid: { paid: boolean; error?: string };
+      let paymentPending = false;
       if (server) {
         try {
-          await sendFromServerWallet(invoiceRes.pr, 0, pin, passkey);
+          const sent = await sendFromServerWallet(invoiceRes.pr, 0, pin, passkey);
           setPin('');
+          if (sent.status === 'pending') paymentPending = true;
           paid = { paid: true };
         } catch (err: unknown) {
-          setErrorMessage(err instanceof Error ? err.message : 'Lightning payment route unavailable.');
+          setErrorMessage(readableError(err, 'Lightning payment route unavailable.', true));
           setStep('error');
           return;
         }
@@ -218,7 +299,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
       setProcessingStatus(`Delivering to ${rail.name}...`);
 
       // Step 3: wait for the partner's confirmation (e.g. the M-Pesa code)
-      if (paymentHash && rail.receipt) {
+      if (paymentHash && rail.receipt && !paymentPending) {
         const pollRes = await pollReceipt(rail, paymentHash, {
           timeoutMs: 90000,
           intervalMs: 3000,
@@ -256,7 +337,18 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
           });
 
           celebrate({ kind: 'send', sats: totalSatsDeducted, label: `${rail.name} ${getRecipientDisplay()}`, ref: paymentHash });
+          setPending(false);
           setStep('success');
+          return;
+        }
+        // The partner refused or lost it: the sats already left, so this error
+        // never offers a retry. Only a wait still pending shows as pending.
+        if (pollRes.terminal) {
+          const ref = paymentHash.slice(0, 10).toUpperCase();
+          setRealReference(ref);
+          setErrorMessage(`${pollRes.error || `${rail.partner} could not pay out.`} Your sats left the wallet. Note ${ref} and check History: if they don't return, contact us from the Contact page.`);
+          setFatal(true);
+          setStep('error');
           return;
         }
       }
@@ -287,10 +379,11 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
         note: `${rail.name} payment through ${rail.partner}`,
       });
 
-      celebrate({ kind: 'send', sats: totalSatsDeducted, label: `${rail.name} ${getRecipientDisplay()}`, ref: paymentHash });
+      // No confirmation: on its way, not delivered. No celebration.
+      setPending(true);
       setStep('success');
     } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : 'Error processing transfer.');
+      setErrorMessage(readableError(err, 'Error processing transfer.', true));
       setStep('error');
     }
   };
@@ -298,11 +391,16 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
   const handleResetAndClose = () => {
     setStep('input');
     setErrorMessage('');
+    setFatal(false);
     onClose();
   };
 
   const handleBack = () => {
     if (step === 'error') {
+      if (fatal) {
+        handleResetAndClose();
+        return;
+      }
       setStep('input');
       setErrorMessage('');
       return;
@@ -360,7 +458,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                           : 'bg-[var(--yb-surface)] border-[var(--yb-outline-variant)] text-[var(--yb-on-surface-variant)]'
                       }`}
                     >
-                      {r.name} ({r.country})
+                      {r.name} ({r.country}){r.direct ? ' · direct' : ''}{r.down ? ' · not answering' : ''}
                     </button>
                   ))}
                 </div>
@@ -552,10 +650,10 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
               <div className="flex gap-2 w-full">
                 <button
                   type="button"
-                  onClick={() => setStep('input')}
+                  onClick={() => (fatal ? handleResetAndClose() : setStep('input'))}
                   className="flex-1 h-11 rounded-2xl bg-[var(--yb-surface-container)] hover:bg-[var(--yb-surface-container-high)] text-[var(--yb-on-surface)] font-medium text-xs"
                 >
-                  Try Again
+                  {fatal ? 'Done' : 'Try Again'}
                 </button>
               </div>
             </div>
@@ -563,17 +661,22 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
 
           {step === 'success' && (
             <div className="py-6 flex flex-col items-center text-center space-y-4">
-              <SatsMotion mode="sent" />
-              <div>
+              {pending ? <SatsMotion mode="sending" /> : <SatsMotion mode="sent" />}
+              <div className="space-y-1">
                 <h3 className="text-lg font-bold text-[var(--yb-on-surface)]">
-                  {rail.name} delivered
+                  {pending ? `${rail.name} not confirmed yet` : `${rail.name} delivered`}
                 </h3>
+                {pending && (
+                  <p className="text-xs text-[var(--yb-on-surface-variant)]">
+                    {rail.partner} hasn't confirmed delivery yet. Check History in a few minutes.
+                  </p>
+                )}
               </div>
 
               <div className="w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl p-3.5 text-left font-mono text-xs space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-[var(--yb-on-surface-variant)]">Delivered</span>
-                  <span className="text-emerald-400 font-bold"><CountUp value={numericAmount} /> {currencyCode}</span>
+                  <span className="text-[var(--yb-on-surface-variant)]">{pending ? 'Amount' : 'Delivered'}</span>
+                  <span className={`${pending ? 'text-[var(--yb-secondary)]' : 'text-emerald-400'} font-bold`}><CountUp value={numericAmount} /> {currencyCode}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--yb-on-surface-variant)]">Recipient</span>
@@ -598,6 +701,7 @@ export const SendMpesaModal: React.FC<SendMpesaModalProps> = ({
                         type="button"
                         onClick={handleCopyRef}
                         className="p-1 text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
+                        aria-label="Copy code"
                         title="Copy code"
                       >
                         {copiedRef ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}

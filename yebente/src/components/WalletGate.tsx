@@ -6,6 +6,7 @@ import {
 } from '../services/altraditsWallet';
 import { biometricOn, approveUnlock } from '../services/biometric';
 import { downloadRecoveryCard, shareRecoveryCard, canShareCard } from '../services/recoveryCard';
+import { readableError } from '../services/errorText';
 
 // The screen before the wallet. One secret for people: the 6-digit PIN (or the
 // fingerprint once it's on). Log in comes first; recovery is only for a lost
@@ -67,7 +68,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
   const go = (m: Mode) => { setMode(m); setError(''); setNote(''); setPin(''); setPin2(''); setTypo(null); };
   const run = async (fn: () => Promise<void>) => {
     setBusy(true); setError('');
-    try { await fn(); } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Something went wrong. Try again.'); } finally { setBusy(false); }
+    try { await fn(); } catch (err: unknown) { setError(readableError(err, 'Something went wrong. Try again.')); } finally { setBusy(false); }
   };
   // Sending to an email: when the server flags a misspelt domain, offer the
   // typed address anyway (some real domains look like typos).
@@ -76,7 +77,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
       setBusy(true); setError(''); setTypo(null);
       fn(confirm).catch((err: unknown) => {
         const hint = !confirm && typoHintOf(err);
-        setError(err instanceof Error ? err.message : 'Something went wrong. Try again.');
+        setError(readableError(err, 'Something went wrong. Try again.'));
         if (hint) setTypo({ hint, address: email.trim(), resend: () => attempt(true) });
       }).finally(() => setBusy(false));
     };
@@ -134,6 +135,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
             {externalEnabled && (
               <div><button type="button" className="text-[11px] text-[var(--yb-on-surface-variant)] hover:underline" onClick={onUseExternal}>Use my own Lightning wallet instead</button></div>
             )}
+            <p className="text-xs text-[var(--yb-on-surface-variant)]">New to Bitcoin? <a className={link} href="/wallet-guide">See the 1-minute guide</a></p>
           </div>
         </>
       )}
@@ -146,7 +148,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
               <p className="text-sm text-[var(--yb-on-surface-variant)]">Enter the email on your wallet. We'll send a code; then you enter your PIN. Nothing gets reset.</p>
               <input type="email" className={field} placeholder="5tan@altradits.com" value={email} autoComplete="email" onChange={(e) => { setEmail(e.target.value.slice(0, 200)); setTypo(null); }} />
               <button type="button" className={primary} disabled={busy || !email.includes('@')}
-                onClick={() => runEmail(async (confirmTypo) => { await startLogin(email.trim(), confirmTypo); setCodeSent(true); setNote('If that email is on a Ye₿ente wallet, a code is on its way. It works for 10 minutes.'); })}>
+                onClick={() => runEmail(async (confirmTypo) => { await startLogin(email.trim(), confirmTypo); setCodeSent(true); setNote('If that email is on a Ye₿ente wallet, a code is on its way.'); })}>
                 Send me a code
               </button>
               <p className="text-xs text-[var(--yb-on-surface-variant)]">No email on your wallet? <button type="button" className={link} onClick={() => go('recover')}>Use your recovery words</button></p>
@@ -156,7 +158,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
               {note && <p className="text-sm text-emerald-300">{note}</p>}
               <label className="block">
                 <span className="block text-xs text-[var(--yb-on-surface-variant)] mb-1.5">Code from the email</span>
-                <input inputMode="numeric" className={`${field} font-mono tracking-[0.3em] text-center`} value={code} autoComplete="one-time-code" onChange={(e) => setCode(digits(e.target.value, 8))} />
+                <input type="password" inputMode="numeric" className={`yb-sensitive ${field} font-mono tracking-[0.3em] text-center`} value={code} autoComplete="one-time-code" autoCorrect="off" autoCapitalize="none" spellCheck={false} onChange={(e) => setCode(digits(e.target.value, 8))} />
               </label>
               <PinInput value={pin} onChange={setPin} label="Your PIN" name="yb-login-pin" />
               <button type="button" className={primary} disabled={busy || code.length !== 8 || pin.length !== 6}
@@ -172,7 +174,7 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
       {mode === 'create' && (
         <>
           <div className="flex items-center gap-2">{back()}<h1 className="text-lg font-bold">Create a wallet</h1></div>
-          <p className="text-xs text-[var(--yb-on-surface-variant)]">Already have one? <button type="button" className={link} onClick={() => go('login')}>Log in</button> · New to Bitcoin? <a className={link} href="/">See the 1-minute guide</a></p>
+          <p className="text-xs text-[var(--yb-on-surface-variant)]">Already have one? <button type="button" className={link} onClick={() => go('login')}>Log in</button> · New to Bitcoin? <a className={link} href="/wallet-guide">See the 1-minute guide</a></p>
           <PinInput value={pin} onChange={setPin} label="Choose a 6-digit PIN (avoid 123456 or 112233)" name="yb-new-pin" autoFocus />
           <PinInput value={pin2} onChange={setPin2} label="The same PIN again" name="yb-new-pin2" />
           <label className="block">
@@ -230,10 +232,11 @@ export const WalletGate: React.FC<Props> = ({ locked, externalEnabled, recoveryT
           </div>
           <div className="space-y-2 pt-2 border-t border-[var(--yb-outline-variant)]/60">
             <span className="block text-xs font-semibold text-[var(--yb-secondary)] pt-2">With your 12 recovery words</span>
-            <textarea rows={3} className={`yb-sensitive ${field} font-mono resize-none`} value={words} autoComplete="off" spellCheck={false} onChange={(e) => setWords(e.target.value)} />
+            <input type="password" className={`yb-sensitive ${field} font-mono`} value={words} autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck={false} onChange={(e) => setWords(e.target.value)} />
+            <p className="text-[11px] text-[var(--yb-on-surface-variant)]">In order: 1 to 6 down the left of your card, then 7 to 12 down the right. Commas, numbers and capitals are fine.</p>
             <PinInput value={pin} onChange={setPin} label="New PIN" name="yb-words-pin" />
             <PinInput value={pin2} onChange={setPin2} label="The same new PIN again" name="yb-words-pin2" />
-            <button type="button" className={primary} disabled={busy || words.trim().split(/\s+/).length < 12}
+            <button type="button" className={primary} disabled={busy || (words.match(/[a-z]+/gi) || []).length < 12}
               onClick={() => run(async () => { twoPins(); await restoreServerWallet(words, pin); setWords(''); setPin(''); setPin2(''); onOpen(); })}>Recover with my words</button>
           </div>
           {note && <p className="text-sm text-emerald-300">{note}</p>}

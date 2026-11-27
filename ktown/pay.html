@@ -7,7 +7,20 @@
 <script src="/assets/report.js"></script>
 <title>Pay with sats</title>
 <meta name="description" content="Pay this shop in sats over Lightning. The merchant receives M-Pesa.">
-<link rel="icon" href="/favicon.ico">
+<meta property="og:title" content="Pay with sats">
+<meta property="og:description" content="Pay this shop in sats over Lightning. The merchant receives M-Pesa.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://altradits.com/assets/ktown-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="kTown. Your till takes bitcoin. You get M-Pesa. Free QR till for Kisumu shops. altradits.com/ktown">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Pay with sats">
+<meta name="twitter:description" content="Pay this shop in sats over Lightning. The merchant receives M-Pesa.">
+<meta name="twitter:image" content="https://altradits.com/assets/ktown-card.png">
+<meta name="twitter:image:alt" content="kTown. Your till takes bitcoin. You get M-Pesa. Free QR till for Kisumu shops. altradits.com/ktown">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <meta name="theme-color" content="#0f1b2d">
 <link rel="stylesheet" href="/ktown/style.css">
 </head>
@@ -41,9 +54,9 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
     <p class="receive" id="receive"></p>
     <p class="err" id="pay-err" role="alert" hidden></p>
     <button type="button" class="btn" id="btn-pay" data-i18n="pay">Pay</button>
-    <p class="foot" data-i18n="honest">kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.</p>
-    <p class="powered"><a class="tando" rel="noopener" data-i18n="poweredBy">Powered by Tando (1% fee)</a></p>
+    <p class="foot" data-i18n="honest">kTown holds no money. Our payout partner converts sats to M-Pesa for a 1% fee.</p>
     <p class="help-line" id="help-pay" hidden><span data-i18n="helpIs">Help</span>: <span id="help-pay-contact"></span></p>
+    <p class="help-line"><span data-i18n="learnAsk">New to Bitcoin?</span> <a href="/wallet-guide" data-i18n="learnLink">Learn more</a></p>
   </section>
   <section id="view-invoice" hidden aria-labelledby="inv-title">
     <h1 class="shop" id="inv-title" data-i18n="scanWith">Scan with your wallet</h1>
@@ -63,8 +76,7 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
     <p class="receive"><small id="paid-sub"></small></p>
     <p class="receive"><small id="paid-fee"></small></p>
     <p class="receive"><small id="paid-sats"></small></p>
-    <p class="foot" data-i18n="honest">kTown holds no money. Tando converts sats to M-Pesa for a 1% fee.</p>
-    <p class="powered"><a class="tando" rel="noopener" data-i18n="poweredBy">Powered by Tando (1% fee)</a></p>
+    <p class="foot" data-i18n="honest">kTown holds no money. Our payout partner converts sats to M-Pesa for a 1% fee.</p>
   </section>
 </main>
 <noscript><p style="text-align:center">Paying needs JavaScript.</p></noscript>

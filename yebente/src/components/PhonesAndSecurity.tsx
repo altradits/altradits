@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Smartphone, ShieldCheck } from 'lucide-react';
 import { fetchSecurity, removeDevice, cancelEmailRecovery, changeServerPin, SecurityInfo } from '../services/altraditsWallet';
+import { readableError } from '../services/errorText';
 
 // The phones signed in to this wallet and what happened to it lately, so the
 // owner can spot a phone or a recovery they don't recognise and remove it.
@@ -29,14 +30,14 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
   const remove = async () => {
     setBusy(true); setError('');
     try { await removeDevice(removing, pin); setRemoving(''); setPin(''); await load(); onChanged?.(); }
-    catch (err: unknown) { setError(err instanceof Error ? err.message : 'Could not remove that phone.'); }
+    catch (err: unknown) { setError(readableError(err, 'Could not remove that phone.')); }
     finally { setBusy(false); }
   };
 
   const cancel = async () => {
     setBusy(true); setError(''); setCancelNote('');
     try { await cancelEmailRecovery(cancelPin); setCancelling(false); setCancelPin(''); setCancelNote('Recovery cancelled. Its links no longer work.'); await load(); onChanged?.(); }
-    catch (err: unknown) { setError(err instanceof Error ? err.message : 'Could not cancel the recovery.'); }
+    catch (err: unknown) { setError(readableError(err, 'Could not cancel the recovery.')); }
     finally { setBusy(false); }
   };
 
@@ -48,15 +49,17 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
       setChanging(false); setOldPin(''); setNewPin(''); setNewPin2('');
       setPinNote('PIN changed. Older sign-ins ended.'); await load(); onChanged?.();
     }
-    catch (err: unknown) { setError(err instanceof Error ? err.message : 'Could not change the PIN.'); }
+    catch (err: unknown) { setError(readableError(err, 'Could not change the PIN.')); }
     finally { setBusy(false); }
   };
   const pinBox = 'yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.3em]';
 
   return (
-    <div className="space-y-2">
-      <span className="font-semibold text-xs text-[var(--yb-secondary)] flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Phones and security</span>
-      <p className="text-[11px] text-[var(--yb-on-surface-variant)]">Each phone stays signed in with its own security key, which can't be copied off it. The app locks itself after a few minutes away; your PIN or fingerprint opens it.</p>
+    <details className="group space-y-2" open={Boolean(info.pendingRecovery || info.hold) || undefined}>
+      <summary className="flex justify-between items-center text-xs text-[var(--yb-secondary)] cursor-pointer list-none py-1">
+        <span className="font-semibold flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Phones and security</span>
+        <span className="font-mono text-[10px] text-[var(--yb-on-surface-variant)]">›</span>
+      </summary>
       {info.pendingRecovery && (
         <div className="p-2.5 rounded-xl bg-red-950/40 border border-red-500/30 space-y-2">
           <p className="text-xs font-semibold text-red-200">Recovery in progress</p>
@@ -95,7 +98,7 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
             <input type="password" inputMode="numeric" maxLength={6} name="yb-pin-new2" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true"
               value={newPin2} onChange={(e) => setNewPin2(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Again" className={pinBox} />
           </div>
-          <p className="text-[11px] text-[var(--yb-on-surface-variant)] px-1">Never a PIN you used before. Older sign-ins end.</p>
+          <p className="text-[11px] text-[var(--yb-on-surface-variant)] px-1">Use a PIN you haven't used before.</p>
           <button type="button" disabled={busy || oldPin.length !== 6 || newPin.length !== 6 || newPin2.length !== 6} onClick={changePin}
             className="w-full h-10 rounded-full border border-[var(--yb-outline-variant)] text-[var(--yb-on-surface)] font-semibold text-xs flex items-center justify-center hover:bg-[var(--yb-surface-container-high)] disabled:opacity-50">Set the new PIN</button>
         </div>
@@ -112,7 +115,7 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
           </li>
         ))}
       </ul>
-      {info.olderDevices > 0 && <p className="text-[11px] text-[var(--yb-on-surface-variant)]">{info.olderDevices} older sign-in(s) from before phone keys; they end when you change your PIN or recover.</p>}
+      {info.olderDevices > 0 && <p className="text-[11px] text-[var(--yb-on-surface-variant)]">{info.olderDevices} older sign-in(s). Changing your PIN ends them.</p>}
       {removing && (
         <div className="grid grid-cols-[1fr_7rem] gap-2">
           <input type="password" inputMode="numeric" maxLength={6} name="yb-remove-pin" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true"
@@ -133,6 +136,6 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
           </ul>
         </details>
       )}
-    </div>
+    </details>
   );
 };

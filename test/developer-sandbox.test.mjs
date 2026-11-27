@@ -82,6 +82,9 @@ test("sandbox invoices use signet encoding and settle through the simulator", as
   assert.equal(done.json.invoice.status, "settled");
   assert.ok(done.json.invoice.settledAt);
   assert.ok(done.json.invoice.preimage);
+  const crypto = await import("node:crypto");
+  assert.equal(crypto.createHash("sha256").update(Buffer.from(done.json.invoice.preimage, "hex")).digest("hex"), done.json.invoice.paymentHash,
+    "the sandbox preimage hashes to the payment hash, like a real payment");
   const again = await call("POST", "v1/sandbox/settle", { token: c.sb, body: { invoiceId: made.json.invoice.id } });
   assert.equal(again.json.invoice.status, "settled", "settling twice settles once");
   // The fee came off the free test balance.

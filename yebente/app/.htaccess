@@ -32,4 +32,9 @@
   <FilesMatch "\.(js|css|woff2)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
+  # The service worker is the update channel itself: never cached long,
+  # so a new shell reaches phones (this set runs after the one above).
+  <FilesMatch "^sw\.js$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
 </IfModule>

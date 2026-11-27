@@ -36,6 +36,7 @@ const BECH = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 const w5 = (hex) => [...Buffer.from(hex, "hex")].map((b) => b.toString(2).padStart(8, "0")).join("").padEnd(260, "0").match(/.{5}/g).map((b) => parseInt(b, 2));
 const META = (id) => JSON.stringify([["text/plain", `Pay ${id}`], ["text/identifier", id]]);
 const J = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
+const PRE = new Map(); // payment hash -> preimage, like a real wallet
 const wallet = { settled: new Map() };
 dev.setDevapiFetcher(async (raw) => {
   const u = new URL(String(raw));
@@ -47,14 +48,16 @@ dev.setDevapiFetcher(async (raw) => {
   const cb = u.pathname.match(/^\/cb\/(\w+)$/);
   if (cb) {
     const msats = Number(u.searchParams.get("amount"));
-    const hash = crypto.randomBytes(32).toString("hex");
+    const pre = crypto.randomBytes(32).toString("hex");
+    const hash = crypto.createHash("sha256").update(Buffer.from(pre, "hex")).digest("hex");
+    PRE.set(hash, pre);
     const dhash = crypto.createHash("sha256").update(META(`${cb[1]}@wallet.test`)).digest("hex");
     const words = [...Array(7).fill(0), 1, 1, 20, ...w5(hash), 23, 1, 20, ...w5(dhash), ...Array(20).fill(0)];
     wallet.settled.set(hash, wallet.settled.get(hash) || false);
     return J({ pr: `lnbc${msats / 100}n1` + words.map((w) => BECH[w]).join("") + "qqqqqq", verify: `https://wallet.test/verify/${hash}` });
   }
   const v = u.pathname.match(/^\/verify\/([0-9a-f]{64})$/);
-  if (v) return J({ settled: wallet.settled.get(v[1]) === true });
+  if (v) return J({ settled: wallet.settled.get(v[1]) === true, preimage: wallet.settled.get(v[1]) === true ? PRE.get(v[1]) : null });
   return J({ status: "ERROR", reason: "No." }, 404);
 });
 
@@ -141,7 +144,8 @@ test("shortfalls and suspensions are flagged", async () => {
   acct.suspended = true;
   await store.setJSON(`dev:acct:${id}`, acct);
 
-  const v = await adminCall("GET", "?view=developer");
+  // Fresh data, as the Refresh button asks for: the dashboard keeps a recent copy for a minute (#519).
+  const v = await adminCall("GET", "?view=developer&fresh=1");
   const kinds = v.json.flags.map((f) => f.kind).sort();
   assert.ok(kinds.includes("shortfall"), "the shortfall account is flagged");
   assert.ok(kinds.includes("suspended"), "the suspended account is flagged");

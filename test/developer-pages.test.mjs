@@ -16,7 +16,8 @@ const PAGES = ["developer.html", "developer-reference.html", "developer-dashboar
 test("every page with a site nav links to Developer", async () => {
   for (const f of fs.readdirSync(ROOT).filter((x) => x.endsWith(".html"))) {
     const html = read(f);
-    if (!html.includes('<nav class="topnav"')) continue;
+    // The home page sells kTown only, so its menu leaves Developer out.
+    if (f === "index.html" || !html.includes('<nav class="topnav"')) continue;
     assert.ok(html.includes('<a href="/developer"'), `${f}: nav links to /developer`);
   }
   for (const f of PAGES) assert.ok(read(f).includes('<a href="/developer" aria-current="page">Developer</a>'), `${f}: marks Developer current`);
@@ -88,4 +89,12 @@ test("routes: Node, Apache and the sitemap serve the three addresses", async () 
   for (const loc of ["https://altradits.com/developer", "https://altradits.com/developer/reference", "https://altradits.com/developer/dashboard"])
     assert.match(sm, new RegExp(`<loc>${loc}<\\/loc><lastmod>20\\d\\d-\\d\\d-\\d\\d<\\/lastmod>`), `sitemap dates ${loc}`);
   assert.match(read("llms.txt"), /developer\/reference/, "llms.txt points at the API reference");
+});
+
+test("the dashboard shows each destination's id with a copy button", async () => {
+  // POST /invoices needs destinationId, and only a session can list destinations,
+  // so the dashboard is the one place a developer can find it.
+  const html = read("developer-dashboard.html");
+  assert.match(html, /idCode\.textContent = `id \$\{d\.id\}`/);
+  assert.match(html, /btn\("Copy id", "ghost", \(e\) => copyText\(d\.id, e\.target\)\)/);
 });

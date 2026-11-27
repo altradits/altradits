@@ -1,6 +1,6 @@
 # The Builder Path: from beginner to a Btrust-ready contributor
 
-A daily program from 2026-11-06 to 2027-06-30. One verified deliverable a day.
+A daily program from Monday 2026-11-09 to 2027-06-30. One verified deliverable a day.
 Review comes first. Bitcoin has few reviewers, so reading, testing and
 reviewing other people's pull requests is the most valued contribution and the
 fastest way to learn.
@@ -72,8 +72,28 @@ The BOSS challenge ("Start Your Career in BOSS") is a one-month entry run with
 Chaincode Labs. Top performers continue with Chaincode. Others move into a
 Builders pathway. The 2026 calendar starts it in January.
 
+Checked again on 2026-11-15. builders.btrust.tech/apply lists live cohorts:
+Mastering Bitcoin and Learn Bitcoin from the Command Line start in March and
+June, Rust for Bitcoiners and Language Clubs in May and October, BOSS in
+January (redirections in February), and the Fellowship in August. All
+pathways are free. bosschallenge.xyz shows only a waitlist, with no date.
+
+Btrust's older pages disagree. btrust.tech/builders and /builders/apply still
+ask for 3+ years of production experience, at least 20 hours a week and a code
+challenge, accept applications all year, and pay "a small remuneration during
+the training period". Ask Btrust which page applies before relying on either.
+
+The ramp in the dated plan (Saturday milestones): join the BOSS waitlist and
+start Mastering Bitcoin self-paced (21 Nov), apply to BOSS (28 Nov), practise
+for its preliminary challenge with bitcoin-core-lab stage 10 (12 Dec), log the
+BOSS status (9 Jan) and result (13 Feb), join a March live cohort, and take
+part every week so the Fellowship can invite you (13 Mar onwards). LND stays
+the focus project throughout.
+
 Sources: [Builders](https://builders.btrust.tech/),
 [Apply and pathways](https://builders.btrust.tech/apply),
+[Older Builders page](https://www.btrust.tech/builders/apply),
+[BOSS challenge](https://bosschallenge.xyz/),
 [2025 pipeline reflections](https://blog.btrust.tech/strengthening-africas-bitcoin-developer-pipeline-reflections-from-2025/).
 
 ### What funders look for (the funding guide)
@@ -125,9 +145,19 @@ All dates inclusive. Rest day: every Sunday. Reflection day: every Saturday
 (a dated log file with that week's prompt answered). Weeks run Monday to
 Sunday.
 
+Every Saturday reflection also names one lab drill from the practice plan
+(assets/learn-5-practice-drills.pdf), in turn, so the Mac test lab is used
+every week. Seven Saturdays carry a dated grant milestone (MILESTONES in
+data/builder-path.js): checking and applying to the BOSS challenge or a
+Btrust Builders pathway (the funding guide says most Starter grantees came
+through Builders), and lining up the two endorsements the Starter Grant
+asks for. Program dates stay "to confirm": each milestone says to check the
+page first. The Watchtower section at the top of the tracker page is the
+one-screen summary of this plan.
+
 | Phase | Dates | Goal | Exit test |
 | :--- | :--- | :--- | :--- |
-| 0, Foundations | 2026-11-06 to 2026-12-31 | Git, GitHub and the terminal. Go well enough to read LND. Enough C++ to build and test Bitcoin Core. Mastering Bitcoin 1 to 7. Regtest bitcoind and lnd running. | Build bitcoind and lnd from source. Show both running on regtest. Show the Go tour finished and the dated log complete. |
+| 0, Foundations | 2026-11-09 to 2026-12-31 | Git, GitHub and the terminal. Go well enough to read LND. Enough C++ to build and test Bitcoin Core. Mastering Bitcoin 1 to 7. Regtest bitcoind and lnd running. | Build bitcoind and lnd from source. Show both running on regtest. Show the Go tour finished and the dated log complete. |
 | 1, Reading and reviewing | 2027-01-01 to 2027-02-25 | Read LND every week. Build and test open pull requests. Post careful tested reviews. Join the PR Review Club when it meets. | At least 6 posted reviews that say exactly what was run, on tracked projects. |
 | 2, Issues and small PRs | 2027-02-26 to 2027-04-22 | Reproduce bugs. Open precise issues. Fix docs and tests. Take good first issues. Keep reviewing weekly. | At least 2 issues opened and at least 2 pull requests opened on tracked projects. |
 | 3, A body of work | 2027-04-23 to 2027-06-30 | Merged pull requests toward the bar of five. A sustained review record. A written proposal for one clear area. The application. | A proposal written in the log. The application submitted. Review record unbroken. |
@@ -190,6 +220,12 @@ Rules:
    never displayed, logged or committed. Setting name only.
 
 ## 5. GitHub load and rate limits
+
+Hourly reminder: lib/builder-reminder.js emails Stanley once per Nairobi hour,
+07:00 to 21:00, with today's task, how it is proven and the time left, while
+the tracker shows the day open. The first hour it shows done, one done email,
+then nothing until tomorrow. Rest days get one note at 07:00. It reads the
+tracker's verdict and never marks a day. BUILDER_REMINDERS=off stops it.
 
 One cached computation feeds the page, the API and the morning report. It
 refreshes in the morning before the report and at most every 30 minutes on

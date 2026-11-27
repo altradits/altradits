@@ -13,7 +13,12 @@
 <style>
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2')}
 @font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin.woff2) format('woff2')}
-:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--paper:#fff;--ok:#0B7A5F;--warn:#B54708;--crit:#B42318;--learn:#FFF7EC}
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--paper:#fff;--ok:#0B7A5F;--warn:#B54708;--crit:#B42318;--learn:#FFF7EC;--on-ink:#fff;--soft:#F1F3F6;--track:#E4E9F0;--stripe1:#d9dee6;--stripe2:#eef1f5;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0E141C;--ink:#E6ECF3;--muted:#9AA8BA;--line:#2A3646;--blue:#8DB8E8;--btc:#F7931A;--btc-text:#FFB066;--paper:#151D27;--ok:#4CC79F;--warn:#F2A35E;--crit:#F47B70;--learn:#2A2217;--on-ink:#0E141C;--soft:#1C2633;--track:#2A3646;--stripe1:#243042;--stripe2:#1A2330;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#0E141C;--ink:#E6ECF3;--muted:#9AA8BA;--line:#2A3646;--blue:#8DB8E8;--btc:#F7931A;--btc-text:#FFB066;--paper:#151D27;--ok:#4CC79F;--warn:#F2A35E;--crit:#F47B70;--learn:#2A2217;--on-ink:#0E141C;--soft:#1C2633;--track:#2A3646;--stripe1:#243042;--stripe2:#1A2330;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .brand img,:root:not([data-theme=light]) #login img{background:#fff;border-radius:.45rem;padding:.2rem .35rem}}
+:root[data-theme=dark] .brand img,:root[data-theme=dark] #login img{background:#fff;border-radius:.45rem;padding:.2rem .35rem}
+@media print{:root,:root[data-theme=dark]{--bg:#fff;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--paper:#fff;--blue:#2A5A8F;--on-ink:#fff;--soft:#F1F3F6;--track:#E4E9F0;--learn:#FFF7EC;color-scheme:light}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.55 Figtree,system-ui,sans-serif}
 h1,h2,h3{font-family:'Bricolage Grotesque',Figtree,sans-serif;line-height:1.15;margin:0}
@@ -50,7 +55,7 @@ dd{margin:0;overflow-wrap:anywhere}
 input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);border-radius:.6rem;font:inherit;background:var(--bg)}
 .mono{font:12px ui-monospace,Menlo,monospace;margin-top:.5rem}
 .btn{display:inline-flex;align-items:center;min-height:2.6rem;padding:.5rem 1rem;border-radius:.6rem;font:600 .93rem Figtree,sans-serif;border:2px solid var(--ink);cursor:pointer;background:transparent;color:var(--ink);text-decoration:none}
-.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:var(--on-ink)}
 .row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem;align-items:center}
 .sm{font-size:.86rem}
 .muted{color:var(--muted)}
@@ -59,11 +64,11 @@ input,textarea{width:100%;padding:.6rem .75rem;border:2px solid var(--line);bord
 .gloss summary .warn{color:var(--warn)}
 .alert{margin:0 0 .6rem;padding:.6rem .8rem;border-radius:.6rem;border:1px solid}
 .alert.crit{color:var(--crit);border-color:var(--crit)}.alert.warn{color:var(--warn);border-color:var(--warn)}
-.bar{display:block;background:#E4E9F0;border-radius:4px;height:8px;width:7rem}.bar i{display:block;background:var(--blue);border-radius:4px;height:8px}
-.stack{display:flex;height:1rem;background:#E4E9F0;border-radius:4px;overflow:hidden;margin:.5rem 0;max-width:34rem}.stack i{display:block;height:100%}.stack .s-on{background:var(--blue)}.stack .s-sp{background:#2F9E44}.stack .s-re{background:#E8890C}
+.bar{display:block;background:var(--track);border-radius:4px;height:8px;width:7rem}.bar i{display:block;background:var(--blue);border-radius:4px;height:8px}
+.stack{display:flex;height:1rem;background:var(--track);border-radius:4px;overflow:hidden;margin:.5rem 0;max-width:34rem}.stack i{display:block;height:100%}.stack .s-on{background:var(--blue)}.stack .s-sp{background:#2F9E44}.stack .s-re{background:#E8890C}
 ul.warn{list-style:none;padding:.7rem .9rem;margin:.7rem 0 0;border:1px solid var(--warn);border-radius:6px}ul.warn li{margin:.35rem 0;font-size:.86rem}ul.warn li::before{content:"! ";color:var(--warn);font-weight:700}
 .spark{display:flex;align-items:flex-end;gap:3px;height:3rem;margin:.4rem 0 .8rem}.spark i{flex:1;background:var(--blue);border-radius:2px 2px 0 0;min-height:2px}
-.qr{max-width:15rem;background:#fff;padding:.5rem;border-radius:8px}.qr svg{width:100%;height:auto;display:block}
+.qr{max-width:17rem}.qr svg{width:100%;height:auto;display:block}
 .ev{border-bottom:1px solid var(--line);padding:.4rem 0;overflow-wrap:anywhere}
 .events{max-height:24rem;overflow-y:auto}
 .sev{display:inline-block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:.05rem .55rem;border-radius:99px;border:2px solid;white-space:nowrap;vertical-align:.1rem}
@@ -73,7 +78,7 @@ ul.warn{list-style:none;padding:.7rem .9rem;margin:.7rem 0 0;border:1px solid va
 .sev.ok{color:var(--ok);border-color:var(--ok);background:#E7F5F0}
 .secmore summary{cursor:pointer;min-height:2rem}
 .chip{border:2px solid var(--line);background:var(--paper);border-radius:99px;padding:.3rem .8rem;font:600 .85rem Figtree,sans-serif;cursor:pointer;color:var(--ink);min-height:2.2rem}
-.chip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--on-ink)}
 .secgroups{display:grid;gap:.5rem;margin:.6rem 0}
 .secgroup{border:2px solid var(--line);border-radius:.8rem;padding:.4rem .7rem}
 .secghead{background:none;border:0;padding:.3rem .2rem;cursor:pointer;font:inherit;color:var(--ink);text-align:left;width:100%;min-height:2.2rem}
@@ -86,7 +91,7 @@ ul.warn{list-style:none;padding:.7rem .9rem;margin:.7rem 0 0;border:1px solid va
 .chan{margin:.4rem 0 1rem}
 .chan .strip{display:flex;height:2.2rem;border:2px solid var(--ink);border-radius:.6rem;overflow:hidden}
 .chan .strip span{display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;white-space:nowrap;overflow:hidden;min-width:2px}
-.chan .mine{background:var(--btc);color:var(--ink)}.chan .res{background:repeating-linear-gradient(45deg,#d9dee6,#d9dee6 4px,#eef1f5 4px,#eef1f5 8px);color:var(--muted)}.chan .theirs{background:#cfe0f3;color:var(--blue)}
+.chan .mine{background:var(--btc);color:var(--ink)}.chan .res{background:repeating-linear-gradient(45deg,var(--stripe1),var(--stripe1) 4px,var(--stripe2) 4px,var(--stripe2) 8px);color:var(--muted)}.chan .theirs{background:#cfe0f3;color:var(--blue)}
 .chan .key{display:flex;flex-wrap:wrap;gap:.3rem 1.1rem;font-size:.85rem;margin-top:.4rem}
 .chan .key b{display:inline-block;width:.8rem;height:.8rem;border-radius:.2rem;margin-right:.3rem;vertical-align:-.1rem}
 .check{list-style:none;padding:0;margin:0;display:grid;gap:.45rem}
@@ -106,8 +111,12 @@ ul.warn{list-style:none;padding:.7rem .9rem;margin:.7rem 0 0;border:1px solid va
 /* Tabs: one area at a time; the header stays */
 .tabs{position:sticky;top:0;z-index:5;display:flex;gap:.35rem;overflow-x:auto;padding:.5rem 0 .7rem;background:var(--bg);margin-bottom:.4rem;scrollbar-width:thin}
 .tabs button{flex:none;border:2px solid var(--line);background:var(--paper);border-radius:99px;padding:.45rem 1rem;font:600 .93rem Figtree,sans-serif;cursor:pointer;min-height:2.6rem;color:var(--ink)}
-.tabs button[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.tabs button[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:var(--on-ink)}
 .pane{display:none}.pane.on{display:block}
+.panel [id$="List"]:empty::before,.panel [id$="Kpis"]:empty::before,.panel [id$="Open"]:empty::before{content:"Loading…";color:var(--muted,#667);font-size:.9rem}
+.tabs .tabgroup{flex:none;align-self:center;font:700 .68rem Figtree,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#667);padding:0 .1rem 0 .55rem;border-left:1px solid var(--line)}.tabs .tabgroup:first-child{border-left:0;padding-left:0}
+.onpage{display:flex;flex-wrap:wrap;gap:.4rem .9rem;margin:.2rem 0 1rem;font-size:.9rem}.onpage b{font-weight:700}.onpage a{color:var(--ink)}
+.group-label{font:700 .8rem Figtree,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#667);margin:1.6rem 0 .4rem}
 button.pill{cursor:pointer;font-family:inherit}
 #refresh{gap:.4rem}
 #refresh .spin{display:inline-block;font-size:1.05rem;line-height:1}
@@ -119,6 +128,8 @@ button.pill{cursor:pointer;font-family:inherit}
 .pill{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .8rem;border-radius:99px;font-weight:700;font-size:.88rem;background:color-mix(in srgb,var(--ok) 15%,white);color:var(--ok);border:2px solid color-mix(in srgb,var(--ok) 45%,white)}
 .pill.bad{background:color-mix(in srgb,var(--crit) 12%,white);color:var(--crit);border-color:color-mix(in srgb,var(--crit) 40%,white)}
 .see{margin:-.2rem 0 .6rem;color:var(--muted)}
+.tutorials{margin:.4rem 0 0;padding-left:1.4rem}
+.tutorials li{margin:0 0 .7rem}
 body.quiet .see{display:none}
 .sub{font-size:1rem;margin:1rem 0 .5rem}
 .h{color:var(--btc-text);font-weight:700}
@@ -135,8 +146,91 @@ dialog{width:min(30rem,calc(100vw - 2rem));border:2px solid var(--ink);border-ra
 .rcpt-titlerow{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;border-bottom:2px solid #EA5158;padding:.55rem 0}
 .rcpt-titlerow h2{font-size:1.15rem;margin:0}
 .rcpt-no{font-size:.85rem;color:var(--muted);white-space:nowrap}
+/* Every table: sortable headings, a filter on long ones, sideways scroll on narrow screens. */
+.tscroll{overflow-x:auto;max-width:100%}
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}th.sortable::after{content:"↕";opacity:.35;margin-left:.3rem;font-size:.8em}
+th.sortable[aria-sort=ascending]::after{content:"↑";opacity:1}th.sortable[aria-sort=descending]::after{content:"↓";opacity:1}
+th.sortable:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+.tfilter{display:block;width:100%;max-width:22rem;margin:.2rem 0 .5rem;padding:.45rem .65rem;border:1px solid var(--line);border-radius:.5rem;background:var(--paper);color:var(--ink);font:inherit;font-size:.88rem}
+.tfilter-none{font-size:.85rem;color:var(--muted);padding:.4rem 0}
+/* Step 4 (#519): a sidebar on wide screens, and quick search. */
+@media (min-width:1180px){
+  .wrap{display:grid;grid-template-columns:12.5rem minmax(0,1fr);column-gap:1.6rem;max-width:92rem}
+  .wrap>*{grid-column:2;min-width:0}
+  .wrap>nav.tabs{grid-column:1;grid-row:1/span 999;align-self:start;position:sticky;top:1rem;flex-direction:column;align-items:stretch;gap:.2rem;overflow:visible;max-height:calc(100vh - 2rem);overflow-y:auto;padding:.4rem 0;margin:0;box-shadow:none}
+  body.scrolled .wrap>nav.tabs{box-shadow:none}
+  .wrap>nav.tabs .tabgroup{display:block;margin:.9rem .9rem .25rem;padding:0;text-align:left;align-self:stretch}
+  .wrap>nav.tabs .tabgroup:first-child{margin-top:0}
+  .wrap>nav.tabs button{text-align:left;border-radius:.6rem;min-height:2.4rem;padding:.4rem .9rem;border-color:transparent;background:transparent}
+  .wrap>nav.tabs button:hover{background:var(--paper);border-color:var(--line)}
+  .wrap>nav.tabs button[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:var(--on-ink)}
+}
+kbd{font:600 .72rem Figtree,sans-serif;border:1px solid var(--line);border-radius:.3rem;padding:.05rem .3rem;margin-left:.35rem;color:var(--muted)}
+#qs{width:min(34rem,calc(100vw - 2rem));margin:12vh auto auto;padding:0;border:1px solid var(--line);border-radius:.9rem;background:var(--paper);color:var(--ink)}
+#qs::backdrop{background:rgba(15,27,45,.45)}
+#qsInput{display:block;width:100%;box-sizing:border-box;border:0;border-bottom:1px solid var(--line);padding:1rem 1.1rem;font:500 1.05rem Figtree,sans-serif;background:transparent;color:var(--ink);outline:none}
+#qsList{list-style:none;margin:0;padding:.35rem;max-height:52vh;overflow-y:auto}
+#qsList li{display:flex;justify-content:space-between;gap:1rem;padding:.55rem .75rem;border-radius:.5rem;cursor:pointer}
+#qsList li span{color:var(--muted);font-size:.82rem;white-space:nowrap}
+#qsList li[aria-selected=true]{background:var(--ink);color:var(--on-ink)}#qsList li[aria-selected=true] span{color:var(--on-ink);opacity:.75}
+.qs-hint{margin:0;padding:.5rem 1.1rem .7rem;border-top:1px solid var(--line)}
+/* The cockpit (#519): tiles that open their panel (one glance), details below. */
+#hCockpit{margin:0}.ck-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;margin-bottom:.9rem}.ck-head p{margin:0}
+.ck{display:grid;grid-template-columns:repeat(auto-fill,minmax(14.5rem,1fr));gap:.75rem;margin-bottom:.4rem}
+.ck-tile{position:relative;display:flex;flex-direction:column;gap:.3rem;min-height:8rem;padding:.8rem .95rem .7rem 1.1rem;background:var(--paper);border:1px solid var(--line);border-radius:.9rem;color:var(--ink);text-decoration:none;overflow:hidden;transition:border-color .15s ease}
+.ck-tile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--line)}
+.ck-tile.good::before{background:var(--ok)}.ck-tile.warn::before{background:var(--warn)}.ck-tile.crit::before{background:var(--crit)}
+a.ck-tile:hover{border-color:var(--blue)}
+a.ck-tile:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.ck-l{display:flex;align-items:center;justify-content:space-between;gap:.5rem;color:var(--muted);font-weight:700;font-size:.74rem;text-transform:uppercase;letter-spacing:.05em}
+.ck-st{font:700 .68rem/1 Figtree,sans-serif;letter-spacing:.02em;text-transform:none;padding:.2rem .45rem;border-radius:999px;border:1px solid currentColor;flex:none}
+.ck-st.good{color:var(--ok)}.ck-st.warn{color:var(--warn)}.ck-st.crit{color:var(--crit)}
+.ck-row{display:flex;align-items:baseline;gap:.15rem .55rem;flex-wrap:wrap}
+.ck-v{font:800 1.75rem/1.1 'Bricolage Grotesque',sans-serif;letter-spacing:-.01em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.ck-u{font:600 .85rem Figtree,sans-serif;color:var(--muted);letter-spacing:0;margin-left:.3rem}.ck-n>.ck-u:first-child{margin:0 .2rem 0 0}
+.ck-tile.crit .ck-v{color:var(--crit)}
+.ck-d{font-size:.8rem;font-weight:700;color:var(--muted);white-space:nowrap}.ck-d.up{color:var(--ok)}.ck-d.down{color:var(--crit)}
+.ck-s{font-size:.82rem;color:var(--muted);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ck-spark{display:block;width:100%;height:30px;margin-top:auto;padding-top:.3rem;cursor:crosshair;overflow:visible}
+.ck-spark:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:2px}
+.ck-spark polyline{fill:none;stroke:var(--btc);stroke-width:1.6;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.ck-area{fill:var(--btc);opacity:.12}.ck-now{fill:var(--btc)}.ck-hov{fill:var(--ink)}.ck-guide{stroke:var(--muted);stroke-width:1;vector-effect:non-scaling-stroke}
+.ck-meter{display:block;height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:auto}.ck-meter i{display:block;height:100%;background:var(--ink);border-radius:3px}
+.ck-days{position:relative;display:flex;align-items:flex-end;gap:2px;height:30px;margin-top:auto}
+.ck-days i{flex:1;background:var(--muted);opacity:.5;border-radius:2px 2px 0 0}.ck-days i:hover,.ck-days i:focus-visible{opacity:1;outline:none}
+.ck-goal{position:absolute;left:0;right:0;height:0;border-top:1px solid var(--ok)}
+.ck-wait .ck-v{color:var(--line)}
+@media (prefers-reduced-motion:no-preference){.ck-wait{animation:ckPulse 1.2s ease-in-out infinite alternate}@keyframes ckPulse{from{opacity:.55}to{opacity:1}}}
+.ck-more{margin-top:1rem;border-top:1px solid var(--line);padding-top:.6rem}
+.ck-more>summary{cursor:pointer;font-weight:600;font-size:.9rem;color:var(--blue);padding:.3rem 0}
+.ck-block{margin-top:1rem}.ck-block h3{font-size:.95rem;margin:0 0 .5rem}
+.ck-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.ck-table th,.ck-table td{padding:.5rem .6rem;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;vertical-align:middle;text-transform:none;letter-spacing:normal;font-size:inherit;color:inherit}
+.ck-table thead th{font-size:.8rem;font-weight:600;color:var(--muted);border-bottom-color:var(--ink)}
+.ck-table th[scope=row],.ck-table thead th:first-child{text-align:left;white-space:normal}
+.ck-table th[scope=row] a{color:var(--ink);font-weight:600;text-decoration:none}.ck-table th[scope=row] a:hover{text-decoration:underline}
+.ck-table th[scope=row] span{display:block;font-size:.78rem;font-weight:400;color:var(--muted)}
+.ck-table td:nth-child(2){font:700 1.05rem/1.2 'Bricolage Grotesque',sans-serif;color:var(--ink)}
+.ck-table td:last-child{width:9rem}.ck-table .ck-spark{padding:0;height:26px}
+.ck-ch{font-weight:700}.ck-ch.up{color:var(--ok)}.ck-ch.down{color:var(--crit)}
+.ck-open{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:0 2rem}
+.ck-open li{display:flex;justify-content:space-between;gap:1rem;padding:.4rem 0;border-bottom:1px solid var(--line);font-size:.88rem}
+.ck-open a{color:var(--ink);text-decoration:none}.ck-open a:hover{text-decoration:underline}
+.ck-open li span{font-variant-numeric:tabular-nums;white-space:nowrap}.ck-open li.late b{color:var(--warn)}
+.ck-two{display:grid;grid-template-columns:1fr 1fr;gap:0 2rem}
+.ck-meters{list-style:none;margin:0;padding:0}
+.ck-meters li{display:grid;grid-template-columns:minmax(0,1fr) 6rem auto;align-items:center;gap:.75rem;padding:.4rem 0;border-bottom:1px solid var(--line);font-size:.88rem}
+.ck-mn{min-width:0;overflow-wrap:anywhere}.ck-mn .muted{font-size:.78rem}
+.ck-mb{height:6px;border-radius:3px;background:var(--line);overflow:hidden}.ck-mb i{display:block;height:100%;background:var(--ink);border-radius:3px}
+.ck-mf{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;min-width:5.5rem}
+.ck-net{margin:.5rem 0 0}
+.ck-tip{position:absolute;z-index:70;pointer-events:none;background:var(--ink);color:#fff;font:600 .8rem/1.3 Figtree,sans-serif;padding:.35rem .55rem;border-radius:6px;white-space:nowrap;font-variant-numeric:tabular-nums}
+@media (max-width:760px){.ck-two,.ck-open{grid-template-columns:1fr}.ck-table thead th:nth-child(3),.ck-table td:nth-child(3){display:none}.ck-table td:last-child{width:5.5rem}}
+@media (max-width:560px){.ck{grid-template-columns:1fr 1fr;gap:.5rem}.ck-tile{min-height:7rem;padding:.65rem .7rem .6rem .9rem}.ck-v{font-size:1.25rem}.ck-s{-webkit-line-clamp:3}.ck-l{flex-wrap:wrap}.ck-table th,.ck-table td{padding:.45rem .35rem}.ck-table td:last-child{width:4rem}.ck-meters li{grid-template-columns:minmax(0,1fr) auto}.ck-mb{display:none}}
 #posters{display:none}
-@media print{@page{size:A4;margin:0}body.posters-on #posters{display:block}.poster{width:210mm;height:297mm;box-sizing:border-box;padding:16mm 14mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;page-break-after:always;break-after:page;color:#000;background:#fff;font-family:inherit}.poster:last-child{page-break-after:auto;break-after:auto}.poster h1{font-size:19mm;white-space:nowrap;line-height:1;margin:0;font-weight:800}.poster .sw{font-size:12mm;margin:3mm 0 0;font-weight:700}.poster .shop{font-size:11mm;margin:4mm 0 0;font-weight:700}.poster .qr{width:160mm;height:160mm;flex:none}.poster .qr svg{width:100%;height:100%;display:block}.poster .how{font-size:7mm;margin:0}.poster .foot{font-size:4.5mm;margin:0;color:#333}}
+@media print{@page{size:A4;margin:0}body.posters-on #posters{display:block}}
+/* The poster itself: used by print and by the PDF, which measures it off-screen. */
+.poster{--o:#F7931A;--o2:#FFA02E;--ink:#1d1d1f;width:210mm;height:297mm;box-sizing:border-box;position:relative;overflow:hidden;font-family:Figtree,sans-serif;color:var(--ink);background:#fff;page-break-after:always;break-after:page;print-color-adjust:exact;-webkit-print-color-adjust:exact}.poster:last-child{page-break-after:auto;break-after:auto}.poster .burst{position:absolute;left:-30%;right:-30%;top:-40mm;height:150mm;-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent);background:repeating-conic-gradient(from 0deg at 50% 40mm,rgba(247,147,26,.22) 0 6deg,transparent 6deg 12deg)}.poster .ptop{position:relative;padding:16mm 12mm 0;text-align:center}.poster .brand{display:inline-flex;align-items:center;gap:6mm}.poster .brand svg{width:30mm;height:30mm;flex:none}.poster .word{font:800 31mm/1 'Bricolage Grotesque',Figtree,sans-serif;letter-spacing:-.04em}.poster .acc{margin:4mm 0 0;font:800 13mm/1 'Bricolage Grotesque',Figtree,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--o)}.poster .shop{margin:3mm 0 0;font:700 7mm/1.15 Figtree,sans-serif;color:var(--ink)}.poster .frame{position:relative;margin:7mm auto 0;width:150mm;height:150mm;padding:7mm;box-sizing:border-box;border:2.2mm solid var(--o);border-radius:9mm;background:#fff;box-shadow:0 0 0 3mm #fff,0 0 0 4mm rgba(247,147,26,.6)}.poster .q,.poster .q svg{width:100%;height:100%;display:block}.poster .mid{position:absolute;left:50%;top:50%;width:54mm;height:22mm;transform:translate(-50%,-50%);border-radius:4mm;background:#fff;padding:2mm 4mm;box-sizing:border-box;display:flex;align-items:center;justify-content:center}.poster .mid img{max-width:100%;max-height:100%;display:block}.poster .band{position:absolute;left:0;right:0;bottom:0;height:52mm;background:linear-gradient(180deg,var(--o2),var(--o) 45%);color:#fff;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:2.6mm}.poster .scan{font:800 19mm/1 'Bricolage Grotesque',Figtree,sans-serif;letter-spacing:.04em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:6mm}.poster .scan svg{width:16mm;height:16mm}.poster .fine{font:700 5.2mm/1.2 Figtree,sans-serif}.poster .sign{font:700 5mm/1.2 Figtree,sans-serif;letter-spacing:.04em}
 #rcptBody{display:grid;grid-template-columns:8.5rem 1fr;gap:.35rem .8rem;margin:.9rem 0;font-size:.92rem}
 #rcptBody dt{color:var(--muted)}
 #rcptBody dd{margin:0;font-weight:600;overflow-wrap:anywhere}
@@ -158,7 +252,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 @media (max-width:600px){.cmds,dl{grid-template-columns:1fr}.cmds dd{margin-bottom:.5rem}}
 .inside{border:2px solid var(--line);border-radius:.9rem;padding:.8rem 1rem;margin-bottom:.8rem}
 .inside h3{font-size:1rem;margin-bottom:.4rem}
-#toast{position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.6rem 1rem;border-radius:.6rem;font-weight:600;z-index:9}
+#toast{position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);background:var(--ink);color:var(--on-ink);padding:.6rem 1rem;border-radius:.6rem;font-weight:600;z-index:9}
 #toast.fail{background:var(--crit)}
 .mktNav{font-weight:600}
 .mktNav a{margin:0 .2rem}
@@ -176,11 +270,11 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 .mktTile .lb{font-size:.7rem;font-weight:700;line-height:1.15;overflow-wrap:anywhere}
 .mktTile .cu{font-size:.62rem;font-weight:700;color:var(--muted);line-height:1.1}
 .mktTile.mktSel{border-color:var(--ink)}
-.mkt-t-lesson{background:#D9E6F8}.mkt-t-yebente{background:#FFE3C2}.mkt-t-myth{background:#D2ECEA}.mkt-t-story{background:#F7D7DC}.mkt-t-tip{background:#DDEFD8}.mkt-t-question{background:#E7E3F8}.mkt-t-none{background:#F1F3F6}
+.mkt-t-lesson{background:#D9E6F8}.mkt-t-yebente{background:#FFE3C2}.mkt-t-myth{background:#D2ECEA}.mkt-t-story{background:#F7D7DC}.mkt-t-tip{background:#DDEFD8}.mkt-t-question{background:#E7E3F8}.mkt-t-none{background:var(--soft)}
 .mktEmptyDay{display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;width:100%;min-height:4.4rem;margin:0;border:2px solid transparent;border-radius:.6rem;padding:.25rem;cursor:pointer;font:inherit;color:var(--muted);background:transparent}
 .mktEmptyDay .d{font-size:.9rem;line-height:1.1}
 .mktEmptyDay .plus{font-size:1.2rem;font-weight:700;line-height:1;color:var(--blue);opacity:0}
-.mktEmptyDay:hover,.mktEmptyDay:focus-visible{background:#F1F3F6}
+.mktEmptyDay:hover,.mktEmptyDay:focus-visible{background:var(--soft)}
 .mktEmptyDay:hover .plus,.mktEmptyDay:focus-visible .plus{opacity:1}
 .mktLegend{list-style:none;display:flex;flex-wrap:wrap;gap:.35rem 1rem;padding:0 .35rem;margin:.4rem 0 0;font-size:.85rem}
 .mktLegend .sw{display:inline-block;width:.9rem;height:.9rem;border-radius:.25rem;vertical-align:-.12rem;margin-right:.3rem;border:1px solid rgba(15,27,45,.2)}
@@ -219,10 +313,10 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 .mktActions{position:absolute;z-index:3;display:flex;gap:.2rem;background:var(--ink);border-radius:.6rem;padding:.25rem}
 .mktActions button{border:0;background:transparent;color:#fff;font:600 .8rem Figtree,sans-serif;cursor:pointer;padding:.3rem .55rem;border-radius:.4rem;min-height:2rem}
 .mktActions button:hover{background:rgba(255,255,255,.2)}
-.mktZoom{position:absolute;z-index:3;right:.5rem;bottom:.5rem;display:flex;gap:.25rem;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:.6rem;padding:.25rem}
+.mktZoom{position:absolute;z-index:3;right:.5rem;bottom:.5rem;display:flex;gap:.25rem;background:var(--paper);border:1px solid var(--line);border-radius:.6rem;padding:.25rem}
 .mktZoom button{min-width:2.4rem;min-height:2rem;border:1px solid var(--line);background:var(--paper);border-radius:.4rem;font:600 .8rem Figtree,sans-serif;cursor:pointer;color:var(--ink)}
-.mktZoom button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
-#mktBoardBtn[aria-pressed=true],#mktGalleryBtn[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.mktZoom button[aria-pressed=true]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+#mktBoardBtn[aria-pressed=true],#mktGalleryBtn[aria-pressed=true]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
 @media (max-width:700px){.mktStudio{flex-direction:column}.mktStage{order:1}.mktSide{order:2;width:auto;max-width:none;max-height:24rem}.mktRail{order:3;flex-direction:row;width:auto}.mktRail button{flex:1;min-height:3.4rem}}
 .mktCols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem;align-items:start}
 @media (max-width:1100px){.mktCols{grid-template-columns:1fr 1fr}}
@@ -233,7 +327,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 .mktCol h3 .n{color:var(--muted);font-weight:600}
 .mktCol h3 button{min-height:2rem;padding:.1rem .6rem;border:2px solid var(--line);border-radius:.5rem;background:var(--paper);font:700 1rem/1 Figtree,sans-serif;cursor:pointer;color:var(--ink)}
 .mktGallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));gap:.8rem}
-.mktCard{position:relative;background:#fff;border:1px solid var(--line);border-radius:.6rem;padding:.6rem;margin-bottom:.5rem}
+.mktCard{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:.6rem;padding:.6rem;margin-bottom:.5rem}
 .mktGallery .mktCard{margin-bottom:0}
 .mktCard .cap{font-size:.85rem;margin:.3rem 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .mktCard img{width:100%;height:auto;border-radius:.4rem;margin:.3rem 0;display:block}
@@ -242,7 +336,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 .mktMove{position:relative;display:inline-block}
 .mktMove summary{list-style:none;cursor:pointer;min-height:2rem;padding:.2rem .6rem;border:2px solid var(--line);border-radius:.5rem;background:var(--paper);font:600 .8rem/1.6 Figtree,sans-serif;color:var(--ink)}
 .mktMove summary::-webkit-details-marker{display:none}
-.mktMove .menu{position:absolute;z-index:4;left:0;top:calc(100% + .2rem);background:#fff;border:2px solid var(--ink);border-radius:.6rem;padding:.3rem;display:flex;flex-direction:column;gap:.2rem;min-width:9rem}
+.mktMove .menu{position:absolute;z-index:4;left:0;top:calc(100% + .2rem);background:var(--paper);border:2px solid var(--ink);border-radius:.6rem;padding:.3rem;display:flex;flex-direction:column;gap:.2rem;min-width:9rem}
 .mktMove .menu button{border:0;background:transparent;text-align:left;font:600 .85rem Figtree,sans-serif;cursor:pointer;padding:.35rem .5rem;border-radius:.4rem;color:var(--ink)}
 .mktMove .menu button:hover{background:var(--bg)}
 .mktNewCard{width:100%;border:2px dashed var(--line);background:transparent;border-radius:.6rem;padding:.7rem;cursor:pointer;font:600 .9rem Figtree,sans-serif;color:var(--muted);margin-top:.2rem}
@@ -261,7 +355,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 #mktCanvas{width:100%;height:auto;display:block}
 .xpost{border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:.8rem 0;background:var(--paper)}
 .xpost .who{display:flex;gap:.6rem;align-items:center;margin-bottom:.4rem}
-.xpost .ava{width:2.2rem;height:2.2rem;border-radius:50%;background:var(--ink);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.xpost .ava{width:2.2rem;height:2.2rem;border-radius:50%;background:var(--ink);color:var(--on-ink);display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex:none}
 .xpost .cap{font-size:.95rem;margin:.4rem 0}
 .xpost img{max-width:100%;height:auto;border-radius:.6rem;display:block;margin:.6rem 0}
 .xpost .acts{color:var(--muted);font-size:.85rem}
@@ -277,15 +371,24 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 </form>
 
 <div class="wrap" id="app" hidden>
+<dialog id="qs" aria-label="Go to a panel">
+  <input id="qsInput" type="search" placeholder="Go to… (a panel or a tab)" autocomplete="off" aria-controls="qsList" aria-label="Search panels">
+  <ul id="qsList" role="listbox" aria-label="Panels"></ul>
+  <p class="sm muted qs-hint">↑ ↓ to choose · Enter to open · Esc to close</p>
+</dialog>
   <header>
     <div class="brand"><a href="/"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><h1>Node dashboard</h1><span style="position:relative"><button type="button" class="pill" id="health" aria-expanded="false" aria-controls="alerts">Checking…</button><div class="alerts" id="alerts" hidden><h3>What needs you</h3><ul id="alertList"></ul></div></span></div>
-    <div class="row"><label class="switch"><input type="checkbox" id="explain" checked> Explain everything</label><span class="sm muted" id="checked"></span><button type="button" class="btn" id="refresh"><span class="spin" aria-hidden="true">↻</span>Refresh</button><button type="button" class="btn" id="logout">Sign out</button></div>
+    <div class="row"><label class="switch"><input type="checkbox" id="explain" checked> Explain everything</label><span class="sm muted" id="checked"></span><button type="button" class="btn" id="qsOpen" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K">Search <kbd>Ctrl K</kbd></button><button type="button" class="btn" id="theme" aria-label="Colour theme">Theme: Auto</button><button type="button" class="btn" id="refresh"><span class="spin" aria-hidden="true">↻</span>Refresh</button><button type="button" class="btn" id="logout">Sign out</button></div>
   </header>
 
   <div class="panel" id="nodeBanner" role="alert" hidden style="border-color:var(--crit)"></div>
 
-  <nav class="tabs" aria-label="Dashboard sections"><button type="button" data-tab="overview">Overview</button><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><button type="button" data-tab="money">Money</button><button type="button" data-tab="developer">Developer</button><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="earn">Earn</button><button type="button" data-tab="ktown">kTown</button><button type="button" data-tab="kazi">Kazi</button><button type="button" data-tab="security">Security</button><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><button type="button" data-tab="learn">Learn</button></nav>
+  <nav class="tabs" aria-label="Dashboard sections"><span class="tabgroup" aria-hidden="true">Today</span><button type="button" data-tab="overview">Overview</button><span class="tabgroup" aria-hidden="true">Node</span><button type="button" data-tab="node">Node & network</button><button type="button" data-tab="channels">Channels</button><span class="tabgroup" aria-hidden="true">Money</span><button type="button" data-tab="money">Money</button><button type="button" data-tab="earn">Earn</button><span class="tabgroup" aria-hidden="true">Products</span><button type="button" data-tab="yebente">Ye₿ente</button><button type="button" data-tab="ktown">kTown</button><button type="button" data-tab="kazi">Kazi</button><button type="button" data-tab="developer">Developer</button><span class="tabgroup" aria-hidden="true">Team</span><button type="button" data-tab="choumi">Choumi</button><button type="button" data-tab="marketing">Marketing</button><span class="tabgroup" aria-hidden="true">Safety</span><button type="button" data-tab="security">Security</button><span class="tabgroup" aria-hidden="true">Learn</span><button type="button" data-tab="learn">Learn</button></nav>
   <div class="pane" data-pane="overview">
+  <section class="panel" aria-labelledby="hCockpit">
+    <div class="ck-head"><h2 id="hCockpit">At a glance</h2><p class="sm muted" id="ckAge"></p></div>
+    <div id="cockpit"></div>
+  </section>
   <section class="panel" aria-labelledby="hCheck">
     <h2 id="hCheck">Today's checklist</h2>
     <div class="learn"><p>What a node operator checks each day. Green means fine. Red means act today. Grey is something only you can check.</p></div>
@@ -302,8 +405,8 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </div>
 
   <div class="pane" data-pane="node">
-  <section class="panel" aria-labelledby="hNode">
-    <h2 id="hNode">1. Your node and the blockchain</h2>
+<section class="panel" aria-labelledby="hNode">
+    <h2 id="hNode">Your node and the blockchain</h2>
     <p class="see sm">See it yourself on the Mac: <code>ln-ro getinfo</code></p>
     <div class="learn">
       <p>Your node is two programs. <b>Bitcoin Core</b> downloads and checks every block. <b>LND</b> runs Lightning on top of it.</p>
@@ -313,7 +416,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <p class="sm muted" id="nodeAge"></p>
     <p class="sm muted" id="nodeNote"></p>
   </section>
-  <section class="panel" aria-labelledby="hNet">
+<section class="panel" aria-labelledby="hNet">
     <h2 id="hNet">Your node, its peer and the network</h2>
     <p class="see sm">See it yourself on the Mac: <code>ln-ro getnetworkinfo</code> · <code>ln-ro listpeers</code></p>
     <div class="learn"><p>Your node has a public key: its address on the Lightning Network. It learns the <b>network graph</b> (every public node and channel) from its peers, and uses it to find routes.</p></div>
@@ -324,11 +427,85 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div id="exPeers" class="scroll"></div>
     <p class="sm muted" id="exAge"></p>
   </section>
+  <div class="grid2">
+<section class="panel" aria-labelledby="hChain">
+      <h2 id="hChain">On-chain wallet and fees</h2>
+      <div class="learn">
+        <p>Your node also has a normal Bitcoin wallet. You need it to open channels, and to pay fees if a channel ever closes.</p>
+        <p>On-chain fees are paid per size of transaction, in <b>sat/vB</b>. Open or close channels when fees are low.</p>
+      </div>
+      <div id="chainLow"></div>
+      <div class="kpis" id="chainKpis"></div>
+      <p class="sm muted" id="chainAge"></p>
+      <h3 class="sub">Your coins, and where each one sits</h3>
+      <div id="coinList" class="scroll sm"><p class="muted sm">Loading…</p></div>
+      <h3 class="sub">Fund it, step by step</h3>
+      <div class="learn">
+        <p><b>1. On the Mac, make an address:</b> open Terminal (no cd needed, run from anywhere) and enter <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet newaddress p2wkh</code>. It prints a bc1q address. Making stays on the Mac, so this server holds no key that touches addresses: there is nothing here to steal that can make them or spend them.</p>
+        <p><b>2. Paste it below</b> and press <i>Show QR code</i>. The dashboard only turns your pasted text into a code. It never makes addresses and never moves money.</p>
+        <p><b>3. Send bitcoin to it</b> from an exchange or another wallet, scanning the code or copying the address.</p>
+        <p><b>4. Wait for 1 confirmation</b> (about 10 minutes), then press <i>Check again</i>. The coin appears above, and the balance moves.</p>
+        <p><b>Verify:</b> <code>ln-ro walletbalance</code> shows the sats, <code>ln-ro listunspent</code> shows the coin, and each coin above links to its mempool.space page. If a Terminal window does not know <code>ln-ro</code> yet, the one-line setup is in Learn → Verify.</p>
+        <p><b>Stay safe:</b> compare the first and last 6 characters with your Mac's screen before sending, since the screen is the truth. Use each address once, and only make one when you are about to fund (the wallet watches only the newest 20 unused ones). First time with a new address, send a tiny test amount and confirm it arrives before the rest. Never trust an address pasted from a chat or email.</p>
+      </div>
+      <div class="row"><input id="chAddrPaste" class="mono" placeholder="Paste your bc1q address here" autocomplete="off" spellcheck="false" aria-label="Paste your bc1q address"></div>
+      <div class="row"><button type="button" class="btn primary" id="chAddrShow">Show QR code</button><button type="button" class="btn" id="chRefresh">Check again</button></div>
+      <p class="err sm" id="chAddrErr" role="alert"></p>
+      <div id="chAddrOut"></div>
+    </section>
+<section class="panel" aria-labelledby="hAddr">
+      <h2 id="hAddr">Your wallet address, and how to use it</h2>
+      <p class="see sm">Verify on the Mac: <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet newaddress p2wkh</code> · <code>ln-ro listunspent</code></p>
+      <div class="learn">
+        <p>Your node makes a <b>new address every time</b> you ask. Each one starts with <span class="mono">bc1q</span>. Use each address once: reusing one lets anyone link your payments together.</p>
+        <p>Only make an address when you are about to fund: every address shown burns a fresh one, and the wallet watches only the newest 20 unused ones.</p>
+      </div>
+      <ol class="flow">
+        <li><b>Make one</b> on the Mac: <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet newaddress p2wkh</code>, then paste it in the <i>Fund it</i> box above for a QR code.</li>
+        <li><b>Use it</b> to fund the on-chain wallet from an exchange or another wallet, or to receive any on-chain payment.</li>
+        <li><b>Verify it:</b> compare the first and last 6 characters on the Mac's own screen. Never trust an address pasted from a chat or email. After the sender pays, the coin appears in the list above and in <code>ln-ro listunspent</code>.</li>
+      </ol>
+      <ul class="warn">
+        <li>Don't generate dozens of addresses without using them: past about 20 unused ones the wallet can stop seeing them (the “gap limit”).</li>
+        <li>An invoice (<span class="mono">lnbc…</span>) is for Lightning; an address (<span class="mono">bc1q…</span>) is for on-chain. They are not interchangeable.</li>
+      </ul>
+    </section>
+  </div>
+  <div class="grid2">
+<section class="panel" aria-labelledby="hBackup">
+    <h2 id="hBackup">Channel backup: is your copy fresh?</h2>
+    <p class="see sm">On the Mac: <code>ls -l $HOME/.lnd-altradits/data/chain/bitcoin/mainnet/channel.backup</code> shows the file's date.</p>
+    <div class="learn">
+      <p>After every channel opens or closes, copy <span class="mono">channel.backup</span> from the Mac to a safe place (a USB stick kept with your 24 words). With those two, your peers return your channel funds after a disaster. Then press the button so the dashboard remembers. It compares your last copy against today's channels.</p>
+    </div>
+    <div id="backupBody"><p class="muted sm">Loading…</p></div>
+    <div class="row"><button type="button" class="btn primary" id="backupMark">I copied the backup</button></div>
+    <p class="err sm" id="backupErr" role="alert"></p>
+  </section>
+<section class="panel" aria-labelledby="hClose">
+      <h2 id="hClose">If you liquidate: getting your sats back</h2>
+      <p class="see sm">Verify on the Mac: <code>ln-ro pendingchannels</code> · <code>ln-ro walletbalance</code> (see Learn → Verify)</p>
+      <div class="learn"><p>Liquidating means closing every channel and pulling all sats back into the on-chain wallet, then to a wallet you alone hold. It takes days, not minutes.</p></div>
+      <ol class="flow">
+        <li><b>Cover Ye₿ente wallets first.</b> Those balances are users' money, owed in real sats. Let users withdraw (or pay them out) before you touch channels.</li>
+        <li><b>Close each channel cooperatively:</b> <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet closechannel &lt;channel_point&gt;</code>. Your side arrives on-chain after a few blocks. Find each ID with the “close ID” row in Learn → Verify.</li>
+        <li><b>Stuck or offline peer?</b> Add <code>--force</code>. It costs more, and your funds wait out a delay of up to about two weeks before they unlock.</li>
+        <li><b>Watch the closes land.</b> Track them with <code>ln-ro pendingchannels</code>; the on-chain balance grows as each one confirms.</li>
+        <li><b>Sweep everything to your own wallet:</b> <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet sendcoins --sweepall &lt;YOUR_ADDRESS&gt; --sat_per_vbyte &lt;FEE&gt;</code>. Check the fee rate on mempool.space first, and double-check the address: on-chain sends can't be undone.</li>
+        <li><b>Verify zero.</b> <code>ln-ro listchannels</code> and <code>ln-ro pendingchannels</code> show nothing left, and <code>ln-ro walletbalance</code> holds everything.</li>
+      </ol>
+      <ul class="warn">
+        <li>Never delete the seed or <span class="mono">channel.backup</span> until every sat is confirmed on-chain.</li>
+        <li>Keep the node online until the last close confirms, so it sees every closing transaction.</li>
+        <li>Closing when fees are high costs more. If nothing is urgent, wait for a quiet mempool.</li>
+      </ul>
+    </section>
+  </div>
   </div>
 
   <div class="pane" data-pane="channels">
-  <section class="panel" aria-labelledby="hChan">
-    <h2 id="hChan">2. Channels: where your Lightning money sits</h2>
+<section class="panel" aria-labelledby="hChan">
+    <h2 id="hChan">Channels: where your Lightning money sits</h2>
     <p class="see sm">See it yourself on the Mac: <code>ln-ro listchannels</code></p>
     <div class="learn">
       <p>A channel is Bitcoin locked between you and one peer. The total never changes. Paying moves sats to their side. Getting paid moves sats to your side.</p>
@@ -339,7 +516,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div id="lnList" class="scroll"></div>
     <div id="lnAdvice" class="sm"></div>
   </section>
-  <section class="panel" aria-labelledby="hLiq">
+<section class="panel" aria-labelledby="hLiq">
     <h2 id="hLiq">Liquidity, plainly</h2>
     <p class="see sm">See it yourself on the Mac: <code>ln-ro channelbalance</code> · <code>ln-ro listchannels</code></p>
     <div class="learn">
@@ -350,7 +527,53 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div class="kpis" id="liqKpis"></div>
     <div id="liqNow" class="sm"></div>
   </section>
-  <section class="panel" aria-labelledby="hInside">
+<section class="panel" aria-labelledby="hPower">
+      <h2 id="hPower">Sending power and top-ups</h2>
+      <div class="learn"><p>To send, sats must be on your side. A top-up is an invoice from your own node that you pay from another wallet. The sats cross the channel to your side.</p></div>
+      <ol class="flow">
+        <li><b>Pick an amount:</b> a preset, the suggested figure (covers every Ye₿ente balance plus a buffer), or your own between the shown min and max.</li>
+        <li><b>Make the invoice,</b> then pay it within the hour from any Lightning wallet: scan the QR, copy it, or press <i>Open in wallet</i>. If the fee looks huge, read Fees below before you confirm.</li>
+        <li><b>Watch this page:</b> it flips to “Paid ✓” with your new balance, and the numbers reload. Sending power rises by the amount; receiving room shrinks by the same amount.</li>
+        <li><b>If it expires unpaid,</b> nothing moved. Just make a new one.</li>
+        <li><b>If the button errors or max shows 0,</b> receiving room is empty: a top-up arrives over Lightning, so it needs inbound first. Open a channel with inbound (Channels tab advice), then retry.</li>
+      </ol>
+      <p class="sm" id="spNote"></p>
+      <label for="spSats" class="sm"><b>Top up the node (sats)</b></label>
+      <input id="spSats" type="number" inputmode="numeric" aria-describedby="spKsh">
+      <span class="ksh" id="spKsh" aria-live="polite"></span>
+      <div class="row" id="spPresets"></div>
+      <div class="row"><button type="button" class="btn primary" id="spGo">Make a top-up invoice</button></div>
+      <p class="err sm" id="spErr" role="alert"></p>
+      <div id="spInvoice"></div>
+      <div id="spList"></div>
+      <h3 class="sub">On the Mac: verify, deposit, withdraw</h3>
+      <div class="learn">
+        <p><b>Verify this top-up landed.</b> <code>ln-ro listinvoices --max_invoices 5</code> shows your recent invoices with the memo “Altradits node top-up”; paid ones read SETTLED. <code>ln-ro channelbalance</code> shows your side grew by the amount.</p>
+        <p><b>Deposit more.</b> Press the button again, or run <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet addinvoice --value &lt;sats&gt;</code> and pay the invoice from another wallet. A top-up arrives over Lightning, so it needs receiving room first, which is why the button has a max.</p>
+        <p><b>Withdraw.</b> The dashboard can never spend: the spending key stays on the Mac. Over Lightning, get an invoice from the wallet you are sending to, then <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet payinvoice &lt;invoice&gt;</code>. On-chain, <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet sendcoins &lt;address&gt; &lt;sats&gt; --sat_per_vbyte &lt;fee&gt;</code>, then wait for confirmations.</p>
+        <p><b>In between.</b> Lightning top-ups settle in seconds with no confirmations to wait for, and the paying wallet covers a small routing fee. You can never send the locked 1% reserve or more than “Can send now”. If an invoice expires unpaid, nothing moved: just make a new one. Keep the Mac awake with LND running until a payment lands. Every command above, plus more, sits in Learn → Verify.</p>
+      </div>
+      <h3 class="sub">Fees: why a payment can look expensive</h3>
+      <div class="learn">
+        <p><b>Your node charges nothing to receive.</b> The fee you see is quoted by the wallet you pay from, and it stays there: none of it reaches your node.</p>
+        <p><b>Why it can look huge.</b> A first use often opens a channel, which is an on-chain transaction priced in sat/vB and taken from the amount. An exchange withdrawal often carries a flat fee that hurts small amounts most. A swap-based wallet wraps on-chain cost plus its own cut. And a very large amount over thin routes simply costs more to carry.</p>
+        <p><b>Pay less.</b> Top up from a wallet that already holds Lightning balance, not from an exchange. Split a big top-up into smaller invoices: each finds cheaper routes. Do any first-time channel open while the slow fee is low. Always read the fee your wallet quotes before you confirm: cancel and split the amount if it looks wrong. Failed attempts cost nothing: a payment settles or fails, never half.</p>
+        <p><b>Is paying now urgent?</b> Look at the top of this panel. If it says “The node can't send anything right now” or “Short:”, topping up is urgent: Ye₿ente withdrawals fail until you do. Otherwise it can wait.</p>
+        <p><b>Best time to pay.</b> The Lightning part costs about the same at any hour: nights and weekends change nothing. Anything touching the chain (a first channel open, a swap, an on-chain send) is cheapest when the slow fee is low: single digits in sat/vB is cheap, and the current price sits under “Fee now” in the On-chain panel. If it is not urgent, wait for a cheap-fee moment.</p>
+      </div>
+    </section>
+<section class="panel" aria-labelledby="hRoute">
+    <h2 id="hRoute">Routing and fees</h2>
+    <p class="see sm">See it yourself on the Mac: <code>ln-ro feereport</code></p>
+    <div class="learn">
+      <p>Nodes pass payments for each other and charge a small fee: a <b>base fee</b> per payment plus a <b>rate</b> in parts per million (ppm).</p>
+      <p>Example: base 1 sat + 1 ppm on 100,000 sats = 1.1 sats.</p>
+      <p>Your channel is <b>private</b>. Others can pay you through it, but it won't route strangers' payments. That's normal for a shop or wallet node.</p>
+    </div>
+    <div class="kpis" id="routeKpis"></div>
+    <div id="feeList" class="scroll"></div>
+  </section>
+<section class="panel" aria-labelledby="hInside">
     <h2 id="hInside">Inside each channel</h2>
     <p class="see sm">See it yourself on the Mac: <code>ln-ro listchannels</code> · <code>ln-ro closedchannels</code></p>
     <div class="learn"><p>A channel starts as one on-chain transaction (the <b>funding transaction</b>). Its <b>short channel ID</b> says where: block × transaction × output. Every payment through it is an <b>update</b> to a shared balance sheet both sides sign.</p></div>
@@ -358,7 +581,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <h3 class="sub">Closed channels</h3>
     <div id="exClosed"></div>
   </section>
-  <section class="panel" aria-labelledby="hLessons">
+<section class="panel" aria-labelledby="hLessons">
     <h2 id="hLessons">Lessons from running the node</h2>
     <div class="learn"><p>Write down what you learn. It stays here, and Stan uses it in channel advice.</p></div>
     <div class="row"><input id="lnLesson" placeholder="A lesson worth keeping" aria-label="New lesson"><button type="button" class="btn" id="lnAdd">Add</button></div>
@@ -458,12 +681,12 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </div>
 </div>
 <div class="pane" data-pane="money">
-  <section class="panel" aria-labelledby="hMap">
+<section class="panel" aria-labelledby="hMap">
     <h2 id="hMap">Where your money is</h2>
     <p class="see sm">Verify on the Mac: <code>ln-ro walletbalance</code> · <code>ln-ro channelbalance</code> (see Learn → Verify)</p>
     <div id="mapBody"><p class="muted sm">Loading…</p></div>
   </section>
-  <section class="panel" aria-labelledby="hPnl">
+<section class="panel" aria-labelledby="hPnl">
     <h2 id="hPnl">Profit and loss</h2>
     <p class="see sm">Verify on the Mac: <code>ln-ro fwdinghistory</code> · <code>ln-ro listpayments</code> · <code>ln-ro listchaintxns</code> (see Learn → Verify)</p>
     <div class="learn">
@@ -480,135 +703,14 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <h3 class="sub">What's yours right now</h3>
     <div class="kpis" id="pnlYours"></div>
   </section>
-
-  <div class="grid2">
-    <section class="panel" aria-labelledby="hPower">
-      <h2 id="hPower">3. Sending power and top-ups</h2>
-      <div class="learn"><p>To send, sats must be on your side. A top-up is an invoice from your own node that you pay from another wallet. The sats cross the channel to your side.</p></div>
-      <ol class="flow">
-        <li><b>Pick an amount:</b> a preset, the suggested figure (covers every Ye₿ente balance plus a buffer), or your own between the shown min and max.</li>
-        <li><b>Make the invoice,</b> then pay it within the hour from any Lightning wallet: scan the QR, copy it, or press <i>Open in wallet</i>. If the fee looks huge, read Fees below before you confirm.</li>
-        <li><b>Watch this page:</b> it flips to “Paid ✓” with your new balance, and the numbers reload. Sending power rises by the amount; receiving room shrinks by the same amount.</li>
-        <li><b>If it expires unpaid,</b> nothing moved. Just make a new one.</li>
-        <li><b>If the button errors or max shows 0,</b> receiving room is empty: a top-up arrives over Lightning, so it needs inbound first. Open a channel with inbound (Channels tab advice), then retry.</li>
-      </ol>
-      <p class="sm" id="spNote"></p>
-      <label for="spSats" class="sm"><b>Top up the node (sats)</b></label>
-      <input id="spSats" type="number" inputmode="numeric" aria-describedby="spKsh">
-      <span class="ksh" id="spKsh" aria-live="polite"></span>
-      <div class="row" id="spPresets"></div>
-      <div class="row"><button type="button" class="btn primary" id="spGo">Make a top-up invoice</button></div>
-      <p class="err sm" id="spErr" role="alert"></p>
-      <div id="spInvoice"></div>
-      <div id="spList"></div>
-      <h3 class="sub">On the Mac: verify, deposit, withdraw</h3>
-      <div class="learn">
-        <p><b>Verify this top-up landed.</b> <code>ln-ro listinvoices --max_invoices 5</code> shows your recent invoices with the memo “Altradits node top-up”; paid ones read SETTLED. <code>ln-ro channelbalance</code> shows your side grew by the amount.</p>
-        <p><b>Deposit more.</b> Press the button again, or run <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet addinvoice --value &lt;sats&gt;</code> and pay the invoice from another wallet. A top-up arrives over Lightning, so it needs receiving room first, which is why the button has a max.</p>
-        <p><b>Withdraw.</b> The dashboard can never spend: the spending key stays on the Mac. Over Lightning, get an invoice from the wallet you are sending to, then <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet payinvoice &lt;invoice&gt;</code>. On-chain, <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet sendcoins &lt;address&gt; &lt;sats&gt; --sat_per_vbyte &lt;fee&gt;</code>, then wait for confirmations.</p>
-        <p><b>In between.</b> Lightning top-ups settle in seconds with no confirmations to wait for, and the paying wallet covers a small routing fee. You can never send the locked 1% reserve or more than “Can send now”. If an invoice expires unpaid, nothing moved: just make a new one. Keep the Mac awake with LND running until a payment lands. Every command above, plus more, sits in Learn → Verify.</p>
-      </div>
-      <h3 class="sub">Fees: why a payment can look expensive</h3>
-      <div class="learn">
-        <p><b>Your node charges nothing to receive.</b> The fee you see is quoted by the wallet you pay from, and it stays there: none of it reaches your node.</p>
-        <p><b>Why it can look huge.</b> A first use often opens a channel, which is an on-chain transaction priced in sat/vB and taken from the amount. An exchange withdrawal often carries a flat fee that hurts small amounts most. A swap-based wallet wraps on-chain cost plus its own cut. And a very large amount over thin routes simply costs more to carry.</p>
-        <p><b>Pay less.</b> Top up from a wallet that already holds Lightning balance, not from an exchange. Split a big top-up into smaller invoices: each finds cheaper routes. Do any first-time channel open while the slow fee is low. Always read the fee your wallet quotes before you confirm: cancel and split the amount if it looks wrong. Failed attempts cost nothing: a payment settles or fails, never half.</p>
-        <p><b>Is paying now urgent?</b> Look at the top of this panel. If it says “The node can't send anything right now” or “Short:”, topping up is urgent: Ye₿ente withdrawals fail until you do. Otherwise it can wait.</p>
-        <p><b>Best time to pay.</b> The Lightning part costs about the same at any hour: nights and weekends change nothing. Anything touching the chain (a first channel open, a swap, an on-chain send) is cheapest when the slow fee is low: single digits in sat/vB is cheap, and the current price sits under “Fee now” in the On-chain panel. If it is not urgent, wait for a cheap-fee moment.</p>
-      </div>
-    </section>
-    <section class="panel" aria-labelledby="hChain">
-      <h2 id="hChain">4. On-chain wallet and fees</h2>
-      <div class="learn">
-        <p>Your node also has a normal Bitcoin wallet. You need it to open channels, and to pay fees if a channel ever closes.</p>
-        <p>On-chain fees are paid per size of transaction, in <b>sat/vB</b>. Open or close channels when fees are low.</p>
-      </div>
-      <div id="chainLow"></div>
-      <div class="kpis" id="chainKpis"></div>
-      <p class="sm muted" id="chainAge"></p>
-      <h3 class="sub">Your coins, and where each one sits</h3>
-      <div id="coinList" class="scroll sm"><p class="muted sm">Loading…</p></div>
-      <h3 class="sub">Fund it, step by step</h3>
-      <div class="learn">
-        <p><b>1. On the Mac, make an address:</b> open Terminal (no cd needed, run from anywhere) and enter <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet newaddress p2wkh</code>. It prints a bc1q address. Making stays on the Mac, so this server holds no key that touches addresses: there is nothing here to steal that can make them or spend them.</p>
-        <p><b>2. Paste it below</b> and press <i>Show QR code</i>. The dashboard only turns your pasted text into a code. It never makes addresses and never moves money.</p>
-        <p><b>3. Send bitcoin to it</b> from an exchange or another wallet, scanning the code or copying the address.</p>
-        <p><b>4. Wait for 1 confirmation</b> (about 10 minutes), then press <i>Check again</i>. The coin appears above, and the balance moves.</p>
-        <p><b>Verify:</b> <code>ln-ro walletbalance</code> shows the sats, <code>ln-ro listunspent</code> shows the coin, and each coin above links to its mempool.space page. If a Terminal window does not know <code>ln-ro</code> yet, the one-line setup is in Learn → Verify.</p>
-        <p><b>Stay safe:</b> compare the first and last 6 characters with your Mac's screen before sending, since the screen is the truth. Use each address once, and only make one when you are about to fund (the wallet watches only the newest 20 unused ones). First time with a new address, send a tiny test amount and confirm it arrives before the rest. Never trust an address pasted from a chat or email.</p>
-      </div>
-      <div class="row"><input id="chAddrPaste" class="mono" placeholder="Paste your bc1q address here" autocomplete="off" spellcheck="false" aria-label="Paste your bc1q address"></div>
-      <div class="row"><button type="button" class="btn primary" id="chAddrShow">Show QR code</button><button type="button" class="btn" id="chRefresh">Check again</button></div>
-      <p class="err sm" id="chAddrErr" role="alert"></p>
-      <div id="chAddrOut"></div>
-    </section>
-  </div>
-  <div class="grid2">
-    <section class="panel" aria-labelledby="hClose">
-      <h2 id="hClose">If you liquidate: getting your sats back</h2>
-      <p class="see sm">Verify on the Mac: <code>ln-ro pendingchannels</code> · <code>ln-ro walletbalance</code> (see Learn → Verify)</p>
-      <div class="learn"><p>Liquidating means closing every channel and pulling all sats back into the on-chain wallet, then to a wallet you alone hold. It takes days, not minutes.</p></div>
-      <ol class="flow">
-        <li><b>Cover Ye₿ente wallets first.</b> Those balances are users' money, owed in real sats. Let users withdraw (or pay them out) before you touch channels.</li>
-        <li><b>Close each channel cooperatively:</b> <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet closechannel &lt;channel_point&gt;</code>. Your side arrives on-chain after a few blocks. Find each ID with the “close ID” row in Learn → Verify.</li>
-        <li><b>Stuck or offline peer?</b> Add <code>--force</code>. It costs more, and your funds wait out a delay of up to about two weeks before they unlock.</li>
-        <li><b>Watch the closes land.</b> Track them with <code>ln-ro pendingchannels</code>; the on-chain balance grows as each one confirms.</li>
-        <li><b>Sweep everything to your own wallet:</b> <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet sendcoins --sweepall &lt;YOUR_ADDRESS&gt; --sat_per_vbyte &lt;FEE&gt;</code>. Check the fee rate on mempool.space first, and double-check the address: on-chain sends can't be undone.</li>
-        <li><b>Verify zero.</b> <code>ln-ro listchannels</code> and <code>ln-ro pendingchannels</code> show nothing left, and <code>ln-ro walletbalance</code> holds everything.</li>
-      </ol>
-      <ul class="warn">
-        <li>Never delete the seed or <span class="mono">channel.backup</span> until every sat is confirmed on-chain.</li>
-        <li>Keep the node online until the last close confirms, so it sees every closing transaction.</li>
-        <li>Closing when fees are high costs more. If nothing is urgent, wait for a quiet mempool.</li>
-      </ul>
-    </section>
-    <section class="panel" aria-labelledby="hAddr">
-      <h2 id="hAddr">Your wallet address, and how to use it</h2>
-      <p class="see sm">Verify on the Mac: <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet newaddress p2wkh</code> · <code>ln-ro listunspent</code></p>
-      <div class="learn">
-        <p>Your node makes a <b>new address every time</b> you ask. Each one starts with <span class="mono">bc1q</span>. Use each address once: reusing one lets anyone link your payments together.</p>
-        <p>Only make an address when you are about to fund: every address shown burns a fresh one, and the wallet watches only the newest 20 unused ones.</p>
-      </div>
-      <ol class="flow">
-        <li><b>Make one</b> on the Mac: <code>lncli --lnddir=$HOME/.lnd-altradits --network=mainnet newaddress p2wkh</code>, then paste it in the <i>Fund it</i> box above for a QR code.</li>
-        <li><b>Use it</b> to fund the on-chain wallet from an exchange or another wallet, or to receive any on-chain payment.</li>
-        <li><b>Verify it:</b> compare the first and last 6 characters on the Mac's own screen. Never trust an address pasted from a chat or email. After the sender pays, the coin appears in the list above and in <code>ln-ro listunspent</code>.</li>
-      </ol>
-      <ul class="warn">
-        <li>Don't generate dozens of addresses without using them: past about 20 unused ones the wallet can stop seeing them (the “gap limit”).</li>
-        <li>An invoice (<span class="mono">lnbc…</span>) is for Lightning; an address (<span class="mono">bc1q…</span>) is for on-chain. They are not interchangeable.</li>
-      </ul>
-    </section>
-  </div>
-  <section class="panel" aria-labelledby="hBackup">
-    <h2 id="hBackup">Channel backup: is your copy fresh?</h2>
-    <p class="see sm">On the Mac: <code>ls -l $HOME/.lnd-altradits/data/chain/bitcoin/mainnet/channel.backup</code> shows the file's date.</p>
-    <div class="learn">
-      <p>After every channel opens or closes, copy <span class="mono">channel.backup</span> from the Mac to a safe place (a USB stick kept with your 24 words). With those two, your peers return your channel funds after a disaster. Then press the button so the dashboard remembers. It compares your last copy against today's channels.</p>
-    </div>
-    <div id="backupBody"><p class="muted sm">Loading…</p></div>
-    <div class="row"><button type="button" class="btn primary" id="backupMark">I copied the backup</button></div>
-    <p class="err sm" id="backupErr" role="alert"></p>
-  </section>
-  <section class="panel" aria-labelledby="hRoute">
-    <h2 id="hRoute">5. Routing and fees</h2>
-    <p class="see sm">See it yourself on the Mac: <code>ln-ro feereport</code></p>
-    <div class="learn">
-      <p>Nodes pass payments for each other and charge a small fee: a <b>base fee</b> per payment plus a <b>rate</b> in parts per million (ppm).</p>
-      <p>Example: base 1 sat + 1 ppm on 100,000 sats = 1.1 sats.</p>
-      <p>Your channel is <b>private</b>. Others can pay you through it, but it won't route strangers' payments. That's normal for a shop or wallet node.</p>
-    </div>
-    <div class="kpis" id="routeKpis"></div>
-    <div id="feeList" class="scroll"></div>
-  </section>
-  <section class="panel" aria-labelledby="hFlow">
+<section class="panel" aria-labelledby="hFlow">
     <h2 id="hFlow">Payments and invoices, last 30 days</h2>
     <p class="see sm">See it yourself on the Mac: <code>ln-ro listpayments</code> · <code>ln-ro listinvoices</code></p>
     <div class="learn"><p><b>Payments</b> are what your node sent; each paid a small routing fee to the nodes on the way. <b>Invoices</b> are requests your node made; settled ones were paid, cancelled ones expired unpaid.</p></div>
     <div class="kpis" id="exPays"></div>
     <div class="kpis" id="exInvs"></div>
   </section>
-  <section class="panel" aria-labelledby="hMoney">
+<section class="panel" aria-labelledby="hMoney">
     <h2 id="hMoney">Money received through the website</h2>
     <p class="see sm">Verify on the Mac: the “Money received” row in Learn → Verify (set ADMIN_TOKEN from the server's settings first). Each payment also links its receipt.</p>
     <div class="learn"><p>Every payment the website took, in sats: orders and donations before the agency moved out, and support payments since. Ye₿ente deposits aren't here; they belong to wallet holders.</p></div>
@@ -637,56 +739,51 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </div>
 
   <div class="pane" data-pane="yebente">
-  <section class="panel" aria-labelledby="hMine">
-    <h2 id="hMine">Your wallets</h2>
-    <div class="learn">
-      <p><b>How a custodial wallet works:</b> the sats sit on your node. A wallet is a record of how many of them belong to someone.</p>
-      <p><b>Receiving</b> makes an invoice on your node for that wallet. When it's paid, the node has more sats and the wallet's record goes up by the same amount.</p>
-      <p><b>Sending</b> pays from the node and takes the amount (plus the real routing fee) off the record. It always needs the wallet's PIN on a trusted phone, so it happens in the Ye₿ente app, never with this admin token.</p>
-    </div>
-    <div class="row"><input id="mineHandle" placeholder="Handle, e.g. stan" aria-label="Wallet handle" style="max-width:16rem"><button type="button" class="btn" id="mineAdd">Add to my list</button><a class="btn primary" href="/yebente#create" target="_blank" rel="noopener">Create a new wallet</a><a class="btn" href="/yebente#login" target="_blank" rel="noopener">Open Ye₿ente to send</a></div>
-    <div id="mineList"></div>
+<section class="panel" aria-labelledby="hOpenPay">
+    <h2 id="hOpenPay">Lightning payments out still open</h2>
+    <div class="learn"><p>A payment out stays open until the node says it was paid or failed; the server asks every 2 minutes. Here is what the node says about each one right now. <b>Ask the node now</b> settles it the same way: refunded only when the node says it failed or never started.</p></div>
+    <div id="openPay"><p class="sm muted">Loading…</p></div>
   </section>
-
-  <section class="panel" aria-labelledby="hCreate">
-    <h2 id="hCreate">Create a wallet, for you or someone else</h2>
-    <ol class="flow">
-      <li><b>For you:</b> press <i>Create a new wallet</i>. Choose a handle (it becomes handle@altradits.com) and a 6-digit PIN. Write the 12 recovery words on paper. Then add the handle above to watch it here.</li>
-      <li><b>For someone else:</b> open the link on <i>their</i> phone, or in a private window, and let them choose the PIN. Give them the 12 words on paper, then close the window. Only add it to your list if they agree.</li>
-      <li><b>Receive:</b> share handle@altradits.com, or press <i>Receive</i> below to make a QR for an exact amount.</li>
-      <li><b>Send:</b> in the Ye₿ente app, with the PIN or fingerprint. To M-Pesa through <i>Send Mobile</i>.</li>
-    </ol>
+<section class="panel" aria-labelledby="hRecentPay">
+    <h2 id="hRecentPay">Recent Lightning payments out</h2>
+    <div class="learn"><p>Who each payment was meant for. An invoice names no person, but it carries the payee's node and usually a description; the node adds the node's public name when it has one. Payments sent before 21 Nov 2026 kept only "Lightning invoice".</p></div>
+    <div id="recentPay"><p class="sm muted">Loading…</p></div>
   </section>
-
-  <section class="panel" aria-labelledby="hCli">
-    <h2 id="hCli">Try it from the command line, and watch the dashboard change</h2>
-    <div class="learn"><p>Receive 21 sats into your wallet step by step, and see where each step shows up. Uses the <code>ln-ro</code> shortcut from Learn → Verify. If <code>curl</code> is refused (403), open the same address in the browser.</p></div>
-    <ol class="flow" id="cliSteps">
-      <li>Ask your Lightning address what it accepts:<br><code>curl -s https://altradits.com/.well-known/lnurlp/<span class="h">HANDLE</span> | jq '{callback, minSendable, maxSendable}'</code><br><span class="muted sm">Amounts are in millisats: 1 sat = 1,000 msat.</span></li>
-      <li>Ask the callback for an invoice of 21 sats (21,000 msat):<br><code>curl -s "<span class="muted">CALLBACK</span>?amount=21000" | jq -r .pr</code><br><span class="muted sm">Dashboard: Ye₿ente → Open invoices goes up by 1.</span></li>
-      <li>Read the invoice your node made:<br><code>ln-ro decodepayreq <span class="muted">INVOICE</span> | jq '{destination, num_satoshis, expiry}'</code><br><span class="muted sm">The destination is your node's public key (Node &amp; network tab).</span></li>
-      <li>Pay it from another wallet (your phone). Then check the node:<br><code>ln-ro listinvoices --max_invoices 1 | jq '.invoices[0] | {state, amt_paid_sat}'</code><br><span class="muted sm">State becomes SETTLED.</span></li>
-      <li>Within 2 minutes, refresh this page: the wallet's balance goes up by 21 sats, <i>Owed to wallets</i> rises, and <code>ln-ro channelbalance</code> shows 21 more on your side.</li>
-    </ol>
-  </section>
-
-  <section class="panel" aria-labelledby="hAll">
+<section class="panel" aria-labelledby="hAll">
     <h2 id="hAll">All wallet balances</h2>
     <p class="see sm">Verify on the Mac: the “Wallets owed” row in Learn → Verify (set ADMIN_TOKEN from the server's settings first). These balances live on the server, not the node.</p>
     <div class="learn"><p>What each wallet holds. Together this is <b>Owed to wallets</b>: sats on your node that belong to other people.</p></div>
     <div class="kpis" id="allKpis"></div>
     <div id="allList" class="scroll"></div>
   </section>
-
-  <section class="panel" aria-labelledby="hDest">
+<section class="panel" aria-labelledby="hB2c">
+    <h2 id="hB2c">Direct M-Pesa payouts (B2C)</h2>
+    <div class="learn">
+      <p><b>What this is:</b> Ye₿ente paying a phone from your own M-Pesa shortcode, so Send Mobile works when the partner is down. The wallet's sats are taken first; Safaricom's answer completes the payout or gives the sats back.</p>
+      <p><b>The float</b> is the money in the B2C account. Quotes never go beyond it, less what open payouts already promised. After you refill it, enter the new figure here; Safaricom's next answer replaces it.</p>
+      <p><b>A stuck payout</b> has no final answer from Safaricom. Search its id in the M-Pesa org portal (it is the OriginatorConversationID). Paid: enter the M-Pesa code and press <i>Mark paid</i>. Not paid, and over an hour old: type <code>REFUND &lt;id&gt;</code> and press <i>Refund</i>. Refunding a payout M-Pesa made would pay twice, so check first. Every manual settlement emails you.</p>
+    </div>
+    <div class="kpis" id="b2cKpis"></div>
+    <div class="row"><input id="b2cFloat" type="number" inputmode="numeric" min="0" step="1" placeholder="Float in KSh after a refill" aria-label="Float in shillings" style="max-width:16rem"><button type="button" class="btn" id="b2cFloatSet">Set float</button></div>
+    <div id="b2cOpen"></div>
+    <div id="b2cRecent"></div>
+  </section>
+<section class="panel" aria-labelledby="hDest">
     <h2 id="hDest">Where clients' money goes</h2>
     <div class="learn"><p>External wallets and M-Pesa numbers that received payments from Ye₿ente wallets (phone numbers are partly hidden). M-Pesa payouts have a receipt from the payout partner.</p></div>
     <div class="row"><label for="destDays" class="sm"><b>Period</b></label><select id="destDays" class="sel"><option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="0">All time</option></select></div>
     <div id="destList" class="scroll" style="margin-top:.6rem"></div>
   </section>
-
-  <section class="panel" aria-labelledby="hYb">
-    <h2 id="hYb">6. Ye₿ente and how payments reach the node</h2>
+<section class="panel" aria-labelledby="hAct">
+    <h2 id="hAct">Most active Ye₿ente wallets</h2>
+    <p class="see sm">Verify on the Mac: the “Most active wallets” row in Learn → Verify (set ADMIN_TOKEN from the server's settings first).</p>
+    <div class="learn"><p>Deposits and completed transactions per wallet, most active first. Use it to reward your most active users, for example with a transfer from your own Ye₿ente wallet.</p></div>
+    <div class="row"><label for="actDays" class="sm"><b>Period</b></label><select id="actDays" style="width:auto;padding:.4rem .6rem;border:2px solid var(--line);border-radius:.6rem;font:inherit"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="0">All time</option></select></div>
+    <div class="kpis" id="actKpis" style="margin-top:.8rem"></div>
+    <div id="actList" class="scroll"></div>
+  </section>
+<section class="panel" aria-labelledby="hYb">
+    <h2 id="hYb">Ye₿ente and how payments reach the node</h2>
     <div class="learn">
       <p>Ye₿ente is custodial: wallet balances are sats your node owes people. <b>Can send</b> must stay above <b>Owed to wallets</b>.</p>
       <p>How a payment arrives:</p>
@@ -700,21 +797,44 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
     <div class="kpis" id="ybKpis"></div>
     <dl id="hooks"></dl>
   </section>
-  <section class="panel" aria-labelledby="hAct">
-    <h2 id="hAct">Most active Ye₿ente wallets</h2>
-    <p class="see sm">Verify on the Mac: the “Most active wallets” row in Learn → Verify (set ADMIN_TOKEN from the server's settings first).</p>
-    <div class="learn"><p>Deposits and completed transactions per wallet, most active first. Use it to reward your most active users, for example with a transfer from your own Ye₿ente wallet.</p></div>
-    <div class="row"><label for="actDays" class="sm"><b>Period</b></label><select id="actDays" style="width:auto;padding:.4rem .6rem;border:2px solid var(--line);border-radius:.6rem;font:inherit"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="0">All time</option></select></div>
-    <div class="kpis" id="actKpis" style="margin-top:.8rem"></div>
-    <div id="actList" class="scroll"></div>
+<section class="panel" aria-labelledby="hMine">
+    <h2 id="hMine">Your wallets</h2>
+    <div class="learn">
+      <p><b>How a custodial wallet works:</b> the sats sit on your node. A wallet is a record of how many of them belong to someone.</p>
+      <p><b>Receiving</b> makes an invoice on your node for that wallet. When it's paid, the node has more sats and the wallet's record goes up by the same amount.</p>
+      <p><b>Sending</b> pays from the node and takes the amount (plus the real routing fee) off the record. It always needs the wallet's PIN on a trusted phone, so it happens in the Ye₿ente app, never with this admin token.</p>
+    </div>
+    <div class="row"><input id="mineHandle" placeholder="Handle, e.g. stan" aria-label="Wallet handle" style="max-width:16rem"><button type="button" class="btn" id="mineAdd">Add to my list</button><a class="btn primary" href="/yebente#create" target="_blank" rel="noopener">Create a new wallet</a><a class="btn" href="/yebente#login" target="_blank" rel="noopener">Open Ye₿ente to send</a></div>
+    <div id="mineList"></div>
+  </section>
+  <p class="group-label" id="ybGuides">Guides</p>
+<section class="panel" aria-labelledby="hCreate">
+    <h2 id="hCreate">Create a wallet, for you or someone else</h2>
+    <ol class="flow">
+      <li><b>For you:</b> press <i>Create a new wallet</i>. Choose a handle (it becomes handle@altradits.com) and a 6-digit PIN. Write the 12 recovery words on paper. Then add the handle above to watch it here.</li>
+      <li><b>For someone else:</b> open the link on <i>their</i> phone, or in a private window, and let them choose the PIN. Give them the 12 words on paper, then close the window. Only add it to your list if they agree.</li>
+      <li><b>Receive:</b> share handle@altradits.com, or press <i>Receive</i> below to make a QR for an exact amount.</li>
+      <li><b>Send:</b> in the Ye₿ente app, with the PIN or fingerprint. To M-Pesa through <i>Send Mobile</i>.</li>
+    </ol>
+  </section>
+<section class="panel" aria-labelledby="hCli">
+    <h2 id="hCli">Try it from the command line, and watch the dashboard change</h2>
+    <div class="learn"><p>Receive 21 sats into your wallet step by step, and see where each step shows up. Uses the <code>ln-ro</code> shortcut from Learn → Verify. If <code>curl</code> is refused (403), open the same address in the browser.</p></div>
+    <ol class="flow" id="cliSteps">
+      <li>Ask your Lightning address what it accepts:<br><code>curl -s https://altradits.com/.well-known/lnurlp/<span class="h">HANDLE</span> | jq '{callback, minSendable, maxSendable}'</code><br><span class="muted sm">Amounts are in millisats: 1 sat = 1,000 msat.</span></li>
+      <li>Ask the callback for an invoice of 21 sats (21,000 msat):<br><code>curl -s "<span class="muted">CALLBACK</span>?amount=21000" | jq -r .pr</code><br><span class="muted sm">Dashboard: Ye₿ente → Open invoices goes up by 1.</span></li>
+      <li>Read the invoice your node made:<br><code>ln-ro decodepayreq <span class="muted">INVOICE</span> | jq '{destination, num_satoshis, expiry}'</code><br><span class="muted sm">The destination is your node's public key (Node &amp; network tab).</span></li>
+      <li>Pay it from another wallet (your phone). Then check the node:<br><code>ln-ro listinvoices --max_invoices 1 | jq '.invoices[0] | {state, amt_paid_sat}'</code><br><span class="muted sm">State becomes SETTLED.</span></li>
+      <li>Within 2 minutes, refresh this page: the wallet's balance goes up by 21 sats, <i>Owed to wallets</i> rises, and <code>ln-ro channelbalance</code> shows 21 more on your side.</li>
+    </ol>
   </section>
   </div>
 
   <div class="pane" data-pane="ktown">
     <section class="panel" aria-labelledby="hKtown">
       <h2 id="hKtown">kTown shops <span class="muted sm" id="ktownCount"></span></h2>
-      <div class="learn"><p>Every shop that signed up. Print its poster on A4: "Bitcoin accepted here" with the shop's own QR. The QR pays into that shop's M-Pesa. Check the shop name before you print.</p></div>
-      <div class="row"><button type="button" class="btn primary" id="ktownPrintAll">Print all posters</button><button type="button" class="btn" id="ktownReload">Refresh</button></div>
+      <div class="learn"><p>Every shop that signed up. Print its poster on A4: "Bitcoin accepted here" with the shop's own QR. The QR pays into that shop's M-Pesa. Check the shop name before you print. Printing secures the shop: its number can no longer be taken over after 48 hours. Reset PIN gives a forgotten-PIN shop a temporary PIN, shown once; the shop keeps its QR. Delete removes a shop after you type its name: its QR stops working, its record is archived and its payments are kept.</p></div>
+      <div class="row"><button type="button" class="btn primary" id="ktownPrintAll">Print all posters</button><button type="button" class="btn" id="ktownPdfAll">All posters as PDF</button><button type="button" class="btn" id="ktownReload">Refresh</button></div>
       <div id="ktownList"><p class="sm muted">Loading…</p></div>
     </section>
   </div>
@@ -732,7 +852,7 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   <div class="pane" data-pane="security">
   <div class="grid2">
     <section class="panel" aria-labelledby="hSec">
-      <h2 id="hSec">7. Security watch (Stan)</h2>
+      <h2 id="hSec">Security watch (Stan)</h2>
       <div class="learn"><p>Everything the site turned away: guessed PINs, forged requests, blocked scripts. High-severity ones are emailed to you.</p></div>
       <div class="kpis" id="secKpis"></div>
       <p class="sm" id="secSolvency"></p>
@@ -1031,6 +1151,19 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
   </div>
 
   <div class="pane" data-pane="learn">
+  <section class="panel" aria-labelledby="hTutorials">
+    <h2 id="hTutorials">Tutorials to practise with</h2>
+    <div class="learn"><p>Six PDFs, in the order to read them. Repeat the drills in tutorial 5 on regtest (Polar) and signet until each one is boring, then on the real node with small amounts.</p><p>These are practice editions: the repo is public, so the node's public key, tunnel address, server IP and payment IDs are replaced with placeholders. The originals with the real details stay on the Mac in <code>~/Documents</code>.</p></div>
+    <ol class="tutorials">
+      <li><a href="/assets/learn-1-node-build.pdf" target="_blank" rel="noopener">How the node was built</a> <span class="sm muted">(5 pages)</span><br><span class="sm">Every setup step from config to liquidity, and why it uses Neutrino instead of a pruned Bitcoin Core.</span></li>
+      <li><a href="/assets/learn-2-node-autostart.pdf" target="_blank" rel="noopener">Start the node automatically</a> <span class="sm muted">(4 pages)</span><br><span class="sm">The launch agents that start LND and the tunnel at login, everyday commands, and how to undo it.</span></li>
+      <li><a href="/assets/learn-3-node-security.pdf" target="_blank" rel="noopener">Node security: what you can and can't do</a> <span class="sm muted">(3 pages)</span><br><span class="sm">What each key can do, who can touch the money, good habits, and the mistakes that lose funds.</span></li>
+      <li><a href="/assets/learn-4-withdrawal-example.pdf" target="_blank" rel="noopener">A real withdrawal, step by step</a> <span class="sm muted">(3 pages)</span><br><span class="sm">Two Lightning withdrawals to a phone wallet, including the attempts that failed and why no money was lost.</span></li>
+      <li><a href="/assets/learn-5-practice-drills.pdf" target="_blank" rel="noopener">Practice plan: twelve drills</a> <span class="sm muted">(3 pages)</span><br><span class="sm">From a throwaway node to disaster recovery, with a practice log to fill in.</span></li>
+      <li><a href="/assets/learn-6-earning-from-a-node.pdf" target="_blank" rel="noopener">Earning from a Lightning node</a> <span class="sm muted">(2 pages)</span><br><span class="sm">Getting paid, routing fees, selling liquidity and teaching, with the arithmetic and what this node still needs.</span></li>
+    </ol>
+  </section>
+
   <section class="panel" aria-labelledby="hVerify">
     <h2 id="hVerify">Verify every number on the Mac</h2>
     <div class="learn"><p>Make a safe shortcut (it can only read): put this line in <code>~/.zshrc</code> so every Terminal window has it, and run it once now: <code>alias ln-ro='lncli --lnddir=$HOME/.lnd-altradits --macaroonpath=$HOME/.lnd-altradits/data/chain/bitcoin/mainnet/readonly.macaroon'</code></p><p>Then compare each dashboard number with the command beside it.</p><p>Rows starting with <code>lncli</code> instead of <code>ln-ro</code> can move money, so they need the full <code>lncli</code> (admin macaroon), not the read-only shortcut.</p></div>
@@ -1076,6 +1209,6 @@ dialog::backdrop{background:rgba(15,27,45,.45)}
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <div id="posters" aria-hidden="true"></div>
 <script src="/ktown/qrcode-generator-1.4.4.js"></script>
-<script type="module" src="/assets/admin.js?v=refresh20"></script>
+<script type="module" src="/assets/admin.js?v=refresh36"></script>
 </body>
 </html>

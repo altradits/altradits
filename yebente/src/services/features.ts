@@ -13,6 +13,8 @@ export interface FeatureFlags {
   receive: boolean;
   send: boolean;
   external: boolean;
+  // Set up but waiting on the node: shown greyed out until it answers again.
+  paused?: WalletAction[];
 }
 
 // When the health call fails: the core (Receive, Send), nothing else.
@@ -38,6 +40,13 @@ export function visibleActions(features: Partial<FeatureFlags> | null | undefine
 
 // Reads the server's features once. Any failure (offline, an error page, an
 // answer without features) shows the core.
+// The tiles shown greyed out: paused, and not already working.
+export function pausedActions(features: Partial<FeatureFlags> | null | undefined): WalletAction[] {
+  const p = Array.isArray(features?.paused) ? features!.paused : [];
+  const on = visibleActions(features);
+  return ORDER.filter((a) => p.includes(a) && !on.includes(a));
+}
+
 export async function fetchFeatures(): Promise<FeatureFlags> {
   try {
     const res = await fetch('/api/yebente/health');
@@ -51,6 +60,7 @@ export async function fetchFeatures(): Promise<FeatureFlags> {
       receive: f.receive === true,
       send: f.send === true,
       external: f.external === true,
+      paused: ORDER.filter((a) => (data.paused as Record<string, unknown> | undefined)?.[a] === true),
     };
   } catch {
     return { ...CORE_FEATURES };
