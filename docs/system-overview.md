@@ -6,7 +6,7 @@ library are free. Contact messages cost $1, and the Developer API takes a 0.5%
 service charge.
 
 **Pages**
-- `/` home and Ye₿ente manual · `/yebente` the wallet app · `/library` free resources in reading order
+- `/` kTown home · `/ktown` the shop QR till · `/yebente` the wallet app · `/wallet-guide` Ye₿ente guide · `/developer` Lightning API · `/portfolio` products · `/contact` paid contact form · `/library` free resources in reading order
 - `/bitcoin-core` setup guide · `/bitcoin` learning in Kisumu · `/players` people and projects to learn from
 - `/journey` contributions and the Btrust starter-grant bar · `/donate` support in sats · `/admin` node dashboard
 
@@ -21,7 +21,7 @@ dashboard all use it. See `docs/manual-lnd.md` and `docs/manual-tunnel.md`.
 
 **Stan** (`lib/stan.js`)
 Stan stayed for security and communication. He keeps the security watch,
-emails Stanley every high-severity alert, and sends a short report each morning: the node
+emails Stanley on high-severity alerts (at most once an hour per technique), and sends a short report each morning: the node
 against the chain tip, sending power, Ye₿ente's balances, and what was turned
 away. Admin → "Email me Stan's report now" sends one on demand.
 

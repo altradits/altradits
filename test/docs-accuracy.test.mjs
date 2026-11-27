@@ -28,8 +28,8 @@ test("Stan mails high severity only, in code, docs and admin", () => {
   assert.match(attacks, /secw:mail:/, "lib/attacks.js: mailed techniques are throttled per hour");
   const doc = read("docs/system-overview.md");
   assert.doesNotMatch(doc, /every alert/, "overview: no blanket every-alert claim");
-  assert.match(doc, /every high-severity alert/, "overview: the high severity rule is stated");
+  assert.match(doc, /high-severity alerts \(at most once an hour per technique\)/, "overview: the high severity rule and throttle are stated");
   const admin = read("admin.html");
   assert.doesNotMatch(admin, /every alert/, "admin.html: no blanket every-alert claim");
-  assert.match(admin, /every high-severity alert/, "admin.html: the high severity rule is stated");
+  assert.match(admin, /high-severity alerts \(at most once an hour per technique\)/, "admin.html: the high severity rule and throttle are stated");
 });
