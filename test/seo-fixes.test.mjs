@@ -54,7 +54,9 @@ const LOC2FILE = {
 test("T1: sitemap lists ktown/terms, omits dashboard, dates match mtimes", () => {
   const sm = read("sitemap.xml");
   assert.ok(sm.includes("<urlset"), "sitemap parses as XML set");
-  assert.ok(sm.includes("https://altradits.com/ktown/terms"), "ktown/terms present");
+  const locs = [...sm.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  const wantTerms = new URL("/ktown/terms", "https://altradits.com").href;
+  assert.ok(locs.includes(wantTerms), "ktown/terms present");
   assert.ok(!sm.includes("developer/dashboard"), "dashboard absent");
   for (const [loc, file] of Object.entries(LOC2FILE)) {
     assert.ok(fs.existsSync(path.join(ROOT, file)), `${loc} file exists: ${file}`);
