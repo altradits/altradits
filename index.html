@@ -36,56 +36,99 @@
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 @font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 
-:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff;color-scheme:light}
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff;--warm:#FFF7EC;color-scheme:light}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
 a{color:var(--blue)}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .wrap{max-width:68rem;margin:0 auto;padding:0 1rem 1rem}
-.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0 -1rem;padding:.8rem 1rem;flex-wrap:wrap;row-gap:.5rem;position:sticky;top:0;z-index:50;background:rgba(238,242,246,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0 -1rem;padding:.8rem 1rem;flex-wrap:wrap;row-gap:.5rem;position:sticky;top:0;z-index:50;background:rgba(238,242,246,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .top img{height:2.5rem;width:auto;display:block}
 .topnav{display:flex;gap:.35rem;flex-wrap:wrap;row-gap:.35rem;align-items:center}
 .topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.45rem .95rem;border-radius:99px}
 .topnav a:hover{color:var(--ink);background:rgba(15,27,45,.08)}
 .topnav a[aria-current]{color:#fff;background:var(--ink)}
+.topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
+.topnav a.launch:hover{color:var(--ink);background:#ffa94d}
 @media (max-width:420px){.topnav{gap:.25rem}.topnav a{font-size:.9rem;padding:.4rem .7rem}.top img{height:1.9rem}}
-.hero{padding:4rem 0 3rem}
-.hero .tag{margin:0 0 .8rem;font-size:.85rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
-.hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem}
+
+.hero{padding:2.75rem 0 2.25rem;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.95fr);gap:2rem;align-items:center}
+@media (max-width:860px){.hero{grid-template-columns:1fr;padding:2.2rem 0 1.6rem}}
+.eyebrow{display:inline-flex;align-items:center;gap:.45rem;margin:0 0 .9rem;padding:.3rem .8rem;border-radius:99px;background:var(--warm);border:1.5px solid #F2C98A;font-size:.82rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
+.hero h1{font:800 clamp(2.15rem,5.4vw,3.45rem)/1.05 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.025em;margin:0}
 .hero h1 em{font-style:normal;color:var(--btc-text)}
-.lead{font-size:1.15rem;line-height:1.55;color:var(--muted);margin:1.2rem 0 0;max-width:38rem}
-.ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:2rem}
-.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none}
+.lead{font-size:1.12rem;line-height:1.58;color:var(--muted);margin:1.1rem 0 0;max-width:36rem}
+.ctas{display:flex;flex-wrap:wrap;gap:.65rem;margin-top:1.65rem}
+.btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.95rem;padding:.8rem 1.4rem;border-radius:.8rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none}
 .btn:hover{background:#ffa94d;border-color:#ffa94d}
 .btn:active{transform:translateY(1px)}
 .btn.ghost{background:transparent;border-color:var(--ink)}
+.btn.ghost:hover{background:rgba(15,27,45,.06);border-color:var(--ink)}
+.proofs{list-style:none;padding:0;margin:1.35rem 0 0;display:flex;flex-wrap:wrap;gap:.45rem}
+.proofs li{font-size:.86rem;font-weight:600;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:99px;padding:.28rem .75rem}
+
+.stage{background:#FFF4E2;border:2px solid var(--ink);border-radius:1.35rem;padding:.9rem 1rem 1rem;box-shadow:8px 8px 0 var(--ink);overflow:hidden}
+.stage img{display:block;width:100%;height:auto;border-radius:.75rem;background:#FFF4E2}
+.stage-cap{display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;margin-top:.85rem;font-size:.9rem;color:var(--ink);font-weight:600}
+.stage-cap span{color:var(--ok);font-weight:700}
+
 ::selection{background:#F7931A66}
-h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:3.5rem 0 .5rem}
-.intro{color:var(--muted);margin:0 0 1.4rem;max-width:42rem}
-.steps{list-style:none;padding:0;margin:0;display:grid;gap:1rem;max-width:46rem}
-.steps li{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem 1.25rem;display:flex;gap:1rem;align-items:baseline}
-.steps .n{font:800 1.4rem 'Bricolage Grotesque',sans-serif;color:var(--btc-text);flex:none}
-.steps p{margin:0}
-.steps p b{display:block;font:800 1.1rem 'Bricolage Grotesque',sans-serif}
-.plain{max-width:42rem}
-.plain p{margin:.6rem 0;color:var(--muted)}
-.plain p b,.plain li b{color:var(--ink)}
-.plain ul{margin:.6rem 0;padding-left:1.2rem;color:var(--muted)}
-.plain li{margin:.35rem 0}
-.faq{margin-top:3.5rem;max-width:46rem}
-.faq details{border-bottom:1px solid var(--line);padding:.9rem 0}
+h2{font:800 clamp(1.55rem,3.8vw,2.1rem)/1.14 'Bricolage Grotesque',sans-serif;margin:3.25rem 0 .45rem;letter-spacing:-.015em}
+h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
+.intro{color:var(--muted);margin:0 0 1.4rem;max-width:44rem}
+
+.contrast{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(18rem,100%),1fr));gap:1rem;margin-top:1rem}
+.contrast article{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.25rem 1.35rem;display:flex;flex-direction:column;gap:.55rem}
+.contrast article.after{background:var(--warm);box-shadow:5px 5px 0 var(--ink)}
+.contrast .kicker{align-self:flex-start;font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .65rem;border-radius:99px;background:rgba(15,27,45,.08);color:var(--muted)}
+.contrast article.after .kicker{background:#DDF3EC;color:var(--ok)}
+.contrast p{margin:0;color:var(--muted)}
+.contrast article.after p{color:var(--ink)}
+
+.steps{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(17rem,100%),1fr));gap:1rem}
+.steps li{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.25rem;display:flex;flex-direction:column;gap:.7rem}
+.steps .head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.steps .n{width:2.2rem;height:2.2rem;border-radius:99px;background:var(--ink);color:var(--btc);font:800 1.1rem 'Bricolage Grotesque',sans-serif;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.steps .pace{font-size:.78rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
+.steps p{margin:0;color:var(--muted)}
+.steps p b{display:block;font:800 1.12rem/1.25 'Bricolage Grotesque',sans-serif;color:var(--ink);margin-bottom:.3rem}
+
+.pillars{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(18rem,100%),1fr));gap:1rem;margin-top:1rem}
+.panel{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.25rem 1.35rem}
+.panel .tag{display:inline-block;font-size:.76rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.45rem}
+.panel h3{margin-bottom:.45rem}
+.panel p{margin:0;color:var(--muted)}
+.panel p+p{margin-top:.55rem}
+.panel p b,.panel li b{color:var(--ink)}
+.panel ul{margin:.4rem 0 0;padding-left:1.15rem;color:var(--muted)}
+.panel li{margin:.35rem 0}
+
+.family{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(16rem,100%),1fr));gap:1rem}
+.family li{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.2rem 1.3rem;display:flex;flex-direction:column;gap:.45rem}
+.family b{font:800 1.2rem/1.2 'Bricolage Grotesque',sans-serif;color:var(--ink)}
+.family p{margin:0;color:var(--muted);font-size:.97rem}
+.family a{margin-top:auto;padding-top:.45rem;font-weight:700;text-decoration:none}
+.family a:hover{text-decoration:underline}
+
+.faq{margin-top:3.25rem;max-width:48rem}
+.faq details{background:var(--paper);border:1.5px solid var(--line);border-radius:.85rem;padding:.85rem 1.1rem;margin-bottom:.6rem}
+.faq details[open]{border-color:var(--ink)}
 .faq summary{font-weight:700;cursor:pointer}
-.faq p{margin:.5rem 0 0;color:var(--muted)}
-.also{margin-top:1.2rem;color:var(--muted)}
+.faq p{margin:.55rem 0 0;color:var(--muted)}
+
+.closing{margin-top:3.25rem;background:var(--ink);color:#fff;border-radius:1.35rem;padding:2rem 1.75rem;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:1.5rem}
+.closing h2{margin:0 0 .4rem;color:#fff}
+.closing p{margin:0;color:#C9D3DF;max-width:34rem}
+.closing .ctas{margin-top:0}
+.closing .btn.ghost{color:#fff;border-color:#9FB2C8}
+.closing .btn.ghost:hover{background:rgba(255,255,255,.1)}
+
 .sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
 .sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}
 .sitefoot .wp{margin:0 0 .6rem}
 .sitefoot p{margin:0 0 .35rem}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top,.tabs{transition:box-shadow .25s ease}body.scrolled .top,body.scrolled .tabs{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.cards .links a,.more a,.foot nav a,.pager a{transition:color .18s ease}.more a{display:inline-block;transition:transform .18s ease,color .18s ease}.more a:hover{transform:translateX(4px)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
-
-.topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
-.topnav a.launch:hover{color:var(--ink);background:#ffa94d}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top{transition:box-shadow .25s ease}body.scrolled .top{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a,.steps li,.family li{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease,transform .18s ease}.steps li:hover,.family li:hover{transform:translateY(-2px);box-shadow:4px 4px 0 var(--ink)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
 </style>
 </head>
 <body>
@@ -93,51 +136,76 @@ h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:
   <div class="top"><a href="/" aria-label="Altradits home"><img src="/assets/logo.png" alt="Altradits" width="325" height="119"></a><nav class="topnav" aria-label="Main"><a href="#answers">Questions</a><a href="/wallet-guide">Guide</a><a class="launch" href="/ktown">Get kTown</a></nav></div>
 
   <header class="hero">
-    <p class="tag">Main product · Pilot in Kisumu, open</p>
-    <h1>Your till takes bitcoin. <em>You get M-Pesa.</em></h1>
-    <p class="lead">kTown is a free QR till for shops. Customers pay in sats. You get shillings in M-Pesa.</p>
-    <div class="ctas"><a class="btn" href="/ktown">Get kTown for your shop</a><a class="btn ghost" href="/ktown/terms">Read the terms</a></div>
+    <div>
+      <p class="eyebrow">Main product · Pilot in Kisumu, open</p>
+      <h1>Your till takes bitcoin. <em>You get M-Pesa.</em></h1>
+      <p class="lead">A customer wants to pay in bitcoin. You need shillings in M-Pesa so you can restock tomorrow. Put one printed kTown QR on your counter. They pay in sats, and your full price lands on your phone.</p>
+      <div class="ctas"><a class="btn" href="/ktown">Get kTown for your shop</a><a class="btn ghost" href="/ktown/terms">Read the terms</a></div>
+      <ul class="proofs" aria-label="Key facts">
+        <li>Nothing to buy</li>
+        <li>Full shop price in KES</li>
+        <li>kTown never holds money</li>
+      </ul>
+    </div>
+    <figure class="stage" style="margin:0">
+      <img src="/assets/card-ktown.svg" alt="kTown counter QR stand beside the customer payment and shop M-Pesa confirmation flow" width="800" height="624">
+      <figcaption class="stage-cap">One printed card on your counter <span>M-Pesa arrives in seconds</span></figcaption>
+    </figure>
   </header>
 
+  <h2>At the counter, without the stress</h2>
+  <p class="intro">Running a shop is busy enough. Taking bitcoin should feel as ordinary as taking M-Pesa.</p>
+  <div class="contrast">
+    <article>
+      <span class="kicker">Before kTown</span>
+      <h3>Turn the sale away, or juggle wallets</h3>
+      <p>Learning crypto apps during a lunch rush, worrying about price swings overnight, or buying extra counter hardware just to serve bitcoin payers.</p>
+    </article>
+    <article class="after">
+      <span class="kicker">With kTown</span>
+      <h3>Point at one QR. Keep your full price.</h3>
+      <p>Your customer scans the printed card, checks the exact shillings on their own screen, and pays in sats. Your M-Pesa rings with the full amount.</p>
+    </article>
+  </div>
+
   <h2>For the shop: three steps</h2>
+  <p class="intro">No app store, no special device, no crypto training for your staff.</p>
   <ol class="steps">
-    <li><span class="n">1</span><p><b>Register your M-Pesa number.</b> Add your shop name and a 6-digit PIN. It takes a few minutes.</p></li>
-    <li><span class="n">2</span><p><b>Print your QR.</b> One QR on the counter. Print it, or save it as a picture.</p></li>
-    <li><span class="n">3</span><p><b>Get paid in shillings.</b> Each payment lands in M-Pesa with its code. You see every payment in your history.</p></li>
+    <li><div class="head"><span class="n">1</span><span class="pace">A few minutes</span></div><p><b>Register your M-Pesa number.</b> Add your shop name and a 6-digit PIN. It takes a few minutes.</p></li>
+    <li><div class="head"><span class="n">2</span><span class="pace">Print once</span></div><p><b>Print your QR.</b> One QR on the counter. Print it, or save it as a picture.</p></li>
+    <li><div class="head"><span class="n">3</span><span class="pace">Straight to M-Pesa</span></div><p><b>Get paid in shillings.</b> Each payment lands in M-Pesa with its code. You see every payment in your history.</p></li>
   </ol>
 
-  <h2>For the customer</h2>
-  <div class="plain">
-    <p>Scan the QR with any Lightning wallet. Check the shillings on screen. Pay in sats.</p>
-  </div>
-
-  <h2>Costs</h2>
-  <div class="plain">
-    <p><b>kTown is free.</b> Our payout partner converts the sats to M-Pesa for a 1% fee. On the kTown pay page the customer covers it, so the shop gets its full price.</p>
-  </div>
-
-  <h2>What kTown never does</h2>
-  <div class="plain">
-    <ul>
-      <li><b>It never holds money.</b> It is not a wallet.</li>
-      <li><b>Payouts go straight to the shop's M-Pesa.</b> Sats go to our payout partner, which pays M-Pesa to the shop's number.</li>
-    </ul>
-  </div>
-
-  <h2>Pilot in Kisumu</h2>
-  <div class="plain">
-    <p>Open now in Kisumu, with limited places for the first shops.</p>
-    <div class="ctas"><a class="btn" href="/ktown">Get kTown for your shop</a></div>
+  <h2>Clear for everyone at the till</h2>
+  <p class="intro">Simple for the buyer, free for the shop, and nobody sitting in the middle.</p>
+  <div class="pillars">
+    <section class="panel">
+      <span class="tag">For the customer</span>
+      <h3>Any Lightning wallet works</h3>
+      <p>Scan the QR with any Lightning wallet. Check the shillings on screen. Pay in sats.</p>
+    </section>
+    <section class="panel">
+      <span class="tag">Costs</span>
+      <h3>kTown is free for shops</h3>
+      <p><b>kTown is free.</b> Our payout partner converts the sats to M-Pesa for a 1% fee. On the kTown pay page the customer covers it, so the shop gets its full price.</p>
+    </section>
+    <section class="panel">
+      <span class="tag">What kTown never does</span>
+      <h3>Zero custody, straight payout</h3>
+      <ul>
+        <li><b>It never holds money.</b> It is not a wallet.</li>
+        <li><b>Payouts go straight to the shop's M-Pesa.</b> Sats go to our payout partner, which pays M-Pesa to the shop's number.</li>
+      </ul>
+    </section>
   </div>
 
   <h2>Three names, one project</h2>
-  <div class="plain">
-    <ul>
-      <li><b>Altradits</b> is the project. Free Bitcoin tools and learning. <a href="/portfolio">See both products</a></li>
-      <li><b>Ye₿ente</b> is the wallet. Open one in a minute, send and receive. <a href="/wallet-guide">Read the guide</a></li>
-      <li><b>kTown</b> is the till. Shops take bitcoin and get M-Pesa. <a href="/ktown">Get kTown</a></li>
-    </ul>
-  </div>
+  <p class="intro">Built in Kisumu for everyday Bitcoin use, from the shop counter to your pocket.</p>
+  <ul class="family">
+    <li><b>Altradits</b><p>The project. Free Bitcoin tools, apps and learning built in Kisumu.</p><a href="/portfolio">See all products →</a></li>
+    <li><b>Ye₿ente</b><p>The starter Bitcoin wallet. Open one in a minute, send, receive and cash out to M-Pesa.</p><a href="/wallet-guide">Read the guide →</a></li>
+    <li><b>kTown</b><p>The free QR till for shops. Customers pay in sats, shops get shillings in M-Pesa.</p><a href="/ktown">Get kTown →</a></li>
+  </ul>
 
   <div class="faq" id="answers">
   <h2>Questions</h2>
@@ -153,9 +221,13 @@ h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:
     <details><summary>What if kTown stops?</summary><p>The pilot is free and may stop. If it stops, the shop's address with the payout partner keeps working, because money never passes through kTown.</p></details>
   </div>
 
-  <h2>Join the Kisumu pilot</h2>
-  <p class="intro">One QR on the counter. Exact shillings in M-Pesa.</p>
-  <div class="ctas"><a class="btn" href="/ktown">Get kTown for your shop</a></div>
+  <section class="closing" aria-labelledby="pilot-cta">
+    <div>
+      <h2 id="pilot-cta">Join the Kisumu pilot</h2>
+      <p>Open now in Kisumu with limited places for the first shops. One QR on the counter, exact shillings in M-Pesa.</p>
+    </div>
+    <div class="ctas"><a class="btn" href="/ktown">Get kTown for your shop</a><a class="btn ghost" href="/portfolio">See all apps</a></div>
+  </section>
 
 </div>
 

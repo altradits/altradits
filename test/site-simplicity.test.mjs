@@ -59,4 +59,11 @@ test("portfolio leads with the three core products and folds experiments into de
   }
   const topCards = [...top.matchAll(/<a class="card"/g)].length;
   assert.equal(topCards, 3, "portfolio.html: top grid stays focused at the 3 core products");
+  for (const cls of ["is-ktown", "is-yebente", "is-dev"]) {
+    assert.ok(top.includes(cls), `portfolio.html: flagship card carries ${cls} mood styling`);
+  }
+  for (const guide of ['href="/"', 'href="/wallet-guide"', 'href="/developer/reference"']) {
+    assert.ok(top.includes(guide), `portfolio.html: flagship subbar links ${guide}`);
+  }
+  assert.ok(top.includes('/assets/yebente-home.png'), "portfolio.html: Ye₿ente card showcases the live home screen");
 });

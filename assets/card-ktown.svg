@@ -1,17 +1,65 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 312" width="800" height="624" role="img" aria-label="kTown: a shop QR till">
-<rect width="400" height="312" fill="#FFF6EA"/>
-<circle cx="360" cy="40" r="90" fill="#F7931A" opacity=".14"/>
-<rect x="24" y="24" width="174" height="264" rx="16" fill="#fff" stroke="#0F1B2D" stroke-width="3"/>
-<text x="111" y="60" text-anchor="middle" font-family="Bricolage Grotesque,system-ui,sans-serif" font-weight="800" font-size="22" fill="#0F1B2D">kTown</text>
-<rect x="34" y="72" width="138" height="138" fill="#fff"/>
-<path d="M106 78h6v6h-6zM94 84h6v6h-6zM106 84h6v6h-6zM112 84h6v6h-6zM88 90h6v6h-6zM94 90h6v6h-6zM106 90h6v6h-6zM112 90h6v6h-6zM94 96h6v6h-6zM100 96h6v6h-6zM106 96h6v6h-6zM112 96h6v6h-6zM88 102h6v6h-6zM106 102h6v6h-6zM88 108h6v6h-6zM88 114h6v6h-6zM106 114h6v6h-6zM112 114h6v6h-6zM46 126h6v6h-6zM52 126h6v6h-6zM64 126h6v6h-6zM76 126h6v6h-6zM88 126h6v6h-6zM100 126h6v6h-6zM112 126h6v6h-6zM124 126h6v6h-6zM130 126h6v6h-6zM142 126h6v6h-6zM52 132h6v6h-6zM64 132h6v6h-6zM70 132h6v6h-6zM76 132h6v6h-6zM94 132h6v6h-6zM106 132h6v6h-6zM142 132h6v6h-6zM160 132h6v6h-6zM52 138h6v6h-6zM58 138h6v6h-6zM64 138h6v6h-6zM76 138h6v6h-6zM130 138h6v6h-6zM142 138h6v6h-6zM154 138h6v6h-6zM46 144h6v6h-6zM52 144h6v6h-6zM58 144h6v6h-6zM64 144h6v6h-6zM100 144h6v6h-6zM106 144h6v6h-6zM112 144h6v6h-6zM148 144h6v6h-6zM154 144h6v6h-6zM160 144h6v6h-6zM40 150h6v6h-6zM52 150h6v6h-6zM58 150h6v6h-6zM64 150h6v6h-6zM88 150h6v6h-6zM130 150h6v6h-6zM136 150h6v6h-6zM142 150h6v6h-6zM148 150h6v6h-6zM154 150h6v6h-6zM88 162h6v6h-6zM100 162h6v6h-6zM106 162h6v6h-6zM112 162h6v6h-6zM154 162h6v6h-6zM88 168h6v6h-6zM100 168h6v6h-6zM106 168h6v6h-6zM112 168h6v6h-6zM130 168h6v6h-6zM136 168h6v6h-6zM154 168h6v6h-6zM112 174h6v6h-6zM136 174h6v6h-6zM148 174h6v6h-6zM154 174h6v6h-6zM88 180h6v6h-6zM94 180h6v6h-6zM136 180h6v6h-6zM154 180h6v6h-6zM160 180h6v6h-6zM88 186h6v6h-6zM100 186h6v6h-6zM112 186h6v6h-6zM124 186h6v6h-6zM130 186h6v6h-6zM154 186h6v6h-6zM88 192h6v6h-6zM130 192h6v6h-6zM142 192h6v6h-6zM148 192h6v6h-6zM154 192h6v6h-6zM160 192h6v6h-6zM94 198h6v6h-6zM100 198h6v6h-6zM106 198h6v6h-6zM112 198h6v6h-6zM124 198h6v6h-6zM154 198h6v6h-6z" fill="#0F1B2D"/><rect x="43" y="81" width="36" height="36" fill="none" stroke="#0F1B2D" stroke-width="6"/><rect x="52" y="90" width="18" height="18" fill="#0F1B2D"/><rect x="127" y="81" width="36" height="36" fill="none" stroke="#0F1B2D" stroke-width="6"/><rect x="136" y="90" width="18" height="18" fill="#0F1B2D"/><rect x="43" y="165" width="36" height="36" fill="none" stroke="#0F1B2D" stroke-width="6"/><rect x="52" y="174" width="18" height="18" fill="#0F1B2D"/>
-<rect x="40" y="228" width="142" height="40" rx="20" fill="#F7931A"/>
-<text x="111" y="254" text-anchor="middle" font-family="Figtree,system-ui,sans-serif" font-weight="700" font-size="16" fill="#0F1B2D">Scan to pay</text>
-<text x="222" y="104" font-family="Bricolage Grotesque,system-ui,sans-serif" font-weight="800" font-size="30" fill="#0F1B2D">A QR till</text>
-<text x="222" y="138" font-family="Bricolage Grotesque,system-ui,sans-serif" font-weight="800" font-size="30" fill="#A84D08">for shops.</text>
-<rect x="222" y="168" width="150" height="2" fill="#C9D3DF"/>
-<text x="222" y="198" font-family="Figtree,system-ui,sans-serif" font-size="15" fill="#4B5A70">Print it. Stick it</text>
-<text x="222" y="219" font-family="Figtree,system-ui,sans-serif" font-size="15" fill="#4B5A70">by the counter.</text>
-<text x="222" y="240" font-family="Figtree,system-ui,sans-serif" font-size="15" fill="#4B5A70">Customers scan</text>
-<text x="222" y="261" font-family="Figtree,system-ui,sans-serif" font-size="15" fill="#4B5A70">and pay.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 312" width="800" height="624" role="img" aria-label="kTown: a printed shop QR till on the counter and an instant M-Pesa confirmation">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#FFF4E2"/>
+    <stop offset="100%" stop-color="#FFE6C2"/>
+  </linearGradient>
+  <linearGradient id="band" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#FFB24C"/>
+    <stop offset="100%" stop-color="#F7931A"/>
+  </linearGradient>
+</defs>
+<rect width="400" height="312" fill="url(#bg)"/>
+<circle cx="354" cy="46" r="88" fill="#F7931A" opacity=".16"/>
+<circle cx="38" cy="284" r="66" fill="#0B7A5F" opacity=".10"/>
+
+<!-- Printed counter stand -->
+<rect x="26" y="24" width="166" height="264" rx="18" fill="#0F1B2D" opacity=".10" transform="translate(5 6)"/>
+<rect x="26" y="24" width="166" height="264" rx="18" fill="#fff" stroke="#0F1B2D" stroke-width="3"/>
+<text x="109" y="54" text-anchor="middle" font-family="Bricolage Grotesque,system-ui,sans-serif" font-weight="800" font-size="22" fill="#0F1B2D">kTown</text>
+<text x="109" y="70" text-anchor="middle" font-family="Figtree,system-ui,sans-serif" font-weight="700" font-size="9.5" letter-spacing="1.1" fill="#A84D08">BITCOIN ACCEPTED HERE</text>
+
+<!-- Orange-framed QR -->
+<rect x="42" y="80" width="134" height="134" rx="12" fill="#fff" stroke="#F7931A" stroke-width="4"/>
+<path d="M104 90h6v6h-6zM92 96h6v6h-6zM104 96h6v6h-6zM110 96h6v6h-6zM86 102h6v6h-6zM92 102h6v6h-6zM104 102h6v6h-6zM110 102h6v6h-6zM92 108h6v6h-6zM98 108h6v6h-6zM104 108h6v6h-6zM110 108h6v6h-6zM86 114h6v6h-6zM104 114h6v6h-6zM86 120h6v6h-6zM104 120h6v6h-6zM50 132h6v6h-6zM56 132h6v6h-6zM68 132h6v6h-6zM80 132h6v6h-6zM92 132h6v6h-6zM104 132h6v6h-6zM116 132h6v6h-6zM128 132h6v6h-6zM140 132h6v6h-6zM152 132h6v6h-6zM56 138h6v6h-6zM68 138h6v6h-6zM74 138h6v6h-6zM134 138h6v6h-6zM146 138h6v6h-6zM158 138h6v6h-6zM50 144h6v6h-6zM62 144h6v6h-6zM74 144h6v6h-6zM134 144h6v6h-6zM146 144h6v6h-6zM158 144h6v6h-6zM50 150h6v6h-6zM62 150h6v6h-6zM74 150h6v6h-6zM140 150h6v6h-6zM152 150h6v6h-6zM92 162h6v6h-6zM104 162h6v6h-6zM110 162h6v6h-6zM152 162h6v6h-6zM92 168h6v6h-6zM104 168h6v6h-6zM116 168h6v6h-6zM128 168h6v6h-6zM140 168h6v6h-6zM152 168h6v6h-6zM104 174h6v6h-6zM128 174h6v6h-6zM146 174h6v6h-6zM152 174h6v6h-6zM92 180h6v6h-6zM98 180h6v6h-6zM134 180h6v6h-6zM152 180h6v6h-6zM158 180h6v6h-6zM92 186h6v6h-6zM104 186h6v6h-6zM116 186h6v6h-6zM128 186h6v6h-6zM152 186h6v6h-6zM92 192h6v6h-6zM110 192h6v6h-6zM134 192h6v6h-6zM146 192h6v6h-6zM158 192h6v6h-6zM98 198h6v6h-6zM110 198h6v6h-6zM122 198h6v6h-6zM146 198h6v6h-6z" fill="#0F1B2D"/>
+<rect x="52" y="90" width="28" height="28" rx="4" fill="none" stroke="#0F1B2D" stroke-width="5"/>
+<rect x="59" y="97" width="14" height="14" rx="2" fill="#0F1B2D"/>
+<rect x="138" y="90" width="28" height="28" rx="4" fill="none" stroke="#0F1B2D" stroke-width="5"/>
+<rect x="145" y="97" width="14" height="14" rx="2" fill="#0F1B2D"/>
+<rect x="52" y="176" width="28" height="28" rx="4" fill="none" stroke="#0F1B2D" stroke-width="5"/>
+<rect x="59" y="183" width="14" height="14" rx="2" fill="#0F1B2D"/>
+<!-- Center badge -->
+<rect x="92" y="137" width="34" height="20" rx="5" fill="#fff" stroke="#F7931A" stroke-width="2"/>
+<text x="109" y="151" text-anchor="middle" font-family="Bricolage Grotesque,system-ui,sans-serif" font-weight="800" font-size="12" fill="#0F1B2D">₿</text>
+
+<!-- Bottom orange scan band -->
+<rect x="38" y="230" width="142" height="42" rx="12" fill="url(#band)"/>
+<text x="109" y="250" text-anchor="middle" font-family="Bricolage Grotesque,system-ui,sans-serif" font-weight="800" font-size="14" fill="#0F1B2D">SCAN TO PAY</text>
+<text x="109" y="264" text-anchor="middle" font-family="Figtree,system-ui,sans-serif" font-weight="600" font-size="9.5" fill="#0F1B2D">Any Lightning wallet</text>
+
+<!-- Flow connector -->
+<path d="M198 118 C210 118, 212 118, 222 118" stroke="#0F1B2D" stroke-width="2.5" stroke-dasharray="4 3" fill="none"/>
+<polygon points="229,118 220,113 220,123" fill="#0F1B2D"/>
+
+<!-- Right column: Step 1 Customer pays -->
+<rect x="234" y="34" width="142" height="92" rx="14" fill="#0F1B2D"/>
+<rect x="246" y="46" width="84" height="18" rx="9" fill="#F7931A" opacity=".2"/>
+<text x="254" y="59" font-family="Figtree,system-ui,sans-serif" font-weight="700" font-size="9.5" fill="#FFB24C">1 · CUSTOMER</text>
+<text x="246" y="84" font-family="Bricolage Grotesque,system-ui,sans-serif" font-weight="800" font-size="17" fill="#fff">Pays in sats</text>
+<text x="246" y="102" font-family="Figtree,system-ui,sans-serif" font-size="11.5" fill="#C9D3DF">Checks KES on screen.</text>
+<text x="246" y="116" font-family="Figtree,system-ui,sans-serif" font-size="11.5" fill="#C9D3DF">Confirms in seconds.</text>
+
+<!-- Arrow down -->
+<line x1="305" y1="130" x2="305" y2="152" stroke="#0B7A5F" stroke-width="2.5"/>
+<polygon points="305,158 300,149 310,149" fill="#0B7A5F"/>
+
+<!-- Right column: Step 2 Shop receives M-Pesa -->
+<rect x="234" y="162" width="142" height="120" rx="14" fill="#fff" stroke="#0B7A5F" stroke-width="2.5"/>
+<rect x="246" y="174" width="102" height="18" rx="9" fill="#E3F5EE"/>
+<text x="254" y="187" font-family="Figtree,system-ui,sans-serif" font-weight="700" font-size="9.5" fill="#0B7A5F">2 · SHOP M-PESA</text>
+<text x="246" y="213" font-family="Bricolage Grotesque,system-ui,sans-serif" font-weight="800" font-size="18" fill="#0F1B2D">KES received</text>
+<text x="246" y="232" font-family="Figtree,system-ui,sans-serif" font-weight="600" font-size="11.5" fill="#0B7A5F">100% of shop price</text>
+<line x1="246" y1="244" x2="364" y2="244" stroke="#E2E8F0" stroke-width="1.5"/>
+<text x="246" y="261" font-family="Figtree,system-ui,sans-serif" font-size="10.5" fill="#4B5A70">Zero hardware needed.</text>
+<text x="246" y="274" font-family="Figtree,system-ui,sans-serif" font-size="10.5" fill="#4B5A70">kTown holds nothing.</text>
 </svg>
