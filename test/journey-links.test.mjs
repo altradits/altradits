@@ -13,8 +13,9 @@ const html = fs.readFileSync(path.join(ROOT, "journey.html"), "utf8");
 const links = [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)].map((m) => {
   const href = (m[1].match(/href="([^"]*)"/) || [])[1] || "";
   const label = m[1].match(/aria-label="([^"]*)"/);
-  const text = m[2].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
-  return { href, name: label ? label[1] : text };
+  // Every link with nested markup carries an aria-label; the rest are plain
+  // text. Anything else fails loudly as an empty name below.
+  return { href, name: label ? label[1] : (m[2].includes("<") ? "" : m[2].trim()) };
 });
 
 test("the wallet link names the app, not the bare word", () => {
