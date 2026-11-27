@@ -15,8 +15,21 @@ test("the guide promises only phone-number cash-out", () => {
   assert.doesNotMatch(guide, /cash out to any M-Pesa number or till/, "tills are never promised");
 });
 
+test("no public page promises till payouts", () => {
+  for (const f of ["wallet-guide.html", "index.html", "friends.html"]) {
+    const html = read(f);
+    assert.doesNotMatch(html, /M-Pesa number or till/, `${f}: no till payout promise`);
+    assert.doesNotMatch(html, /phone number or till/, `${f}: no till payout promise`);
+  }
+  assert.ok(read("index.html").includes("cash out to any M-Pesa number,"), "index featureList names numbers");
+  assert.ok(read("friends.html").includes("Any Safaricom M-Pesa number"), "friends Tando copy names numbers");
+});
+
 test("the wallet docs quote the real buy caps", () => {
   assert.match(read("docs/yebente.md"), /10 to 5,000 KES per payment, 10,000 daily/, "per-payment and daily caps separated");
+  const yw = read("lib/ywallet.js");
+  assert.match(yw, /YEBENTE_BUY_MAX_KES", 5_000/, "code: per-payment buy cap defaults to 5,000 KES");
+  assert.match(yw, /YEBENTE_DAILY_BUY_KES", 10_000/, "code: daily buy cap defaults to 10,000 KES");
 });
 
 test("the kTown docs carry no stale pilot size", () => {
