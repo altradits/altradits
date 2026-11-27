@@ -113,7 +113,7 @@ test("T6: the 13 generic alts now name their own page", () => {
     const title = html.match(/<title>(.*?)<\/title>/)[1].split(" \u00b7 ")[0];
     const alt = html.match(/<meta property="og:image:alt" content="([^"]*)">/)[1];
     assert.ok(title.split(" ")[0].length > 0 && alt.length > 2, `${f}: alt present`);
-    assert.ok(alt.includes(title.split(" ")[0].replace("\u20bf", "\u20bf")) || alt === title || title.includes(alt.split(" ")[0]), `${f}: alt names its page (${alt})`);
+    assert.ok(alt.includes(title.split(" ")[0]) || alt === title || title.includes(alt.split(" ")[0]), `${f}: alt names its page (${alt})`);
   }
 });
 

@@ -74,8 +74,9 @@ test("T4: CITATION.cff cites traced values only", () => {
   assert.match(cff, /^version: 0\.1\.0$/m);
   assert.equal(pkg.version, "0.1.0", "version matches package.json");
   assert.ok(cff.includes("Thuita") && cff.includes("Stanley Chege"), "author named");
-  assert.ok(cff.includes("MIT") && cff.includes("https://github.com/altradits/altradits")
-    && cff.includes("https://altradits.com"), "license, repo, site traced");
+  assert.match(cff, /^license: MIT$/m, "license traced");
+  assert.match(cff, /^repository-code: https:\/\/github\.com\/altradits\/altradits$/m, "repo traced");
+  assert.match(cff, /^url: https:\/\/altradits\.com$/m, "site traced");
   assert.match(cff, /^date-released: 2026-11-27$/m, "owner-decided release date");
   assert.match(cff, /^\s+orcid: https:\/\/orcid\.org\/0009-0001-1828-4852$/m, "owner-verified ORCID");
   assert.match(cff, /^\s+email: altradits@gmail\.com$/m, "owner-confirmed contact");
