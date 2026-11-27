@@ -28,12 +28,12 @@ test("saved words fill the form again on load", () => {
 });
 
 test("resume rechecks with the server before Send ever opens", () => {
-  assert.match(html, /fetch\("\/api\/contact\?hash=" \+ draft\.quote\.hash\)/, "contact.html: resume asks the server");
-  assert.match(html, /paid = \(await \(await fetch\("\/api\/contact\?hash=" \+ draft\.quote\.hash\)\)\.json\(\)\)\.paid === true/,
+  assert.match(html, /fetch\("\/api\/contact\?hash=" \+ encodeURIComponent\(draft\.quote\.hash\)\)/, "contact.html: resume asks the server with an encoded hash");
+  assert.match(html, /paid = \(await \(await fetch\("\/api\/contact\?hash=" \+ encodeURIComponent\(draft\.quote\.hash\)\)\)\.json\(\)\)\.paid === true/,
     "contact.html: only a fresh paid=true counts");
   assert.match(html, /if \(paid\) \{ quote = draft\.quote; showSend\(\); return; \}/, "contact.html: paid returns to Send");
-  assert.match(html, /if \(Date\.parse\(draft\.quote\.expiresAt\) >= Date\.now\(\)\) \{ quote = draft\.quote; showPay\(quote\); startPoll\(\); return; \}/,
-    "contact.html: a fresh quote returns to Pay with the wait restarted");
+  assert.match(html, /if \(Date\.parse\(draft\.quote\.expiresAt\) >= Date\.now\(\)\) \{\n        if \(typeof draft\.quote\.qr !== "string" \|\| typeof draft\.quote\.bolt11 !== "string"\) \{ saveDraft\(\{ fields \}\); return; \}\n        quote = draft\.quote; showPay\(quote\); startPoll\(\); return;\n      \}/,
+    "contact.html: a fresh sound quote returns to Pay with the wait restarted");
 });
 
 test("an expired quote falls back to step 1 with words kept", () => {
@@ -47,6 +47,21 @@ test("stored invoice data never becomes page markup or a raw link", () => {
   assert.match(html, /pic\.src = "data:image\/svg\+xml," \+ encodeURIComponent\(svg\)/, "contact.html: the picture source is encoded");
   assert.match(html, /\$\("#open"\)\.href = "lightning:" \+ encodeURIComponent\(q\.bolt11\)/, "contact.html: the wallet link is encoded");
   assert.match(html, /\.qr img\{display:block;width:100%;height:auto\}/, "contact.html: the picture fills the QR box");
+});
+
+test("an in-flight resume never hijacks an active submit", () => {
+  assert.match(html, /let poll = null, quote = null, fields = null, resumed = true;/, "contact.html: resume starts armed");
+  assert.match(html, /e\.preventDefault\(\); resumed = false;/, "contact.html: submitting disarms it");
+  assert.match(html, /clearInterval\(poll\); resumed = false; quote = null;/, "contact.html: going back disarms it");
+  assert.match(html, /\} catch \{\}\n      if \(!resumed\) return;\n      fields = readFields\(\);/,
+    "contact.html: a late resume aborts, and edits typed meanwhile are kept");
+});
+
+test("the saved hash and quote are validated before use", () => {
+  assert.match(html, /\/\^\[0-9a-f\]\{64\}\$\/i\.test\(draft\.quote\.hash\)/, "contact.html: the saved hash must look like a hash");
+  assert.match(html, /fetch\("\/api\/contact\?hash=" \+ encodeURIComponent\(quote\.hash\)\)/, "contact.html: the wait loop encodes its hash too");
+  assert.match(html, /typeof draft\.quote\.qr !== "string" \|\| typeof draft\.quote\.bolt11 !== "string"\) \{ saveDraft\(\{ fields \}\); return; \}/,
+    "contact.html: a corrupt quote is dropped instead of rendered");
 });
 
 test("going back keeps the live quote stashed, never mints from the draft", () => {

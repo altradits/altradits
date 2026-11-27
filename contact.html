@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-YZJedBkfPIV4xz/X7ioe/uP/wzMN4PeGxiTUB4npa7w='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-o34vLbneq0vq8Vps2fmSKNcxNKQtpE/5QzQH+mBWBZk='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/contact">
 <title>Write to the team · Altradits</title>
@@ -149,7 +149,7 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
 <script>
 (() => {
   const $ = (s) => document.querySelector(s);
-  let poll = null, quote = null, fields = null;
+  let poll = null, quote = null, fields = null, resumed = true;
   // A refresh or a closed tab must not strand a paid visitor. The draft
   // (typed words plus the live quote) lives in this browser only; the server
   // still stores nothing until the message is sent.
@@ -184,7 +184,7 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
     poll = setInterval(async () => {
       if (Date.parse(quote.expiresAt) < Date.now()) { clearInterval(poll); $("#state").textContent = "This invoice expired. Go back and start again."; return; }
       try {
-        const s = await (await fetch("/api/contact?hash=" + quote.hash)).json();
+        const s = await (await fetch("/api/contact?hash=" + encodeURIComponent(quote.hash))).json();
         if (s.paid) { clearInterval(poll); showSend(); }
       } catch {}
     }, 4000);
@@ -201,19 +201,24 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
   // Resume rechecks the saved quote with the server first: paid returns to
   // Send, fresh returns to Pay, expired returns to the kept words. Send never
   // opens on a stored claim alone.
-  if (draft?.quote?.hash && draft?.fields) {
+  if (draft?.quote?.hash && /^[0-9a-f]{64}$/i.test(draft.quote.hash) && draft?.fields) {
     (async () => {
       fields = draft.fields;
       let paid = false;
-      try { paid = (await (await fetch("/api/contact?hash=" + draft.quote.hash)).json()).paid === true; } catch {}
+      try { paid = (await (await fetch("/api/contact?hash=" + encodeURIComponent(draft.quote.hash))).json()).paid === true; } catch {}
+      if (!resumed) return;
+      fields = readFields();
       if (paid) { quote = draft.quote; showSend(); return; }
-      if (Date.parse(draft.quote.expiresAt) >= Date.now()) { quote = draft.quote; showPay(quote); startPoll(); return; }
+      if (Date.parse(draft.quote.expiresAt) >= Date.now()) {
+        if (typeof draft.quote.qr !== "string" || typeof draft.quote.bolt11 !== "string") { saveDraft({ fields }); return; }
+        quote = draft.quote; showPay(quote); startPoll(); return;
+      }
       saveDraft({ fields });
       $("#err").textContent = "Your last invoice expired. Check your words and continue when ready.";
     })();
   } else if (draft?.quote) { saveDraft({ fields: draft.fields || null }); }
   $("#msgForm").addEventListener("submit", async (e) => {
-    e.preventDefault(); $("#err").textContent = "";
+    e.preventDefault(); resumed = false; $("#err").textContent = "";
     fields = readFields();
     if (!fields.name || !fields.email || fields.message.length < 10) { $("#err").textContent = "Fill in your name, email and a message of at least 10 characters."; return; }
     $("#toPay").disabled = true;
@@ -226,7 +231,7 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
     showPay(r); startPoll();
   });
   $("#copy").addEventListener("click", () => navigator.clipboard?.writeText($("#bolt").value).then(() => { $("#copy").textContent = "Copied"; }));
-  $("#backToWrite").addEventListener("click", () => { clearInterval(poll); quote = null; $("#stepPay").hidden = true; $("#stepWrite").hidden = false; stashWords(); $("#toPay").disabled = false; $("#err").textContent = ""; });
+  $("#backToWrite").addEventListener("click", () => { clearInterval(poll); resumed = false; quote = null; $("#stepPay").hidden = true; $("#stepWrite").hidden = false; stashWords(); $("#toPay").disabled = false; $("#err").textContent = ""; });
   async function sendMessage(confirmed) {
     $("#err2").textContent = ""; $("#typoBtn").hidden = true; $("#sendBtn").disabled = true;
     let r;
