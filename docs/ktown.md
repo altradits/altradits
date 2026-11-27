@@ -129,7 +129,7 @@ Before KTOWN=on for the 10-shop pilot, these guard the first strangers:
   a full pilot still lets it through. Health answers { ok, on, full }
   only: never the count.
 
-## Pilot fixes (20 shops)
+## Pilot fixes
 
 - Direct wallet payments are confirmed by the shop's own app. A wallet that
   pays the printed QR's LNURL never opens the pay page, so nothing else asks

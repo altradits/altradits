@@ -23,6 +23,6 @@ test("the receipt link names its real host", () => {
 });
 
 test("the worker cache is bumped in source and bundle", () => {
-  assert.match(read("yebente/public/sw.js"), /const CACHE = "yebente-v4"/, "worker source carries v4, past main");
-  assert.match(read("yebente/app/sw.js"), /const CACHE = "yebente-v4"/, "built bundle carries v4");
+  assert.match(read("yebente/public/sw.js"), /const CACHE = "yebente-v6"/, "worker source carries v6, past main and the open v5 lane");
+  assert.match(read("yebente/app/sw.js"), /const CACHE = "yebente-v6"/, "built bundle carries v6");
 });

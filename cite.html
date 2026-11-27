@@ -6,7 +6,7 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-cPn4t/dQ9thFKY+Zn50KWAJXWV6pUo9xk5sgQZDdD/Y='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-zScyy60mhXxTPcYcnPwLChzwtvT7yZlZLi0z+Asf9ws='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <meta name="theme-color" content="#EEF2F6">
 <link rel="canonical" href="https://altradits.com/cite">
@@ -160,9 +160,10 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
   b.addEventListener("click",function(){
     var t=document.getElementById("credit").textContent;
     function done(){b.textContent="Copied";setTimeout(function(){b.textContent="Copy credit line";},1500);}
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,function(){});return;}
+    function failed(){b.textContent="Copy failed: select the text";setTimeout(function(){b.textContent="Copy credit line";},1500);}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,failed);return;}
     var ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();
-    try{document.execCommand("copy");done();}catch(e){}
+    var ok=false;try{ok=document.execCommand("copy");}catch(e){}if(ok){done();}else{failed();}
     ta.remove();
   });
 })();

@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-1/fPY7DKI4d1NTJP6nyWhpj0tm3WdqQCAU27iaeAeA8='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-Oc5fbz39y9DU4B45mE88HAjO0bCLy6j7UffJb6Q2eLI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/donate">
 <title>Support Stanley's open-source Bitcoin work · Altradits</title>
@@ -79,6 +79,7 @@ textarea{font:12px ui-monospace,Menlo,monospace}
 .qr{max-width:17rem;margin:1rem 0 .5rem}.qr svg{display:block;width:100%;height:auto}
 .addr{font-family:ui-monospace,Menlo,monospace;overflow-wrap:anywhere}
 .err{color:#B42318}
+#copy:disabled,#open[aria-disabled]{opacity:.55}
 .topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
 .topnav a.launch:hover{color:var(--ink);background:#ffa94d}
 </style>
@@ -135,6 +136,8 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
 (() => {
   const $ = (s) => document.querySelector(s);
   let poll = null;
+  function quietActions() { $("#copy").disabled = true; $("#open").removeAttribute("href"); $("#open").setAttribute("aria-disabled", "true"); }
+  function clearInvoice() { $("#qr").innerHTML = ""; $("#bolt").value = ""; $("#open").removeAttribute("href"); $("#open").removeAttribute("aria-disabled"); $("#copy").disabled = false; $("#copy").textContent = "Copy invoice"; }
   $("#amts").addEventListener("click", (e) => { const s = e.target.closest("[data-s]")?.dataset.s; if (s) $("#sats").value = s; });
   async function fallback() {
     try { const r = await (await fetch("/api/tip")).json(); $("#fbqr").innerHTML = r.qr; $("#fbaddr").textContent = r.address; $("#fallback").hidden = false; } catch {}
@@ -146,15 +149,19 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
     catch { $("#err").textContent = "No connection. Try again."; return; }
     if (r.error) { $("#err").textContent = r.error; if (r.offline) fallback(); return; }
     $("#qr").innerHTML = r.qr; $("#bolt").value = r.bolt11; $("#open").href = "lightning:" + r.bolt11;
+    $("#open").removeAttribute("aria-disabled"); $("#copy").disabled = false;
     $("#invoice").hidden = false; $("#again").hidden = true; $("#copy").textContent = "Copy invoice"; $("#state").textContent = "Waiting for payment…";
     clearInterval(poll);
     poll = setInterval(async () => {
-      if (Date.parse(r.expiresAt) < Date.now()) { clearInterval(poll); $("#state").textContent = "This invoice expired. Make a new one."; $("#again").hidden = false; return; }
-      try { const s = await (await fetch("/api/tip?hash=" + r.hash)).json(); if (s.paid) { clearInterval(poll); $("#state").textContent = "Received. Thank you ⚡"; $("#again").hidden = false; } } catch {}
+      if (Date.parse(r.expiresAt) < Date.now()) { clearInterval(poll); $("#state").textContent = "This invoice expired. Make a new one."; $("#again").hidden = false; quietActions(); $("#again").focus(); return; }
+      try { const s = await (await fetch("/api/tip?hash=" + r.hash)).json(); if (s.paid) { clearInterval(poll); $("#state").textContent = "Received. Thank you ⚡"; $("#again").hidden = false; quietActions(); $("#again").focus(); } } catch {}
     }, 4000);
   });
-  $("#copy").addEventListener("click", () => navigator.clipboard?.writeText($("#bolt").value).then(() => { $("#copy").textContent = "Copied"; }));
-  $("#again").addEventListener("click", () => { $("#invoice").hidden = true; $("#again").hidden = true; $("#sats").focus(); });
+  $("#copy").addEventListener("click", () => {
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText($("#bolt").value).then(() => { $("#copy").textContent = "Copied"; }, () => { $("#copy").textContent = "Copy failed"; });
+    else $("#copy").textContent = "Copy failed";
+  });
+  $("#again").addEventListener("click", () => { clearInterval(poll); $("#invoice").hidden = true; $("#again").hidden = true; clearInvoice(); $("#sats").focus(); });
 })();
 </script>
 </body>
