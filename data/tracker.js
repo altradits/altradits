@@ -43,11 +43,16 @@ export const TRACK = [
   { repo: "BitcoinDesign/Guide", name: "Bitcoin Design Guide", logo: "bitcoin-design",
     guide: "https://github.com/BitcoinDesign/Guide/blob/master/CONTRIBUTING.md", start: "https://github.com/BitcoinDesign/Guide/pulls",
     challenge: "Review an open change from the view of a first-time wallet user in Kenya, and suggest one clear improvement." },
+  { repo: "bitdevsksm/bitdevsksm.org", name: "BitDevs Kisumu", logo: "bitdevs-kisumu",
+    guide: "https://github.com/bitdevsksm/bitdevsksm.org/blob/main/README.md", start: "https://github.com/bitdevsksm/bitdevsksm.org/issues",
+    challenge: "Run the Jekyll site locally. Fix one small thing on a page, or write up a meetup post, and open a pull request." },
 ];
 
 // Where Stanley has already contributed: shown as proof of where the ladder leads.
 export const DONE = [
   { repo: "minmoto/payment-channels", name: "Minmo: payment-channels", logo: "minmo", note: "Ethiopia's Telebirr channel and African cash-corridor schemas, for Minmo (led by Jodom)." },
+  { repo: "bitcoinkisumu/bitcoin-kisumu", name: "Bitcoin Kisumu", logo: "bitcoin-kisumu", note: "Bitcoin education for Kisumu: merged content, UI and API work (Kiswahili playbook, field kit, BIP-380 checks)." },
+  { repo: "bitdevsksm/pacho-exchange", name: "Pacho Exchange", note: "Exchange engineering: merged runbooks, AML export, STK option and till payouts." },
 ];
 
 export const STEPS = [
