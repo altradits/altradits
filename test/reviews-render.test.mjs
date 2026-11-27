@@ -19,6 +19,8 @@ test("five first, the rest behind a button, hash links expand", () => {
 
 test("terminals mount after every paint, never twice", () => {
   assert.match(html, /const mountAll = \(\) =>/);
+  assert.ok(html.indexOf("const mountAll = () =>") < html.indexOf("const expandReviews = () =>"), "mountAll is initialized before expandReviews can run on a hash deep-link");
+  assert.match(html, /getElementById\(location\.hash\.slice\(1\)\)/, "hash lookup uses getElementById instead of querySelector");
   assert.match(html, /querySelector\(`\[data-pract="\$\{t\._k\}"\]:empty`\)/);
   assert.match(html, /expandReviews = \(\) => \{ paintReviews\(T\.reviews\); mountAll\(\);/);
 });
