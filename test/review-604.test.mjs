@@ -12,7 +12,7 @@ const pilotCss = home.slice(home.indexOf(".pilot{"), home.indexOf(".steps{"));
 
 test("1. desktop grid: two columns at 860px, narrow heading, full-width rows", () => {
   assert.ok(pilotCss.includes("@media (min-width:860px){.pilot{display:grid;grid-template-columns:.78fr 1.22fr"), "pilot goes .78fr/1.22fr at 860px");
-  assert.ok(pilotCss.includes(".pilot h2{margin:0 0 clamp(2rem,4.5vw,3rem);max-width:13ch;font-size:clamp(1.9rem,3.8vw,2.65rem);line-height:1.08;text-wrap:balance}"), "heading holds 13ch at display scale");
+  assert.ok(pilotCss.includes(".pilot h2{margin:0;max-width:13ch;font-size:clamp(1.9rem,3.8vw,2.65rem);line-height:1.08;text-wrap:balance}"), "heading holds 13ch at display scale");
   assert.ok(pilotCss.includes(".pilot ol{list-style:none;margin:0;padding:0;max-width:none}"), "rows span the right column");
 });
 
@@ -54,7 +54,8 @@ test("6. finish: breathing hover, sticky rail with quiet link", () => {
   assert.ok(pilotCss.includes("padding:clamp(1.4rem,3vw,1.9rem) .75rem;margin:0 -.75rem"), "hover surface breathes past the numerals");
   assert.ok(home.includes('<div class="pilot-head">'), "heading and link share a rail");
   assert.ok(home.includes('<a class="pilot-link" href="/ktown">Join the pilot'), "the rail ends in one quiet link");
-  assert.ok(pilotCss.includes(".pilot-head{position:sticky;top:5.5rem}"), "the rail sticks on desktop");
+  assert.ok(pilotCss.includes(".pilot-head{margin:0 0 clamp(1.75rem,4vw,2.5rem)}"), "the rail breathes before row 01 on mobile");
+  assert.ok(pilotCss.includes(".pilot-head{position:sticky;top:5.5rem;margin:0}"), "the rail sticks marginless on desktop");
   assert.ok(pilotCss.includes(".pilot-link:hover{text-decoration:underline}"), "the link answers hover plainly");
 });
 
