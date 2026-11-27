@@ -66,9 +66,11 @@ test("desktop gets an editorial grid, the section opens with a rule", () => {
 });
 
 test("row hover lives inside the reduced-motion guard only", () => {
-  const guard = (home.match(/@media \(prefers-reduced-motion:no-preference\)\{.*/) || [""])[0];
+  const guards = [...home.matchAll(/@media \(prefers-reduced-motion:no-preference\)\{.*/g)].map((m) => m[0]);
+  const guard = guards.join("\n");
   assert.ok(guard.includes(".names-row:hover"), "row hover in the motion-allowed block");
-  const outside = home.replace(guard, "");
+  let outside = home;
+  for (const g of guards) outside = outside.replace(g, "");
   assert.ok(!outside.includes(".names-row:hover"), "no row hover outside the guard");
 });
 
@@ -79,7 +81,8 @@ test("rail matches the page spine, mobile links fill the touch target", () => {
   );
   assert.ok(home.includes(".names-link a{display:inline-block;padding:.45rem 0"), "mobile links fill the tap target");
   assert.ok(home.includes(".names-link a{padding:0}"), "padding resets on desktop rows");
-  const guard = (home.match(/@media \(prefers-reduced-motion:no-preference\)\{.*/) || [""])[0];
+  const guards = [...home.matchAll(/@media \(prefers-reduced-motion:no-preference\)\{.*/g)].map((m) => m[0]);
+  const guard = guards.join("\n");
   assert.ok(guard.includes(".names-link a:hover{color:var(--ink)}"), "link hover matches in the motion-allowed block");
 });
 
