@@ -1,4 +1,4 @@
-// SEO mechanical fixes (T1-T12): sitemap, canonicals, social tags, alts,
+// SEO mechanical fixes (T1-T13): sitemap, canonicals, social tags, alts,
 // single h1, dashboard noindex, WebPage data and internal links.
 // Run: node --test test/seo-fixes.test.mjs
 import { test } from "node:test";
@@ -44,6 +44,11 @@ const LOC2FILE = {
   "https://altradits.com/bitcoin-core-checklist": "bitcoin-core-checklist.html",
   "https://altradits.com/lnd-review-guide": "lnd-review-guide.html",
   "https://altradits.com/whitepaper-companion": "whitepaper-companion.html",
+  "https://altradits.com/lightning-node": "lightning-node.html",
+  "https://altradits.com/buy-bitcoin": "buy-bitcoin.html",
+  "https://altradits.com/send-to-kenya": "send-to-kenya.html",
+  "https://altradits.com/lightning": "lightning.html",
+  "https://altradits.com/merchant-licensing": "merchant-licensing.html",
 };
 
 test("T1: sitemap lists ktown/terms, omits dashboard, dates match mtimes", () => {
@@ -169,4 +174,12 @@ test("T12: wallet-guide and bitcoin FAQ data match visible text", () => {
     const html = read(f);
     assert.ok(html.includes('"@type":"FAQPage"'), `${f}: FAQPage present`);
   }
+});
+
+test("T13: ktown/terms keeps both language h1s with lang scoping", () => {
+  const html = read("ktown/terms.html");
+  assert.equal((html.match(/<h1/g) || []).length, 2, "terms keeps two h1s");
+  assert.ok(html.includes("<h1>Merchant terms (pilot)</h1>"), "English h1 kept");
+  const sw = html.match(/<section lang="sw">[\s\S]*?<\/section>/)[0];
+  assert.ok(sw.includes("<h1>Masharti ya mfanyabiashara (majaribio)</h1>"), "Kiswahili h1 scoped to lang=sw");
 });

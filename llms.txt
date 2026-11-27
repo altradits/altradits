@@ -21,6 +21,11 @@ Code: https://github.com/altradits/altradits (MIT)
 - Bitcoin basics and principles: https://altradits.com/bitcoin
 - Whitepaper companion, in plain words plus Kiswahili: https://altradits.com/whitepaper-companion
 - Projects to follow: https://altradits.com/players
+- Run a Lightning node (LND): https://altradits.com/lightning-node
+- Buy bitcoin with M-Pesa: https://altradits.com/buy-bitcoin
+- Send money to Kenya: https://altradits.com/send-to-kenya
+- Lightning in plain words: https://altradits.com/lightning
+- Shop licensing questions: https://altradits.com/merchant-licensing
 
 ## Open source
 

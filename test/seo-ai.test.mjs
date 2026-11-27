@@ -15,15 +15,17 @@ const LIFTED = ["library.html", "bitcoin-core.html", "bitcoin.html", "players.ht
   "tracker.html", "journey.html", "wallet-guide.html", "developer.html",
   "developer-reference.html", "donate.html",
   "research.html", "portfolio.html", "friends.html", "plan.html",
-  "kazi.html", "njia.html", "trivia.html"];
+  "kazi.html", "njia.html", "trivia.html", "contact.html"];
 const NEW = ["cite.html", "bitcoin-core-checklist.html", "lnd-review-guide.html",
-  "whitepaper-companion.html"];
+  "whitepaper-companion.html",
+  "lightning-node.html", "buy-bitcoin.html", "send-to-kenya.html", "lightning.html",
+  "merchant-licensing.html"];
 const ldBlocks = (html) => [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
   .map((m) => JSON.parse(m[1]));
 
 test("T1: public content pages are indexable, private shells stay noindex", () => {
   for (const f of LIFTED) assert.doesNotMatch(read(f), /noindex/, `${f}: lifted`);
-  for (const f of ["admin.html", "404.html", "receipt.html", "contact.html", "developer-dashboard.html"]) {
+  for (const f of ["admin.html", "404.html", "receipt.html", "developer-dashboard.html"]) {
     assert.match(read(f), /<meta name="robots" content="noindex">/, `${f}: still noindex`);
   }
   const robots = read("robots.txt");
