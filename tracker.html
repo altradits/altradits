@@ -6,10 +6,11 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-E+wQU48XCjF3Tj/ZDr/LjfqfMsLWpT4/raJU9RMYyNk='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-sQpKGgukFbxW6AsF7Dy+ipVkpHHewGkqONnfkf8OubM='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
+<script src="/assets/report.js" defer></script>
+<script src="/assets/practice.js" defer></script>
 <link rel="canonical" href="https://altradits.com/tracker">
 <title>Open-source tracker · Altradits</title>
 <meta name="description" content="Stanley's public open-source tracker: six Bitcoin and Lightning projects, one challenge each, solved without AI. Progress updates itself from GitHub.">
@@ -22,11 +23,13 @@
 <meta property="og:image" content="https://altradits.com/assets/social-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Ye₿ente wallet: send money anywhere, keep all of it">
+<meta property="og:image:alt" content="Stanley open-source tracker progress">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Open-source tracker · Altradits">
 <meta name="twitter:description" content="Stanley's public open-source tracker: six Bitcoin and Lightning projects, one challenge each, solved without AI. Progress updates itself from GitHub.">
 <meta name="twitter:image" content="https://altradits.com/assets/social-card.png">
+<meta name="twitter:image:alt" content="Stanley open-source tracker progress">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Open-source tracker", "url": "https://altradits.com/tracker"}</script>
 <style>
 /* Brand fonts, served from this site: Bricolage Grotesque and Figtree (SIL Open Font License 1.1, https://openfontlicense.org), latin and latin-ext (₿), variable weight */
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
@@ -63,7 +66,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .cards .links{display:flex;flex-wrap:wrap;gap:.4rem 1rem;margin-top:auto;padding-top:.3rem;font-weight:600}
 .tag{align-self:flex-start;font-size:.78rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em}
 .sitefoot{padding:1.5rem 0 2.5rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line);margin-top:3rem}
-.sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}
+.sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}.soc{color:var(--muted)}a.soc:hover{color:var(--ink)}.soc svg{width:20px;height:20px;vertical-align:-4px}
 .sitefoot .wp{margin:0 0 .6rem}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
@@ -159,6 +162,16 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .steps a{font-size:.85rem}
 .links{display:flex;flex-wrap:wrap;gap:.3rem 1rem;font-weight:600;margin-top:auto}
 .sm{font-size:.9rem}.muted{color:var(--muted)}
+blockquote{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1rem 1.2rem;margin:0 0 1rem;max-width:46rem}
+blockquote p{font:700 1.15rem/1.4 'Bricolage Grotesque',sans-serif;margin:0 0 .4rem}
+blockquote footer{color:var(--muted);font-size:.92rem}
+code{font:.9em ui-monospace,Menlo,monospace;background:rgba(15,27,45,.08);padding:.1rem .35rem;border-radius:.35rem}
+button{font:700 .95rem Figtree,sans-serif;min-height:2.75rem;padding:.5rem 1.1rem;border-radius:.6rem;border:2px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer}
+button:hover{background:rgba(15,27,45,.06)}
+button:disabled{opacity:.5;cursor:default}
+.practice{display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem}
+.practice input{font:1rem ui-monospace,Menlo,monospace;min-height:2.75rem;padding:.5rem .8rem;border:2px solid var(--ink);border-radius:.6rem;background:#fff;color:var(--ink);width:100%}
+.practice pre{background:#0e1626;color:#d7e3f4;padding:.8rem 1rem;border-radius:.6rem;overflow-x:auto;font:.85rem/1.5 ui-monospace,Menlo,monospace;margin:0}
 .banner{background:#FFF4E0;border:2px solid var(--btc);border-radius:.8rem;padding:.7rem 1rem;margin:0 0 1rem;max-width:46rem}
 .barline{height:.6rem;background:var(--paper);border:2px solid var(--line);border-radius:99px;overflow:hidden;margin:.4rem 0;max-width:46rem}
 .barline i{display:block;height:100%;background:var(--btc);border-radius:99px}
@@ -239,12 +252,49 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
   <h2>Where I've already contributed</h2>
   <ul class="proj" id="done"></ul>
 
+  <h2>Review log</h2>
+  <p class="intro">Every review I ran: what I tested, what I saw, and what happened to the change since. Status reads live from GitHub.</p>
+  <div class="links" id="sharePage"><span class="muted sm">Share this page:</span> <a href="https://x.com/intent/post?text=Stanley%27s%20open-source%20tracker&url=https%3A%2F%2Faltradits.com%2Ftracker&via=altradits">X</a> <a href="https://wa.me/?text=Stanley%27s%20open-source%20tracker%20via%20%40altradits%20https%3A%2F%2Faltradits.com%2Ftracker">WhatsApp</a> <a href="https://t.me/share/url?url=https%3A%2F%2Faltradits.com%2Ftracker&text=Stanley%27s%20open-source%20tracker">Telegram</a> <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Faltradits.com%2Ftracker">LinkedIn</a></div>
+  <ul class="proj" id="reviews"></ul>
+  <button type="button" class="more" id="moreReviews" hidden>Show every review</button>
+
+  <h2>Legend Billboard</h2>
+  <p class="intro">The contributors whose work is reviewed above. Generations change hands; Bitcoin keeps running. Start where I started: one review.</p>
+  <ul class="proj" id="billboard"></ul>
+
+  <h2>Journey</h2>
+  <p class="intro">From the first contribution to full time. Ranks count logged reviews on the six projects; merges follow the milestone chain above.</p>
+  <ul class="proj" id="journey"></ul>
+
+  <h2>In Remembrance</h2>
+  <p class="intro">Builders whose work outlived them. Every entry links its sources.</p>
+  <ul class="proj" id="remembered"></ul>
+
+  <h2>Free forever</h2>
+  <p class="intro">Everything here is free. Nothing is sold. Knowledge stays free.</p>
+  <blockquote>
+    <p>Information wants to be free.</p>
+    <footer>Stewart Brand, Hackers Conference, 1984. <a href="https://en.wikipedia.org/wiki/Information_wants_to_be_free">Source</a>.</footer>
+  </blockquote>
+  <blockquote>
+    <p lang="it">Il sapere non occupa spazio.</p>
+    <footer>An Italian proverb. Attribution checked: no source ties this line to Leonardo da Vinci.</footer>
+  </blockquote>
+  <blockquote>
+    <p lang="it">Ricorda: continua a esplorare e crescere.</p>
+    <footer>Stanley's line, polished from his own video. It means: knowledge takes no space. Remember: keep exploring and growing.</footer>
+  </blockquote>
+  <p>
+    <button type="button" id="sayQuote" hidden data-say="Il sapere non occupa spazio. Ricorda: continua a esplorare e crescere.">Hear it in a second voice</button>
+  </p>
+  <div class="links"><a href="https://www.tiktok.com/@5tan_lee/video/7435272500571032888">Watch Stanley say it</a><a href="/contact">Contact</a><a href="/donate">Donate</a></div>
+
   <p class="intro sm" id="updated"></p>
   <p class="intro sm">Follow along on <a href="https://github.com/altradits">GitHub</a>. Want to mentor or review? See <a href="/journey">my journey</a>.</p>
 
 </div>
 
-<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/ktown">Get kTown</a> · <a href="/ktown/terms">kTown terms</a> · <a href="/yebente">Ye₿ente wallet</a> · <a href="/wallet-guide">Ye₿ente guide</a> · <a href="/developer">Developer</a> · <a href="/contact">Contact</a> · <a href="https://github.com/altradits">GitHub</a> · <a href="https://www.linkedin.com/in/stanmobitech/">LinkedIn</a></div></footer>
+<footer class="sitefoot"><div class="wrap"><p class="wp">Built on the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin whitepaper</a>: <i>“A purely peer-to-peer version of electronic cash.”</i> Satoshi Nakamoto, 2008.</p>© Altradits · <a href="/ktown">Get kTown</a> · <a href="/ktown/terms">kTown terms</a> · <a href="/yebente">Ye₿ente wallet</a> · <a href="/wallet-guide">Ye₿ente guide</a> · <a href="/developer">Developer</a> · <a href="/contact">Contact</a> · <a class="soc" href="https://github.com/altradits" aria-label="GitHub profile"><svg aria-hidden="true" width="20" height="20" fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a> · <a class="soc" href="https://www.linkedin.com/in/stanmobitech/" aria-label="LinkedIn profile"><svg aria-hidden="true" width="20" height="20" fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a> · <a class="soc" href="https://x.com/altradits" aria-label="X profile"><svg aria-hidden="true" width="20" height="20" fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg></a> · <a class="soc" href="https://www.tiktok.com/@5tan_lee" aria-label="TikTok profile"><svg aria-hidden="true" width="20" height="20" fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a></div></footer>
 <script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY>24)},{passive:true});document.body.classList.toggle("scrolled",scrollY>24); // nav shadow on scroll
@@ -255,7 +305,15 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   let T;
   try { const r = await fetch("/api/tracker"); T = await r.json(); if (!r.ok) throw new Error(T.error); }
-  catch (e) { $("#today").innerHTML = `<p class="muted">${esc(e.message || "GitHub can't be reached right now.")}</p>`; return; }
+  catch (e) {
+    const msg = `<p class="muted">${esc(e.message || "GitHub can't be reached right now.")}</p>`;
+    $("#today").innerHTML = msg;
+    for (const id of ["reviews", "billboard", "journey", "remembered"]) {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `<li>${msg}</li>`;
+    }
+    return;
+  }
   const B = T.builder;
   if (B) {
     const res = (d) => (d.resources || []).map((r) => `<a href="${esc(r.url)}">${esc(r.label)}</a>`).join("");
@@ -339,6 +397,99 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
     <div class="links"><a href="https://github.com/${esc(p.repo)}">Repository</a>${p.guide ? `<a href="${esc(p.guide)}">Contributing guide</a>` : ""}${p.start ? `<a href="${esc(p.start)}">First tasks</a>` : ""}</div></li>`;
   $("#projects").innerHTML = T.projects.map((p) => card(p, true)).join("");
   $("#done").innerHTML = T.done.map((p) => card(p, false)).join("");
+  const PILL = { merged: "Merged", open: "Open", closed: "Closed", unknown: "Status unknown" };
+  const RKIND = { review: "Review", research: "Research" };
+  if (T.reviews) {
+    let ri = 0;
+    const rkey = () => `r${ri++}`;
+    const rid = (r) => `review-${String(r.repo).replace(/[^a-z0-9]+/gi, "-")}-${r.number}`;
+    const share = (r) => {
+      const u = encodeURIComponent(`https://altradits.com/tracker#${rid(r)}`);
+      const t = encodeURIComponent(`${r.title} (reviewed by @altradits)`);
+      return `<span class="muted sm">Share:</span> <a href="https://x.com/intent/post?text=${t}&url=${u}&via=altradits">X</a> <a href="https://wa.me/?text=${t}%20via%20%40altradits%20${u}">WhatsApp</a>`;
+    };
+    const ritem = (r, ri) => `<li id="${rid(r)}"><div class="who"><div><h3>${esc(RKIND[r.kind] || r.kind)}: ${esc(r.title)}</h3><small>${esc(r.repo)}#${r.number} · ${esc(r.date)}${r.commit ? ` · <code>${esc(r.commit)}</code>` : ""}</small> <span class="tag">${esc(PILL[r.status] || r.status)}</span></div></div>
+      <p><b>Claim under test:</b> ${esc(r.claim || "")}</p>
+      <p><b>Pain:</b> ${esc(r.pain || "")}</p>
+      <p><b>Before:</b> ${esc(r.before || "")} <b>After merge:</b> ${esc(r.after || "")}</p>
+      <p class="sm">Idea by <a href="https://github.com/${esc(r.author)}">@${esc(r.author)}</a>${r.mergedBy ? ` · Merged by <a href="https://github.com/${esc(r.mergedBy)}">@${esc(r.mergedBy)}</a>` : ""}</p>
+      <ul>${r.ran.map((t, ti) => { const k = rkey(); t._k = k; return `<li><code>${esc(t.run)}</code> <button type="button" data-copy="${ri}:${ti}" aria-label="Copy: ${esc(t.run)}" aria-live="polite">Copy</button><br><span>${esc(t.saw)}</span><br><small class="muted">Why: ${esc(t.why || "")}</small><div data-pract="${k}"></div></li>`; }).join("")}</ul>
+      <p>${esc(r.note || "")}</p>
+      <p class="sm"><b>Lesson:</b> ${esc(r.lesson || "")}</p>
+      ${r.followup ? `<p><b>Followup:</b> ${esc(r.followup)}</p>` : ""}
+      <div class="links"><a href="${esc(r.comment)}">My comment</a><a href="https://github.com/${esc(r.repo)}/${r.kind === "research" ? "issues" : "pull"}/${r.number}">On GitHub</a> ${share(r)}</div></li>`;
+    const paintReviews = (list) => { $("#reviews").innerHTML = list.map((r) => ritem(r, T.reviews.indexOf(r))).join(""); };
+    const mountAll = () => {
+      if (!window.PracticeTerminal) return;
+      for (const r of T.reviews) for (const t of r.ran) {
+        const el = document.querySelector(`[data-pract="${t._k}"]:empty`);
+        if (el) window.PracticeTerminal.mount(el, t);
+      }
+    };
+    paintReviews(T.reviews.slice(0, 5));
+    const expandReviews = () => { paintReviews(T.reviews); mountAll(); $("#moreReviews").hidden = true; };
+    if (T.reviews.length > 5) {
+      if (location.hash.startsWith("#review-")) { expandReviews(); const t = document.getElementById(location.hash.slice(1)); if (t && t.scrollIntoView) t.scrollIntoView(); }
+      else { $("#moreReviews").hidden = false; $("#moreReviews").onclick = expandReviews; }
+    }
+    mountAll();
+    const rlist = document.getElementById("reviews");
+    if (rlist) rlist.addEventListener("click", (e) => {
+      const b = e.target.closest ? e.target.closest("button[data-copy]") : null;
+      if (!b || !T.reviews) return;
+      const [ri, ti] = String(b.getAttribute("data-copy") || "").split(":").map(Number);
+      const t = T.reviews[ri] && T.reviews[ri].ran[ti];
+      if (!t) return;
+      const done = () => { b.textContent = "Copied"; setTimeout(() => { b.textContent = "Copy"; }, 1500); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.run).then(done, () => {});
+      else {
+        const ta = document.createElement("textarea");
+        ta.value = t.run;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); done(); } catch (_) {}
+        ta.remove();
+      }
+    });
+  }
+  const say = document.getElementById("sayQuote");
+  if (say && "speechSynthesis" in window) {
+    say.hidden = false;
+    say.addEventListener("click", () => {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(say.dataset.say || "");
+      u.lang = "it-IT";
+      speechSynthesis.speak(u);
+    });
+  }
+  const BB = T.billboard;
+  if (BB) {
+    const cards = BB.legends.map((l) => `<li><div class="who"><div><h3>${esc(l.name || `@${l.login}`)}</h3><small>${esc(l.project)} · ${l.reviews} review${l.reviews === 1 ? "" : "s"} · ${l.merged} merged</small></div></div>
+      <ul>${l.titles.map((t) => `<li><a href="${esc(t.anchor || t.url)}">${esc(t.title)}</a>` +
+        `<br><small class="muted">${esc(t.repo)}#${t.number}</small>` +
+        (t.lesson ? `<br><small>What I learned: ${esc(t.lesson)}</small>` : "") +
+        `<br><small><a href="${esc(t.url)}">My comment</a>` +
+        (t.pr ? ` \u00b7 <a href="${esc(t.pr)}">On GitHub</a>` : "") + `</small></li>`).join("")}</ul>
+      <div class="links"><a href="${esc(l.url)}">Connect: @${esc(l.login)}</a>${l.xUrl ? ` <a href="${esc(l.xUrl)}">Follow on X</a>` : ""}</div></li>`).join("");
+    const you = `<li><div class="who"><div><h3>Where I stand</h3><small>${BB.you.reviews} reviews logged · ${BB.you.authors} authors reviewed · ${BB.you.merged} merged after review</small></div></div>
+      <p>Your turn: every legend started with one review. Retype one above, run it on your own machine, post what you saw.</p>
+      <div class="links"><a href="https://github.com/lightningnetwork/lnd/pulls">Open LND PRs</a><a href="/plan">My six-month plan</a></div></li>`;
+    $("#billboard").innerHTML = cards + you;
+  }
+  const J = T.journey;
+  if (J) {
+    const d = (iso) => String(iso || "").slice(0, 10);
+    const first = (label, b) => b ? `<li><b>${esc(label)}:</b> <a href="${esc(b.url)}">${esc(b.title)}</a> <small class="muted">${esc(b.repo)}#${esc(String(b.number))} · ${esc(d(b.at))}</small></li>` : `<li><b>${esc(label)}:</b> <span class="muted">Not yet.</span></li>`;
+    const r = J.rank;
+    $("#journey").innerHTML = `<li><div class="who"><div><h3>${esc(r.title)}</h3><small>${r.reviews} reviews logged on the six projects</small></div></div>
+      <ul>${[["Genesis", J.genesis], ["First review", J.firstReview], ["First issue", J.firstIssue], ["First pull request", J.firstPr], ["First merge", J.firstMerge]].map(([l, b]) => first(l, b)).join("")}</ul>
+      <p>${r.next ? `Next: <b>${esc(r.next.title)}</b>, ${r.next.toGo} review${r.next.toGo === 1 ? "" : "s"} to go. ${esc(r.next.text)}` : "Top rank reached."}</p></li>`;
+  }
+  if (T.remembrance) {
+    $("#remembered").innerHTML = T.remembrance.map((m) => `<li><div class="who"><div><h3>${esc(m.name)} <small>${esc(m.years)}</small></h3><small>${esc(m.project)}</small></div></div>
+      <p>${esc(m.contribution)}</p>
+      <div class="links">${m.sources.map((x) => `<a href="${esc(x.url)}">${esc(x.label)}</a>`).join("")}</div></li>`).join("");
+  }
   $("#updated").textContent = `Read from GitHub ${new Date(T.updatedAt).toLocaleString()}${T.stale ? " (GitHub didn't answer just now; showing the last result)" : ""}. Refreshes every 30 minutes.`;
 })();
 </script>

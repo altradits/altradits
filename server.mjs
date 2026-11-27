@@ -36,7 +36,7 @@ if (!SERVER) {
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain", ".xml": "application/xml; charset=utf-8", ".woff2": "font/woff2", ".ttf": "font/ttf", ".webmanifest": "application/manifest+json", ".mp3": "audio/mpeg", ".pdf": "application/pdf", ".wasm": "application/wasm" };
 // Only these paths are ever served: never .git, .env, lib/, data files.
-const PUBLIC = /^\/(404\.html|index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|friends\.html|plan\.html|research\.html|portfolio\.html|donate\.html|bitcoin\.html|wallet\.html|wallet-guide\.html|kazi\.html|njia\.html|bitcoin-core\.html|contact\.html|receipt\.html|developer\.html|developer-reference\.html|developer-dashboard\.html|trivia\.html|robots\.txt|sitemap\.xml|llms\.txt|yebente\/app\/(?:index\.html|manifest\.webmanifest|sw\.js|assets\/[\w.-]+|fonts\/[\w.-]+|icons\/[\w.-]+)|address-check\/(?:index\.html|sw\.js)|touchtype\/(?:index\.html|js\/[\w.-]+\.js|css\/[\w.-]+\.css|sound\/[\w.-]+\.mp3)|opcode-circuit\/(?:index\.html|manifest\.webmanifest|sw\.js|style\.css|game\.js|engine\/[\w.-]+\.js|sim\/[\w.-]+\.js|content\/[\w.-]+\.js|icons\/[\w.-]+\.svg)|sats-safari\/(?:index\.html|i18n\/[\w.-]+\.json|[\w.-]+\.(?:js|css))|ktown\/(?:index\.html|pay\.html|terms\.html|manifest\.webmanifest|icons\/[\w.-]+\.(?:png|svg)|[\w.-]+\.(?:js|css))|assets\/[\w.-]+|assets\/marketing\/(?:(?:\d{4}-\d{2}|templates)\/)?[\w-][\w.-]*|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
+const PUBLIC = /^\/(404\.html|index\.html|admin\.html|journey\.html|library\.html|players\.html|tracker\.html|friends\.html|plan\.html|research\.html|portfolio\.html|donate\.html|bitcoin\.html|wallet\.html|wallet-guide\.html|kazi\.html|njia\.html|bitcoin-core\.html|contact\.html|receipt\.html|developer\.html|developer-reference\.html|developer-dashboard\.html|trivia\.html|cite\.html|bitcoin-core-checklist\.html|lnd-review-guide\.html|whitepaper-companion\.html|lightning-node\.html|buy-bitcoin\.html|send-to-kenya\.html|lightning\.html|merchant-licensing\.html|docs\/developer-openapi\.json|robots\.txt|sitemap\.xml|llms\.txt|yebente\/app\/(?:index\.html|manifest\.webmanifest|sw\.js|assets\/[\w.-]+|fonts\/[\w.-]+|icons\/[\w.-]+)|address-check\/(?:index\.html|sw\.js)|touchtype\/(?:index\.html|js\/[\w.-]+\.js|css\/[\w.-]+\.css|sound\/[\w.-]+\.mp3)|opcode-circuit\/(?:index\.html|manifest\.webmanifest|sw\.js|style\.css|game\.js|engine\/[\w.-]+\.js|sim\/[\w.-]+\.js|content\/[\w.-]+\.js|icons\/[\w.-]+\.svg)|sats-safari\/(?:index\.html|i18n\/[\w.-]+\.json|[\w.-]+\.(?:js|css))|ktown\/(?:index\.html|pay\.html|terms\.html|manifest\.webmanifest|icons\/[\w.-]+\.(?:png|svg)|[\w.-]+\.(?:js|css))|assets\/[\w.-]+|assets\/marketing\/(?:(?:\d{4}-\d{2}|templates)\/)?[\w-][\w.-]*|assets\/players\/[\w-]+\.png|\.well-known\/acme-challenge\/[\w-]+)$/;
 // HSTS: browsers that have visited once only ever use HTTPS here (no includeSubDomains,
 // so other subdomains such as mail are unaffected). COOP: no other site keeps a handle
 // on our windows.
@@ -175,17 +175,19 @@ const server = http.createServer(async (req, res) => {
     const old = url.pathname.match(/^\/([a-z-]+)(?:\.html|\/)?$/);
     if (old && req.method === "GET" && old[1] in GONE) { res.writeHead(301, { Location: `/${GONE[old[1]]}` }).end(); return; }
     if (/^\/(?:r|h)\/[a-z0-9]{4,12}\/?$/.test(url.pathname) && req.method === "GET") { res.writeHead(301, { Location: "/" }).end(); return; }
-    const oldPage = url.pathname.match(/^\/(journey|library|players|friends|plan|research|portfolio|tracker|admin|donate|bitcoin|bitcoin-core|contact|receipt|wallet-guide|kazi|njia|trivia)\.html$/);
+    const oldPage = url.pathname.match(/^\/(journey|library|players|friends|plan|research|portfolio|tracker|admin|donate|bitcoin|bitcoin-core|contact|receipt|wallet-guide|kazi|njia|trivia|cite|bitcoin-core-checklist|lnd-review-guide|whitepaper-companion|lightning-node|buy-bitcoin|send-to-kenya|lightning|merchant-licensing)\.html$/);
     if (oldPage && req.method === "GET") { res.writeHead(301, { Location: `/${oldPage[1]}${url.search}` }).end(); return; }
     const oldDev = url.pathname.match(/^\/developer-(reference|dashboard)\.html$/);
     if (oldDev && req.method === "GET") { res.writeHead(301, { Location: `/developer/${oldDev[1]}${url.search}` }).end(); return; }
     const oldDevTop = url.pathname.match(/^\/developer\.html$/);
     if (oldDevTop && req.method === "GET") { res.writeHead(301, { Location: `/developer${url.search}` }).end(); return; }
-    const page = url.pathname.match(/^\/(journey|library|players|friends|plan|research|portfolio|tracker|admin|donate|bitcoin|bitcoin-core|contact|receipt|wallet-guide|kazi|njia|trivia)\/?$/);
+    const page = url.pathname.match(/^\/(journey|library|players|friends|plan|research|portfolio|tracker|admin|donate|bitcoin|bitcoin-core|contact|receipt|wallet-guide|kazi|njia|trivia|cite|bitcoin-core-checklist|lnd-review-guide|whitepaper-companion|lightning-node|buy-bitcoin|send-to-kenya|lightning|merchant-licensing)\/?$/);
     // Developer: the page at /developer, the reference and the dashboard below it.
     const dev = url.pathname.match(/^\/developer\/?$/) ? "/developer.html"
       : url.pathname.match(/^\/developer\/reference\/?$/) ? "/developer-reference.html"
       : url.pathname.match(/^\/developer\/dashboard\/?$/) ? "/developer-dashboard.html" : null;
+    // Developer: the OpenAPI contract as JSON, for agents and codegen.
+    const oas = url.pathname.match(/^\/developer\/openapi\.json$/) ? "/docs/developer-openapi.json" : null;
     // Ye₿ente: the built app in yebente/app, served at /yebente.
     const yb = url.pathname.match(/^\/yebente(?:\/(?:index\.html)?)?$/) ? "/yebente/app/index.html" : url.pathname.match(/^\/yebente\/(manifest\.webmanifest|sw\.js|(?:assets|fonts|icons)\/[\w.-]+)$/)?.[1];
     // kTown: the merchant app at /ktown, the terms at /ktown/terms, the pay
@@ -209,7 +211,7 @@ const server = http.createServer(async (req, res) => {
     // the game plays offline. The bare path redirects there.
     if (url.pathname === "/sats-safari") { res.writeHead(301, { Location: `/sats-safari/${url.search}` }).end(); return; }
     const ss = url.pathname.match(/^\/sats-safari\/(?:index\.html)?$/) ? "/sats-safari/index.html" : null;
-    const rel = kt ? kt : dev ? dev : ss ? ss : ac ? ac : tt ? tt : oc ? oc : yb ? (yb.startsWith("/") ? yb : `/yebente/app/${yb}`) : page ? `/${page[1]}.html` : url.pathname === "/" ? "/index.html" : url.pathname;
+    const rel = kt ? kt : dev ? dev : oas ? oas : ss ? ss : ac ? ac : tt ? tt : oc ? oc : yb ? (yb.startsWith("/") ? yb : `/yebente/app/${yb}`) : page ? `/${page[1]}.html` : url.pathname === "/" ? "/index.html" : url.pathname;
     // Unknown addresses: a page miss answers our 404 page (still a 404); a
     // missing file answers plain text, as before.
     if (!PUBLIC.test(rel)) {

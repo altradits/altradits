@@ -19,6 +19,7 @@ email.setMailer({ sendMail: async (m) => { sent.push(m); return { messageId: "x"
 const { setJSON } = await import("../lib/store.js");
 const { dayAt, phaseAt } = await import("../data/builder-path.js");
 const r = await import("../lib/builder-reminder.js");
+const { VERSION: TRACKER_VERSION } = await import("../lib/tracker.js");
 
 // 16 Nov 2026 is a Monday log day; 15 Nov is a rest day. Nairobi is UTC+3.
 const at = (date, hour, minute = 2) => Date.parse(`${date}T${String(hour - 3).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00Z`);
@@ -28,7 +29,7 @@ const builder = (date, status = "open", extra = {}) => ({
   calendar: [{ date, type: dayAt(date).type, status, proof: status === "done" ? { title: "days/2026-11-16.md", url: "https://github.com/altradits/builder-log/blob/HEAD/days/2026-11-16.md" } : null }],
   ...extra,
 });
-const cache = (b, now) => setJSON("tracker:cache", { v: 6, updatedAt: new Date(now).toISOString(), builder: b });
+const cache = (b, now) => setJSON("tracker:cache", { v: TRACKER_VERSION, updatedAt: new Date(now).toISOString(), builder: b });
 
 test("Nairobi clock and the window", () => {
   assert.deepEqual(r.nairobiClock(at("2026-11-16", 7, 0)), { date: "2026-11-16", hour: 7, minute: 0 });

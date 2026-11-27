@@ -43,7 +43,7 @@ test("English and Kiswahili carry the same keys, filled in, with no em-dashes", 
 test("nothing in the game reaches outside it, except the way back to altradits.com", () => {
   for (const f of gameFiles()) {
     if (!/\.(html|js|css|json)$/.test(f)) continue;
-    const src = read(f).replaceAll("https://altradits.com", ""); // our own canonical and share URLs stay
+    const src = read(f).replaceAll("https://altradits.com", "").replaceAll("https://schema.org", ""); // our own canonical and share URLs stay; the JSON-LD context names a vocabulary, never fetched
     assert.doesNotMatch(src, /https?:\/\//, `${f}: no outside addresses (same-origin paths only)`);
     assert.doesNotMatch(src, /—/, `${f}: no em-dashes (house style)`);
   }

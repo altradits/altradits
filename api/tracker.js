@@ -3,9 +3,10 @@ import { json, clientIp } from "../lib/http.js";
 import { hit } from "../lib/store.js";
 import { tracker } from "../lib/tracker.js";
 import { RULES, STEPS } from "../data/tracker.js";
+import { REMEMBERED } from "../data/remembrance.js";
 
 export async function GET(request) {
   if ((await hit(`rl:tracker:${clientIp(request)}`, 600)) > 120) return json({ error: "Too many requests." }, 429);
-  try { return json({ ...(await tracker()), rules: RULES, stepInfo: STEPS }); }
+  try { return json({ ...(await tracker()), rules: RULES, stepInfo: STEPS, remembrance: REMEMBERED }); }
   catch { return json({ error: "GitHub can't be reached right now. Try again soon." }, 503); }
 }
