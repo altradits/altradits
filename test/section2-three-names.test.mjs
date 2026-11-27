@@ -79,7 +79,8 @@ test("rail matches the page spine, mobile links fill the touch target", () => {
     home.includes(".names{display:grid;grid-template-columns:minmax(14rem,19rem)"),
     "rail column shares the page spine",
   );
-  assert.ok(home.includes(".names-link a{display:inline-block;padding:.45rem 0"), "mobile links fill the tap target");
+  assert.ok(home.includes(".names-link a{display:inline-block;padding:.55rem 0"), "mobile links fill the tap target");
+  assert.ok(home.includes(".names h2{margin:0 0 .5rem;text-wrap:balance}"), "heading wraps evenly in the rail");
   assert.ok(home.includes(".names-link a{padding:0}"), "padding resets on desktop rows");
   const guards = [...home.matchAll(/@media \(prefers-reduced-motion:no-preference\)\{.*/g)].map((m) => m[0]);
   const guard = guards.join("\n");
