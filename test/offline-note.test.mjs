@@ -22,3 +22,15 @@ test("failed saves reveal the note instead of failing silently", () => {
   const fn = js.slice(js.indexOf("const savePref"), js.indexOf("const savePref") + 600);
   assert.ok(fn.includes('$("offline-note").hidden = false'), "a failed save speaks");
 });
+
+test("the service worker cache is bumped past the fix", () => {
+  const sw = read("ktown/sw.js");
+  const m = sw.match(/const CACHE = "ktown-v(\d+)";/);
+  assert.ok(m, "a versioned cache constant exists");
+  assert.ok(Number(m[1]) > 11, "installed merchants get the fixed shell");
+});
+
+test("the offline note reads as a calm status banner", () => {
+  const css = read("ktown/style.css");
+  assert.ok(css.includes(".offline-note{text-align:center;font-weight:700;font-size:.9rem;margin:0 0 .5rem;padding:.45rem .85rem;border-radius:.75rem;background:rgba(247,147,26,.16);border:1px solid rgba(247,147,26,.55);color:var(--navy)}"), "banner surface kept");
+});
