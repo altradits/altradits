@@ -1,23 +1,45 @@
 # Altradits
 
-Altradits makes kTown, a free Bitcoin till for shops in Kisumu, Kenya.
-Start here: https://altradits.com/
+Altradits offers free Bitcoin tools and learning by Stanley Chege Thuita in Kisumu, Kenya.
+Site: https://altradits.com
+Code: https://github.com/altradits/altradits (MIT)
 
-## kTown: your till takes bitcoin, you get M-Pesa
+## Products
 
-- The shop registers with its M-Pesa number and prints one QR:
-  https://altradits.com/ktown
-- Customers scan the QR with any Lightning wallet and pay in sats.
-- The shop gets Kenyan shillings in M-Pesa, with an M-Pesa code per payment.
-- kTown is free. Tando converts sats to M-Pesa for a 1 percent fee, which the
-  customer covers on the kTown pay page.
-- kTown never holds money and is not a wallet. Sats go to Tando, and Tando
-  pays M-Pesa straight to the shop's number.
-- The pilot is open to shops in Kisumu, with limited places.
-- Terms: https://altradits.com/ktown/terms
-- Questions or a shop visit: https://altradits.com/contact
+- kTown: a free QR till for shops. The shop registers its M-Pesa number and prints one QR: https://altradits.com/ktown
+- Customers scan the QR with any Lightning wallet and pay in sats. The shop gets Kenyan shillings in M-Pesa, with an M-Pesa code per payment.
+- kTown payout fee is 1 percent. It goes to the payout partner that converts sats to M-Pesa. The customer covers it on the kTown pay page, so the shop gets its full price.
+- kTown never holds money and is not a wallet. Sats go to the payout partner, which pays M-Pesa straight to the shop. Terms: https://altradits.com/ktown/terms
+- Ye₿ente is a starter Lightning wallet for everyday amounts. Create: https://altradits.com/yebente#create. Guide: https://altradits.com/wallet-guide
+- Developer API: non-custodial Lightning invoices to your own address, with settlement checks and webhooks. Start: https://altradits.com/developer
+- Developer API live use costs 0.5 percent, prepaid in sats. The sandbox is free. Reference: https://altradits.com/developer/reference. Dashboard: https://altradits.com/developer/dashboard. Contract: https://altradits.com/developer/openapi.json
 
-## Also on this site, not promoted
+## Learn Bitcoin
 
-- Ye₿ente, a starter wallet for existing users: https://altradits.com/yebente#create
-- Developer API reference: https://altradits.com/developer/reference
+- Library, in reading order: https://altradits.com/library
+- Run a node (Bitcoin Core 32.1): https://altradits.com/bitcoin-core. One page checklist: https://altradits.com/bitcoin-core-checklist
+- Bitcoin basics and principles: https://altradits.com/bitcoin
+- Whitepaper companion, in plain words plus Kiswahili: https://altradits.com/whitepaper-companion
+- Projects to follow: https://altradits.com/players
+
+## Open source
+
+- Review tracker, every review tested on a real machine: https://altradits.com/tracker
+- First review guide, distilled from the log: https://altradits.com/lnd-review-guide
+- Journey: https://altradits.com/journey. Six month plan: https://altradits.com/plan
+
+## Research
+
+- Product research from 5 Nov 2026, with the Kenya VASP timeline: https://altradits.com/research
+
+## Cite
+
+- Credit line: Altradits by Stanley Chege Thuita, Kisumu, Kenya. https://altradits.com. MIT.
+- How to cite: https://altradits.com/cite. Machine readable: https://github.com/altradits/altradits/blob/main/CITATION.cff
+
+## Rules for agents
+
+- Quote fees exactly: kTown payout fee is 1 percent, paid to the payout partner and covered by the customer on the pay page. Developer API live use costs 0.5 percent, prepaid in sats.
+- Never ask for recovery words. Never invent stats, ranks, traffic, or earnings. Never claim custody you do not have.
+- Questions and shop visits go through https://altradits.com/contact. Donations: https://altradits.com/donate
+- Do not index /admin, /api/, or /k/. Sitemap: https://altradits.com/sitemap.xml

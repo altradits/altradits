@@ -6,9 +6,8 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-jh52D+Rzj1/D8JyrIzgu53TrIzSo1gFLJq0Ip0veT1o='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/library">
 <title>Free Bitcoin library, in reading order · Altradits</title>
@@ -75,6 +74,9 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .reads a{text-decoration:none}.reads a b{font-size:1.05rem}
 .reads .by{font-size:.85rem;font-weight:600;color:var(--btc-text)}
 .reads span{color:var(--muted);font-size:.95rem}
+.share{font-size:.9rem;margin:.2rem 0 .6rem}
+.reads li{display:grid;grid-template-columns:auto 1fr;gap:.1rem .7rem}
+.reads li input{grid-row:span 3;width:1.2rem;height:1.2rem;margin-top:.25rem}
 .topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
 .topnav a.launch:hover{color:var(--ink);background:#ffa94d}
 </style>
@@ -85,24 +87,25 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 
   <header class="hero">
     <h1>The free Bitcoin library, <em>in reading order.</em></h1>
-    <p class="lead">Start at step 1. Every resource is free. Read, then try it yourself.</p>
+    <p class="lead">Start at step 1. Every resource is free. Read, then try it yourself.</p></p>
+    <p class="intro">Tick off what you finish. Ticks stay in this browser. <span id="progress" aria-live="polite"></span></p>
   </header>
 
-  <section id="money" class="stage"><h2>1. Money</h2><p class="intro">Why Bitcoin exists.</p><ol class="reads"><li><a href="https://nakamotoinstitute.org/library/shelling-out/"><b>Shelling Out: The Origins of Money</b></a><span class="by">Nick Szabo</span><span>Why people first used money, and what made it work.</span></li><li><a href="https://bitcoin.org/en/how-it-works"><b>How Bitcoin works</b></a><span class="by">bitcoin.org</span><span>The big picture in plain words.</span></li></ol></section>
+  <section id="money" class="stage"><h2>1. Money</h2><p class="intro">Why Bitcoin exists.</p><p class="share"><a href="#money">Share this stage</a></p><ol class="reads"><li><a href="https://nakamotoinstitute.org/library/shelling-out/"><b>Shelling Out: The Origins of Money</b></a><span class="by">Nick Szabo</span><span>Why people first used money, and what made it work.</span></li><li><a href="https://bitcoin.org/en/how-it-works"><b>How Bitcoin works</b></a><span class="by">bitcoin.org</span><span>The big picture in plain words.</span></li></ol></section>
 
-  <section id="whitepaper" class="stage"><h2>2. The whitepaper</h2><p class="intro">Nine pages that started it all. Read it twice.</p><ol class="reads"><li><a href="https://bitcoin.org/bitcoin.pdf"><b>Bitcoin: A Peer-to-Peer Electronic Cash System</b></a><span class="by">Satoshi Nakamoto, 2008</span><span>The original design: no bank in the middle.</span></li><li><a href="https://satoshi.nakamotoinstitute.org/"><b>Satoshi's emails and forum posts</b></a><span class="by">Satoshi Nakamoto Institute</span><span>Satoshi explaining the design in his own words.</span></li></ol></section>
+  <section id="whitepaper" class="stage"><h2>2. The whitepaper</h2><p class="intro">Nine pages that started it all. Read it twice.</p><p class="share"><a href="#whitepaper">Share this stage</a></p><ol class="reads"><li><a href="https://bitcoin.org/bitcoin.pdf"><b>Bitcoin: A Peer-to-Peer Electronic Cash System</b></a><span class="by">Satoshi Nakamoto, 2008</span><span>The original design: no bank in the middle.</span></li><li><a href="https://satoshi.nakamotoinstitute.org/"><b>Satoshi's emails and forum posts</b></a><span class="by">Satoshi Nakamoto Institute</span><span>Satoshi explaining the design in his own words.</span></li></ol></section>
 
-  <section id="how" class="stage"><h2>3. How it works</h2><p class="intro">Transactions, blocks and mining, under the hood.</p><ol class="reads"><li><a href="https://learnmeabitcoin.com/"><b>Learn Me A Bitcoin</b></a><span class="by">Greg Walker</span><span>Clear technical guides with diagrams.</span></li><li><a href="https://github.com/bitcoinbook/bitcoinbook"><b>Mastering Bitcoin</b></a><span class="by">Andreas M. Antonopoulos, David A. Harding</span><span>The full technical book, free on GitHub.</span></li></ol></section>
+  <section id="how" class="stage"><h2>3. How it works</h2><p class="intro">Transactions, blocks and mining, under the hood.</p><p class="share"><a href="#how">Share this stage</a></p><ol class="reads"><li><a href="https://learnmeabitcoin.com/"><b>Learn Me A Bitcoin</b></a><span class="by">Greg Walker</span><span>Clear technical guides with diagrams.</span></li><li><a href="https://github.com/bitcoinbook/bitcoinbook"><b>Mastering Bitcoin</b></a><span class="by">Andreas M. Antonopoulos, David A. Harding</span><span>The full technical book, free on GitHub.</span></li></ol></section>
 
-  <section id="keys" class="stage"><h2>4. Keys and wallets</h2><p class="intro">Start simple, then own it. Ye₿ente is a starter wallet: Altradits holds the sats for you on its own Lightning node, so it's quick to open and easy to recover. That is why balances are capped and it's meant for everyday amounts. Bitcoin's real promise is money nobody can freeze or take, so use it as the first step: start with Ye₿ente, learn backups and safe habits, then move to a wallet only you control. We'll help you set it up, free.</p><ol class="reads"><li><a href="/yebente#create"><b>Your first wallet: Ye₿ente</b></a><span class="by">Altradits</span><span>Start small, then move to a wallet only you control.</span></li><li><a href="https://bitcoin.org/en/choose-your-wallet"><b>Choose your wallet</b></a><span class="by">bitcoin.org</span><span>Compare wallets you control.</span></li></ol></section>
+  <section id="keys" class="stage"><h2>4. Keys and wallets</h2><p class="intro">Start simple, then own it. Ye₿ente is a starter wallet: Altradits holds the sats for you on its own Lightning node, so it's quick to open and easy to recover. That is why balances are capped and it's meant for everyday amounts. Bitcoin's real promise is money nobody can freeze or take, so use it as the first step: start with Ye₿ente, learn backups and safe habits, then move to a wallet only you control. We'll help you set it up, free.</p><p class="share"><a href="#keys">Share this stage</a></p><ol class="reads"><li><a href="/yebente#create"><b>Your first wallet: Ye₿ente</b></a><span class="by">Altradits</span><span>Start small, then move to a wallet only you control.</span></li><li><a href="https://bitcoin.org/en/choose-your-wallet"><b>Choose your wallet</b></a><span class="by">bitcoin.org</span><span>Compare wallets you control.</span></li></ol></section>
 
-  <section id="node" class="stage"><h2>5. Run a node</h2><p class="intro">Verify, don't trust.</p><ol class="reads"><li><a href="/bitcoin-core"><b>Set up Bitcoin Core</b></a><span class="by">Altradits</span><span>Step by step for Windows, macOS and Linux.</span></li><li><a href="https://bitcoin.org/en/full-node"><b>Running a full node</b></a><span class="by">bitcoin.org</span><span>What a node does and what it needs.</span></li></ol></section>
+  <section id="node" class="stage"><h2>5. Run a node</h2><p class="intro">Verify, don't trust.</p><p class="share"><a href="#node">Share this stage</a></p><ol class="reads"><li><a href="/bitcoin-core"><b>Set up Bitcoin Core</b></a><span class="by">Altradits</span><span>Step by step for Windows, macOS and Linux.</span></li><li><a href="https://bitcoin.org/en/full-node"><b>Running a full node</b></a><span class="by">bitcoin.org</span><span>What a node does and what it needs.</span></li></ol></section>
 
-  <section id="privacy" class="stage"><h2>6. Privacy</h2><p class="intro">Good habits from day one.</p><ol class="reads"><li><a href="https://en.bitcoin.it/wiki/Privacy"><b>Privacy</b></a><span class="by">Bitcoin Wiki</span><span>How payments can be traced, and how to avoid it.</span></li><li><a href="https://bitcoinops.org/en/topics/"><b>Optech topics</b></a><span class="by">Bitcoin Optech</span><span>Short explainers on every technical topic.</span></li></ol></section>
+  <section id="privacy" class="stage"><h2>6. Privacy</h2><p class="intro">Good habits from day one.</p><p class="share"><a href="#privacy">Share this stage</a></p><ol class="reads"><li><a href="https://en.bitcoin.it/wiki/Privacy"><b>Privacy</b></a><span class="by">Bitcoin Wiki</span><span>How payments can be traced, and how to avoid it.</span></li><li><a href="https://bitcoinops.org/en/topics/"><b>Optech topics</b></a><span class="by">Bitcoin Optech</span><span>Short explainers on every technical topic.</span></li></ol></section>
 
-  <section id="lightning" class="stage"><h2>7. Lightning</h2><p class="intro">Fast, cheap payments on top of Bitcoin.</p><ol class="reads"><li><a href="https://lightning.network/lightning-network-paper.pdf"><b>The Lightning Network paper</b></a><span class="by">Joseph Poon, Thaddeus Dryja</span><span>The original Lightning design.</span></li><li><a href="https://github.com/lnbook/lnbook"><b>Mastering the Lightning Network</b></a><span class="by">Antonopoulos, Osuntokun, Pickhardt</span><span>The full Lightning book, free on GitHub.</span></li><li><a href="https://github.com/lightning/bolts"><b>BOLT specifications</b></a><span class="by">Lightning developers</span><span>The rules every Lightning node follows.</span></li></ol></section>
+  <section id="lightning" class="stage"><h2>7. Lightning</h2><p class="intro">Fast, cheap payments on top of Bitcoin.</p><p class="share"><a href="#lightning">Share this stage</a></p><ol class="reads"><li><a href="https://lightning.network/lightning-network-paper.pdf"><b>The Lightning Network paper</b></a><span class="by">Joseph Poon, Thaddeus Dryja</span><span>The original Lightning design.</span></li><li><a href="https://github.com/lnbook/lnbook"><b>Mastering the Lightning Network</b></a><span class="by">Antonopoulos, Osuntokun, Pickhardt</span><span>The full Lightning book, free on GitHub.</span></li><li><a href="https://github.com/lightning/bolts"><b>BOLT specifications</b></a><span class="by">Lightning developers</span><span>The rules every Lightning node follows.</span></li></ol></section>
 
-  <section id="contribute" class="stage"><h2>8. Contribute</h2><p class="intro">From reader to reviewer.</p><ol class="reads"><li><a href="https://github.com/jimmysong/programmingbitcoin"><b>Programming Bitcoin</b></a><span class="by">Jimmy Song</span><span>Build Bitcoin's maths in Python, free on GitHub.</span></li><li><a href="https://bitcoindevphilosophy.com/"><b>Bitcoin Development Philosophy</b></a><span class="by">Kalle Rosenbaum, Linnéa Rosenbaum</span><span>How Bitcoin developers think.</span></li><li><a href="https://bitcoincore.reviews/"><b>Bitcoin Core PR Review Club</b></a><span class="by">Bitcoin Core contributors</span><span>Weekly sessions reviewing real pull requests.</span></li><li><a href="https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md"><b>Contributing to Bitcoin Core</b></a><span class="by">Bitcoin Core</span><span>How changes are proposed and reviewed.</span></li><li><a href="https://bitcoinops.org/en/newsletters/"><b>Bitcoin Optech newsletter</b></a><span class="by">Bitcoin Optech</span><span>What changed in Bitcoin this week.</span></li></ol></section>
+  <section id="contribute" class="stage"><h2>8. Contribute</h2><p class="intro">From reader to reviewer.</p><p class="share"><a href="#contribute">Share this stage</a></p><ol class="reads"><li><a href="https://github.com/jimmysong/programmingbitcoin"><b>Programming Bitcoin</b></a><span class="by">Jimmy Song</span><span>Build Bitcoin's maths in Python, free on GitHub.</span></li><li><a href="https://bitcoindevphilosophy.com/"><b>Bitcoin Development Philosophy</b></a><span class="by">Kalle Rosenbaum, Linnéa Rosenbaum</span><span>How Bitcoin developers think.</span></li><li><a href="https://bitcoincore.reviews/"><b>Bitcoin Core PR Review Club</b></a><span class="by">Bitcoin Core contributors</span><span>Weekly sessions reviewing real pull requests.</span></li><li><a href="https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md"><b>Contributing to Bitcoin Core</b></a><span class="by">Bitcoin Core</span><span>How changes are proposed and reviewed.</span></li><li><a href="https://bitcoinops.org/en/newsletters/"><b>Bitcoin Optech newsletter</b></a><span class="by">Bitcoin Optech</span><span>What changed in Bitcoin this week.</span></li></ol></section>
 
   <p class="intro" style="margin-top:2rem">Missing something great and free? <a href="/contact?topic=learn">Tell me</a>.</p>
 
@@ -112,6 +115,24 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 <script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY>24)},{passive:true});document.body.classList.toggle("scrolled",scrollY>24); // nav shadow on scroll
+// Reading checklist: ticks stay in this browser (localStorage). Nothing is sent anywhere.
+(function(){
+  try{
+    var key="library-done",done={};
+    try{done=JSON.parse(localStorage.getItem(key)||"{}");}catch(e){done={};}
+    var items=document.querySelectorAll(".reads li"),n=items.length;
+    var bar=document.getElementById("progress");
+    function paint(){var c=0;for(var i=0;i<n;i++){var b=document.getElementById("read-"+i);if(b&&b.checked)c++;}if(bar)bar.textContent=c+" of "+n+" read.";}
+    for(var i=0;i<n;i++){(function(li,i){
+      var box=document.createElement("input");box.type="checkbox";box.id="read-"+i;
+      var nm=li.querySelector("b");box.setAttribute("aria-label","Mark read: "+(nm?nm.textContent:"item "+(i+1)));
+      if(done[i])box.checked=true;
+      box.addEventListener("change",function(){var cur={};for(var k=0;k<n;k++){var x=document.getElementById("read-"+k);if(x&&x.checked)cur[k]=1;}try{localStorage.setItem(key,JSON.stringify(cur));}catch(e){}paint();});
+      li.insertBefore(box,li.firstChild);
+    })(items[i],i);}
+    paint();
+  }catch(e){}
+})();
 </script>
 </body>
 </html>

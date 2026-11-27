@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+title: Altradits
+version: 0.1.0
+message: If you use this site or code, please cite it as below.
+authors:
+  - family-names: Thuita
+    given-names: Stanley Chege
+license: MIT
+repository-code: https://github.com/altradits/altradits
+url: https://altradits.com
+keywords:
+  - bitcoin
+  - lightning-network
+  - bitcoin-education
+  - kisumu
+  - kenya
+preferred-citation:
+  type: website
+  title: Altradits
+  authors:
+    - family-names: Thuita
+      given-names: Stanley Chege
+  url: https://altradits.com

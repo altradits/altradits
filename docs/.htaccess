@@ -7,3 +7,14 @@
   Order allow,deny
   Deny from all
 </IfModule>
+
+# The Developer API contract is public on purpose (also at /developer/openapi.json).
+<Files "developer-openapi.json">
+  <IfModule mod_authz_core.c>
+    Require all granted
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+  </IfModule>
+</Files>
