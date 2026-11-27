@@ -8,9 +8,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-0ErrmpHMXuoGuhmHfRgxeelOtmlotnMNCfH0iYqjqRI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-x2ejU1hbukmnC7GmOSuSpYZvCl5ahoyly4uJfbKUnzA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
-<script src="/assets/practice.js"></script>
+<script src="/assets/report.js" defer></script>
+<script src="/assets/practice.js" defer></script>
 <link rel="canonical" href="https://altradits.com/tracker">
 <title>Open-source tracker · Altradits</title>
 <meta name="description" content="Stanley's public open-source tracker: six Bitcoin and Lightning projects, one challenge each, solved without AI. Progress updates itself from GitHub.">
@@ -23,7 +24,7 @@
 <meta property="og:image" content="https://altradits.com/assets/social-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Ye₿ente wallet: send money anywhere, keep all of it">
+<meta property="og:image:alt" content="Stanley open-source tracker progress">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Open-source tracker · Altradits">
 <meta name="twitter:description" content="Stanley's public open-source tracker: six Bitcoin and Lightning projects, one challenge each, solved without AI. Progress updates itself from GitHub.">
@@ -411,7 +412,7 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
       <p><b>Pain:</b> ${esc(r.pain || "")}</p>
       <p><b>Before:</b> ${esc(r.before || "")} <b>After merge:</b> ${esc(r.after || "")}</p>
       <p class="sm">Idea by <a href="https://github.com/${esc(r.author)}">@${esc(r.author)}</a>${r.mergedBy ? ` · Merged by <a href="https://github.com/${esc(r.mergedBy)}">@${esc(r.mergedBy)}</a>` : ""}</p>
-      <ul>${r.ran.map((t, ti) => { const k = rkey(); t._k = k; return `<li><code>${esc(t.run)}</code> <button type="button" data-copy="${ri}:${ti}">Copy</button><br><span>${esc(t.saw)}</span><br><small class="muted">Why: ${esc(t.why || "")}</small><div data-pract="${k}"></div></li>`; }).join("")}</ul>
+      <ul>${r.ran.map((t, ti) => { const k = rkey(); t._k = k; return `<li><code>${esc(t.run)}</code> <button type="button" data-copy="${ri}:${ti}" aria-label="Copy: ${esc(t.run)}" aria-live="polite">Copy</button><br><span>${esc(t.saw)}</span><br><small class="muted">Why: ${esc(t.why || "")}</small><div data-pract="${k}"></div></li>`; }).join("")}</ul>
       <p>${esc(r.note || "")}</p>
       <p class="sm"><b>Lesson:</b> ${esc(r.lesson || "")}</p>
       ${r.followup ? `<p><b>Followup:</b> ${esc(r.followup)}</p>` : ""}

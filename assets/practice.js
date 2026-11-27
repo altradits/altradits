@@ -26,25 +26,31 @@
     return `${n} of ${s.target.length} characters right, try ${s.runs + 1}.`;
   }
 
+  let nextId = 0;
   function mount(el, entry) {
     if (!el || typeof document === "undefined") return null;
     const session = createSession(entry.run);
+    const uid = `practice-${++nextId}`;
     el.classList.add("practice");
     const label = document.createElement("div");
     label.className = "muted sm";
+    label.id = `${uid}-hint`;
     label.textContent = "Practice terminal: retype the command, then run it.";
     const input = document.createElement("input");
     input.type = "text";
     input.autocomplete = "off";
     input.spellcheck = false;
     input.setAttribute("aria-label", "Retype the command");
+    input.setAttribute("aria-describedby", `${uid}-hint`);
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = "Run";
+    button.setAttribute("aria-label", `Run: ${entry.run}`);
     const out = document.createElement("pre");
     out.hidden = true;
     const status = document.createElement("div");
     status.className = "muted sm";
+    status.setAttribute("role", "status");
     const run = () => {
       if (attempt(session, input.value)) {
         out.textContent = `$ ${session.target}\n${entry.saw}\n(recorded output)`;

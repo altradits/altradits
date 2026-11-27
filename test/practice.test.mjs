@@ -40,7 +40,14 @@ test("hints report leading characters without revealing the rest", () => {
 
 test("the tracker page ships and mounts the practice terminal", () => {
   const html = read("tracker.html");
-  assert.match(html, /<script src="\/assets\/practice\.js"><\/script>/, "page loads the module");
+  assert.match(html, /<script src="\/assets\/practice\.js" defer><\/script>/, "page loads the module deferred");
   assert.match(html, /PracticeTerminal\.mount\(el, t\)/, "every logged command gets a terminal");
   assert.match(read("assets/practice.js"), /recorded output/, "honest label: rehearsal, not execution");
+});
+
+test("mounted controls are named and results announce", () => {
+  const src = read("assets/practice.js");
+  assert.match(src, /setAttribute\("aria-label", `Run: /, "Run button named per command");
+  assert.match(src, /setAttribute\("aria-describedby"/, "instruction associated");
+  assert.match(src, /setAttribute\("role", "status"\)/, "status announced");
 });

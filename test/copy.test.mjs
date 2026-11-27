@@ -11,11 +11,13 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const html = fs.readFileSync(path.join(root, "tracker.html"), "utf8");
 
 test("each logged command renders a copy button with a log reference", () => {
-  assert.match(html, /<button type="button" data-copy="\$\{ri\}:\$\{ti\}">Copy<\/button>/);
+  assert.match(html, /<button type="button" data-copy="\$\{ri\}:\$\{ti\}" aria-label="Copy: \$\{esc\(t\.run\)\}" aria-live="polite">Copy<\/button>/);
 });
 
 test("the handler copies by reference with clipboard and fallback paths", () => {
   assert.match(html, /button\[data-copy\]/);
+  assert.match(html, /aria-label="Copy: \$\{esc\(t\.run\)\}"/, "button named per command");
+  assert.match(html, /aria-live="polite">Copy<\/button>/, "Copied swap announced");
   assert.match(html, /navigator\.clipboard\.writeText\(t\.run\)/);
   assert.match(html, /document\.execCommand\("copy"\)/);
   assert.match(html, /T\.reviews\[ri\] && T\.reviews\[ri\]\.ran\[ti\]/);
