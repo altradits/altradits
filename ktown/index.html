@@ -41,12 +41,12 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
   </div>
 </header>
 <main class="wrap">
+  <p class="offline-note" id="offline-note" role="status" data-i18n="offlineNote" hidden></p>
   <section id="screen-qr" aria-labelledby="qr-shop" hidden>
     <h1 class="shop" id="qr-shop">kTown</h1>
     <p class="mpesa-name" id="qr-mpesa"></p>
     <p class="mark-line"><span class="mark" id="qr-mark"></span></p>
     <p class="secure-note" id="qr-secure" hidden></p>
-    <p class="offline-note" id="offline-note" role="status" data-i18n="offlineNote" hidden></p>
     <div class="qr-card" id="qr" role="img" aria-label="Shop QR code"></div>
     <p class="print-line">Pay with Bitcoin Lightning <svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8L20 9h-7l1-7z" fill="currentColor"/></svg></p>
     <p class="err" id="qr-err" role="alert" hidden></p>
