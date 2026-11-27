@@ -238,7 +238,7 @@ async function boot() {
   } catch (e) {
     // Only a 404 means the QR is unknown. Anything else (Tando down, too many
     // requests, no connection) says what the server said, or to try again soon.
-    fatal(e.status === 404 ? t("unknownQr") : e.said || (e.status ? t("tryLater") : e.message || t("tryLater")), e.status === 404 ? "unknownQr" : null);
+    fatal(e.status === 404 ? t("unknownQr") : e.said || (e.status ? t("tryLater") : e.message || t("tryLater")), e.status === 404 ? "unknownQr" : (!e.said && (e.status || !e.message)) ? "tryLater" : null);
     return;
   }
   try {

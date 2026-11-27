@@ -22,3 +22,16 @@ test("an empty hold says sending resumes", () => {
   assert.match(tsx, /hold\.left <= 0/, "empty is handled");
   assert.ok(tsx.includes("sending resumes after"), "the words read true");
 });
+
+test("boot fatals keep tryLater so it re-renders on switch", () => {
+  const js = read("ktown/pay.js");
+  assert.ok(js.includes('(!e.said && (e.status || !e.message)) ? "tryLater" : null'), "server and network errors keep their key");
+});
+
+test("the wallet cache is bumped with the rebuilt shell", () => {
+  for (const f of ["yebente/public/sw.js", "yebente/app/sw.js"]) {
+    const m = read(f).match(/const CACHE = "yebente-v(\d+)";/);
+    assert.ok(m, `${f}: a versioned cache constant exists`);
+    assert.ok(Number(m[1]) > 1, `${f}: returning users get the new shell`);
+  }
+});
