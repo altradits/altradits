@@ -192,7 +192,8 @@ function checkPromotion(game) {
 
 /* Applies one typed key. Returns { ignored, correct, drillComplete, promoted }. */
 function handleKey(game, key, now) {
-    if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock'].indexOf(key) !== -1) {
+    // Tab moves focus instead of typing: never a drill target, never scored.
+    if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab'].indexOf(key) !== -1) {
         return { ignored: true, correct: false, drillComplete: false, promoted: false };
     }
     if (game.startTime === null) game.startTime = (typeof now === 'number') ? now : Date.now();
@@ -501,9 +502,11 @@ function initBrowserGame() {
         updateStream();
     });
 
+    // Drop focus after a click: a later Space must type, not re-press the button.
     soundBtn.addEventListener('click', function () {
         setSoundEnabled(game, !game.soundEnabled);
         syncSoundButton();
+        soundBtn.blur();
     });
 
     document.getElementById('btn-reset').addEventListener('click', function () {
@@ -511,6 +514,7 @@ function initBrowserGame() {
         updateStageUI();
         syncAfterDrill();
         updateStream();
+        document.getElementById('btn-reset').blur();
     });
 
     syncSoundButton();
