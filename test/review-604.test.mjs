@@ -12,7 +12,7 @@ const pilotCss = home.slice(home.indexOf(".pilot{"), home.indexOf(".steps{"));
 
 test("1. desktop grid: two columns at 860px, narrow heading, full-width rows", () => {
   assert.ok(pilotCss.includes("@media (min-width:860px){.pilot{display:grid;grid-template-columns:.78fr 1.22fr"), "pilot goes .78fr/1.22fr at 860px");
-  assert.ok(pilotCss.includes(".pilot h2{margin:0 0 clamp(2rem,4.5vw,3rem);max-width:13ch}"), "heading holds 13ch");
+  assert.ok(pilotCss.includes(".pilot h2{margin:0 0 clamp(2rem,4.5vw,3rem);max-width:13ch;font-size:clamp(1.9rem,3.8vw,2.65rem);line-height:1.08;text-wrap:balance}"), "heading holds 13ch at display scale");
   assert.ok(pilotCss.includes(".pilot ol{list-style:none;margin:0;padding:0;max-width:none}"), "rows span the right column");
 });
 
@@ -29,7 +29,7 @@ test("3. copy: each row says one new thing in short sentences", () => {
   for (const row of [
     "<b>Open now in Kisumu.</b> Limited places. Nothing to buy or install.",
     "<b>Keep your full price.</b> The customer covers the 1% fee.",
-    "<b>Straight to M-Pesa.</b> kTown never holds money. No BTC exposure.",
+    "<b>Straight to M-Pesa.</b> kTown never holds money. No price-swing risk.",
   ]) {
     assert.ok(home.includes(row), `pilot keeps: ${row}`);
   }
@@ -48,6 +48,14 @@ test("4. hover: tint, ink rule and index nudge, only where motion is allowed", (
   for (const m of pilotCss.matchAll(/\.pilot li:hover/g)) {
     assert.ok(m.index > guardAt, "no pilot hover rule escapes the guard");
   }
+});
+
+test("6. finish: breathing hover, sticky rail with quiet link", () => {
+  assert.ok(pilotCss.includes("padding:clamp(1.4rem,3vw,1.9rem) .75rem;margin:0 -.75rem"), "hover surface breathes past the numerals");
+  assert.ok(home.includes('<div class="pilot-head">'), "heading and link share a rail");
+  assert.ok(home.includes('<a class="pilot-link" href="/ktown">Join the pilot'), "the rail ends in one quiet link");
+  assert.ok(pilotCss.includes(".pilot-head{position:sticky;top:5.5rem}"), "the rail sticks on desktop");
+  assert.ok(pilotCss.includes(".pilot-link:hover{text-decoration:underline}"), "the link answers hover plainly");
 });
 
 test("house rules kept: title, theme, motion and scrolled behavior", () => {
