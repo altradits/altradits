@@ -16,7 +16,7 @@ const read = (f) => fs.readFileSync(path.join(root, f), "utf8");
 // where document exists. window exists so the frame check passes quietly.
 function loadPageCore() {
   const html = read("address-check/index.html");
-  const scripts = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1]);
+  const scripts = [...html.matchAll(/<script(?![^>]*\bsrc=)(?![^>]*type=\"application\/ld\+json\")[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1]);
   assert.equal(scripts.length, 1, "the tool ships exactly one inline script");
   const sandbox = { window: {} };
   vm.createContext(sandbox);
