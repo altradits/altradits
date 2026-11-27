@@ -52,9 +52,14 @@ test("ink leads sit over muted detail with a capped measure", () => {
 
 test("desktop gets an explicit editorial grid, small screens compact", () => {
   assert.ok(style.includes("@media (min-width:860px){.how{display:grid"), "rail plus content grid at 860px and up");
-  assert.match(style, /grid-template-columns:minmax\(13rem,20rem\) minmax\(0,1fr\)/, "narrow rail, wide content");
+  assert.match(style, /grid-template-columns:minmax\(14rem,19rem\) minmax\(0,1fr\)/, "narrow rail, wide content");
   assert.match(style, /gap:clamp\(2rem,5vw,4rem\)/, "fluid gap between rail and rows");
   assert.ok(style.includes("@media (max-width:859px){.steps li{padding:1.15rem 0"), "small-screen compaction rule");
+});
+
+test("review: rules run flush and the heading balances", () => {
+  assert.doesNotMatch(style, /\.steps\{[^}]*max-width/, "no cap on the rules container");
+  assert.match(style, /\.how h2\{[^}]*text-wrap:balance/, "heading wraps evenly");
 });
 
 test("the section opens with a top rule and tight clamp padding", () => {
