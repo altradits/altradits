@@ -101,9 +101,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
       </div>
 
       {syncFailed && (
-        <p role="status" className="text-xs text-red-300 mt-1">
-          Sync failed. Check your connection and try again.
-        </p>
+        <p role="status" className="text-xs text-amber-200/90 mt-1">Couldn't refresh. Showing the last balance.</p>
       )}
 
       {/* Country currency indicators alongside each other without button borders */}

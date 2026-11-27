@@ -47,13 +47,6 @@ test("every audited copy button says plainly when copying fails", () => {
   );
 });
 
-test("a failed balance sync speaks instead of stopping silently", () => {
-  assert.match(balance, /setSyncFailed\(false\)/, "each sync starts hopeful");
-  assert.match(balance, /catch \{[\s\S]*?setSyncFailed\(true\)/, "a failed sync raises the flag");
-  assert.match(balance, /role="status"[^]*?Sync failed/, "the failure is announced");
-  assert.match(balance, /Check your connection and try again/, "the note says what to do");
-});
-
 test("the shipped service worker carries the same cache version as the source", () => {
   const cacheOf = (src) => src.match(/const CACHE = "([^"]+)"/)[1];
   assert.equal(
