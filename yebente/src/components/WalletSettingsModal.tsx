@@ -314,8 +314,8 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                       type="button"
                       onClick={() => { void copyOwn(ownAddress); }}
                       className="absolute right-3 top-3 text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
-                      aria-label={copyOwnFailed ? 'Copy failed. Long-press the address to copy it.' : 'Copy Lightning address'}
-                      title={copyOwnFailed ? 'Copy failed. Long-press the address to copy it.' : 'Copy Lightning address'}
+                      aria-label="Copy Lightning address"
+                      title="Copy Lightning address"
                     >
                       {copiedOwn ? <Check className="w-3.5 h-3.5 text-[var(--yb-secondary)]" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
@@ -468,8 +468,8 @@ export const WalletSettingsModal: React.FC<WalletSettingsModalProps> = ({
                       type="button"
                       onClick={() => { void copyExternal(address); }}
                       className="absolute right-3 top-3 text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]"
-                      aria-label={copyExternalFailed ? 'Copy failed. Long-press the address to copy it.' : 'Copy outside address'}
-                      title={copyExternalFailed ? 'Copy failed. Long-press the address to copy it.' : 'Copy outside address'}
+                      aria-label="Copy outside address"
+                      title="Copy outside address"
                     >
                       {copiedExternal ? <Check className="w-3.5 h-3.5 text-[var(--yb-secondary)]" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
