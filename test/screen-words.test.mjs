@@ -23,6 +23,9 @@ test("the receipt link names its real host", () => {
 });
 
 test("the worker cache is bumped in source and bundle", () => {
-  assert.match(read("yebente/public/sw.js"), /const CACHE = "yebente-v6"/, "worker source carries v6, past main and the open v5 lane");
-  assert.match(read("yebente/app/sw.js"), /const CACHE = "yebente-v6"/, "built bundle carries v6");
+  const versionOf = (src) => Number(src.match(/const CACHE = "yebente-v(\d+)"/)[1]);
+  const source = versionOf(read("yebente/public/sw.js"));
+  const built = versionOf(read("yebente/app/sw.js"));
+  assert.equal(built, source, "bundle matches the source version");
+  assert.ok(source >= 6, "source stays past the merged v5 shell");
 });
