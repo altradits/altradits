@@ -68,6 +68,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:1.6rem 0 .4rem}
 .sitefoot a{color:var(--muted);display:inline-block;padding:.5rem 0}.soc{color:var(--muted)}a.soc:hover{color:var(--ink)}.soc svg{width:20px;height:20px;vertical-align:-4px}
 .sitefoot .wp{margin:0 0 .6rem}
 .err{color:#B42318}
+#fund-copy:disabled,#fund-open[aria-disabled]{opacity:.55}
 .topnav a.launch{background:var(--btc);color:var(--ink);padding:.45rem 1.1rem;border-radius:99px;font-weight:700;box-shadow:0 6px 14px -6px rgba(247,147,26,.8)}
 .topnav a.launch:hover{color:var(--ink);background:#ffa94d}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
@@ -160,6 +161,7 @@ if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw
     <textarea id="fund-bolt" readonly rows="3" aria-label="Lightning invoice"></textarea>
     <div class="ctas"><button type="button" class="btn ghost" id="fund-copy">Copy invoice</button><a class="btn ghost" id="fund-open" href="#">Open in wallet</a></div>
     <p class="status" id="fund-state" role="status">Waiting for payment.</p>
+    <div class="ctas"><button type="button" class="btn" id="fund-again" hidden>Fund another</button></div>
   </div>
   <p class="status" id="pool-line" role="status"></p>
   <h3>Message wall</h3>

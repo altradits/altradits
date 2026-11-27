@@ -7,7 +7,6 @@ import { logBalance, getStoredTransactions } from '../services/storageService';
 interface BalanceCardProps {
   wallet: UserWallet;
   rates: ExchangeRates;
-  onOpenWalletSettings: () => void;
   onUpdateWallet?: (updated: UserWallet) => void;
   onRefreshServer?: () => Promise<void>; // the Ye₿ente wallet: ask the server again
 }
@@ -15,12 +14,12 @@ interface BalanceCardProps {
 export const BalanceCard: React.FC<BalanceCardProps> = ({
   wallet,
   rates,
-  onOpenWalletSettings,
   onUpdateWallet,
   onRefreshServer,
 }) => {
   const [hideBalances, setHideBalances] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncFailed, setSyncFailed] = useState(false);
 
   // If wallet is not connected / ejected, do not render balance card
   if (!wallet.isConnected) {
@@ -29,6 +28,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
 
   const handleSyncBalance = async () => {
     setIsSyncing(true);
+    setSyncFailed(false);
     try {
       // The Ye₿ente wallet: the balance is the server's, never worked out here.
       if (wallet.type === 'custodial') {
@@ -40,6 +40,8 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
       const webln = await queryWebLNBalance();
       const sats = webln.available && typeof webln.sats === 'number' ? Math.max(logged, webln.sats) : logged;
       onUpdateWallet?.({ ...wallet, satsBalance: sats, btcBalance: sats / 100_000_000 });
+    } catch {
+      setSyncFailed(true);
     } finally {
       setIsSyncing(false);
     }
@@ -97,6 +99,12 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
           </button>
         </div>
       </div>
+
+      {syncFailed && (
+        <p role="status" className="text-xs text-red-300 mt-1">
+          Sync failed. Check your connection and try again.
+        </p>
+      )}
 
       {/* Country currency indicators alongside each other without button borders */}
       <div className="grid grid-cols-2 gap-2.5 mt-4 pt-3 border-t border-white/15">
