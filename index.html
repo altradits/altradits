@@ -98,15 +98,14 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .steps p{margin:0;color:var(--muted)}
 .steps p b{display:block;font:800 1.12rem/1.25 'Bricolage Grotesque',sans-serif;color:var(--ink);margin-bottom:.3rem}
 
-.pillars{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(18rem,100%),1fr));gap:1rem;margin-top:1rem}
-.panel{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.25rem 1.35rem}
-.panel .tag{display:inline-block;font-size:.76rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.45rem}
-.panel h3{margin-bottom:.45rem}
-.panel p{margin:0;color:var(--muted)}
-.panel p+p{margin-top:.55rem}
-.panel p b,.panel li b{color:var(--ink)}
-.panel ul{margin:.4rem 0 0;padding-left:1.15rem;color:var(--muted)}
-.panel li{margin:.35rem 0}
+.till-points{border-top:1px solid var(--line);margin-top:3.25rem;padding:clamp(1.5rem,3.5vw,2.25rem) 0 .25rem}
+.till-points h2{margin:0 0 clamp(1.75rem,4vw,2.5rem)}
+.till-rows{display:grid;gap:clamp(1.75rem,4vw,2.75rem)}
+.till-rows article{border-top:1px solid var(--line);padding-top:1rem}
+.till-rows article:first-child{border-top:0;padding-top:0}
+.till-rows h3{font-size:1.3rem}
+.till-rows p{margin:.45rem 0 0;color:var(--muted);max-width:38rem}
+@media (min-width:860px){.till-points{display:grid;grid-template-columns:minmax(14rem,19rem) minmax(0,1fr);gap:clamp(2rem,5vw,4rem);align-items:start}.till-points h2{margin-bottom:0}}
 
 .family{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(16rem,100%),1fr));gap:1rem}
 .family li{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.2rem 1.3rem;display:flex;flex-direction:column;gap:.45rem}
@@ -133,7 +132,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .sitefoot .wp{margin:0 0 .6rem}
 .sitefoot p{margin:0 0 .35rem}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top{transition:box-shadow .25s ease}body.scrolled .top{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a,.steps li,.family li{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease,transform .18s ease}.steps li:hover,.family li:hover{transform:translateY(-2px);box-shadow:4px 4px 0 var(--ink)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top{transition:box-shadow .25s ease}body.scrolled .top{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a,.steps li,.family li{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease,transform .18s ease}.steps li:hover,.family li:hover{transform:translateY(-2px);box-shadow:4px 4px 0 var(--ink)}.till-rows article{transition:border-color .18s ease}.till-rows article:hover{border-color:var(--ink)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}}
 </style>
 </head>
 <body>
@@ -170,28 +169,23 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
     <li><div class="head"><span class="n">3</span><span class="pace">Straight to M-Pesa</span></div><p><b>Get paid in shillings.</b> Each payment lands in M-Pesa with its code. You see every payment in your history.</p></li>
   </ol>
 
-  <h2>Clear for everyone at the till</h2>
-  <p class="intro">Simple for the buyer, free for the shop, and nobody sitting in the middle.</p>
-  <div class="pillars">
-    <section class="panel">
-      <span class="tag">For the customer</span>
-      <h3>Any Lightning wallet works</h3>
-      <p>Scan the QR with any Lightning wallet. Check the shillings on screen. Pay in sats.</p>
-    </section>
-    <section class="panel">
-      <span class="tag">Costs</span>
-      <h3>kTown is free for shops</h3>
-      <p><b>kTown is free.</b> Our payout partner converts the sats to M-Pesa for a 1% fee. On the kTown pay page the customer covers it, so the shop gets its full price.</p>
-    </section>
-    <section class="panel">
-      <span class="tag">What kTown never does</span>
-      <h3>Zero custody, straight payout</h3>
-      <ul>
-        <li><b>It never holds money.</b> It is not a wallet.</li>
-        <li><b>Payouts go straight to the shop's M-Pesa.</b> Sats go to our payout partner, which pays M-Pesa to the shop's number.</li>
-      </ul>
-    </section>
-  </div>
+  <section class="till-points" aria-labelledby="till-h">
+    <h2 id="till-h">Clear for everyone at the till</h2>
+    <div class="till-rows">
+      <article>
+        <h3>Any wallet pays</h3>
+        <p>Whatever Lightning wallet the customer carries works here.</p>
+      </article>
+      <article>
+        <h3>Free for the shop</h3>
+        <p>The 1% conversion fee sits on the customer. The shop owes nothing.</p>
+      </article>
+      <article>
+        <h3>Nobody in the middle</h3>
+        <p>kTown never holds money. Payouts go straight to the shop's M-Pesa.</p>
+      </article>
+    </div>
+  </section>
 
   <h2>Three names, one project</h2>
   <p class="intro">Built in Kisumu for everyday Bitcoin use, from the shop counter to your pocket.</p>
