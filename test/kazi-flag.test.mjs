@@ -23,3 +23,8 @@ test("disabled buttons read dimmed", () => {
   assert.match(html, /\.btn\[disabled\]\{opacity:\.55;cursor:default\}/,
     "kazi.html: disabled buttons look disabled");
 });
+
+test("after a flag the button follows the input, not a blanket enable", () => {
+  assert.match(html, /catch \(e\) \{ input\.placeholder = e\.message; \}\nbtn\.disabled = !input\.value\.trim\(\);/,
+    "kazi.html: success with cleared input stays disabled, failure with text re-enables");
+});
