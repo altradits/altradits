@@ -35,7 +35,7 @@
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/assets/bricolage-grotesque-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 @font-face{font-family:'Figtree';font-style:normal;font-weight:400 700;font-display:swap;src:url(/assets/figtree-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 
-:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--ok:#0B7A5F;--paper:#fff}
+:root{--bg:#EEF2F6;--ink:#0F1B2D;--muted:#4B5A70;--line:#C9D3DF;--blue:#2A5A8F;--btc:#F7931A;--btc-text:#A84D08;--paper:#fff}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtree,system-ui,sans-serif}
 a{color:var(--blue)}
@@ -46,7 +46,6 @@ a{color:var(--blue)}
 .topnav{display:flex;gap:.35rem;flex-wrap:wrap;row-gap:.35rem;align-items:center}
 .topnav a{font-weight:600;text-decoration:none;color:var(--muted);white-space:nowrap;padding:.45rem .95rem;border-radius:99px}
 .topnav a:hover{color:var(--ink);background:rgba(15,27,45,.08)}
-.topnav a[aria-current]{color:#fff;background:var(--ink)}
 @media (max-width:420px){.topnav{gap:.25rem}.topnav a{font-size:.9rem;padding:.4rem .7rem}.top img{height:1.9rem}}
 .hero{padding:2.25rem 0 1.5rem}
 .hero h1{font:800 clamp(2.1rem,6vw,3.4rem)/1.06 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:46rem;text-wrap:balance}
@@ -69,17 +68,15 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .photo figcaption{color:var(--muted);font-size:.95rem;line-height:1.5;margin:.5rem 0 0;max-width:46rem}
 .photo.mid{margin-top:2rem}
 .friends{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:1rem}
-.friends>li{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.6rem;box-shadow:0 1px 2px rgba(15,27,45,.12),0 12px 28px -20px rgba(15,27,45,.35)}
-.friends>li:hover{box-shadow:5px 5px 0 var(--ink)}
+.friends>li{background:var(--paper);border:2px solid var(--line);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.6rem;box-shadow:0 1px 2px rgba(15,27,45,.12),0 12px 28px -20px rgba(15,27,45,.35)}
 .friends .who{display:flex;align-items:center;gap:.8rem}
 .friends .who img{width:56px;height:56px;border-radius:.8rem;border:1px solid var(--line);background:#fff;flex:none;object-fit:contain;padding:4px}
 .friends .role{font-size:.8rem;font-weight:700;color:var(--btc-text);text-transform:uppercase;letter-spacing:.04em}
 .friends p{margin:0;color:var(--muted);font-size:.97rem}
 .links{display:flex;flex-wrap:wrap;gap:.3rem 1rem;font-weight:600;margin-top:auto}
 .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:1rem}
-.side{background:var(--paper);border:2px solid var(--ink);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem;box-shadow:0 1px 2px rgba(15,27,45,.12),0 12px 28px -20px rgba(15,27,45,.35)}
-.side:hover{box-shadow:5px 5px 0 var(--ink)}
-@media (prefers-reduced-motion:no-preference){.friends>li,.side{transition:box-shadow .18s ease,transform .18s ease}.friends>li:hover,.side:hover{transform:translateY(-2px)}}
+.side{background:var(--paper);border:2px solid var(--line);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem;box-shadow:0 1px 2px rgba(15,27,45,.12),0 12px 28px -20px rgba(15,27,45,.35)}
+@media (prefers-reduced-motion:no-preference){.friends>li,.side{transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}.friends>li:hover,.side:hover{border-color:var(--ink);transform:translateY(-2px)}}
 .side h3{display:flex;align-items:center;gap:.5rem;font-size:1.25rem}
 .side h3 img{border-radius:.5rem;border:1px solid var(--line);background:#fff;padding:4px}
 .side p{margin:0;color:var(--muted)}
