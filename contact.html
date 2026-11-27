@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-WSssNfqHN272+5h+OYwaLqhKG7q2fzwQpIeJnMifbsI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-YZJedBkfPIV4xz/X7ioe/uP/wzMN4PeGxiTUB4npa7w='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/contact">
 <title>Write to the team · Altradits</title>
@@ -73,7 +73,7 @@ input,select,textarea{width:100%;padding:.7rem .8rem;border:2px solid var(--line
 textarea{min-height:8rem;resize:vertical}
 .cost{background:var(--bg);border:2px dashed var(--btc-text);border-radius:.8rem;padding:.8rem 1rem;margin:1rem 0;font-size:.97rem}
 .cost b{color:var(--btc-text)}
-.qr{max-width:17rem;margin:1rem 0 .5rem}.qr svg{display:block;width:100%;height:auto}
+.qr{max-width:17rem;margin:1rem 0 .5rem}.qr img{display:block;width:100%;height:auto}
 #bolt{font:12px ui-monospace,Menlo,monospace}
 .err{color:#B42318}
 .okflag{display:inline-block;background:var(--ok);color:#fff;font-weight:700;border-radius:99px;padding:.3rem .9rem;margin-bottom:.6rem}
@@ -161,8 +161,16 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
   const setTopic = (v) => { if (v && [...$("#topic").options].some((o) => o.value === v)) $("#topic").value = v; };
   const stashWords = () => { const d = loadDraft() || {}; saveDraft({ fields: readFields(), ...(d.quote ? { quote: d.quote } : {}) }); };
   const topicLabel = () => $("#topic").options[$("#topic").selectedIndex].text;
+  // The QR picture renders as an inert image, never as markup: SVG written
+  // straight into the page could run a stored script, while an image cannot.
+  const showQr = (svg) => {
+    const pic = document.createElement("img");
+    pic.alt = "Lightning invoice QR code";
+    pic.src = "data:image/svg+xml," + encodeURIComponent(svg);
+    $("#qr").replaceChildren(pic);
+  };
   const showPay = (q) => {
-    $("#qr").innerHTML = q.qr; $("#bolt").value = q.bolt11; $("#open").href = "lightning:" + q.bolt11;
+    showQr(q.qr); $("#bolt").value = q.bolt11; $("#open").href = "lightning:" + encodeURIComponent(q.bolt11);
     $("#payNote").textContent = `Scan with any Lightning wallet: $${q.usd} (${Number(q.sats).toLocaleString("en-US")} sats).`;
     $("#stepWrite").hidden = true; $("#stepPay").hidden = false; $("#stepSend").hidden = true; $("#state").textContent = "Waiting for payment…";
   };

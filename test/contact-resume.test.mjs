@@ -41,6 +41,14 @@ test("an expired quote falls back to step 1 with words kept", () => {
     "contact.html: expired keeps the words and says why");
 });
 
+test("stored invoice data never becomes page markup or a raw link", () => {
+  assert.doesNotMatch(html, /innerHTML = [rq]\.qr/, "contact.html: the QR picture is not written as markup");
+  assert.match(html, /createElement\("img"\)/, "contact.html: the QR picture is an image element");
+  assert.match(html, /pic\.src = "data:image\/svg\+xml," \+ encodeURIComponent\(svg\)/, "contact.html: the picture source is encoded");
+  assert.match(html, /\$\("#open"\)\.href = "lightning:" \+ encodeURIComponent\(q\.bolt11\)/, "contact.html: the wallet link is encoded");
+  assert.match(html, /\.qr img\{display:block;width:100%;height:auto\}/, "contact.html: the picture fills the QR box");
+});
+
 test("going back keeps the live quote stashed, never mints from the draft", () => {
   assert.match(html, /stashWords\(\); \$\("#toPay"\)\.disabled = false/, "contact.html: going back stashes words");
   assert.match(html, /saveDraft\({ fields: readFields\(\), \.\.\.\(d\.quote \? \{ quote: d\.quote \} : \{\}\) \}\)/,
