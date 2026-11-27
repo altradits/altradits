@@ -16,6 +16,17 @@ const TYPE_TITLES: Record<string, string> = {
   send_btc: 'Send Sats',
 };
 
+// The receipt lives on a partner page: show where the link actually goes.
+const receiptHost = (url: string): string => {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "https:" && u.protocol !== "http:") return "Receipt";
+    return u.hostname.replace(/^www\./, "") || "Receipt";
+  } catch {
+    return "Receipt";
+  }
+};
+
 export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   transaction,
   onClose,
@@ -184,7 +195,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                   rel="noopener noreferrer"
                   className="text-emerald-400 hover:text-emerald-300 underline flex items-center gap-1 text-[11px]"
                 >
-                  <span>bitcoin.co.ke</span>
+                  <span>{receiptHost(transaction.receiptUrl!)}</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
