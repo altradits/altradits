@@ -62,12 +62,12 @@ a{color:var(--blue)}
 .btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.95rem;padding:.8rem 1.4rem;border-radius:.8rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none}
 .btn:hover{background:#ffa94d;border-color:#ffa94d}
 .btn:active{transform:translateY(1px)}
-.btn.ghost{background:transparent;border-color:var(--ink)}
-.btn.ghost:hover{background:rgba(15,27,45,.06);border-color:var(--ink)}
 .proofs{list-style:none;padding:0;margin:1.35rem 0 0;display:flex;flex-wrap:wrap;gap:.45rem}
 .proofs li{font-size:.86rem;font-weight:600;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:99px;padding:.28rem .75rem}
+.proofs.paths{margin-top:0}
+.proofs.paths a{display:block}
 
-.phone-stage{margin:0;background:radial-gradient(circle at 25% 15%,#4C2470,#1A1024 72%);border:2px solid var(--ink);border-radius:1.35rem;padding:1.35rem 1.35rem 1rem;box-shadow:8px 8px 0 var(--ink);display:flex;flex-direction:column;align-items:center;gap:.85rem}
+.phone-stage{margin:0;background:var(--plum);border:2px solid var(--ink);border-radius:1.35rem;padding:1.35rem 1.35rem 1rem;box-shadow:8px 8px 0 var(--ink);display:flex;flex-direction:column;align-items:center;gap:.85rem}
 .phone-bezel{width:min(14.5rem,72%);background:#0D0B10;border:2px solid rgba(255,255,255,.22);border-radius:1.45rem;padding:.4rem;box-shadow:0 22px 44px -16px rgba(0,0,0,.7)}
 .phone-bezel img{width:100%;height:auto;display:block;border-radius:1.1rem}
 .stage-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:.4rem}
@@ -129,8 +129,8 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
     <div>
       <p class="eyebrow">Ye₿ente · Starter Bitcoin wallet</p>
       <h1>Open a free Bitcoin wallet <em>in a minute.</em></h1>
-      <p class="lead">Most people avoid Bitcoin because wallets feel scary, slow, or full of jargon. Ye₿ente starts gentle: open yours in 60 seconds, send sats anywhere in seconds, and cash out to M-Pesa when you need shillings. Altradits holds everyday amounts on its own node so recovery stays simple.</p>
-      <div class="ctas"><a class="btn" href="/yebente#create">Open your free wallet</a><a class="btn ghost" href="#answers">Quick answers</a></div>
+      <p class="lead">Open yours in a minute, send sats in seconds, and cash out to M-Pesa when you need shillings. Altradits holds small amounts on its own node, so recovery stays simple.</p>
+      <div class="ctas"><a class="btn" href="/yebente#create">Open your free wallet</a></div>
       <ul class="proofs" aria-label="Highlights">
         <li>Start with a few cents</li>
         <li>One 6-digit PIN</li>
@@ -168,12 +168,6 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
     <li><span class="tag">Out</span><h3>Send some out</h3><p>Paste an address or scan a QR, enter sats, approve with your PIN.</p><figure class="cardshot"><img src="/assets/yebente-send.png" alt="Ye₿ente's Send screen: destination with paste and scan buttons, 1,000 sats amount and routing fee" width="390" height="844" loading="lazy"></figure></li>
   </ul>
 
-  <h2>Put money in</h2>
-  <p class="intro">An empty wallet can't send. Get some from a person.</p>
-  <ul class="cards">
-    <li><span class="tag">From someone</span><h3>Get some from a person</h3><p>Anyone with bitcoin can pay your address or QR: a friend, a customer, work paying you.</p><figure class="cardshot"><img src="/assets/yebente-receive.png" alt="Ye₿ente's Receive screen: QR code, copyable Lightning address, LNURL and Create invoice button" width="390" height="844" loading="lazy"></figure><div class="links"><a href="/bitcoin">See how receiving works →</a></div></li>
-  </ul>
-
   <h2>Done. And next.</h2>
   <p class="intro">What's already in your wallet, and what's being built.</p>
   <ul class="cards">
@@ -183,10 +177,10 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 
   <h2>Keep learning</h2>
   <p class="intro">For your first weeks with the wallet.</p>
-  <ul class="cards">
-    <li><span class="tag">1</span><h3>Why this money</h3><p>Why money matters, and why Bitcoin exists.</p><div class="links"><a href="/library#money">Start here →</a></div></li>
-    <li><span class="tag">2</span><h3>Wallets, kept safe</h3><p>Start with Ye₿ente, then wallets only you control.</p><div class="links"><a href="/library#keys">Read on →</a></div></li>
-    <li><span class="tag">3</span><h3>Safe habits</h3><p>Good habits from day one.</p><div class="links"><a href="/library#privacy">Read on →</a></div></li>
+  <ul class="proofs paths" aria-label="Learning paths">
+    <li><a href="/library#money">Why this money</a></li>
+    <li><a href="/library#keys">Wallets, kept safe</a></li>
+    <li><a href="/library#privacy">Safe habits</a></li>
   </ul>
 
   <h2>Three names, one project</h2>
@@ -213,9 +207,8 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 
   <section class="closing" aria-labelledby="ready-cta">
     <div>
-      <h2 id="ready-cta">Ready to keep all of it?</h2>
-      <p class="intro">Cents to send, seconds to arrive. Your wallet opens in a minute.</p>
-      <div class="ctas"><a class="btn" href="/yebente#create">Open your free wallet</a></div>
+      <h2 id="ready-cta">Open it on your phone.</h2>
+      <p class="intro">Cents to send, seconds to arrive.</p>
     </div>
     <figure class="scan"><img src="/assets/yebente-open-qr.png" alt="QR code that opens Ye₿ente's wallet creation" width="240" height="240"><figcaption>On a computer? Scan to open on your phone.</figcaption></figure>
   </section>
