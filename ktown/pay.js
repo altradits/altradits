@@ -8,7 +8,7 @@ const STR = {
   en: {
     loading: "Loading…", amount: "Amount", pay: "Pay",
     honest: "kTown holds no money. Our payout partner converts sats to M-Pesa for a 1% fee.",
-    helpIs: "Help", learnAsk: "New to Bitcoin?", learnLink: "Learn more",
+    helpIs: "Help", learnAsk: "New to Bitcoin?", learnLink: "Learn more", newPayment: "New payment",
     between: "Between", and: "and", receive: "Merchant receives",
     scanWith: "Scan with your wallet",
     copy: "Copy", copied: "Copied.", openWallet: "Open in wallet",
@@ -26,7 +26,7 @@ const STR = {
   sw: {
     loading: "Inapakia…", amount: "Kiasi", pay: "Lipa",
     honest: "kTown haishiki pesa. Mshirika wetu wa malipo hubadilisha sats kuwa M-Pesa kwa asilimia 1.",
-    helpIs: "Msaada", learnAsk: "Mpya kwa Bitcoin?", learnLink: "Jifunze zaidi",
+    helpIs: "Msaada", learnAsk: "Mpya kwa Bitcoin?", learnLink: "Jifunze zaidi", newPayment: "Malipo mapya",
     between: "Kati ya", and: "na", receive: "Muuzaji atapokea",
     scanWith: "Skani na pochi yako",
     copy: "Nakili", copied: "Imenakiliwa.", openWallet: "Fungua kwenye pochi",
@@ -329,6 +329,17 @@ async function boot() {
     $("view-pay").hidden = false;
     refreshReceive();
     toTop();
+  });
+  $("link-paid-new").addEventListener("click", () => {
+    stopPoll();
+    payHash = "";
+    $("amount").value = "";
+    hideErr("pay-err");
+    $("view-paid").hidden = true;
+    $("view-pay").hidden = false;
+    refreshReceive();
+    toTop();
+    $("amount").focus();
   });
 }
 

@@ -85,7 +85,7 @@ export const CardTopupModal: React.FC<CardTopupModalProps> = ({ isOpen, onClose,
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60">
-      <div className="bg-[var(--yb-surface-container-low)] border border-[var(--yb-outline-variant)] yb-sheet rounded-t-[28px] sm:rounded-[28px] w-full max-w-md overflow-hidden flex flex-col max-h-[92vh]">
+      <div role="dialog" aria-modal="true" aria-label="Top up with card" className="bg-[var(--yb-surface-container-low)] border border-[var(--yb-outline-variant)] yb-sheet rounded-t-[28px] sm:rounded-[28px] w-full max-w-md overflow-hidden flex flex-col max-h-[92vh]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--yb-outline-variant)]/60">
           <button type="button" onClick={close} className="p-1.5 rounded-lg text-[var(--yb-on-surface-variant)] hover:text-[var(--yb-on-surface)]" aria-label="Back">
             <ArrowLeft className="w-5 h-5" />

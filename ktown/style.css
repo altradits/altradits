@@ -63,7 +63,7 @@ body.signed-out #set-title{font-size:1.5rem;margin-top:.25rem}
 .mark.ok{color:var(--navy)}
 .mark.no{color:var(--muted)}
 .secure-note{text-align:center;color:var(--muted);font-size:.92rem;margin:.4rem 0 0}
-.offline-note{text-align:center;font-weight:700;font-size:.92rem;margin:.4rem 0 0}
+.offline-note{text-align:center;font-weight:700;font-size:.9rem;margin:0 0 .5rem;padding:.45rem .85rem;border-radius:.75rem;background:rgba(247,147,26,.16);border:1px solid rgba(247,147,26,.55);color:var(--navy)}
 #print-sheet{display:none}
 /* The Bitcoin QR code template: the code in ink
 on white inside an orange rounded frame with a faint outer ring, and the
