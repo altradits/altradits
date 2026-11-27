@@ -18,13 +18,14 @@ test("trivia: a hidden Fund another button waits inside the invoice", () => {
 
 test("trivia: paid and expired states reveal and focus Fund another", () => {
   assert.match(js, /\$\("fund-again"\)\.hidden = false; \$\("fund-again"\)\.focus\(\)/, "endDonor reveals and focuses Fund another");
-  assert.match(js, /endDonor\("Received\. Thank you\.", false\); loadPool\(\)/, "paid invoices end through endDonor and refresh the pool");
-  assert.match(js, /endDonor\("This invoice expired\.", true\)/, "expired invoices end through endDonor");
+  assert.match(js, /endDonor\("Received\. Thank you\."\); loadPool\(\)/, "paid invoices end through endDonor and refresh the pool");
+  assert.match(js, /endDonor\("This invoice expired\."\)/, "expired invoices end through endDonor");
 });
 
-test("trivia: expiry quiets the dead invoice actions", () => {
-  assert.match(js, /\$\("fund-copy"\)\.disabled = true/, "expiry disables Copy");
-  assert.match(js, /\$\("fund-open"\)\.removeAttribute\("href"\)/, "expiry removes the wallet link target");
+test("trivia: paid and expired states quiet the invoice actions", () => {
+  assert.doesNotMatch(js, /if \(expired\)/, "no expired-only guard: both terminal states quiet");
+  assert.match(js, /\$\("fund-copy"\)\.disabled = true/, "terminal states disable Copy");
+  assert.match(js, /\$\("fund-open"\)\.removeAttribute\("href"\)/, "terminal states remove the wallet link target");
   assert.match(page, /#fund-copy:disabled,#fund-open\[aria-disabled\]/, "dead actions look dead");
 });
 
@@ -36,6 +37,7 @@ test("trivia: a new invoice resets copy, actions, and Fund another", () => {
 
 test("trivia: denied clipboard says so", () => {
   assert.match(js, /\$\("fund-copy"\)\.textContent = "Copy failed"/, "copy failure sets Copy failed");
+  assert.match(js, /else \$\("fund-copy"\)\.textContent = "Copy failed";/, "missing clipboard API also sets Copy failed");
 });
 
 test("trivia: Fund another clears the stale invoice and returns to the amount", () => {

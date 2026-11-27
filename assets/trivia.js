@@ -201,10 +201,10 @@
       $("join-ok").textContent = `Seat taken as ${r.player.name}. Good luck.`;
       pollPlay();
     });
-    function endDonor(message, expired) {
+    function endDonor(message) {
       clearInterval(S.donorTimer);
       $("fund-state").textContent = message;
-      if (expired) { $("fund-copy").disabled = true; $("fund-open").removeAttribute("href"); $("fund-open").setAttribute("aria-disabled", "true"); }
+      $("fund-copy").disabled = true; $("fund-open").removeAttribute("href"); $("fund-open").setAttribute("aria-disabled", "true");
       $("fund-again").hidden = false; $("fund-again").focus();
     }
     $("fund-form").addEventListener("submit", async (e) => {
@@ -226,15 +226,16 @@
       $("fund-state").textContent = "Waiting for payment.";
       clearInterval(S.donorTimer);
       S.donorTimer = setInterval(async () => {
-        if (Date.parse(r.expiresAt) < Date.now()) { endDonor("This invoice expired.", true); return; }
+        if (Date.parse(r.expiresAt) < Date.now()) { endDonor("This invoice expired."); return; }
         try {
           const s = await call(`/api/trivia?view=donor&hash=${r.hash}`);
-          if (s.state === "paid") { endDonor("Received. Thank you.", false); loadPool(); }
+          if (s.state === "paid") { endDonor("Received. Thank you."); loadPool(); }
         } catch { /* keep waiting */ }
       }, 4000);
     });
     $("fund-copy").addEventListener("click", () => {
       if (navigator.clipboard) navigator.clipboard.writeText($("fund-bolt").value).then(() => { $("fund-copy").textContent = "Copied"; }, () => { $("fund-copy").textContent = "Copy failed"; });
+      else $("fund-copy").textContent = "Copy failed";
     });
     $("fund-again").addEventListener("click", () => {
       clearInterval(S.donorTimer); $("fund-invoice").hidden = true; $("fund-again").hidden = true;
