@@ -69,6 +69,9 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60"
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Details"
         onClick={(e) => e.stopPropagation()}
         className="bg-[var(--yb-surface-container-low)] border border-[var(--yb-outline-variant)] yb-sheet rounded-t-[28px] sm:rounded-[28px] w-full max-w-sm overflow-hidden flex flex-col"
       >
