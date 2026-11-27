@@ -54,6 +54,15 @@ test("a failed balance sync speaks instead of stopping silently", () => {
   assert.match(balance, /Check your connection and try again/, "the note says what to do");
 });
 
+test("the shipped service worker carries the same cache version as the source", () => {
+  const cacheOf = (src) => src.match(/const CACHE = "([^"]+)"/)[1];
+  assert.equal(
+    cacheOf(read("yebente/app/sw.js")),
+    cacheOf(read("yebente/public/sw.js")),
+    "rebuild after every cache bump so the old shell is evicted",
+  );
+});
+
 test("BalanceCard carries no dead settings prop", () => {
   assert.doesNotMatch(balance, /onOpenWalletSettings/, "BalanceCard neither takes nor uses it");
   const uses = app.match(/onOpenWalletSettings/g) || [];
