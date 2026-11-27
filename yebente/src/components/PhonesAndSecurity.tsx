@@ -69,7 +69,7 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
               className="w-full h-10 rounded-full border border-red-500/60 text-red-100 font-semibold text-xs flex items-center justify-center">Cancel recovery</button>
           ) : (
             <div className="grid grid-cols-[1fr_7rem] gap-2">
-              <input type="password" inputMode="numeric" maxLength={6} name="yb-cancel-pin" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true"
+              <input type="password" inputMode="numeric" maxLength={6} name="yb-cancel-pin" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" aria-label="PIN to cancel the recovery"
                 value={cancelPin} onChange={(e) => setCancelPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="PIN"
                 className="yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.3em]" />
               <button type="button" disabled={busy || cancelPin.length !== 6} onClick={cancel}
@@ -91,11 +91,11 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
       ) : (
         <div className="space-y-2">
           <div className="grid grid-cols-3 gap-2">
-            <input type="password" inputMode="numeric" maxLength={6} name="yb-pin-old" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true"
+            <input type="password" inputMode="numeric" maxLength={6} name="yb-pin-old" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" aria-label="Old PIN"
               value={oldPin} onChange={(e) => setOldPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Old PIN" className={pinBox} />
-            <input type="password" inputMode="numeric" maxLength={6} name="yb-pin-new" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true"
+            <input type="password" inputMode="numeric" maxLength={6} name="yb-pin-new" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" aria-label="New PIN"
               value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="New PIN" className={pinBox} />
-            <input type="password" inputMode="numeric" maxLength={6} name="yb-pin-new2" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true"
+            <input type="password" inputMode="numeric" maxLength={6} name="yb-pin-new2" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" aria-label="Repeat the new PIN"
               value={newPin2} onChange={(e) => setNewPin2(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Again" className={pinBox} />
           </div>
           <p className="text-[11px] text-[var(--yb-on-surface-variant)] px-1">Use a PIN you haven't used before.</p>
@@ -111,14 +111,14 @@ export const PhonesAndSecurity: React.FC<{ onChanged?: () => void }> = ({ onChan
               <Smartphone className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">{d.current ? 'This phone' : `Phone added ${when(d.at)}`}<span className="block text-[10px] text-[var(--yb-on-surface-variant)]">Last used {when(d.lastSeen)}</span></span>
             </span>
-            <button type="button" onClick={() => { setRemoving(removing === d.id ? '' : d.id); setPin(''); setError(''); }} className="text-[11px] font-semibold text-[var(--yb-primary)] hover:underline shrink-0">Remove</button>
+            <button type="button" onClick={() => { setRemoving(removing === d.id ? '' : d.id); setPin(''); setError(''); }} aria-label={d.current ? 'Remove this phone' : `Remove the phone added ${when(d.at)}`} className="text-[11px] font-semibold text-[var(--yb-primary)] hover:underline shrink-0">Remove</button>
           </li>
         ))}
       </ul>
       {info.olderDevices > 0 && <p className="text-[11px] text-[var(--yb-on-surface-variant)]">{info.olderDevices} older sign-in(s). Changing your PIN ends them.</p>}
       {removing && (
         <div className="grid grid-cols-[1fr_7rem] gap-2">
-          <input type="password" inputMode="numeric" maxLength={6} name="yb-remove-pin" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true"
+          <input type="password" inputMode="numeric" maxLength={6} name="yb-remove-pin" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" aria-label="PIN to remove the phone"
             value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="PIN"
             className="yb-sensitive w-full bg-[var(--yb-surface)] border border-[var(--yb-outline-variant)] rounded-2xl px-4 py-2.5 text-xs font-mono text-[var(--yb-on-surface)] focus:outline-none focus:border-[var(--yb-primary)] tracking-[0.3em]" />
           <button type="button" disabled={busy || pin.length !== 6} onClick={remove}
