@@ -6,7 +6,7 @@
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-a/cYFeQGSKrSqLbbeEUxk96js1PRgvIukdRCcfERNts='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ISEKh0ElF7O+czxKiab4wKSVoRY5lubmfjLTtHPsagE='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <meta name="theme-color" content="#EEF2F6">
 <link rel="canonical" href="https://altradits.com/kazi">
@@ -55,6 +55,7 @@ a{color:var(--blue)}
 .ctas{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
 .btn{display:inline-flex;justify-content:center;align-items:center;min-height:2.9rem;padding:.8rem 1.35rem;border-radius:.75rem;font:700 1rem Figtree,system-ui,sans-serif;border:2px solid var(--btc);background:var(--btc);color:var(--ink);text-decoration:none;cursor:pointer}
 .btn.ghost{background:transparent;border-color:var(--ink)}
+.btn[disabled]{opacity:.55;cursor:default}
 h2{font:800 clamp(1.5rem,4vw,2rem)/1.15 'Bricolage Grotesque',sans-serif;margin:2.4rem 0 .4rem}
 h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .intro{color:var(--muted);margin:0 0 1.2rem;max-width:42rem}
@@ -347,12 +348,14 @@ li.append(c);
 const row = el("div", "flagrow");
 const input = el("input"); input.placeholder = t("flagWhy"); input.maxLength = 200; input.setAttribute("aria-label", t("flagWhy"));
 const btn = el("button", "btn ghost", t("flagBtn")); btn.type = "button";
+btn.disabled = true;
+input.addEventListener("input", () => { btn.disabled = !input.value.trim(); });
 btn.addEventListener("click", async () => {
 if (!input.value.trim()) return;
 btn.disabled = true;
 try { await api("flag", { id: task.id, reason: input.value.trim() }); input.value = ""; input.placeholder = t("flagged"); }
 catch (e) { input.placeholder = e.message; }
-btn.disabled = false;
+btn.disabled = !input.value.trim();
 });
 const lab = el("span", "sm", `${t("flag")}: `); lab.style.alignSelf = "center";
 row.append(lab, input, btn);

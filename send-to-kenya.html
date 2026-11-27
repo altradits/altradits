@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-cPn4t/dQ9thFKY+Zn50KWAJXWV6pUo9xk5sgQZDdD/Y='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/send-to-kenya">
 <title>Send money to Kenya from abroad over Lightning · Altradits</title>
@@ -144,18 +144,6 @@ summary{font-weight:700;cursor:pointer}
 <script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
 addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY>24)},{passive:true});document.body.classList.toggle("scrolled",scrollY>24); // nav shadow on scroll
-// Copy the credit line. Clipboard first, older browsers second.
-(function(){
-  var b=document.getElementById("copycredit");if(!b)return;
-  b.addEventListener("click",function(){
-    var t=document.getElementById("credit").textContent;
-    function done(){b.textContent="Copied";setTimeout(function(){b.textContent="Copy credit line";},1500);}
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,function(){});return;}
-    var ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();
-    try{document.execCommand("copy");done();}catch(e){}
-    ta.remove();
-  });
-})();
 </script>
 </body>
 </html>

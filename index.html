@@ -76,13 +76,19 @@ h2{font:800 clamp(1.55rem,3.8vw,2.1rem)/1.14 'Bricolage Grotesque',sans-serif;ma
 h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .intro{color:var(--muted);margin:0 0 1.4rem;max-width:44rem}
 
-.contrast{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(18rem,100%),1fr));gap:1rem;margin-top:1rem}
-.contrast article{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.25rem 1.35rem;display:flex;flex-direction:column;gap:.55rem}
-.contrast article.after{background:var(--warm);box-shadow:5px 5px 0 var(--ink)}
-.contrast .kicker{align-self:flex-start;font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .65rem;border-radius:99px;background:rgba(15,27,45,.08);color:var(--muted)}
-.contrast article.after .kicker{background:#DDF3EC;color:var(--ok)}
-.contrast p{margin:0;color:var(--muted)}
-.contrast article.after p{color:var(--ink)}
+.pilot{padding:clamp(3.25rem,6.5vw,5rem) 0;border-top:1.5px solid var(--line)}
+.pilot h2{margin:0;max-width:13ch;font-size:clamp(1.9rem,3.8vw,2.65rem);line-height:1.08;text-wrap:balance}
+.pilot ol{list-style:none;margin:0;padding:0;max-width:none}
+.pilot li{display:flex;gap:clamp(1rem,3vw,1.75rem);align-items:baseline;padding:clamp(1.4rem,3vw,1.9rem) .75rem;margin:0 -.75rem;border-top:1.5px solid var(--line)}
+.pilot li:last-child{border-bottom:1.5px solid var(--line)}
+.pilot .i{font:600 .82rem/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.14em;color:var(--btc-text);flex:none}
+.pilot p{margin:0;color:var(--muted)}
+.pilot p b{display:block;font:800 clamp(1.15rem,2.6vw,1.4rem)/1.25 'Bricolage Grotesque',sans-serif;color:var(--ink);margin-bottom:.25rem}
+.pilot-head{margin:0 0 clamp(1.75rem,4vw,2.5rem)}
+@media (min-width:860px){.pilot{display:grid;grid-template-columns:.78fr 1.22fr;gap:clamp(2rem,5vw,4rem);align-items:start}.pilot h2{margin:0}.pilot-head{position:sticky;top:5.5rem;margin:0}}
+.pilot-link{display:inline-block;margin-top:1rem;font-weight:700;color:var(--btc-text);text-decoration:none}
+.pilot-link:hover{text-decoration:underline}
+@media (prefers-reduced-motion:no-preference){.pilot li{transition:background-color .18s ease,border-color .18s ease}.pilot .i{transition:transform .18s ease}.pilot li:hover{background-color:rgba(15,27,45,.04);border-top-color:var(--ink)}.pilot li:hover .i{transform:translateX(4px)}}
 
 .steps{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(17rem,100%),1fr));gap:1rem}
 .steps li{background:var(--paper);border:2px solid var(--ink);border-radius:1.1rem;padding:1.25rem;display:flex;flex-direction:column;gap:.7rem}
@@ -143,20 +149,17 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
     </figure>
   </header>
 
-  <h2>At the counter, without the stress</h2>
-  <p class="intro">Running a shop is busy enough. Taking bitcoin should feel as ordinary as taking M-Pesa.</p>
-  <div class="contrast">
-    <article>
-      <span class="kicker">Before kTown</span>
-      <h3>Turn the sale away, or juggle wallets</h3>
-      <p>Learning crypto apps during a lunch rush, worrying about price swings overnight, or buying extra counter hardware just to serve bitcoin payers.</p>
-    </article>
-    <article class="after">
-      <span class="kicker">With kTown</span>
-      <h3>Point at one QR. Keep your full price.</h3>
-      <p>Your customer scans the printed card, checks the exact shillings on their own screen, and pays in sats. Your M-Pesa rings with the full amount.</p>
-    </article>
-  </div>
+  <section class="pilot" aria-labelledby="pilot-h">
+    <div class="pilot-head">
+      <h2 id="pilot-h">Free for Kisumu shops</h2>
+      <a class="pilot-link" href="/ktown">Join the pilot →</a>
+    </div>
+    <ol>
+      <li><span class="i" aria-hidden="true">01</span><p><b>Open now in Kisumu.</b> Limited places. Nothing to buy or install.</p></li>
+      <li><span class="i" aria-hidden="true">02</span><p><b>Keep your full price.</b> The customer covers the 1% fee.</p></li>
+      <li><span class="i" aria-hidden="true">03</span><p><b>Straight to M-Pesa.</b> kTown never holds money. No price-swing risk.</p></li>
+    </ol>
+  </section>
 
   <h2>For the shop: three steps</h2>
   <p class="intro">No app store, no special device, no crypto training for your staff.</p>

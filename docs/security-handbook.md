@@ -16,12 +16,12 @@ How Altradits is defended, how the defences are kept from slipping, and what to 
 - A Content-Security-Policy meta tag in every page (deploy/page-csp.mjs): only our scripts, inline scripts pinned by hash, no other sites called, framed or posted to.
 - A frame check in every page's script (clickjacking).
 - /assets/report.js reports anything the lock blocks to the Security watch.
-- Private pages (admin, portal, team, proposal, collect) are noindex; the admin's sign-in is rate-limited.
+- The private admin page is noindex; its sign-in is rate-limited.
 
 **API**
 - Rate limits on every public endpoint (store hit counters); the admin allows 20 wrong tokens per connection per 15 minutes and alerts at 100 an hour site-wide.
 - Tokens compared with safeEqual; tokens and ids never in logs.
-- Request bodies capped (100 kB; 8 MB only with the admin token).
+- Request bodies capped (100 kB; 1 MB on the admin endpoint with the admin token).
 - Connections identified by a keyed hash (IP_SALT), never stored raw.
 
 **Money**
