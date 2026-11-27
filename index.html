@@ -70,6 +70,7 @@ a{color:var(--blue)}
 
 .stage{border:1.5px solid var(--line);border-radius:1.25rem;overflow:hidden;background:var(--warm)}
 .stage img{display:block;width:100%;height:auto}
+.stage:focus-within{outline:3px solid var(--blue);outline-offset:2px}
 
 ::selection{background:#F7931A66}
 h2{font:800 clamp(1.55rem,3.8vw,2.1rem)/1.14 'Bricolage Grotesque',sans-serif;margin:3.25rem 0 .45rem;letter-spacing:-.015em}
@@ -165,7 +166,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
       <div class="ctas"><a class="btn" href="/ktown">Get kTown</a></div>
     </div>
     <figure class="stage" style="margin:0">
-      <img src="/assets/card-ktown.svg" alt="kTown counter QR stand beside the customer payment and shop M-Pesa confirmation flow" width="800" height="624">
+      <a href="/ktown" aria-label="Get kTown for your shop"><img src="/assets/ktown-stand.png" alt="Bitcoin Accepted Here shop stand: Altradits QR code with Scan to Pay band" width="895" height="1260"></a>
     </figure>
   </header>
 
