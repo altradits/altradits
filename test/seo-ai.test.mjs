@@ -13,7 +13,7 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 const PUB = eval(read("server.mjs").match(/const PUBLIC = (\/.*\/);/)[1]);
 const LIFTED = ["library.html", "bitcoin-core.html", "bitcoin.html", "players.html",
   "tracker.html", "journey.html", "wallet-guide.html", "developer.html",
-  "developer-reference.html", "developer-dashboard.html", "donate.html",
+  "developer-reference.html", "donate.html",
   "research.html", "portfolio.html", "friends.html", "plan.html",
   "kazi.html", "njia.html", "trivia.html"];
 const NEW = ["cite.html", "bitcoin-core-checklist.html", "lnd-review-guide.html",
@@ -23,7 +23,7 @@ const ldBlocks = (html) => [...html.matchAll(/<script type="application\/ld\+jso
 
 test("T1: public content pages are indexable, private shells stay noindex", () => {
   for (const f of LIFTED) assert.doesNotMatch(read(f), /noindex/, `${f}: lifted`);
-  for (const f of ["admin.html", "404.html", "receipt.html", "contact.html"]) {
+  for (const f of ["admin.html", "404.html", "receipt.html", "contact.html", "developer-dashboard.html"]) {
     assert.match(read(f), /<meta name="robots" content="noindex">/, `${f}: still noindex`);
   }
   const robots = read("robots.txt");
@@ -74,7 +74,9 @@ test("T4: CITATION.cff cites traced values only", () => {
   assert.ok(cff.includes("Thuita") && cff.includes("Stanley Chege"), "author named");
   assert.ok(cff.includes("MIT") && cff.includes("https://github.com/altradits/altradits")
     && cff.includes("https://altradits.com"), "license, repo, site traced");
-  assert.doesNotMatch(cff, /^date-released:/m, "no invented release date (owner fills it)");
+  assert.match(cff, /^date-released: 2026-11-27$/m, "owner-decided release date");
+  assert.match(cff, /^\s+orcid: https:\/\/orcid\.org\/0009-0001-1828-4852$/m, "owner-verified ORCID");
+  assert.match(cff, /^\s+email: altradits@gmail\.com$/m, "owner-confirmed contact");
 });
 
 test("T5: journey Person works for Altradits, research Article is dated from its meta", () => {

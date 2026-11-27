@@ -457,7 +457,8 @@ test("kTown: Tando through the public-address guard, exact-amount invoices, no p
     const html = read(page), src = read(js);
     assert.match(html, /connect-src 'self'/, `${page}: the app calls only this site's API`);
     assert.doesNotMatch(html, /connect-src 'self' https?:/, `${page}: no API host beside this site`);
-    assert.doesNotMatch(html, /(src|href)="http/, `${page}: no outside scripts, styles or images (store assets in the repo)`);
+    const noCanon = html.replace(/<link rel="canonical" href="https:\/\/altradits\.com\/[^"]*">/g, ""); // same-site crawler metadata, never loaded
+    assert.doesNotMatch(noCanon, /(src|href)="http/, `${page}: no outside scripts, styles or images (store assets in the repo)`);
     assert.doesNotMatch(src, /fetch\(\s*["'`]https?:/, `${js}: fetch() takes same-site paths only`);
     for (const [, key] of html.matchAll(/data-i18n="([a-zA-Z]+)"/g))
       assert.ok(src.includes(`${key}:`), `${page}: label "${key}" has no wording in ${js}`);

@@ -38,7 +38,7 @@ test("the pages carry their policy, reporter, frame check and share tags", async
 test("the inline scripts parse", async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "altradits-devjs-"));
   for (const f of PAGES) {
-    const scripts = [...read(f).matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+    const scripts = [...read(f).matchAll(/<script(?![^>]*\bsrc=)(?![^>]*type=\"application\/ld\+json\")[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
     assert.ok(scripts.length >= 1, `${f}: has an inline script`);
     const tmp = path.join(dir, f.replace(".html", ".js"));
     fs.writeFileSync(tmp, scripts.join("\n;\n"));
@@ -80,14 +80,15 @@ test("the dashboard only talks to our own API and never runs server text", async
     assert.ok(html.includes(`id="${id}"`), `dashboard has #${id}`);
 });
 
-test("routes: Node, Apache and the sitemap serve the three addresses", async () => {
+test("routes: Node, Apache and the sitemap serve the public addresses (dashboard stays noindex)", async () => {
   const srv = read("server.mjs"), ht = read(".htaccess"), sm = read("sitemap.xml");
   assert.ok(srv.includes("developer.html") && srv.includes("developer-reference.html") && srv.includes("developer-dashboard.html"), "server.mjs serves the files");
   assert.match(srv, /developer\\\/reference/, "server.mjs routes /developer/reference");
   assert.match(srv, /developer\\\/dashboard/, "server.mjs routes /developer/dashboard");
   assert.ok(ht.includes("developer.html") && ht.includes("developer/(reference|dashboard)"), ".htaccess routes both stacks");
-  for (const loc of ["https://altradits.com/developer", "https://altradits.com/developer/reference", "https://altradits.com/developer/dashboard"])
+  for (const loc of ["https://altradits.com/developer", "https://altradits.com/developer/reference"])
     assert.match(sm, new RegExp(`<loc>${loc}<\\/loc><lastmod>20\\d\\d-\\d\\d-\\d\\d<\\/lastmod>`), `sitemap dates ${loc}`);
+  assert.doesNotMatch(sm, /developer\/dashboard/, "sitemap omits the noindex dashboard");
   assert.match(read("llms.txt"), /developer\/reference/, "llms.txt points at the API reference");
 });
 
