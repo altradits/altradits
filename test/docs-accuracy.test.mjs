@@ -6,6 +6,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { feeFor } from "../lib/devapi.js";
 
 const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
@@ -15,7 +16,9 @@ test("the overview prices match the code: $1 contact, 0.5% developer charge", ()
   const price = contact.match(/CONTACT\s*=\s*\{\s*usd:\s*(\d+)/);
   assert.ok(price, "api/contact.js: CONTACT.usd is set");
   assert.equal(price[1], "1", "api/contact.js: contact costs $1");
-  assert.match(read("lib/devapi.js"), /ceil\(n\/200\)/, "lib/devapi.js: the 0.5% fee maths is in place");
+  assert.equal(feeFor(200), 1, "lib/devapi.js: 0.5% of 200 sats is 1 sat");
+  assert.equal(feeFor(201), 2, "lib/devapi.js: the charge rounds up");
+  assert.equal(feeFor(1), 1, "lib/devapi.js: the minimum charge is 1 sat");
   const doc = read("docs/system-overview.md");
   assert.doesNotMatch(doc, /Nothing is sold/, "overview: no blanket nothing-sold claim");
   assert.match(doc, /\$1/, "overview: the $1 contact price is stated");
