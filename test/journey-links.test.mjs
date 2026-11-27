@@ -28,6 +28,7 @@ test("the wallet link names the app, not the bare word", () => {
 test("no name on the page points two ways", () => {
   const dests = new Map();
   for (const l of links) {
+    assert.ok(l.name, `journey.html: link to ${l.href} has an accessible name`);
     if (!dests.has(l.name)) dests.set(l.name, new Set());
     dests.get(l.name).add(l.href);
   }
