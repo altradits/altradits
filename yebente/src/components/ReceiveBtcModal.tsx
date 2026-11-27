@@ -65,6 +65,9 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [invoice, setInvoice] = useState<string>('');
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  // Null when the invoice came from the saved outside address: no payment
+  // hash, so nothing to watch. The screen says so and offers Done.
+  const [trackedHash, setTrackedHash] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const { copied, copy } = useCopy();
 
@@ -176,6 +179,7 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
       }
 
       setInvoice(res.invoice);
+      setTrackedHash(res.paymentHash || null);
 
       const qrData = await templateQrDataUrl(res.invoice.toUpperCase());
       setQrCodeUrl(qrData);
@@ -344,7 +348,20 @@ export const ReceiveBtcModal: React.FC<ReceiveBtcModalProps> = ({
                 <Share2 className="w-5 h-5" />
               </button>
             </div>
-            <Loader2 className="w-5 h-5 animate-spin text-[var(--yb-primary)]" aria-label="Waiting for payment" />
+            {trackedHash ? (
+              <Loader2 className="w-5 h-5 animate-spin text-[var(--yb-primary)]" aria-label="Waiting for payment" />
+            ) : (
+              <>
+                <p className="max-w-sm text-xs text-[var(--yb-on-surface-variant)] leading-relaxed">Ye₿ente cannot watch this invoice. It will not flip to paid by itself. Press Done to close.</p>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full max-w-sm h-12 rounded-full bg-[var(--yb-primary-container)] hover:bg-[var(--yb-primary-container-hover)] text-[var(--yb-on-surface)] font-bold text-sm flex items-center justify-center"
+                >
+                  Done
+                </button>
+              </>
+            )}
           </>
         )}
 
