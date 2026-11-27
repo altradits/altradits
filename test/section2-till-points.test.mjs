@@ -7,7 +7,7 @@ import path from "node:path";
 
 const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
 const home = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-const sec = home.slice(home.indexOf('<section class="till-points"'), home.indexOf("<h2>Three names"));
+const sec = home.slice(home.indexOf('<section class="till-points"'), home.indexOf('<section class="names"'));
 
 test("till-points: one section with the kept h2 and exactly three rows", () => {
   assert.ok(sec.startsWith('<section class="till-points"'), "section opens the block");
