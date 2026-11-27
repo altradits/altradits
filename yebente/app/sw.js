@@ -4,7 +4,7 @@
 // cached: money screens always read live, and the app shows its own offline
 // state. Google Fonts stay network-only and fall back to system fonts
 // offline. Scope is /yebente. Bump CACHE when any cached file changes.
-const CACHE = "yebente-v2";
+const CACHE = "yebente-v3";
 const SHELL = [
   "/yebente/",
   "/yebente/manifest.webmanifest",
