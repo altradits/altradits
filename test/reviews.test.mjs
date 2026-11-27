@@ -15,10 +15,18 @@ test("every review entry is complete and links to GitHub", () => {
     assert.ok(["review", "research"].includes(r.kind));
     assert.match(r.date, /^\d{4}-\d{2}-\d{2}$/, "Nairobi day");
     assert.ok(r.title.length > 0);
+    assert.ok(r.claim.length > 0, "the claim under test");
+    assert.match(r.author, /^[\w-]+$/, "idea owner's login");
+    assert.ok(r.pain.length > 0, "the pain point");
+    assert.ok(r.before.length > 0 && r.after.length > 0, "before and after merge");
+    assert.ok(r.followup === null || r.followup.length > 0, "followup or null");
+    assert.ok(r.mergedBy === null || /^[\w-]+$/.test(r.mergedBy), "merger login or null");
     assert.ok(Array.isArray(r.ran) && r.ran.length > 0, "at least one run");
     for (const t of r.ran) {
       assert.ok(t.run.length > 0 && t.saw.length > 0, "run and saw");
+      assert.ok(t.why.length > 0, "why this command");
     }
+    assert.ok(r.lesson.length > 0, "one lesson");
     assert.match(r.comment, /^https:\/\/github\.com\//, "proof link");
     if (r.kind === "review") assert.match(r.commit, /^[0-9a-f]{7,40}$/, "tested commit");
   }
