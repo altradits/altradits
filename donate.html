@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-3Fc0tfNY8PNSFDzt94O7bs9deC+YLnsxnJSHJEMwRbE='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-Pw2Kr4oE3weVdREXruSLpIhgN4jC3mbpxSEglzr+YPQ='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/donate">
 <title>Support Stanley's open-source Bitcoin work · Altradits</title>
@@ -108,6 +108,7 @@ textarea{font:12px ui-monospace,Menlo,monospace}
       <textarea id="bolt" readonly rows="3" aria-label="Lightning invoice"></textarea>
       <div class="ctas"><button type="button" class="btn ghost" id="copy">Copy invoice</button><a class="btn ghost" id="open" href="#">Open in wallet</a></div>
       <p id="state" role="status">Waiting for payment…</p>
+      <p><button type="button" class="btn ghost" id="again" hidden>Make another invoice</button></p>
     </div>
     <div id="fallback" hidden>
       <p>Or send any amount to this Lightning address:</p>
@@ -145,14 +146,15 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
     catch { $("#err").textContent = "No connection. Try again."; return; }
     if (r.error) { $("#err").textContent = r.error; if (r.offline) fallback(); return; }
     $("#qr").innerHTML = r.qr; $("#bolt").value = r.bolt11; $("#open").href = "lightning:" + r.bolt11;
-    $("#invoice").hidden = false; $("#state").textContent = "Waiting for payment…";
+    $("#invoice").hidden = false; $("#again").hidden = true; $("#state").textContent = "Waiting for payment…";
     clearInterval(poll);
     poll = setInterval(async () => {
-      if (Date.parse(r.expiresAt) < Date.now()) { clearInterval(poll); $("#state").textContent = "This invoice expired. Make a new one."; return; }
-      try { const s = await (await fetch("/api/tip?hash=" + r.hash)).json(); if (s.paid) { clearInterval(poll); $("#state").textContent = "Received. Thank you ⚡"; } } catch {}
+      if (Date.parse(r.expiresAt) < Date.now()) { clearInterval(poll); $("#state").textContent = "This invoice expired. Make a new one."; $("#again").hidden = false; return; }
+      try { const s = await (await fetch("/api/tip?hash=" + r.hash)).json(); if (s.paid) { clearInterval(poll); $("#state").textContent = "Received. Thank you ⚡"; $("#again").hidden = false; } } catch {}
     }, 4000);
   });
   $("#copy").addEventListener("click", () => navigator.clipboard?.writeText($("#bolt").value).then(() => { $("#copy").textContent = "Copied"; }));
+  $("#again").addEventListener("click", () => { $("#invoice").hidden = true; $("#again").hidden = true; $("#sats").focus(); });
 })();
 </script>
 </body>

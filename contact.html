@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-OymE4LCdmN5zfGhMzeuFh52gk5hrjFQ0RQaO12zqLoY='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-3getVa0UUAZj1GQBiPnUWgvm7xusK611shGDU61UaBI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/contact">
 <title>Write to the team · Altradits</title>
@@ -128,6 +128,7 @@ textarea{min-height:8rem;resize:vertical}
         <p class="intro" id="review"></p>
         <button class="btn" type="button" id="sendBtn">Send message</button>
         <button class="btn ghost" type="button" id="typoBtn" hidden></button>
+        <p><button class="btn ghost" type="button" id="freshBtn" hidden>Start a new message</button></p>
         <p class="err" id="err2" role="alert"></p>
       </fieldset>
     </form>
@@ -182,7 +183,7 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
   $("#copy").addEventListener("click", () => navigator.clipboard?.writeText($("#bolt").value).then(() => { $("#copy").textContent = "Copied"; }));
   $("#backToWrite").addEventListener("click", () => { clearInterval(poll); quote = null; $("#stepPay").hidden = true; $("#stepWrite").hidden = false; $("#toPay").disabled = false; $("#err").textContent = ""; });
   async function sendMessage(confirmed) {
-    $("#err2").textContent = ""; $("#typoBtn").hidden = true; $("#sendBtn").disabled = true;
+    $("#err2").textContent = ""; $("#typoBtn").hidden = true; $("#freshBtn").hidden = true; $("#sendBtn").disabled = true;
     let r;
     try {
       r = await (await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" },
@@ -191,12 +192,15 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
     if (!r.ok) {
       $("#err2").textContent = r.error || "Could not send.";
       if (r.typoHint) { $("#typoBtn").textContent = `Use ${fields.email} anyway`; $("#typoBtn").hidden = false; }
+      // A used or expired quote can never send: offer a fresh start instead of a hopeless retry.
+      if (/Start a new message for a fresh one\./.test(r.error || "")) $("#freshBtn").hidden = false;
       $("#sendBtn").disabled = false; return;
     }
     $("#msgForm").hidden = true; $("#done").hidden = false;
   }
   $("#sendBtn").addEventListener("click", () => sendMessage(false));
   $("#typoBtn").addEventListener("click", () => sendMessage(true));
+  $("#freshBtn").addEventListener("click", () => { clearInterval(poll); quote = null; $("#stepSend").hidden = true; $("#stepWrite").hidden = false; $("#toPay").disabled = false; $("#err").textContent = ""; $("#err2").textContent = ""; $("#freshBtn").hidden = true; });
 })();
 </script>
 </body>

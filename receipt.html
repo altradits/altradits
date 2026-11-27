@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#EEF2F6">
 <meta name="robots" content="noindex">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-lK5JLprFGAzZeXxxGqpkyaAW6V3f+ufNFKh/RmT7QmA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gnVmVvOlbJPw4QxO5LiqBTrdJK7OfIqiiXQlYkylGB0=' 'sha256-QPPd7mAfXNsmIWgd2wad5Z/x5LqJmht3LQCSG7a+G8A='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <script src="/assets/report.js"></script>
 <link rel="canonical" href="https://altradits.com/receipt">
 <title>Receipt · Altradits</title>
@@ -61,7 +61,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 Figtr
     <p class="rcpt-foot">Thank you. Every payment supports open-source Bitcoin and Lightning work, and funds the node that carries Ye₿ente payments.</p>
   </div>
   <p class="err" id="err" role="alert"></p>
+  <p class="noprint" id="errBack" hidden><a href="/">Back to the homepage</a> · <a href="/contact">Write to the team</a></p>
   <button class="btn" id="print" type="button" hidden>Print / save as PDF</button>
+  <p class="noprint" id="okBack" hidden><a href="/">Back to the homepage</a></p>
 </div>
 <script>
 if (window.top !== window.self) { document.documentElement.innerHTML = ""; throw new Error("Not shown inside a frame."); } // no clickjacking
@@ -81,7 +83,8 @@ addEventListener("scroll",()=>{document.body.classList.toggle("scrolled",scrollY
     document.title = `Receipt ${r.no} · Altradits`;
     document.getElementById("rcpt").hidden = false;
     document.getElementById("print").hidden = false;
-  } catch { document.getElementById("err").textContent = "No such receipt. Check the link in your email."; }
+    document.getElementById("okBack").hidden = false;
+  } catch { document.getElementById("err").textContent = "No such receipt. Check the link in your email."; document.getElementById("errBack").hidden = false; }
   document.getElementById("print").addEventListener("click", () => window.print());
 })();
 </script>
