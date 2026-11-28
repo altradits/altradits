@@ -19,6 +19,9 @@ test("status flags carry no button chrome", () => {
     assert.ok(!flag.includes(chrome), `no ${chrome} on .okflag`);
   }
   assert.ok(flag.includes("color:var(--ok)"), "green status voice kept");
+  assert.ok(flag.includes("text-transform:uppercase"), "unified quiet kicker voice");
+  assert.ok(flag.includes("font-size:.76rem"), "kicker size, not body size");
+  assert.ok(!flag.includes("margin-bottom"), "no stacked margin: the wrapping p owns spacing");
 });
 
 test("flags keep their words", () => {
