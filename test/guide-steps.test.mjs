@@ -23,6 +23,22 @@ test("step labels carry no button chrome", () => {
   assert.ok(!badge.includes("font-weight:800"), "never 800: Figtree tops out at 700");
 });
 
+test("badge sits on the centered axis", () => {
+  assert.ok(!badge.includes("align-self"), "badge follows the centered column axis");
+});
+
+test("frames are calm with margin in CSS, never inline", () => {
+  assert.ok(css.includes(".stepframe{margin:0;"), "figure margin lives in the stylesheet");
+  assert.ok(css.includes(".stepframe{margin:0;background:var(--paper);border:1.5px solid var(--line);"), "calm hairline frame, no heavy ink box");
+  assert.ok(!html.includes('class="stepframe" style='), "no repeated inline styles on figures");
+  assert.equal([...html.matchAll(/<figure class="stepframe">/g)].length, 3, "three step figures kept");
+});
+
+test("static figures never jump on hover", () => {
+  const guard = (css.match(/@media \(prefers-reduced-motion:no-preference\)\{[\s\S]*/ ) || [""])[0];
+  assert.ok(!guard.includes(".stepframe"), "no stepframe motion: figures are not clickable");
+});
+
 test("steps keep their labels in order", () => {
   const labels = [...html.matchAll(/<span class="badge">([^<]*)<\/span>/g)].map((m) => m[1]);
   assert.deepEqual(labels, ["Step 1", "Step 2", "Step 3"], "step labels kept in order");
