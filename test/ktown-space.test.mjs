@@ -27,3 +27,7 @@ test("checkbox, footer, and help notes share the scale", () => {
 test("empty shop name leaves no phantom gap", () => {
   assert.ok(css.includes(".mpesa-name:empty{display:none}"), "empty name collapses");
 });
+
+test("installed shops get the new shell", () => {
+  assert.ok(fs.readFileSync(path.join(ROOT, "ktown/sw.js"), "utf8").includes('const CACHE = "ktown-v13";'), "cache bumped past v12");
+});
