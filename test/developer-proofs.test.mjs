@@ -34,3 +34,11 @@ test("guarantees keep their words in order", () => {
   );
   assert.ok(html.includes('<ul class="proofs" aria-label="Key guarantees">'), "list label kept");
 });
+
+test("guarantees stay separated without button chrome", () => {
+  assert.ok(css.includes("gap:.45rem .9rem"), "row breathes between items");
+  const dot = (css.match(/\.proofs li\+li::before\{[^}]*\}/) || [""])[0];
+  assert.ok(dot, "separator rule found");
+  assert.ok(dot.includes('content:""'), "separator stays silent to screen readers");
+  assert.ok(dot.includes("width:4px"), "quiet dot, not a pill");
+});
