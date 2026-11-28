@@ -19,6 +19,8 @@ test("flagship statuses carry no button chrome", () => {
     assert.ok(!flagship.includes(chrome), `no ${chrome} on .flagship .status`);
   }
   assert.ok(flagship.includes("text-transform:uppercase"), "quiet kicker voice kept");
+  assert.ok(flagship.includes("font-weight:700"), "matches the gallery, no faux bold");
+  assert.ok(!css.includes("font-weight:800"), "no faux-bold weight anywhere on the page");
   for (const [rule, voice] of [
     [".is-ktown .status", "color:var(--btc-text)"],
     [".is-yebente .status", "color:#5B2A86"],
