@@ -55,7 +55,7 @@ a{color:var(--blue)}
 .topnav a.launch:hover{color:var(--ink);background:#ffa94d}
 @media (max-width:420px){.topnav{gap:.25rem}.topnav a{font-size:.9rem;padding:.4rem .7rem}.top img{height:1.9rem}}
 
-.hero{padding:clamp(4.5rem,10vw,7.5rem) 0 clamp(4rem,8vw,6rem);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(2.5rem,6vw,5rem);align-items:center}
+.hero{padding:clamp(3.25rem,7vw,5rem) 0 clamp(3.5rem,7vw,5rem);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(2.5rem,6vw,5rem);align-items:center}
 @media (max-width:860px){.hero{grid-template-columns:1fr;padding:3.5rem 0 3rem;gap:2.5rem}}
 .hero h1{font:800 clamp(2.6rem,6.5vw,4.4rem)/1.02 'Bricolage Grotesque',Figtree,system-ui,sans-serif;letter-spacing:-.025em;margin:0;max-width:34rem}
 .hero h1 em{font-style:normal;color:var(--btc-text)}
@@ -68,8 +68,11 @@ a{color:var(--blue)}
 .hero .ctas{margin-top:clamp(2rem,4vw,2.75rem)}
 .hero .btn{min-height:3.4rem;padding:1rem 2.2rem;border-radius:99px;font-size:1.1rem}
 
-.stage{border:1.5px solid var(--line);border-radius:1.25rem;overflow:hidden;background:var(--warm)}
+.stage{border:1px solid rgba(15,27,45,.12);border-radius:1.25rem;overflow:hidden;background:var(--paper);max-width:min(23rem,100%);width:100%;justify-self:center;box-shadow:0 24px 48px -24px rgba(15,27,45,.22),0 4px 12px -4px rgba(15,27,45,.08)}
 .stage img{display:block;width:100%;height:auto}
+.stage a{display:block}
+.stage a:focus-visible{outline:none}
+.stage:has(:focus-visible){outline:3px solid var(--blue);outline-offset:3px}
 
 ::selection{background:#F7931A66}
 h2{font:800 clamp(1.55rem,3.8vw,2.1rem)/1.14 'Bricolage Grotesque',sans-serif;margin:3.25rem 0 .45rem;letter-spacing:-.015em}
@@ -152,7 +155,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
 .sitefoot .soc{color:var(--muted);display:inline-flex;align-items:center;justify-content:center;min-width:2.75rem;min-height:2.75rem}
 .sitefoot .soc svg{width:20px;height:20px;display:block}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top{transition:box-shadow .25s ease}body.scrolled .top{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.names-row{transition:background-color .18s ease}.names-row:hover{background:rgba(15,27,45,.045)}.names-link a{transition:color .18s ease}.names-link a:hover{color:var(--ink)}.steps .n{transition:color .18s ease}.steps li:hover .n{color:var(--ink)}.till-rows article{transition:border-color .18s ease}.till-rows article:hover{border-color:var(--ink)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}.sitefoot a{transition:color .18s ease}.sitefoot .footnav a:hover,.sitefoot .wp a:hover{color:var(--ink)}.sitefoot .footnav a:hover{text-decoration:underline}a.soc:hover{color:var(--ink)}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.top{transition:box-shadow .25s ease}body.scrolled .top{box-shadow:0 8px 22px -12px rgba(15,27,45,.45)}.btn,.topnav a{transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}.names-row{transition:background-color .18s ease}.names-row:hover{background:rgba(15,27,45,.045)}.names-link a{transition:color .18s ease}.names-link a:hover{color:var(--ink)}.steps .n{transition:color .18s ease}.steps li:hover .n{color:var(--ink)}.till-rows article{transition:border-color .18s ease}.till-rows article:hover{border-color:var(--ink)}details{interpolate-size:allow-keywords}details::details-content{transition:height .25s ease}.sitefoot a{transition:color .18s ease}.sitefoot .footnav a:hover,.sitefoot .wp a:hover{color:var(--ink)}.sitefoot .footnav a:hover{text-decoration:underline}a.soc:hover{color:var(--ink)}.stage{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}.stage:hover{transform:translateY(-3px);border-color:rgba(15,27,45,.26);box-shadow:0 30px 56px -24px rgba(15,27,45,.28),0 6px 16px -4px rgba(15,27,45,.1)}}
 </style>
 </head>
 <body>
@@ -165,7 +168,7 @@ h3{font:800 1.15rem/1.25 'Bricolage Grotesque',sans-serif;margin:0}
       <div class="ctas"><a class="btn" href="/ktown">Get kTown</a></div>
     </div>
     <figure class="stage" style="margin:0">
-      <img src="/assets/card-ktown.svg" alt="kTown counter QR stand beside the customer payment and shop M-Pesa confirmation flow" width="800" height="624">
+      <a href="/ktown" aria-label="Get kTown for your shop"><img src="/assets/ktown-stand.png" alt="Bitcoin Accepted Here shop stand: Altradits QR code with Scan to Pay band" width="815" height="1164" fetchpriority="high"></a>
     </figure>
   </header>
 
