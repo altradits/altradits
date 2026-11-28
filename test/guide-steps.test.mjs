@@ -19,6 +19,8 @@ test("step labels carry no button chrome", () => {
     assert.ok(!badge.includes(chrome), `no ${chrome} on .badge`);
   }
   assert.ok(badge.includes("text-transform:uppercase"), "quiet kicker voice kept");
+  assert.ok(badge.includes("font-weight:700"), "loaded Figtree weight, no faux bold");
+  assert.ok(!badge.includes("font-weight:800"), "never 800: Figtree tops out at 700");
 });
 
 test("steps keep their labels in order", () => {
