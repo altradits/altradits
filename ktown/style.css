@@ -58,6 +58,7 @@ body.has-tabs .wrap,body.pay .wrap{flex:1 1 auto;min-height:0;width:100%;overflo
 body.has-tabs .shop,body.pay .shop{margin-top:.35rem}
 body.signed-out #set-title{font-size:1.5rem;margin-top:.25rem}
 .mpesa-name{text-align:center;font-weight:700;font-size:1.1rem;margin:.3rem 0 0;overflow-wrap:anywhere}
+.mpesa-name:empty{display:none}
 .mark-line{text-align:center;margin:.3rem 0 0}
 .mark{font-size:.85rem;font-weight:700}
 .mark.ok{color:var(--navy)}
@@ -128,6 +129,7 @@ body.has-tabs .card .btn{margin-top:1rem}
 .link{background:none;border:0;border-radius:.5rem;padding:.6rem .5rem;color:var(--navy);
   font:700 1rem Figtree,system-ui,sans-serif;text-decoration:underline;cursor:pointer;min-height:3rem}
 .link:hover{text-decoration-thickness:2px}
+#signed-out .switch-line{text-align:center;margin:.75rem 0 0}
 /* History: the amount leads, the status sits in a quiet chip. */
 .tx{list-style:none;margin:1rem 0 0;padding:0;max-height:20rem;overflow-y:auto;
   background:
@@ -274,7 +276,7 @@ heading shrink. */
   #signed-out label{margin:.45rem 0 .3rem}
   #signed-out .card .btn{margin-top:.75rem}
   #signed-out .agree{margin-top:.75rem}
-  #signed-out>p{margin:.4rem 0}
+  #signed-out>.switch-line{margin:.4rem 0 0}
 }
 /* Auth on short screens: the fields pair side by side so the whole card
 and its submit fit above the tab bar. Targets stay 48px. */
@@ -305,10 +307,11 @@ for screen readers only; the card heading says what the form is. */
 @media (orientation:landscape) and (max-height:30rem){
   body.signed-out #set-title{position:absolute;width:.0625rem;height:.0625rem;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
   /* The log-in link rides on the register heading row, top right. */
-  #signed-out>p{grid-row:1;grid-column:1;justify-self:end;align-self:start;z-index:1;margin:.3rem .5rem 0 0}
+  #signed-out>p{grid-row:1;grid-column:1;justify-self:end;align-self:start;z-index:1}
   #f-register{grid-row:1;grid-column:1}
   #f-login{grid-row:2}
   #signed-out .link{min-height:2.75rem;padding:.4rem .5rem;font-size:.95rem}
+  #signed-out>.switch-line{margin:.3rem .5rem 0 0}
   #signed-out .card{margin-top:.25rem;padding:.75rem 1rem}
   #f-register,#f-login,#f-names{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:.75rem;row-gap:.5rem;align-items:end}
   #f-register>.agree,#f-register>.btn,#f-login>.btn,#f-names>.btn{grid-column:auto}
@@ -357,8 +360,8 @@ body.pay .receive{margin-top:1rem}
 .paid{text-align:center;font:800 clamp(2.5rem,10vw,3.25rem)/1.15 "Bricolage Grotesque",Figtree,system-ui,sans-serif;margin:2rem 0 0}
 .mpesa-code{text-align:center;font-size:1.35rem;font-weight:800;letter-spacing:.08em;margin:.5rem 0 0}
 .foot{margin:.75rem 0 0;color:var(--muted);font-size:.8rem;text-align:center}
-.help-line{margin:.9rem 0 0;color:var(--muted);font-size:.88rem;text-align:center}
-.agree{display:flex;gap:.6rem;align-items:flex-start;font-weight:400;margin-top:1.25rem}
+.help-line{margin:.75rem 0 0;color:var(--muted);font-size:.88rem;text-align:center}
+.agree{display:flex;gap:.6rem;align-items:flex-start;font-weight:400;margin-top:1rem}
 .agree input{width:1.5rem;height:1.5rem;min-height:1.5rem;flex:none;margin-top:.2rem;accent-color:var(--navy);
   border-radius:.35rem}
 .agree label{display:inline;font-weight:400;margin:0}
