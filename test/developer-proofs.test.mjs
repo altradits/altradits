@@ -36,9 +36,12 @@ test("guarantees keep their words in order", () => {
 });
 
 test("guarantees stay separated without button chrome", () => {
-  assert.ok(css.includes("gap:.45rem .9rem"), "row breathes between items");
-  const dot = (css.match(/\.proofs li\+li::before\{[^}]*\}/) || [""])[0];
-  assert.ok(dot, "separator rule found");
-  assert.ok(dot.includes('content:""'), "separator stays silent to screen readers");
-  assert.ok(dot.includes("width:4px"), "quiet dot, not a pill");
+  const row = (css.match(/\.proofs\{[^}]*\}/) || [""])[0];
+  assert.ok(row.includes("gap:.5rem 1.5rem"), "row breathes between items");
+  assert.ok(row.includes("border-top:1px solid var(--line)"), "hairline sets the row apart");
+  assert.ok(!css.includes("li+li::before"), "no dot separators");
+  assert.ok(
+    css.includes("@media (max-width:860px){.hero{grid-template-columns:minmax(0,1fr)"),
+    "mobile hero cannot overflow",
+  );
 });
