@@ -14,7 +14,8 @@ test("hero reveals the shop stand and links it to kTown", () => {
   assert.ok(hero.length > 100, "hero present");
   assert.ok(hero.includes('<a href="/ktown" aria-label="Get kTown for your shop">'), "stand links to kTown");
   assert.ok(hero.includes('<img src="/assets/ktown-stand.png"'), "stand artwork shown");
-  assert.ok(hero.includes('width="895" height="1260"'), "intrinsic dimensions kept");
+  assert.ok(hero.includes('width="815" height="1164"'), "intrinsic dimensions kept");
+  assert.ok(hero.includes('fetchpriority="high"'), "LCP image prioritized");
   assert.ok(!hero.includes("card-ktown.svg"), "generic illustration gone from the hero");
 });
 
@@ -29,8 +30,16 @@ test("stand assets exist and are real files", () => {
   assert.ok(pdf.startsWith("%PDF-"), "valid PDF magic");
 });
 
-test("hero stand link shows a focus ring", () => {
-  assert.ok(html.includes(".stage:focus-within{outline:3px solid var(--blue);outline-offset:2px}"), "focus ring survives the clipped figure");
+test("hero stand link shows a keyboard-only focus ring", () => {
+  assert.ok(html.includes(".stage a{display:block}"), "link fills the frame");
+  assert.ok(html.includes(".stage a:focus-visible{outline:none}"), "no stuck ring on click");
+  assert.ok(html.includes(".stage:has(:focus-visible){outline:3px solid var(--blue);outline-offset:3px}"), "crisp outer ring on tab");
+});
+
+test("hero stand is capped, lifted on hover, and calm at rest", () => {
+  assert.ok(html.includes("max-width:min(23rem,100%)"), "portrait capped for above-the-fold balance");
+  assert.ok(html.includes(".stage{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}"), "guarded hover transition");
+  assert.ok(html.includes(".stage:hover{transform:translateY(-3px);"), "restrained hover lift");
 });
 
 test("headline and CTA stay untouched", () => {
